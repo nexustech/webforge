@@ -1,74 +1,27 @@
-import {
-  Button,
-  cn,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-  EmptyState,
-  fieldControlClass,
-  ScrollArea,
-} from "@webforge/editor-ui";
+import { Button, cn, EmptyState, fieldControlClass, ScrollArea } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { LAYER_NAME_MAX } from "@webforge/model";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
-  ChevronRightIcon,
   ChevronsDownUpIcon,
   ChevronsUpDownIcon,
   CopyIcon,
-  EyeClosedIcon,
   EyeIcon,
   EyeOffIcon,
   LayersIcon,
-  Link2Icon,
-  LockIcon,
   PencilIcon,
-  SparklesIcon,
-  StickyNoteIcon,
   Trash2Icon,
 } from "lucide-react";
-import {
-  type ComponentType,
-  type KeyboardEvent,
-  type MouseEvent,
-  type ReactNode,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type ComponentType, type ReactNode, useState } from "react";
 import type { CanvasPointer } from "../editor/canvas-pointer.js";
-import { type Layer, type LayerShown, layerItem, layerShown } from "../editor/layers.js";
+import { type Layer, layerItem } from "../editor/layers.js";
 import type { MenuPoint } from "../element-menu/index.js";
-import { isMac } from "../shell/commands.js";
-import { DRAGGABLE_ROW_CLASS, type RowDragKeys, useRowDrag } from "../shell/use-row-drag.js";
+import { LayerRow, type LayerRowEvents } from "./LayerRow.js";
+import type { LayersPanelActions } from "./layer-rows.js";
+import { useLayerDrag } from "./use-layer-drag.js";
+import { useLayersTree } from "./use-layers-tree.js";
 
-/** What the Layers panel can do; the host binds them to the editor session and its commands. */
-export type LayersPanelActions = {
-  select(id: string): void;
-  /** Ctrl/Cmd-click (1.31): adds the layer to the selection, or takes it out. */
-  toggle(id: string): void;
-  /** Shift-click (1.31): selects these layers, the first the one shown. */
-  selectMany(ids: readonly string[]): void;
-  rename(id: string, name: string): void;
-  /** Shows a layer, hides it while editing, or keeps it off the website (UX-23): one undo step. */
-  setShown(id: string, shown: LayerShown): void;
-  /** Moves a layer to `index` among its siblings. */
-  move(id: string, index: number): void;
-  /**
-   * Copies a layer to `index` among its siblings as they are now: a Ctrl/Cmd-drag, with Shift for
-   * another linked copy of a shared section (1.35, UX-4). Undefined where nothing can be copied.
-   */
-  copy?(id: string, index: number, linked: boolean): void;
-  /** The canvas's own commands on the selected element (1.12); undefined while unavailable. */
-  readonly moveUp: (() => void) | undefined;
-  readonly moveDown: (() => void) | undefined;
-  readonly duplicate: (() => void) | undefined;
-  readonly remove: (() => void) | undefined;
-};
+export type { LayersPanelActions } from "./layer-rows.js";
 
 /** Props of {@link LayersPanel}. */
 export type LayersPanelProps = {
@@ -103,78 +56,6 @@ export type LayersPanelProps = {
   readonly canvas?: CanvasPointer | undefined;
 };
 
-/** A layer as a row: where it sits among its siblings, so moves stay within its parent. */
-type Row = {
-  readonly layer: Layer;
-  readonly depth: number;
-  readonly parent: string;
-  readonly index: number;
-  readonly siblings: number;
-  /** Its children show below it (it has some, and isn't collapsed). */
-  readonly expanded: boolean;
-};
-
-/** How the tree is shown: the layers collapsed, and the filter's text. */
-type TreeView = {
-  readonly collapsed: ReadonlySet<string>;
-  /** Lower case; empty for no filter. */
-  readonly filter: string;
-};
-
-/** Whether `layer`'s name or kind contains `filter`. */
-const matches = (layer: Layer, filter: string) =>
-  `${layer.name ?? ""} ${layer.kind}`.toLocaleLowerCase().includes(filter);
-
-/** Whether `layer` or a layer inside it matches `filter`. */
-const anyMatch = (layer: Layer, filter: string): boolean =>
-  matches(layer, filter) || layer.children.some((child) => anyMatch(child, filter));
-
-/**
- * The rows shown: every layer, except those inside a collapsed one; with a filter, the layers
- * that match it and the layers they are in, whatever is collapsed.
- */
-function rowsOf(layers: readonly Layer[], view: TreeView, depth = 1, parent = ""): Row[] {
-  return layers.flatMap((layer, index) => {
-    if (view.filter !== "" && !anyMatch(layer, view.filter)) return [];
-    const expanded =
-      layer.children.length > 0 && (view.filter !== "" || !view.collapsed.has(layer.id));
-    return [
-      { layer, depth, parent, index, siblings: layers.length, expanded },
-      ...(expanded ? rowsOf(layer.children, view, depth + 1, layer.id) : []),
-    ];
-  });
-}
-
-/** The ids of the layers `id` is inside, outermost first; empty if it isn't in `layers`. */
-function parentsOf(layers: readonly Layer[], id: string | null): string[] {
-  for (const layer of layers) {
-    if (layer.id === id) return [];
-    const inside = parentsOf(layer.children, id);
-    if (inside.length > 0 || layer.children.some((child) => child.id === id)) {
-      return [layer.id, ...inside];
-    }
-  }
-  return [];
-}
-
-/** Every layer with children: what Collapse all collapses. */
-const withChildren = (layers: readonly Layer[]): string[] =>
-  layers.flatMap((layer) =>
-    layer.children.length > 0 ? [layer.id, ...withChildren(layer.children)] : [],
-  );
-
-/**
- * Where a layer at `from` lands when dropped before or `after` its sibling at `over`, counted once
- * it has left its own place.
- */
-export function dropIndex(from: number, over: number, after: boolean): number {
-  const target = over + (after ? 1 : 0);
-  return target > from ? target - 1 : target;
-}
-
-/** The MIME type a dragged layer travels as, so drops from elsewhere are ignored. */
-const DRAG_TYPE = "application/x-webforge-layer";
-
 /**
  * Layers (F-ED-12, UI1; ADR 0011): the page's sections and elements as a tree, selected in
  * step with the canvas. Drag a layer, or press Mod+Alt+↑/↓, to move it among its siblings; while
@@ -194,203 +75,52 @@ export function LayersPanel({
   menu: Menu,
   canvas,
 }: LayersPanelProps) {
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
-  const [filter, setFilter] = useState("");
-  const query = filter.trim().toLocaleLowerCase();
-  const rows = rowsOf(layers, { collapsed, filter: query });
-  // A layer selected elsewhere (the canvas) shows: the layers it is in open once. They can be
-  // collapsed again afterwards, hiding it.
-  const latest = useRef({ layers, selectedId });
-  // Kept up to date after each render, for the effect below and for focusing once React has drawn.
-  useLayoutEffect(() => {
-    latest.current = { layers, selectedId };
-  });
-  useEffect(() => {
-    const parents = parentsOf(latest.current.layers, selectedId);
-    setCollapsed((current) =>
-      parents.some((id) => current.has(id))
-        ? new Set([...current].filter((id) => !parents.includes(id)))
-        : current,
-    );
-  }, [selectedId]);
-  const [renaming, setRenaming] = useState<string | null>(null);
-  // Where a Shift-click range starts: the last row clicked without Shift, as in file managers.
-  const anchor = useRef<string | null>(null);
-  const [menuAt, setMenuAt] = useState<MenuPoint | null>(null);
-  const treeRef = useRef<HTMLDivElement>(null);
-  const selectedRow = rows.find((row) => row.layer.id === selectedId);
-
-  const focusRow = (id: string) => {
-    actions.select(id);
-    // After React has rendered the new selection, which moves the focusable row.
-    requestAnimationFrame(() => {
-      treeRef.current?.querySelector<HTMLElement>(`[data-layer="${CSS.escape(id)}"]`)?.focus();
-    });
-  };
-
-  /** Puts the focus back on row `id`, selecting nothing: where a closed menu leaves it. */
-  const focusRowOnly = (id: string) => {
-    requestAnimationFrame(() => {
-      treeRef.current?.querySelector<HTMLElement>(`[data-layer="${CSS.escape(id)}"]`)?.focus();
-    });
-  };
-
-  const setExpanded = (id: string, expanded: boolean) =>
-    setCollapsed((current) => {
-      const next = new Set(current);
-      if (expanded) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
-  /** Opens the element menu for `id` at `at`, selecting it first so the menu acts on it. */
-  const openMenu = (id: string, at: MenuPoint) => {
-    actions.select(id);
-    setMenuAt(at);
-  };
-
-  /** Focuses the selected layer's row, as it is once React has drawn it. */
-  const focusSelected = () =>
-    requestAnimationFrame(() => {
-      const id = latest.current.selectedId;
-      if (id === null) return;
-      treeRef.current?.querySelector<HTMLElement>(`[data-layer="${CSS.escape(id)}"]`)?.focus();
-    });
-
-  const onKeyDown = (event: KeyboardEvent, row: Row) => {
-    if (renaming !== null) {
-      return;
-    }
-    const at = rows.indexOf(row);
-    // The canvas's keys (F-ED-27): Mod + arrows walk the tree, Mod + Alt + ↑/↓ move (Alt + ↑/↓
-    // too, Layers' first keys). Plain arrows move the focus, as in any tree (WAI-ARIA).
-    const mod = isMac() ? event.metaKey : event.ctrlKey;
-    if ((event.key === "ArrowRight" || event.key === "ArrowLeft") && mod) {
-      event.preventDefault();
-      const siblings = rows.filter((other) => other.parent === row.parent);
-      const sibling = siblings[siblings.indexOf(row) + (event.key === "ArrowRight" ? 1 : -1)];
-      if (sibling !== undefined) focusRow(sibling.layer.id);
-    } else if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
-      event.preventDefault();
-      const opening = event.key === "ArrowRight";
-      if (row.layer.children.length > 0 && row.expanded !== opening && query === "") {
-        setExpanded(row.layer.id, opening);
-      } else if (opening && row.expanded) {
-        const child = rows[at + 1];
-        if (child !== undefined) focusRow(child.layer.id);
-      } else if (!opening && row.parent !== "") {
-        focusRow(row.parent);
-      }
-    } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-      event.preventDefault();
-      const step = event.key === "ArrowUp" ? -1 : 1;
-      if (event.altKey) {
-        if (layoutLocked) {
-          // Content mode keeps the layout (M3).
-        } else if (alsoSelected.length > 0) {
-          // Several selected: they all move, as the Edit menu's Move up and down do (1.31).
-          (step < 0 ? actions.moveUp : actions.moveDown)?.();
-        } else {
-          actions.move(row.layer.id, row.index + step);
-        }
-      } else if (mod && step < 0) {
-        if (row.parent !== "") focusRow(row.parent);
-      } else if (mod) {
-        // The first child as listed: a filter may leave it out, and then there's none to go to.
-        const next = rows[at + 1];
-        const first = row.layer.children[0];
-        if (row.expanded && next?.parent === row.layer.id) {
-          focusRow(next.layer.id);
-        } else if (!row.expanded && query === "" && first !== undefined) {
-          setExpanded(row.layer.id, true);
-          focusRow(first.id);
-        }
-      } else {
-        const next = rows[at + step];
-        if (next !== undefined) focusRow(next.layer.id);
-      }
-    } else if (event.key === "F2") {
-      event.preventDefault();
-      setRenaming(row.layer.id);
-    } else if ((event.key === "Delete" || event.key === "Backspace") && actions.remove) {
-      // The canvas's Delete shortcut leaves keys in a tree to the tree: delete the selected layer.
-      event.preventDefault();
-      actions.remove();
-    }
-  };
-
-  /**
-   * Whether the dragged layer can go next to `row`: only among its own siblings; at the top, the
-   * page's sections among themselves, and the shared Header's or Footer's among theirs, so they
-   * stay first and last (#673).
-   */
-  const canDropAt = (from: Row, row: Row) =>
-    from.parent === row.parent &&
-    (row.parent !== "" ||
-      (from.layer.region === row.layer.region && from.layer.design === row.layer.design));
-  /** How many top-level rows the shared `region` has. */
-  const regionRows = (region: Layer["region"]) =>
-    layers.filter((layer) => layer.region === region).length;
-
-  /** Whether a drag copies what it drags: Ctrl or Cmd held, as on the canvas (UX-4). */
-  const copying = (keys: RowDragKeys) =>
-    actions.copy !== undefined && (keys.ctrlKey || keys.metaKey);
-
-  const rowDrag = useRowDrag<Row>({
-    type: DRAG_TYPE,
+  const {
     rows,
-    keyOf: (row) => row.layer.id,
-    // A copy may go next to the layer it copies; a move to its own place changes nothing.
-    place: (from, row, y, event) =>
-      from.layer.id === row.layer.id && !copying(event) ? null : y > 0.5 ? "after" : "before",
-    allowed: canDropAt,
-    copying,
-    onDrop: (from, row, place, keys) => {
-      const after = place === "after";
-      if (copying(keys)) {
-        // Next to the row it was dropped on, counted with the original still there; Shift held
-        // from before the press too, as the browser's own drag couldn't (#271).
-        actions.copy?.(from.layer.id, row.index + (after ? 1 : 0), keys.shiftKey);
-      } else if (from.layer.id !== row.layer.id) {
-        actions.move(from.layer.id, dropIndex(from.index, row.index, after));
-      }
+    selectedRow,
+    treeRef,
+    filter,
+    setFilter,
+    query,
+    renaming,
+    setRenaming,
+    latestSelected,
+    focusRow,
+    focusRowOnly,
+    focusSelected,
+    setExpanded,
+    expandAll,
+    collapseAll,
+    click,
+    keyDown,
+  } = useLayersTree({ layers, selectedId, alsoSelected, actions, layoutLocked });
+  const drag = useLayerDrag({ layers, rows, actions, canvas });
+  const { dragging } = drag;
+  const [menuAt, setMenuAt] = useState<MenuPoint | null>(null);
+
+  const events: LayerRowEvents = {
+    click,
+    keyDown,
+    startRename: setRenaming,
+    renamed: (id, name) => {
+      setRenaming(null);
+      if (name !== undefined) actions.rename(id, name);
+      focusRow(id);
     },
-  });
-  const { dragging, drop } = rowDrag;
-  // Where the dragged layer would land, on the canvas too (SP-8).
-  const dropMark =
-    dragging === null || drop === null || !drop.allowed || drop.place === "into"
-      ? null
-      : { nodeId: drop.key, place: drop.place, name: dragging.layer.name ?? dragging.layer.kind };
-  const dropKey = dropMark === null ? "" : `${dropMark.nodeId} ${dropMark.place}`;
-  // The row under the pointer: its element stays outlined until the pointer leaves it, or the row
-  // goes (deleted, collapsed or filtered out), which leaves no pointerleave to clear it.
-  const [hovered, setHovered] = useState<string | null>(null);
-  const outlinedId =
-    hovered !== null && rows.some((row) => row.layer.id === hovered) ? hovered : null;
-  // What the panel has shown on the canvas, so it clears only that: an outline a breadcrumb set
-  // stays (#421 review).
-  const shown = useRef<{ outline: string | null; drop: string }>({ outline: null, drop: "" });
-  useEffect(() => {
-    if (shown.current.outline === outlinedId) return;
-    shown.current.outline = outlinedId;
-    canvas?.outline(outlinedId);
-  }, [canvas, outlinedId]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: redrawn when where it lands changes.
-  useEffect(() => {
-    if (shown.current.drop === dropKey) return;
-    shown.current.drop = dropKey;
-    canvas?.markDrop(dropMark);
-  }, [canvas, dropKey]);
-  // Nothing stays outlined or marked once the panel goes.
-  useEffect(
-    () => () => {
-      if (shown.current.outline !== null) canvas?.outline(null);
-      if (shown.current.drop !== "") canvas?.markDrop(null);
-      shown.current = { outline: null, drop: "" };
-    },
-    [canvas],
-  );
+    // Selects the layer first, so the menu acts on it.
+    openMenu:
+      Menu === undefined
+        ? undefined
+        : (id, at) => {
+            actions.select(id);
+            setMenuAt(at);
+          },
+    setExpanded,
+    hover: drag.hover,
+    leave: drag.leave,
+    setShown: (id, shown) => actions.setShown(id, shown),
+    shownClosed: focusRowOnly,
+  };
 
   if (layers.length === 0) {
     return (
@@ -414,200 +144,28 @@ export function LayersPanel({
         >
           {rows.map((row) => {
             const { layer } = row;
-            const linked =
-              layer.sharedSection === undefined
-                ? undefined
-                : t("layers.linkedCopy", {
-                    name: t("history.namedItem", { name: layer.sharedSection }),
-                  });
             const isSelected = layer.id === selectedId || alsoSelected.includes(layer.id);
-            const focusable = isSelected || (selectedRow === undefined && row === rows[0]);
-            // While a layer is dragged, the rows it can't go next to (outside its own list).
-            const notAllowed =
-              dragging !== null && dragging.layer.id !== layer.id && !canDropAt(dragging, row);
-            const hasChildren = layer.children.length > 0;
-            // One drag moving several selected layers is for later (1.31): until then a
-            // selected row can't be dragged while others are selected too.
-            const draggable =
-              !layoutLocked &&
-              // A Blog design's sections stay where they are (#936), as the canvas keeps them.
-              layer.locked !== true &&
-              renaming !== layer.id &&
-              !(isSelected && alsoSelected.length > 0) &&
-              // The shared Header and Footer stay first and last: theirs move among their own (#673).
-              !(row.parent === "" && layer.region !== undefined && regionRows(layer.region) < 2);
             return (
-              <div
+              <LayerRow
                 key={layer.id}
-                role="treeitem"
-                data-layer={layer.id}
-                data-drop={notAllowed ? "not-allowed" : undefined}
-                aria-level={row.depth}
-                aria-selected={isSelected}
-                aria-setsize={row.siblings}
-                aria-posinset={row.index + 1}
-                aria-expanded={hasChildren ? row.expanded : undefined}
-                // A note's text (UX-17), read after the name: the name only says it has one.
-                aria-description={layer.note}
-                tabIndex={focusable ? 0 : -1}
-                {...rowDrag.rowProps(row, draggable)}
-                className={cn(
-                  draggable && DRAGGABLE_ROW_CLASS,
-                  "group relative flex h-6 items-center gap-1 rounded-sm pr-1 text-xs outline-none",
-                  "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                  isSelected && "bg-accent text-accent-foreground",
-                  layer.hidden && !isSelected && "text-muted-foreground",
-                  notAllowed && "cursor-not-allowed opacity-50",
-                  rowDrag.indicatorClass(row),
-                )}
-                style={{ paddingLeft: `${(row.depth - 1) * 12 + 4}px` }}
-                // Its element outlined on the canvas, with its chip, as a breadcrumb does (SP-10).
-                onPointerEnter={() => setHovered(layer.id)}
-                onPointerLeave={() =>
-                  setHovered((current) => (current === layer.id ? null : current))
+                row={row}
+                events={events}
+                selected={isSelected}
+                focusable={isSelected || (selectedRow === undefined && row === rows[0])}
+                // One drag moving several selected layers is for later (1.31): until then a
+                // selected row can't be dragged while others are selected too.
+                draggable={
+                  !layoutLocked &&
+                  renaming !== layer.id &&
+                  !(isSelected && alsoSelected.length > 0) &&
+                  drag.movable(row)
                 }
-                onClick={(event) => {
-                  const start =
-                    rows.find((each) => each.layer.id === anchor.current) ?? selectedRow;
-                  if (event.ctrlKey || event.metaKey) {
-                    anchor.current = layer.id;
-                    actions.toggle(layer.id);
-                  } else if (event.shiftKey && start !== undefined) {
-                    // The rows from the anchor to this one, as they are listed (1.31).
-                    const from = rows.indexOf(start);
-                    const to = rows.indexOf(row);
-                    const range = rows.slice(Math.min(from, to), Math.max(from, to) + 1);
-                    actions.selectMany([
-                      layer.id,
-                      ...range.map((each) => each.layer.id).filter((id) => id !== layer.id),
-                    ]);
-                  } else {
-                    anchor.current = layer.id;
-                    actions.select(layer.id);
-                  }
-                }}
-                onDoubleClick={() => setRenaming(layer.id)}
-                onContextMenu={(event) => {
-                  if (Menu === undefined) return;
-                  event.preventDefault();
-                  // From the keyboard (Shift+F10, the Menu key) there is no pointer: below the row.
-                  const box = event.currentTarget.getBoundingClientRect();
-                  const keyboard =
-                    event.button !== 2 || (event.clientX === 0 && event.clientY === 0);
-                  openMenu(
-                    layer.id,
-                    keyboard
-                      ? { x: box.left + 16, y: box.bottom }
-                      : { x: event.clientX, y: event.clientY },
-                  );
-                }}
-                onKeyDown={(event) => onKeyDown(event, row)}
-              >
-                {hasChildren ? (
-                  // For the mouse: the row itself expands and collapses with →/←, and says
-                  // which it is (aria-expanded), so the arrow isn't part of its name.
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    aria-hidden
-                    title={t(row.expanded ? "layers.collapse" : "layers.expand", {
-                      item: layerItem(layer),
-                    })}
-                    disabled={query !== ""}
-                    className="flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-hover [&_svg]:size-3"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setExpanded(layer.id, !row.expanded);
-                    }}
-                  >
-                    <ChevronRightIcon className={cn(row.expanded && "rotate-90")} />
-                  </button>
-                ) : (
-                  <span aria-hidden className="size-4 shrink-0" />
-                )}
-                {renaming === layer.id ? (
-                  <RenameField
-                    layer={layer}
-                    onDone={(name) => {
-                      setRenaming(null);
-                      if (name !== undefined) actions.rename(layer.id, name);
-                      focusRow(layer.id);
-                    }}
-                  />
-                ) : (
-                  <span
-                    className={cn(
-                      "min-w-0 flex-1 truncate",
-                      layer.hidden && "line-through",
-                      layer.editorHidden === true &&
-                        !layer.hidden &&
-                        "italic text-muted-foreground",
-                    )}
-                  >
-                    {linked !== undefined && (
-                      // A linked copy of a shared section (F-ED-23): its section changes everywhere.
-                      <span title={linked}>
-                        <Link2Icon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
-                        <span className="sr-only">{linked} </span>
-                      </span>
-                    )}
-                    {row.parent === "" && layer.region !== undefined && (
-                      // The shared Header or Footer (#673), marked as shared sections are (UX-12).
-                      <span title={t("layers.onEveryPage")}>
-                        <Link2Icon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
-                        <span className="sr-only">{t("layers.onEveryPage")} </span>
-                      </span>
-                    )}
-                    {row.parent === "" && layer.design !== undefined && (
-                      // A Blog's design (#936), drawn on every post.
-                      <span title={t("layers.onEveryPost")}>
-                        <Link2Icon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
-                        <span className="sr-only">{t("layers.onEveryPost")} </span>
-                      </span>
-                    )}
-                    {layer.locked === true && (
-                      // Can't be moved or deleted, only edited (UX-12).
-                      <span title={t("layers.locked")}>
-                        <LockIcon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
-                        <span className="sr-only">{t("layers.locked")} </span>
-                      </span>
-                    )}
-                    {layer.animated === true && (
-                      // Has an animation (UX-12, 2.12).
-                      <span title={t("layers.animated")}>
-                        <SparklesIcon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
-                        <span className="sr-only">{t("layers.animated")} </span>
-                      </span>
-                    )}
-                    {layer.name === undefined ? (
-                      layer.kind
-                    ) : (
-                      <>
-                        {layer.name} <span className="text-muted-foreground">{layer.kind}</span>
-                      </>
-                    )}
-                    {layer.note !== undefined && (
-                      // A note for the person (UX-17, #868), after the name, its text on pointing at it.
-                      <span title={layer.note}>
-                        <StickyNoteIcon
-                          aria-hidden
-                          className="ml-1 inline size-3.5 align-[-2px] text-warning"
-                        />
-                        <span className="sr-only">{`, ${t("notes.marker")}`}</span>
-                      </span>
-                    )}
-                  </span>
-                )}
-                <ShownMenu
-                  layer={layer}
-                  disabled={layoutLocked}
-                  // Not the shared Header or Footer itself (its row has the region), which the
-                  // page's settings leave out.
-                  canHideWhileEditing={layer.region === undefined}
-                  onClosed={() => focusRowOnly(layer.id)}
-                  onShown={(shown) => actions.setShown(layer.id, shown)}
-                />
-              </div>
+                notAllowed={drag.notAllowed(row)}
+                renaming={renaming === layer.id}
+                filtering={query !== ""}
+                layoutLocked={layoutLocked}
+                drag={drag.rowDrag}
+              />
             );
           })}
         </div>
@@ -621,7 +179,7 @@ export function LayersPanel({
 
       {/* While a layer is over a row it can't go to, why: browsers show no tooltips in a drag. */}
       <p role="status" className="shrink-0 px-2 text-xs text-destructive-text empty:hidden">
-        {dragging !== null && rowDrag.drop?.allowed === false
+        {dragging !== null && drag.rowDrag.drop?.allowed === false
           ? t("layers.dropNotAllowed", { item: layerItem(dragging.layer) })
           : ""}
       </p>
@@ -679,13 +237,10 @@ export function LayersPanel({
           <Trash2Icon />
         </ToolButton>
         <span className="flex-1" />
-        <ToolButton label={t("layers.expandAll")} onClick={() => setCollapsed(new Set())}>
+        <ToolButton label={t("layers.expandAll")} onClick={expandAll}>
           <ChevronsUpDownIcon />
         </ToolButton>
-        <ToolButton
-          label={t("layers.collapseAll")}
-          onClick={() => setCollapsed(new Set(withChildren(layers)))}
-        >
+        <ToolButton label={t("layers.collapseAll")} onClick={collapseAll}>
           <ChevronsDownUpIcon />
         </ToolButton>
       </div>
@@ -694,117 +249,13 @@ export function LayersPanel({
           at={menuAt}
           onClose={() => setMenuAt(null)}
           onRename={() => {
-            const id = latest.current.selectedId;
+            const id = latestSelected();
             if (id !== null) setRenaming(id);
           }}
           onCloseFocus={focusSelected}
         />
       )}
     </div>
-  );
-}
-
-/** Each way a layer can show (UX-23), in the menu's order, with its icon. */
-const SHOWN_CHOICES = [
-  { shown: "shown", label: "layers.shown.shown", Icon: EyeIcon },
-  { shown: "editorHidden", label: "layers.shown.editorHidden", Icon: EyeClosedIcon },
-  { shown: "hidden", label: "layers.shown.hidden", Icon: EyeOffIcon },
-] as const;
-
-/**
- * A row's eye (UX-23, #864): how the layer shows, and a menu to change it. *Show*, *Hide while
- * editing* (not on the canvas, still on the website) or *Don't publish* (dimmed on the canvas, not
- * on the website). Out of the row's tab order, as the row's keys and the toolbar reach the same.
- */
-function ShownMenu({
-  layer,
-  disabled,
-  canHideWhileEditing,
-  onShown,
-  onClosed,
-}: {
-  readonly layer: Layer;
-  readonly disabled: boolean;
-  readonly canHideWhileEditing: boolean;
-  readonly onShown: (shown: LayerShown) => void;
-  /** Once the menu has closed: it's gone with its button, so the row takes the focus back. */
-  readonly onClosed: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const shown = layerShown(layer);
-  const current = SHOWN_CHOICES.find((choice) => choice.shown === shown) ?? SHOWN_CHOICES[0];
-  const label = t("layers.shownMenu", {
-    item: layerItem(layer),
-    shown: t(current.label),
-  });
-  const eye = {
-    type: "button" as const,
-    tabIndex: -1,
-    disabled,
-    "aria-label": label,
-    "aria-haspopup": "menu" as const,
-    title: label,
-    className: cn(
-      "flex size-5 shrink-0 items-center justify-center rounded-sm hover:bg-hover [&_svg]:size-3.5",
-      shown === "shown" && "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
-    ),
-    // The row selects on a click: the eye only opens its menu.
-    onDoubleClick: (event: MouseEvent) => event.stopPropagation(),
-  };
-  // A plain button until it's opened: a long page's every row holding a menu costs its opening
-  // (the start screen's CPU budget for a new site, #923's CI).
-  if (!open) {
-    return (
-      <button
-        {...eye}
-        onClick={(event) => {
-          event.stopPropagation();
-          setOpen(true);
-        }}
-      >
-        <current.Icon />
-      </button>
-    );
-  }
-  return (
-    <DropdownMenu
-      open
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) onClosed();
-      }}
-    >
-      <DropdownMenuTrigger {...eye} onClick={(event) => event.stopPropagation()}>
-        <current.Icon />
-      </DropdownMenuTrigger>
-      {/* Its events reach the row through the portal: the row neither selects nor moves on them. */}
-      <DropdownMenuContent
-        align="end"
-        // Its button is gone once it closes: onClosed puts the focus on the row instead.
-        onCloseAutoFocus={(event) => event.preventDefault()}
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => event.stopPropagation()}
-      >
-        <DropdownMenuRadioGroup
-          value={shown}
-          onValueChange={(value) => {
-            const choice = SHOWN_CHOICES.find((each) => each.shown === value);
-            if (choice !== undefined) onShown(choice.shown);
-          }}
-        >
-          {SHOWN_CHOICES.map((choice) => (
-            <DropdownMenuRadioItem
-              key={choice.shown}
-              value={choice.shown}
-              disabled={choice.shown === "editorHidden" && !canHideWhileEditing}
-            >
-              <choice.Icon aria-hidden className="size-3.5" />
-              {t(choice.label)}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
 
@@ -829,43 +280,5 @@ function ToolButton({
     >
       {children}
     </Button>
-  );
-}
-
-/** Renames a layer in place: Enter or leaving the field keeps the name, Escape cancels. */
-function RenameField({
-  layer,
-  onDone,
-}: {
-  readonly layer: Layer;
-  readonly onDone: (name: string | undefined) => void;
-}) {
-  const [value, setValue] = useState(layer.name ?? "");
-  const done = useRef(false);
-  const finish = (name: string | undefined) => {
-    if (!done.current) {
-      done.current = true;
-      onDone(name);
-    }
-  };
-  return (
-    <input
-      aria-label={t("layers.nameField", { item: layer.kind })}
-      placeholder={layer.kind}
-      // biome-ignore lint/a11y/noAutofocus: renaming starts by typing the name.
-      autoFocus
-      maxLength={LAYER_NAME_MAX}
-      value={value}
-      className={cn(fieldControlClass, "h-5 flex-1 px-1 text-xs")}
-      onFocus={(event) => event.currentTarget.select()}
-      onChange={(event) => setValue(event.currentTarget.value)}
-      onClick={(event) => event.stopPropagation()}
-      onKeyDown={(event) => {
-        event.stopPropagation();
-        if (event.key === "Enter") finish(value);
-        else if (event.key === "Escape") finish(undefined);
-      }}
-      onBlur={() => finish(value)}
-    />
   );
 }
