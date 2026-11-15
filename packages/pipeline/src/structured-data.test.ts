@@ -1,7 +1,19 @@
-import type { NodeDoc, SitePage, SiteSnapshot } from "@webforge/model";
+import {
+  COLLECTION_PRESETS,
+  type ItemValue,
+  type MediaId,
+  type NodeDoc,
+  type SitePage,
+  type SiteSnapshot,
+} from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { businessDataSchema, structuredData, websiteDataSchema } from "./structured-data.js";
+import {
+  blogPostingSchema,
+  businessDataSchema,
+  structuredData,
+  websiteDataSchema,
+} from "./structured-data.js";
 
 const ADDRESS = "https://rosas.example";
 
@@ -264,6 +276,99 @@ describe("structured data (3.15, SEO-1)", () => {
         name: "Rosa's <!--<script> Bakery & Café > the rest",
       }),
     );
+  });
+});
+
+describe("a Blog's post (5.14, CC-6)", () => {
+  /** A post at `blog/spring-opening`, with `values` and `change` on top of its page. */
+  const post = (
+    values: Readonly<Record<string, ItemValue>>,
+    change: Partial<SitePage> = {},
+  ): SitePage => ({
+    ...page("blog/spring-opening"),
+    title: "Spring opening",
+    item: { values },
+    ...change,
+  });
+  const FULL: Readonly<Record<string, ItemValue>> = {
+    title: { kind: "text", text: "Spring opening" },
+    date: { kind: "date", date: "2026-11-10" },
+    summary: { kind: "text", text: "Doors open at nine." },
+    picture: { kind: "image", mediaId: "photo" as MediaId },
+  };
+  const withPost = (shown: SitePage, change: Partial<SiteSnapshot> = {}) =>
+    site({ pages: [page("index"), page("visit", [CONTACT]), shown], ...change });
+
+  it("describes the post from what it has: title, days, summary, picture, and the site", () => {
+    const shown = post(FULL, { updated: "2026-11-12" });
+    const data = dataOn(withPost(shown), "blog/spring-opening", "images/share/photo.jpg");
+
+    expect(data).toEqual([
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        headline: "Spring opening",
+        url: `${ADDRESS}/blog/spring-opening.html`,
+        datePublished: "2026-11-10",
+        dateModified: "2026-11-12",
+        description: "Doors open at nine.",
+        image: `${ADDRESS}/images/share/photo.jpg`,
+        publisher: { "@type": "Organization", name: "Rosa's Bakery Ltd", url: `${ADDRESS}/` },
+      },
+    ]);
+    expect(blogPostingSchema.safeParse(data[0]).success).toBe(true);
+  });
+
+  it("leaves out what the post doesn't have, and still validates", () => {
+    // No picture: the site's own share picture isn't the post's.
+    const shown = post({ title: { kind: "text", text: "Spring opening" } });
+    const data = dataOn(withPost(shown), "blog/spring-opening", "images/share/site.jpg");
+
+    expect(data).toEqual([expect.not.objectContaining({ image: expect.anything() })]);
+    expect(Object.keys(data[0] ?? {})).toEqual([
+      "@context",
+      "@type",
+      "headline",
+      "url",
+      "publisher",
+    ]);
+    expect(blogPostingSchema.safeParse(data[0]).success).toBe(true);
+  });
+
+  it("never says it changed before it was published", () => {
+    const shown = post(FULL, { updated: "2026-11-01" });
+    const [data] = dataOn(withPost(shown), "blog/spring-opening");
+    expect(data).toMatchObject({ datePublished: "2026-11-10" });
+    expect(data).not.toHaveProperty("dateModified");
+  });
+
+  it("takes its page's title when its own is empty, and a person as a personal site's publisher", () => {
+    const shown = post({ title: { kind: "text", text: " " } });
+    const personal = withPost(shown, {
+      name: "Sam Jones",
+      business: { type: "personal" },
+      settings: {},
+    });
+    const [data] = dataOn(personal, "blog/spring-opening", "images/share/photo.jpg");
+    expect(data).toEqual({
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: "Spring opening",
+      publisher: { "@type": "Person", name: "Sam Jones" },
+    });
+  });
+
+  it("takes every item for a Blog's post only while the Blog is the only kind of collection", () => {
+    expect(
+      COLLECTION_PRESETS,
+      "A new preset (Portfolio, Events: ADR 0025) must reach the snapshot, and structuredData " +
+        "must choose its schema.org type rather than write BlogPosting for its items",
+    ).toEqual(["blog"]);
+  });
+
+  it("writes none for a post kept from search engines, and nothing of the business", () => {
+    const hidden = post(FULL, { hideFromSearch: true });
+    expect(dataOn(withPost(hidden), "blog/spring-opening")).toEqual([]);
   });
 });
 

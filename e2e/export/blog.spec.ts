@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
@@ -91,4 +91,28 @@ test("links its feed from every page, and the feed lists the post at its whole a
   const feed = readFileSync(join(BLOG_SITE_DIR, "blog", "feed.xml"), "utf8");
   expect(feed).toContain("<link>https://rosas.example/blog/spring-opening.html</link>");
   expect(feed).toContain("<pubDate>Tue, 10 Nov 2026 00:00:00 GMT</pubDate>");
+});
+
+test("describes the post to search engines as a BlogPosting, from its fields (5.14, CC-6)", () => {
+  const html = readFileSync(join(BLOG_SITE_DIR, "blog", "spring-opening.html"), "utf8");
+  // Readable, as the rest of the page is.
+  const scripts = [
+    ...html.matchAll(/<script type="application\/ld\+json">\n([\s\S]*?)\n<\/script>/g),
+  ];
+  expect(scripts).toHaveLength(1);
+  const data = JSON.parse(scripts[0]?.[1] ?? "null") as Record<string, unknown>;
+
+  expect(data).toEqual({
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: "Spring opening",
+    url: "https://rosas.example/blog/spring-opening.html",
+    datePublished: "2026-11-10",
+    description: "Doors open at nine.",
+    image: expect.stringMatching(/^https:\/\/rosas\.example\/.+\.(jpg|png)$/),
+    publisher: expect.objectContaining({ name: expect.any(String), url: "https://rosas.example/" }),
+  });
+  // Its picture is a file the export wrote, at that address once the site is published.
+  const image = String(data.image).slice("https://rosas.example/".length);
+  expect(existsSync(join(BLOG_SITE_DIR, image)), image).toBe(true);
 });

@@ -71,6 +71,30 @@ export const websiteDataSchema = z.strictObject({
   url: z.url().optional(),
 });
 
+/** A day as a post keeps it, `2026-11-10`: a schema.org `Date`. */
+const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+/**
+ * A Blog's post as structured data (5.14, CC-6), checked before it is written: schema.org's
+ * `BlogPosting` from what the post has already, its title, day, summary and picture, with the
+ * site as its publisher. Nothing the owner types twice.
+ */
+export const blogPostingSchema = z.strictObject({
+  "@context": z.literal("https://schema.org"),
+  "@type": z.literal("BlogPosting"),
+  headline: z.string().min(1),
+  url: z.url().optional(),
+  datePublished: day.optional(),
+  dateModified: day.optional(),
+  description: z.string().optional(),
+  image: z.url().optional(),
+  publisher: z.strictObject({
+    "@type": z.enum(["Organization", "Person"]),
+    name: z.string().min(1),
+    url: z.url().optional(),
+  }),
+});
+
 /** The contact details a page can show, by their Site Settings key. */
 const CONTACT_KEYS = ["contact.address", "contact.phone", "contact.email"] as const;
 
@@ -160,12 +184,52 @@ const jsonLd = (data: object) =>
   `<script type="application/ld+json">\n${JSON.stringify(data, null, 2).replace(/[<>&]/g, (c) => SCRIPT_SAFE[c] ?? c)}\n</script>`;
 
 /**
+ * A post's `BlogPosting` (5.14, CC-6): its title as the headline, its day as published, the day
+ * it last changed as modified (never before it was published), its summary as the description, and
+ * its picture as the image (the one it's shared with, its own unless Page Settings chose another)
+ * at its whole address, which needs the site's. A post with no day, summary or picture leaves
+ * those out. The publisher is the business, or the person on a personal site.
+ */
+function blogPosting(site: SiteSnapshot, page: SitePage, shareImage: string | undefined) {
+  const values = page.item?.values ?? {};
+  const { title, date, summary } = values;
+  const hasPicture = Object.values(values).some((value) => value.kind === "image");
+  const address = siteAddress(site);
+  const published = date?.kind === "date" ? date.date : undefined;
+  const modified =
+    page.updated !== undefined && (published === undefined || page.updated >= published)
+      ? page.updated
+      : undefined;
+  return blogPostingSchema.safeParse({
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: title?.kind === "text" && title.text.trim() !== "" ? title.text : page.title,
+    ...(address === undefined ? {} : { url: exportedAddress(address, page.path) }),
+    ...(published === undefined ? {} : { datePublished: published }),
+    ...(modified === undefined ? {} : { dateModified: modified }),
+    ...(summary?.kind === "text" && summary.text.trim() !== ""
+      ? { description: summary.text }
+      : {}),
+    // An absolute address: structured data is read away from the page.
+    ...(address === undefined || shareImage === undefined || !hasPicture
+      ? {}
+      : { image: `${address}/${shareImage}` }),
+    publisher: {
+      "@type": site.business?.type === "personal" ? "Person" : "Organization",
+      name: site.settings?.["contact.businessName"] ?? site.name,
+      ...(address === undefined ? {} : { url: `${address}/` }),
+    },
+  });
+}
+
+/**
  * The structured data the home page carries, and the contact page (3.15, SEO-1): the
  * business as schema.org's type for it (its name, description, postal address, telephone, email,
  * opening hours, picture, social profiles, price range and place on the map, and for a restaurant the
  * page with its prices as its menu), and the website by its name on the home page. Built from Site
  * Settings, nothing typed twice; the hours and contact details only where the page shows them. None on
- * other pages, and none for a page kept from search engines.
+ * other pages, and none for a page kept from search engines. A Blog's post carries its own
+ * `BlogPosting` (5.14, CC-6).
  */
 export function structuredData({
   site,
@@ -174,6 +238,13 @@ export function structuredData({
   library,
   shareImage,
 }: StructuredDataOptions): string[] {
+  // Every item is a Blog's post while the Blog is the only preset (a test checks it): another
+  // preset must reach the snapshot and choose its own schema.org type here.
+  if (page.item !== undefined && searchable(page)) {
+    const posting = blogPosting(site, page, shareImage);
+    // A value the checks refuse leaves the post's data out rather than write something wrong.
+    return posting.success ? [jsonLd(posting.data)] : [];
+  }
   const home = page.path === "index";
   if ((!home && page.path !== firstPageWith(site, "ContactDetails")?.path) || !searchable(page)) {
     return [];
