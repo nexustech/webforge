@@ -1,3 +1,4 @@
+import { WithTooltip } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   type ColorRole,
@@ -73,13 +74,13 @@ function Shades({ name, color }: { readonly name: string; readonly color: Oklch 
   return (
     <ul className="m-0 flex list-none gap-px p-0" aria-label={t("theme.studio.shades", { name })}>
       {SHADE_STEPS.map((step) => (
-        <li
-          key={step}
-          title={t("theme.studio.shade", { name, step })}
-          aria-label={t("theme.studio.shade", { name, step })}
-          className="h-3 min-w-0 flex-1 bg-(--shade) first:rounded-l-sm last:rounded-r-sm"
-          style={{ "--shade": oklchCss(shadeOf(color, step)) } as CSSProperties}
-        />
+        <WithTooltip key={step} tooltip={t("theme.studio.shade", { name, step })}>
+          <li
+            aria-label={t("theme.studio.shade", { name, step })}
+            className="h-3 min-w-0 flex-1 bg-(--shade) first:rounded-l-sm last:rounded-r-sm"
+            style={{ "--shade": oklchCss(shadeOf(color, step)) } as CSSProperties}
+          />
+        </WithTooltip>
       ))}
     </ul>
   );

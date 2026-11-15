@@ -331,7 +331,7 @@ export function ColourField({
                 key={step}
                 value={String(step)}
                 aria-label={t("colour.shadeStep", { step })}
-                title={t("colour.shadeStep", { step })}
+                tooltip={t("colour.shadeStep", { step })}
                 className="size-5 min-w-0 rounded-sm p-0 data-[state=on]:ring-2 data-[state=on]:ring-ring"
               >
                 <span

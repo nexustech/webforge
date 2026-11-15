@@ -53,7 +53,7 @@ export function TokenRow({
           <ToggleGroupItem
             key={each}
             value={each}
-            title={valueLabel(each)}
+            tooltip={valueLabel(each)}
             className="flex h-auto flex-col items-center gap-1 px-1.5 py-1 text-2xs"
           >
             <span

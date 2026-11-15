@@ -8,6 +8,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "../ui/context-menu.js";
+import { WithTooltip } from "../ui/tooltip.js";
 import type {
   DeviceValue,
   EditPanelField,
@@ -43,29 +44,31 @@ function DeviceDot({
       ? t("editPanel.dot.set", { device, field: label })
       : t("editPanel.dot.inherits", { device, field: label });
     return (
-      <span
-        role="img"
-        aria-label={title}
-        title={title}
-        className="p-1"
-        data-device-dot={overridden ? "set" : "inherits"}
-      >
-        {dot}
-      </span>
+      <WithTooltip tooltip={title}>
+        <span
+          role="img"
+          aria-label={title}
+          className="p-1"
+          data-device-dot={overridden ? "set" : "inherits"}
+        >
+          {dot}
+        </span>
+      </WithTooltip>
     );
   }
   const title = t("editPanel.dot.clear", { device, field: label });
   return (
-    <button
-      type="button"
-      aria-label={title}
-      title={title}
-      className="rounded-full p-1 hover:bg-hover focus-visible:outline-2 focus-visible:outline-ring"
-      data-device-dot="set"
-      onClick={onClear}
-    >
-      {dot}
-    </button>
+    <WithTooltip tooltip={title}>
+      <button
+        type="button"
+        aria-label={title}
+        className="rounded-full p-1 hover:bg-hover focus-visible:outline-2 focus-visible:outline-ring"
+        data-device-dot="set"
+        onClick={onClear}
+      >
+        {dot}
+      </button>
+    </WithTooltip>
   );
 }
 
@@ -168,14 +171,11 @@ export function FieldRow({
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div className="flex min-w-0 items-center gap-1">
-            <label
-              id={labelId}
-              htmlFor={id}
-              title={field.label}
-              className="truncate text-xs text-muted-foreground"
-            >
-              {withMatch(field.label, query)}
-            </label>
+            <WithTooltip tooltip={field.label} whenCut>
+              <label id={labelId} htmlFor={id} className="truncate text-xs text-muted-foreground">
+                {withMatch(field.label, query)}
+              </label>
+            </WithTooltip>
             {field.responsive === true || field.overridden === true ? (
               <DeviceDot
                 label={field.label}
@@ -189,20 +189,21 @@ export function FieldRow({
               />
             ) : null}
             {devices === undefined ? null : (
-              <button
-                type="button"
-                aria-expanded={perDevice}
-                aria-controls={perDevice ? devicesId : undefined}
-                aria-label={t("editPanel.devices.show", { field: field.label })}
-                title={t("editPanel.devices.show", { field: field.label })}
-                className="ml-auto shrink-0 rounded-sm p-0.5 text-muted-foreground hover:bg-hover focus-visible:outline-2 focus-visible:outline-ring"
-                onClick={() => setPerDevice(!perDevice)}
-              >
-                <ChevronRightIcon
-                  aria-hidden
-                  className={cn("size-3 transition-transform", perDevice && "rotate-90")}
-                />
-              </button>
+              <WithTooltip tooltip={t("editPanel.devices.show", { field: field.label })}>
+                <button
+                  type="button"
+                  aria-expanded={perDevice}
+                  aria-controls={perDevice ? devicesId : undefined}
+                  aria-label={t("editPanel.devices.show", { field: field.label })}
+                  className="ml-auto shrink-0 rounded-sm p-0.5 text-muted-foreground hover:bg-hover focus-visible:outline-2 focus-visible:outline-ring"
+                  onClick={() => setPerDevice(!perDevice)}
+                >
+                  <ChevronRightIcon
+                    aria-hidden
+                    className={cn("size-3 transition-transform", perDevice && "rotate-90")}
+                  />
+                </button>
+              </WithTooltip>
             )}
           </div>
         </ContextMenuTrigger>
@@ -279,14 +280,15 @@ function SourceLine({ source }: { readonly source: FieldSource }) {
       {onReveal === undefined ? (
         text
       ) : (
-        <button
-          type="button"
-          title={t("editPanel.source.reveal")}
-          className="cursor-pointer text-left text-ring underline-offset-2 hover:underline focus-visible:underline"
-          onClick={onReveal}
-        >
-          {text}
-        </button>
+        <WithTooltip tooltip={t("editPanel.source.reveal")}>
+          <button
+            type="button"
+            className="cursor-pointer text-left text-ring underline-offset-2 hover:underline focus-visible:underline"
+            onClick={onReveal}
+          >
+            {text}
+          </button>
+        </WithTooltip>
       )}
     </p>
   );
@@ -317,27 +319,27 @@ function DeviceRow({
       data-device={device.id}
     >
       <div className="flex min-w-0 items-center gap-1">
-        <label
-          id={labelId}
-          htmlFor={id}
-          title={device.label}
-          className={cn(
-            "truncate text-xs",
-            device.own ? "font-semibold text-ring" : "text-muted-foreground",
-          )}
-        >
-          {device.label}
-          {device.own ? <span className="sr-only">{`, ${t("editPanel.devices.own")}`}</span> : null}
-        </label>
-        {device.inEffect ? (
-          <span
-            role="img"
-            aria-label={t("editPanel.devices.inEffect")}
-            title={t("editPanel.devices.inEffect")}
-            className="p-1"
+        <WithTooltip tooltip={device.label} whenCut>
+          <label
+            id={labelId}
+            htmlFor={id}
+            className={cn(
+              "truncate text-xs",
+              device.own ? "font-semibold text-ring" : "text-muted-foreground",
+            )}
           >
-            <span aria-hidden className="block size-2 rounded-full bg-ring" />
-          </span>
+            {device.label}
+            {device.own ? (
+              <span className="sr-only">{`, ${t("editPanel.devices.own")}`}</span>
+            ) : null}
+          </label>
+        </WithTooltip>
+        {device.inEffect ? (
+          <WithTooltip tooltip={t("editPanel.devices.inEffect")}>
+            <span role="img" aria-label={t("editPanel.devices.inEffect")} className="p-1">
+              <span aria-hidden className="block size-2 rounded-full bg-ring" />
+            </span>
+          </WithTooltip>
         ) : null}
       </div>
       <div className="min-w-0">

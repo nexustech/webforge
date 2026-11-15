@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "./dialog.js";
 import { ScrollArea } from "./scroll-area.js";
+import { WithTooltip } from "./tooltip.js";
 
 /** Something a {@link Picker} offers: an image, an icon, a font. */
 export type PickerItem = {
@@ -310,28 +311,28 @@ export function Picker<Item extends PickerItem>({
               {drawn.map((item) => {
                 const isActive = item.id === active?.id;
                 return (
-                  <div
-                    key={item.id}
-                    role="option"
-                    data-picker-item={item.id}
-                    aria-selected={isActive}
-                    // The current choice, as "current" rather than selected.
-                    aria-current={item.id === value ? "true" : undefined}
-                    tabIndex={isActive ? 0 : -1}
-                    title={item.label}
-                    className={cn(
-                      "flex min-w-0 cursor-default rounded-sm border border-transparent p-1 text-xs outline-none",
-                      "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
-                      layout === "grid" ? "flex-col gap-1" : "items-center gap-2",
-                      isActive && "border-ring bg-accent text-accent-foreground",
-                    )}
-                    onClick={() => setActiveId(item.id)}
-                    onDoubleClick={() => choose(item)}
-                    onKeyDown={onItemKeyDown}
-                  >
-                    {renderItem(item)}
-                    <span className="truncate">{item.label}</span>
-                  </div>
+                  <WithTooltip key={item.id} tooltip={item.label} whenCut>
+                    <div
+                      role="option"
+                      data-picker-item={item.id}
+                      aria-selected={isActive}
+                      // The current choice, as "current" rather than selected.
+                      aria-current={item.id === value ? "true" : undefined}
+                      tabIndex={isActive ? 0 : -1}
+                      className={cn(
+                        "flex min-w-0 cursor-default rounded-sm border border-transparent p-1 text-xs outline-none",
+                        "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
+                        layout === "grid" ? "flex-col gap-1" : "items-center gap-2",
+                        isActive && "border-ring bg-accent text-accent-foreground",
+                      )}
+                      onClick={() => setActiveId(item.id)}
+                      onDoubleClick={() => choose(item)}
+                      onKeyDown={onItemKeyDown}
+                    >
+                      {renderItem(item)}
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                  </WithTooltip>
                 );
               })}
             </div>
