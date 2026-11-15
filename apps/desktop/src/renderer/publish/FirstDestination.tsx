@@ -3,7 +3,11 @@ import type { PublishDestination } from "@webforge/model";
 import { type Ref, useEffect, useId, useRef } from "react";
 import { useHelpAt } from "../help/index.js";
 
-/** A card: what it is and what it needs, the whole of it one button named by its title. */
+/**
+ * A card: what it is and what it needs. Its button is named by the title and described by the rest
+ * (axe's label-content-name-mismatch: a name must hold all of a button's visible text), and covers
+ * the whole card, so a click anywhere on it chooses it.
+ */
 function Card({
   title,
   description,
@@ -17,20 +21,19 @@ function Card({
 }) {
   const described = useId();
   return (
-    <li>
+    <li className="relative flex flex-col gap-0.5 rounded-md border border-border bg-panel p-3 hover:border-border-strong has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring">
       <button
         ref={ref}
         type="button"
-        className="flex w-full flex-col gap-0.5 rounded-md border border-border bg-panel p-3 text-left hover:border-border-strong focus-visible:outline-2 focus-visible:outline-ring"
-        aria-label={title}
+        className="text-left text-sm font-medium outline-none after:absolute after:inset-0 after:rounded-md"
         aria-describedby={described}
         onClick={onChoose}
       >
-        <span className="text-sm font-medium">{title}</span>
-        <span id={described} className="text-xs text-muted-foreground">
-          {description}
-        </span>
+        {title}
       </button>
+      <span id={described} className="text-xs text-muted-foreground">
+        {description}
+      </span>
     </li>
   );
 }
