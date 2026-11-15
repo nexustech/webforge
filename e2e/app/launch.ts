@@ -79,7 +79,7 @@ export function writeTestPreferences(userData: string, tips = false): void {
 
 /**
  * Starts Webforge again while it runs, with the same user data, as a double-click on a `.wforge`
- * does (1.8). The new launch hands its command line to the running app and quits; this resolves
+ * does (1.8). The new launch hands its command line to the running app and exits; this resolves
  * with its exit code.
  */
 export async function launchSecondInstance(options: {

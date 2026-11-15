@@ -81,7 +81,8 @@ export function LayerRow({
         "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
         selected && "bg-accent text-accent-foreground",
         layer.hidden && !selected && "text-muted-foreground",
-        notAllowed && "cursor-not-allowed opacity-50",
+        // Muted as any disabled control is, not faded (#1010).
+        notAllowed && "cursor-not-allowed text-disabled",
         drag.indicatorClass(row),
       )}
       style={{ paddingLeft: `${(row.depth - 1) * 12 + 4}px` }}

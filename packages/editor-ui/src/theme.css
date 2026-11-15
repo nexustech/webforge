@@ -69,7 +69,9 @@
   /* UI1's #e23c81 is 2.5:1 on the title bar; lightened for the Publish icon. */
   --publish: #f06aa6;
   --save-status: #31c5f0;
-  --disabled: #6e7880;
+  /* A disabled control's text and icons: 3:1 on the title bar and the panels, and on --muted, a
+     disabled button's fill (#1010). Lighter than UI1's #6e7880 (2.26:1 on the title bar). */
+  --disabled: #868f97;
   --scrollbar-thumb: #677073;
   --scrollbar-thumb-hover: #767f82;
 }
@@ -117,7 +119,8 @@
   --info: #0a6f96;
   --publish: #b8236a;
   --save-status: #08617f;
-  --disabled: #9aa1a8;
+  /* UI1's #9aa1a8 is 1.83:1 on the title bar (#1010). */
+  --disabled: #737a82;
   --scrollbar-thumb: #b9bfc5;
   --scrollbar-thumb-hover: #a3aab1;
 }

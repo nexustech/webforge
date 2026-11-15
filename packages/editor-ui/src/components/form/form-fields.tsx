@@ -89,8 +89,10 @@ export function MultiChoiceField({
           className={cn(
             "flex h-7 cursor-pointer items-center rounded-sm border border-border px-2 text-xs",
             "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-            "has-[:disabled]:cursor-default has-[:disabled]:opacity-50",
             chosen.has(option.value) && "border-primary bg-accent text-accent-foreground",
+            // Disabled (#1010): muted text, and a chosen one a muted fill and edge.
+            "has-[:disabled]:cursor-default has-[:disabled]:text-disabled",
+            chosen.has(option.value) && "has-[:disabled]:border-disabled has-[:disabled]:bg-muted",
           )}
         >
           <input
@@ -192,7 +194,7 @@ export function CheckField({
   onCommit,
 }: FieldRendererProps<"toggle">) {
   return (
-    <label htmlFor={id} className="flex items-center gap-2 text-sm has-[:disabled]:opacity-50">
+    <label htmlFor={id} className="flex items-center gap-2 text-sm has-[:disabled]:text-disabled">
       <input
         id={id}
         type="checkbox"

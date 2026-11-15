@@ -41,7 +41,40 @@ export const Sizes: Story = {
   ),
 };
 
-export const Disabled: Story = { args: { disabled: true } };
+/** Every variant disabled: muted text, and a muted fill where the variant has one (#1010). */
+export const Disabled: Story = {
+  render: () => (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button disabled>Primary</Button>
+        <Button variant="secondary" disabled>
+          Secondary
+        </Button>
+        <Button variant="outline" disabled>
+          Outline
+        </Button>
+        <Button variant="ghost" disabled>
+          Ghost
+        </Button>
+        <Button variant="destructive" disabled>
+          Delete
+        </Button>
+        <Button variant="link" disabled>
+          Link
+        </Button>
+      </div>
+      <div className="flex items-center gap-1 bg-titlebar p-1">
+        <Button variant="ghost" disabled>
+          <EyeIcon className="text-info" />
+          Preview
+        </Button>
+        <Button size="icon" variant="ghost" aria-label="Undo" disabled>
+          <Undo2Icon />
+        </Button>
+      </div>
+    </div>
+  ),
+};
 
 /** The colour-coded title-bar actions (UI1): tinted icons, white labels. */
 export const TitleBarActions: Story = {

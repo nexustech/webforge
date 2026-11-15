@@ -96,6 +96,14 @@ const UI_PAIRS: Readonly<Record<string, readonly string[]>> = {
   "grid-outline": ["page"],
 };
 
+/**
+ * A disabled control's text and icons → what they sit on: 3:1 too (#1010), though WCAG exempts
+ * them, so a disabled button reads as one. A filled button's fill is --muted while it's disabled.
+ */
+const DISABLED_PAIRS: Readonly<Record<string, readonly string[]>> = {
+  disabled: ["background", "panel", "panel-group", "tabs", "titlebar", "card", "popover", "muted"],
+};
+
 /** A token's colour; `top@base` is a translucent token shown over an opaque one. */
 function colour(tokens: ReadonlyMap<string, Rgba>, name: string): Rgba | undefined {
   const [topName = "", baseName] = name.split("@");
@@ -142,6 +150,13 @@ describe("theme contrast (WCAG AA)", () => {
     "has controls and icons at 3:1 or more in the %s theme",
     (theme) => {
       expect(failures(theme, UI_PAIRS, 3)).toEqual([]);
+    },
+  );
+
+  it.each(["dark", "light"] as const)(
+    "has disabled controls at 3:1 or more in the %s theme",
+    (theme) => {
+      expect(failures(theme, DISABLED_PAIRS, 3)).toEqual([]);
     },
   );
 });

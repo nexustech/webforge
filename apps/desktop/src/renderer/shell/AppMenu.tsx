@@ -12,6 +12,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { Fragment } from "react";
+import { CommandLabel, reasonRowProps } from "./CommandLabel.js";
 import { useCommandRegistry, useCommands } from "./command-context.js";
 import { type Command, formatShortcut, type MenuId, menuEntries } from "./commands.js";
 
@@ -26,7 +27,8 @@ const MENU_LABELS = {
 
 /**
  * The title bar's app menu (File, Edit, View, Help), listing the registered commands; an item
- * can open a submenu (File › Open Recent, 3.18), which the arrow keys open and leave.
+ * can open a submenu (File › Open Recent, 3.18), which the arrow keys open and leave. A disabled
+ * item says why under its name, when its command does (#1010).
  */
 export function AppMenu() {
   const registry = useCommandRegistry();
@@ -36,9 +38,10 @@ export function AppMenu() {
     <MenubarItem
       key={command.id}
       disabled={command.enabled === false}
+      {...reasonRowProps(command)}
       onSelect={() => registry.run(command.id)}
     >
-      {command.label}
+      <CommandLabel command={command} />
       {command.shortcut !== undefined && (
         <MenubarShortcut>{formatShortcut(command.shortcut)}</MenubarShortcut>
       )}
@@ -61,8 +64,11 @@ export function AppMenu() {
                   item(command)
                 ) : (
                   <MenubarSub key={command.id}>
-                    <MenubarSubTrigger disabled={command.enabled === false}>
-                      {command.label}
+                    <MenubarSubTrigger
+                      disabled={command.enabled === false}
+                      {...reasonRowProps(command)}
+                    >
+                      <CommandLabel command={command} />
                     </MenubarSubTrigger>
                     <MenubarSubContent>
                       {submenu.map((each) => (

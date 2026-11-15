@@ -238,7 +238,12 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
         <h2 className="text-xs font-medium text-muted-foreground">{t("menu.title")}</h2>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={t("menu.add")} title={t("menu.add")}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={t("menu.add")}
+              tooltip={t("menu.add")}
+            >
               <PlusIcon />
             </Button>
           </DropdownMenuTrigger>

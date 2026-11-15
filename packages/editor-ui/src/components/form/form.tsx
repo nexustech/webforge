@@ -187,7 +187,7 @@ export function Check({
 }) {
   const hintId = useId();
   const box = (
-    <label className="flex items-center gap-2 text-sm has-[:disabled]:opacity-50">
+    <label className="flex items-center gap-2 text-sm has-[:disabled]:text-disabled">
       <input
         type="checkbox"
         className="size-4 accent-primary"
@@ -273,8 +273,10 @@ export function ImageChoice({
       className={cn(
         "flex w-20 cursor-pointer flex-col items-center gap-1 rounded-sm border border-border p-1 text-center text-xs",
         "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-        "has-[:disabled]:cursor-default has-[:disabled]:opacity-50",
         selected && "border-primary bg-accent text-accent-foreground",
+        // Disabled (#1010): muted text, and the chosen one a muted fill and edge.
+        "has-[:disabled]:cursor-default has-[:disabled]:text-disabled",
+        selected && "has-[:disabled]:border-disabled has-[:disabled]:bg-muted",
       )}
     >
       <input

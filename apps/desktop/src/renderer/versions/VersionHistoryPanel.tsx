@@ -142,7 +142,7 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
                         variant="ghost"
                         size="icon-sm"
                         aria-label={t("versionHistory.actions", { name })}
-                        title={t("versionHistory.actions", { name })}
+                        tooltip={t("versionHistory.actions", { name })}
                         disabled={busy}
                       >
                         <MoreHorizontalIcon />
@@ -191,7 +191,7 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
           <Button
             variant="ghost"
             size="sm"
-            title={t("versionHistory.cleanUpHelp")}
+            tooltip={t("versionHistory.cleanUpHelp")}
             onClick={() => run(() => actions.cleanUp())}
             disabled={busy}
           >

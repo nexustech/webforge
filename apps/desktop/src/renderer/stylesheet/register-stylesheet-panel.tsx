@@ -9,7 +9,7 @@ import type { EditorSession } from "../editor/editor-session.js";
 import { type ClassCatalogue, useClassCatalogue } from "../fields/index.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
-import type { CommandRegistry } from "../shell/commands.js";
+import { availability, type CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
 import { StylesheetPanel } from "./StylesheetPanel.js";
@@ -143,12 +143,15 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
   // The commands work in Advanced mode only, as the panel is there.
   const advanced = () => preferences.getState().preferences.editorLevel === "advanced";
   let enabled = advanced();
+  // View › Stylesheet says why it's off in Simple mode (#1010). The other two say nothing, so the
+  // command box leaves their CSS words out of Simple mode.
+  const available = () => availability(enabled ? undefined : t("stylesheet.advancedOnly"));
   const removeCommands = [
     commands.register({
       id: COMMAND_IDS.stylesheet,
       label: t("stylesheet.command"),
       menu: "view",
-      enabled,
+      ...available(),
       keywords: ["CSS", "custom.css"],
       run: show,
     }),
@@ -170,7 +173,8 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
   const stopFollowing = preferences.subscribe(() => {
     if (advanced() === enabled) return;
     enabled = !enabled;
-    for (const id of [COMMAND_IDS.stylesheet, ...Object.values(STYLESHEET_COMMANDS)]) {
+    commands.update(COMMAND_IDS.stylesheet, available());
+    for (const id of Object.values(STYLESHEET_COMMANDS)) {
       commands.update(id, { enabled });
     }
   });

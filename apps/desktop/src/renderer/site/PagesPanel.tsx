@@ -254,7 +254,7 @@ export function PagesPanel({ site, shownPageId, published = false, actions }: Pa
               variant="ghost"
               size="icon-sm"
               aria-label={t("pages.add")}
-              title={t("pages.add")}
+              tooltip={t("pages.add")}
             >
               <PlusIcon />
             </Button>
@@ -321,7 +321,7 @@ export function PagesPanel({ site, shownPageId, published = false, actions }: Pa
                     size="icon-sm"
                     className="ml-auto size-5"
                     aria-label={`${t("blog.newPost")} (${row.collection.name})`}
-                    title={t("blog.newPost")}
+                    tooltip={t("blog.newPost")}
                     onClick={() => actions.addPost(row.collection.id)}
                   >
                     <PlusIcon />

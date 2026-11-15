@@ -437,6 +437,49 @@ describe("Tooltip", () => {
     await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
+
+  it("is a button's tooltip prop, with no provider above and no title (#1011)", async () => {
+    render(
+      <Button size="icon" aria-label="Rotate" tooltip="Rotate the device">
+        R
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Rotate" });
+    expect(button.hasAttribute("title")).toBe(false);
+    await act(async () => {
+      button.focus();
+    });
+    expect((await screen.findByRole("tooltip")).textContent).toBe("Rotate the device");
+  });
+
+  it("shows a disabled button's tooltip on hover, from a wrapper (#1011)", async () => {
+    render(
+      <Button size="icon" aria-label="Move Up" tooltip="Move Up" disabled>
+        U
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Move Up" });
+    expect(button.parentElement?.tagName).toBe("SPAN");
+    await userEvent.hover(button.parentElement ?? button);
+    expect((await screen.findByRole("tooltip")).textContent).toBe("Move Up");
+  });
+
+  it("keeps a button with a tooltip working as a menu's trigger (#1011)", async () => {
+    render(
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <Button size="icon" aria-label="Add" tooltip="Add">
+            +
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem>Link</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(await screen.findByRole("menuitem", { name: "Link" })).toBeTruthy();
+  });
 });
 
 describe("ScrollArea", () => {

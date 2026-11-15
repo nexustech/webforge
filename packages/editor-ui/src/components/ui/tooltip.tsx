@@ -1,18 +1,31 @@
 import { Tooltip as TooltipPrimitive } from "radix-ui";
-import type { ComponentProps } from "react";
+import { type ComponentProps, createContext, useContext } from "react";
 import { cn } from "../../lib/cn.js";
+
+/** Whether a {@link TooltipProvider} is above: the app's, a story's or a test's. */
+const Provided = createContext(false);
 
 /** Shares tooltip timing across the app; wrap the app once. */
 export function TooltipProvider({
   delayDuration = 400,
+  children,
   ...props
 }: ComponentProps<typeof TooltipPrimitive.Provider>) {
-  return <TooltipPrimitive.Provider delayDuration={delayDuration} {...props} />;
+  return (
+    <TooltipPrimitive.Provider delayDuration={delayDuration} {...props}>
+      <Provided value>{children}</Provided>
+    </TooltipPrimitive.Provider>
+  );
 }
 
-/** A tooltip: a {@link TooltipTrigger} and its {@link TooltipContent}. */
+/**
+ * A tooltip: a {@link TooltipTrigger} and its {@link TooltipContent}. It shares the app's
+ * {@link TooltipProvider}, so moving along a toolbar shows each tooltip at once after the first; a
+ * panel rendered on its own (a test's) gets one of its own (#1011).
+ */
 export function Tooltip(props: ComponentProps<typeof TooltipPrimitive.Root>) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
+  const root = <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
+  return useContext(Provided) ? root : <TooltipProvider>{root}</TooltipProvider>;
 }
 
 /**

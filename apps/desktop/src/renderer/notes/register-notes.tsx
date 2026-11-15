@@ -4,7 +4,7 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 import type { EditorSession } from "../editor/editor-session.js";
 import { type Layer, layerItem, layerOf, setLayerNote } from "../editor/layers.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
-import type { CommandRegistry } from "../shell/commands.js";
+import { availability, type CommandRegistry } from "../shell/commands.js";
 import type { WindowDialogRegistry } from "../shell/window-dialogs.js";
 import { NoteDialog } from "./NoteDialog.js";
 
@@ -55,7 +55,10 @@ export function registerNotes(
       enabled: layer !== undefined,
       label: t(layer?.note === undefined ? "notes.add" : "notes.edit"),
     });
-    registry.update(COMMAND_IDS.resolveNote, { enabled: layer?.note !== undefined });
+    registry.update(
+      COMMAND_IDS.resolveNote,
+      availability(layer?.note === undefined ? t("notes.resolve.none") : undefined),
+    );
   };
   const removers = [
     dialogs.register({ id: "note", component: Note }),
