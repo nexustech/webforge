@@ -45,13 +45,23 @@ export const publish = {
   "publish.destinations.description":
     "Where {appName} publishes this site. Each destination's password is kept by this computer, never in your site's file.",
   "publish.destinations.loading": "Reading the destinations…",
-  "publish.destinations.empty":
-    "No destinations yet. Add your web host: its address, your user name and the folder it serves.",
+  "publish.destinations.unreadable":
+    "The destinations couldn't be read. Close Publish and open it again.",
+  // A site with no destinations yet: where it's hosted, as cards (#1014, product owner).
+  "publish.first.question": "Where is your website hosted?",
+  "publish.first.fileTransfer": "A web host with a control panel",
+  "publish.first.fileTransfer.description":
+    "cPanel, Plesk or another. You'll need its address, your user name and your password.",
+  "publish.first.netlify": "Netlify",
+  "publish.first.netlify.description": "Sign in with your Netlify account.",
+  "publish.first.none": "I don't have a host yet",
+  "publish.first.none.description":
+    "What kind of host works, and other ways to put your website online.",
   "publish.destinations.add": "Add Destination",
   "publish.destinations.close": "Close",
   "publish.destinations.where": "{host} · {folder}",
   "publish.destinations.netlifySite": "Netlify: {url}",
-  "publish.destinations.add.fileTransfer": "FTP, FTPS or SFTP…",
+  "publish.destinations.add.fileTransfer": "Web Host with a Control Panel…",
   "publish.destinations.add.netlify": "Netlify…",
   "publish.destinations.netlify": "Netlify",
   "publish.destinations.signIn.none":

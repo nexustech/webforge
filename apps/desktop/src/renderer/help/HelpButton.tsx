@@ -35,6 +35,15 @@ export function HelpProvider({
   return <HelpOpener.Provider value={open}>{children}</HelpOpener.Provider>;
 }
 
+/**
+ * Opens the Help window at `topic`'s page and heading: for a link that isn't a **?** (Publish's "I
+ * don't have a host yet", #1014). `undefined` where Help can't open (outside a {@link HelpProvider}).
+ */
+export function useHelpAt(topic: HelpTopic): (() => void) | undefined {
+  const open = useContext(HelpOpener);
+  return open === undefined ? undefined : () => open(helpLinkOf(topic));
+}
+
 /** What a **?** is named by: its heading on the page, or the page's title. */
 function nameOf(target: HelpTarget): string {
   const page = target.page === undefined ? undefined : bundledHelpLibrary().pages.get(target.page);
