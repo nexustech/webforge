@@ -1,4 +1,12 @@
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -138,16 +146,24 @@ describe("template-index (#983)", () => {
     expect(ordered.map(({ id }) => id)).toEqual(["cafe", "zoo", "salon", "blank"]);
   });
 
-  it("imports a hyphenated id's manifest by a name it can have", () => {
+  it("imports each manifest by a name it can have: a hyphenated id, a reserved word", () => {
     const module = templateIndexModule([
       { id: "photo-studio", category: "creative" },
+      { id: "case", category: "trades" },
       { id: "blank", category: null },
     ]);
     expect(module).toContain(
-      'import photoStudio from "../templates/photo-studio/images.json" with { type: "json" };',
+      'import photoStudioImages from "../templates/photo-studio/images.json" with { type: "json" };',
     );
-    expect(module).toContain('  "photo-studio": photoStudio,');
-    expect(module).toContain('export const TEMPLATE_IDS = [\n  "photo-studio",\n  "blank",\n]');
+    expect(module).toContain('import caseImages from "../templates/case/images.json" with');
+    expect(module).not.toMatch(/^import case /m);
+    expect(module).toContain('  "photo-studio": photoStudioImages,');
+    expect(module).toContain('  "case": caseImages,');
+    expect(module).toContain(
+      ["export const TEMPLATE_IDS = [", '  "photo-studio",', '  "case",', '  "blank",', "]"].join(
+        "\n",
+      ),
+    );
   });
 
   it("reads each folder's template, and refuses one whose id isn't its folder's", () => {
@@ -162,5 +178,15 @@ describe("template-index (#983)", () => {
       { recursive: true },
     );
     expect(() => templatesIn(root)).toThrow(/bistro\/template.json has the id cafe/);
+  });
+});
+
+describe("new-template's business types (#983)", () => {
+  it("fails plainly when the model's list isn't where it reads it", () => {
+    const root = repository();
+    writeFileSync(join(root, "packages/model/src/settings.ts"), "export const TYPES = [];\n");
+    expect(() =>
+      newTemplate("tea-room", "food", root, { finish: false, today: "2026-11-15" }),
+    ).toThrow(/No BUSINESS_TYPES in packages\/model\/src\/settings.ts/);
   });
 });

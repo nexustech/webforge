@@ -1,14 +1,14 @@
 // Generated from the folders of `packages/templates/templates/` by `pnpm template-index`
 // (tools/src/build-template-index.ts): don't edit it by hand. A test checks that it matches them.
 
-import blank from "../templates/blank/images.json" with { type: "json" };
-import cafe from "../templates/cafe/images.json" with { type: "json" };
-import consultant from "../templates/consultant/images.json" with { type: "json" };
-import personal from "../templates/personal/images.json" with { type: "json" };
-import photographer from "../templates/photographer/images.json" with { type: "json" };
-import salon from "../templates/salon/images.json" with { type: "json" };
-import shop from "../templates/shop/images.json" with { type: "json" };
-import trades from "../templates/trades/images.json" with { type: "json" };
+import blankImages from "../templates/blank/images.json" with { type: "json" };
+import cafeImages from "../templates/cafe/images.json" with { type: "json" };
+import consultantImages from "../templates/consultant/images.json" with { type: "json" };
+import personalImages from "../templates/personal/images.json" with { type: "json" };
+import photographerImages from "../templates/photographer/images.json" with { type: "json" };
+import salonImages from "../templates/salon/images.json" with { type: "json" };
+import shopImages from "../templates/shop/images.json" with { type: "json" };
+import tradesImages from "../templates/trades/images.json" with { type: "json" };
 
 /**
  * The templates Webforge ships (2.14a, F-SITE-1, S2), by id: each a folder of this package's
@@ -29,12 +29,12 @@ export const TEMPLATE_IDS = [
 
 /** Each template's image manifest (`images.json`), by id. */
 export const TEMPLATE_MANIFESTS = {
-  blank,
-  cafe,
-  consultant,
-  personal,
-  photographer,
-  salon,
-  shop,
-  trades,
+  blank: blankImages,
+  cafe: cafeImages,
+  consultant: consultantImages,
+  personal: personalImages,
+  photographer: photographerImages,
+  salon: salonImages,
+  shop: shopImages,
+  trades: tradesImages,
 };

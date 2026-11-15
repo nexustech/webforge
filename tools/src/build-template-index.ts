@@ -24,9 +24,12 @@ const BUSINESS_TYPES_FILE = "packages/model/src/settings.ts";
 /** A template as the index needs it: its folder's name, its id, and its business type. */
 export type IndexedTemplate = { readonly id: string; readonly category: string | null };
 
-/** `id` as a name the module can import its manifest by: `photo-studio` as `photoStudio`. */
+/**
+ * The name the module imports `id`'s manifest by: `photo-studio`'s as `photoStudioImages`. Never the
+ * bare id, which could be a reserved word (`case`).
+ */
 const identifierOf = (id: string) =>
-  id.replace(/-([a-z0-9])/g, (_, letter: string) => letter.toUpperCase());
+  `${id.replace(/-([a-z0-9])/g, (_, letter: string) => letter.toUpperCase())}Images`;
 
 /**
  * `templates` in New Site's order: by business type, as `types` lists them, then those without one
@@ -69,9 +72,7 @@ export function templateIndexModule(templates: readonly IndexedTemplate[]): stri
     "export const TEMPLATE_MANIFESTS = {",
     ...templates
       .toSorted((a, b) => a.id.localeCompare(b.id))
-      .map(({ id }) =>
-        identifierOf(id) === id ? `  ${id},` : `  ${JSON.stringify(id)}: ${identifierOf(id)},`,
-      ),
+      .map(({ id }) => `  ${JSON.stringify(id)}: ${identifierOf(id)},`),
     "};",
     "",
   ].join("\n");

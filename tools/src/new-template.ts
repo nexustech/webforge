@@ -22,10 +22,14 @@ const TEMPLATES_FOLDER = "packages/templates/templates";
 /** Where the business types are listed, in their order, from the repository root. */
 const BUSINESS_TYPES_FILE = "packages/model/src/settings.ts";
 
-/** The business types, as the model lists them in `root`. */
+/**
+ * The business types, as the model lists them in `root`: as `build-template-index.ts` reads them,
+ * since a tool Node runs directly can't import another.
+ */
 function businessTypesIn(root: string): string[] {
   const text = readFileSync(join(root, BUSINESS_TYPES_FILE), "utf8");
-  const list = /export const BUSINESS_TYPES = \[([^\]]*)\]/.exec(text)?.[1] ?? "";
+  const list = /export const BUSINESS_TYPES = \[([^\]]*)\]/.exec(text)?.[1];
+  if (list === undefined) throw new Error(`No BUSINESS_TYPES in ${BUSINESS_TYPES_FILE}`);
   return [...list.matchAll(/"([a-z]+)"/g)].map((match) => match[1] ?? "");
 }
 
