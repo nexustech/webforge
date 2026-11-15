@@ -266,6 +266,10 @@ export function areaExport(
     `/** ${doc} */`,
     `export const ${name}: Area<${CONTEXT[scope]}> = {`,
     `  id: "${id}",`,
+    // What the window's areas share goes through services, not a new field on the context (#984).
+    ...(scope === "window"
+      ? ["  // State shared with other areas: `provides` and `uses` (editor/window-services.ts)."]
+      : []),
     `  register: ${register},`,
     "};",
     "",

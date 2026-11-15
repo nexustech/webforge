@@ -4,6 +4,7 @@ import { siteLibrary } from "@webforge/site-components";
 import type { SiteApi } from "../../shared/ipc/site.js";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { whenClosed } from "../editor/first-tips.js";
+import { TipPlaces, TrustedCode } from "../editor/window-services.js";
 import { reportFailure } from "../log.js";
 import { SITE_CHECK_PANEL_ID } from "../site-check/index.js";
 import { siteSession } from "../storage/index.js";
@@ -36,18 +37,11 @@ const exportThrough =
  */
 export const exportCommandArea: Area<WindowContext> = {
   id: "exportCommand",
+  uses: [TrustedCode, TipPlaces],
   register: (context) => {
-    const {
-      api,
-      commands,
-      session,
-      settings,
-      preferences,
-      windowDialogs,
-      panels,
-      codeTrust,
-      tips,
-    } = context;
+    const { api, commands, session, settings, preferences, windowDialogs, panels, use } = context;
+    const codeTrust = use(TrustedCode);
+    const tips = use(TipPlaces);
     const dialogs = createExportDialogs();
     // The first export's tip (OB-4), once its report has closed.
     const stopTip = whenClosed(

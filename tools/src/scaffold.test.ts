@@ -326,6 +326,10 @@ describe("scaffold", () => {
     expect(read(root, "apps/desktop/src/renderer/site/area.ts")).toContain(
       "export const jumpHomeCommandsArea: Area<WindowContext> = {",
     );
+    // A window area shares state through services (#984).
+    expect(read(root, "apps/desktop/src/renderer/site/area.ts")).toContain(
+      "`provides` and `uses` (editor/window-services.ts)",
+    );
     expect(read(root, "apps/desktop/src/renderer/areas.ts")).toMatch(
       /WINDOW_AREAS[\s\S]*jumpHomeCommandsArea,\n\];/,
     );
