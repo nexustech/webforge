@@ -1,0 +1,89 @@
+import { t } from "@webforge/i18n";
+import type { PublishDestination } from "@webforge/model";
+import { type Ref, useEffect, useId, useRef } from "react";
+import { useHelpAt } from "../help/index.js";
+
+/**
+ * A card: what it is and what it needs. Its button is named by the title and described by the rest
+ * (axe's label-content-name-mismatch: a name must hold all of a button's visible text), and covers
+ * the whole card, so a click anywhere on it chooses it.
+ */
+function Card({
+  title,
+  description,
+  onChoose,
+  ref,
+}: {
+  readonly title: string;
+  readonly description: string;
+  readonly onChoose: () => void;
+  readonly ref?: Ref<HTMLButtonElement>;
+}) {
+  const described = useId();
+  return (
+    <li className="relative flex flex-col gap-0.5 rounded-md border border-border bg-panel p-3 hover:border-border-strong has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring">
+      <button
+        ref={ref}
+        type="button"
+        className="text-left text-sm font-medium outline-none after:absolute after:inset-0 after:rounded-md"
+        aria-describedby={described}
+        onClick={onChoose}
+      >
+        {title}
+      </button>
+      <span id={described} className="text-xs text-muted-foreground">
+        {description}
+      </span>
+    </li>
+  );
+}
+
+/**
+ * A site's first publish destination (#1014, product owner): "Where is your website hosted?", with
+ * a card for each answer in place of an empty list. A web host with a control panel opens its form
+ * (the connection inside it, FTPS to start); Netlify, where it's offered, its own; and "I don't have
+ * a host yet" Help on choosing one, where Help can open.
+ */
+export function FirstDestination({
+  netlify,
+  onAdd,
+}: {
+  /** Whether Netlify is offered. */
+  readonly netlify: boolean;
+  readonly onAdd: (kind: PublishDestination["kind"]) => void;
+}) {
+  const choosingHost = useHelpAt("publish.choosingHost");
+  // The first card has the focus as the cards appear: the dialog opened before the list was read,
+  // with its focus on Close.
+  const first = useRef<HTMLButtonElement>(null);
+  useEffect(() => first.current?.focus(), []);
+  return (
+    <section aria-labelledby="publish-first-question" className="grid gap-2">
+      <h3 id="publish-first-question" className="m-0 text-sm font-medium">
+        {t("publish.first.question")}
+      </h3>
+      <ul className="m-0 flex list-none flex-col gap-2 p-0">
+        <Card
+          ref={first}
+          title={t("publish.first.fileTransfer")}
+          description={t("publish.first.fileTransfer.description")}
+          onChoose={() => onAdd("file-transfer")}
+        />
+        {netlify ? (
+          <Card
+            title={t("publish.first.netlify")}
+            description={t("publish.first.netlify.description")}
+            onChoose={() => onAdd("netlify")}
+          />
+        ) : null}
+        {choosingHost === undefined ? null : (
+          <Card
+            title={t("publish.first.none")}
+            description={t("publish.first.none.description")}
+            onChoose={choosingHost}
+          />
+        )}
+      </ul>
+    </section>
+  );
+}

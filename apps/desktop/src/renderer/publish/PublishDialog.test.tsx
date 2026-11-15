@@ -1,9 +1,12 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { TooltipProvider } from "@webforge/editor-ui";
 import type { PublishDestination } from "@webforge/model";
+import type { ComponentProps, ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ListedDestination, PublishApi } from "../../shared/ipc/publish.js";
+import { HelpProvider } from "../help/index.js";
 import { type NetlifyPublishApi, PublishDialog, type PublishDialogApi } from "./PublishDialog.js";
 
 afterEach(cleanup);
@@ -69,15 +72,17 @@ function fakePublish(listed: ListedDestination[]) {
   } satisfies PublishDialogApi;
 }
 
+/** The dialog, with Help where `help` opens it. */
 function setUp(
   listed: ListedDestination[] = [],
-  publish = fakePublish(listed),
+  publish: PublishDialogApi = fakePublish(listed),
   webAddress?: string,
+  help?: ComponentProps<typeof HelpProvider>["open"],
 ) {
   const notify = vi.fn();
   const onSaved = vi.fn();
   const onPublish = vi.fn();
-  render(
+  const dialog = (
     <PublishDialog
       open
       publish={publish}
@@ -87,8 +92,17 @@ function setUp(
       onSaved={onSaved}
       onPublish={onPublish}
       onClose={vi.fn()}
-    />,
+    />
   );
+  const withHelp = (children: ReactNode) =>
+    help === undefined ? (
+      children
+    ) : (
+      <HelpProvider open={help}>
+        <TooltipProvider>{children}</TooltipProvider>
+      </HelpProvider>
+    );
+  render(withHelp(dialog));
   const user = userEvent.setup({ delay: null });
   return { publish, notify, onSaved, onPublish, user };
 }
@@ -130,17 +144,59 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     expect(onPublish).toHaveBeenCalledWith(live);
   });
 
-  it("says when there are none yet", async () => {
+  it("asks where the website is hosted when there are none yet, with Close alone (#1014)", async () => {
     setUp();
-    // After the list has been read, which says so first.
-    await vi.waitFor(() =>
-      expect(screen.getByRole("status").textContent).toContain("No destinations yet"),
+    // After the list has been read.
+    expect(
+      await screen.findByRole("heading", { name: "Where is your website hosted?" }),
+    ).toBeTruthy();
+    // Focused, the dialog having opened before the list was read.
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "A web host with a control panel" }),
     );
+    // Netlify only where it's offered, Help only where it can open.
+    expect(screen.queryByRole("button", { name: "Netlify" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "I don't have a host yet" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add Destination" })).toBeNull();
+    // Close, and the corner's ×.
+    expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(2);
+  });
+
+  it("opens Help on choosing a host from its card (#1014)", async () => {
+    const open = vi.fn();
+    const { user } = setUp([], undefined, undefined, open);
+    await user.click(await screen.findByRole("button", { name: "I don't have a host yet" }));
+    expect(open).toHaveBeenCalledWith({ page: "publish", anchor: "choosing-a-web-host" });
+  });
+
+  it("says the destinations couldn't be read, with neither the cards nor Add (#1014)", async () => {
+    for (const read of [
+      async () => ({ status: "failed", reason: "no-keychain" }) as const,
+      async () => {
+        throw new Error("gone");
+      },
+    ]) {
+      const publish = fakePublish([]);
+      publish.destinations.mockImplementationOnce(read);
+      const { notify } = setUp([], publish);
+      expect(
+        await screen.findByText(
+          "The destinations couldn't be read. Close Publish and open it again.",
+        ),
+      ).toBeTruthy();
+      expect(notify).toHaveBeenCalledOnce();
+      // A site with destinations isn't asked for its first one behind the error.
+      expect(screen.queryByRole("heading", { name: "Where is your website hosted?" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Add Destination" })).toBeNull();
+      cleanup();
+    }
   });
 
   it("adds a destination with 4.3's form, and tells the window it was saved", async () => {
     const { user, publish, onSaved } = setUp();
-    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    await user.click(
+      await screen.findByRole("button", { name: "A web host with a control panel" }),
+    );
 
     const form = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
     await user.type(form.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
@@ -165,7 +221,9 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
 
   it("starts each Add afresh: nothing typed or trusted in the last one stays", async () => {
     const { user } = setUp();
-    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    await user.click(
+      await screen.findByRole("button", { name: "A web host with a control panel" }),
+    );
     let form = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
     await user.type(form.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
     await user.click(form.getByRole("button", { name: "Cancel" }));
@@ -173,7 +231,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
       expect(screen.queryByRole("dialog", { name: "Publish to your web host" })).toBeNull(),
     );
 
-    await user.click(screen.getByRole("button", { name: "Add Destination" }));
+    await user.click(screen.getByRole("button", { name: "A web host with a control panel" }));
     form = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
     expect((form.getByLabelText("Host", { exact: true }) as HTMLInputElement).value).toBe("");
   });
@@ -243,14 +301,18 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     await user.click(question.getByRole("button", { name: "Remove" }));
 
     await waitFor(() => expect(publish.removeDestination).toHaveBeenCalledWith(SESSION, old.id));
-    expect(await screen.findByText(/No destinations yet/)).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Where is your website hosted?" }),
+    ).toBeTruthy();
   });
 
   it("says why a change didn't happen, keeping the form open", async () => {
     const publish = fakePublish([]);
     publish.saveDestination.mockResolvedValueOnce({ status: "failed", reason: "no-keychain" });
     const { user, notify } = setUp([], publish);
-    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    await user.click(
+      await screen.findByRole("button", { name: "A web host with a control panel" }),
+    );
     const form = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
     await user.type(form.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
     await user.type(form.getByLabelText("User name", { exact: true }), "rosa");
@@ -339,10 +401,9 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
     return { netlify, onSaved, onPublish, user: userEvent.setup({ delay: null }) };
   }
 
-  it("adds one through Add Destination › Netlify…, making a new site Netlify names", async () => {
+  it("adds one from the Netlify card, making a new site Netlify names", async () => {
     const { netlify, onSaved, user } = setUpNetlify([]);
-    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Netlify…" }));
+    await user.click(await screen.findByRole("button", { name: "Netlify" }));
 
     const dialog = await screen.findByRole("dialog", { name: "Add a Netlify Destination" });
     await user.type(within(dialog).getByLabelText("Personal access token"), "nfp_token");
@@ -373,8 +434,7 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
     const netlify = fakeNetlify();
     netlify.save.mockResolvedValueOnce({ status: "failed", reason: "unknown" });
     const { onSaved, user } = setUpNetlify([], netlify);
-    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Netlify…" }));
+    await user.click(await screen.findByRole("button", { name: "Netlify" }));
     const dialog = await screen.findByRole("dialog", { name: "Add a Netlify Destination" });
     await user.type(within(dialog).getByLabelText("Personal access token"), "nfp_token");
     await user.click(within(dialog).getByRole("button", { name: "Connect" }));
@@ -395,6 +455,14 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
       }),
       { handle: "8d2c1f0e-1111-4222-8333-444455556666" },
     );
+  });
+
+  it("adds another from Add Destination's menu, by the same plain names (#1014)", async () => {
+    const { user } = setUpNetlify([{ destination: old, signIn: "saved", trust: {} }]);
+    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    expect(screen.getByRole("menuitem", { name: "Netlify…" })).toBeTruthy();
+    await user.click(screen.getByRole("menuitem", { name: "Web Host with a Control Panel…" }));
+    expect(await screen.findByRole("dialog", { name: "Publish to your web host" })).toBeTruthy();
   });
 
   it("lists one by its site, publishes and tests it, and can't before it has its site", async () => {

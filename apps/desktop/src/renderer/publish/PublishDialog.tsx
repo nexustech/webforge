@@ -18,7 +18,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  EmptyState,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
@@ -27,6 +26,7 @@ import {
   PUBLISH_DESTINATIONS_MAX,
   type PublishDestination,
 } from "@webforge/model";
+import { ChevronDownIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type {
   ConnectionResult,
@@ -40,6 +40,7 @@ import {
   FileTransferDestinationDialog,
   type FileTransferSaved,
 } from "./FileTransferDestinationDialog.js";
+import { FirstDestination } from "./FirstDestination.js";
 import {
   type NetlifyAccount,
   type NetlifyDestinationApi,
@@ -149,7 +150,9 @@ export function PublishDialog({
   onPublish,
   onClose,
 }: PublishDialogProps) {
-  const [listed, setListed] = useState<readonly ListedDestination[] | undefined>();
+  // `undefined` while it's read; "unreadable" when it couldn't be, which shows neither the first-run
+  // cards nor Add, so a site's destinations aren't added again behind the error (#1014).
+  const [listed, setListed] = useState<readonly ListedDestination[] | "unreadable" | undefined>();
   const [editing, setEditing] = useState<Editing | undefined>();
   const [removing, setRemoving] = useState<ListedDestination | undefined>();
   const [tests, setTests] = useState<Tests>({});
@@ -169,7 +172,7 @@ export function PublishDialog({
     publish.destinations(sessionId()).then(
       (result) => {
         if (!current) return;
-        setListed(result.status === "listed" ? result.destinations : []);
+        setListed(result.status === "listed" ? result.destinations : "unreadable");
         if (result.status === "listed") {
           onListed?.(result.destinations.map(({ destination }) => destination));
         }
@@ -177,7 +180,7 @@ export function PublishDialog({
       },
       () => {
         if (!current) return;
-        setListed([]);
+        setListed("unreadable");
         notify(failureMessage("unknown"));
       },
     );
@@ -295,7 +298,8 @@ export function PublishDialog({
   const editedSettings =
     edited?.destination.kind === "file-transfer" ? edited.destination.settings : undefined;
   const editedNetlify = edited?.destination.kind === "netlify" ? edited.destination : undefined;
-  const cannotAdd = listed === undefined || listed.length >= PUBLISH_DESTINATIONS_MAX;
+  const cannotAdd =
+    listed === undefined || listed === "unreadable" || listed.length >= PUBLISH_DESTINATIONS_MAX;
 
   return (
     <>
@@ -317,8 +321,15 @@ export function PublishDialog({
             <p role="status" className="text-sm text-muted-foreground">
               {t("publish.destinations.loading")}
             </p>
+          ) : listed === "unreadable" ? (
+            <p role="status" className="text-sm text-destructive-text">
+              {t("publish.destinations.unreadable")}
+            </p>
           ) : listed.length === 0 ? (
-            <EmptyState role="status">{t("publish.destinations.empty")}</EmptyState>
+            <FirstDestination
+              netlify={netlify !== undefined}
+              onAdd={(kind) => setEditing({ kind, listed: undefined })}
+            />
           ) : (
             <ul className="space-y-2">
               {listed.map((each) => (
@@ -344,7 +355,7 @@ export function PublishDialog({
             </ul>
           )}
           <DialogFooter>
-            {netlify === undefined ? (
+            {listed === "unreadable" || listed?.length === 0 ? null : netlify === undefined ? (
               <Button
                 variant="outline"
                 disabled={cannotAdd}
@@ -353,11 +364,13 @@ export function PublishDialog({
                 {t("publish.destinations.add")}
               </Button>
             ) : (
-              // Which kind of destination (4.4b): a web host over FTP, FTPS or SFTP, or Netlify.
+              // Which kind of destination (4.4b): a web host with a control panel, or Netlify. The
+              // first one is chosen from cards instead (#1014).
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" disabled={cannotAdd}>
                     {t("publish.destinations.add")}
+                    <ChevronDownIcon aria-hidden />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
