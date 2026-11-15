@@ -595,7 +595,8 @@ const STEPS = {
           "A shared section's own section can't be removed; remove its copies from pages.",
         );
       }
-      if (placed.node.type === "Header" || placed.node.type === "Footer") {
+      // The site's Header and Footer: the catalogue's layout components (#982).
+      if (CATALOGUE[placed.node.type]?.place === "layout") {
         return fail("refused", "The Header and Footer can't be removed.");
       }
       const kept = untouchable(placed.node);

@@ -12,6 +12,7 @@ import {
   toast,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import type { ComponentLibrary } from "@webforge/site-components";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
@@ -62,10 +63,17 @@ import {
 const LINKS = TOKEN_CONTROLS.find((control) => tokenKey(control) === "links.underline");
 
 /**
- * The sample page Colours, Text and Styles draw their changes on (CT-11): a Hero, Features and a
- * Call to action with their defaults, between them every colour role, text style, button and card.
+ * The sample page Colours, Text and Styles draw their changes on (CT-11): the sections whose
+ * definitions place them on it (`studioSample`, #982), in that order, with their defaults. Between
+ * them, every colour role, text style, button and card.
  */
-const SAMPLE_PAGE = ["Hero", "Features", "CallToAction"] as const;
+const samplePageOf = (library: ComponentLibrary): readonly string[] =>
+  Object.entries(library.components)
+    .flatMap(([type, def]) =>
+      def.studioSample === undefined ? [] : [[type, def.studioSample] as const],
+    )
+    .sort(([, a], [, b]) => a - b)
+    .map(([type]) => type);
 
 /** Which look Components' preview shows: the theme's now, or with the changes not applied yet. */
 type Compared = "now" | "draft";
@@ -174,7 +182,7 @@ export function ThemeStudio({
     if (itemPreviews === undefined || section === "themes") return undefined;
     if (section === "components") {
       if (shown === undefined) return undefined;
-      const node = previewNode(library, previewTypeOf(shown));
+      const node = previewNode(library, previewTypeOf(library, shown));
       // Always a theme of its own: one given anew draws the preview again (#613).
       const drawnIn = showing === "draft" && drafted !== undefined ? drafted.theme : theme;
       return (
@@ -207,7 +215,7 @@ export function ThemeStudio({
         label={t("theme.studio.samplePage")}
         draw={(device) => (
           <div className="flex flex-col">
-            {SAMPLE_PAGE.map((type) => (
+            {samplePageOf(library).map((type) => (
               <Fragment key={type}>
                 {itemPreviews(previewNode(library, type), device, theme)}
               </Fragment>

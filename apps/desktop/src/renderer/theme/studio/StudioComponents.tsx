@@ -14,6 +14,7 @@ import {
   fieldsHiddenBy,
   partnersOf,
   shownValueOf,
+  type ThemeControl,
 } from "@webforge/site-components";
 import { lookFieldsOf } from "../../clipboard/index.js";
 import { specOf } from "../../editor/edit-panel-fields.js";
@@ -24,9 +25,6 @@ import { TokenRow } from "./TokenRow.js";
 
 /** The card style's own entry: cards are list items without an Appearance group (CT-1). */
 const CARD_KIND = "Card";
-
-/** The section drawn for the Card entry: one with cards. */
-const CARD_PREVIEW = "Features";
 
 /** A kind Components lists: a component type and its name, or the theme's card style. */
 export type Kind = { readonly type: string; readonly label: string };
@@ -65,11 +63,18 @@ export function lookKinds(library: ComponentLibrary): KindGroups {
 const perDevice = (value: unknown) =>
   isOverridden(value, "tablet") || isOverridden(value, "mobile");
 
-/** The theme's tokens drawn beside a kind's look: the buttons' for Button, the card style. */
-const tokensOf = (type: string): readonly TokenControl[] =>
+/** Whether `type`'s definition in `library` has Theme Studio show `control` with it (#982). */
+const hasControl = (library: ComponentLibrary, type: string, control: ThemeControl) =>
+  library.components[type]?.themeControls?.includes(control) === true;
+
+/**
+ * The theme's tokens drawn beside a kind's look: the buttons' for a component with the buttons'
+ * controls (a Button), the card style for Card.
+ */
+const tokensOf = (library: ComponentLibrary, type: string): readonly TokenControl[] =>
   TOKEN_CONTROLS.filter(
     (control) =>
-      (type === "Button" && control.group === "buttons") ||
+      (hasControl(library, type, "buttons") && control.group === "buttons") ||
       (type === CARD_KIND && tokenKey(control) === "cards.style"),
   );
 
@@ -79,9 +84,15 @@ export function shownKind(groups: KindGroups, kind: string | undefined): Kind | 
   return all.find((each) => each.type === kind) ?? all[0];
 }
 
-/** The type drawn for a kind: the card style draws a section with cards. */
-export const previewTypeOf = (kind: Kind): string =>
-  kind.type === CARD_KIND ? CARD_PREVIEW : kind.type;
+/**
+ * The type drawn for a kind: the card style draws the section drawn for it, one with cards
+ * (`themeControls`, #982).
+ */
+export const previewTypeOf = (library: ComponentLibrary, kind: Kind): string =>
+  kind.type === CARD_KIND
+    ? (Object.keys(library.components).find((type) => hasControl(library, type, "cardStyle")) ??
+      kind.type)
+    : kind.type;
 
 /** Props of {@link StudioComponents}. */
 type StudioComponentsProps = {
@@ -230,7 +241,7 @@ export function StudioComponents({
       },
     ];
   });
-  const tokens = tokensOf(shown.type);
+  const tokens = tokensOf(library, shown.type);
   return (
     <section aria-label={shown.label} className="flex min-w-0 flex-col gap-3 pb-2">
       <div>
@@ -243,7 +254,7 @@ export function StudioComponents({
       </div>
       {tokens.length === 0 ? null : (
         <div>
-          {shown.type === "Button" ? (
+          {hasControl(library, shown.type, "buttons") ? (
             <h4 className="m-0 mb-1 text-xs font-semibold">{t("theme.components.buttons")}</h4>
           ) : null}
           {tokens.map((control) => (

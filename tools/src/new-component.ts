@@ -458,7 +458,8 @@ export function main(
     if (!result.catalogueData) process.stderr.write("its data failed: run pnpm catalogue-data\n");
     if (result.formatted && result.catalogueData) {
       process.stdout.write(
-        "Next: fill it in (docs/components.md) and word its help page's heading, then pnpm check.\n",
+        "Next: fill it in (docs/components.md) and word its help page's heading, then pnpm check.\n" +
+          "If it writes the page's main heading (<h1>), give it a mainHeading, so Site Check counts it.\n",
       );
     } else {
       process.exitCode = 1;
