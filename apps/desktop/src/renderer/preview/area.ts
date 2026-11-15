@@ -3,6 +3,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { createElement } from "react";
 import { createStore } from "zustand/vanilla";
 import type { Area, WindowContext } from "../editor/areas.js";
+import { TrustedCode } from "../editor/window-services.js";
 import { siteSession } from "../storage/index.js";
 import { PhonePreviewDialog, type PhoneState } from "./PhonePreviewDialog.js";
 import { registerPreviewCommands } from "./preview-commands.js";
@@ -14,7 +15,9 @@ import { registerPreviewCommands } from "./preview-commands.js";
  */
 export const previewArea: Area<WindowContext> = {
   id: "preview",
-  register: ({ api, commands, session, windowDialogs, codeTrust }) => {
+  uses: [TrustedCode],
+  register: ({ api, commands, session, windowDialogs, use }) => {
+    const codeTrust = use(TrustedCode);
     const phone = createStore<PhoneState>(() => ({ status: "closed" }));
     const removeDialog = windowDialogs.register({
       id: "phonePreview",

@@ -1,4 +1,6 @@
 import type { StoreApi } from "zustand/vanilla";
+import type { CodeTrust } from "./code-trust.js";
+import type { FirstTips } from "./first-tips.js";
 import type { PublishRequests } from "./publish-requests.js";
 import { defineService } from "./services.js";
 
@@ -22,3 +24,21 @@ export const OnNetlify = defineService<StoreApi<boolean>>("onNetlify");
  * Publish provides it.
  */
 export const Publishing = defineService<PublishRequests>("publishing");
+
+/**
+ * The code trust step (#649): asks before the site's code runs, and keeps what's trusted. Code
+ * trust provides it.
+ */
+export const TrustedCode = defineService<CodeTrust>("trustedCode");
+
+/** Where areas say the person has reached a first-time tip's place (OB-4, 5.4a). Onboarding provides it. */
+export const TipPlaces = defineService<FirstTips>("tipPlaces");
+
+/**
+ * What the person ignored in Site Check for the open site (3.6), as the window opened with it, and
+ * how to remember a change. Site Check provides it.
+ */
+export const SiteCheckIgnored = defineService<{
+  readonly initial: readonly string[];
+  readonly save: (ignored: readonly string[]) => void;
+}>("siteCheckIgnored");
