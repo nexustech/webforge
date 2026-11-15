@@ -3,6 +3,7 @@
 
 export { ChoiceField } from "./components/edit/choice-field.js";
 export { ClassesInput, type ClassesInputProps } from "./components/edit/classes-input.js";
+export { EditPanel, hasBuiltInRenderer } from "./components/edit/edit-panel.js";
 export type {
   EditPanelField,
   EditPanelProps,
@@ -10,8 +11,7 @@ export type {
   FieldSource,
   GroupAction,
   OptionGroup,
-} from "./components/edit/edit-panel.js";
-export { EditPanel, hasBuiltInRenderer } from "./components/edit/edit-panel.js";
+} from "./components/edit/edit-panel-types.js";
 export { FieldRenderersProvider } from "./components/edit/field-context.js";
 export type {
   FieldChoice,
