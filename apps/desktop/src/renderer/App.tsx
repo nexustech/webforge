@@ -1,4 +1,4 @@
-import { type ResizableLayout, Toaster, TooltipProvider, toast } from "@webforge/editor-ui";
+import { type ResizableLayout, Toaster, TooltipProvider } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
@@ -6,15 +6,12 @@ import { useEffect, useState } from "react";
 import type { AppInfo, Preferences, SiteUiState } from "../shared/ipc-contract.js";
 import { starterSite } from "../shared/starter-site.js";
 import type { WebforgeApi } from "../shared/webforge-api.js";
-import { createItemPreviews } from "./add/index.js";
 import { AiAppsStatus } from "./ai-apps/AiAppsStatus.js";
 import { EDITOR_AREAS, WINDOW_AREAS } from "./areas.js";
 import { connectAreas, type WindowContext } from "./editor/areas.js";
 import { createCanvasPointer } from "./editor/canvas-pointer.js";
-import { createCodeTrust } from "./editor/code-trust.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
-import { createFirstTips } from "./editor/first-tips.js";
 import { createSettingsRegistry } from "./editor/settings-registry.js";
 import { useDocument } from "./editor/use-document.js";
 import { HelpCommands, HelpProvider, openHelpWith } from "./help/index.js";
@@ -44,7 +41,6 @@ import { ShortcutSheet } from "./shell/ShortcutSheet.js";
 import { TitleBar } from "./shell/TitleBar.js";
 import { UndoStepsMenu } from "./shell/UndoStepsMenu.js";
 import { createWindowDialogs, WindowDialogs } from "./shell/window-dialogs.js";
-import { jumpTo } from "./site-check/index.js";
 import { SiteCommands } from "./start/SiteCommands.js";
 import { applyTheme } from "./startup.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
@@ -127,57 +123,20 @@ export function App({
   // The window's areas (2.20, B1): the Site and Layers panels, Go to page, Open Crash Reports,
   // the View menu's zoom and device views, and Export, after the shell's own commands. Their
   // context is made once, so they register once; they reach main through its `api` (#668).
-  const [windowContext] = useState<Omit<WindowContext, "use">>(() => {
-    // What the item previews draw with: the canvas's CSS compiler, as the Add panel's.
-    const previewSource = {
-      library: session.library,
-      theme: () => session.history.document.getState().theme,
-      compileCss: (request) => api.canvas.compileCss(request),
-      // A preview shown draws again as the theme changes (#613).
-      subscribe: (listener: () => void) => session.history.document.subscribe(listener),
-    } satisfies Parameters<typeof createItemPreviews>[0];
-    return {
-      api,
-      session,
-      commands: registry,
-      panels,
-      preferences,
-      siteWide,
-      canvasView,
-      canvasPointer,
-      settings,
-      appVersion: info.version,
-      siteUiState: uiState ?? undefined,
-      windowDialogs,
-      // Drawn by the canvas's CSS compiler, as the Add panel's previews are.
-      itemPreviews: createItemPreviews(previewSource),
-      codeTrust: createCodeTrust({
-        api: api.trust,
-        session,
-        sessionId: siteSession,
-        // Review: Settings' Custom Code, or the element, as Site Check shows a finding there.
-        review: (piece) =>
-          jumpTo(
-            piece.kind === "element"
-              ? { kind: "element", on: piece.on, nodeId: piece.nodeId }
-              : { kind: "code", part: piece.kind === "code" ? piece.part : "head" },
-            { session, panels, settings, commands: registry, openGuide: () => {} },
-          ),
-        notify: () => toast.error(t("site.code.trust.failed")),
-      }),
-      siteCheckIgnored: {
-        initial: uiState?.siteCheckIgnored ?? [],
-        save: (ignored) => {
-          api.project
-            .setUiState(siteSession(), { siteCheckIgnored: [...ignored] })
-            .catch((error: unknown) => {
-              reportFailure("siteCheck.ignored", error);
-            });
-        },
-      },
-      tips: createFirstTips(),
-    };
-  });
+  const [windowContext] = useState<Omit<WindowContext, "use">>(() => ({
+    api,
+    session,
+    commands: registry,
+    panels,
+    preferences,
+    siteWide,
+    canvasView,
+    canvasPointer,
+    settings,
+    appVersion: info.version,
+    siteUiState: uiState ?? undefined,
+    windowDialogs,
+  }));
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);
 
   // View → Use Light/Dark Appearance (the editor's look, not the site's theme), labelled for the theme shown; it reads that when it runs.

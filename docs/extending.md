@@ -40,14 +40,43 @@ export const bookingsPanelArea: Area<EditorContext> = {
 - **The context** (`editor/areas.ts`) holds what an area registers into and works on:
   - every context: `api`, `session`, `commands`, `panels`, `preferences`;
   - the editor's: `toolbars`, `engine`, `siteWide`, `compileCss`, `sectionPreviews`, `editPreviews`, `imagePicks` (the Edit panel's image picker, opened from the canvas), and `dialogs` (the editor's dialogs: naming a shared section, renaming a layer, picking an image);
-  - the window's: `siteWide`, `canvasView`, `canvasPointer`, `settings`, `windowDialogs`, `siteCheckIgnored` and the previews.
-  - `tips` (the window's), the first-time tips (OB-4): `tips.reached("export")` says the person has reached a tip's place, and the onboarding area shows it if it's the first time. A tip that follows a dialog is reached once the dialog has closed (`whenClosed` in `editor/first-tips.ts`); a new tip adds its id to `TipId`, its strings and, if it points at something, an anchor in `onboarding/tips.ts`.
+  - the window's: its basics only, `siteWide`, `canvasView`, `canvasPointer`, `settings`, `windowDialogs`, `appVersion` and `siteUiState` (the open site's UI state when the window opened), plus `use` for its services.
+  - State the window's areas share is a **service** (#984), never a new field on the context or a line in `App.tsx`. See [Services](#services).
   - `siteWide` in both has `setBeforeSiteWideAction(hook)`: the hook runs before an action that changes every page, once the person has agreed, as 4.6's automatic version before a site-wide action does.
 - **Even the editor's own panels are areas** (#668): Undo and Redo with Undo History (`undo-history/`) and the Edit panel (`edit-panel/`) head `EDITOR_AREAS`, so `Editor.tsx` registers nothing by hand.
 - **Main only through `ctx.api`** (#668): an area never reads `window.webforge`. It passes `ctx.api.<domain>` (or a call of it) to what it registers, as the Media panel gets `ctx.api.media`. `App` takes the API as one prop, `api`, which is `window.webforge` in the app, and gives the same object to both lists; it is fixed for the window's life. A new call needs no new prop or context field: add it to its IPC domain, and the area calls it.
 - **The canvas engine** is there only while the editor has one mounted. Use `ctx.engine.whileMounted(({ engine, connection }) => connect…)`: it connects to each engine as it mounts and undoes that as the engine goes. Flush the canvas's pending edit with `ctx.engine.flush()` before a command changes the document.
 - **Design or Content mode:** follow it with `followLayoutLock(ctx.preferences, (locked) => …)` (`shell/preferences-store.ts`). Never hold a ref for someone else to call.
 - **A build of the site** (Export, and Publish and Republish from 4.5) composes `editor/build-flow.ts` (#668): `gateOnSiteCheck(site, mode, …)` stops it on a _Must fix_ in that mode and shows Site Check; `runWithProgress(…)` runs it with its progress in a toast whose Cancel button stops it.
+
+### Services
+
+What one window area keeps and others use, such as the year of the last publish, is a service: a token in `editor/window-services.ts`, typed by its value, that one area provides and others use.
+
+```ts
+// editor/window-services.ts: in editor/, so any area imports it without importing another area.
+export const PublishedYear = defineService<StoreApi<number | undefined>>("publishedYear");
+
+// publish/area.ts: made once, before any area registers, from the window's basics.
+export const publishArea: Area<WindowContext> = {
+  id: "publish",
+  provides: [provide(PublishedYear, ({ siteUiState }: WindowContext) => createStore(…))],
+  register: ({ use }) => { const publishedYear = use(PublishedYear); … },
+};
+
+// site/area.ts
+export const pageCommandsArea: Area<WindowContext> = {
+  id: "pageCommands",
+  uses: [PublishedYear],
+  register: ({ use }) => { … use(PublishedYear).getState() … },
+};
+```
+
+- **`connectAreas` makes every service once, before any area registers,** a service another uses first (a provider's `make` may `use` the services its area lists). The areas then register in their list's order, so an area's place in the list is still its place in the menus.
+- **It throws before any area registers** on a service no area provides, one provided twice, or providers that use each other in a cycle; `use` throws on a service the area doesn't list in `uses` (or `provides`). The composition root's test (`editor/areas.test.ts`) checks `WINDOW_AREAS` with `checkServices`, so a missing provider fails a unit test, not the window.
+- **The services now:** Publish provides `PublishedYear`, `OnNetlify` (whether the site has a Netlify destination) and `Publishing` (Version History's republish requests); Code trust provides `TrustedCode` (#649: asks before the site's code runs); Site Check provides `SiteCheckIgnored`; onboarding provides `TipPlaces`.
+- **`TipPlaces`,** the first-time tips (OB-4): `use(TipPlaces).reached("export")` says the person has reached a tip's place, and the onboarding area shows it if it's the first time. A tip that follows a dialog is reached once the dialog has closed (`whenClosed` in `editor/first-tips.ts`); a new tip adds its id to `TipId`, its strings and, if it points at something, an anchor in `onboarding/tips.ts`.
+- **In a test** that registers one area alone, give its services with `servicesForTest([PublishedYear, store], …)` (`testing/services.ts`).
 
 ### Two lists: the editor's and the window's
 

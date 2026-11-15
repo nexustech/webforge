@@ -1,4 +1,5 @@
 import type { Area, WindowContext } from "../editor/areas.js";
+import { TrustedCode } from "../editor/window-services.js";
 import { registerStylesheetPanel } from "./register-stylesheet-panel.js";
 
 /**
@@ -8,13 +9,14 @@ import { registerStylesheetPanel } from "./register-stylesheet-panel.js";
  */
 export const stylesheetPanelArea: Area<WindowContext> = {
   id: "stylesheetPanel",
-  register: ({ api, panels, session, commands, preferences, codeTrust }) =>
+  uses: [TrustedCode],
+  register: ({ api, panels, session, commands, preferences, use }) =>
     registerStylesheetPanel({
       session,
       panels,
       commands,
       preferences,
       canvas: () => api.canvas,
-      allowListConfirmed: codeTrust.allowListConfirmed,
+      allowListConfirmed: use(TrustedCode).allowListConfirmed,
     }),
 };
