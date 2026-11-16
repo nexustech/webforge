@@ -38,7 +38,7 @@ test("selects an element through its wrapper, a group, not a button", async () =
 });
 
 test("refuses a click that a dialog over the canvas would catch", async () => {
-  await chooseFromMenu(app, page, "File", "Site Settings…");
+  await chooseFromMenu(app, page, "Site", "Site Settings…");
   await expect(page.getByRole("dialog", { name: "Settings", exact: true })).toBeVisible();
 
   await expect(clickOnCanvas(heading())).rejects.toThrow("the canvas is covered");

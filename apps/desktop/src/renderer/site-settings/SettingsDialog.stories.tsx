@@ -79,7 +79,7 @@ export const Updates: Story = { args: { initialGroup: "updates:" } };
 /** App › AI apps (#752): a line whose button opens AI apps, over Settings. */
 export const AiApps: Story = { args: { initialGroup: "aiApps:" } };
 
-/** This site › General, as File → Site Settings… opens it. */
+/** This site › General, as Site → Site Settings… opens it. */
 export const ThisSite: Story = { args: { initialGroup: "site:general" } };
 
 /** This site › Custom code (3.9), in Advanced mode: the site's own code and allowed addresses. */

@@ -119,7 +119,7 @@ test("a colour hard to read says so under it, and a readable one doesn't", async
 
 test("Theme Studio opens from the View menu, switches theme from a card, and undoes it there", async () => {
   const page = await openTheme();
-  await chooseFromMenu(running(), page, "View", "Theme Studio…");
+  await chooseFromMenu(running(), page, "Site", "Theme Studio…");
   const studio = page.getByRole("dialog", { name: "Theme Studio" });
   await expect(studio.getByRole("button", { name: /Light/ })).toHaveAttribute(
     "aria-pressed",
@@ -159,7 +159,7 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
     page.getByRole("region", { name: "Media" }).getByRole("button", { name: "Shop front.jpg" }),
   ).toBeVisible();
 
-  await chooseFromMenu(running(), page, "View", "Theme Studio…");
+  await chooseFromMenu(running(), page, "Site", "Theme Studio…");
   const studio = page.getByRole("dialog", { name: "Theme Studio" });
   await studio.getByRole("tab", { name: "Colours" }).click();
   await studio.getByRole("button", { name: "Colours from an image…" }).click();

@@ -14,7 +14,7 @@ import { createStyleDialog } from "./style/style-state.js";
 import { registerThemeCommands } from "./theme-commands.js";
 
 /**
- * The Theme tab (2.3a) and Theme Studio (2.3b), View → Theme… and Theme Studio… (#452), My themes
+ * The Theme tab (2.3a) and Theme Studio (2.3b), Site → Theme… and Theme Studio… (#452, #1016), My themes
  * (2.23): the person's own themes, kept on this computer, and *Style this ‹kind›…* (3.13a), whose
  * changes can become the theme's look for a kind.
  */

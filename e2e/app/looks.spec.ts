@@ -29,7 +29,7 @@ test("a kind's look set in Theme Studio shows on an item without its own, once i
   await expect(features).toHaveCount(1);
   await expect(features).not.toHaveClass(/bg-secondary!/);
 
-  await chooseFromMenu(app, page, "View", "Theme Studio…");
+  await chooseFromMenu(app, page, "Site", "Theme Studio…");
   const studio = page.getByRole("dialog", { name: "Theme Studio" });
   await studio.getByRole("tab", { name: "Components" }).click();
   // The kinds are a list in the bar at the top (CT-11).

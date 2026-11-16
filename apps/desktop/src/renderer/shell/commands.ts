@@ -9,8 +9,11 @@ import { COMMAND_SHORTCUTS, platformKeys, type StandardShortcut } from "./shortc
  * from the shortcut standard (F-ED-27, `shortcut-standard.ts`), by command id.
  */
 
-/** The app menu a command appears in. */
-export type MenuId = "file" | "edit" | "view" | "help";
+/**
+ * The app menu a command appears in. Site holds what sets up the whole site: its settings, its
+ * theme and its stylesheet (#1016).
+ */
+export type MenuId = "file" | "edit" | "view" | "site" | "help";
 
 /**
  * The command palette's group for a command that isn't one of the app's own (F-ED-26, UX-11):

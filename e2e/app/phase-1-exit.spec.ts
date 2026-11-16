@@ -249,7 +249,7 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   await expect(sections()).toHaveCount(1);
 
   // Site Settings: the business's email.
-  await chooseFromMenu(running(), page, "File", "Site Settings…");
+  await chooseFromMenu(running(), page, "Site", "Site Settings…");
   const settings = page.getByRole("dialog", { name: "Settings", exact: true });
   await settings.getByRole("tab", { name: "Contact & hours" }).click();
   await settings.getByLabel("Email address", { exact: true }).fill("hello@rosas.example");

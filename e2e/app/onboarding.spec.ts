@@ -146,7 +146,7 @@ test("shows each first-time tip once: the first selection, Content mode, and aft
   await expect(content).toHaveCount(0);
 
   // Theme Studio's, once it has closed.
-  await chooseFromMenu(app, page, "View", "Theme Studio…");
+  await chooseFromMenu(app, page, "Site", "Theme Studio…");
   await expect(page.getByRole("dialog", { name: "Theme Studio" })).toBeVisible();
   await expect(tourCard(page, "Themes change every page")).toHaveCount(0);
   await page.keyboard.press("Escape");

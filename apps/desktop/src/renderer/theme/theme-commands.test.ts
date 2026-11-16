@@ -3,8 +3,8 @@ import { registriesForTest } from "../testing/fixtures.js";
 import { createStudio } from "./studio/studio-state.js";
 import { registerThemeCommands } from "./theme-commands.js";
 
-describe("View → Theme… and Theme Studio… (#452, 2.3b)", () => {
-  it("are in the View menu: the first shows the Theme tab, the second opens Theme Studio", () => {
+describe("Site › Theme… and Theme Studio… (#452, 2.3b, #1016)", () => {
+  it("are in the Site menu: the first shows the Theme tab, the second opens Theme Studio", () => {
     const { commands, panels } = registriesForTest();
     const shown = vi.fn();
     panels.onShow(shown);
@@ -12,7 +12,8 @@ describe("View → Theme… and Theme Studio… (#452, 2.3b)", () => {
     const remove = registerThemeCommands(commands, panels, studio);
 
     const command = commands.list().find((each) => each.id === "theme.show");
-    expect(command).toMatchObject({ label: "Theme…", menu: "view" });
+    expect(command).toMatchObject({ label: "Theme…", menu: "site" });
+    expect(commands.get("theme.studio")).toMatchObject({ menu: "site" });
     commands.run("theme.show");
     expect(shown).toHaveBeenCalledWith("theme");
     expect(studio.getState().open).toBe(false);

@@ -62,28 +62,37 @@ const command = (
   click: () => renderer?.run(item.id),
 });
 
+/** `items` without a separator at either end or two together: one left by a removed item. */
+const tidy = (items: readonly MenuItemConstructorOptions[]): MenuItemConstructorOptions[] =>
+  items.filter(
+    (item, index) =>
+      item.type !== "separator" ||
+      (index > 0 && index < items.length - 1 && items[index + 1]?.type !== "separator"),
+  );
+
 /**
  * The items of the renderer's menu `id`, each running its command when chosen, or opening the
- * submenu of them it has (File › Open Recent, 3.18).
+ * submenu of them it has (File › Open Recent, 3.18), a separator before each group (#1016).
  */
 function itemsOf(
   renderer: RendererMenus | undefined,
   id: NativeMenus[number]["id"],
 ): MenuItemConstructorOptions[] {
   const menu = renderer?.menus.find((each) => each.id === id);
-  return (menu?.items ?? []).map(({ submenu, ...item }) =>
+  return (menu?.items ?? []).flatMap(({ submenu, separated, ...item }) => [
+    ...(separated === true ? [{ type: "separator" as const }] : []),
     submenu === undefined
       ? command(renderer, item)
       : {
           id: item.id,
           label: item.label,
           enabled: item.enabled,
-          submenu: submenu.flatMap(({ separated, ...each }) => [
-            ...(separated === true ? [{ type: "separator" as const }] : []),
+          submenu: submenu.flatMap(({ separated: after, ...each }) => [
+            ...(after === true ? [{ type: "separator" as const }] : []),
             command(renderer, each),
           ]),
         },
-  );
+  ]);
 }
 
 /** Edit's Undo and Redo: the editor's when it has them, else the roles (the start screen). */
@@ -126,6 +135,7 @@ export function applicationMenu(
     const file = itemsOf(renderer, "file");
     const edit = itemsOf(renderer, "edit");
     const view = itemsOf(renderer, "view");
+    const site = itemsOf(renderer, "site");
     const help = itemsOf(renderer, "help");
     return [
       // The application menu, with the editor's own items (Settings…, LF-12) after About.
@@ -161,11 +171,13 @@ export function applicationMenu(
               { role: "copy" },
               { role: "paste" },
               { role: "selectAll" },
-              ...after(edit.filter((item) => !UNDO_REDO.includes(item.id ?? ""))),
+              ...after(tidy(edit.filter((item) => !UNDO_REDO.includes(item.id ?? "")))),
             ],
           },
       // Always there, empty on the start screen: macOS adds Enter Full Screen to it (#525).
       { label: t("app.menu.view"), submenu: view },
+      // The site's settings, theme and stylesheet (#1016): none on the start screen.
+      ...(site.length === 0 ? [] : [{ label: t("shell.menu.site"), submenu: site }]),
       ...developer,
       { role: "windowMenu" },
       ...(help.length === 0 ? [] : [{ role: "help" as const, submenu: help }]),

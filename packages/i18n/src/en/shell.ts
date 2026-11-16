@@ -50,6 +50,8 @@ export const shell = {
   "shell.menu.file": "File",
   "shell.menu.edit": "Edit",
   "shell.menu.view": "View",
+  // The site's settings, theme and stylesheet (#1016).
+  "shell.menu.site": "Site",
   "shell.menu.help": "Help",
 
   // Title-bar buttons: short labels; the command's full label is in its tooltip.

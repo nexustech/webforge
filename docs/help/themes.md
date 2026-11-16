@@ -4,14 +4,14 @@ id: themes
 title: Themes, colours and fonts
 summary: Change your whole site's colours, fonts, corners and spacing at once, in the Theme panel or Theme Studio.
 related: [styling, templates, media]
-updated: 2026-11-13
+updated: 2026-11-16
 ---
 
 # Themes, colours and fonts
 
 Your site's **theme** sets its colours, fonts, text sizes, buttons, corners and spacing on every page. Change it and the whole site follows, so everything stays consistent. Changes that affect every page ask you first, and each one is a single step you can undo.
 
-You'll find the **Theme** panel in the right column, beside Site and Media, or under **View › Theme…**.
+You'll find the **Theme** panel in the right column, beside Site and Media, or under **Site › Theme…**.
 
 ## Choosing a theme
 
@@ -55,7 +55,7 @@ Built-in themes never change. The first time you change one, {appName} asks you 
 
 ## Theme Studio
 
-**Open Theme Studio**, at the top of the Theme panel (or **View › Theme Studio…**), shows the whole theme in a window that fills {appName}'s window. Its parts are tabs at the top:
+**Open Theme Studio**, at the top of the Theme panel (or **Site › Theme Studio…**), shows the whole theme in a window that fills {appName}'s window. Its parts are tabs at the top:
 
 - **Themes:** every theme drawn in its own colours and fonts, to compare. Create a **New theme…** from any theme, and rename or delete your own.
 - **Colours:** every colour and its shades, for the page and for reversed sections side by side. **Colours from an image…** suggests brand colours from your logo or a photo in Media.

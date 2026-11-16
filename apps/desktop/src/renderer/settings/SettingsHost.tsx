@@ -22,7 +22,7 @@ type Shown = {
 };
 
 /**
- * File → Settings… and File → Site Settings… (LF-12, F-SET-1), also in the command box: both open
+ * File → Settings… and Site → Site Settings… (LF-12, F-SET-1, #1016), also in the command box: both open
  * the one {@link SettingsDialog}, on App's first section or on This site's.
  */
 export function SettingsHost({ registry }: SettingsHostProps) {
@@ -56,7 +56,8 @@ export function SettingsHost({ registry }: SettingsHostProps) {
       commands.register({
         id: COMMAND_IDS.siteSettings,
         label: t("site.settings.command"),
-        menu: "file",
+        // Site › Site Settings…, with the theme (#1016).
+        menu: "site",
         enabled: hasSite(),
         run: () => open("site"),
       }),
