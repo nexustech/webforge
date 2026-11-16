@@ -258,6 +258,16 @@ export const projectChannels = {
     request: z.tuple([sessionIdSchema]),
     response: z.string().max(BUSINESS_ABOUT_MAX).nullable(),
   },
+  /**
+   * Closes the site opened as the session given (File › Close Site, #1016): its last changes saved
+   * and its canvas kept for the Recent list first, as before another site replaces it. Nothing for
+   * an opening another has replaced (#663).
+   */
+  closeProject: {
+    channel: "project:close",
+    request: z.tuple([sessionIdSchema]),
+    response: z.null(),
+  },
   /** The site that is open, or `null`. */
   getCurrentProject: {
     channel: "project:get-current",
@@ -365,6 +375,8 @@ export interface ProjectApi {
   removeRecent(id: string): Promise<null>;
   /** Takes every unpinned site off the Recent list. */
   clearRecent(): Promise<null>;
+  /** Closes the site opened as `sessionId`, saved first (File › Close Site, #1016). */
+  close(sessionId: string): Promise<null>;
   /** Remembers the editor state with the open site, if it is still the opening `sessionId` names. */
   setUiState(sessionId: string, change: SiteUiChange): Promise<UiStateResult>;
 }

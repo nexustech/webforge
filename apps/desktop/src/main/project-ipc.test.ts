@@ -43,6 +43,7 @@ function setUp(
     uiState: vi.fn(() => ({ editorMode: "content" })),
     setUiState: vi.fn(() => ({ status: "saved" })),
     saveSiteZip: vi.fn(async (path: string) => ({ status: "saved", fileName: basename(path) })),
+    close: vi.fn(async () => undefined),
     staleReason: vi.fn((sessionId: string) =>
       sessionId === project.sessionId ? undefined : "stale-session",
     ),
@@ -237,6 +238,26 @@ describe("registerProjectHandlers", () => {
     await invoke("project:open");
 
     expect(order).toEqual(["before", "create", "before", "open"]);
+  });
+
+  it("closes the open site once it's saved, and never for an opening that's been replaced (#1016)", async () => {
+    const order: string[] = [];
+    const beforeSwitch = vi.fn(async () => {
+      order.push("saved");
+    });
+    const { invoke, session } = setUp({}, { beforeSwitch });
+    session.close.mockImplementation(async () => {
+      order.push("closed");
+    });
+
+    await expect(
+      invoke("project:close", APP_URL, "22222222-2222-4222-8222-222222222222"),
+    ).resolves.toBeNull();
+    expect(order).toEqual([]);
+
+    await expect(invoke("project:close", APP_URL, project.sessionId)).resolves.toBeNull();
+    expect(order).toEqual(["saved", "closed"]);
+    await expect(invoke("project:close")).rejects.toThrow();
   });
 
   it("lists, opens and removes recent sites by id, never by path", async () => {

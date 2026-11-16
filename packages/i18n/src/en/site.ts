@@ -437,6 +437,8 @@ export const site = {
   "site.zip.saved": "Saved a copy of your site as “{name}”.",
   "site.zip.savedDescription":
     "It has everything in your site, its versions too. Open it with File › Open Site from ZIP.",
+  // File › Close Site failed: the site stays open (#1016).
+  "site.closeFailed": "The site couldn't be closed. Try again.",
   "site.zip.saveFailed": "{appName} couldn't save a copy of your site.",
   "site.zip.ownFile": "A copy can't replace your site's own file. Choose another name for it.",
   // More than a ZIP file holds, saving the site as one or opening one.
