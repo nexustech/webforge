@@ -503,6 +503,24 @@ describe("Tooltip", () => {
     expect(description?.textContent).toBe("Copy (Ctrl+C)");
   });
 
+  it("describes a disabled button by its tooltip while it's disabled (#1011)", () => {
+    const view = render(
+      <Button size="icon" aria-label="Undo" tooltip="Nothing to undo." disabled>
+        U
+      </Button>,
+    );
+    // Not focusable, so its tooltip never opens from the keyboard: the reason is there anyway.
+    const button = screen.getByRole("button", { name: "Undo" });
+    const description = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+    expect(description?.textContent).toBe("Nothing to undo.");
+    view.rerender(
+      <Button size="icon" aria-label="Undo" tooltip="Nothing to undo." disabled={false}>
+        U
+      </Button>,
+    );
+    expect(button.hasAttribute("aria-describedby")).toBe(false);
+  });
+
   it("keeps a button with a tooltip working as a menu's trigger (#1011)", async () => {
     render(
       <DropdownMenu modal={false}>

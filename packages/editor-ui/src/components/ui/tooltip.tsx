@@ -107,7 +107,8 @@ export function useTooltipRoot(whenCut: boolean) {
  * - `disableable`: the element is a control that can be disabled. A disabled one gets no pointer
  *   events, so the tooltip hangs on a wrapper, enabled or not: a wrapper that came and went would
  *   remount the control, closing a menu it had open. Radix describes the wrapper by the tooltip, so
- *   the control gets the description itself while it's open, as a control under the trigger would.
+ *   the control gets the description itself while it's open, as a control under the trigger would,
+ *   and for as long as it's disabled, when the keyboard can't reach it to open the tooltip.
  * - `whenCut`: only while its text is cut short, to show the whole of it.
  *
  * Not for an element that sets `data-state` itself (a toggle or a tab): the tooltip's would
@@ -122,7 +123,11 @@ export function WithTooltip({
   readonly tooltip: ReactNode;
   readonly disableable?: boolean;
   readonly whenCut?: boolean;
-  readonly children: ReactElement<{ "aria-describedby"?: string | undefined }>;
+  readonly children: ReactElement<{
+    readonly "aria-describedby"?: string | undefined;
+    readonly disabled?: boolean | undefined;
+    readonly "aria-hidden"?: boolean | "true" | "false" | undefined;
+  }>;
 }) {
   const { trigger, root, open } = useTooltipRoot(whenCut);
   const description = useId();
@@ -136,7 +141,13 @@ export function WithTooltip({
       </Tooltip>
     );
   }
-  const describedBy = [children.props["aria-describedby"], open ? description : undefined]
+  // A disabled button can't take the keyboard's focus, so its tooltip (why it's off) is its
+  // description for as long as it's disabled, not only while the pointer opens it. One hidden
+  // from screen readers (a mouse's shortcut) has no one to describe it to.
+  const hidden = children.props["aria-hidden"];
+  const described =
+    hidden !== true && hidden !== "true" && (open || children.props.disabled === true);
+  const describedBy = [children.props["aria-describedby"], described ? description : undefined]
     .filter((each) => each !== undefined)
     .join(" ");
   return (
@@ -146,7 +157,7 @@ export function WithTooltip({
           {cloneElement(children, {
             "aria-describedby": describedBy === "" ? undefined : describedBy,
           })}
-          {open && (
+          {described && (
             // A description is read from a hidden element too, and this one isn't read twice.
             <span id={description} hidden>
               {tooltip}
