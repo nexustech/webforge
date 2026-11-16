@@ -1,12 +1,11 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
 import { themePreset } from "@webforge/themes";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, removeWhenFree, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import type { RendererWindow } from "./sites.js";
 import { stubFileDialogs } from "./sites.js";
@@ -29,7 +28,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 /** The open site's theme, as the main process keeps it. */
