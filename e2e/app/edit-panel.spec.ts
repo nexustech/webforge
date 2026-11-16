@@ -1,8 +1,7 @@
-import { rm } from "node:fs/promises";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp, newUserDataDir, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, removeWhenFree, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
 // The Edit panel (1.14): the selected element's fields, each change one labelled undo step.
@@ -26,10 +25,7 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   await app.close();
-  // Best effort, as launchDesktopApp's own clean-up: a helper process can hold a file for a moment.
-  await rm(userDataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(
-    () => undefined,
-  );
+  void removeWhenFree(userDataDir);
 });
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");

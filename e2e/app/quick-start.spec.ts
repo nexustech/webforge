@@ -1,12 +1,16 @@
 import { mkdtempSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import type { Oklch } from "@webforge/model";
 import { brandedTheme, brandFromImage, themePreset } from "@webforge/themes";
 import { OPEN_WAIT } from "./budget.js";
-import { APP_START_TIMEOUT_MS, launchDesktopApp, type WebforgeApp } from "./launch.js";
+import {
+  APP_START_TIMEOUT_MS,
+  launchDesktopApp,
+  removeWhenFree,
+  type WebforgeApp,
+} from "./launch.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // The quick start (QS-1…QS-4, 3.11b): from the start screen's Start a site, through its four steps,
@@ -22,7 +26,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 test("starts a site from the quick start's answers: the business, a look, pages, colours and details", async () => {

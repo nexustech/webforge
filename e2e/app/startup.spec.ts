@@ -6,12 +6,16 @@ import {
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { OPEN_WAIT } from "./budget.js";
-import { APP_START_TIMEOUT_MS, launchDesktopApp, type WebforgeApp } from "./launch.js";
+import {
+  APP_START_TIMEOUT_MS,
+  launchDesktopApp,
+  removeWhenFree,
+  type WebforgeApp,
+} from "./launch.js";
 
 // The start-up screen (#887): drawn in the person's theme while the editor loads, replaced by the
 // editor, and by a way to try again if starting fails, never left up. The start screen draws
@@ -42,7 +46,7 @@ test.afterEach(async () => {
   }
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 /** Launches the app for someone in the light theme, which the start-up screen must be drawn in. */
