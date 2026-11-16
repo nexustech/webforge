@@ -197,14 +197,18 @@ test("removes a test's folder once the process holding it has ended (#1112)", as
     ],
     { cwd: folder, stdio: ["ignore", "pipe", "ignore"] },
   );
-  await once(holder.stdout, "data");
-  await expect(rm(folder, { recursive: true, force: true })).rejects.toThrow(/EBUSY/);
+  try {
+    await once(holder.stdout, "data");
+    await expect(rm(folder, { recursive: true, force: true })).rejects.toThrow(/EBUSY/);
 
-  const removed = removeWhenFree(folder);
-  setTimeout(() => holder.kill(), 1_000);
-  await removed;
+    const removed = removeWhenFree(folder);
+    setTimeout(() => holder.kill(), 1_000);
+    await removed;
 
-  expect(existsSync(folder)).toBe(false);
+    expect(existsSync(folder)).toBe(false);
+  } finally {
+    holder.kill();
+  }
 });
 
 test("cleans up with the asynchronous rm, whose retries work (#534)", () => {
