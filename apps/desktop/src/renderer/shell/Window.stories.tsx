@@ -143,20 +143,11 @@ function Window() {
               <>
                 <ModeToggle mode="design" onModeChange={noop} />
                 <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-                <CommandButton
-                  commandId={COMMAND_IDS.toggleLeftPanels}
-                  icon={<PanelLeftIcon />}
-                  label="Left panels"
-                />
-                <CommandButton
-                  commandId={COMMAND_IDS.toggleDrawer}
-                  icon={<PanelBottomIcon />}
-                  label="Bottom panel"
-                />
+                <CommandButton commandId={COMMAND_IDS.toggleLeftPanels} icon={<PanelLeftIcon />} />
+                <CommandButton commandId={COMMAND_IDS.toggleDrawer} icon={<PanelBottomIcon />} />
                 <CommandButton
                   commandId={COMMAND_IDS.toggleRightPanels}
                   icon={<PanelRightIcon />}
-                  label="Right panels"
                 />
               </>
             }

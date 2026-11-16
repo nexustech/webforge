@@ -32,7 +32,7 @@ test.afterEach(async () => {
 async function exportTo(page: Page, folder: string): Promise<number> {
   if (app === undefined) throw new Error("The app isn't running");
   await stubFileDialogs(app, folder);
-  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Export", exact: true }).click();
   const options = page.getByRole("dialog", { name: "Export Site" });
   await expect(options).toBeVisible();
   const started = Date.now();

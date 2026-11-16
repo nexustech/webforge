@@ -83,7 +83,10 @@ test("offers the tour after the quick start, and shows the three steps beside th
   await below(preview, page.getByRole("button", { name: "Preview", exact: true }));
   await preview.getByRole("button", { name: "Next" }).click();
   const publish = tourCard(page, "Put it online");
-  await below(publish, page.getByRole("button", { name: "Publish…", exact: true }));
+  await below(
+    publish,
+    page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }),
+  );
   await publish.getByRole("button", { name: "Next" }).click();
 
   // Where help is, centred; Done closes it.

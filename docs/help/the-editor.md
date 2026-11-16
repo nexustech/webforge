@@ -19,11 +19,13 @@ When a site is open, the editor fills the window.
   - the command search;
   - the **Design | Content** switch;
   - buttons to show or hide the side panels;
-  - **Preview**, **Export** and **Publish**.
+  - **Preview**, **Export** and **Publish**, with **Publish** filled in colour. In a window narrower than about 1200 px they show only their icons: an eye, a down arrow and a cloud. Hover over one to see its name.
 - **Left column:** the [Add](add-panel.md) panel, [Undo History](undo-and-history.md), [Version History](version-history.md) and the [Assistant](assistant.md) as tabs, with [Layers](layers.md) underneath. These four tabs show icons: a square with a plus for Add, a clock with an arrow for Undo History, a box with an arrow for Version History and sparkles for the Assistant. Hover over one, or move to it with the keyboard, to see its name and what it's for.
 - **Middle:** your page, as visitors will see it. Above it are the canvas toolbar and a line showing where the selected item sits on the page.
 - **Right column:** the [Edit panel](edit-panel.md) for whatever you've selected, with tabs beside it for **Site** ([Pages](pages.md) and the menu), [Media](media.md) and [Theme](themes.md).
 - **Bottom panel:** [Site Check](site-check.md). Show or hide it with Ctrl+J (Cmd+J on a Mac).
+
+Before a site is open, on the start screen, the title bar has only the menus, **New** and **Open**.
 
 A button or menu item you can't use at the moment is greyed out, and most say why: hover over the button, or look under the item in a menu or in the command search. Undo says there's nothing to undo, for example, Paste Style asks you to copy a style first, and the Edit menu's Duplicate, Delete and moves ask you to select an element first.
 
