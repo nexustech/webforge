@@ -1,7 +1,6 @@
-import { rm } from "node:fs/promises";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { CANVAS_INNER } from "@webforge/engine/puck-dom";
-import { launchDesktopApp, newUserDataDir, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, removeWhenFree, waitForCanvas } from "./launch.js";
 
 // The canvas toolbar (1.15, F-ED-8): device views, a custom width and the page shown, none of
 // them an undo step (U6).
@@ -383,7 +382,7 @@ test("keeps a device the person added, after a restart (F-ED-25)", async () => {
     await expect.poll(pageWidth).toBe(1920);
   } finally {
     await app.close();
-    await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    void removeWhenFree(userData);
   }
 });
 

@@ -1,5 +1,4 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
@@ -9,6 +8,7 @@ import { placeCaret } from "./caret.js";
 import {
   APP_START_TIMEOUT_MS,
   launchDesktopApp,
+  removeWhenFree,
   type WebforgeApp,
   waitForCanvas,
 } from "./launch.js";
@@ -32,7 +32,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 /** The running app; the test calls it once it has launched one. */

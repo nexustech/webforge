@@ -1,10 +1,9 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, test } from "@playwright/test";
 import { OPEN_WAIT } from "../app/budget.js";
-import { launchDesktopApp } from "../app/launch.js";
+import { launchDesktopApp, removeWhenFree } from "../app/launch.js";
 import { stubFileDialogs } from "../app/sites.js";
 import { createFromTemplate, TEMPLATES } from "../app/templates.js";
 
@@ -28,7 +27,7 @@ test.beforeAll(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 /** Adds `name`'s time to the results file, keeping this run's others. */

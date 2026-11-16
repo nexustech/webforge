@@ -1,5 +1,4 @@
 import { mkdtempSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
@@ -8,6 +7,7 @@ import { clickOnCanvas } from "./canvas-click.js";
 import {
   APP_START_TIMEOUT_MS,
   launchDesktopApp,
+  removeWhenFree,
   type WebforgeApp,
   waitForCanvas,
 } from "./launch.js";
@@ -28,7 +28,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 /** The tour's card now, by its heading. */

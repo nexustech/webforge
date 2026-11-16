@@ -1,11 +1,10 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
 import { largeSiteEdits } from "../app/large-site.js";
-import { launchDesktopApp, waitForCanvas } from "../app/launch.js";
+import { launchDesktopApp, removeWhenFree, waitForCanvas } from "../app/launch.js";
 import { stubFileDialogs } from "../app/sites.js";
 
 // A full export of a 20-page site in under 5 s, its images cached (architecture §10, 5.1): from
@@ -25,7 +24,7 @@ let app: ElectronApplication | undefined;
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 /** Exports the open site to `folder` and gives how long it took, from Export… to the report. */

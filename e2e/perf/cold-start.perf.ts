@@ -1,7 +1,6 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { once } from "node:events";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type Browser, chromium, expect, type Page, test } from "@playwright/test";
@@ -10,6 +9,7 @@ import {
   desktopDir,
   electronCommand,
   launchDesktopApp,
+  removeWhenFree,
   waitForCanvas,
   writeTestPreferences,
 } from "../app/launch.js";
@@ -102,7 +102,7 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 /** The app's output so far, and a wait for a line in it. */

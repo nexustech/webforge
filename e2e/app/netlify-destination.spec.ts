@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, removeWhenFree } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { type MockNetlify, startMockNetlify } from "./netlify-mock.js";
 
@@ -31,7 +31,7 @@ test.afterEach(async () => {
   await netlify?.close();
   netlify = undefined;
   await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
-  await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(userData);
 });
 
 /** A site with a contact form that has nowhere to send yet, saved at a new path. */

@@ -1,13 +1,12 @@
 import { createHash } from "node:crypto";
 import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { changedDocuments, createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { FONTSOURCE_API, PACKAGE_FILES, PACKAGE_LISTINGS } from "@webforge/themes/font-plan";
-import { desktopDir, launchDesktopApp, waitForCanvas } from "./launch.js";
+import { desktopDir, launchDesktopApp, removeWhenFree, waitForCanvas } from "./launch.js";
 import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // A font downloaded on demand (2.2, S4, PH2-8) works offline. It comes once from a stand-in for
@@ -148,7 +147,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 test("a downloaded font shows and exports offline, after a restart", async () => {

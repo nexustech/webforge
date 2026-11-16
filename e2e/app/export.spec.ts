@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite, newId, type PageId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, removeWhenFree, waitForCanvas } from "./launch.js";
 import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // Export from the editor (3.3): the web address prompt, the export dialog, the site built in the
@@ -37,7 +37,7 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   await app.close();
-  rmSync(parent, { recursive: true, force: true });
+  void removeWhenFree(parent);
 });
 
 /** What Open Site and Show ZIP File asked the system to open. */

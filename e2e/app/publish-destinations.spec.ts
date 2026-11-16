@@ -6,7 +6,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { createSite, type PageId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { startSftpServer } from "../packaged/sftp-server.js";
-import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, removeWhenFree } from "./launch.js";
 
 // A made-up password: the test never touches a real credential.
 const PASSWORD = "test-only-sftp-password";
@@ -27,7 +27,7 @@ test.afterEach(async () => {
   await server?.stop();
   server = undefined;
   await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
-  await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(userData);
 });
 
 /**

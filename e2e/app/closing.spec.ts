@@ -195,10 +195,29 @@ test("removes a test's folder once the process holding it has ended (#1112)", as
       "-Command",
       "$file = [IO.File]::Open('DIPS', 'OpenOrCreate', 'ReadWrite', 'None'); 'open'; Start-Sleep 60",
     ],
-    { cwd: folder, stdio: ["ignore", "pipe", "ignore"] },
+    { cwd: folder, stdio: ["ignore", "pipe", "pipe"] },
   );
+  let stderr = "";
+  holder.stderr.on("data", (data: Buffer) => {
+    stderr += data.toString();
+  });
   try {
-    await once(holder.stdout, "data");
+    // Its line once the file is open; not if it can't open it, exits or doesn't start.
+    const opened = await Promise.race([
+      once(holder.stdout, "data").then(
+        () => true,
+        () => false,
+      ),
+      once(holder, "exit").then(
+        () => false,
+        () => false,
+      ),
+      once(holder, "error").then(
+        () => false,
+        () => false,
+      ),
+    ]);
+    expect(opened, `PowerShell didn't open the file: ${stderr}`).toBe(true);
     await expect(rm(folder, { recursive: true, force: true })).rejects.toThrow(/EBUSY/);
 
     const removed = removeWhenFree(folder);
@@ -223,5 +242,40 @@ test("cleans up with the asynchronous rm, whose retries work (#534)", () => {
     )
     .filter((file) => file.endsWith(".ts"))
     .filter((file) => /rmSync\([^)]*maxRetries/.test(readFileSync(join(root, file), "utf8")));
+  expect(offending).toEqual([]);
+});
+
+test("removes the user data with removeWhenFree, never an rm the test waits for (#1112)", () => {
+  // After a close, Electron's process, ending, can hold the user data for up to two minutes on a
+  // busy computer: an rm the test waits for then fails it (EBUSY), where removeWhenFree waits.
+  const root = join(import.meta.dirname, "..");
+  const offending = ["app", "perf"]
+    .flatMap((folder) =>
+      readdirSync(join(root, folder), { recursive: true, encoding: "utf8" }).map((file) =>
+        join(folder, file),
+      ),
+    )
+    .filter((file) => file.endsWith(".ts"))
+    .flatMap((file) => {
+      const source = readFileSync(join(root, file), "utf8");
+      // The folders a spec gives Webforge as its user data: `userDataDir: userData`,
+      // `userDataDir: join(dir, "user-data")`, `{ userDataDir }` and `newUserDataDir()`'s.
+      const held = new Set([
+        ...[...source.matchAll(/userDataDir:\s*(?:join\(\s*)?(\w+)/g)].map((match) => match[1]),
+        ...(/[{,]\s*userDataDir\s*[,}]/.test(source) ? ["userDataDir"] : []),
+        ...[...source.matchAll(/(\w+)\s*=\s*newUserDataDir\(\)/g)].map((match) => match[1]),
+      ]);
+      // And the folders they're in: `userData = join(dir, "user-data")`.
+      for (const name of [...held]) {
+        for (const match of source.matchAll(
+          new RegExp(`\\b${name}\\s*=\\s*join\\(\\s*(\\w+)`, "g"),
+        )) {
+          held.add(match[1]);
+        }
+      }
+      return [...source.matchAll(/(?:await\s+rm|rmSync)\(\s*(\w+)/g)]
+        .filter((match) => held.has(match[1]))
+        .map((match) => `${file}: ${match[1]}`);
+    });
   expect(offending).toEqual([]);
 });

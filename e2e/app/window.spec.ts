@@ -1,8 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { APP_START_TIMEOUT_MS, launchDesktopApp, newUserDataDir } from "./launch.js";
+import {
+  APP_START_TIMEOUT_MS,
+  launchDesktopApp,
+  newUserDataDir,
+  removeWhenFree,
+} from "./launch.js";
 
 // A roomy canvas (ADR 0008): the window starts maximised and remembers how it was left, side
 // columns are narrow and show one panel at a time, and the canvas stays usable at 1280 px.
@@ -23,7 +27,7 @@ test.beforeAll(start);
 
 test.afterAll(async () => {
   await app.close();
-  await rm(userDataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(userDataDir);
 });
 
 const isMaximized = () =>
