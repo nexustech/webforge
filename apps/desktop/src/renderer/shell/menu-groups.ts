@@ -23,7 +23,7 @@ type GroupItem = string | Submenu;
  * arranging; the Style, Select and Shared Section submenus; notes; find. A command a menu's groups
  * leave out comes after them, in a group of its own.
  */
-const MENU_GROUPS: Partial<Record<MenuId, readonly (readonly GroupItem[])[]>> = {
+export const MENU_GROUPS: Partial<Record<MenuId, readonly (readonly GroupItem[])[]>> = {
   edit: [
     [COMMAND_IDS.undo, COMMAND_IDS.redo],
     ["edit.cut", "edit.copy", "edit.paste", "edit.duplicate", "edit.delete"],

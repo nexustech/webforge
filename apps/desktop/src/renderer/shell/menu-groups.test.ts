@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MenuEntry } from "./commands.js";
-import { inGroups } from "./menu-groups.js";
+import { inGroups, MENU_GROUPS } from "./menu-groups.js";
 
 /** Entries for commands `ids`, in that (registration) order. */
 const entries = (...ids: string[]): MenuEntry[] =>
@@ -100,5 +100,34 @@ describe("inGroups (#1016)", () => {
     const grouped = inGroups("view", entries("view.zoomOut", "view.zoomIn"));
     expect(drawn(grouped)).toEqual(["view.zoomOut", "view.zoomIn"]);
     expect(drawn(inGroups("app", entries("app.settings")))).toEqual(["app.settings"]);
+  });
+});
+
+describe("MENU_GROUPS (#1016)", () => {
+  /** The renderer's own code, tests and stories left out, and the files that only refer to ids. */
+  const sources = Object.entries(
+    import.meta.glob<string>(
+      ["../**/*.{ts,tsx}", "!../**/*.test.{ts,tsx}", "!../**/*.stories.tsx"],
+      {
+        query: "?raw",
+        import: "default",
+        eager: true,
+      },
+    ),
+  ).filter(([path]) => !/\/(menu-groups|shortcut-standard)\.ts$|\/ElementMenu\.tsx$/.test(path));
+
+  it("lists only commands the editor registers, so a renamed one can't drop out of its group", () => {
+    const ids = Object.values(MENU_GROUPS).flatMap((groups) =>
+      groups
+        .flat()
+        .flatMap((item) =>
+          typeof item === "string"
+            ? [item]
+            : item.items.map((each) => (typeof each === "string" ? each : each.id)),
+        ),
+    );
+    expect(ids.length).toBeGreaterThan(20);
+    const unregistered = ids.filter((id) => !sources.some(([, text]) => text.includes(`"${id}"`)));
+    expect(unregistered).toEqual([]);
   });
 });

@@ -87,8 +87,8 @@ function itemsOf(
           id: item.id,
           label: item.label,
           enabled: item.enabled,
-          submenu: submenu.flatMap(({ separated: after, ...each }) => [
-            ...(after === true ? [{ type: "separator" as const }] : []),
+          submenu: submenu.flatMap(({ separated: afterLine, ...each }) => [
+            ...(afterLine === true ? [{ type: "separator" as const }] : []),
             command(renderer, each),
           ]),
         },

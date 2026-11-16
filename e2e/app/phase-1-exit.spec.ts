@@ -12,7 +12,7 @@ import {
   type WebforgeApp,
   waitForCanvas,
 } from "./launch.js";
-import { chooseFromMenu } from "./menus.js";
+import { chooseFromMenu, chooseFromSubmenu } from "./menus.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // Phase 1's exit criterion 1 (spec/04, #436): a three-page site built from blank in the editor,
@@ -218,7 +218,7 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   ).toBeVisible();
 
   await selectSection();
-  await chooseFromMenu(running(), page, "Edit", "Save as shared section…");
+  await chooseFromSubmenu(running(), page, "Edit", "Shared Section", "Save as shared section…");
   const save = page.getByRole("dialog", { name: "Save as shared section" });
   await save.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await save.getByRole("button", { name: "Save" }).click();
