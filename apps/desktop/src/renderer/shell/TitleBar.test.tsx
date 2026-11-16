@@ -94,6 +94,31 @@ describe("TitleBar", () => {
     }
   });
 
+  it("shows what Site Check found while it's wide, and opens it (#1009)", async () => {
+    const registry = createCommandRegistry();
+    const run = vi.fn();
+    registry.register({
+      id: COMMAND_IDS.siteCheck,
+      label: "Site Check",
+      status: "5 to fix · 13 tips",
+      run,
+    });
+    renderTitleBar(registry);
+
+    // Named by its label too, as its tooltip is: the count alone doesn't say what it counts.
+    const button = screen.getByRole("button", { name: "Site Check: 5 to fix · 13 tips" });
+    expect(within(button).getByText("5 to fix · 13 tips").className).toBe(
+      "hidden @min-[1180px]/title-bar:inline",
+    );
+    await userEvent.click(button);
+    expect(run).toHaveBeenCalledOnce();
+
+    act(() => registry.update(COMMAND_IDS.siteCheck, { status: "No problems" }));
+    expect(screen.getByRole("button", { name: "Site Check: No problems" }).textContent).toBe(
+      "No problems",
+    );
+  });
+
   it("gives a button a caret once commands go with it, and none before (LF-13)", async () => {
     const registry = renderTitleBar();
     expect(screen.queryByRole("button", { name: "More Export options" })).toBeNull();

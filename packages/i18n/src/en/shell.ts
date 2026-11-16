@@ -86,6 +86,8 @@ export const shell = {
   "shell.actions": "Site actions",
   // A title-bar button's caret (LF-13), named by the button: "More Export options".
   "shell.moreOptions": "More {name} options",
+  // A title-bar button that shows how things stand, named for a screen reader (#1009).
+  "shell.withStatus": "{name}: {status}",
 
   // Settings (LF-12): one dialog for the app and the open site.
   "settings.command": "Settings…",

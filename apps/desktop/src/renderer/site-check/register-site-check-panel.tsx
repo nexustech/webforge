@@ -14,6 +14,7 @@ import { type SiteCheckAssistant, useAssistantWrites } from "./assistant-writes.
 import type { BundleActions } from "./bundle.js";
 import { describeDetail, describePlace } from "./describe.js";
 import { SiteCheckPanel } from "./SiteCheckPanel.js";
+import { registerSiteCheckCommand } from "./site-check-command.js";
 import { createSiteCheck } from "./site-check-store.js";
 
 /** Site Check's panel id: the export shows it when something must be fixed first (X5). */
@@ -25,6 +26,11 @@ type SiteCheckPanelOptions = {
   readonly settings: SettingsRegistry;
   /** Where Page Settings… is, for a page without a description (3.17). */
   readonly commands: Pick<CommandRegistry, "run">;
+  /**
+   * Where Site Check's own command goes, for the title bar's button with what it found (#1009).
+   * Left out, it has none.
+   */
+  readonly titleBar?: Pick<CommandRegistry, "register" | "update">;
   /** Opens a guide's page on another website in the browser (3.17). */
   readonly openGuide: (guide: SearchGuide) => void;
   /** What the person ignored for the open site, as main loaded it. */
@@ -48,7 +54,7 @@ type SiteCheckPanelOptions = {
 /**
  * Puts Site Check in the bottom drawer (F-CHK-1, UI1), in Simple and Advanced mode (T2). It checks
  * the site in the background as it changes; a finding jumps to where it is, and some have a *Fix*.
- * Returns a function that removes the panel and stops checking.
+ * Returns a function that removes the panel, and the command if any, and stops checking.
  */
 export function registerSiteCheckPanel(
   panels: PanelRegistry,
@@ -56,6 +62,7 @@ export function registerSiteCheckPanel(
     session,
     settings,
     commands,
+    titleBar,
     openGuide,
     ignored,
     saveIgnored,
@@ -137,7 +144,12 @@ export function registerSiteCheckPanel(
     icon: ListChecksIcon,
     component: SiteCheck,
   });
+  const removeCommand =
+    titleBar === undefined
+      ? undefined
+      : registerSiteCheckCommand(titleBar, panels, SITE_CHECK_PANEL_ID, siteCheck.state);
   return () => {
+    removeCommand?.();
     remove();
     siteCheck.dispose();
   };

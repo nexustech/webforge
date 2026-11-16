@@ -4,12 +4,14 @@ id: site-check
 title: Site Check
 summary: What Site Check looks for, what each finding means, and how to fix it.
 related: [export, publish, pages, media, forms, site-settings]
-updated: 2026-11-14
+updated: 2026-11-16
 ---
 
 # Site Check
 
 **Site Check** looks over your whole site as you work and lists anything to fix before your website goes live. It's in the bottom panel; show or hide it with Ctrl+J (Cmd+J on a Mac).
+
+Its button in the title bar, beside **Preview**, shows what it found: _5 to fix · 13 tips_ counts the Must fix and Should fix items together, then the tips, and _No problems_ means it found nothing. Click it to open Site Check. In a narrow window the button is a list with ticks; hover over it to see the count.
 
 Findings come in three kinds:
 

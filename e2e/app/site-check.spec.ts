@@ -38,6 +38,25 @@ test("lists the new site's placeholder text, and selects it from there", async (
   await expect(panel.getByRole("heading", { name: "Text", exact: true })).toBeVisible();
 });
 
+test("its title-bar button says what it found, and opens it (#1009)", async () => {
+  const button = page.getByRole("banner").getByRole("button", { name: /^Site Check: / });
+  // The starter site's placeholder text, at least, is still to fix.
+  await expect(button).toHaveAccessibleName(/^Site Check: \d+ to fix/);
+  const before = await button.getAttribute("aria-label");
+
+  // Ignoring a finding counts one fewer.
+  await rule("placeholders")
+    .getByRole("button", { name: /^Ignore/ })
+    .first()
+    .click();
+  await expect(button).not.toHaveAccessibleName(before ?? "");
+
+  await page.getByRole("button", { name: "Show or Hide Bottom Panel" }).click();
+  await expect(drawer()).toBeHidden();
+  await button.click();
+  await expect(drawer().getByRole("tab", { name: "Site Check", selected: true })).toBeVisible();
+});
+
 test("ignores a finding, and brings it back", async () => {
   const before = await rule("placeholders")
     .getByRole("button", { name: /^Show / })

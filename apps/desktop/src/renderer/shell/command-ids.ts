@@ -20,6 +20,8 @@ export const COMMAND_IDS = {
   previewOnPhone: "site.previewOnPhone",
   stopPhonePreview: "site.stopPhonePreview",
   exportSite: "site.export",
+  // The title bar's Site Check button (#1009): its panel, with what it found.
+  siteCheck: "site.check",
   siteSettings: "site.settings",
   pageSettings: "page.settings",
   customCode: "site.customCode",

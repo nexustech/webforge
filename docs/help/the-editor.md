@@ -19,7 +19,8 @@ When a site is open, the editor fills the window.
   - the command search;
   - the **Design | Content** switch;
   - buttons to show or hide the side panels;
-  - **Preview**, **Export** and **Publish**, with **Publish** filled in colour. In a window narrower than about 1200 px they show only their icons: an eye, a down arrow and a cloud. Hover over one to see its name.
+  - [Site Check](site-check.md)'s button, showing what it found, such as _5 to fix · 13 tips_ or _No problems_. Click it to open Site Check;
+  - **Preview**, **Export** and **Publish**, with **Publish** filled in colour. In a window narrower than about 1200 px these four show only their icons: a list with ticks, an eye, a down arrow and a cloud. Hover over one to see its name, and Site Check's count.
 - **Left column:** the [Add](add-panel.md) panel, [Undo History](undo-and-history.md), [Version History](version-history.md) and the [Assistant](assistant.md) as tabs, with [Layers](layers.md) underneath. These four tabs show icons: a square with a plus for Add, a clock with an arrow for Undo History, a box with an arrow for Version History and sparkles for the Assistant. Hover over one, or move to it with the keyboard, to see its name and what it's for.
 - **Middle:** your page, as visitors will see it. Above it are the canvas toolbar and a line showing where the selected item sits on the page.
 - **Right column:** the [Edit panel](edit-panel.md) for whatever you've selected, with tabs beside it for **Site** ([Pages](pages.md) and the menu), [Media](media.md) and [Theme](themes.md).
