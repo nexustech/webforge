@@ -1,6 +1,5 @@
-import { rm } from "node:fs/promises";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp, newUserDataDir, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, removeWhenFree, waitForCanvas } from "./launch.js";
 
 // Command palette and Add panel favourites (1.34, F-ED-26, UX-10, UX-11): Ctrl/Cmd+P finds
 // commands, pages to go to and things to add; an Add from it is one undo step; the person's
@@ -116,6 +115,6 @@ test("keeps the person's favourite sections first, after a restart", async () =>
     await expect(groups().first().getByRole("button")).toHaveAccessibleName("FAQ");
   } finally {
     await app.close();
-    await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    void removeWhenFree(userData);
   }
 });

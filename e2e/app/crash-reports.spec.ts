@@ -1,11 +1,15 @@
 import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { APP_START_TIMEOUT_MS, launchDesktopApp, type WebforgeApp } from "./launch.js";
+import {
+  APP_START_TIMEOUT_MS,
+  launchDesktopApp,
+  removeWhenFree,
+  type WebforgeApp,
+} from "./launch.js";
 
 // Local crash reports (F-SITE-7): a crash or uncaught error leaves a JSON report in the user-data
 // folder, with no site content or paths, and nothing is sent anywhere.
@@ -24,7 +28,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close().catch(() => undefined);
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 /** Starts Webforge with a site whose name and text are {@link SECRET}. */

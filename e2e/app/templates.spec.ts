@@ -1,5 +1,4 @@
 import { mkdtempSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, test } from "@playwright/test";
@@ -13,7 +12,7 @@ import {
   type Work,
 } from "./budget.js";
 import { canvasAxe } from "./canvas-axe.js";
-import { APP_START_TIMEOUT_MS, launchDesktopApp } from "./launch.js";
+import { APP_START_TIMEOUT_MS, launchDesktopApp, removeWhenFree } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 import { createFromTemplate, TEMPLATES } from "./templates.js";
 
@@ -45,7 +44,7 @@ test.afterAll(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 for (const template of TEMPLATES) {

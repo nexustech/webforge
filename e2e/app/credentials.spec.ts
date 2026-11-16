@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { type ElectronApplication, expect, test } from "@playwright/test";
-import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, removeWhenFree } from "./launch.js";
 
 // Publish passwords and tokens are encrypted with Electron's safeStorage, whose key the OS keeps
 // (ADR 0006: Windows DPAPI, macOS Keychain), and the credential store keeps the encrypted bytes in
@@ -39,7 +38,9 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  // Not waited for: Electron's process, ending, can hold the user data's `DIPS` database for up to
+  // two minutes more on a busy computer (#1112), longer than the test may take.
+  void removeWhenFree(userData);
 });
 
 test("a secret encrypted by one run decrypts in the next, saved as before or now (safeStorage, 0.3, #843)", async () => {

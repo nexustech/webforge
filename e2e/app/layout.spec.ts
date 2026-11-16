@@ -1,8 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { APP_START_TIMEOUT_MS, launchDesktopApp, newUserDataDir, waitForCanvas } from "./launch.js";
+import {
+  APP_START_TIMEOUT_MS,
+  launchDesktopApp,
+  newUserDataDir,
+  removeWhenFree,
+  waitForCanvas,
+} from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
 // The window shell (1.2): panel sizes and the theme are remembered per person, across restarts.
@@ -26,7 +31,7 @@ test.beforeAll(start);
 
 test.afterAll(async () => {
   await app.close();
-  await rm(userDataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(userDataDir);
 });
 
 /**

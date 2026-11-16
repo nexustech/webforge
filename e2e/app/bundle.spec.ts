@@ -1,11 +1,10 @@
 import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp, type WebforgeApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, removeWhenFree, type WebforgeApp, waitForCanvas } from "./launch.js";
 import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // Download and bundle (C8, 3.9): Site Check stops the export for a stylesheet the site's code
@@ -63,7 +62,7 @@ test.beforeEach(async () => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 const drawer = () => page.getByRole("region", { name: "Bottom panel" });
