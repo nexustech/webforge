@@ -4,18 +4,16 @@ import type { CheckReport } from "@webforge/site-check";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
+import { countsByLevel } from "./counts.js";
 
 /**
  * What the title bar's Site Check button says (#1009): "5 to fix · 13 tips", *Must fix* and
  * *Should fix* counted together, either left out at none, or "No problems" with nothing at all.
  */
 export function siteCheckStatus(report: CheckReport): string {
-  let toFix = 0;
-  let tips = 0;
-  for (const result of report.results) {
-    if (result.level === "tip") tips += result.findings.length;
-    else toFix += result.findings.length;
-  }
+  const counts = countsByLevel(report);
+  const toFix = counts.must + counts.should;
+  const tips = counts.tip;
   const parts = [
     ...(toFix === 0 ? [] : [plural("siteCheck.button.toFix", toFix)]),
     ...(tips === 0 ? [] : [plural("siteCheck.count.tip", tips)]),
