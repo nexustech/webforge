@@ -487,6 +487,22 @@ describe("Tooltip", () => {
     expect(screen.getByRole("button", { name: "Move Up" })).toBe(button);
   });
 
+  it("describes a button in a wrapper by its tooltip while it's open (#1011)", async () => {
+    render(
+      <Button size="icon" aria-label="Copy" tooltip="Copy (Ctrl+C)" disabled={false}>
+        C
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Copy" });
+    expect(button.hasAttribute("aria-describedby")).toBe(false);
+    await userEvent.tab();
+    expect(document.activeElement).toBe(button);
+    await screen.findByRole("tooltip");
+    // The button, not only the wrapper Radix describes: it's what a screen reader is on.
+    const description = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+    expect(description?.textContent).toBe("Copy (Ctrl+C)");
+  });
+
   it("keeps a button with a tooltip working as a menu's trigger (#1011)", async () => {
     render(
       <DropdownMenu modal={false}>

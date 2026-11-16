@@ -1,7 +1,7 @@
 import { ToggleGroup as ToggleGroupPrimitive } from "radix-ui";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
-import { Tooltip, TooltipContent, TooltipTrigger, useTooltipWhenCut } from "./tooltip.js";
+import { Tooltip, TooltipContent, TooltipTrigger, useTooltipRoot } from "./tooltip.js";
 
 /** A segmented control: Desktop · Tablet · Mobile, Design | Content. */
 export function ToggleGroup({
@@ -39,7 +39,7 @@ export function ToggleGroupItem({
   children,
   ...props
 }: ToggleGroupItemProps) {
-  const { trigger, root } = useTooltipWhenCut(tooltipWhenCut);
+  const { trigger, root } = useTooltipRoot(tooltipWhenCut);
   const item = {
     "data-slot": "toggle-group-item",
     className: cn(

@@ -29,6 +29,10 @@ describe("PhonePreviewCue (3.2)", () => {
       });
     });
     expect(screen.getByRole("status").textContent).toContain("Phone preview on");
+    // Stop is described by who can see the preview, for a screen reader on it (#1011).
+    const button = screen.getByRole("button", { name: "Stop Phone Preview" });
+    const description = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+    expect(description?.textContent).toContain("Anyone on this Wi-Fi");
     await userEvent.click(screen.getByRole("button", { name: "Stop Phone Preview" }));
     expect(stop).toHaveBeenCalledOnce();
 
