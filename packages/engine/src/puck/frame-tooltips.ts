@@ -1,4 +1,4 @@
-import { ACTIONS, RICH_TEXT_MENU } from "./puck-dom.js";
+import { ACTION_BAR, ACTIONS, RICH_TEXT_MENU } from "./puck-dom.js";
 
 /**
  * A canvas control's tooltip text (#1011): the chrome's own controls set it in place of the
@@ -7,7 +7,7 @@ import { ACTIONS, RICH_TEXT_MENU } from "./puck-dom.js";
 export const TIP_ATTRIBUTE = "data-wf-tip";
 
 /** Puck's controls that carry a `title` of their own: the element's bar and the text toolbar. */
-const PUCK_TITLED = `${ACTIONS} [title], ${RICH_TEXT_MENU} [title]`;
+const PUCK_TITLED = `${ACTIONS} [title], ${ACTION_BAR} [title], ${RICH_TEXT_MENU} [title]`;
 
 /** How long the pointer rests on a control before its tooltip shows, as the editor's (400 ms). */
 const DELAY = 400;
@@ -50,8 +50,8 @@ function adoptTitle(element: Element): void {
 }
 
 /** The control under `target` with a tooltip, taking Puck's `title` on the way. */
-function tipped(target: EventTarget | null): HTMLElement | null {
-  if (!(target instanceof Element)) return null;
+function tipped(target: Element | null): HTMLElement | null {
+  if (target === null) return null;
   const titled = target.closest("[title]");
   if (titled !== null) adoptTitle(titled);
   return target.closest<HTMLElement>(`[${TIP_ATTRIBUTE}]`);
@@ -76,6 +76,11 @@ function focusVisible(element: Element): boolean {
 export function showFrameTooltips(document: Document): () => void {
   const view = document.defaultView;
   if (view === null) return () => undefined;
+  // The frame's own: its nodes aren't the `Element`s of the editor's window, where this code runs.
+  const element = (target: EventTarget | null): Element | null =>
+    target instanceof view.Element ? target : null;
+  const node = (target: EventTarget | null): Node | null =>
+    target instanceof view.Node ? target : null;
   let current: HTMLElement | null = null;
   let tip: HTMLElement | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -125,25 +130,26 @@ export function showFrameTooltips(document: Document): () => void {
   };
 
   const onPointerOver = (event: PointerEvent) => {
-    const target = tipped(event.target);
+    const target = tipped(element(event.target));
     if (target === null || target === pressed) return;
     open(target, "after");
   };
   const onPointerOut = (event: PointerEvent) => {
-    const to = event.relatedTarget;
-    if (current !== null && to instanceof Node && current.contains(to)) return;
-    if (pressed !== null && !(to instanceof Node && pressed.contains(to))) pressed = null;
+    const to = node(event.relatedTarget);
+    if (current !== null && to !== null && current.contains(to)) return;
+    if (pressed !== null && !(to !== null && pressed.contains(to))) pressed = null;
     if (current !== null && document.activeElement !== current) hide();
   };
   const onFocusIn = (event: FocusEvent) => {
-    const target = tipped(event.target);
-    if (target !== null && event.target instanceof Element && focusVisible(event.target)) {
+    const focused = element(event.target);
+    const target = tipped(focused);
+    if (target !== null && focused !== null && focusVisible(focused)) {
       open(target, "once");
     }
   };
   const onFocusOut = () => hide();
   const onPointerDown = (event: PointerEvent) => {
-    pressed = tipped(event.target);
+    pressed = tipped(element(event.target));
     hide();
   };
   const onKeyDown = (event: KeyboardEvent) => {

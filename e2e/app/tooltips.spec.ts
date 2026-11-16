@@ -34,7 +34,12 @@ test("shows a toolbar's tooltips with their shortcuts, on hover and on the keybo
   await toolbar().getByRole("radio", { name: "Tablet" }).hover();
   // Ctrl+2, or ⌘2 on a Mac.
   await expect(tooltip()).toHaveText(/^Tablet \(.+2\)$/);
-  await page.mouse.move(0, 0);
+  // Off it, onto the left panels: not the title bar's empty part, the window's drag area, which
+  // passes the page no pointer events, nor the canvas, whose frame takes them from the editor's.
+  // Twice, as a hand moves: the tooltip closes on a move after the pointer has left it.
+  const left = page.getByRole("region", { name: "Left panels" });
+  await left.hover({ position: { x: 20, y: 40 } });
+  await left.hover({ position: { x: 30, y: 50 } });
   await expect(tooltip()).toHaveCount(0);
 
   // A key first, so the focus counts as the keyboard's.
