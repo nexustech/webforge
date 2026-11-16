@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { t } from "@webforge/i18n";
-import { fireEvent, userEvent, within } from "storybook/test";
+import { expect, fireEvent, userEvent, waitFor, within } from "storybook/test";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import { QuickStartDialog } from "./QuickStartDialog.js";
 
@@ -61,11 +61,11 @@ async function answerBusiness(canvasElement: HTMLElement) {
   await userEvent.type(body.getByLabelText(t("quickStart.whatYouDo")), "Bread and cakes");
 }
 
-/** The step named `step`, from the list of steps. */
+/** The step named `step`, from the list of steps, once the dialog shows it (#1106). */
 async function goTo(canvasElement: HTMLElement, step: string) {
-  await userEvent.click(
-    dialog(canvasElement).getByRole("button", { name: new RegExp(`${step}$`) }),
-  );
+  const button = dialog(canvasElement).getByRole("button", { name: new RegExp(`${step}$`) });
+  await userEvent.click(button);
+  await waitFor(() => expect(button).toHaveAttribute("aria-current", "step"));
 }
 
 /** As it opens: *Your business*, nothing answered. */
@@ -95,6 +95,11 @@ export const Pages: Story = {
     const body = dialog(canvasElement);
     await userEvent.click(body.getByRole("checkbox", { name: "Visit us" }));
     await userEvent.click(body.getByRole("checkbox", { name: t("recipe.food-private-hire") }));
+    // The screenshot is taken as the play ends: the Pages step, as the play left it (#1106).
+    await waitFor(() => {
+      expect(body.getByRole("checkbox", { name: "Visit us" })).not.toBeChecked();
+      expect(body.getByRole("checkbox", { name: t("recipe.food-private-hire") })).toBeChecked();
+    });
   },
 };
 
@@ -105,6 +110,7 @@ export const PagesOnOnePage: Story = {
     await goTo(canvasElement, t("quickStart.step.pages"));
     const body = dialog(canvasElement);
     await userEvent.click(body.getByText(t("quickStart.layout.onePage"), { exact: true }));
+    await body.findByText(t("quickStart.onePageText"));
   },
 };
 
