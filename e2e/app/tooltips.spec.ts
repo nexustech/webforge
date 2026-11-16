@@ -65,10 +65,11 @@ test("shows the canvas's own controls' tooltips, and Puck's, in place of the bro
   await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
 
   // Pointed at again until it shows: on a cold start the + can still move as the selection
-  // settles, out from under the pointer before the tooltip's delay is up.
+  // settles, out from under the pointer before the tooltip's delay is up. The pointer goes back
+  // to the Section between tries, not off the canvas: the + is there while the Section is hovered.
   await expect(async () => {
-    await page.mouse.move(0, 0);
-    await canvas().getByRole("button", { name: "Add a section here" }).hover();
+    await section.hover({ force: true, position: { x: 10, y: box.height - 4 }, timeout: 2000 });
+    await canvas().getByRole("button", { name: "Add a section here" }).hover({ timeout: 2000 });
     await expect(frameTip()).toHaveText("Add a section here", { timeout: 2000 });
   }).toPass();
   // A site whose own rules would reach the tooltip, which sits in the site's body: added, read
