@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Page } from "@playwright/test";
 
-// The editor's menus (File, Edit, View, Help): in the title bar on Windows and Linux, in the
+// The editor's menus (File, Edit, View, Site, Help): in the title bar on Windows and Linux, in the
 // system's menu bar on macOS (LF-13), where a test chooses an item through Electron's own menu.
 
 /** Whether macOS's menu bar holds the menus. */
@@ -109,28 +109,37 @@ export async function submenuItems(
   return found;
 }
 
-/** Chooses `item` in the submenu `submenu` of the editor's menu `menu` (File › Open Recent). */
+/**
+ * Chooses `item` (the start of its label, or a pattern) in the submenu `submenu` of the editor's
+ * menu `menu`: File › Open Recent (3.18), Edit › Style (#1016).
+ */
 export async function chooseFromSubmenu(
   app: ElectronApplication,
   page: Page,
   menu: string,
   submenu: string,
-  item: string,
+  item: ItemName,
 ): Promise<void> {
   if (nativeMenus) {
+    const [start, source, flags] =
+      typeof item === "string" ? [item, null, ""] : ["", item.source, item.flags];
     // The renderer sends its menus once its commands are registered.
     await expect
       .poll(() =>
         app.evaluate(
-          ({ Menu }, [menuLabel, submenuLabel, itemLabel]) => {
+          ({ Menu }, [menuLabel, submenuLabel, itemStart, itemSource, itemFlags]) => {
+            const named = (label: string) =>
+              itemSource === null
+                ? label.startsWith(itemStart)
+                : new RegExp(itemSource, itemFlags).test(label);
             const top = Menu.getApplicationMenu()?.items.find((each) => each.label === menuLabel);
             const opener = top?.submenu?.items.find((each) => each.label === submenuLabel);
-            const found = opener?.submenu?.items.find((each) => each.label === itemLabel);
+            const found = opener?.submenu?.items.find((each) => named(each.label));
             if (found === undefined || !found.enabled) return false;
             found.click();
             return true;
           },
-          [menu, submenu, item] as const,
+          [menu, submenu, start, source, flags] as const,
         ),
       )
       .toBe(true);

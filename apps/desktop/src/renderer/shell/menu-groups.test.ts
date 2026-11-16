@@ -6,9 +6,15 @@ import { inGroups } from "./menu-groups.js";
 const entries = (...ids: string[]): MenuEntry[] =>
   ids.map((id) => ({ command: { id, label: id, run: () => undefined }, submenu: [] }));
 
-/** The menu as text: its items' ids, "|" where a separator goes. */
+/** The menu as text: its items' ids, "|" where a separator goes, a submenu's in brackets. */
 const drawn = (grouped: ReturnType<typeof inGroups>) =>
-  grouped.flatMap(({ command, separated }) => (separated ? ["|", command.id] : [command.id]));
+  grouped.flatMap(({ command, submenu, separated }) => {
+    const item =
+      submenu.length === 0
+        ? command.id
+        : `${command.label} [${submenu.map((each) => each.label).join(", ")}]`;
+    return separated ? ["|", item] : [item];
+  });
 
 describe("inGroups (#1016)", () => {
   it("puts Edit's items in its groups' order, a separator between groups", () => {
@@ -16,12 +22,12 @@ describe("inGroups (#1016)", () => {
       "edit",
       entries(
         "edit.findReplace",
-        "edit.selectParent",
         "edit.copy",
         "edit.undo",
         "edit.cut",
         "edit.redo",
         "edit.moveUp",
+        "edit.note",
       ),
     );
 
@@ -34,9 +40,47 @@ describe("inGroups (#1016)", () => {
       "|",
       "edit.moveUp",
       "|",
-      "edit.selectParent",
+      "edit.note",
       "|",
       "edit.findReplace",
+    ]);
+  });
+
+  it("gathers Style's, Select's and Shared Section's commands in submenus, named without their word", () => {
+    const grouped = inGroups(
+      "edit",
+      entries(
+        "edit.renameSharedSection",
+        "edit.selectSimilar",
+        "edit.pasteStyle",
+        "edit.undo",
+        "edit.copyStyle",
+        "edit.selectParent",
+        "edit.saveSharedSection",
+        "edit.pasteLinked",
+      ),
+    );
+
+    expect(drawn(grouped)).toEqual([
+      "edit.undo",
+      "|",
+      "Style [edit.copyStyle, edit.pasteStyle]",
+      "Select [edit.selectParent, edit.selectSimilar]",
+      "Shared Section [edit.saveSharedSection, Rename…, edit.pasteLinked]",
+    ]);
+    // A submenu's item runs nothing itself, and is always open to read its items' reasons.
+    const style = grouped[1]?.command;
+    expect(style).toMatchObject({ id: "menu.edit.style" });
+    expect(style?.enabled).toBeUndefined();
+    // The command keeps its own name, for the command box.
+    expect(grouped[3]?.submenu[1]).toMatchObject({ id: "edit.renameSharedSection" });
+  });
+
+  it("leaves out a submenu none of whose commands are registered", () => {
+    expect(drawn(inGroups("edit", entries("edit.undo", "edit.selectChild")))).toEqual([
+      "edit.undo",
+      "|",
+      "Select [edit.selectChild]",
     ]);
   });
 

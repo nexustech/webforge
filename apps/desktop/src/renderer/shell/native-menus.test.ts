@@ -134,11 +134,33 @@ describe("macOS's menu bar (LF-13)", () => {
     registry.register({ id: "edit.findReplace", label: "Find…", menu: "edit", run: vi.fn() });
     registry.register({ id: "edit.undo", label: "Undo", menu: "edit", run: vi.fn() });
     registry.register({ id: "theme.show", label: "Theme…", menu: "site", run: vi.fn() });
+    registry.register({
+      id: "edit.renameSharedSection",
+      label: "Rename Shared Section…",
+      menu: "edit",
+      ...availability("Select a shared section."),
+      run: vi.fn(),
+    });
 
     const menus = nativeMenusOf(registry);
     expect(menus.map((menu) => menu.id)).toEqual(["file", "edit", "view", "site"]);
     expect(menus.find((menu) => menu.id === "edit")?.items).toEqual([
       expect.not.objectContaining({ separated: true }),
+      // Edit › Shared Section, its item named without its word, and saying why it's disabled.
+      {
+        id: "menu.edit.sharedSection",
+        label: "Shared Section",
+        enabled: true,
+        separated: true,
+        submenu: [
+          {
+            id: "edit.renameSharedSection",
+            label: "Rename…",
+            enabled: false,
+            reason: "Select a shared section.",
+          },
+        ],
+      },
       expect.objectContaining({ id: "edit.findReplace", separated: true }),
     ]);
     expect(menus.find((menu) => menu.id === "site")?.label).toBe("Site");

@@ -5,7 +5,7 @@ title: Header, Footer, announcements and shared sections
 summary: The parts that are the same on every page, an announcement bar above them, and sections you share between pages.
 components: [Header, Footer, AnnouncementBar]
 related: [pages, layers, add-panel, site-check]
-updated: 2026-11-10
+updated: 2026-11-16
 ---
 
 # Header, Footer, announcements and shared sections
@@ -52,5 +52,7 @@ A **shared section** is a section stored once and placed on several pages, such 
 - **Place another copy:** click it in the Add panel's **Shared sections** group. Or copy it and use **Paste as Linked Copy** (Ctrl+Shift+V, Cmd+Shift+V on a Mac).
 - **Make one copy separate:** right-click it and choose **Detach from shared section**. That copy becomes an ordinary section; the others stay shared.
 - **Rename or delete a shared section:** use its **…** menu in the Add panel. Deleting it leaves every copy on its page as an ordinary section.
+
+All of these are also in **Edit › Shared Section**, for the selected section.
 
 In Layers, linked copies show a link icon. While you edit one, a line above the page says how many copies and pages the change applies to.

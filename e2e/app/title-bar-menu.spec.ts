@@ -72,12 +72,43 @@ test("lists Edit in its groups, and the site's settings, theme and stylesheet un
   await title("Edit").click();
   const edit = page.getByRole("menu", { name: "Edit" });
   await expect(edit).toBeVisible();
-  // Undo; clipboard; style; arranging; selecting; shared sections; notes; find.
-  await expect(edit.getByRole("separator")).toHaveCount(7);
-  const items = await edit.getByRole("menuitem").count();
+  // Undo; clipboard; arranging; the Style, Select and Shared Section submenus; notes; find.
+  await expect(edit.getByRole("separator")).toHaveCount(5);
+  // It fits a 600 px window, with room to spare.
   const box = await edit.boundingBox();
-  console.log(`Edit: ${items} items, ${box?.height ?? 0} px`);
   expect(box?.height ?? Number.POSITIVE_INFINITY).toBeLessThan(540);
+
+  // → opens a submenu, ← closes it; a disabled item there still says why.
+  const styleItem = edit.getByRole("menuitem", { name: "Style", exact: true });
+  await styleItem.focus();
+  await page.keyboard.press("ArrowRight");
+  const style = page.getByRole("menu", { name: "Style" });
+  await expect(style.getByRole("menuitem")).toHaveText([
+    /^Style This…/,
+    /^Copy Style/,
+    /^Paste Style/,
+    /^Apply Look/,
+    /^Apply Look/,
+  ]);
+  await expect(style.getByRole("menuitem", { name: /^Paste Style/ })).toHaveAttribute(
+    "aria-description",
+    /.+/,
+  );
+  await page.keyboard.press("ArrowLeft");
+  await expect(style).toBeHidden();
+  await expect(styleItem).toBeFocused();
+
+  // Shared Section's items are named without its word; the command box keeps the full names.
+  await edit.getByRole("menuitem", { name: "Shared Section", exact: true }).focus();
+  await page.keyboard.press("ArrowRight");
+  const shared = page.getByRole("menu", { name: "Shared Section" });
+  await expect(shared.getByRole("menuitem")).toHaveText([
+    /^Save as shared section…/i,
+    /^Rename…/,
+    /^Delete…/,
+    /^Detach/,
+    /^Paste as Linked Copy/,
+  ]);
   await page.keyboard.press("Escape");
   await closingDone();
 

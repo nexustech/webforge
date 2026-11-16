@@ -212,12 +212,12 @@ describe("SettingsHost (LF-12)", () => {
     ]);
   });
 
-  it("opens Site Settings from the File menu command and saves them as one undo step", async () => {
+  it("opens Site Settings from the Site menu command and saves them as one undo step (#1016)", async () => {
     const { commands: registry, session, user } = setUp();
 
     expect(registry.get(COMMAND_IDS.siteSettings)).toMatchObject({
       label: "Site Settings…",
-      menu: "file",
+      menu: "site",
     });
     act(() => {
       registry.run(COMMAND_IDS.siteSettings);
