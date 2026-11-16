@@ -44,7 +44,9 @@ const modeButton = (page: Page, name: "Design" | "Content") =>
   page.getByRole("radio", { name, exact: true });
 /** A button of Puck's action bar on the selected element, drawn inside the canvas frame. */
 const action = (page: Page, title: "Duplicate" | "Delete") =>
-  canvas(page).locator(`${ACTION_BAR_ACTION}[title="${title}"]`);
+  canvas(page)
+    .locator(ACTION_BAR_ACTION)
+    .and(canvas(page).getByRole("button", { name: title, exact: true }));
 
 /** Selects the starter heading, so Puck shows its action bar for it. */
 async function selectHeading(page: Page): Promise<void> {

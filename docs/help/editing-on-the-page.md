@@ -4,7 +4,7 @@ id: editing-on-the-page
 title: Editing on the page
 summary: Select, type, move, copy and delete sections and elements right on the page.
 related: [the-editor, edit-panel, layers, styling, links, keyboard-shortcuts]
-updated: 2026-11-14
+updated: 2026-11-16
 ---
 
 # Editing on the page
@@ -20,6 +20,8 @@ updated: 2026-11-14
   - **Ctrl+←** and **Ctrl+→** move between items side by side.
 
 ## The bar on the selected item
+
+Hover over a button on the bar, the + beside a section, a handle or a button on the text toolbar to see what it does.
 
 | Button                         | What it does                                                                                                            |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |

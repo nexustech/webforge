@@ -280,7 +280,7 @@ export function WidthHandles({
           aria-hidden
           className="wf-width-grip"
           data-side={side}
-          title={t("canvas.width.handle", { field: field.label })}
+          data-wf-tip={t("canvas.width.handle", { field: field.label })}
           onPointerDown={begin}
           onClick={(event) => event.stopPropagation()}
         />
