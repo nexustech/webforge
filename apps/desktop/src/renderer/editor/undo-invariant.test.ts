@@ -18,6 +18,7 @@ import {
 } from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
 import { createFakeEngine, type FakeEngine } from "@webforge/test-utils/renderer";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
@@ -832,47 +833,51 @@ describe("undo invariant over the editor session", () => {
     vi.useRealTimers();
   });
 
-  it("undo all restores the opened site, redo all the final one, and the canvas follows", () => {
-    fc.assert(
-      fc.property(fc.array(fc.oneof(...commands), { maxLength: 40 }), (sequence) => {
-        const ctx = setup();
-        const { session } = ctx;
-        const initial = session.history.document.getState();
-        const canvasShowsCurrentPage = () =>
-          expect(ctx.shown()).toEqual(
-            session.history.document.getState().pages[session.ui.getState().pageId]?.doc,
-          );
+  it(
+    "undo all restores the opened site, redo all the final one, and the canvas follows",
+    () => {
+      fc.assert(
+        fc.property(fc.array(fc.oneof(...commands), { maxLength: 40 }), (sequence) => {
+          const ctx = setup();
+          const { session } = ctx;
+          const initial = session.history.document.getState();
+          const canvasShowsCurrentPage = () =>
+            expect(ctx.shown()).toEqual(
+              session.history.document.getState().pages[session.ui.getState().pageId]?.doc,
+            );
 
-        for (const command of sequence) {
-          command.run(ctx);
+          for (const command of sequence) {
+            command.run(ctx);
+            canvasShowsCurrentPage();
+          }
+          ctx.connection.flush();
+          vi.advanceTimersByTime(TEXT_SESSION_GRACE_MS);
+          // A gesture still open at the end is released as the user lets go.
+          ctx.session.begin("props", "Release").commit();
+          const current = session.history.document.getState();
+          const { entries, cursor } = session.history.state.getState();
+
+          session.history.jumpTo(null);
+          expect(session.history.document.getState()).toEqual(initial);
           canvasShowsCurrentPage();
-        }
-        ctx.connection.flush();
-        vi.advanceTimersByTime(TEXT_SESSION_GRACE_MS);
-        // A gesture still open at the end is released as the user lets go.
-        ctx.session.begin("props", "Release").commit();
-        const current = session.history.document.getState();
-        const { entries, cursor } = session.history.state.getState();
 
-        session.history.jumpTo(null);
-        expect(session.history.document.getState()).toEqual(initial);
-        canvasShowsCurrentPage();
+          session.history.jumpTo(entries[cursor - 1]?.id ?? null);
+          expect(session.history.document.getState()).toEqual(current);
+          canvasShowsCurrentPage();
 
-        session.history.jumpTo(entries[cursor - 1]?.id ?? null);
-        expect(session.history.document.getState()).toEqual(current);
-        canvasShowsCurrentPage();
-
-        // Step by step agrees with jumping.
-        while (session.history.redo()) canvasShowsCurrentPage();
-        const final = session.history.document.getState();
-        while (session.history.undo()) canvasShowsCurrentPage();
-        expect(session.history.document.getState()).toEqual(initial);
-        session.history.jumpTo(entries.at(-1)?.id ?? null);
-        expect(session.history.document.getState()).toEqual(final);
-        ctx.connection.disconnect();
-      }),
-      { numRuns: 200 },
-    );
-    // 200 sequences of up to 40 actions: seconds of work, more under coverage on a busy machine.
-  }, 60_000);
+          // Step by step agrees with jumping.
+          while (session.history.redo()) canvasShowsCurrentPage();
+          const final = session.history.document.getState();
+          while (session.history.undo()) canvasShowsCurrentPage();
+          expect(session.history.document.getState()).toEqual(initial);
+          session.history.jumpTo(entries.at(-1)?.id ?? null);
+          expect(session.history.document.getState()).toEqual(final);
+          ctx.connection.disconnect();
+        }),
+        { numRuns: 200 },
+      );
+      // 200 sequences of up to 40 actions: seconds of work, more under coverage on a busy machine.
+    },
+    scaledTestTimeout(60_000),
+  );
 });
