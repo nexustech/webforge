@@ -63,23 +63,38 @@ async function windowWidth(width: number): Promise<void> {
 }
 
 /**
- * Whether the page's frame fills the room Desktop measures (its content box), to a pixel (Desktop
- * takes its whole pixels). False while the frame still has the width of the window before it last
- * changed, wider (#1084) or narrower (#1108): the layout after a resize comes a moment later.
+ * The room Desktop fills (PH2-18), measured as the engine measures it (`puck-overrides.tsx`): the
+ * width of the canvas's inner box less its padding and borders. With whether that box scrolls, and
+ * the width of the page's frame.
  */
-const frameFills = () =>
+const room = () =>
   page.evaluate((selector) => {
+    const inner = document.querySelector<HTMLElement>(selector);
     const frame = document.querySelector<HTMLIFrameElement>(".editor__canvas iframe");
-    const room = document.querySelector<HTMLElement>(selector);
-    const width = frame?.contentWindow?.innerWidth;
-    if (width === undefined || room === null) return false;
-    const style = getComputedStyle(room);
-    const inner =
-      room.clientWidth -
-      Number.parseFloat(style.paddingLeft) -
-      Number.parseFloat(style.paddingRight);
-    return Math.abs(inner - width) <= 1;
+    if (inner === null) return null;
+    const style = getComputedStyle(inner);
+    const px = (name: string) => Number.parseFloat(style.getPropertyValue(name)) || 0;
+    return {
+      width:
+        inner.getBoundingClientRect().width -
+        px("padding-left") -
+        px("padding-right") -
+        px("border-left-width") -
+        px("border-right-width"),
+      scrolls: inner.scrollHeight > inner.clientHeight,
+      frameWidth: frame?.contentWindow?.innerWidth,
+    };
   }, CANVAS_INNER);
+
+/**
+ * Whether the page's frame fills the room, to a pixel (Desktop takes its whole pixels). False while
+ * the frame still has the width of the window before it last changed, wider (#1084) or narrower
+ * (#1108): the layout after a resize comes a moment later.
+ */
+const frameFills = async () => {
+  const measured = await room();
+  return measured?.frameWidth !== undefined && Math.abs(measured.width - measured.frameWidth) <= 1;
+};
 
 /**
  * The page's width once Desktop fills the canvas at 100% (PH2-18): its frame fills the room, and
@@ -238,13 +253,10 @@ test("lays a long page out in Desktop view without overflowing sideways, its scr
   // The frame scrolls itself, like a browser window; nothing spills sideways.
   expect(frame).toMatchObject({ scrolls: true, overflowsSideways: false });
   // The box Desktop measures never scrolls, so its room, and the page's width, stay put.
-  const room = await page.evaluate((selector) => {
-    const inner = document.querySelector(selector) as HTMLElement;
-    return { scrolls: inner.scrollHeight > inner.clientHeight, width: inner.clientWidth };
-  }, CANVAS_INNER);
+  const measured = await room();
+  expect(measured?.scrolls).toBe(false);
   // Desktop takes the room's whole pixels: a fractional box can round one either way.
-  expect(room.scrolls).toBe(false);
-  expect(Math.abs(room.width - frame.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs((measured?.width ?? 0) - frame.width)).toBeLessThanOrEqual(1);
   await expect.poll(size).toMatch(new RegExp(`^${frame.width} × [0-9]+ @ 100%$`));
 });
 
