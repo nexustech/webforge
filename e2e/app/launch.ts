@@ -148,15 +148,24 @@ export async function launchDesktopApp(
   ];
   if (temporary.length > 0) {
     app.on("close", () => {
-      for (const folder of temporary) {
-        // Best effort: after a killed app, its helper processes can hold files for a moment.
-        rm(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => {
-          // Left in the temp folder; the OS cleans it up eventually.
-        });
-      }
+      for (const folder of temporary) void removeWhenFree(folder);
     });
   }
   return closingWithin(app);
+}
+
+/**
+ * Removes `folder`, a test's temporary folder, once nothing holds it, and never fails (#1112).
+ * After a close, Electron's own process can still hold the user data as it ends: on Windows,
+ * Playwright starts Electron in a shell, the process a close waits for and kills, and on a busy
+ * computer Electron's process took up to two minutes more to end once killed, keeping its `DIPS`
+ * database open. It retries for about that long, 200 ms more between each try; a folder still held
+ * after that is left in the temp folder, which the OS cleans up eventually.
+ */
+export function removeWhenFree(folder: string): Promise<void> {
+  return rm(folder, { recursive: true, force: true, maxRetries: 40, retryDelay: 200 }).catch(() => {
+    // Left in the temp folder.
+  });
 }
 
 /**

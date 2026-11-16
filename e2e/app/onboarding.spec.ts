@@ -1,5 +1,4 @@
 import { mkdtempSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
@@ -8,6 +7,7 @@ import { clickOnCanvas } from "./canvas-click.js";
 import {
   APP_START_TIMEOUT_MS,
   launchDesktopApp,
+  removeWhenFree,
   type WebforgeApp,
   waitForCanvas,
 } from "./launch.js";
@@ -28,7 +28,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 /** The tour's card now, by its heading. */
@@ -83,7 +83,10 @@ test("offers the tour after the quick start, and shows the three steps beside th
   await below(preview, page.getByRole("button", { name: "Preview", exact: true }));
   await preview.getByRole("button", { name: "Next" }).click();
   const publish = tourCard(page, "Put it online");
-  await below(publish, page.getByRole("button", { name: "Publish…", exact: true }));
+  await below(
+    publish,
+    page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }),
+  );
   await publish.getByRole("button", { name: "Next" }).click();
 
   // Where help is, centred; Done closes it.

@@ -4,14 +4,14 @@ id: publish
 title: Publish
 summary: Put your website on your web host or on Netlify, and update it with one click whenever you change something.
 related: [export, site-check, site-settings, version-history]
-updated: 2026-11-15
+updated: 2026-11-16
 ---
 
 # Publish
 
 **Publish** puts your website on your web host, or on Netlify, for you, and after that sends only what changed. Where it goes is called a **publish destination**: your web host's address, your user name and the folder it serves, or your Netlify site. Set it up once, then publish with one click.
 
-Click **Publish** in the title bar, choose **File › Publish…**, or press Ctrl+U (Cmd+U on a Mac) when you're not typing text.
+Click **Publish**, the filled button at the right of the title bar (the cloud, in a narrow window), choose **File › Publish…**, or press Ctrl+U (Cmd+U on a Mac) when you're not typing text.
 
 ## Choosing a web host
 

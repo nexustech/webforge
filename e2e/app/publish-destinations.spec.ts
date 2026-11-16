@@ -6,7 +6,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { createSite, type PageId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { startSftpServer } from "../packaged/sftp-server.js";
-import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, removeWhenFree } from "./launch.js";
 
 // A made-up password: the test never touches a real credential.
 const PASSWORD = "test-only-sftp-password";
@@ -27,7 +27,7 @@ test.afterEach(async () => {
   await server?.stop();
   server = undefined;
   await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
-  await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(userData);
 });
 
 /**
@@ -63,7 +63,7 @@ async function openPublish(path: string): Promise<Page> {
   app = await launchDesktopApp({ userDataDir: userData, args: [path] });
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
-  await page.getByRole("button", { name: "Publish…", exact: true }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Publish" })).toBeVisible();
   return page;
 }
@@ -207,7 +207,7 @@ test("publishes the site to an SFTP host, then keeps the version it went live wi
   await live.getByRole("button", { name: "Done" }).click();
 
   // Published again, nothing has changed: nothing is sent.
-  await page.getByRole("button", { name: "Publish…", exact: true }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }).click();
   await page
     .getByRole("dialog", { name: "Publish" })
     .getByRole("button", { name: "Publish to Test host" })
@@ -279,7 +279,7 @@ test("republishes an earlier version, the site as it is left be, and says where 
 
   // The site as it is, without About, goes live first.
   const live = page.getByRole("dialog", { name: "Your site is live" });
-  await page.getByRole("button", { name: "Publish…", exact: true }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }).click();
   await page
     .getByRole("dialog", { name: "Publish" })
     .getByRole("button", { name: "Publish to Test host" })

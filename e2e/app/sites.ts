@@ -49,7 +49,7 @@ export async function exportFromEditor(
   timeout = 30_000,
   code?: "Keep the code" | "Leave it out",
 ): Promise<string> {
-  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Export", exact: true }).click();
   if (code !== undefined) {
     const asked = page.getByRole("alertdialog", {
       name: "This site contains code that will run for your visitors",

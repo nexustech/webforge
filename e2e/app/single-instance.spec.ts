@@ -1,5 +1,4 @@
 import { existsSync, mkdtempSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
@@ -8,6 +7,7 @@ import { placeCaret } from "./caret.js";
 import {
   launchDesktopApp,
   launchSecondInstance,
+  removeWhenFree,
   type WebforgeApp,
   waitForCanvas,
 } from "./launch.js";
@@ -33,7 +33,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");

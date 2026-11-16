@@ -1,11 +1,10 @@
 import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, test } from "@playwright/test";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, removeWhenFree } from "./launch.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // Rolling backups and damaged-file recovery (F-SITE-6, ADR 0003 §4): a site torn by a sync client
@@ -35,7 +34,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 /** The backups Webforge has taken, across all sites. */

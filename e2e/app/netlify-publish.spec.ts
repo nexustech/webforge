@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite, insertPage, newId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, removeWhenFree } from "./launch.js";
 import { type MockNetlify, startMockNetlify } from "./netlify-mock.js";
 
 // Publishing to Netlify (4.2, #70) through 4.5's flow, against a mock of Netlify's API on this
@@ -69,7 +69,7 @@ test.afterEach(async () => {
   await netlify?.close();
   netlify = undefined;
   await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
-  await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(userData);
 });
 
 /** A site with a contact form sending through Netlify Forms, saved at a new path. */
@@ -146,7 +146,9 @@ test("publishes to Netlify sending only what changed, with its forms named, and 
   });
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
-  await expect(page.getByRole("button", { name: "Publish…", exact: true })).toBeEnabled();
+  await expect(
+    page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }),
+  ).toBeEnabled();
   const { sessionId, destinationId } = await addNetlify(page, netlify, siteId);
 
   // The first publish sends every file, and Netlify finds the contact form by its name.
@@ -237,7 +239,9 @@ test("says whether visitors reach the Netlify site or Netlify's login (4.4b's wa
   });
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
-  await expect(page.getByRole("button", { name: "Publish…", exact: true })).toBeEnabled();
+  await expect(
+    page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }),
+  ).toBeEnabled();
   const { sessionId, destinationId } = await addNetlify(page, netlify, siteId);
   const check = () =>
     page.evaluate(
@@ -281,7 +285,9 @@ test("keeps a renamed page's old address working on Netlify, as one undo step wi
   });
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
-  await expect(page.getByRole("button", { name: "Publish…", exact: true })).toBeEnabled();
+  await expect(
+    page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }),
+  ).toBeEnabled();
   const { sessionId, destinationId } = await addNetlify(page, netlify, siteId);
   expect(await publish(page, sessionId, destinationId)).toMatchObject({ status: "published" });
   expect(netlify.file(siteId, "about-us.html")).toContain("About us");

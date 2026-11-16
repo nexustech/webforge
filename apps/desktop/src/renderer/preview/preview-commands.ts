@@ -24,6 +24,8 @@ export type PreviewCommandsDeps = {
   readonly phone: StoreApi<PhoneState>;
   /** Tells the person something went wrong. */
   readonly notify: (message: string) => void;
+  /** Tells the person something worked: the preview opened in their browser (#1009). */
+  readonly tell: (message: string) => void;
   /**
    * Asks about the site's code its owner hasn't written here or confirmed (#649), before a preview
    * runs it in their browser or on their phone.
@@ -54,7 +56,8 @@ export function registerPreviewCommands(
   registry: CommandRegistry,
   deps: PreviewCommandsDeps,
 ): () => void {
-  const { session, library, api, sessionId, phone, notify, confirmCode, onCodeTrusted } = deps;
+  const { session, library, api, sessionId, phone, notify, tell, confirmCode, onCodeTrusted } =
+    deps;
   /** Runs `start` once the owner has said what to do with code they haven't confirmed (#649). */
   const afterCode = (start: () => void) => {
     confirmCode(site())
@@ -148,7 +151,9 @@ export function registerPreviewCommands(
           api
             .open(sessionId(), content(), page())
             .then((opened) => {
-              if (opened === "failed") notify(t("preview.failed"));
+              // The browser may open behind the window: the app says it did (#1009).
+              if (opened === "opened") tell(t("preview.opened"));
+              else notify(t("preview.failed"));
             })
             .catch((error: unknown) => {
               reportFailure("preview.open", error);
