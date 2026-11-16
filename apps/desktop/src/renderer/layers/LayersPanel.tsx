@@ -132,9 +132,9 @@ export function LayersPanel({
   }
 
   const selected = selectedRow?.layer;
-  // Moving, copying, hiding and deleting change the layout, so they're off without a selection or
-  // while Content mode locks it (M3): their tooltips say which (#1010).
-  const off =
+  // Hiding changes the layout, so it's off without a selection or while Content mode locks it
+  // (M3), and its tooltip says which (#1010). The canvas commands' reasons are their own.
+  const hideOff =
     selected === undefined
       ? t("shell.disabled.noSelection")
       : layoutLocked
@@ -215,13 +215,25 @@ export function LayersPanel({
         aria-label={t("layers.toolbar")}
         className="flex h-8 shrink-0 items-center gap-0.5 border-t border-border px-1"
       >
-        <ToolButton label={t("canvas.moveUp")} onClick={actions.moveUp} reason={off}>
+        <ToolButton
+          label={t("canvas.moveUp")}
+          onClick={actions.moveUp}
+          reason={actions.reasons?.moveUp}
+        >
           <ArrowUpIcon />
         </ToolButton>
-        <ToolButton label={t("canvas.moveDown")} onClick={actions.moveDown} reason={off}>
+        <ToolButton
+          label={t("canvas.moveDown")}
+          onClick={actions.moveDown}
+          reason={actions.reasons?.moveDown}
+        >
           <ArrowDownIcon />
         </ToolButton>
-        <ToolButton label={t("canvas.duplicate")} onClick={actions.duplicate} reason={off}>
+        <ToolButton
+          label={t("canvas.duplicate")}
+          onClick={actions.duplicate}
+          reason={actions.reasons?.duplicate}
+        >
           <CopyIcon />
         </ToolButton>
         <ToolButton
@@ -235,7 +247,7 @@ export function LayersPanel({
               ? undefined
               : () => actions.setShown(selected.id, selected.hidden ? "shown" : "hidden")
           }
-          reason={off}
+          reason={hideOff}
         >
           {selected?.hidden === true ? <EyeOffIcon /> : <EyeIcon />}
         </ToolButton>
@@ -246,7 +258,11 @@ export function LayersPanel({
         >
           <PencilIcon />
         </ToolButton>
-        <ToolButton label={t("canvas.delete")} onClick={actions.remove} reason={off}>
+        <ToolButton
+          label={t("canvas.delete")}
+          onClick={actions.remove}
+          reason={actions.reasons?.remove}
+        >
           <Trash2Icon />
         </ToolButton>
         <span className="flex-1" />
