@@ -8,8 +8,6 @@ export const shell = {
   // Their title-bar buttons' tooltips, naming the step (#1011): "Undo Edited Heading text".
   "editor.undo.step": "Undo {step}",
   "editor.redo.step": "Redo {step}",
-  // A title-bar button whose command isn't there yet, as on the start screen.
-  "shell.disabled.noSite": "Open a site first.",
   // Content mode's lock (M3) on a command that changes the layout.
   "shell.disabled.layoutLocked": "Switch to Design mode to change the layout.",
   // A control that acts on the selected element, with nothing selected.
@@ -55,8 +53,6 @@ export const shell = {
   "shell.menu.help": "Help",
 
   // Title-bar buttons: short labels; the command's full label is in its tooltip.
-  "shell.new": "New",
-  "shell.open": "Open",
   "shell.preview": "Preview",
   // The preview server's answers in the browser (3.2): a page it doesn't have, and one asked for
   // before the first build was ready.
@@ -64,6 +60,7 @@ export const shell = {
     "This page isn't in the preview. Go back to the home page, or open Preview again from {appName}.",
   "preview.notReady": "The preview isn't ready yet. Reload this page in a moment.",
   // Preview and Preview on Phone (3.2, F-PV-1).
+  "preview.opened": "Opened in your browser",
   "preview.failed": "{appName} couldn't open the preview. Try again in a moment.",
   "preview.phone.title": "Preview on your phone",
   "preview.phone.description":

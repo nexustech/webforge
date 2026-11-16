@@ -123,7 +123,9 @@ describe("App", () => {
       ),
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Export Site…" }));
+    await userEvent.click(
+      within(screen.getByRole("banner")).getByRole("button", { name: "Export", exact: true }),
+    );
     // The starter site has no web address yet (X3).
     await userEvent.click(await screen.findByRole("button", { name: "Export without it" }));
     await userEvent.click(await screen.findByRole("button", { name: "Export…" }));

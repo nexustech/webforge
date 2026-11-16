@@ -21,56 +21,64 @@ export type CommandButtonProps = {
   readonly icon: ReactNode;
   /** A short visible label ("Export"); without it the button shows only its icon. */
   readonly text?: string;
-  /** An icon-only button's name until its command is registered (then the command's label). */
-  readonly label?: string;
+  /**
+   * With `text`: shown only while the title bar (its container, `title-bar`) is at least 1180 px
+   * wide, icon only below that, the button still named by it (#1009). Windows 1280 px wide and up
+   * always show it; at 960 px nothing is cut off.
+   */
+  readonly textWhenWide?: boolean;
   readonly className?: string;
   readonly size?: ButtonProps["size"];
+  /** Ghost unless given: Publish is the title bar's one filled button (#1009). */
+  readonly variant?: ButtonProps["variant"];
 };
 
 /**
  * A title-bar button for a registered command. Its tooltip gives the command's full label and
- * shortcut, and while it's disabled why (#1010): the command's reason, or "Open a site first" while
- * the command is missing (not contributed yet, as on the start screen). Commands that name it as
- * theirs to go with (`more`) make it a split button, with a caret that lists them.
+ * shortcut, and while it's disabled why (#1010). Nothing while the command is missing (not
+ * contributed yet, as Undo and Publish aren't on the start screen, #1009). Commands that name it
+ * as theirs to go with (`more`) make it a split button, with a caret that lists them.
  */
 export function CommandButton({
   commandId,
   icon,
   text,
-  label,
+  textWhenWide = false,
   className,
   size,
+  variant = "ghost",
 }: CommandButtonProps) {
   const registry = useCommandRegistry();
   const commands = useCommands();
   const command = commands.find((each) => each.id === commandId);
   const more = commands.filter((each) => each.more === commandId);
-  const disabled = command === undefined || command.enabled === false;
-  const name = command?.label ?? label;
+  if (command === undefined) return null;
   const tip =
-    command === undefined
-      ? (text ?? label)
-      : command.shortcut === undefined
-        ? (command.tooltip ?? command.label)
-        : `${command.tooltip ?? command.label} (${formatShortcut(command.shortcut)})`;
-  const reason = command === undefined ? t("shell.disabled.noSite") : reasonOf(command);
+    command.shortcut === undefined
+      ? (command.tooltip ?? command.label)
+      : `${command.tooltip ?? command.label} (${formatShortcut(command.shortcut)})`;
+  const collapses = text !== undefined && textWhenWide;
 
-  // Always some text (a missing command has its reason), so the button keeps its tooltip, and
-  // `disabled` is always given: neither comes and goes, which would remount it.
+  // `disabled` is always given, so it doesn't come and go, which would remount the button.
   const button = (
     <Button
-      variant="ghost"
-      size={size ?? (text === undefined ? "icon" : "default")}
-      className={cn("[&_svg]:transition-colors", className)}
-      disabled={disabled}
-      tooltip={tipWithReason(tip, reason)}
+      variant={variant}
+      size={size ?? (text === undefined || collapses ? "icon" : "default")}
+      className={cn(
+        "[&_svg]:transition-colors",
+        // Written out in full: Tailwind finds its classes in the source as they are.
+        collapses && "@min-[1180px]/title-bar:w-auto @min-[1180px]/title-bar:px-2.5",
+        className,
+      )}
+      disabled={command.enabled === false}
+      tooltip={tipWithReason(tip, reasonOf(command))}
       // Found by the tour, which points at it (OB-3).
       data-command={commandId}
-      aria-label={text === undefined ? name : undefined}
+      aria-label={text === undefined ? command.label : collapses ? text : undefined}
       onClick={() => registry.run(commandId)}
     >
       {icon}
-      {text}
+      {collapses ? <span className="hidden @min-[1180px]/title-bar:inline">{text}</span> : text}
     </Button>
   );
   if (more.length === 0) {
@@ -79,7 +87,7 @@ export function CommandButton({
   return (
     <span className="inline-flex">
       {button}
-      <MoreMenu name={label ?? text ?? name ?? commandId} commands={more} />
+      <MoreMenu name={text ?? command.label} commands={more} />
     </span>
   );
 }

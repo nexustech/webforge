@@ -222,17 +222,14 @@ export function App({
                       <CommandButton
                         commandId={COMMAND_IDS.toggleLeftPanels}
                         icon={<PanelLeftIcon />}
-                        label={t("command.toggleLeftPanels")}
                       />
                       <CommandButton
                         commandId={COMMAND_IDS.toggleDrawer}
                         icon={<PanelBottomIcon />}
-                        label={t("command.toggleDrawer")}
                       />
                       <CommandButton
                         commandId={COMMAND_IDS.toggleRightPanels}
                         icon={<PanelRightIcon />}
-                        label={t("command.toggleRightPanels")}
                       />
                       <div className="mx-1 h-5 w-px bg-border" aria-hidden />
                     </>
