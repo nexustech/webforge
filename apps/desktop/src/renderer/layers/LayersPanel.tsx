@@ -274,7 +274,7 @@ function ToolButton({
       variant="ghost"
       size="icon-sm"
       aria-label={label}
-      title={label}
+      tooltip={label}
       disabled={onClick === undefined}
       onClick={onClick}
     >

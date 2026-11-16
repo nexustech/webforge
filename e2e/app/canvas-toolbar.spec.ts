@@ -44,13 +44,43 @@ const size = async () =>
     (await readout().getAttribute("aria-label")) ?? "",
   )?.[1] ?? "";
 
-/** Sets the window's content to `width` × 900 and waits until Desktop has taken the new room. */
+/**
+ * Sets the window's content to `width` × 900 and waits until the editor's page has that size. The
+ * canvas lays out again after that: a check of the page's width must tell the new layout from the
+ * one before, which on a busy computer is still there for a while (#1084), as
+ * {@link desktopWidth} does.
+ */
 async function windowWidth(width: number): Promise<void> {
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.unmaximize());
   await app.evaluate(
     ({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0]?.setContentSize(size, 900),
     width,
   );
+  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(width);
+}
+
+/** Whether the page's frame fits in the canvas: false while it still has a wider window's width. */
+const frameFits = () =>
+  page.evaluate(() => {
+    const frame = document.querySelector(".editor__canvas iframe")?.getBoundingClientRect();
+    const canvas = document.querySelector(".editor__canvas")?.getBoundingClientRect();
+    return frame !== undefined && canvas !== undefined && frame.width <= canvas.width + 1;
+  });
+
+/**
+ * The page's width once Desktop fills the canvas at 100% (PH2-18): its frame fits in the canvas,
+ * and the readout and the page agree. A width taken before then can be the window's before it
+ * last changed (#1084): on a 3440 px screen, the maximised window's 2910 px.
+ */
+async function desktopWidth(): Promise<number> {
+  await expect
+    .poll(async () => {
+      const width = await pageWidth();
+      const shown = await size();
+      return (await frameFits()) && shown.startsWith(`${width} × `) && shown.endsWith(" @ 100%");
+    })
+    .toBe(true);
+  return pageWidth();
 }
 
 test("switches device views and widths at once, without undo steps", async () => {
@@ -138,22 +168,14 @@ test("keeps a zoom above Fit, though the page then overflows the canvas (#134)",
 
 test("fills the canvas in Desktop view as the window grows and shrinks, and keeps fixed widths (PH2-18)", async () => {
   const width = toolbar().getByRole("spinbutton", { name: "Canvas width in pixels" });
-  /** The readout's width, once it and the page agree: the window may resize in steps. */
-  const settledWidth = async () => {
-    await expect.poll(async () => (await size()).startsWith(`${await pageWidth()} × `)).toBe(true);
-    return pageWidth();
-  };
 
   await windowWidth(1800);
-  await expect.poll(pageWidth).toBeGreaterThan(1100);
-  const wide = await settledWidth();
-  await expect.poll(size).toMatch(/ @ 100%$/);
+  const wide = await desktopWidth();
+  expect(wide).toBeGreaterThan(1100);
   await expect(width).toHaveValue(String(wide));
 
   await windowWidth(2200);
-  await expect.poll(pageWidth).toBeGreaterThan(wide);
-  await settledWidth();
-  await expect.poll(size).toMatch(/ @ 100%$/);
+  expect(await desktopWidth()).toBeGreaterThan(wide);
 
   // A window narrower than the desktop layout: Desktop stays 1024 px, zoomed out to fit.
   await windowWidth(1100);
@@ -183,6 +205,9 @@ test("lays a long page out in Desktop view without overflowing sideways, its scr
   }
   // Wide enough for a page wider than Desktop's least, 1024 px, beside two 300 px columns (#1007).
   await windowWidth(1800);
+  // Its scrollbar is inside the frame, so the readout counts 15 px more than the page has: the
+  // frame fitting the canvas tells the new layout from the old (#1084).
+  await expect.poll(frameFits).toBe(true);
   await expect.poll(pageWidth).toBeGreaterThan(1100);
 
   const frame = await canvas()

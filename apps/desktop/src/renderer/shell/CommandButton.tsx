@@ -7,13 +7,11 @@ import {
   DropdownMenuItem,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { ChevronDownIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { CommandLabel, reasonOf, reasonRowProps } from "./CommandLabel.js";
 import { useCommandRegistry, useCommands } from "./command-context.js";
 import { type Command, formatShortcut } from "./commands.js";
 
@@ -31,8 +29,9 @@ export type CommandButtonProps = {
 
 /**
  * A title-bar button for a registered command. Its tooltip gives the command's full label and
- * shortcut. Disabled while the command is missing (not contributed yet) or disabled. Commands that
- * name it as theirs to go with (`more`) make it a split button, with a caret that lists them.
+ * shortcut, and while it's disabled why (#1010): the command's reason, or "Open a site first" while
+ * the command is missing (not contributed yet, as on the start screen). Commands that name it as
+ * theirs to go with (`more`) make it a split button, with a caret that lists them.
  */
 export function CommandButton({
   commandId,
@@ -54,14 +53,26 @@ export function CommandButton({
       : command.shortcut === undefined
         ? command.label
         : `${command.label} (${formatShortcut(command.shortcut)})`;
+  const reason = command === undefined ? t("shell.disabled.noSite") : reasonOf(command);
 
+  // Always some text (a missing command has its reason), so the button keeps its tooltip, and
+  // `disabled` is always given: neither comes and goes, which would remount it.
   const button = (
     <Button
       variant="ghost"
       size={size ?? (text === undefined ? "icon" : "default")}
-      // A disabled button mutes its colour-coded icon too.
-      className={cn("[&_svg]:transition-colors [&:disabled_svg]:text-disabled", className)}
+      className={cn("[&_svg]:transition-colors", className)}
       disabled={disabled}
+      tooltip={
+        tip === undefined || reason === undefined ? (
+          (tip ?? reason)
+        ) : (
+          <span className="flex flex-col">
+            <span>{tip}</span>
+            <span>{reason}</span>
+          </span>
+        )
+      }
       // Found by the tour, which points at it (OB-3).
       data-command={commandId}
       aria-label={text === undefined ? name : undefined}
@@ -71,24 +82,12 @@ export function CommandButton({
       {text}
     </Button>
   );
-  const withTip =
-    tip === undefined ? (
-      button
-    ) : (
-      <Tooltip>
-        {/* A disabled button gets no pointer events, so the tooltip hangs on a wrapper. */}
-        <TooltipTrigger asChild>
-          <span className="inline-flex">{button}</span>
-        </TooltipTrigger>
-        <TooltipContent>{tip}</TooltipContent>
-      </Tooltip>
-    );
   if (more.length === 0) {
-    return withTip;
+    return button;
   }
   return (
     <span className="inline-flex">
-      {withTip}
+      {button}
       <MoreMenu name={label ?? text ?? name ?? commandId} commands={more} />
     </span>
   );
@@ -121,9 +120,10 @@ function MoreMenu({
           <DropdownMenuItem
             key={command.id}
             disabled={command.enabled === false}
+            {...reasonRowProps(command)}
             onSelect={() => void registry.run(command.id)}
           >
-            {command.label}
+            <CommandLabel command={command} />
             {command.shortcut === undefined ? null : (
               <DropdownMenuShortcut>{formatShortcut(command.shortcut)}</DropdownMenuShortcut>
             )}

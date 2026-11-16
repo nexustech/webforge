@@ -15,6 +15,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
   toast,
+  WithTooltip,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { FileMeta, ImageMeta, MediaId, MediaMeta } from "@webforge/model";
@@ -374,17 +375,18 @@ function ImageDetails({ image, session, imageUrl }: ImageDetailsProps) {
               }}
             />
           )}
-          <button
-            type="button"
-            aria-label={t("site.media.focalAt", { value: focalText })}
-            aria-describedby={ids.focalHint}
-            title={focalText}
-            className="absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-accent shadow outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            style={{ left: `${focal.x * 100}%`, top: `${focal.y * 100}%` }}
-            onKeyDown={moveWithKeys}
-            // The click on the image below moves the point; the marker itself stays put.
-            onPointerDown={(event) => event.stopPropagation()}
-          />
+          <WithTooltip tooltip={focalText}>
+            <button
+              type="button"
+              aria-label={t("site.media.focalAt", { value: focalText })}
+              aria-describedby={ids.focalHint}
+              className="absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-accent shadow outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              style={{ left: `${focal.x * 100}%`, top: `${focal.y * 100}%` }}
+              onKeyDown={moveWithKeys}
+              // The click on the image below moves the point; the marker itself stays put.
+              onPointerDown={(event) => event.stopPropagation()}
+            />
+          </WithTooltip>
         </div>
         <p id={ids.focalHint} className="m-0 text-xs text-muted-foreground">
           {t("site.media.focalHint")}

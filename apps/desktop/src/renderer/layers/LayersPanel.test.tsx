@@ -9,6 +9,24 @@ import { dragRow, pickUp } from "../testing/row-drag.js";
 import { LayersPanel, type LayersPanelActions, type LayersPanelProps } from "./LayersPanel.js";
 import { dropIndex } from "./layer-rows.js";
 
+/** The tooltip `element` shows on pointing at it (#1011). */
+async function tooltipOf(element: Element | null | undefined): Promise<string | null> {
+  if (element === null || element === undefined) return null;
+  await userEvent.hover(element);
+  const text = (await screen.findByRole("tooltip")).textContent;
+  // Leaving the mark keeps it open while the pointer could be on its way to it: Escape closes it.
+  await userEvent.keyboard("{Escape}");
+  await waitFor(() => expect(screen.queryByRole("tooltip")).toBeNull());
+  return text;
+}
+
+/** The first row's arrow, for the mouse: hidden from screen readers, so it has no name. */
+function firstArrow(): HTMLElement {
+  const arrow = screen.getAllByRole("treeitem")[0]?.querySelector("button");
+  if (arrow === null || arrow === undefined) throw new Error("no arrow");
+  return arrow;
+}
+
 /** The platform's Mod key: Ctrl, or Cmd on a Mac. */
 const MOD = isMac() ? { metaKey: true } : { ctrlKey: true };
 
@@ -102,8 +120,21 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(noted?.textContent).toBe("Heading, has a note");
     expect(noted?.getAttribute("aria-description")).toBe("Swap this photo");
     expect(plain?.hasAttribute("aria-description")).toBe(false);
-    expect(noted?.querySelector('[title="Swap this photo"]')).not.toBeNull();
     expect(plain?.textContent).toBe("Heading");
+  });
+
+  it("shows a note's text on pointing at its mark (#1011)", async () => {
+    render(
+      <LayersPanel
+        layers={[layer("a", { note: "Swap this photo" })]}
+        selectedId={null}
+        alsoSelected={[]}
+        actions={setUpActions()}
+        layoutLocked={false}
+      />,
+    );
+    const mark = screen.getByText(", has a note").parentElement;
+    expect(await tooltipOf(mark)).toBe("Swap this photo");
   });
 
   it("shows the tree with levels, names, the selection and hidden layers", () => {
@@ -412,11 +443,7 @@ describe("LayersPanel (F-ED-12)", () => {
     for (const name of ["Move up", "Move down", "Duplicate", "Delete"]) {
       await userEvent.click(screen.getByRole("button", { name }));
     }
-    await userEvent.click(
-      screen
-        .getByRole("toolbar", { name: "Layer actions" })
-        .querySelector("[title=\"Don't publish 'Hours'\"]") as HTMLElement,
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Don't publish 'Hours'" }));
     await userEvent.click(screen.getByRole("button", { name: "Rename" }));
 
     expect(actions.moveUp).toHaveBeenCalledOnce();
@@ -462,7 +489,7 @@ describe("LayersPanel (F-ED-12)", () => {
       expect(first()?.getAttribute("aria-expanded")).toBe("true");
       expect(screen.getAllByRole("treeitem")[4]?.getAttribute("aria-expanded")).toBeNull();
 
-      await userEvent.click(screen.getAllByTitle("Collapse Section")[0] as HTMLElement);
+      await userEvent.click(firstArrow());
       expect(shown()).toEqual(["Section", "Section"]);
       expect(first()?.getAttribute("aria-expanded")).toBe("false");
       expect(screen.getByRole("treeitem", { name: "Section", expanded: false })).toBeTruthy();
@@ -507,7 +534,7 @@ describe("LayersPanel (F-ED-12)", () => {
       const view = render(<LayersPanel {...props} selectedId="a" />);
 
       // Collapsing the selected layer's parent hides it (#223 review).
-      await userEvent.click(screen.getAllByTitle("Collapse Section")[0] as HTMLElement);
+      await userEvent.click(firstArrow());
       expect(shown()).toEqual(["Section", "Section"]);
 
       // Selected elsewhere (the canvas): the layers it is in open, once.
@@ -597,7 +624,7 @@ describe("LayersPanel (F-ED-12)", () => {
       expect(document.activeElement).toBe(field);
     });
 
-    it("marks locked and animated layers, as it marks linked and hidden ones", () => {
+    it("marks locked and animated layers, as it marks linked and hidden ones", async () => {
       render(
         <LayersPanel
           layers={[
@@ -626,8 +653,10 @@ describe("LayersPanel (F-ED-12)", () => {
         "Animated Text",
         "Linked copy of 'Hours' Section",
       ]);
-      expect(screen.getByTitle("Locked: it can't be moved or deleted")).toBeTruthy();
-      expect(screen.getByTitle("Animated")).toBeTruthy();
+      const locked = screen.getByText("Locked: it can't be moved or deleted").parentElement;
+      const animated = screen.getByText("Animated").parentElement;
+      expect(await tooltipOf(locked)).toBe("Locked: it can't be moved or deleted");
+      expect(await tooltipOf(animated)).toBe("Animated");
     });
   });
 });

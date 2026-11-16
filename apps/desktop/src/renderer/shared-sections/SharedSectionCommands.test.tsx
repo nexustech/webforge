@@ -43,7 +43,8 @@ function setUp(siteWide?: { confirmSiteWide: () => Promise<boolean> }) {
     siteWide,
   );
   const enabled = (id: string) => commands.get(id)?.enabled;
-  return { session, commands, askName, beforeAction, registered, enabled };
+  const reason = (id: string) => commands.get(id)?.disabledReason;
+  return { session, commands, askName, beforeAction, registered, enabled, reason };
 }
 
 /** Saves the selected section as shared section "Hours", which selects it in its copy. */
@@ -55,27 +56,34 @@ function saveAndSelectCopy(session: EditorSession) {
 
 describe("the shared-section commands (1.29, F-ED-23)", () => {
   it("offers Save for a section of the page, and the others for a copy", () => {
-    const { session, enabled } = setUp();
+    const { session, enabled, reason } = setUp();
 
     expect(enabled(SAVE)).toBe(true);
     expect([enabled(RENAME), enabled(DETACH), enabled(DELETE)]).toEqual([false, false, false]);
+    // Each says why it's off (#1010).
+    expect([reason(RENAME), reason(DETACH), reason(DELETE)]).toEqual(
+      Array(3).fill("Select a shared section on this page first."),
+    );
 
     const selected = saveAndSelectCopy(session);
     expect(selected).toBeDefined();
     expect(enabled(SAVE)).toBe(false);
+    expect(reason(SAVE)).toBe("Select a section of this page to save it.");
     expect([enabled(RENAME), enabled(DETACH), enabled(DELETE)]).toEqual([true, true, true]);
   });
 
   it("turns them all off while the layout is locked, or several elements are selected", () => {
-    const { session, registered, enabled } = setUp();
+    const { session, registered, enabled, reason } = setUp();
 
     registered.setLayoutLocked(true);
     expect(enabled(SAVE)).toBe(false);
+    expect(reason(SAVE)).toBe("Switch to Design mode to change the layout.");
     registered.setLayoutLocked(false);
     expect(enabled(SAVE)).toBe(true);
     // Another element selected too (1.31).
     session.toggleSelected("heading-1");
     expect(enabled(SAVE)).toBe(false);
+    expect(reason(SAVE)).toBe("Select just one section.");
   });
 
   it("asks for a name to save under, the section's own, and for one to rename to", () => {

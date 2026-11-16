@@ -26,7 +26,7 @@ export type HandOffOptions = {
 
 /**
  * Sites handed to the running app (1.8, P1): a `.wforge` double-clicked while Webforge is open
- * starts a second instance, which passes its command line here and quits; macOS sends
+ * starts a second instance, which passes its command line here and exits; macOS sends
  * `open-file` instead. The open site is saved first, then the new one replaces it in the same
  * window. Hand-offs run one at a time, in the order they arrive, so two quick double-clicks
  * never open sites over each other.

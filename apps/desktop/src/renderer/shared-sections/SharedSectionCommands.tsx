@@ -13,7 +13,7 @@ import {
   savableSection,
   saveAsSharedSection,
 } from "../editor/shared-sections.js";
-import type { CommandRegistry } from "../shell/commands.js";
+import { availability, type CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { NameDialog } from "../shell/NameDialog.js";
 
@@ -130,17 +130,29 @@ export function registerSharedSectionCommands(
     const site = session.history.document.getState();
     const { pageId, nodeId, others = [] } = session.ui.getState();
     // One section at a time: not while several elements are selected (1.31).
-    const one = !locked && others.length === 0;
-    const inCopy = one && selectedCopy() !== undefined;
-    registry.update(SHARED_SECTION_COMMANDS.save, {
-      enabled: one && savableSection(site, pageId, nodeId) !== undefined,
-    });
+    const notOne = locked
+      ? t("shell.disabled.layoutLocked")
+      : others.length > 0
+        ? t("canvas.sharedSection.selectOne")
+        : undefined;
+    registry.update(
+      SHARED_SECTION_COMMANDS.save,
+      availability(
+        notOne ??
+          (savableSection(site, pageId, nodeId) === undefined
+            ? t("canvas.saveSharedSection.select")
+            : undefined),
+      ),
+    );
+    const inCopy = availability(
+      notOne ?? (selectedCopy() === undefined ? t("canvas.sharedSection.selectCopy") : undefined),
+    );
     for (const id of [
       SHARED_SECTION_COMMANDS.rename,
       SHARED_SECTION_COMMANDS.detach,
       SHARED_SECTION_COMMANDS.delete,
     ]) {
-      registry.update(id, { enabled: inCopy });
+      registry.update(id, inCopy);
     }
   };
   update();

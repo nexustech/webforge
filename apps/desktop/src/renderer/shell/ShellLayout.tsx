@@ -14,6 +14,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  WithTooltip,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { SearchIcon } from "lucide-react";
@@ -224,7 +225,7 @@ function PanelTabs({
             size="icon-sm"
             className="mr-1"
             aria-label={t("panels.search", { panel: active.title })}
-            title={t("panels.search", { panel: active.title })}
+            tooltip={t("panels.search", { panel: active.title })}
             onClick={() => search.focus()}
           >
             <SearchIcon />
@@ -270,22 +271,22 @@ function PanelStrip({
       className="flex h-full flex-col items-center gap-1 bg-panel py-2"
     >
       {panels.map((panel) => (
-        <button
-          key={panel.id}
-          type="button"
-          aria-label={panel.title}
-          title={panel.title}
-          className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-          onClick={() => registry.show(panel.id)}
-        >
-          {panel.icon === undefined ? (
-            <span aria-hidden className="text-xs font-semibold">
-              {panel.title.slice(0, 1)}
-            </span>
-          ) : (
-            <panel.icon className="size-4" />
-          )}
-        </button>
+        <WithTooltip key={panel.id} tooltip={panel.title}>
+          <button
+            type="button"
+            aria-label={panel.title}
+            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+            onClick={() => registry.show(panel.id)}
+          >
+            {panel.icon === undefined ? (
+              <span aria-hidden className="text-xs font-semibold">
+                {panel.title.slice(0, 1)}
+              </span>
+            ) : (
+              <panel.icon className="size-4" />
+            )}
+          </button>
+        </WithTooltip>
       ))}
     </nav>
   );

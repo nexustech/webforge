@@ -128,7 +128,7 @@ export function CanvasToolbar({
               size="icon"
               variant="ghost"
               aria-label={label}
-              title={label}
+              tooltip={label}
               disabled={disabled}
               onClick={() => onZoomChange(next)}
             >
@@ -140,7 +140,7 @@ export function CanvasToolbar({
             size="icon"
             variant="ghost"
             aria-label={t("canvasToolbar.rotate")}
-            title={t("canvasToolbar.rotate")}
+            tooltip={t("canvasToolbar.rotate")}
             disabled={rotated === undefined}
             onClick={rotate}
           >
@@ -242,7 +242,7 @@ export function CanvasToolbar({
               key={id}
               value={id}
               aria-label={t(`device.${id}`)}
-              title={t(`device.${id}`)}
+              tooltip={t(`device.${id}`)}
             >
               <Icon />
             </ToggleGroupItem>
@@ -399,7 +399,8 @@ function DeviceMenu({
             size={compact ? "icon" : "sm"}
             variant="ghost"
             className="text-xs whitespace-nowrap tabular-nums"
-            title={compact ? (readout ?? t("canvasToolbar.devices")) : undefined}
+            // In both sizes, so the button doesn't remount (closing its menu) as the toolbar narrows.
+            tooltip={compact && readout !== undefined ? readout : t("canvasToolbar.devices")}
             aria-label={
               readout === undefined
                 ? t("canvasToolbar.devices")

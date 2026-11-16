@@ -409,13 +409,15 @@ describe("startApp", () => {
     );
   });
 
-  it("only quits as a second launch, having handed its site over", async () => {
+  it("only exits as a second launch, at once, having handed its site over (#1084)", async () => {
     const fake = fakeElectron({ primary: false });
 
     const started = fake.start();
     await Promise.race([started, new Promise((resolve) => setTimeout(resolve, 20))]);
 
-    expect(fake.app.quit).toHaveBeenCalled();
+    // Not quit(): that ends the process only once Electron is ready, up to a minute later.
+    expect(fake.app.exit).toHaveBeenCalledWith(0);
+    expect(fake.app.quit).not.toHaveBeenCalled();
     expect(fake.startCrashReports).toHaveBeenCalledWith(false);
     expect(fake.windows).toHaveLength(0);
   });
