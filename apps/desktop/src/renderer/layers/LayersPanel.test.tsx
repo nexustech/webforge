@@ -437,6 +437,17 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(dropIndex(2, 0, true)).toBe(1);
   });
 
+  it("says in the toolbar's tooltips why a button is off in Content mode (#1010)", async () => {
+    render(<LayersPanel layers={LAYERS} selectedId="a" actions={setUpActions()} layoutLocked />);
+    const moveUp = screen.getByRole("button", { name: "Move up" });
+    expect(await tooltipOf(moveUp.parentElement)).toBe(
+      "Move upSwitch to Design mode to change the layout.",
+    );
+    // Renaming isn't locked: on, so just its name.
+    const rename = screen.getByRole("button", { name: "Rename" });
+    expect(await tooltipOf(rename.parentElement)).toBe("Rename");
+  });
+
   it("runs the toolbar on the selected layer, and disables what isn't available", async () => {
     const { actions } = setUp("b");
 
@@ -452,12 +463,15 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(screen.getByRole("textbox")).toBeTruthy();
   });
 
-  it("disables the toolbar without a selection or commands, and says when the page is empty", () => {
+  it("disables the toolbar without a selection or commands, and says when the page is empty", async () => {
     setUp(null, false);
 
     expect((screen.getByRole("button", { name: "Rename" }) as HTMLButtonElement).disabled).toBe(
       true,
     );
+    // Its name with nothing after it, not "Don't publish " (#1011); its tooltip says why it's off.
+    const hide = screen.getByRole("button", { name: "Don't publish" });
+    expect(await tooltipOf(hide.parentElement)).toBe("Don't publishSelect an element first.");
     expect(screen.getAllByRole("treeitem")[0]?.tabIndex).toBe(0);
     cleanup();
 

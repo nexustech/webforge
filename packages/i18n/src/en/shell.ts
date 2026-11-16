@@ -9,6 +9,8 @@ export const shell = {
   "shell.disabled.noSite": "Open a site first.",
   // Content mode's lock (M3) on a command that changes the layout.
   "shell.disabled.layoutLocked": "Switch to Design mode to change the layout.",
+  // A control that acts on the selected element, with nothing selected.
+  "shell.disabled.noSelection": "Select an element first.",
   // The arrow beside Undo (UX-16).
   "shell.undoSteps": "Undo several steps",
   "shell.undoSteps.title": "Undo back to…",

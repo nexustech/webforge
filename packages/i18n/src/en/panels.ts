@@ -119,6 +119,8 @@ export const panels = {
   "layers.toolbar": "Layer actions",
   "layers.hide": "Don't publish {item}",
   "layers.show": "Show {item}",
+  // The toolbar's button with nothing selected.
+  "layers.hideSelected": "Don't publish",
   // A row's eye (UX-23): how the layer shows now, and a menu of the three ways.
   "layers.shownMenu": "Show or hide {item} (now: {shown})",
   "layers.shown.shown": "Show",
