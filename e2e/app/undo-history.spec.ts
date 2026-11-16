@@ -39,7 +39,10 @@ const selected = () => canvas().locator(`${SELECTED_COMPONENT} ${ACTION_BAR_LABE
 async function deleteHeading(): Promise<void> {
   await canvas().locator("h1").click();
   await expect(selected()).toHaveText("Heading");
-  await canvas().locator(`${ACTION_BAR_ACTION}[title="Delete"]`).click();
+  await canvas()
+    .locator(ACTION_BAR_ACTION)
+    .and(canvas().getByRole("button", { name: "Delete", exact: true }))
+    .click();
   await expect(canvas().locator("h1")).toHaveCount(0);
 }
 
@@ -80,7 +83,10 @@ test.describe("Undo History and Undo toasts", () => {
     await deleteHeading();
     await canvas().getByText(STARTER_TEXT).click();
     await expect(selected()).toHaveText("Text");
-    await canvas().locator(`${ACTION_BAR_ACTION}[title="Delete"]`).click();
+    await canvas()
+      .locator(ACTION_BAR_ACTION)
+      .and(canvas().getByRole("button", { name: "Delete", exact: true }))
+      .click();
     await expect(canvas().getByText(STARTER_TEXT)).toHaveCount(0);
 
     await page.getByRole("button", { name: "Undo several steps" }).click();

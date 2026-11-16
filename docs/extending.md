@@ -258,6 +258,8 @@ No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `
 - **Counts** use `plural(base, count)`, with `base.one` and `base.other` keys.
 - **Code that fills placeholders itself** (a script, Puck) uses `template(key)`.
 
+No control has the browser's `title` (`pnpm ui-strings` checks the renderer, `editor-ui` and the engine for one in JSX or set with `setAttribute`, and the engine for `element.title =` too, #1011): it is slow, unstyled and never shown on focus. Give a `Button` its `tooltip`, wrap another control in `WithTooltip` (`disableable` for one that can be disabled, `whenCut` for a label cut short), and give a control on the canvas `data-wf-tip`. An `iframe` keeps its `title`, which names it.
+
 ## Tests and stories
 
 - **The fake canvas engine** is `createFakeEngine()` from `@webforge/test-utils/renderer`.

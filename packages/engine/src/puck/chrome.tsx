@@ -17,6 +17,7 @@ import type { FieldDrag, InsertPoint } from "../canvas-engine.js";
 /** Marks the element outlined from outside the canvas (`CanvasEngine.outline`). */
 export const OUTLINED_ATTRIBUTE = "data-wf-outlined";
 
+import { FRAME_TOOLTIP_CSS } from "./frame-tooltips.js";
 import {
   ACTIONS,
   ACTIONS_OVERLAY,
@@ -149,7 +150,7 @@ ${HOVERED_COMPONENT}:not(${SELECTED_COMPONENT}) ${ACTIONS_OVERLAY} {
 ${HOVERED_COMPONENT}:not(${SELECTED_COMPONENT}) ${ACTIONS_OVERLAY} * {
   pointer-events: none !important;
 }
-${SPACING_HANDLES_CSS}${WIDTH_HANDLES_CSS}`;
+${SPACING_HANDLES_CSS}${WIDTH_HANDLES_CSS}${FRAME_TOOLTIP_CSS}`;
 
 /** The editor's colours the chrome is drawn in (UI1, LF-1), from its theme's tokens. */
 export type ChromeTokens = {
@@ -161,6 +162,10 @@ export type ChromeTokens = {
   readonly primaryForeground: string;
   /** `--grid-outline`: *Show outlines* and the columns' outlines. */
   readonly grid: string;
+  /** `--popover`, `--popover-foreground` and `--border-strong`: the controls' tooltips (#1011). */
+  readonly popover: string;
+  readonly popoverForeground: string;
+  readonly borderStrong: string;
 };
 
 /** The light theme's colours, where the editor document has no tokens (a test without its CSS). */
@@ -168,6 +173,9 @@ const DEFAULT_TOKENS: ChromeTokens = {
   primary: "#0a6fb7",
   primaryForeground: "#ffffff",
   grid: "#f028f3",
+  popover: "#ffffff",
+  popoverForeground: "#26292b",
+  borderStrong: "#c4c9cf",
 };
 
 /** The chrome's colours in `editor`, the editor window's document, as its theme sets them now. */
@@ -178,6 +186,9 @@ export function chromeTokens(editor: Document): ChromeTokens {
     primary: read("--primary", DEFAULT_TOKENS.primary),
     primaryForeground: read("--primary-foreground", DEFAULT_TOKENS.primaryForeground),
     grid: read("--grid-outline", DEFAULT_TOKENS.grid),
+    popover: read("--popover", DEFAULT_TOKENS.popover),
+    popoverForeground: read("--popover-foreground", DEFAULT_TOKENS.popoverForeground),
+    borderStrong: read("--border-strong", DEFAULT_TOKENS.borderStrong),
   };
 }
 
@@ -198,7 +209,9 @@ export function applyChromeStyles(document: Document, editor: Document): () => v
       CHROME_TOKENS_ATTRIBUTE,
       `:root {\n  --wf-outline-color: ${tokens.primary};\n  --wf-grid-color: ${tokens.grid};\n` +
         `  --wf-primary: ${tokens.primary};\n` +
-        `  --wf-primary-foreground: ${tokens.primaryForeground};\n}`,
+        `  --wf-primary-foreground: ${tokens.primaryForeground};\n` +
+        `  --wf-tip-bg: ${tokens.popover};\n  --wf-tip-fg: ${tokens.popoverForeground};\n` +
+        `  --wf-tip-border: ${tokens.borderStrong};\n}`,
     );
   };
   apply();
@@ -286,7 +299,7 @@ export function createSelectionOutline(
           <button
             type="button"
             className="wf-add"
-            title={t("canvas.addSection")}
+            data-wf-tip={t("canvas.addSection")}
             aria-label={t("canvas.addSection")}
             // Not a click on the section underneath: no selecting, no dragging.
             onPointerDown={(event) => event.stopPropagation()}

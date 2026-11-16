@@ -13,6 +13,7 @@ import type { CanvasView } from "./canvas-view.js";
 import { applyChromeStyles, createSelectionOutline } from "./chrome.js";
 import type { DragSources } from "./drag-sources.js";
 import type { Emitter } from "./engine-support.js";
+import { showFrameTooltips } from "./frame-tooltips.js";
 import { CANVAS_INNER, CANVAS_ROOT } from "./puck-dom.js";
 import { boxHandleFields } from "./spacing-handles.js";
 import { widthHandleField } from "./width-handles.js";
@@ -148,8 +149,11 @@ export function createPuckOverrides(options: PuckOverridesOptions): Partial<Over
       }
       options.frameWindows.emit(frameWindow);
       const stopListening = listenInFrame(frameWindow, options.frameListeners);
+      // The chrome's tooltips, in place of the browser's `title` (#1011).
+      const stopTooltips = document === undefined ? undefined : showFrameTooltips(document);
       return () => {
         stopListening();
+        stopTooltips?.();
         stopColours?.();
         frame.detach();
         options.frameWindows.emit(null);

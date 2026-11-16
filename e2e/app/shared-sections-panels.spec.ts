@@ -127,7 +127,7 @@ test("places a copy from the Add panel, asks before deleting inside one, marks c
   await canvas()
     .locator(OVERLAY)
     .filter({ has: canvas().locator('.wf-outline[data-state="selected"]') })
-    .locator('[title="Delete"]')
+    .getByRole("button", { name: "Delete", exact: true })
     .click();
   await expect(copies()).toHaveCount(0);
   await expect(confirmation()).toHaveCount(0);

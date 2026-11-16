@@ -41,7 +41,7 @@ const quickAction = (title: string) =>
   canvas()
     .locator(OVERLAY)
     .filter({ has: canvas().locator('.wf-outline[data-state="selected"]') })
-    .locator(`[title="${title}"]`);
+    .getByRole("button", { name: title, exact: true });
 
 /** The selected element's quick-action bar, which names it. */
 const selectedBar = () =>
@@ -378,7 +378,7 @@ test.describe("keyboard and floating add", () => {
     // The Section's bottom padding selects the Section itself.
     await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
 
-    await canvas().getByTitle("Add a section here").click();
+    await canvas().getByRole("button", { name: "Add a section here" }).click();
     await page
       .getByRole("region", { name: "Left panels" })
       .getByRole("button", { name: "Section", exact: true })

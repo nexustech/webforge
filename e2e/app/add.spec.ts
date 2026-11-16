@@ -66,7 +66,7 @@ test("the canvas's + opens Add at its place, even with the left panels hidden", 
   // The Section's bottom padding selects the Section itself.
   await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
 
-  await canvas().getByTitle("Add a section here").click();
+  await canvas().getByRole("button", { name: "Add a section here" }).click();
   await expect(left().getByRole("status")).toHaveText(/Choose a section to add after Section\./);
   await item("FAQ").click();
 
