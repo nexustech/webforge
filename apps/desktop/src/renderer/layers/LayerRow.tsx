@@ -1,4 +1,4 @@
-import { cn, fieldControlClass } from "@webforge/editor-ui";
+import { cn, fieldControlClass, WithTooltip } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { LAYER_NAME_MAX } from "@webforge/model";
 import { ChevronRightIcon, Link2Icon, LockIcon, SparklesIcon, StickyNoteIcon } from "lucide-react";
@@ -107,22 +107,26 @@ export function LayerRow({
       {hasChildren ? (
         // For the mouse: the row itself expands and collapses with →/←, and says
         // which it is (aria-expanded), so the arrow isn't part of its name.
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden
-          title={t(row.expanded ? "layers.collapse" : "layers.expand", {
+        <WithTooltip
+          tooltip={t(row.expanded ? "layers.collapse" : "layers.expand", {
             item: layerItem(layer),
           })}
-          disabled={filtering}
-          className="flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-hover [&_svg]:size-3"
-          onClick={(event) => {
-            event.stopPropagation();
-            events.setExpanded(layer.id, !row.expanded);
-          }}
+          disableable
         >
-          <ChevronRightIcon className={cn(row.expanded && "rotate-90")} />
-        </button>
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-hidden
+            disabled={filtering}
+            className="flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-hover [&_svg]:size-3"
+            onClick={(event) => {
+              event.stopPropagation();
+              events.setExpanded(layer.id, !row.expanded);
+            }}
+          >
+            <ChevronRightIcon className={cn(row.expanded && "rotate-90")} />
+          </button>
+        </WithTooltip>
       ) : (
         <span aria-hidden className="size-4 shrink-0" />
       )}
@@ -147,10 +151,12 @@ export function LayerRow({
 /** A mark before a layer's name: an icon, and its meaning for a screen reader and on pointing. */
 function Mark({ label, children }: { readonly label: string; readonly children: ReactNode }) {
   return (
-    <span title={label}>
-      {children}
-      <span className="sr-only">{label} </span>
-    </span>
+    <WithTooltip tooltip={label}>
+      <span>
+        {children}
+        <span className="sr-only">{label} </span>
+      </span>
+    </WithTooltip>
   );
 }
 
@@ -210,10 +216,15 @@ function LayerName({ row }: { readonly row: TreeRow }) {
       )}
       {layer.note !== undefined && (
         // A note for the person (UX-17, #868), after the name, its text on pointing at it.
-        <span title={layer.note}>
-          <StickyNoteIcon aria-hidden className="ml-1 inline size-3.5 align-[-2px] text-warning" />
-          <span className="sr-only">{`, ${t("notes.marker")}`}</span>
-        </span>
+        <WithTooltip tooltip={layer.note}>
+          <span>
+            <StickyNoteIcon
+              aria-hidden
+              className="ml-1 inline size-3.5 align-[-2px] text-warning"
+            />
+            <span className="sr-only">{`, ${t("notes.marker")}`}</span>
+          </span>
+        </WithTooltip>
       )}
     </span>
   );

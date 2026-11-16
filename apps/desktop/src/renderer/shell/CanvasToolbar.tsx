@@ -242,7 +242,7 @@ export function CanvasToolbar({
               key={id}
               value={id}
               aria-label={t(`device.${id}`)}
-              title={t(`device.${id}`)}
+              tooltip={t(`device.${id}`)}
             >
               <Icon />
             </ToggleGroupItem>
@@ -399,7 +399,8 @@ function DeviceMenu({
             size={compact ? "icon" : "sm"}
             variant="ghost"
             className="text-xs whitespace-nowrap tabular-nums"
-            tooltip={compact ? (readout ?? t("canvasToolbar.devices")) : undefined}
+            // In both sizes, so the button doesn't remount (closing its menu) as the toolbar narrows.
+            tooltip={compact && readout !== undefined ? readout : t("canvasToolbar.devices")}
             aria-label={
               readout === undefined
                 ? t("canvasToolbar.devices")

@@ -167,6 +167,7 @@ export {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  WithTooltip,
 } from "./components/ui/tooltip.js";
 export { TourCard, type TourCardProps } from "./components/ui/tour-card.js";
 export { cn } from "./lib/cn.js";

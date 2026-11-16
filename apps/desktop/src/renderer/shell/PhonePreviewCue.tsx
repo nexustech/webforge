@@ -1,4 +1,4 @@
-import { Button } from "@webforge/editor-ui";
+import { Button, WithTooltip } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { SmartphoneIcon } from "lucide-react";
 import { useCommand, useCommandRegistry } from "./command-context.js";
@@ -14,21 +14,22 @@ export function PhonePreviewCue() {
   const stop = useCommand(COMMAND_IDS.stopPhonePreview);
   if (stop === undefined) return null;
   return (
-    <div
-      role="status"
-      title={t("preview.phone.onDescription")}
-      className="flex h-7 items-center gap-1.5 rounded-sm bg-accent px-2 text-xs text-accent-foreground"
-    >
-      <SmartphoneIcon aria-hidden className="size-3.5" />
-      <span>{t("preview.phone.on")}</span>
-      <Button
-        size="sm"
-        variant="secondary"
-        className="h-5 px-1.5"
-        onClick={() => void registry.run(stop.id)}
+    <WithTooltip tooltip={t("preview.phone.onDescription")}>
+      <div
+        role="status"
+        className="flex h-7 items-center gap-1.5 rounded-sm bg-accent px-2 text-xs text-accent-foreground"
       >
-        {stop.label}
-      </Button>
-    </div>
+        <SmartphoneIcon aria-hidden className="size-3.5" />
+        <span>{t("preview.phone.on")}</span>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="h-5 px-1.5"
+          onClick={() => void registry.run(stop.id)}
+        >
+          {stop.label}
+        </Button>
+      </div>
+    </WithTooltip>
   );
 }
