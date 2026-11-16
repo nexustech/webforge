@@ -64,7 +64,9 @@ test("gives the selected element a rule of its own with Target This Element", as
   await expect.poll(headingColour).toBe("rgb(4, 5, 6)");
   await expect(editor()).toContainText(".heading {");
 
-  // Each line's number is level with it, not spaced for a larger text size (#1096).
+  // Each line's number is level with it, not spaced for a larger text size (#1096): within a
+  // pixel, as the gutter places its numbers from measured heights, which a fractional display
+  // scale leaves a little apart. Spaced for a larger size, they'd drift a pixel or more a line.
   const levels = await drawer()
     .locator(".cm-editor")
     .evaluate((shown) => {
@@ -73,9 +75,13 @@ test("gives the selected element a rule of its own with Target This Element", as
           .map((each) => each.getBoundingClientRect())
           // The gutter's first element is an invisible spacer, with no height.
           .filter((box) => box.height > 0)
-          .map((box) => Math.round(box.top));
+          .map((box) => box.top);
       return { lines: tops(".cm-line"), numbers: tops(".cm-lineNumbers .cm-gutterElement") };
     });
   expect(levels.lines.length).toBeGreaterThan(1);
-  expect(levels.numbers).toEqual(levels.lines);
+  expect(levels.numbers).toHaveLength(levels.lines.length);
+  const apart = levels.numbers.map((top, index) =>
+    Math.abs(top - (levels.lines[index] ?? Number.POSITIVE_INFINITY)),
+  );
+  expect(Math.max(...apart)).toBeLessThanOrEqual(1);
 });
