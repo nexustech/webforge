@@ -26,7 +26,10 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   await app.close();
-  await rm(userDataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  // Best effort, as launchDesktopApp's own clean-up: a helper process can hold a file for a moment.
+  await rm(userDataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(
+    () => undefined,
+  );
 });
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");

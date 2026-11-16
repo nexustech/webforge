@@ -202,18 +202,19 @@ export type WebforgeApp = ClosingApp<ElectronApplication>;
  * Ends `child` and, on Windows, every process it started: there, ending a process leaves its
  * children running, and an orphaned renderer or GPU process keeps the test's folders busy (EPERM).
  * Elsewhere Electron's helpers end with their parent. `force` kills outright (SIGKILL), which
- * Windows' `taskkill /F` always does. `taskkill` runs alongside, and the caller waits for the
- * process's exit: run synchronously, it stopped the test's own timers for as long as it took to
- * walk the process tree on a busy machine (#1099).
+ * Windows' `taskkill /F` always does. Resolves once that's done: at once elsewhere, and on
+ * Windows when `taskkill` has ended the tree. It runs asynchronously: run synchronously, it stopped
+ * the test's own timers for as long as it took to walk the process tree on a busy machine (#1099).
  */
-function endProcess(child: ChildProcess, force = false): void {
+function endProcess(child: ChildProcess, force = false): Promise<void> {
   if (process.platform === "win32" && child.pid !== undefined) {
-    execFile("taskkill", ["/pid", String(child.pid), "/T", "/F"], () => {
+    return new Promise((resolve) => {
       // An error is a process gone already, or exiting.
+      execFile("taskkill", ["/pid", String(child.pid), "/T", "/F"], () => resolve());
     });
-    return;
   }
   child.kill(force ? "SIGKILL" : "SIGTERM");
+  return Promise.resolve();
 }
 
 /** Resolves once `child` writes Webforge's closed line to stderr; never without one. */
@@ -285,10 +286,10 @@ export function closingWithin<App extends Pick<ElectronApplication, "close" | "p
       if (ending === "done") return;
       // Playwright's close settles once the process is gone; nothing waits on it after this.
       done.catch(() => undefined);
-      endProcess(child);
-      if (await Promise.race([exited.then(() => false), after(killTimeoutMs)])) {
-        endProcess(child, true);
-        await Promise.race([exited, after(killTimeoutMs)]);
+      // Ended when the process has exited and, on Windows, the processes it started with it.
+      const ended = (killed: Promise<void>) => Promise.all([exited, killed]).then(() => false);
+      if (await Promise.race([ended(endProcess(child)), after(killTimeoutMs)])) {
+        await Promise.race([ended(endProcess(child, true)), after(killTimeoutMs)]);
       }
     } finally {
       for (const timer of timers) clearTimeout(timer);

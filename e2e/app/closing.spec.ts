@@ -16,16 +16,6 @@ function endless(): ChildProcess {
 
 const ended = (child: ChildProcess) => child.exitCode !== null || child.signalCode !== null;
 
-/** Whether the process `pid` is still running. */
-function alive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 test("kills an app whose process hasn't exited once closing has taken too long", async () => {
   const child = endless();
   const app = closingWithin(
@@ -37,8 +27,7 @@ test("kills an app whose process hasn't exited once closing has taken too long",
   await app.close();
 
   expect(Date.now() - start).toBeLessThan(5_000);
-  // Windows' taskkill can finish just after the close: it runs alongside (#1099).
-  await expect.poll(() => ended(child)).toBe(true);
+  expect(ended(child)).toBe(true);
 });
 
 test("kills a process outright that doesn't end when told to", async () => {
@@ -60,7 +49,7 @@ test("kills a process outright that doesn't end when told to", async () => {
   await app.close();
 
   expect(Date.now() - start).toBeLessThan(5_000);
-  // Windows' taskkill can finish just after the close: it runs alongside (#1099).
+  // On a busy machine, taskkill can take longer than this test's half-second kills (#1099).
   await expect.poll(() => ended(child)).toBe(true);
 });
 
@@ -146,8 +135,7 @@ test("ends an app soon after it says it has closed, not at the time limit (#534)
 
   // Its two seconds' grace, and no more: not the minute.
   expect(Date.now() - start).toBeLessThan(10_000);
-  // Windows' taskkill can finish just after the close: it runs alongside (#1099).
-  await expect.poll(() => ended(child)).toBe(true);
+  expect(ended(child)).toBe(true);
 });
 
 test("waits for an app that closes by itself until it says so, then ends it (#534)", async () => {
@@ -161,8 +149,7 @@ test("waits for an app that closes by itself until it says so, then ends it (#53
   await app.untilClosed();
 
   expect(Date.now() - start).toBeLessThan(10_000);
-  // Windows' taskkill can finish just after the close: it runs alongside (#1099).
-  await expect.poll(() => ended(child)).toBe(true);
+  expect(ended(child)).toBe(true);
   // And a close after it waits for that, as an afterEach's does.
   await app.close();
 });
@@ -189,9 +176,8 @@ test("ends the processes the app started too, before it says it's done (#534)", 
 
   await app.close();
 
-  // Windows' taskkill can finish just after the close: it runs alongside (#1099).
-  await expect.poll(() => ended(child)).toBe(true);
-  await expect.poll(() => alive(helper)).toBe(false);
+  expect(ended(child)).toBe(true);
+  expect(() => process.kill(helper, 0)).toThrow();
 });
 
 test("cleans up with the asynchronous rm, whose retries work (#534)", () => {
