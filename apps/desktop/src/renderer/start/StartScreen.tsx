@@ -22,8 +22,7 @@ import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
 import { createSettingsRegistry } from "../editor/settings-registry.js";
 import { HelpCommands } from "../help/index.js";
 import { reportFailure } from "../log.js";
-import { registerAppSettings } from "../settings/app-settings.js";
-import { SettingsHost } from "../settings/SettingsHost.js";
+import { registerAppSettings, SettingsHost } from "../settings/index.js";
 import { AboutDialog } from "../shell/AboutDialog.js";
 import { AppMark } from "../shell/AppMark.js";
 import {
