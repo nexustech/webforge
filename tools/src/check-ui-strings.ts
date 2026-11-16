@@ -8,10 +8,12 @@
 // files under the given folders. Tests and stories are skipped. With `--catalogue <folder>`, it
 // also fails on a message of the string catalogue that spells out the app's name (`app.name`)
 // rather than taking `{appName}` (#450). With `--no-title <folder>` (repeatable), it also fails on
-// a `title` attribute on an element in that folder's .tsx files (#1011): the browser's tooltip is
-// slow, unstyled and never shown on focus, so the editor uses its own (frames keep theirs, which
-// names them). TypeScript 7 has no
-// JavaScript compiler API, so the files are parsed with swc, as dependency-cruiser does (ADR 0001).
+// a `title` attribute on an element in that folder's .ts and .tsx files, in JSX or set with
+// `setAttribute` (#1011): the browser's tooltip is slow, unstyled and never shown on focus, so the
+// editor uses its own (frames keep theirs, which names them). `--no-title-property <folder>` also
+// fails on `x.title = …` (not `document.title`), for code that writes the canvas frame's elements
+// itself; elsewhere `.title` is mostly a page's. TypeScript 7 has no JavaScript compiler API, so
+// the files are parsed with swc, as dependency-cruiser does (ADR 0001).
 //
 // This file has no relative imports so Node can run it directly with type stripping.
 
@@ -213,54 +215,141 @@ function intrinsicTag(opening: unknown): string | null {
     : null;
 }
 
+/** Whether `node` is the string `"title"`, or the name `title`. */
+function isTitle(node: unknown): boolean {
+  return (
+    isNode(node) &&
+    (node.type === "Identifier" || node.type === "StringLiteral") &&
+    node.value === "title"
+  );
+}
+
+/** Whether an object literal in `node` has a `title` key, written out or shorthand (`{ title }`). */
+function hasTitleKey(node: unknown): boolean {
+  return [...walk(node)].some(
+    (part) =>
+      part.type === "ObjectExpression" &&
+      Array.isArray(part.properties) &&
+      part.properties.some(
+        (property: unknown) =>
+          isNode(property) &&
+          ((property.type === "Identifier" && isTitle(property)) ||
+            (property.type === "KeyValueProperty" && isTitle(property.key))),
+      ),
+  );
+}
+
+/** Whether `node` is a member `x.title` or `x["title"]`, other than `document.title`. */
+function isTitleMember(node: unknown): boolean {
+  if (!isNode(node) || node.type !== "MemberExpression") return false;
+  const { object, property } = node;
+  const named =
+    isNode(property) &&
+    (property.type === "Computed"
+      ? isTitle(property.expression)
+      : property.type === "Identifier" && isTitle(property));
+  // The document's title is the window's name, not a tooltip.
+  const document = isNode(object) && object.type === "Identifier" && object.value === "document";
+  return named && !document;
+}
+
+/** Where a DOM call or assignment sets an element's `title`, and how. */
+function domTitle(node: AstNode, properties: boolean): string | null {
+  if (node.type === "CallExpression") {
+    const { callee } = node;
+    // swc's arguments are `{ spread, expression }`, with no `type` of their own.
+    const first: unknown = Array.isArray(node.arguments) ? node.arguments[0] : undefined;
+    const name =
+      typeof first === "object" && first !== null && "expression" in first
+        ? first.expression
+        : undefined;
+    const setter =
+      isNode(callee) &&
+      callee.type === "MemberExpression" &&
+      isNode(callee.property) &&
+      callee.property.type === "Identifier" &&
+      callee.property.value === "setAttribute";
+    return setter && isNode(name) && name.type === "StringLiteral" && isTitle(name)
+      ? 'setAttribute("title")'
+      : null;
+  }
+  if (properties && node.type === "AssignmentExpression" && isTitleMember(node.left)) {
+    return ".title =";
+  }
+  return null;
+}
+
 /**
- * Finds `title` attributes on elements in one TSX source file (#1011): the editor shows its own
- * tooltips (`Button`'s `tooltip`, `WithTooltip`, the canvas's `data-wf-tip`). A component's
- * `title` prop (a dialog's) is no attribute and passes. `file` is used for reporting only.
+ * Finds `title` attributes on elements in one source file (#1011): the editor shows its own
+ * tooltips (`Button`'s `tooltip`, `WithTooltip`, the canvas's `data-wf-tip`). It finds them in JSX
+ * (written out, or a key of an object spread onto the element) and set by `setAttribute`; with
+ * `properties`, also set as a property (`element.title = …`), for code that writes the frame's
+ * elements itself, where nothing else has a `title` to set. A component's `title` prop (a
+ * dialog's) is no attribute and passes, as do frames, whose `title` names them. `file` says
+ * whether it's TSX, and is used for reporting.
  */
-export function findTitleAttributes(source: string, file: string): UiStringViolation[] {
-  const { ast, lineAt } = parsed(source, true);
+export function findTitleAttributes(
+  source: string,
+  file: string,
+  { properties = false }: { readonly properties?: boolean } = {},
+): UiStringViolation[] {
+  const { ast, lineAt } = parsed(source, file.endsWith(".tsx"));
   const violations: UiStringViolation[] = [];
   for (const node of walk(ast)) {
+    const set = domTitle(node, properties);
+    if (set !== null) {
+      violations.push({ file, line: lineAt(node.span), where: set, text: "title" });
+      continue;
+    }
     if (node.type !== "JSXOpeningElement") continue;
     const tag = intrinsicTag(node);
     if (tag === null || TITLED_ELEMENTS.has(tag) || !Array.isArray(node.attributes)) continue;
     for (const attribute of node.attributes) {
       if (!isNode(attribute)) continue;
-      // `title={…}`, or a `title` key in an object spread onto it (`{...{ title }}`).
       const titled =
         attribute.type === "JSXAttribute"
           ? attributeName(attribute.name) === "title"
-          : [...walk(attribute)].some(
-              (part) =>
-                part.type === "KeyValueProperty" &&
-                isNode(part.key) &&
-                (part.key.type === "Identifier" || part.key.type === "StringLiteral") &&
-                part.key.value === "title",
-            );
+          : hasTitleKey(attribute);
       if (titled) {
         // swc gives a spread its place as `spread`, not `span`.
         const span = attribute.span ?? (attribute.spread as Span | undefined);
-        violations.push({ file, line: lineAt(span), where: tag, text: "title" });
+        violations.push({ file, line: lineAt(span), where: `<${tag} title>`, text: "title" });
       }
     }
   }
   return violations.toSorted((a, b) => a.line - b.line);
 }
 
-/** Checks every file under `folders` with {@link findTitleAttributes}, relative to `root`. */
-export function checkTitleFolders(folders: readonly string[], root: string): UiStringViolation[] {
-  return folders.flatMap((folder) =>
-    listCheckedFiles(folder).flatMap((path) =>
-      findTitleAttributes(readFileSync(path, "utf8"), relative(root, path).replaceAll("\\", "/")),
-    ),
-  );
+/** Whether a file's `title`s are checked: sources, TS or TSX, not their tests or stories. */
+export function isTitleCheckedFile(path: string): boolean {
+  return /\.tsx?$/.test(path) && !/\.(test|stories|d)\.tsx?$/.test(path);
+}
+
+/**
+ * Checks every file under `folders` with {@link findTitleAttributes}, and under `propertyFolders`
+ * with its `properties` too, relative to `root`.
+ */
+export function checkTitleFolders(
+  folders: readonly string[],
+  root: string,
+  propertyFolders: readonly string[] = [],
+): UiStringViolation[] {
+  const check = (folder: string, properties: boolean) =>
+    listCheckedFiles(folder, isTitleCheckedFile).flatMap((path) =>
+      findTitleAttributes(readFileSync(path, "utf8"), relative(root, path).replaceAll("\\", "/"), {
+        properties,
+      }),
+    );
+  return [
+    ...folders.flatMap((folder) => check(folder, false)),
+    ...propertyFolders.flatMap((folder) => check(folder, true)),
+  ];
 }
 
 /** One line per `title` attribute, for the terminal. */
 export function formatTitleViolations(violations: readonly UiStringViolation[]): string {
   const lines = violations.map(
-    (violation) => `  ${violation.file}:${violation.line}  <${violation.where} title>`,
+    (violation) => `  ${violation.file}:${violation.line}  ${violation.where}`,
   );
   return [
     `Found ${violations.length} title attribute(s). Use Button's tooltip, WithTooltip, or data-wf-tip on the canvas (#1011):`,
@@ -310,9 +399,12 @@ export function isCheckedFile(path: string): boolean {
 }
 
 /** Every checked file under `folder`, recursively, skipping `node_modules`. */
-export function listCheckedFiles(folder: string): string[] {
+export function listCheckedFiles(
+  folder: string,
+  checked: (path: string) => boolean = isCheckedFile,
+): string[] {
   return readdirSync(folder, { withFileTypes: true, recursive: true })
-    .filter((entry) => entry.isFile() && isCheckedFile(entry.name))
+    .filter((entry) => entry.isFile() && checked(entry.name))
     .map((entry) => join(entry.parentPath, entry.name))
     .filter((path) => !path.split(/[\\/]/).includes("node_modules"))
     .toSorted();
@@ -355,23 +447,25 @@ function main(): void {
   const args = process.argv.slice(2);
   const folders: string[] = [];
   const titled: string[] = [];
+  const titledProperties: string[] = [];
   let catalogue: string | undefined;
   let missing = false;
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index] ?? "";
-    if (arg === "--catalogue" || arg === "--no-title") {
+    if (arg === "--catalogue" || arg === "--no-title" || arg === "--no-title-property") {
       const value = args[index + 1];
       index += 1;
       if (value === undefined) missing = true;
       else if (arg === "--catalogue") catalogue = value;
-      else titled.push(value);
+      else if (arg === "--no-title") titled.push(value);
+      else titledProperties.push(value);
     } else {
       folders.push(arg);
     }
   }
   if (folders.length === 0 || missing) {
     console.error(
-      "Usage: node tools/src/check-ui-strings.ts [--catalogue <folder>] [--no-title <folder>]... <folder>...",
+      "Usage: node tools/src/check-ui-strings.ts [--catalogue <folder>] [--no-title <folder>]... [--no-title-property <folder>]... <folder>...",
     );
     process.exitCode = 2;
     return;
@@ -382,7 +476,7 @@ function main(): void {
     process.exitCode = 1;
     return;
   }
-  const titles = checkTitleFolders(titled, process.cwd());
+  const titles = checkTitleFolders(titled, process.cwd(), titledProperties);
   if (titles.length > 0) {
     console.error(formatTitleViolations(titles));
     process.exitCode = 1;
@@ -395,7 +489,8 @@ function main(): void {
     return;
   }
   console.log(`No hard-coded UI strings in ${folders.join(", ")}.`);
-  if (titled.length > 0) console.log(`No title attributes in ${titled.join(", ")}.`);
+  const noTitles = [...new Set([...titled, ...titledProperties])];
+  if (noTitles.length > 0) console.log(`No title attributes in ${noTitles.join(", ")}.`);
   if (catalogue !== undefined) {
     console.log(`No message in ${catalogue} spells out the app's name.`);
   }
