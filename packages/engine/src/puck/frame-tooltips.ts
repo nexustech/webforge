@@ -147,7 +147,12 @@ export function showFrameTooltips(document: Document): () => void {
       open(target, "once");
     }
   };
-  const onFocusOut = () => hide();
+  // Only its own control's: focus moving elsewhere (out of the frame, as selecting does) leaves
+  // a tooltip the pointer is on.
+  const onFocusOut = (event: FocusEvent) => {
+    const from = node(event.target);
+    if (current !== null && from !== null && current.contains(from)) hide();
+  };
   const onPointerDown = (event: PointerEvent) => {
     pressed = tipped(element(event.target));
     hide();
@@ -155,7 +160,13 @@ export function showFrameTooltips(document: Document): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape" && tip?.isConnected === true) hide();
   };
-  const onScroll = () => hide();
+  // A scroll (the page's, or Puck bringing the selection into view) moves the tooltip with its
+  // control, rather than hiding one the pointer is still on.
+  const onScroll = () => {
+    if (current === null || tip?.isConnected !== true) return;
+    if (current.isConnected) place(current, tip);
+    else hide();
+  };
 
   document.addEventListener("pointerover", onPointerOver);
   document.addEventListener("pointerout", onPointerOut);

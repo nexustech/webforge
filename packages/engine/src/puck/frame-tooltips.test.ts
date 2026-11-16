@@ -66,6 +66,22 @@ describe("showFrameTooltips", () => {
     expect(tip()).toBeNull();
   });
 
+  it("keeps the pointer's tooltip as focus moves elsewhere and the page scrolls", () => {
+    const add = control("Add a section here");
+    const other = Object.assign(document.createElement("input"), { type: "text" });
+    document.body.append(other);
+    other.focus();
+
+    over(add);
+    // Selecting moves the focus out of the frame (macOS CI, #1011), and Puck scrolls to it.
+    other.blur();
+    window.dispatchEvent(new Event("scroll"));
+    vi.advanceTimersByTime(400);
+    expect(tip()?.textContent).toBe("Add a section here");
+    window.dispatchEvent(new Event("scroll"));
+    expect(tip()?.textContent).toBe("Add a section here");
+  });
+
   it("takes Puck's title on its element bar as a tooltip, keeping it as the name", () => {
     const bar = document.createElement("div");
     bar.className = "_DraggableComponent-actions_abc";
