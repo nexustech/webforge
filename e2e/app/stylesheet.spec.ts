@@ -63,4 +63,19 @@ test("gives the selected element a rule of its own with Target This Element", as
 
   await expect.poll(headingColour).toBe("rgb(4, 5, 6)");
   await expect(editor()).toContainText(".heading {");
+
+  // Each line's number is level with it, not spaced for a larger text size (#1096).
+  const levels = await drawer()
+    .locator(".cm-editor")
+    .evaluate((shown) => {
+      const tops = (selector: string) =>
+        [...shown.querySelectorAll(selector)]
+          .map((each) => each.getBoundingClientRect())
+          // The gutter's first element is an invisible spacer, with no height.
+          .filter((box) => box.height > 0)
+          .map((box) => Math.round(box.top));
+      return { lines: tops(".cm-line"), numbers: tops(".cm-lineNumbers .cm-gutterElement") };
+    });
+  expect(levels.lines.length).toBeGreaterThan(1);
+  expect(levels.numbers).toEqual(levels.lines);
 });
