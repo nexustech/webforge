@@ -124,8 +124,8 @@ export const panels = {
   // A row's eye (UX-23): how the layer shows now, and a menu of the three ways.
   "layers.shownMenu": "Show or hide {item} (now: {shown})",
   "layers.shown.shown": "Show",
-  "layers.shown.editorHidden": "Hide while editing",
-  "layers.shown.hidden": "Don't publish",
+  "layers.shown.editorHidden": "Hide While Editing",
+  "layers.shown.hidden": "Don't Publish",
   "layers.rename": "Rename",
   "layers.nameField": "Name for this {item}",
   // A linked copy of a shared section, marked in Layers (1.29, F-ED-23).
@@ -226,7 +226,7 @@ export const panels = {
   "menu.moveUp": "Move Up",
   "menu.moveDown": "Move Down",
   "menu.moveInto": "Move into '{name}'",
-  "menu.moveOut": "Move out of Dropdown",
+  "menu.moveOut": "Move Out of Dropdown",
   "menu.delete": "Delete",
   "menu.removePage": "Remove from Menu",
   "menu.renameDialog.title": "Rename menu item",

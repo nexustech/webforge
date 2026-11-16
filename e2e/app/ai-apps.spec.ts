@@ -94,7 +94,7 @@ test("an AI app paired in AI apps… changes the site, as undo steps named after
     process.platform !== "win32" && process.platform !== "darwin",
     "an app's key is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5, ADR 0021)",
   );
-  await chooseFromMenu(app, page, "File", "AI apps…");
+  await chooseFromMenu(app, page, "File", "AI Apps…");
   const allow = dialog().getByRole("checkbox", { name: "Let AI apps connect" });
   // Off by default: nothing listens, and nothing can be added.
   await expect(allow).not.toBeChecked();
@@ -143,7 +143,7 @@ test("an AI app paired in AI apps… changes the site, as undo steps named after
   await expect(canvas().getByText("Fresh bread every morning")).toHaveCount(0);
 
   // Removed, it's cut off: its connection and its key.
-  await chooseFromMenu(app, page, "File", "AI apps…");
+  await chooseFromMenu(app, page, "File", "AI Apps…");
   await dialog().getByRole("button", { name: "Remove Test client" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Remove" }).click();
   await expect(dialog().getByText("No AI apps yet.")).toBeVisible();
@@ -167,7 +167,7 @@ test("Claude Desktop connects through the extension AI apps… writes, with its 
       },
     });
   });
-  await chooseFromMenu(app, page, "File", "AI apps…");
+  await chooseFromMenu(app, page, "File", "AI Apps…");
   await dialog().getByRole("checkbox", { name: "Let AI apps connect" }).click();
   await dialog().getByRole("button", { name: "Add AI app" }).click();
   // Claude Desktop is the first choice, named so.
@@ -249,7 +249,7 @@ test("Claude Desktop connects through the extension AI apps… writes, with its 
 /** Adds "Another app" called `name` in AI apps…, turned on: its address and key. */
 /** Adds the app chosen in *Which app?* by `choice`, under the name offered, and shows its key. */
 async function addFromChoice(choice: string, name: string) {
-  await chooseFromMenu(app, page, "File", "AI apps…");
+  await chooseFromMenu(app, page, "File", "AI Apps…");
   const allow = dialog().getByRole("checkbox", { name: "Let AI apps connect" });
   if (!(await allow.isChecked())) await allow.click();
   await dialog().getByRole("button", { name: "Add AI app" }).click();
@@ -324,7 +324,7 @@ test("Claude Code's command has no key: with the key in its variable, it connect
 });
 
 async function pairAnotherApp(name: string): Promise<{ address: string; key: string }> {
-  await chooseFromMenu(app, page, "File", "AI apps…");
+  await chooseFromMenu(app, page, "File", "AI Apps…");
   const allow = dialog().getByRole("checkbox", { name: "Let AI apps connect" });
   if (!(await allow.isChecked())) await allow.click();
   await dialog().getByRole("button", { name: "Add AI app" }).click();

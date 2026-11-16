@@ -13,17 +13,21 @@ export const canvas = {
   // Quick actions on the selected element (1.12).
   "canvas.moveUp": "Move up",
   "canvas.moveDown": "Move down",
+  // The Edit menu's and the command box's names for them (T5, #1016): the buttons' tooltips
+  // above stay sentence case.
+  "canvas.moveUp.command": "Move Up",
+  "canvas.moveDown.command": "Move Down",
   "canvas.duplicate": "Duplicate",
   "canvas.delete": "Delete",
-  "canvas.selectPrevious": "Select previous element",
-  "canvas.selectNext": "Select next element",
+  "canvas.selectPrevious": "Select Previous Element",
+  "canvas.selectNext": "Select Next Element",
   // Keyboard navigation and the selection chip (1.30, F-ED-25, F-ED-27).
-  "canvas.selectParent": "Select parent",
-  "canvas.selectChild": "Select first element inside",
-  "canvas.selectPreviousSibling": "Select previous sibling",
-  "canvas.selectNextSibling": "Select next sibling",
-  "canvas.editText": "Edit text",
-  "canvas.clearText": "Clear text and edit",
+  "canvas.selectParent": "Select Parent",
+  "canvas.selectChild": "Select First Element Inside",
+  "canvas.selectPreviousSibling": "Select Previous Sibling",
+  "canvas.selectNextSibling": "Select Next Sibling",
+  "canvas.editText": "Edit Text",
+  "canvas.clearText": "Clear Text and Edit",
   "canvas.edit": "Edit",
   // A hovered element's name chip with its size, while spacing on hover shows (SP-2).
   "canvas.chipSize": "{name} · {size}",
@@ -31,7 +35,9 @@ export const canvas = {
   "canvas.style": "Style",
   "canvas.hide": "Don't publish",
   "canvas.show": "Show",
-  "canvas.toggleHidden": "Don't publish, or show",
+  // Ctrl+/ in the Edit menu and the command box, named by what it will do (#1016).
+  "canvas.leaveOff": "Leave Off the Website",
+  "canvas.putBack": "Put Back on the Website",
   // The floating + between sections (1.12).
   "canvas.addSection": "Add a section here",
   "canvas.spacing.handle": "Drag to change the {field} ({side})",
@@ -68,7 +74,7 @@ export const canvas = {
   // F2 on the canvas (1.30): asks for the selected element's name, as the element menu does.
   "canvas.rename": "Rename…",
   // Selects every element of the page like the selected one (1.35, the element menu).
-  "canvas.selectSimilar": "Select similar",
+  "canvas.selectSimilar": "Select Similar",
   "canvas.sharedRegion.header": "Header",
   "canvas.sharedRegion.footer": "Footer",
   // Asked before an element of the shared Header or Footer goes from every page (D7).
@@ -89,8 +95,8 @@ export const canvas = {
     "Editing shared section {name}: changes apply to {copies} copies on 1 page",
   "canvas.sharedSectionBanner.pages":
     "Editing shared section {name}: changes apply to {copies} copies on {pages} pages",
-  "canvas.saveSharedSection": "Save as shared section…",
-  "canvas.detachSharedSection": "Detach from shared section",
+  "canvas.saveSharedSection": "Save as Shared Section…",
+  "canvas.detachSharedSection": "Detach from Shared Section",
   // Why the shared-section commands are disabled (#1010).
   "canvas.sharedSection.selectOne": "Select just one section.",
   "canvas.saveSharedSection.select": "Select a section of this page to save it.",
@@ -102,10 +108,10 @@ export const canvas = {
   "canvas.saveSharedSection.confirm": "Save",
   // Names are unique (1.29): {name} is quoted, "'Opening hours'".
   "canvas.sharedSectionNameTaken": "A shared section called {name} already exists",
-  "canvas.renameSharedSection": "Rename shared section…",
+  "canvas.renameSharedSection": "Rename Shared Section…",
   "canvas.renameSharedSection.title": "Rename shared section",
   "canvas.renameSharedSection.confirm": "Rename",
-  "canvas.deleteSharedSection": "Delete shared section…",
+  "canvas.deleteSharedSection": "Delete Shared Section…",
   // D7's question before deleting a shared section: {name} is quoted.
   "canvas.deleteSharedSection.title": "Delete shared section {name}?",
   "canvas.deleteSharedSection.description":

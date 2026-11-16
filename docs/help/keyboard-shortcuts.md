@@ -37,11 +37,11 @@ On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt
 | Ctrl+Alt+C · Ctrl+Alt+V   | Copy Style · Paste Style                                                 |
 | Ctrl+D                    | Duplicate                                                                |
 | Delete, or Ctrl+Backspace | Delete (on a Mac, Cmd+Delete: the delete key on its own clears the text) |
-| Ctrl+Alt+↑ · Ctrl+Alt+↓   | Move up · Move down (on Windows, Alt+↑ and Alt+↓ too)                    |
-| Ctrl+/                    | Don't publish, or show                                                   |
+| Ctrl+Alt+↑ · Ctrl+Alt+↓   | Move Up · Move Down (on Windows, Alt+↑ and Alt+↓ too)                    |
+| Ctrl+/                    | Leave Off the Website, or Put Back on the Website                        |
 | F2                        | Rename…                                                                  |
 | Ctrl+F                    | Find and Replace…                                                        |
-| Enter                     | Edit text                                                                |
+| Enter                     | Edit Text                                                                |
 | Backspace                 | Clear the text and edit it (deletes an item with no text of its own)     |
 | Esc                       | Cancel a drag                                                            |
 

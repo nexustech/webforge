@@ -80,7 +80,7 @@ async function selectHeading(index: number): Promise<void> {
 
 test("saves a shared section, edits every copy at once, undoes it, and detaches one", async () => {
   await selectSection();
-  await sharedSectionMenu("Save as shared section…");
+  await sharedSectionMenu("Save as Shared Section…");
   const dialog = page.getByRole("dialog", { name: "Save as shared section" });
   await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await dialog.getByRole("button", { name: "Save" }).click();
@@ -119,7 +119,7 @@ test("saves a shared section, edits every copy at once, undoes it, and detaches 
 
 test("Ctrl/Cmd+V pastes a copied linked copy as the page's own; Ctrl/Cmd+Shift+V places another linked copy (F-ED-23)", async () => {
   await selectSection();
-  await sharedSectionMenu("Save as shared section…");
+  await sharedSectionMenu("Save as Shared Section…");
   const dialog = page.getByRole("dialog", { name: "Save as shared section" });
   await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await dialog.getByRole("button", { name: "Save" }).click();
@@ -155,7 +155,7 @@ test("Ctrl/Cmd+V pastes a copied linked copy as the page's own; Ctrl/Cmd+Shift+V
 
 test("renames a shared section, then deletes it after asking, its copies staying", async () => {
   await selectSection();
-  await sharedSectionMenu("Save as shared section…");
+  await sharedSectionMenu("Save as Shared Section…");
   await page.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await page.getByRole("button", { name: "Save" }).click();
   await editMenu("Duplicate");
@@ -197,7 +197,7 @@ test("renames a shared section, then deletes it after asking, its copies staying
 
 test("renames and deletes a shared section on no page from the Add panel, and undoes the delete", async () => {
   await selectSection();
-  await sharedSectionMenu("Save as shared section…");
+  await sharedSectionMenu("Save as Shared Section…");
   await page.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await page.getByRole("button", { name: "Save" }).click();
   // Its only copy deleted: the shared section is on no page, so only the Add panel reaches it.
@@ -246,7 +246,7 @@ const padding = (box: Box, fromBottom = 6) => ({
 
 test("Ctrl/Cmd+Shift-drag of a copy places another linked copy; Ctrl/Cmd-drag a section of the page's own (1.30)", async () => {
   await selectSection();
-  await sharedSectionMenu("Save as shared section…");
+  await sharedSectionMenu("Save as Shared Section…");
   const dialog = page.getByRole("dialog", { name: "Save as shared section" });
   await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await dialog.getByRole("button", { name: "Save" }).click();

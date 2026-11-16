@@ -110,7 +110,7 @@ describe("macOS's menu bar (LF-13)", () => {
     });
     registry.register({
       id: "site.noRecent",
-      label: "No recent sites",
+      label: "No Recent Sites",
       submenu: "site.openRecent",
       enabled: false,
       run: vi.fn(),
@@ -123,7 +123,7 @@ describe("macOS's menu bar (LF-13)", () => {
       enabled: true,
       submenu: [
         { id: "site.clearRecent", label: "Clear Recent", enabled: true, separated: true },
-        { id: "site.noRecent", label: "No recent sites", enabled: false },
+        { id: "site.noRecent", label: "No Recent Sites", enabled: false },
       ],
     });
     expect(appChannels.setNativeMenus.request.safeParse([menus]).success).toBe(true);

@@ -28,7 +28,7 @@ const steps = () => page.locator(".undo-history__step");
 const headings = () => canvas().locator(".site-heading");
 const confirmation = () => page.getByRole("alertdialog");
 
-/** The Edit menu's Delete, not "Delete shared section…". */
+/** The Edit menu's Delete, not Edit › Shared Section › Delete…. */
 const DELETE = /^Delete(?! shared)/;
 
 /** Runs an Edit menu command. */
@@ -74,7 +74,7 @@ async function deleteHeading(index: number): Promise<void> {
 
 test("places a copy from the Add panel, asks before deleting inside one, marks copies in Layers, and deletes whole copies without asking", async () => {
   await selectSection();
-  await sharedSectionMenu("Save as shared section…");
+  await sharedSectionMenu("Save as Shared Section…");
   const dialog = page.getByRole("dialog", { name: "Save as shared section" });
   await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await dialog.getByRole("button", { name: "Save" }).click();

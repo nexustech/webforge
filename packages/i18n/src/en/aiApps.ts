@@ -1,6 +1,6 @@
 /** AI apps (`apps/desktop/src/renderer/ai-apps/`, F-AI-1, 4.9): pairing them and seeing them. */
 export const aiApps = {
-  "aiApps.command": "AI apps…",
+  "aiApps.command": "AI Apps…",
   "aiApps.title": "AI apps",
   "aiApps.description":
     "Let AI apps on this computer, such as Claude, work on the site you have open. Each change they make is a step in Undo History, named after the app.",
