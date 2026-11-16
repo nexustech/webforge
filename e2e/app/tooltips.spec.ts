@@ -69,8 +69,35 @@ test("shows the canvas's own controls' tooltips, and Puck's, in place of the bro
   // to the Section between tries, not off the canvas: the + is there while the Section is hovered.
   await expect(async () => {
     await section.hover({ force: true, position: { x: 10, y: box.height - 4 }, timeout: 2000 });
-    await canvas().getByRole("button", { name: "Add a section here" }).hover({ timeout: 2000 });
-    await expect(frameTip()).toHaveText("Add a section here", { timeout: 2000 });
+    const plus = canvas().getByRole("button", { name: "Add a section here" });
+    await plus.hover({ timeout: 2000 });
+    try {
+      await expect(frameTip()).toHaveText("Add a section here", { timeout: 2000 });
+    } catch (error) {
+      // TEMPORARY (#1009, macOS CI): what the frame saw, to find why no tooltip showed.
+      const seen = await plus
+        .evaluate((element) => {
+          const box = element.getBoundingClientRect();
+          const under = element.ownerDocument.elementFromPoint(
+            box.left + box.width / 2,
+            box.top + box.height / 2,
+          );
+          const named = (each: Element | null) =>
+            each === null ? "null" : `${each.tagName}.${each.className}`.slice(0, 120);
+          return {
+            connected: element.isConnected,
+            tip: element.getAttribute("data-wf-tip"),
+            box: [box.left, box.top, box.width, box.height].map(Math.round),
+            under: named(under),
+            underIsPlus: under !== null && element.contains(under),
+            active: named(element.ownerDocument.activeElement),
+            frameFocused: element.ownerDocument.hasFocus(),
+          };
+        })
+        .catch((reason: unknown) => String(reason));
+      console.log(`frame tooltip diagnostics: ${JSON.stringify(seen)}`);
+      throw error;
+    }
   }).toPass();
   // A site whose own rules would reach the tooltip, which sits in the site's body: added, read
   // and removed at once, so the canvas's layout never moves under the pointer.
