@@ -364,6 +364,7 @@ function ItemMenu({ row, name, groups, actions, onEdit, onCloseAutoFocus }: Item
           variant="ghost"
           size="icon-sm"
           aria-label={t("menu.actions", { name })}
+          tooltip={t("menu.actions", { name })}
           className="absolute top-0 right-0.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
         >
           <EllipsisIcon />

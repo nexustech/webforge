@@ -333,6 +333,7 @@ export function PagesPanel({ site, shownPageId, published = false, actions }: Pa
                         size="icon-sm"
                         className="size-5"
                         aria-label={t("pages.actions", { name: row.collection.name })}
+                        tooltip={t("pages.actions", { name: row.collection.name })}
                       >
                         <EllipsisIcon />
                       </Button>
@@ -551,6 +552,7 @@ function PageMenu(props: PageMenuProps) {
           variant="ghost"
           size="icon-sm"
           aria-label={t("pages.actions", { name: page.title })}
+          tooltip={t("pages.actions", { name: page.title })}
           className="absolute top-0 right-0.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
         >
           <EllipsisIcon />

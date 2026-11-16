@@ -361,6 +361,9 @@ describe("registerAddPanel", () => {
     render(<Host panels={panels} />);
     const user = userEvent.setup();
 
+    // Its "…" says what it is on pointing at it (#1011).
+    await user.hover(button("Actions for Opening hours"));
+    expect((await screen.findByRole("tooltip")).textContent).toBe("Actions for Opening hours");
     await user.click(button("Actions for Opening hours"));
     await user.click(screen.getByRole("menuitem", { name: "Rename…" }));
     expect(sharedActions.rename).toHaveBeenCalledWith(HOURS);

@@ -235,6 +235,7 @@ function SharedSectionMenu({
           variant="ghost"
           size="icon-sm"
           aria-label={t("add.sharedActions", { name: item.label })}
+          tooltip={t("add.sharedActions", { name: item.label })}
           className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
         >
           <EllipsisIcon />
