@@ -89,7 +89,7 @@ function RoleSelect({ editor, name }: { editor: ToolbarProps["editor"]; name: Te
   return (
     <select
       aria-label={label}
-      title={label}
+      data-wf-tip={label}
       value={role}
       disabled={editor === null}
       onMouseDown={(event) => event.stopPropagation()}
