@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite, newId, type PageId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, removeWhenFree, waitForCanvas } from "./launch.js";
 import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // Export from the editor (3.3): the web address prompt, the export dialog, the site built in the
@@ -37,7 +37,7 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   await app.close();
-  rmSync(parent, { recursive: true, force: true });
+  void removeWhenFree(parent);
 });
 
 /** What Open Site and Show ZIP File asked the system to open. */
@@ -46,7 +46,7 @@ const opened = () =>
 
 /** File → Export Site…, past the web address prompt while the site has none (X3). */
 async function startExport(webAddress: "skip" | "skip-always" | "not-asked") {
-  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Export", exact: true }).click();
   if (webAddress === "not-asked") return;
   const prompt = page.getByRole("alertdialog", { name: "Add your site's web address?" });
   await expect(prompt).toBeVisible();
@@ -180,7 +180,7 @@ test.describe("Export site with Site Check (3.6, X5)", () => {
         editor.getByRole("region", { name: "Bottom panel" }).locator(`[data-rule="${id}"]`);
 
       // Stopped before anything is asked or written, with Site Check shown at what to fix.
-      await editor.getByRole("button", { name: "Export Site…", exact: true }).click();
+      await editor.getByRole("banner").getByRole("button", { name: "Export", exact: true }).click();
       await expect(editor.getByText("Fix 1 thing in Site Check before exporting")).toBeVisible();
       await expect(rule("deviceNames")).toHaveAttribute("data-status", "fail");
       await expect(editor.getByRole("dialog", { name: "Export Site" })).toBeHidden();
@@ -235,7 +235,10 @@ test.describe("Export site with Site Check (3.6, X5)", () => {
       const exportAnswering = async (name: string, answer?: "Leave it out" | "Keep the code") => {
         const folder = join(dir, name);
         await stubFileDialogs(opened, folder);
-        await editor.getByRole("button", { name: "Export Site…", exact: true }).click();
+        await editor
+          .getByRole("banner")
+          .getByRole("button", { name: "Export", exact: true })
+          .click();
         if (answer !== undefined) {
           await expect(prompt).toBeVisible();
           await expect(prompt.getByRole("listitem")).toHaveText([

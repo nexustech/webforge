@@ -4,12 +4,12 @@ id: site-settings
 title: Site Settings
 summary: Your site's name, web address, business details, social profiles, search engine and analytics settings, and form service.
 related: [settings, forms, pages, site-check, custom-code]
-updated: 2026-11-10
+updated: 2026-11-16
 ---
 
 # Site Settings
 
-**Site Settings** hold the details your whole site shares. Change them here, once, and every page that shows them updates. Open them with **File › Site Settings…**.
+**Site Settings** hold the details your whole site shares. Change them here, once, and every page that shows them updates. Open them with **Site › Site Settings…**.
 
 They're in the same **Settings** window as {appName}'s own preferences, under **This site**. Click **Save** to keep your changes, as one step you can undo.
 

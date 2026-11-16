@@ -107,6 +107,15 @@ export function App({
   const panelLayout = usePreferences(preferences, (state) => state.preferences.panelLayout);
   const siteName = useDocument(session, (site) => site.settings.general.name);
   const siteLanguage = useDocument(session, (site) => site.settings.general.language);
+  // The window's title names the open site (#1016): "Rosa's Bakery - {appName}", in the taskbar
+  // and the window switcher; the app's own name again once it closes.
+  useEffect(() => {
+    document.title =
+      siteName.trim() === "" ? t("app.name") : t("app.windowTitle", { site: siteName });
+    return () => {
+      document.title = t("app.name");
+    };
+  }, [siteName]);
   // Spelling is checked in the site's language, including after Site Settings changes it (1.22).
   useEffect(() => {
     api.app.setSpellCheckLanguage(siteLanguage).catch((error: unknown) => {
@@ -222,17 +231,14 @@ export function App({
                       <CommandButton
                         commandId={COMMAND_IDS.toggleLeftPanels}
                         icon={<PanelLeftIcon />}
-                        label={t("command.toggleLeftPanels")}
                       />
                       <CommandButton
                         commandId={COMMAND_IDS.toggleDrawer}
                         icon={<PanelBottomIcon />}
-                        label={t("command.toggleDrawer")}
                       />
                       <CommandButton
                         commandId={COMMAND_IDS.toggleRightPanels}
                         icon={<PanelRightIcon />}
-                        label={t("command.toggleRightPanels")}
                       />
                       <div className="mx-1 h-5 w-px bg-border" aria-hidden />
                     </>

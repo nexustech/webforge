@@ -4,7 +4,7 @@ id: preview
 title: Preview
 summary: See your site in your web browser and on your phone, as visitors will, while you edit.
 related: [export, site-check, custom-code, pages, layers]
-updated: 2026-11-13
+updated: 2026-11-16
 ---
 
 # Preview
@@ -13,7 +13,7 @@ updated: 2026-11-13
 
 ## On this computer
 
-Click **Preview** in the title bar, choose **File › Preview**, or press Ctrl+I (Cmd+I on a Mac) when you're not typing text. Your browser opens at the page you're editing.
+Click **Preview** in the title bar (the eye, in a narrow window), choose **File › Preview**, or press Ctrl+I (Cmd+I on a Mac) when you're not typing text. Your browser opens at the page you're editing, and {appName} says **Opened in your browser**. If you don't see it, it may have opened behind the {appName} window.
 
 The preview follows you as you work:
 

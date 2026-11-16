@@ -17,7 +17,7 @@ type ThemeStudioOptions = {
 
 /**
  * Adds Theme Studio (2.3b) to the window's dialogs: drawn once, whatever the panels show, so the
- * Theme tab's button and View → Theme Studio… open it from anywhere (#457 review). Returns a
+ * Theme tab's button and Site → Theme Studio… open it from anywhere (#457 review). Returns a
  * function that removes it.
  */
 export function registerThemeStudio(

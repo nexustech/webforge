@@ -1,5 +1,4 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
@@ -9,10 +8,11 @@ import { placeCaret } from "./caret.js";
 import {
   APP_START_TIMEOUT_MS,
   launchDesktopApp,
+  removeWhenFree,
   type WebforgeApp,
   waitForCanvas,
 } from "./launch.js";
-import { chooseFromMenu } from "./menus.js";
+import { chooseFromMenu, chooseFromSubmenu } from "./menus.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // Phase 1's exit criterion 1 (spec/04, #436): a three-page site built from blank in the editor,
@@ -32,7 +32,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 /** The running app; the test calls it once it has launched one. */
@@ -218,7 +218,7 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   ).toBeVisible();
 
   await selectSection();
-  await chooseFromMenu(running(), page, "Edit", "Save as shared section…");
+  await chooseFromSubmenu(running(), page, "Edit", "Shared Section", "Save as shared section…");
   const save = page.getByRole("dialog", { name: "Save as shared section" });
   await save.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await save.getByRole("button", { name: "Save" }).click();
@@ -249,7 +249,7 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   await expect(sections()).toHaveCount(1);
 
   // Site Settings: the business's email.
-  await chooseFromMenu(running(), page, "File", "Site Settings…");
+  await chooseFromMenu(running(), page, "Site", "Site Settings…");
   const settings = page.getByRole("dialog", { name: "Settings", exact: true });
   await settings.getByRole("tab", { name: "Contact & hours" }).click();
   await settings.getByLabel("Email address", { exact: true }).fill("hello@rosas.example");

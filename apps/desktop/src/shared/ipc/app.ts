@@ -25,8 +25,8 @@ const failureCodeSchema = z.string().regex(/^[A-Za-z0-9_.:-]{1,64}(?: [A-Za-z0-9
 /** A command's id, as the renderer's registry names it (`edit.undo`, `site.settings`). */
 const commandIdSchema = z.string().regex(/^[a-z][a-zA-Z0-9.-]{0,63}$/);
 
-/** The menus macOS's menu bar takes from the renderer: the application menu (`app`), then four. */
-const NATIVE_MENU_KINDS = ["app", "file", "edit", "view", "help"] as const;
+/** The menus macOS's menu bar takes from the renderer: the application menu (`app`), then five. */
+const NATIVE_MENU_KINDS = ["app", "file", "edit", "view", "site", "help"] as const;
 
 /** One item of a native submenu: the renderer's command, as its menus show it (3.18). */
 const nativeSubmenuItemSchema = z.strictObject({
@@ -37,7 +37,7 @@ const nativeSubmenuItemSchema = z.strictObject({
   enabled: z.boolean(),
   /** Why it's disabled, already translated (#1010): shown under its label. */
   reason: z.string().min(1).max(120).optional(),
-  /** After a separator: Clear Recent at the foot of Open Recent. */
+  /** After a separator: Clear Recent at the foot of Open Recent, or a menu's next group (#1016). */
   separated: z.literal(true).optional(),
 });
 
@@ -45,11 +45,11 @@ const nativeSubmenuItemSchema = z.strictObject({
  * One item of a native menu: the renderer's command, as its menus show it (LF-13), or the item
  * that opens a submenu of them (File › Open Recent, 3.18). Submenus go one level deep.
  */
-const nativeMenuItemSchema = nativeSubmenuItemSchema.omit({ separated: true }).extend({
+const nativeMenuItemSchema = nativeSubmenuItemSchema.extend({
   submenu: z.array(nativeSubmenuItemSchema).min(1).max(20).optional(),
 });
 
-/** The renderer's menus (File, Edit, View, Help), for macOS's menu bar (LF-13). */
+/** The renderer's menus (File, Edit, View, Site, Help), for macOS's menu bar (LF-13). */
 const nativeMenusSchema = z
   .array(
     z.strictObject({

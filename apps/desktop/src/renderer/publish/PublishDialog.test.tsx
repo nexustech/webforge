@@ -150,9 +150,13 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     expect(
       await screen.findByRole("heading", { name: "Where is your website hosted?" }),
     ).toBeTruthy();
-    // Focused, the dialog having opened before the list was read.
-    expect(document.activeElement).toBe(
-      screen.getByRole("button", { name: "A web host with a control panel" }),
+    // Focused, the dialog having opened before the list was read. The card takes the focus in an
+    // effect, a task after the heading is drawn: on a busy computer the heading can be found
+    // before then (#1120).
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "A web host with a control panel" }),
+      ),
     );
     // Netlify only where it's offered, Help only where it can open.
     expect(screen.queryByRole("button", { name: "Netlify" })).toBeNull();

@@ -71,7 +71,7 @@ const quickAction = (title: string) =>
   canvas()
     .locator(OVERLAY)
     .filter({ has: canvas().locator('.wf-outline[data-state="selected"]') })
-    .locator(`[title="${title}"]`);
+    .getByRole("button", { name: title, exact: true });
 
 test("deleting a page says how many pages change, and undo brings it back", async () => {
   await right().getByRole("tab", { name: "Site" }).click();

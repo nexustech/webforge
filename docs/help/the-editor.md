@@ -9,21 +9,24 @@ updated: 2026-11-16
 
 # The editor
 
-When a site is open, the editor fills the window.
+When a site is open, the editor fills the window, and the window's title names the site, as the taskbar and the window switcher show it.
 
 - **Title bar:**
-  - the menus (on a Mac they're in the menu bar at the top of the screen);
+  - the menus, **File**, **Edit**, **View**, **Site** and **Help** (on a Mac they're in the menu bar at the top of the screen). **Site** holds what sets up the whole site: **Site Settings…**, **Theme…**, **Theme Studio…** and, in Advanced mode, **Stylesheet**. **Edit** lists its items in groups: undo, the clipboard, arranging, notes and find, with three submenus between them: **Style**, **Select** and **Shared Section**. Point at a submenu, or press the right arrow key on it, to open it; the left arrow key closes it;
   - **New** and **Open**;
   - whether your work is saved;
   - **Undo** and **Redo**;
   - the command search;
   - the **Design | Content** switch;
   - buttons to show or hide the side panels;
-  - **Preview**, **Export** and **Publish**.
+  - [Site Check](site-check.md)'s button, showing what it found, such as _5 to fix · 13 tips_ or _No problems_. Click it to open Site Check;
+  - **Preview**, **Export** and **Publish**, with **Publish** filled in colour. In a window narrower than about 1200 px these four show only their icons: a list with ticks, an eye, a down arrow and a cloud. Hover over one to see its name, and Site Check's count.
 - **Left column:** the [Add](add-panel.md) panel, [Undo History](undo-and-history.md), [Version History](version-history.md) and the [Assistant](assistant.md) as tabs, with [Layers](layers.md) underneath. These four tabs show icons: a square with a plus for Add, a clock with an arrow for Undo History, a box with an arrow for Version History and sparkles for the Assistant. Hover over one, or move to it with the keyboard, to see its name and what it's for.
 - **Middle:** your page, as visitors will see it. Above it are the canvas toolbar and a line showing where the selected item sits on the page.
 - **Right column:** the [Edit panel](edit-panel.md) for whatever you've selected, with tabs beside it for **Site** ([Pages](pages.md) and the menu), [Media](media.md) and [Theme](themes.md).
 - **Bottom panel:** [Site Check](site-check.md). Show or hide it with Ctrl+J (Cmd+J on a Mac).
+
+Before a site is open, on the start screen, the title bar has only the menus, **New** and **Open**. **File › Close Site** goes back there, the site saved.
 
 A button or menu item you can't use at the moment is greyed out, and most say why: hover over the button, or look under the item in a menu or in the command search. Undo says there's nothing to undo, for example, Paste Style asks you to copy a style first, and the Edit menu's Duplicate, Delete and moves ask you to select an element first.
 
@@ -38,7 +41,7 @@ A button or menu item you can't use at the moment is greyed out, and most say wh
 You can do everything in the editor without a mouse.
 
 - **F6** moves to the next part of the window: the title bar, the left panels, the page, the bottom panel and the right panels, in that order. **Shift+F6** goes back. Each part remembers where you were in it.
-- **Tab** moves between the buttons and options in a part. In a row of tabs, use the arrow keys.
+- **Tab** moves between the buttons and options in a part. In a row of tabs, use the arrow keys. A button you move to shows its tooltip, as it does when you hover over it: its name, its shortcut if it has one, and why it's greyed out if it is. **Esc** hides the tooltip.
 - On the page, the arrow keys select the next or previous item, **Enter** edits its text and **Esc** stops. See [Editing on the page](editing-on-the-page.md).
 - **Shift+F10**, or the menu key, opens the right-click menu for what you've selected.
 - **Esc** closes a dialog and takes you back to where you were.

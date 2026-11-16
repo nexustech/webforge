@@ -4,7 +4,7 @@ id: getting-started
 title: Getting started
 summary: Make your first site, with the quick start, a template or an example.
 related: [the-editor, templates, pages, themes, preview, publish, export]
-updated: 2026-11-14
+updated: 2026-11-16
 ---
 
 # Getting started
@@ -35,6 +35,10 @@ On the right, **Recent sites** lists the sites you've opened, newest first.
 - The **×** takes a site off the list. It doesn't delete the site's file.
 
 The **Help** tab lists the help pages to start with (this one, _The editor_ and _Keyboard shortcuts_), then the keyboard shortcuts and the example site.
+
+**File › Settings…** (Ctrl+,; on a Mac, **{appName} › Settings…** or Cmd+,) works here too, so you can choose {appName}'s appearance before you open a site. See [Settings](settings.md).
+
+To come back here from a site, choose **File › Close Site**. {appName} saves the site first, and it's at the top of **Recent sites**.
 
 ## Start a site (the quick start)
 

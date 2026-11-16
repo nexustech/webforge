@@ -4,7 +4,7 @@ id: keyboard-shortcuts
 title: Keyboard shortcuts
 summary: Every keyboard shortcut in {appName}, by what it does.
 related: [the-editor, editing-on-the-page, layers, edit-panel]
-updated: 2026-11-10
+updated: 2026-11-16
 ---
 
 # Keyboard shortcuts
@@ -24,7 +24,7 @@ On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt
 | Ctrl+I     | Preview (when you're not typing text)     |
 | Ctrl+E     | Export Site…                              |
 | Ctrl+U     | Publish… (when you're not typing text)    |
-| Ctrl+,     | Settings…                                 |
+| Ctrl+,     | Settings…, on the start screen too        |
 
 ## Editing
 

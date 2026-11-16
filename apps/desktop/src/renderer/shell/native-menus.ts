@@ -10,6 +10,7 @@ import {
   type MenuId,
   menuEntries,
 } from "./commands.js";
+import { inGroups } from "./menu-groups.js";
 
 /**
  * Commands a Mac lists in its application menu (Webforge › Settings…, LF-12), whatever their
@@ -26,6 +27,7 @@ const MENUS: readonly {
   { id: "file", label: () => t("shell.menu.file") },
   { id: "edit", label: () => t("shell.menu.edit") },
   { id: "view", label: () => t("shell.menu.view") },
+  { id: "site", label: () => t("shell.menu.site") },
   { id: "help", label: () => t("shell.menu.help") },
 ];
 
@@ -44,18 +46,23 @@ const nativeItem = (command: Command) => ({
 });
 
 /**
- * The registry's menus as macOS's menu bar shows them: each menu's commands, with their keys, and
- * the submenus they open (File › Open Recent, 3.18).
+ * The registry's menus as macOS's menu bar shows them: each menu's commands in their groups
+ * (#1016), with their keys, and the submenus they open (File › Open Recent, 3.18).
  */
 export function nativeMenusOf(registry: Pick<CommandRegistry, "list">): NativeMenus {
   const commands = registry.list();
   return MENUS.map(({ id, label }) => ({
     id,
     label: label(),
-    items: menuEntries(commands, (command) =>
-      id === "app" ? APP_MENU.has(command.id) : command.menu === id && !APP_MENU.has(command.id),
-    ).map(({ command, submenu }) => ({
+    items: inGroups(
+      id,
+      menuEntries(commands, (command) =>
+        id === "app" ? APP_MENU.has(command.id) : command.menu === id && !APP_MENU.has(command.id),
+      ),
+    ).map(({ command, submenu, separated }) => ({
       ...nativeItem(command),
+      // A group's first item (#1016).
+      ...(separated ? { separated: true as const } : {}),
       ...(submenu.length === 0
         ? {}
         : {

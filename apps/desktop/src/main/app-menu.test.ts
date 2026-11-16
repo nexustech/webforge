@@ -113,6 +113,57 @@ describe("applicationMenu (F-ED-27)", () => {
     expect(run).toHaveBeenCalledWith("site.settings");
   });
 
+  it("separates the editor's groups, and puts its Site menu after View (#1016)", () => {
+    const item = (id: string, label: string, separated = false) => ({
+      id,
+      label,
+      enabled: true,
+      ...(separated ? { separated: true as const } : {}),
+    });
+    const menu = applicationMenu("darwin", false, {
+      menus: [
+        {
+          id: "edit",
+          label: "Edit",
+          items: [
+            item("edit.undo", "Undo"),
+            // Its group's first after Undo's: the roles' separator is enough before it.
+            item("edit.copyStyle", "Copy Style", true),
+            item("edit.moveUp", "Move Up", true),
+            item("edit.findReplace", "Find and Replace…", true),
+          ],
+        },
+        { id: "site", label: "Site", items: [item("site.settings", "Site Settings…")] },
+      ],
+      run: vi.fn(),
+    });
+
+    expect(menu?.map((each) => each.role ?? each.label)).toEqual([
+      "appMenu",
+      "Edit",
+      "View",
+      "Site",
+      "windowMenu",
+    ]);
+    const edit = (menu?.find((each) => each.label === "Edit")?.submenu ??
+      []) as MenuItemConstructorOptions[];
+    expect(edit.map((each) => each.role ?? each.label ?? each.type)).toEqual([
+      "Undo",
+      "redo",
+      "separator",
+      "cut",
+      "copy",
+      "paste",
+      "selectAll",
+      "separator",
+      "Copy Style",
+      "separator",
+      "Move Up",
+      "separator",
+      "Find and Replace…",
+    ]);
+  });
+
   it("says under a disabled item of the editor's why it's disabled (#1010)", () => {
     const menu = applicationMenu("darwin", false, {
       menus: [

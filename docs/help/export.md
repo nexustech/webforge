@@ -4,14 +4,14 @@ id: export
 title: Export
 summary: Save your website as files, or one ZIP file, to put on any web host.
 related: [publish, site-check, preview, site-settings, saving-and-backups]
-updated: 2026-11-15
+updated: 2026-11-16
 ---
 
 # Export
 
 **Export** saves your website as a folder of files, or a single ZIP file, that you can upload to any web host. You can also open the files straight from your computer. The website loads nothing from anywhere else, so it works anywhere.
 
-Click **Export** in the title bar, choose **File › Export Site…**, or press Ctrl+E (Cmd+E on a Mac).
+Click **Export** in the title bar (the down arrow, in a narrow window), choose **File › Export Site…**, or press Ctrl+E (Cmd+E on a Mac).
 
 ## What happens
 

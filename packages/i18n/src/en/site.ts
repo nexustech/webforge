@@ -179,7 +179,7 @@ export const site = {
   "site.code.open": "Custom Code…",
   "site.code.css": "Stylesheet (custom.css)",
   "site.code.cssHint":
-    "CSS for every page, after the site's own styles, so it wins over the theme. View › Stylesheet edits it with suggestions, and shows it on the page as you type.",
+    "CSS for every page, after the site's own styles, so it wins over the theme. In Advanced mode, Site › Stylesheet edits it with suggestions, and shows it on the page as you type.",
   "site.code.js": "Script (custom.js)",
   "site.code.jsHint":
     "JavaScript for every page of the exported site, after {appName}'s own. It never runs in the editor.",
@@ -437,6 +437,8 @@ export const site = {
   "site.zip.saved": "Saved a copy of your site as “{name}”.",
   "site.zip.savedDescription":
     "It has everything in your site, its versions too. Open it with File › Open Site from ZIP.",
+  // File › Close Site failed: the site stays open (#1016).
+  "site.closeFailed": "The site couldn't be closed. Try again.",
   "site.zip.saveFailed": "{appName} couldn't save a copy of your site.",
   "site.zip.ownFile": "A copy can't replace your site's own file. Choose another name for it.",
   // More than a ZIP file holds, saving the site as one or opening one.

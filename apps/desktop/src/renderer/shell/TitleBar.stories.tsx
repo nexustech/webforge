@@ -34,6 +34,8 @@ const COMMANDS: readonly CommandSpec[] = [
     enabled: false,
     run: noop,
   },
+  // What Site Check found (#1009).
+  { id: COMMAND_IDS.siteCheck, label: "Site Check", status: "5 to fix · 13 tips", run: noop },
   { id: COMMAND_IDS.preview, label: "Preview", menu: "file", run: noop },
   { id: COMMAND_IDS.exportSite, label: "Export Site…", menu: "file", run: noop },
   { id: COMMAND_IDS.publish, label: "Publish…", menu: "file", run: noop },
@@ -42,9 +44,12 @@ const COMMANDS: readonly CommandSpec[] = [
 function WithCommands({
   commands,
   undoSteps,
+  width,
 }: {
   readonly commands: readonly CommandSpec[];
   readonly undoSteps?: ReactNode;
+  /** The window's width, in pixels: the story's own otherwise. */
+  readonly width?: number;
 }) {
   const [registry] = useState(() => {
     const created = createCommandRegistry();
@@ -53,16 +58,18 @@ function WithCommands({
   });
   return (
     <CommandRegistryProvider registry={registry}>
-      <TitleBar
-        siteName="Bloom Bakery"
-        undoSteps={undoSteps}
-        saveStatus={
-          <span className="flex items-center gap-1 px-1 text-xs text-save-status">
-            <CheckIcon className="size-3.5" />
-            Saved
-          </span>
-        }
-      />
+      <div style={width === undefined ? undefined : { width }}>
+        <TitleBar
+          siteName="Bloom Bakery"
+          undoSteps={undoSteps}
+          saveStatus={
+            <span className="flex items-center gap-1 px-1 text-xs text-save-status">
+              <CheckIcon className="size-3.5" />
+              Saved
+            </span>
+          }
+        />
+      </div>
     </CommandRegistryProvider>
   );
 }
@@ -82,11 +89,45 @@ export const Complete: Story = {
   render: () => <WithCommands commands={COMMANDS} />,
 };
 
-const EARLY = new Set<string>([COMMAND_IDS.undo, COMMAND_IDS.redo, COMMAND_IDS.exportSite]);
+const START = new Set<string>([COMMAND_IDS.newSite, COMMAND_IDS.openSite]);
 
-/** Before New, Open, Preview and Publish exist (Phase 1): their buttons are disabled. */
-export const EarlyCommands: Story = {
-  render: () => <WithCommands commands={COMMANDS.filter((command) => EARLY.has(command.id))} />,
+/** The start screen: no site open, so no Undo, Redo, Site Check, Preview, Export or Publish (#1009). */
+export const StartScreen: Story = {
+  render: () => <WithCommands commands={COMMANDS.filter((command) => START.has(command.id))} />,
+};
+
+/** A 960 px window: Site Check, Preview, Export and Publish are icons, nothing cut off (#1009). */
+export const At960: Story = {
+  tags: ["wide-window"],
+  render: () => <WithCommands commands={COMMANDS} width={960} />,
+};
+
+/**
+ * A 1280 px window: Site Check shows what it found, and Preview, Export and Publish their names,
+ * Publish filled (#1009).
+ */
+export const At1280: Story = {
+  tags: ["wide-window"],
+  render: () => <WithCommands commands={COMMANDS} width={1280} />,
+};
+
+/** A 1440 px window: their names, with room to spare (#1009). */
+export const At1440: Story = {
+  tags: ["wide-window"],
+  render: () => <WithCommands commands={COMMANDS} width={1440} />,
+};
+
+/** Site Check found nothing to fix and no tips (#1009). */
+export const NoProblems: Story = {
+  tags: ["wide-window"],
+  render: () => (
+    <WithCommands
+      commands={COMMANDS.map((command) =>
+        command.id === COMMAND_IDS.siteCheck ? { ...command, status: "No problems" } : command,
+      )}
+      width={1280}
+    />
+  ),
 };
 
 /** A phone can open the preview (3.2): the cue says so, with Stop beside it. */

@@ -29,6 +29,7 @@ const COMMANDS: readonly CommandSpec[] = [
   { id: COMMAND_IDS.openSite, label: "Open Site…", menu: "file", run: noop },
   { id: COMMAND_IDS.undo, label: "Undo", menu: "edit", run: noop },
   { id: COMMAND_IDS.redo, label: "Redo", menu: "edit", enabled: false, run: noop },
+  { id: COMMAND_IDS.siteCheck, label: "Site Check", status: "2 to fix · 4 tips", run: noop },
   { id: COMMAND_IDS.preview, label: "Preview", menu: "file", run: noop },
   { id: COMMAND_IDS.exportSite, label: "Export Site…", menu: "file", run: noop },
   { id: COMMAND_IDS.publish, label: "Publish…", menu: "file", run: noop },
@@ -143,20 +144,11 @@ function Window() {
               <>
                 <ModeToggle mode="design" onModeChange={noop} />
                 <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-                <CommandButton
-                  commandId={COMMAND_IDS.toggleLeftPanels}
-                  icon={<PanelLeftIcon />}
-                  label="Left panels"
-                />
-                <CommandButton
-                  commandId={COMMAND_IDS.toggleDrawer}
-                  icon={<PanelBottomIcon />}
-                  label="Bottom panel"
-                />
+                <CommandButton commandId={COMMAND_IDS.toggleLeftPanels} icon={<PanelLeftIcon />} />
+                <CommandButton commandId={COMMAND_IDS.toggleDrawer} icon={<PanelBottomIcon />} />
                 <CommandButton
                   commandId={COMMAND_IDS.toggleRightPanels}
                   icon={<PanelRightIcon />}
-                  label="Right panels"
                 />
               </>
             }

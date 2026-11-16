@@ -148,15 +148,24 @@ export async function launchDesktopApp(
   ];
   if (temporary.length > 0) {
     app.on("close", () => {
-      for (const folder of temporary) {
-        // Best effort: after a killed app, its helper processes can hold files for a moment.
-        rm(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => {
-          // Left in the temp folder; the OS cleans it up eventually.
-        });
-      }
+      for (const folder of temporary) void removeWhenFree(folder);
     });
   }
   return closingWithin(app);
+}
+
+/**
+ * Removes `folder`, a test's temporary folder, once nothing holds it, and never fails (#1112).
+ * After a close, Electron's own process can still hold the user data as it ends: on Windows,
+ * Playwright starts Electron in a shell, the process a close waits for and kills, and on a busy
+ * computer Electron's process took up to two minutes more to end once killed, keeping its `DIPS`
+ * database open. It retries for about that long, 200 ms more between each try; a folder still held
+ * after that is left in the temp folder, which the OS cleans up eventually.
+ */
+export function removeWhenFree(folder: string): Promise<void> {
+  return rm(folder, { recursive: true, force: true, maxRetries: 40, retryDelay: 200 }).catch(() => {
+    // Left in the temp folder.
+  });
 }
 
 /**
@@ -325,9 +334,12 @@ export const APP_START_TIMEOUT_MS = 30_000;
 const CANVAS_START_TIMEOUT_MS = 30_000;
 
 /**
- * Waits until `page`'s canvas shows the site with its compiled CSS (1.12) and the fonts it uses.
- * Both change the layout when they arrive (a heading set in its font is wider or narrower), so
- * clicks, hovers, drags and measurements wait for them.
+ * Waits until `page`'s canvas shows the site with its compiled CSS (1.12) and the fonts it uses,
+ * and the cover over it while it opens has gone (#1013), as a person waits.
+ * - The styles and fonts change the layout when they arrive (a heading set in its font is wider or
+ *   narrower), so clicks, hovers, drags and measurements wait for them.
+ * - The cover takes the clicks until then: a click on the canvas lands on it and selects nothing
+ *   (#1101). A forced click or `page.mouse` doesn't wait for it, as an ordinary click does.
  */
 export async function waitForCanvas(page: Page): Promise<void> {
   const canvas = page.frameLocator(".editor__canvas iframe");
@@ -344,4 +356,7 @@ export async function waitForCanvas(page: Page): Promise<void> {
           requestAnimationFrame(() => void document.fonts.ready.then(() => resolve())),
         ),
     );
+  await expect(page.locator(".editor__canvas-cover")).toHaveCount(0, {
+    timeout: CANVAS_START_TIMEOUT_MS,
+  });
 }

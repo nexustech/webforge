@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, removeWhenFree } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { type MockNetlify, startMockNetlify } from "./netlify-mock.js";
 
@@ -31,7 +31,7 @@ test.afterEach(async () => {
   await netlify?.close();
   netlify = undefined;
   await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
-  await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(userData);
 });
 
 /** A site with a contact form that has nowhere to send yet, saved at a new path. */
@@ -62,14 +62,16 @@ async function open(path: string, mock: MockNetlify): Promise<Page> {
   });
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
-  await expect(page.getByRole("button", { name: "Publish…", exact: true })).toBeEnabled();
+  await expect(
+    page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }),
+  ).toBeEnabled();
   return page;
 }
 
 /** Site Settings' Forms section, open on `page`. */
 async function formSettings(page: Page) {
   if (app === undefined) throw new Error("no app");
-  await chooseFromMenu(app, page, "File", "Site Settings…");
+  await chooseFromMenu(app, page, "Site", "Site Settings…");
   const settings = page.getByRole("dialog", { name: "Settings", exact: true });
   await settings.getByRole("tab", { name: "Forms" }).click();
   return settings;
@@ -77,7 +79,7 @@ async function formSettings(page: Page) {
 
 /** The Publish dialog's *Netlify* card, the site's first destination, signed in with the mock's token. */
 async function addNetlify(page: Page, mock: MockNetlify) {
-  await page.getByRole("button", { name: "Publish…", exact: true }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }).click();
   const publish = page.getByRole("dialog", { name: "Publish" });
   await publish.getByRole("button", { name: "Netlify", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Add a Netlify Destination" });
@@ -134,7 +136,7 @@ test("adds a Netlify destination by token, offers Netlify Forms, and publishes t
   await expect(settings).toHaveCount(0);
 
   // Published through 4.5's flow: Netlify finds the form by its name.
-  await page.getByRole("button", { name: "Publish…", exact: true }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }).click();
   await publish.getByRole("button", { name: "Publish to rosas-bakery" }).click();
   const live = page.getByRole("dialog", { name: "Your site is live" });
   await expect(live).toBeVisible({ timeout: 60_000 });
@@ -147,7 +149,7 @@ test("adds a Netlify destination by token, offers Netlify Forms, and publishes t
 
   // Made private on Netlify since: published again, Your site is live says visitors can't see it.
   netlify.protect(siteId);
-  await page.getByRole("button", { name: "Publish…", exact: true }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }).click();
   await publish.getByRole("button", { name: "Publish to rosas-bakery" }).click();
   await expect(live.getByRole("alert")).toContainText("Visitors have to log in to see this site", {
     timeout: 60_000,

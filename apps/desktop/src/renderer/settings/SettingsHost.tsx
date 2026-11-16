@@ -8,6 +8,11 @@ import { SettingsDialog } from "./SettingsDialog.js";
 /** Props of {@link SettingsHost}. */
 export type SettingsHostProps = {
   readonly registry: SettingsRegistry;
+  /**
+   * Whether a site is open, with Site › Site Settings… for it; false on the start screen, where
+   * Settings… shows the app's parts alone (#1016). True when left out.
+   */
+  readonly site?: boolean;
 };
 
 /**
@@ -22,10 +27,11 @@ type Shown = {
 };
 
 /**
- * File → Settings… and File → Site Settings… (LF-12, F-SET-1), also in the command box: both open
- * the one {@link SettingsDialog}, on App's first section or on This site's.
+ * File → Settings… and Site → Site Settings… (LF-12, F-SET-1, #1016), also in the command box:
+ * both open the one {@link SettingsDialog}, on App's first section or on This site's. Without a
+ * site (the start screen), Settings… alone.
  */
-export function SettingsHost({ registry }: SettingsHostProps) {
+export function SettingsHost({ registry, site = true }: SettingsHostProps) {
   const commands = useCommandRegistry();
   const [shown, setShown] = useState<Shown>({ open: false, parts: [] });
 
@@ -53,15 +59,22 @@ export function SettingsHost({ registry }: SettingsHostProps) {
         menu: "file",
         run: () => open("app"),
       }),
-      commands.register({
-        id: COMMAND_IDS.siteSettings,
-        label: t("site.settings.command"),
-        menu: "file",
-        enabled: hasSite(),
-        run: () => open("site"),
-      }),
-      // Site Settings… is on while a site's part is there, as other site-only commands are.
-      registry.subscribe(() => commands.update(COMMAND_IDS.siteSettings, { enabled: hasSite() })),
+      ...(site
+        ? [
+            commands.register({
+              id: COMMAND_IDS.siteSettings,
+              label: t("site.settings.command"),
+              // Site › Site Settings…, with the theme (#1016).
+              menu: "site",
+              enabled: hasSite(),
+              run: () => open("site"),
+            }),
+            // Site Settings… is on while a site's part is there, as other site-only commands are.
+            registry.subscribe(() =>
+              commands.update(COMMAND_IDS.siteSettings, { enabled: hasSite() }),
+            ),
+          ]
+        : []),
       // A step that needs a setting opens the dialog on its section, and hears how it closed.
       registry.onShow(({ part, group, closed }) => {
         const parts = registry.list().flatMap((entry) => entry.open() ?? []);
@@ -75,7 +88,7 @@ export function SettingsHost({ registry }: SettingsHostProps) {
     return () => {
       for (const stop of stops) stop();
     };
-  }, [commands, registry]);
+  }, [commands, registry, site]);
 
   const close = (saved: boolean) => {
     shown.closed?.(saved);

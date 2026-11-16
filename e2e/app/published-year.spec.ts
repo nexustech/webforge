@@ -5,7 +5,13 @@ import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp, newUserDataDir, type WebforgeApp, waitForCanvas } from "./launch.js";
+import {
+  launchDesktopApp,
+  newUserDataDir,
+  removeWhenFree,
+  type WebforgeApp,
+  waitForCanvas,
+} from "./launch.js";
 
 // The year a published site shows (F-CM-8, 4.5): `{year}` is filled in when the site is built, so
 // once the year has turned, Site Check tips to publish again, from when the site's file says it
@@ -24,7 +30,7 @@ test.afterEach(async () => {
   await app?.close();
   app = undefined;
   await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
-  await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(userData);
 });
 
 test("tips to publish again when the published site shows last year, and opens Publish", async () => {

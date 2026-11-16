@@ -1,12 +1,11 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
 import { themePreset } from "@webforge/themes";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, removeWhenFree, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import type { RendererWindow } from "./sites.js";
 import { stubFileDialogs } from "./sites.js";
@@ -29,7 +28,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 /** The open site's theme, as the main process keeps it. */
@@ -120,7 +119,7 @@ test("a colour hard to read says so under it, and a readable one doesn't", async
 
 test("Theme Studio opens from the View menu, switches theme from a card, and undoes it there", async () => {
   const page = await openTheme();
-  await chooseFromMenu(running(), page, "View", "Theme Studio…");
+  await chooseFromMenu(running(), page, "Site", "Theme Studio…");
   const studio = page.getByRole("dialog", { name: "Theme Studio" });
   await expect(studio.getByRole("button", { name: /Light/ })).toHaveAttribute(
     "aria-pressed",
@@ -160,7 +159,7 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
     page.getByRole("region", { name: "Media" }).getByRole("button", { name: "Shop front.jpg" }),
   ).toBeVisible();
 
-  await chooseFromMenu(running(), page, "View", "Theme Studio…");
+  await chooseFromMenu(running(), page, "Site", "Theme Studio…");
   const studio = page.getByRole("dialog", { name: "Theme Studio" });
   await studio.getByRole("tab", { name: "Colours" }).click();
   await studio.getByRole("button", { name: "Colours from an image…" }).click();

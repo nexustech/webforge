@@ -1,9 +1,8 @@
-import { rm } from "node:fs/promises";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp, newUserDataDir, waitForCanvas } from "./launch.js";
-import { chooseFromMenu } from "./menus.js";
+import { launchDesktopApp, newUserDataDir, removeWhenFree, waitForCanvas } from "./launch.js";
+import { chooseFromSubmenu } from "./menus.js";
 
 // The Edit panel (1.14): the selected element's fields, each change one labelled undo step.
 
@@ -26,10 +25,7 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   await app.close();
-  // Best effort, as launchDesktopApp's own clean-up: a helper process can hold a file for a moment.
-  await rm(userDataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(
-    () => undefined,
-  );
+  void removeWhenFree(userDataDir);
 });
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
@@ -121,7 +117,7 @@ test.describe("Edit panel", () => {
     const box = await first.boundingBox();
     if (box === null) throw new Error("Heading not visible");
     await clickOnCanvas(first, { position: { x: box.width * 0.97, y: box.height - 2 } });
-    await chooseFromMenu(app, page, "Edit", "Paste Style");
+    await chooseFromSubmenu(app, page, "Edit", "Style", "Paste Style");
 
     await expect(canvas().locator("h3.site-heading")).toHaveCount(2);
     await expect(steps().first()).toHaveText("Pasted style on Heading");
@@ -138,7 +134,7 @@ test.describe("Edit panel", () => {
     await panel().getByLabel("Shadow", { exact: true }).selectOption("large");
     const shadowed = canvas().locator(".site-heading[class*='shadow-lg!']");
     await expect(shadowed).toHaveCount(1);
-    await chooseFromMenu(app, page, "Edit", "Apply Look to Every Heading on This Page");
+    await chooseFromSubmenu(app, page, "Edit", "Style", "Apply Look to Every Heading on This Page");
 
     await expect(shadowed).toHaveCount(2);
     await expect(steps().first()).toHaveText("Applied the Heading look to 1 other");

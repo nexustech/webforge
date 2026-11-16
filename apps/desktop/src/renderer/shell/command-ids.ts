@@ -14,12 +14,16 @@ export const COMMAND_IDS = {
   // A site's ZIP (4.7): a copy of the open site saved as one, and a site opened from one.
   saveSiteZip: "site.saveZip",
   openSiteZip: "site.openZip",
+  // File › Close Site (#1016): back to the start screen.
+  closeSite: "site.close",
   undo: "edit.undo",
   redo: "edit.redo",
   preview: "site.preview",
   previewOnPhone: "site.previewOnPhone",
   stopPhonePreview: "site.stopPhonePreview",
   exportSite: "site.export",
+  // The title bar's Site Check button (#1009): its panel, with what it found.
+  siteCheck: "site.check",
   siteSettings: "site.settings",
   pageSettings: "page.settings",
   customCode: "site.customCode",

@@ -58,7 +58,9 @@ try {
   // With a site open, the editor; otherwise, or when its site couldn't be read, the start screen
   // (1.8), which reloads the window once it has created or opened one.
   root.render(
-    <StrictMode>{showEditor?.(info, preferences) ?? <StartScreen info={info} />}</StrictMode>,
+    <StrictMode>
+      {showEditor?.(info, preferences) ?? <StartScreen info={info} preferences={preferences} />}
+    </StrictMode>,
   );
   // The start screen's site opens in this window, reloaded: its editor's code loads meanwhile (#945).
   if (showEditor === undefined) preloadEditorWhenIdle(() => import("./editor-start.js"));

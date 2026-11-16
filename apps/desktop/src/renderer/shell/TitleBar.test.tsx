@@ -62,15 +62,61 @@ describe("TitleBar", () => {
     expect(within(banner).getByText("Saved")).toBeTruthy();
   });
 
-  it("disables buttons whose commands nobody has registered yet", () => {
-    renderTitleBar();
+  it("shows no button for a command nobody has registered, as on the start screen (#1009)", () => {
+    const registry = createCommandRegistry();
+    registry.register({ id: COMMAND_IDS.newSite, label: "New Site…", run: vi.fn() });
+    registry.register({ id: COMMAND_IDS.openSite, label: "Open Site…", run: vi.fn() });
+    renderTitleBar(registry);
 
-    // Icon-only buttons (LF-13) keep their names before the editor registers them.
-    for (const name of ["New", "Open", "Undo", "Redo", "Preview", "Export", "Publish"]) {
-      const button = screen.getByRole("button", { name }) as HTMLButtonElement;
-      expect(button.disabled).toBe(true);
-      expect(button.textContent).toBe("");
+    expect(screen.getByRole("button", { name: "New Site…" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Open Site…" })).toBeTruthy();
+    for (const name of ["Undo", "Redo", "Preview", "Export", "Publish"]) {
+      expect(screen.queryByRole("button", { name })).toBeNull();
     }
+  });
+
+  it("names Preview, Export and Publish while it's wide, Publish filled (#1009)", () => {
+    const registry = createCommandRegistry();
+    registry.register({ id: COMMAND_IDS.preview, label: "Preview", run: vi.fn() });
+    registry.register({ id: COMMAND_IDS.exportSite, label: "Export Site…", run: vi.fn() });
+    registry.register({ id: COMMAND_IDS.publish, label: "Publish…", run: vi.fn() });
+    renderTitleBar(registry);
+
+    // Its container: the names show from 1180 px, by a container query.
+    expect(screen.getByRole("banner").parentElement?.className).toContain("@container/title-bar");
+    for (const name of ["Preview", "Export", "Publish"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button.textContent).toBe(name);
+      expect(within(button).getByText(name).className).toBe(
+        "hidden @min-[1180px]/title-bar:inline",
+      );
+      expect(button.className.includes("bg-primary")).toBe(name === "Publish");
+    }
+  });
+
+  it("shows what Site Check found while it's wide, and opens it (#1009)", async () => {
+    const registry = createCommandRegistry();
+    const run = vi.fn();
+    registry.register({
+      id: COMMAND_IDS.siteCheck,
+      label: "Site Check",
+      status: "5 to fix · 13 tips",
+      run,
+    });
+    renderTitleBar(registry);
+
+    // Named by its label too, as its tooltip is: the count alone doesn't say what it counts.
+    const button = screen.getByRole("button", { name: "Site Check: 5 to fix · 13 tips" });
+    expect(within(button).getByText("5 to fix · 13 tips").className).toBe(
+      "hidden @min-[1180px]/title-bar:inline",
+    );
+    await userEvent.click(button);
+    expect(run).toHaveBeenCalledOnce();
+
+    act(() => registry.update(COMMAND_IDS.siteCheck, { status: "No problems" }));
+    expect(screen.getByRole("button", { name: "Site Check: No problems" }).textContent).toBe(
+      "No problems",
+    );
   });
 
   it("gives a button a caret once commands go with it, and none before (LF-13)", async () => {
@@ -107,8 +153,8 @@ describe("TitleBar", () => {
     registry.register({ id: COMMAND_IDS.undo, label: "Undo", run: undo });
     renderTitleBar(registry);
 
-    // Named by its command once registered.
-    await userEvent.click(screen.getByRole("button", { name: "Export Site…" }));
+    // Named by its own name (#1009); an icon button by its command.
+    await userEvent.click(screen.getByRole("button", { name: "Export" }));
     await userEvent.click(screen.getByRole("button", { name: "Undo" }));
 
     expect(exportSite).toHaveBeenCalledOnce();
@@ -159,15 +205,6 @@ describe("TitleBar", () => {
     expect((await screen.findByRole("tooltip")).textContent).toBe(
       "Undo Edited Heading text (Ctrl+Z)",
     );
-  });
-
-  it("says a button's command needs a site while nobody has registered it (#1010)", async () => {
-    renderTitleBar();
-
-    const publish = screen.getByRole("button", { name: "Publish" });
-    await userEvent.hover(publish.parentElement ?? publish);
-
-    expect((await screen.findByRole("tooltip")).textContent).toBe("Publish Open a site first.");
   });
 
   it("shows no reason once the command is enabled again (#1010)", async () => {

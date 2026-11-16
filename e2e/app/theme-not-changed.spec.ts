@@ -51,7 +51,7 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
     features.evaluate((element) => getComputedStyle(element).backgroundColor);
   const before = await background();
 
-  await chooseFromMenu(app, page, "View", "Theme Studio…");
+  await chooseFromMenu(app, page, "Site", "Theme Studio…");
   await studio().getByRole("tab", { name: "Components" }).click();
   // The kinds are a list in the bar at the top (CT-11).
   await studio()

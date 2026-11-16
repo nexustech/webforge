@@ -87,7 +87,13 @@ describe("HelpWindow (5.4b, HP-6)", () => {
   it("opens a page on the web in the browser, and says so when it couldn't", async () => {
     const { main, openExternal } = setUp({ page: "site-check" }, false);
     const link = main.getByRole("link", { name: "the web" });
-    expect(link.getAttribute("title")).toBe("the web (opens in your web browser)");
+    // In the app's tooltip, not the browser's (#1011), and said to a screen reader.
+    expect(link.hasAttribute("title")).toBe(false);
+    expect(link.getAttribute("aria-description")).toBe("the web (opens in your web browser)");
+    await userEvent.hover(link);
+    expect((await screen.findByRole("tooltip")).textContent).toBe(
+      "the web (opens in your web browser)",
+    );
     await userEvent.click(link);
     expect(openExternal).toHaveBeenCalledWith("https://www.example.org/");
     expect(await main.findByText(/Your web browser didn't open/)).toBeTruthy();

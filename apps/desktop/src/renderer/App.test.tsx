@@ -100,6 +100,14 @@ describe("App", () => {
     expect(screen.getByRole("main")).toBeTruthy();
   });
 
+  it("names the open site in the window's title, and only the app once it closes (#1016)", () => {
+    renderApp();
+    expect(document.title).toBe("My site - Webforge");
+
+    cleanup();
+    expect(document.title).toBe("Webforge");
+  });
+
   it("spell checks in the site's language (F-ED-19)", () => {
     setSpellCheckLanguage.mockClear();
     renderApp();
@@ -123,7 +131,9 @@ describe("App", () => {
       ),
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Export Site…" }));
+    await userEvent.click(
+      within(screen.getByRole("banner")).getByRole("button", { name: "Export" }),
+    );
     // The starter site has no web address yet (X3).
     await userEvent.click(await screen.findByRole("button", { name: "Export without it" }));
     await userEvent.click(await screen.findByRole("button", { name: "Export…" }));

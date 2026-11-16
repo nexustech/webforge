@@ -46,12 +46,12 @@ test("the start screen, the editor and its main dialogs pass axe", async () => {
     [
       "alertdialog",
       "Add your site's web address?",
-      () => page.getByRole("button", { name: "Export Site…", exact: true }).click(),
+      () => page.getByRole("banner").getByRole("button", { name: "Export", exact: true }).click(),
     ],
     [
       "dialog",
       "Publish",
-      () => page.getByRole("button", { name: "Publish…", exact: true }).click(),
+      () => page.getByRole("banner").getByRole("button", { name: "Publish", exact: true }).click(),
     ],
     ["dialog", "Commands", () => page.getByRole("button", { name: /^Search commands/ }).click()],
   ] as const) {

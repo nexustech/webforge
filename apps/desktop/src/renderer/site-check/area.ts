@@ -51,6 +51,7 @@ export const siteCheckArea: Area<WindowContext> = {
       session,
       settings,
       commands,
+      titleBar: commands,
       // A guide's page (3.17), by its name: main knows the address.
       openGuide: (guide) => {
         api.app

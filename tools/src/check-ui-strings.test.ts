@@ -3,11 +3,15 @@ import { describe, expect, it } from "vitest";
 import {
   checkCatalogue,
   checkFolders,
+  checkTitleFolders,
   findAppNames,
+  findTitleAttributes,
   findUiStrings,
   formatAppNameViolations,
+  formatTitleViolations,
   formatUiStringViolations,
   isCheckedFile,
+  isTitleCheckedFile,
   isUserFacingAttribute,
 } from "./check-ui-strings.js";
 
@@ -88,6 +92,91 @@ describe("check-ui-strings", () => {
     ]);
     expect(message).toContain("Found 1 hard-coded UI string(s)");
     expect(message).toContain('a/Panel.tsx:3  title: "Pages"');
+  });
+});
+
+describe("title attributes in the editor (#1011)", () => {
+  it("reports a title on an element, with its line, but not on a frame or a component", () => {
+    const source = [
+      "export const A = () => (",
+      "  <div>",
+      '    <button type="button" title={t("x")} />',
+      '    <iframe title={t("frame")} />',
+      '    <Dialog title={t("dialog")} />',
+      '    <RichTextMenu.Control title={t("bold")} />',
+      '    <a {...(web ? { title: t("web") } : {})} {...{ href: "#" }} />',
+      "  </div>",
+      ");",
+    ].join("\n");
+    expect(findTitleAttributes(source, "a/Panel.tsx")).toEqual([
+      { file: "a/Panel.tsx", line: 3, where: "<button title>", text: "title" },
+      { file: "a/Panel.tsx", line: 7, where: "<a title>", text: "title" },
+    ]);
+  });
+
+  it("reports a shorthand title spread onto an element", () => {
+    const source = ['const title = t("x");', "const a = <span {...{ title }} />;"].join("\n");
+    expect(findTitleAttributes(source, "a/Panel.tsx")).toEqual([
+      { file: "a/Panel.tsx", line: 2, where: "<span title>", text: "title" },
+    ]);
+  });
+
+  it("reports setAttribute('title') in a .ts file, and .title = only when asked", () => {
+    const source = [
+      "export function chrome(element: HTMLElement, text: string) {",
+      '  element.setAttribute("title", text);',
+      "  element.title = text;",
+      '  element["title"] = text;',
+      "  document.title = text;",
+      '  element.removeAttribute("title");',
+      '  element.setAttribute("data-wf-tip", text);',
+      "  const cast = <HTMLElement>element;",
+      "}",
+    ].join("\n");
+    expect(findTitleAttributes(source, "a/chrome.ts")).toEqual([
+      { file: "a/chrome.ts", line: 2, where: 'setAttribute("title")', text: "title" },
+    ]);
+    expect(
+      findTitleAttributes(source, "a/chrome.ts", { properties: true }).map((v) => [
+        v.line,
+        v.where,
+      ]),
+    ).toEqual([
+      [2, 'setAttribute("title")'],
+      [3, ".title ="],
+      [4, ".title ="],
+    ]);
+  });
+
+  it("checks TS and TSX sources, not tests, stories or declarations", () => {
+    expect(isTitleCheckedFile("chrome.ts")).toBe(true);
+    expect(isTitleCheckedFile("Panel.tsx")).toBe(true);
+    expect(isTitleCheckedFile("chrome.test.ts")).toBe(false);
+    expect(isTitleCheckedFile("Panel.stories.tsx")).toBe(false);
+    expect(isTitleCheckedFile("env.d.ts")).toBe(false);
+  });
+
+  // The editor itself is checked by `pnpm ui-strings` (in `pnpm check` and CI): parsing all of it
+  // here too would double the time.
+  it("checks property folders for .title =, and the others for attributes only", () => {
+    const fixture = join(FIXTURES, "titles");
+    expect(checkTitleFolders([fixture], FIXTURES).map((v) => [v.file, v.line, v.where])).toEqual([
+      ["titles/chrome.ts", 2, 'setAttribute("title")'],
+    ]);
+    expect(
+      checkTitleFolders([], FIXTURES, [fixture]).map((v) => [v.file, v.line, v.where]),
+    ).toEqual([
+      ["titles/chrome.ts", 2, 'setAttribute("title")'],
+      ["titles/chrome.ts", 3, ".title ="],
+    ]);
+  });
+
+  it("formats one line per attribute", () => {
+    const message = formatTitleViolations([
+      { file: "a/Panel.tsx", line: 3, where: "<button title>", text: "title" },
+    ]);
+    expect(message).toContain("Found 1 title attribute(s)");
+    expect(message).toContain("a/Panel.tsx:3  <button title>");
   });
 });
 

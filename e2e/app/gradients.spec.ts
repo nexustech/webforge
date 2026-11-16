@@ -81,7 +81,7 @@ test("a direction chosen in Style this Hero… draws Brand to Accent, as one ste
 test("a direction chosen for every Hero in Theme Studio draws Brand to Accent once applied (CT-10)", async () => {
   await addHero();
 
-  await chooseFromMenu(app, page, "View", "Theme Studio…");
+  await chooseFromMenu(app, page, "Site", "Theme Studio…");
   const studio = page.getByRole("dialog", { name: "Theme Studio" });
   await studio.getByRole("tab", { name: "Components" }).click();
   // The kinds are a list in the bar at the top (CT-11).

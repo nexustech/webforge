@@ -1,5 +1,4 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
@@ -9,10 +8,11 @@ import { placeCaret } from "./caret.js";
 import {
   APP_START_TIMEOUT_MS,
   launchDesktopApp,
+  removeWhenFree,
   type WebforgeApp,
   waitForCanvas,
 } from "./launch.js";
-import { chooseFromSubmenu, submenuItems } from "./menus.js";
+import { chooseFromMenu, chooseFromSubmenu, submenuItems } from "./menus.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // The start screen (F-SITE-1, F-SITE-2): new → edit → quit → reopen from the Recent list.
@@ -32,7 +32,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");
@@ -63,9 +63,40 @@ async function closeWindow(): Promise<void> {
   app = undefined;
 }
 
+test("opens Settings on the start screen, and File › Close Site goes back to it, saved (#1016)", async () => {
+  const page = await startWithoutSite();
+  // Its keys: Settings… is in File here, and in the app's menu on a Mac.
+  await page.keyboard.press("ControlOrMeta+Comma");
+  const settings = page.getByRole("dialog", { name: "Settings" });
+  await expect(settings.getByRole("tab")).toHaveText(["Interface", "Devices", "Updates"]);
+  await settings.getByRole("button", { name: "Cancel" }).click();
+  await expect(settings).toBeHidden();
+
+  const sitePath = join(dir, "Rosa's Bakery.wforge");
+  await stubFileDialogs(running(), sitePath);
+  await page
+    .getByRole("button", { name: "Choose a template yourself…", exact: true })
+    .first()
+    .click();
+  const newSite = page.getByRole("dialog", { name: "New Site" });
+  await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
+  await newSite.getByRole("button", { name: "Create" }).click();
+  await waitForCanvas(page);
+
+  await chooseFromMenu(running(), page, "File", "Close Site");
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
+  // On the Recent list, and no longer the open one: it opens again from there.
+  const card = page.getByRole("listitem").filter({ hasText: "Rosa's Bakery" });
+  // Its canvas, kept as it closed.
+  await expect(card.locator("img")).toHaveAttribute("src", /^data:image\/jpeg;base64,/);
+  await card.getByRole("button").first().click();
+  await waitForCanvas(page);
+});
+
 test("creates a blank site, keeps an edit and reopens it from the Recent list", async () => {
   let page = await startWithoutSite();
   await expect(page.getByText("Sites you open or create appear here.")).toBeVisible();
+  await expect(page).toHaveTitle("Webforge");
 
   // New Site, Blank: the save dialog (stubbed) names the file, and the editor opens on it.
   const sitePath = join(dir, "Rosa's Bakery.wforge");
@@ -80,6 +111,8 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   await newSite.getByRole("button", { name: "Create" }).click();
   await waitForCanvas(page);
   await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved");
+  // The window's title names the site (#1016).
+  await expect(page).toHaveTitle("Rosa's Bakery - Webforge");
   // The Blank template: Home, About and Contact, and its "Page not found" page.
   const blank = await page.evaluate(async () => {
     const read = await (window as unknown as RendererWindow).webforge.project.readSite();

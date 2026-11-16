@@ -21,6 +21,9 @@ describe("the chrome's colours (R8)", () => {
       primary: "#1d6fd0",
       primaryForeground: "#ffffff",
       grid: "#f028f3",
+      popover: "#ffffff",
+      popoverForeground: "#26292b",
+      borderStrong: "#c4c9cf",
     });
   });
 
@@ -30,6 +33,8 @@ describe("the chrome's colours (R8)", () => {
     expect(tokensStyle()).toContain("--wf-primary: #0a6fb7;");
     // Hover and selection outlines are the accent too (LF-1).
     expect(tokensStyle()).toContain("--wf-outline-color: #0a6fb7;");
+    // The controls' tooltips are the editor's popover (#1011).
+    expect(tokensStyle()).toContain("--wf-tip-bg: #ffffff;");
 
     document.documentElement.style.setProperty("--primary", "#1d6fd0");
     document.documentElement.setAttribute("data-theme", "dark");

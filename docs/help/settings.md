@@ -4,7 +4,7 @@ id: settings
 title: Settings
 summary: {appName}'s own preferences, such as its appearance, Simple or Advanced mode, your devices and where updates come from.
 related: [site-settings, the-editor, ai-apps, assistant]
-updated: 2026-11-15
+updated: 2026-11-16
 ---
 
 # Settings
@@ -13,6 +13,8 @@ updated: 2026-11-15
 
 - **App:** how {appName} works for you, on this computer, for every site. Described below.
 - **This site:** the open site's [Site Settings](site-settings.md).
+
+Settings opens on the start screen too, before any site is open, with the app's parts alone: **Interface**, **Devices** and **Updates**.
 
 Click **Save** to keep your changes.
 

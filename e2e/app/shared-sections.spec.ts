@@ -2,7 +2,7 @@ import { type ElectronApplication, expect, type Locator, type Page, test } from 
 import { clickOnCanvas } from "./canvas-click.js";
 import { type Box, below, boxOf, drag } from "./drag.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
-import { chooseFromMenu } from "./menus.js";
+import { chooseFromMenu, chooseFromSubmenu } from "./menus.js";
 
 // Shared sections (1.29, F-ED-23): a section saved once and placed as linked copies; editing any
 // copy changes them all in one undo step, and Detach makes one copy a normal section again.
@@ -35,6 +35,12 @@ const headings = () => canvas().locator(".site-heading");
 async function editMenu(name: string | RegExp): Promise<void> {
   await expect(page.getByRole("menu")).toHaveCount(0);
   await chooseFromMenu(app, page, "Edit", name);
+}
+
+/** Runs a command in Edit › Shared Section (#1016), once the menu a previous one closed has gone. */
+async function sharedSectionMenu(name: string): Promise<void> {
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  await chooseFromSubmenu(app, page, "Edit", "Shared Section", name);
 }
 
 /** Waits until `target` stays where it is: Puck animates the canvas, and redraws a saved section. */
@@ -74,7 +80,7 @@ async function selectHeading(index: number): Promise<void> {
 
 test("saves a shared section, edits every copy at once, undoes it, and detaches one", async () => {
   await selectSection();
-  await editMenu("Save as shared section…");
+  await sharedSectionMenu("Save as shared section…");
   const dialog = page.getByRole("dialog", { name: "Save as shared section" });
   await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await dialog.getByRole("button", { name: "Save" }).click();
@@ -102,7 +108,7 @@ test("saves a shared section, edits every copy at once, undoes it, and detaches 
 
   // Detached, the second copy is a normal section: its edits stay its own.
   await selectHeading(1);
-  await editMenu("Detach from shared section");
+  await sharedSectionMenu("Detach");
   await expect(steps().first()).toHaveText("Detached 'Welcome'");
   await expect(banner()).toHaveCount(0);
   await selectHeading(1);
@@ -113,7 +119,7 @@ test("saves a shared section, edits every copy at once, undoes it, and detaches 
 
 test("Ctrl/Cmd+V pastes a copied linked copy as the page's own; Ctrl/Cmd+Shift+V places another linked copy (F-ED-23)", async () => {
   await selectSection();
-  await editMenu("Save as shared section…");
+  await sharedSectionMenu("Save as shared section…");
   const dialog = page.getByRole("dialog", { name: "Save as shared section" });
   await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await dialog.getByRole("button", { name: "Save" }).click();
@@ -149,13 +155,13 @@ test("Ctrl/Cmd+V pastes a copied linked copy as the page's own; Ctrl/Cmd+Shift+V
 
 test("renames a shared section, then deletes it after asking, its copies staying", async () => {
   await selectSection();
-  await editMenu("Save as shared section…");
+  await sharedSectionMenu("Save as shared section…");
   await page.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await page.getByRole("button", { name: "Save" }).click();
   await editMenu("Duplicate");
   await expect(headings()).toHaveCount(2);
 
-  await editMenu("Rename shared section…");
+  await sharedSectionMenu("Rename…");
   const rename = page.getByRole("dialog", { name: "Rename shared section" });
   const name = rename.getByRole("textbox", { name: "Name" });
   // Its own name, in other capitals, is allowed (another section's isn't: unit tests).
@@ -169,7 +175,7 @@ test("renames a shared section, then deletes it after asking, its copies staying
   );
 
   // Deleting asks first (D7); its copies stay as normal sections.
-  await editMenu("Delete shared section…");
+  await sharedSectionMenu("Delete…");
   const ask = page.getByRole("alertdialog", { name: "Delete shared section 'Opening hours'?" });
   await expect(ask).toContainText("This changes 1 page.");
   await ask.getByRole("button", { name: "Delete Shared Section" }).click();
@@ -191,7 +197,7 @@ test("renames a shared section, then deletes it after asking, its copies staying
 
 test("renames and deletes a shared section on no page from the Add panel, and undoes the delete", async () => {
   await selectSection();
-  await editMenu("Save as shared section…");
+  await sharedSectionMenu("Save as shared section…");
   await page.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await page.getByRole("button", { name: "Save" }).click();
   // Its only copy deleted: the shared section is on no page, so only the Add panel reaches it.
@@ -240,7 +246,7 @@ const padding = (box: Box, fromBottom = 6) => ({
 
 test("Ctrl/Cmd+Shift-drag of a copy places another linked copy; Ctrl/Cmd-drag a section of the page's own (1.30)", async () => {
   await selectSection();
-  await editMenu("Save as shared section…");
+  await sharedSectionMenu("Save as shared section…");
   const dialog = page.getByRole("dialog", { name: "Save as shared section" });
   await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await dialog.getByRole("button", { name: "Save" }).click();

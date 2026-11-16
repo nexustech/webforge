@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import userEvent from "@testing-library/user-event";
 import { toast } from "@webforge/editor-ui";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -130,6 +131,33 @@ describe("StartScreen", () => {
       // Toasts are the page's, not the screen's: none may stay for the next test.
       act(() => toast.dismiss());
     }
+  });
+
+  it("opens Settings with Ctrl+, on the app's own parts, and shows a new appearance at once (#1016)", async () => {
+    prefs.set.mockClear();
+    await render(api([]));
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: ",", ctrlKey: true }));
+    });
+    const dialog = await vi.waitFor(() => {
+      const found = document.querySelector('[role="dialog"]');
+      if (found === null) throw new Error("No Settings dialog");
+      return found;
+    });
+    const tabs = [...dialog.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
+    expect(tabs).toEqual(["Interface", "Devices", "Updates"]);
+
+    const appearance = dialog.querySelector<HTMLSelectElement>("select");
+    const save = [...dialog.querySelectorAll("button")].find((each) => each.textContent === "Save");
+    if (appearance === null || save === undefined) throw new Error("No Appearance or Save");
+    const user = userEvent.setup();
+    await user.selectOptions(appearance, "light");
+    await user.click(save);
+    await vi.waitFor(() =>
+      expect(prefs.set).toHaveBeenCalledWith(expect.objectContaining({ theme: "light" })),
+    );
+    expect(document.documentElement.dataset.theme).toBe("light");
   });
 
   it("answers save requests at once, having nothing to save", async () => {

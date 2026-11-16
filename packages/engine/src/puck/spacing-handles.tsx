@@ -341,7 +341,7 @@ export function SpacingHandles({
             className="wf-grip"
             data-property={field.property}
             data-side={side}
-            title={t("canvas.spacing.handle", {
+            data-wf-tip={t("canvas.spacing.handle", {
               field: field.label,
               side: t(`field.side.${side}`),
             })}

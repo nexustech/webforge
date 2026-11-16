@@ -1,5 +1,4 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -8,7 +7,7 @@ import { changedDocuments, createSite, type MediaId, type SiteDoc } from "@webfo
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
 import { clickOnCanvas } from "./canvas-click.js";
-import { launchDesktopApp, launchSecondInstance, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, launchSecondInstance, removeWhenFree, waitForCanvas } from "./launch.js";
 import type { RendererWindow } from "./sites.js";
 
 // Copy and paste (1.25, F-ED-16): elements copied in one site paste into another opened later,
@@ -72,7 +71,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  void removeWhenFree(dir);
 });
 
 const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");

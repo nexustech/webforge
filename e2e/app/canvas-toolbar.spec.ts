@@ -1,7 +1,6 @@
-import { rm } from "node:fs/promises";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { CANVAS_INNER } from "@webforge/engine/puck-dom";
-import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, removeWhenFree, waitForCanvas } from "./launch.js";
 
 // The canvas toolbar (1.15, F-ED-8): device views, a custom width and the page shown, none of
 // them an undo step (U6).
@@ -18,10 +17,13 @@ test.beforeEach(async () => {
     .getByRole("tab", { name: "Undo History" })
     .click();
   await expect(canvas().locator("h1")).toHaveText("Welcome to our business");
+  // The page's markup shows before its styles, under a cover that takes the clicks (#1101).
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {
-  await app.close();
+  // None yet when the first test's launch didn't finish (#1101): its own error is the one to see.
+  await app?.close();
 });
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
@@ -59,25 +61,52 @@ async function windowWidth(width: number): Promise<void> {
   await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(width);
 }
 
-/** Whether the page's frame fits in the canvas: false while it still has a wider window's width. */
-const frameFits = () =>
-  page.evaluate(() => {
-    const frame = document.querySelector(".editor__canvas iframe")?.getBoundingClientRect();
-    const canvas = document.querySelector(".editor__canvas")?.getBoundingClientRect();
-    return frame !== undefined && canvas !== undefined && frame.width <= canvas.width + 1;
-  });
+/**
+ * The room Desktop fills (PH2-18), measured as the engine measures it (`puck-overrides.tsx`): the
+ * width of the canvas's inner box less its padding and borders. With whether that box scrolls, and
+ * the width of the page's frame.
+ */
+const room = () =>
+  page.evaluate((selector) => {
+    const inner = document.querySelector<HTMLElement>(selector);
+    const frame = document.querySelector<HTMLIFrameElement>(".editor__canvas iframe");
+    if (inner === null) return null;
+    const style = getComputedStyle(inner);
+    const px = (name: string) => Number.parseFloat(style.getPropertyValue(name)) || 0;
+    return {
+      width:
+        inner.getBoundingClientRect().width -
+        px("padding-left") -
+        px("padding-right") -
+        px("border-left-width") -
+        px("border-right-width"),
+      scrolls: inner.scrollHeight > inner.clientHeight,
+      frameWidth: frame?.contentWindow?.innerWidth,
+    };
+  }, CANVAS_INNER);
 
 /**
- * The page's width once Desktop fills the canvas at 100% (PH2-18): its frame fits in the canvas,
- * and the readout and the page agree. A width taken before then can be the window's before it
- * last changed (#1084): on a 3440 px screen, the maximised window's 2910 px.
+ * Whether the page's frame fills the room, to a pixel (Desktop takes its whole pixels). False while
+ * the frame still has the width of the window before it last changed, wider (#1084) or narrower
+ * (#1108): the layout after a resize comes a moment later.
+ */
+const frameFills = async () => {
+  const measured = await room();
+  return measured?.frameWidth !== undefined && Math.abs(measured.width - measured.frameWidth) <= 1;
+};
+
+/**
+ * The page's width once Desktop fills the canvas at 100% (PH2-18): its frame fills the room, and
+ * the readout and the page agree. A width taken before then can be the window's before it last
+ * changed: on a 3440 px screen, the maximised window's 2910 px (#1084), or after the window grows,
+ * the smaller window's (#1108).
  */
 async function desktopWidth(): Promise<number> {
   await expect
     .poll(async () => {
       const width = await pageWidth();
       const shown = await size();
-      return (await frameFits()) && shown.startsWith(`${width} × `) && shown.endsWith(" @ 100%");
+      return (await frameFills()) && shown.startsWith(`${width} × `) && shown.endsWith(" @ 100%");
     })
     .toBe(true);
   return pageWidth();
@@ -206,8 +235,8 @@ test("lays a long page out in Desktop view without overflowing sideways, its scr
   // Wide enough for a page wider than Desktop's least, 1024 px, beside two 300 px columns (#1007).
   await windowWidth(1800);
   // Its scrollbar is inside the frame, so the readout counts 15 px more than the page has: the
-  // frame fitting the canvas tells the new layout from the old (#1084).
-  await expect.poll(frameFits).toBe(true);
+  // frame filling the room tells the new layout from the old (#1084, #1108).
+  await expect.poll(frameFills).toBe(true);
   await expect.poll(pageWidth).toBeGreaterThan(1100);
 
   const frame = await canvas()
@@ -223,13 +252,10 @@ test("lays a long page out in Desktop view without overflowing sideways, its scr
   // The frame scrolls itself, like a browser window; nothing spills sideways.
   expect(frame).toMatchObject({ scrolls: true, overflowsSideways: false });
   // The box Desktop measures never scrolls, so its room, and the page's width, stay put.
-  const room = await page.evaluate((selector) => {
-    const inner = document.querySelector(selector) as HTMLElement;
-    return { scrolls: inner.scrollHeight > inner.clientHeight, width: inner.clientWidth };
-  }, CANVAS_INNER);
+  const measured = await room();
+  expect(measured?.scrolls).toBe(false);
   // Desktop takes the room's whole pixels: a fractional box can round one either way.
-  expect(room.scrolls).toBe(false);
-  expect(Math.abs(room.width - frame.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs((measured?.width ?? 0) - frame.width)).toBeLessThanOrEqual(1);
   await expect.poll(size).toMatch(new RegExp(`^${frame.width} × [0-9]+ @ 100%$`));
 });
 
@@ -380,7 +406,7 @@ test("keeps a device the person added, after a restart (F-ED-25)", async () => {
     await expect.poll(pageWidth).toBe(1920);
   } finally {
     await app.close();
-    await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    void removeWhenFree(userData);
   }
 });
 
@@ -391,6 +417,7 @@ test("shows the Header's mobile menu open in the Mobile view, as a preview only 
   await canvas()
     .locator(".site-header")
     .click({ force: true, position: { x: 400, y: 10 } });
+  await expect(selected).toBeVisible();
   // Wide screens have no small-screen menu to preview.
   await expect(selected.getByRole("button", { name: "Show mobile menu" })).toHaveCount(0);
 

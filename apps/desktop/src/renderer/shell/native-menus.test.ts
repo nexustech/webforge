@@ -129,6 +129,44 @@ describe("macOS's menu bar (LF-13)", () => {
     expect(appChannels.setNativeMenus.request.safeParse([menus]).success).toBe(true);
   });
 
+  it("lists Edit in its groups and the Site menu after View, the schema's way (#1016)", () => {
+    const { registry } = setUp();
+    registry.register({ id: "edit.findReplace", label: "Find…", menu: "edit", run: vi.fn() });
+    registry.register({ id: "edit.undo", label: "Undo", menu: "edit", run: vi.fn() });
+    registry.register({ id: "theme.show", label: "Theme…", menu: "site", run: vi.fn() });
+    registry.register({
+      id: "edit.renameSharedSection",
+      label: "Rename Shared Section…",
+      menu: "edit",
+      ...availability("Select a shared section."),
+      run: vi.fn(),
+    });
+
+    const menus = nativeMenusOf(registry);
+    expect(menus.map((menu) => menu.id)).toEqual(["file", "edit", "view", "site"]);
+    expect(menus.find((menu) => menu.id === "edit")?.items).toEqual([
+      expect.not.objectContaining({ separated: true }),
+      // Edit › Shared Section, its item named without its word, and saying why it's disabled.
+      {
+        id: "menu.edit.sharedSection",
+        label: "Shared Section",
+        enabled: true,
+        separated: true,
+        submenu: [
+          {
+            id: "edit.renameSharedSection",
+            label: "Rename…",
+            enabled: false,
+            reason: "Select a shared section.",
+          },
+        ],
+      },
+      expect.objectContaining({ id: "edit.findReplace", separated: true }),
+    ]);
+    expect(menus.find((menu) => menu.id === "site")?.label).toBe("Site");
+    expect(appChannels.setNativeMenus.request.safeParse([menus]).success).toBe(true);
+  });
+
   it("lists Settings… in the application menu, not in File (LF-12)", () => {
     const { registry } = setUp();
     registry.register({ id: "app.settings", label: "Settings…", menu: "file", run: vi.fn() });

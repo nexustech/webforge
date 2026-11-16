@@ -9,7 +9,7 @@ import type { EditorSession } from "../editor/editor-session.js";
 import { type ClassCatalogue, useClassCatalogue } from "../fields/index.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
-import { availability, type CommandRegistry } from "../shell/commands.js";
+import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
 import { StylesheetPanel } from "./StylesheetPanel.js";
@@ -44,7 +44,7 @@ const STYLESHEET_COMMANDS = {
 } as const;
 
 /**
- * Puts the Stylesheet panel (CT-8, 6.8) in the bottom drawer, in Advanced mode only, with *View ›
+ * Puts the Stylesheet panel (CT-8, 6.8) in the bottom drawer, in Advanced mode only, with *Site ›
  * Stylesheet* to show it and *Target this element* and *Move this look to CSS* in the command box.
  * Returns a function that removes them.
  */
@@ -140,43 +140,36 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
     advancedOnly: true,
     component: Stylesheet,
   });
-  // The commands work in Advanced mode only, as the panel is there.
+  // The commands are there in Advanced mode only, as the panel is: Simple mode's menus and command
+  // box don't list them (#1016).
   const advanced = () => preferences.getState().preferences.editorLevel === "advanced";
-  let enabled = advanced();
-  // View › Stylesheet says why it's off in Simple mode (#1010). The other two say nothing, so the
-  // command box leaves their CSS words out of Simple mode.
-  const available = () => availability(enabled ? undefined : t("stylesheet.advancedOnly"));
-  const removeCommands = [
+  const register = () => [
     commands.register({
       id: COMMAND_IDS.stylesheet,
       label: t("stylesheet.command"),
-      menu: "view",
-      ...available(),
+      menu: "site",
       keywords: ["CSS", "custom.css"],
       run: show,
     }),
     commands.register({
       id: STYLESHEET_COMMANDS.target,
       label: t("stylesheet.target"),
-      enabled,
       keywords: ["CSS"],
       run: target,
     }),
     commands.register({
       id: STYLESHEET_COMMANDS.moveLook,
       label: t("stylesheet.move"),
-      enabled,
       keywords: ["CSS"],
       run: moveLook,
     }),
   ];
+  let removeCommands = advanced() ? register() : [];
   const stopFollowing = preferences.subscribe(() => {
-    if (advanced() === enabled) return;
-    enabled = !enabled;
-    commands.update(COMMAND_IDS.stylesheet, available());
-    for (const id of Object.values(STYLESHEET_COMMANDS)) {
-      commands.update(id, { enabled });
-    }
+    const registered = removeCommands.length > 0;
+    if (advanced() === registered) return;
+    for (const remove of removeCommands) remove();
+    removeCommands = advanced() ? register() : [];
   });
   return () => {
     stopFollowing();

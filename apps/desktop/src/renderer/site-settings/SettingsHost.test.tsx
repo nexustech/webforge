@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import { createSettingsRegistry } from "../editor/settings-registry.js";
@@ -46,6 +46,30 @@ function setUp(session = sessionWith()) {
     user: userEvent.setup({ delay: null }),
   };
 }
+
+describe("SettingsHost without a site (#1016)", () => {
+  it("offers Settings… alone, on the app's parts, with no Site Settings… to grey out", async () => {
+    const commands = createCommandRegistry();
+    const settings = createSettingsRegistry();
+    registerAppSettings(settings, createPreferencesStore(), undefined, "1.0.0");
+    render(
+      <CommandRegistryProvider registry={commands}>
+        <SettingsHost registry={settings} site={false} />
+      </CommandRegistryProvider>,
+    );
+
+    expect(commands.list().map((command) => command.id)).toEqual([COMMAND_IDS.settings]);
+    act(() => {
+      commands.run(COMMAND_IDS.settings);
+    });
+    const dialog = await screen.findByRole("dialog", { name: "Settings" });
+    expect(
+      within(dialog)
+        .getAllByRole("tab")
+        .map((tab) => tab.textContent),
+    ).toEqual(["Interface", "Devices", "Updates"]);
+  });
+});
 
 describe("SettingsHost (LF-12)", () => {
   it("opens on the section a step asks for, and tells it whether the person saved (3.3)", async () => {
@@ -212,12 +236,12 @@ describe("SettingsHost (LF-12)", () => {
     ]);
   });
 
-  it("opens Site Settings from the File menu command and saves them as one undo step", async () => {
+  it("opens Site Settings from the Site menu command and saves them as one undo step (#1016)", async () => {
     const { commands: registry, session, user } = setUp();
 
     expect(registry.get(COMMAND_IDS.siteSettings)).toMatchObject({
       label: "Site Settings…",
-      menu: "file",
+      menu: "site",
     });
     act(() => {
       registry.run(COMMAND_IDS.siteSettings);

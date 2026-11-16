@@ -58,6 +58,7 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
   };
   const phoneState = createStore<PhoneState>(() => ({ status: "closed" }));
   const notify = vi.fn();
+  const tell = vi.fn();
   const confirmCode = vi.fn(
     async (): Promise<CodeDecision> => ({ go: true, keeps: () => true, allowListConfirmed: true }),
   );
@@ -78,6 +79,7 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
     sessionId: () => SESSION,
     phone: phoneState,
     notify,
+    tell,
   });
   /** An edit of the site, as any edit is: one step in the history. */
   const edit = (name: string) =>
@@ -90,6 +92,7 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
     api,
     phoneState,
     notify,
+    tell,
     remove,
     edit,
     about,
@@ -174,6 +177,7 @@ describe("registerPreviewCommands: the site's code (#649)", () => {
       sessionId: () => SESSION,
       phone: createStore<PhoneState>(() => ({ status: "closed" })),
       notify: vi.fn(),
+      tell: vi.fn(),
       confirmCode: (site) => codeTrust.confirm(site),
       onCodeTrusted: (listener) => codeTrust.onTrusted(listener),
     });
@@ -199,13 +203,16 @@ describe("registerPreviewCommands: the site's code (#649)", () => {
 
 describe("registerPreviewCommands (3.2)", () => {
   it("opens the site at the page shown, from File → Preview and the title bar's button", async () => {
-    const { session, registry, api, about } = setUp();
+    const { session, registry, api, about, tell, notify } = setUp();
     session.showPage(about);
 
     expect(registry.get(COMMAND_IDS.preview)).toMatchObject({ label: "Preview", menu: "file" });
     await runSettled(registry, COMMAND_IDS.preview);
 
     expect(api.open).toHaveBeenCalledOnce();
+    // The browser may open behind the window: the app says it did (#1009).
+    await vi.waitFor(() => expect(tell).toHaveBeenCalledWith("Opened in your browser"));
+    expect(notify).not.toHaveBeenCalled();
     const [sessionId, content, page] = api.open.mock.calls[0] ?? [];
     expect(sessionId).toBe(SESSION);
     expect(page).toBe("services/about.html");
@@ -231,7 +238,7 @@ describe("registerPreviewCommands (3.2)", () => {
   });
 
   it("says so when the preview couldn't open", async () => {
-    const { registry, api, notify } = setUp();
+    const { registry, api, notify, tell } = setUp();
     api.open.mockResolvedValueOnce("failed");
     await runSettled(registry, COMMAND_IDS.preview);
     await vi.waitFor(() =>
@@ -239,6 +246,7 @@ describe("registerPreviewCommands (3.2)", () => {
         "Webforge couldn't open the preview. Try again in a moment.",
       ),
     );
+    expect(tell).not.toHaveBeenCalled();
   });
 
   it("sends nothing until it's opened, then each change, at most one every 100 ms", async () => {

@@ -40,7 +40,7 @@ const headingColour = () =>
 
 test("styles the canvas as the stylesheet is typed, and undoes it a pause at a time", async () => {
   await chooseFromMenu(app, page, "View", "Use Advanced Mode");
-  await chooseFromMenu(app, page, "View", "Stylesheet");
+  await chooseFromMenu(app, page, "Site", "Stylesheet");
   const before = await headingColour();
 
   await editor().click();
@@ -54,7 +54,7 @@ test("styles the canvas as the stylesheet is typed, and undoes it a pause at a t
 
 test("gives the selected element a rule of its own with Target This Element", async () => {
   await chooseFromMenu(app, page, "View", "Use Advanced Mode");
-  await chooseFromMenu(app, page, "View", "Stylesheet");
+  await chooseFromMenu(app, page, "Site", "Stylesheet");
   await selectHeading();
 
   await drawer().getByRole("button", { name: "Target This Element" }).click();
