@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp, type WebforgeApp } from "./launch.js";
+import { APP_START_TIMEOUT_MS, launchDesktopApp, type WebforgeApp } from "./launch.js";
 
 // Local crash reports (F-SITE-7): a crash or uncaught error leaves a JSON report in the user-data
 // folder, with no site content or paths, and nothing is sent anywhere.
@@ -36,7 +36,10 @@ async function openSecretSite(): Promise<WebforgeApp> {
   );
   store.close();
   const launched = await launchDesktopApp({ userDataDir: userData, args: [sitePath] });
-  await expect((await launched.firstWindow()).getByRole("banner")).toBeVisible();
+  // The editor's first screen, which a busy machine took 8.5 s to draw (#1099).
+  await expect((await launched.firstWindow()).getByRole("banner")).toBeVisible({
+    timeout: APP_START_TIMEOUT_MS,
+  });
   return launched;
 }
 
@@ -103,9 +106,12 @@ test("a renderer crash leaves a local report", async () => {
     kind: process.platform === "darwin" ? "killed" : "crashed",
   });
 
-  // The crashed window has nothing to save or capture, so it closes at once (#121).
+  // The crashed window has nothing to save or capture, so Webforge closes at once (#121), not
+  // after waiting for a renderer that can't answer. Timed to when it says so: Electron's teardown
+  // after that is the busy machine's (#1099).
   const started = Date.now();
+  const closedAfter = app.saidClosed.then(() => Date.now() - started);
   await app.close();
   app = undefined;
-  expect(Date.now() - started).toBeLessThan(5_000);
+  expect(await Promise.race([closedAfter, "never said so"])).toBeLessThan(5_000);
 });
