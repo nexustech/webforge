@@ -1,10 +1,12 @@
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import {
   type ComponentProps,
+  cloneElement,
   createContext,
   type ReactElement,
   type ReactNode,
   useContext,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -83,17 +85,18 @@ function cut(element: Element | null): boolean {
 }
 
 /**
- * A tooltip's root and the ref for its trigger. With `whenCut` it opens only while the trigger's
- * text is cut short: a label whose tooltip shows the whole of it.
+ * A tooltip's root, whether it's open, and the ref for its trigger. With `whenCut` it opens only
+ * while the trigger's text is cut short: a label whose tooltip shows the whole of it.
  */
-export function useTooltipWhenCut(whenCut: boolean) {
+export function useTooltipRoot(whenCut: boolean) {
   // The element under the trigger, whatever it is: Radix types it as a button.
   const trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
-  const root: ComponentProps<typeof Tooltip> = whenCut
-    ? { open, onOpenChange: (next) => setOpen(next && cut(trigger.current)) }
-    : {};
-  return { trigger, root };
+  const root: ComponentProps<typeof Tooltip> = {
+    open,
+    onOpenChange: (next) => setOpen(next && (!whenCut || cut(trigger.current))),
+  };
+  return { trigger, root, open };
 }
 
 /**
@@ -103,7 +106,9 @@ export function useTooltipWhenCut(whenCut: boolean) {
  *
  * - `disableable`: the element is a control that can be disabled. A disabled one gets no pointer
  *   events, so the tooltip hangs on a wrapper, enabled or not: a wrapper that came and went would
- *   remount the control, closing a menu it had open.
+ *   remount the control, closing a menu it had open. Radix describes the wrapper by the tooltip, so
+ *   the control gets the description itself while it's open, as a control under the trigger would,
+ *   and for as long as it's disabled, when the keyboard can't reach it to open the tooltip.
  * - `whenCut`: only while its text is cut short, to show the whole of it.
  *
  * Not for an element that sets `data-state` itself (a toggle or a tab): the tooltip's would
@@ -118,13 +123,47 @@ export function WithTooltip({
   readonly tooltip: ReactNode;
   readonly disableable?: boolean;
   readonly whenCut?: boolean;
-  readonly children: ReactElement;
+  readonly children: ReactElement<{
+    readonly "aria-describedby"?: string | undefined;
+    readonly disabled?: boolean | undefined;
+    readonly "aria-hidden"?: boolean | "true" | "false" | undefined;
+  }>;
 }) {
-  const { trigger, root } = useTooltipWhenCut(whenCut);
+  const { trigger, root, open } = useTooltipRoot(whenCut);
+  const description = useId();
+  if (!disableable) {
+    return (
+      <Tooltip {...root}>
+        <TooltipTrigger asChild ref={trigger}>
+          {children}
+        </TooltipTrigger>
+        <TooltipContent>{tooltip}</TooltipContent>
+      </Tooltip>
+    );
+  }
+  // A disabled button can't take the keyboard's focus, so its tooltip (why it's off) is its
+  // description for as long as it's disabled, not only while the pointer opens it. One hidden
+  // from screen readers (a mouse's shortcut) has no one to describe it to.
+  const hidden = children.props["aria-hidden"];
+  const described =
+    hidden !== true && hidden !== "true" && (open || children.props.disabled === true);
+  const describedBy = [children.props["aria-describedby"], described ? description : undefined]
+    .filter((each) => each !== undefined)
+    .join(" ");
   return (
     <Tooltip {...root}>
       <TooltipTrigger asChild ref={trigger}>
-        {disableable ? <span className="inline-flex">{children}</span> : children}
+        <span className="inline-flex">
+          {cloneElement(children, {
+            "aria-describedby": describedBy === "" ? undefined : describedBy,
+          })}
+          {described && (
+            // A description is read from a hidden element too, and this one isn't read twice.
+            <span id={description} hidden>
+              {tooltip}
+            </span>
+          )}
+        </span>
       </TooltipTrigger>
       <TooltipContent>{tooltip}</TooltipContent>
     </Tooltip>

@@ -333,6 +333,7 @@ export function PagesPanel({ site, shownPageId, published = false, actions }: Pa
                         size="icon-sm"
                         className="size-5"
                         aria-label={t("pages.actions", { name: row.collection.name })}
+                        tooltip={t("pages.actions", { name: row.collection.name })}
                       >
                         <EllipsisIcon />
                       </Button>
@@ -545,21 +546,26 @@ function PageMenu(props: PageMenuProps) {
   return (
     // Not modal: a modal menu hides the rest of the window from screen readers while its buttons
     // stay focusable (axe: aria-hidden-focus), and this small row menu needs no focus trap.
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={t("pages.actions", { name: page.title })}
-          className="absolute top-0 right-0.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
-        >
-          <EllipsisIcon />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" onCloseAutoFocus={props.onCloseAutoFocus}>
-        <PageMenuItems {...props} />
-      </DropdownMenuContent>
-    </DropdownMenu>
+    // Placed by a wrapper: the trigger gives the button `disabled`, so its tooltip's wrapper
+    // would sit in the row's flow under an absolute button.
+    <span className="absolute top-0 right-0.5 flex">
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t("pages.actions", { name: page.title })}
+            tooltip={t("pages.actions", { name: page.title })}
+            className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+          >
+            <EllipsisIcon />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" onCloseAutoFocus={props.onCloseAutoFocus}>
+          <PageMenuItems {...props} />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
   );
 }
 

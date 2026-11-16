@@ -1,7 +1,7 @@
 import type { CanvasAction, CanvasEngine } from "@webforge/engine";
 import type { MessageKey } from "@webforge/i18n";
 import { t } from "@webforge/i18n";
-import type { CommandRegistry, MenuId } from "../shell/commands.js";
+import { availability, type CommandRegistry, type MenuId } from "../shell/commands.js";
 
 /**
  * The canvas's keyboard actions (1.12, 1.30), in the order the Edit menu and command box list
@@ -145,9 +145,19 @@ export function registerCanvasCommands(
         const layout = CHANGES_LAYOUT.has(command.action);
         const one =
           ONE_ELEMENT.has(command.action) || (isBulk(command.action) && bulk === undefined);
-        registry.update(command.id, {
-          enabled: selected && !(layout && locked) && !(one && several),
-        });
+        // Why it's off, for the Edit menu, the command box and the Layers toolbar (#1010). Text
+        // with several selected says nothing: no one step makes it work.
+        const reason = !selected
+          ? t("shell.disabled.noSelection")
+          : layout && locked
+            ? t("shell.disabled.layoutLocked")
+            : undefined;
+        registry.update(
+          command.id,
+          reason === undefined && one && several
+            ? { enabled: false, disabledReason: undefined }
+            : availability(reason),
+        );
       }
     }
   };
@@ -156,7 +166,9 @@ export function registerCanvasCommands(
       id: command.id,
       label: t(command.label),
       ...(command.menu === undefined ? {} : { menu: command.menu }),
-      enabled: !NEEDS_SELECTION.has(command.action),
+      ...availability(
+        NEEDS_SELECTION.has(command.action) ? t("shell.disabled.noSelection") : undefined,
+      ),
       run: () => {
         beforeAction();
         if (several && bulk !== undefined && isBulk(command.action)) {
