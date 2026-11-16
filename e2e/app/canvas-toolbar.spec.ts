@@ -1,7 +1,7 @@
 import { rm } from "node:fs/promises";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { CANVAS_INNER } from "@webforge/engine/puck-dom";
-import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, waitForCanvas } from "./launch.js";
 
 // The canvas toolbar (1.15, F-ED-8): device views, a custom width and the page shown, none of
 // them an undo step (U6).
@@ -18,10 +18,13 @@ test.beforeEach(async () => {
     .getByRole("tab", { name: "Undo History" })
     .click();
   await expect(canvas().locator("h1")).toHaveText("Welcome to our business");
+  // The page's markup shows before its styles, under a cover that takes the clicks (#1101).
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {
-  await app.close();
+  // None yet when the first test's launch didn't finish (#1101): its own error is the one to see.
+  await app?.close();
 });
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
@@ -391,6 +394,7 @@ test("shows the Header's mobile menu open in the Mobile view, as a preview only 
   await canvas()
     .locator(".site-header")
     .click({ force: true, position: { x: 400, y: 10 } });
+  await expect(selected).toBeVisible();
   // Wide screens have no small-screen menu to preview.
   await expect(selected.getByRole("button", { name: "Show mobile menu" })).toHaveCount(0);
 
