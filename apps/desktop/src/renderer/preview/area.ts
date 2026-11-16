@@ -30,6 +30,7 @@ export const previewArea: Area<WindowContext> = {
       sessionId: siteSession,
       phone,
       notify: (message) => toast.error(message),
+      tell: (message) => toast(message),
       confirmCode: (site) => codeTrust.confirm(site),
       onCodeTrusted: (listener) => codeTrust.onTrusted(listener),
     });

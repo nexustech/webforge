@@ -64,8 +64,13 @@ test("shows the canvas's own controls' tooltips, and Puck's, in place of the bro
   // The Section's bottom padding selects the Section itself.
   await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
 
-  await canvas().getByRole("button", { name: "Add a section here" }).hover();
-  await expect(frameTip()).toHaveText("Add a section here");
+  // Pointed at again until it shows: on a cold start the + can still move as the selection
+  // settles, out from under the pointer before the tooltip's delay is up.
+  await expect(async () => {
+    await page.mouse.move(0, 0);
+    await canvas().getByRole("button", { name: "Add a section here" }).hover();
+    await expect(frameTip()).toHaveText("Add a section here", { timeout: 2000 });
+  }).toPass();
   // A site whose own rules would reach the tooltip, which sits in the site's body: added, read
   // and removed at once, so the canvas's layout never moves under the pointer.
   expect(
