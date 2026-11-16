@@ -159,6 +159,29 @@ export type CommandRegistry = {
   subscribe(listener: () => void): () => void;
 };
 
+/**
+ * This platform's keys of `standard`, the one shown first: the first this keyboard has. This
+ * platform's only (#290): a Mac's Cmd+Esc is no key on Windows, Windows' Alt+arrows none on a Mac.
+ */
+function shownFirst(standard: StandardShortcut, mac: boolean): readonly string[] {
+  const keys = platformKeys(standard, mac);
+  return [
+    ...keys.filter((key) => onKeyboard(key, mac)),
+    ...keys.filter((key) => !onKeyboard(key, mac)),
+  ];
+}
+
+/**
+ * `label` with the shortcut the standard gives command `id`, as a tooltip shows it: "Zoom In
+ * (Ctrl+=)". For a control that does what a command does without running it (the canvas
+ * toolbar's, #1011); just `label` when the command has none.
+ */
+export function withShortcut(label: string, id: string, mac = isMac()): string {
+  const standard = COMMAND_SHORTCUTS[id];
+  const [shown] = standard === undefined ? [] : shownFirst(standard, mac);
+  return shown === undefined ? label : `${label} (${formatShortcut(shown, mac)})`;
+}
+
 /** `command` with its keys from `standard`, the shown one first: the first this keyboard has. */
 function withKeys(
   command: CommandSpec,
@@ -168,13 +191,8 @@ function withKeys(
   if (standard === undefined) {
     return command;
   }
-  // This platform's keys only (#290): a Mac's Cmd+Esc is no key on Windows, Windows' Alt+arrows
-  // none on a Mac.
   const keys = platformKeys(standard, mac);
-  const [shown, ...others] = [
-    ...keys.filter((key) => onKeyboard(key, mac)),
-    ...keys.filter((key) => !onKeyboard(key, mac)),
-  ];
+  const [shown, ...others] = shownFirst(standard, mac);
   const text = standard.text === true ? keys : (standard.text ?? []);
   return {
     ...command,

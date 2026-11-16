@@ -9,6 +9,7 @@ import {
   isMac,
   matchesShortcut,
   onKeyboard,
+  withShortcut,
 } from "./commands.js";
 import type { StandardShortcut } from "./shortcut-standard.js";
 
@@ -240,6 +241,14 @@ describe("shortcuts", () => {
       false,
     );
     expect(matchesShortcut(key({ key: "/", ctrlKey: true }), "?", false)).toBe(false);
+  });
+
+  it("gives a label the shortcut the standard has for a command (#1011)", () => {
+    expect(withShortcut("Mobile", "view.mobile", false)).toBe("Mobile (Ctrl+3)");
+    expect(withShortcut("Mobile", "view.mobile", true)).toBe("Mobile (⌘3)");
+    // The first of its keys: Zoom In has Mod+= and Mod+Plus.
+    expect(withShortcut("Zoom In", "view.zoomIn", false)).toBe("Zoom In (Ctrl+=)");
+    expect(withShortcut("Rotate", "view.rotate", false)).toBe("Rotate");
   });
 
   it("formats shortcuts for each platform", () => {
