@@ -59,9 +59,9 @@ test("says why a greyed-out Layers button is off", async () => {
 });
 
 test("shows the canvas's own controls' tooltips, and Puck's, in place of the browser's", async () => {
-  // The canvas styled and uncovered first (#1125): until then a click lands on the cover, or the
-  // Section measured unstyled puts it on the Footer, and nothing is selected. The only + is then
-  // a hovered section's, which comes and goes with the pointer, and never stays for its tooltip.
+  // The canvas styled and uncovered first (#1125): until then a click lands on the cover and
+  // selects nothing. The only + is then a hovered section's, which comes and goes with the
+  // pointer, and never stays under it for its tooltip.
   await waitForCanvas(page);
   const section = canvas().locator(".site-section");
   const box = await section.boundingBox();
