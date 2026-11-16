@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
   EmptyState,
   useMenuDialog,
+  WithTooltip,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { BrushCleaningIcon, HistoryIcon, MoreHorizontalIcon, SaveIcon } from "lucide-react";
@@ -131,9 +132,9 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
                     </p>
                     {published === undefined ? null : (
                       // Cut short in a narrow panel: the whole of it on hover.
-                      <p className="m-0 truncate text-xs text-muted-foreground" title={published}>
-                        {published}
-                      </p>
+                      <WithTooltip tooltip={published} whenCut>
+                        <p className="m-0 truncate text-xs text-muted-foreground">{published}</p>
+                      </WithTooltip>
                     )}
                   </div>
                   <DropdownMenu modal={false}>
