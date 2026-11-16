@@ -107,50 +107,62 @@ function channel(make: typeof publisherFor, signal = new AbortController().signa
 }
 
 describe("runPublish (4.5, ADR 0018 §1)", () => {
-  it("builds the site, sends it with the job's sign-in, and says what went live", async () => {
-    const { sent, make } = fakePublisher();
-    const stages: string[] = [];
-    const publishing = await job(site());
+  it(
+    "builds the site, sends it with the job's sign-in, and says what went live",
+    async () => {
+      const { sent, make } = fakePublisher();
+      const stages: string[] = [];
+      const publishing = await job(site());
 
-    const outcome = await runPublish(publishing, loadResources, {
-      ...channel(make),
-      onProgress: (progress) => stages.push(progress.stage),
-    });
+      const outcome = await runPublish(publishing, loadResources, {
+        ...channel(make),
+        onProgress: (progress) => stages.push(progress.stage),
+      });
 
-    expect(outcome).toMatchObject({
-      type: "published",
-      url: "https://rosas.example/",
-      uploaded: 2,
-      removed: 1,
-      check: "live",
-    });
-    // Netlify's own API: the job names no other.
-    expect(make).toHaveBeenCalledWith(destination, publishing.signIn, publishing.trust, {});
-    expect(stages).toEqual(
-      expect.arrayContaining(["pages", "preparing", "uploading", "verifying"]),
-    );
-    // The code its owner trusts is built; the rest is left blank (#649).
-    const home = new TextDecoder().decode(sent.files?.get("index.html"));
-    expect(home).toContain("trusted()");
-    expect(home).not.toContain("untrusted()");
-  }, 60_000);
+      expect(outcome).toMatchObject({
+        type: "published",
+        url: "https://rosas.example/",
+        uploaded: 2,
+        removed: 1,
+        check: "live",
+      });
+      // Netlify's own API: the job names no other.
+      expect(make).toHaveBeenCalledWith(destination, publishing.signIn, publishing.trust, {});
+      expect(stages).toEqual(
+        expect.arrayContaining(["pages", "preparing", "uploading", "verifying"]),
+      );
+      // The code its owner trusts is built; the rest is left blank (#649).
+      const home = new TextDecoder().decode(sent.files?.get("index.html"));
+      expect(home).toContain("trusted()");
+      expect(home).not.toContain("untrusted()");
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("sends the rules for a renamed page's old address an Apache host may take (5.15)", async () => {
-    const { sent, make } = fakePublisher();
-    const doc = site();
-    doc.settings.search.keptAddresses = [{ from: "old-home.html", page: doc.homePageId }];
+  it(
+    "sends the rules for a renamed page's old address an Apache host may take (5.15)",
+    async () => {
+      const { sent, make } = fakePublisher();
+      const doc = site();
+      doc.settings.search.keptAddresses = [{ from: "old-home.html", page: doc.homePageId }];
 
-    await runPublish(await job(doc), loadResources, channel(make));
+      await runPublish(await job(doc), loadResources, channel(make));
 
-    expect(sent.files?.has("old-home.html")).toBe(true);
-    expect(sent.htaccess).toContain("RewriteRule ^old-home(\\.html)?$ %1 [R=301,NC,L]");
-  }, 60_000);
+      expect(sent.files?.has("old-home.html")).toBe(true);
+      expect(sent.htaccess).toContain("RewriteRule ^old-home(\\.html)?$ %1 [R=301,NC,L]");
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("sends no rules for a site with no old addresses", async () => {
-    const { sent, make } = fakePublisher();
-    await runPublish(await job(site()), loadResources, channel(make));
-    expect(sent.htaccess).toBeUndefined();
-  }, 60_000);
+  it(
+    "sends no rules for a site with no old addresses",
+    async () => {
+      const { sent, make } = fakePublisher();
+      await runPublish(await job(site()), loadResources, channel(make));
+      expect(sent.htaccess).toBeUndefined();
+    },
+    scaledTestTimeout(60_000),
+  );
 
   it("publishes to the API the job names: the E2E tests' mock Netlify (#70)", async () => {
     const { make } = fakePublisher();
@@ -234,51 +246,65 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
     expect(sent.files?.has("index.html")).toBe(true);
   });
 
-  it("builds for Netlify when the destination is Netlify's, so its forms can send (4.2)", async () => {
-    const pipeline = createPipeline(siteLibrary);
-    const build = vi.spyOn(pipeline, "build");
-    const netlify: PublishDestination = {
-      id: destination.id,
-      name: "Live",
-      kind: "netlify",
-      siteId: "3f8e2a1c-5b6d-4e7f-8a9b-0c1d2e3f4a5b",
-    };
-    const publishing = { ...(await job(site())), destination: netlify, signIn: { token: "t" } };
+  it(
+    "builds for Netlify when the destination is Netlify's, so its forms can send (4.2)",
+    async () => {
+      const pipeline = createPipeline(siteLibrary);
+      const build = vi.spyOn(pipeline, "build");
+      const netlify: PublishDestination = {
+        id: destination.id,
+        name: "Live",
+        kind: "netlify",
+        siteId: "3f8e2a1c-5b6d-4e7f-8a9b-0c1d2e3f4a5b",
+      };
+      const publishing = { ...(await job(site())), destination: netlify, signIn: { token: "t" } };
 
-    await runPublish(publishing, loadResources, {
-      ...channel(fakePublisher().make),
-      pipeline,
-    });
-    await runPublish(await job(site()), loadResources, {
-      ...channel(fakePublisher().make),
-      pipeline,
-    });
+      await runPublish(publishing, loadResources, {
+        ...channel(fakePublisher().make),
+        pipeline,
+      });
+      await runPublish(await job(site()), loadResources, {
+        ...channel(fakePublisher().make),
+        pipeline,
+      });
 
-    expect(build.mock.calls.map(([, , options]) => options.host)).toEqual(["netlify", undefined]);
-  }, 60_000);
+      expect(build.mock.calls.map(([, , options]) => options.host)).toEqual(["netlify", undefined]);
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("answers the publisher's failure by its code, and a cancel as cancelled", async () => {
-    const otherSite = fakePublisher(new PublishError("other-site", "another project's folder"));
-    expect(await runPublish(await job(site()), loadResources, channel(otherSite.make))).toEqual({
-      type: "failed",
-      code: "other-site",
-      detail: "other-site",
-    });
+  it(
+    "answers the publisher's failure by its code, and a cancel as cancelled",
+    async () => {
+      const otherSite = fakePublisher(new PublishError("other-site", "another project's folder"));
+      expect(await runPublish(await job(site()), loadResources, channel(otherSite.make))).toEqual({
+        type: "failed",
+        code: "other-site",
+        detail: "other-site",
+      });
 
-    const cancelled = fakePublisher(new PublishError("cancelled", "cancelled"));
-    expect(await runPublish(await job(site()), loadResources, channel(cancelled.make))).toEqual({
-      type: "cancelled",
-    });
-  }, 60_000);
+      const cancelled = fakePublisher(new PublishError("cancelled", "cancelled"));
+      expect(await runPublish(await job(site()), loadResources, channel(cancelled.make))).toEqual({
+        type: "cancelled",
+      });
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("stops a cancelled build before anything is sent", async () => {
-    const { make } = fakePublisher();
-    const stop = new AbortController();
-    stop.abort();
+  it(
+    "stops a cancelled build before anything is sent",
+    async () => {
+      const { make } = fakePublisher();
+      const stop = new AbortController();
+      stop.abort();
 
-    expect(await runPublish(await job(site()), loadResources, channel(make, stop.signal))).toEqual({
-      type: "cancelled",
-    });
-    expect(make).not.toHaveBeenCalled();
-  }, 60_000);
+      expect(
+        await runPublish(await job(site()), loadResources, channel(make, stop.signal)),
+      ).toEqual({
+        type: "cancelled",
+      });
+      expect(make).not.toHaveBeenCalled();
+    },
+    scaledTestTimeout(60_000),
+  );
 });

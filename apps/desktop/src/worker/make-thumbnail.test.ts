@@ -1,5 +1,6 @@
 import { loadNodeResources } from "@webforge/pipeline/node";
 import { heroPhoto } from "@webforge/test-utils";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { describe, expect, it } from "vitest";
 import { thumbnailFor } from "./make-thumbnail.js";
 
@@ -8,24 +9,32 @@ import { thumbnailFor } from "./make-thumbnail.js";
 // these tests set their own timeouts.
 
 describe("thumbnailFor", () => {
-  it("answers with a WebP preview of the image", async () => {
-    const outcome = await thumbnailFor(
-      { type: "thumbnail", mimeType: "image/jpeg", data: heroPhoto() },
-      loadNodeResources,
-    );
-
-    expect(outcome).toMatchObject({ type: "thumbnail" });
-    expect(
-      outcome.type === "thumbnail" && String.fromCharCode(...outcome.data.subarray(8, 12)),
-    ).toBe("WEBP");
-  }, 60_000);
-
-  it("fails an image it can't decode, without details", async () => {
-    await expect(
-      thumbnailFor(
-        { type: "thumbnail", mimeType: "image/png", data: new Uint8Array([1, 2, 3]) },
+  it(
+    "answers with a WebP preview of the image",
+    async () => {
+      const outcome = await thumbnailFor(
+        { type: "thumbnail", mimeType: "image/jpeg", data: heroPhoto() },
         loadNodeResources,
-      ),
-    ).resolves.toEqual({ type: "thumbnail-failed" });
-  }, 60_000);
+      );
+
+      expect(outcome).toMatchObject({ type: "thumbnail" });
+      expect(
+        outcome.type === "thumbnail" && String.fromCharCode(...outcome.data.subarray(8, 12)),
+      ).toBe("WEBP");
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
+    "fails an image it can't decode, without details",
+    async () => {
+      await expect(
+        thumbnailFor(
+          { type: "thumbnail", mimeType: "image/png", data: new Uint8Array([1, 2, 3]) },
+          loadNodeResources,
+        ),
+      ).resolves.toEqual({ type: "thumbnail-failed" });
+    },
+    scaledTestTimeout(60_000),
+  );
 });

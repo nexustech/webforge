@@ -36,134 +36,111 @@ function setUp(site: SiteDoc = starterSite()) {
   return { onSave, onCancel, user: userEvent.setup({ delay: null }) };
 }
 
-// Each test drives many inputs through user-event, which is slow in happy-dom under coverage.
-const SLOW = 15_000;
-
 describe("SiteSettingsDialog", () => {
-  it(
-    "saves what was changed across sections as one set of settings",
-    async () => {
-      const site = starterSite();
-      site.media = { [photo.id]: photo };
-      const { onSave, user } = setUp(site);
+  it("saves what was changed across sections as one set of settings", async () => {
+    const site = starterSite();
+    site.media = { [photo.id]: photo };
+    const { onSave, user } = setUp(site);
 
-      const name = screen.getByLabelText("Site name");
-      await user.clear(name);
-      await user.type(name, "Rosa's Bakery");
-      await user.click(screen.getByRole("radio", { name: "shop.jpg" }));
-      const backToTop = screen.getByRole("checkbox", { name: "Show a back-to-top button" });
-      // Only the published site shows it, which the option says.
-      expect(backToTop.getAttribute("aria-describedby")).toBe(
-        screen.getByText("Shows on the published site once visitors scroll down.").id,
-      );
-      await user.click(backToTop);
-      // AI tools' copies are off for a new site, and their switch is in General (3.15, SEO-12).
-      await user.click(screen.getByLabelText("Help AI tools read your site"));
-      await user.click(screen.getByRole("tab", { name: "Contact & hours" }));
-      await user.type(screen.getByLabelText("Phone number"), "+44 1234 567890");
-      await user.click(screen.getByRole("button", { name: "Add opening hours" }));
-      await user.click(screen.getByText("Tue"));
-      await user.click(screen.getByRole("tab", { name: "Search engines" }));
-      await user.click(screen.getByLabelText("Include a sitemap for search engines"));
-      await user.click(screen.getByRole("button", { name: "Save" }));
+    const name = screen.getByLabelText("Site name");
+    await user.clear(name);
+    await user.type(name, "Rosa's Bakery");
+    await user.click(screen.getByRole("radio", { name: "shop.jpg" }));
+    const backToTop = screen.getByRole("checkbox", { name: "Show a back-to-top button" });
+    // Only the published site shows it, which the option says.
+    expect(backToTop.getAttribute("aria-describedby")).toBe(
+      screen.getByText("Shows on the published site once visitors scroll down.").id,
+    );
+    await user.click(backToTop);
+    // AI tools' copies are off for a new site, and their switch is in General (3.15, SEO-12).
+    await user.click(screen.getByLabelText("Help AI tools read your site"));
+    await user.click(screen.getByRole("tab", { name: "Contact & hours" }));
+    await user.type(screen.getByLabelText("Phone number"), "+44 1234 567890");
+    await user.click(screen.getByRole("button", { name: "Add opening hours" }));
+    await user.click(screen.getByText("Tue"));
+    await user.click(screen.getByRole("tab", { name: "Search engines" }));
+    await user.click(screen.getByLabelText("Include a sitemap for search engines"));
+    await user.click(screen.getByRole("button", { name: "Save" }));
 
-      expect(onSave).toHaveBeenCalledTimes(1);
-      expect(onSave.mock.calls[0]?.[0]).toMatchObject({
-        general: { name: "Rosa's Bakery", icon: "photo", backToTop: true },
-        contact: {
-          phone: "+44 1234 567890",
-          openingHours: [{ days: ["tue"], opens: "09:00", closes: "17:00" }],
-        },
-        search: { includeSitemap: false, readableByAi: true },
-      });
-    },
-    SLOW,
-  );
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave.mock.calls[0]?.[0]).toMatchObject({
+      general: { name: "Rosa's Bakery", icon: "photo", backToTop: true },
+      contact: {
+        phone: "+44 1234 567890",
+        openingHours: [{ days: ["tue"], opens: "09:00", closes: "17:00" }],
+      },
+      search: { includeSitemap: false, readableByAi: true },
+    });
+  });
 
-  it(
-    "says what to fix, shows its section and keeps the dialog open",
-    async () => {
-      const { onSave, user } = setUp();
-      await user.click(screen.getByRole("tab", { name: "Contact & hours" }));
-      await user.type(screen.getByLabelText("Email address"), "rosa at example");
-      await user.click(screen.getByRole("tab", { name: "Analytics" }));
+  it("says what to fix, shows its section and keeps the dialog open", async () => {
+    const { onSave, user } = setUp();
+    await user.click(screen.getByRole("tab", { name: "Contact & hours" }));
+    await user.type(screen.getByLabelText("Email address"), "rosa at example");
+    await user.click(screen.getByRole("tab", { name: "Analytics" }));
 
-      await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
 
-      expect(onSave).not.toHaveBeenCalled();
-      expect(screen.getByRole("alert").textContent).toBe(
-        "Some values need fixing before they can be saved.",
-      );
-      // The first section with something to fix comes forward, the field pointing at its message.
-      const email = screen.getByLabelText("Email address");
-      expect(email.getAttribute("aria-invalid")).toBe("true");
-      expect(
-        document.getElementById(email.getAttribute("aria-describedby") ?? "")?.textContent,
-      ).toBe("Use an email address such as hello@example.com.");
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Some values need fixing before they can be saved.",
+    );
+    // The first section with something to fix comes forward, the field pointing at its message.
+    const email = screen.getByLabelText("Email address");
+    expect(email.getAttribute("aria-invalid")).toBe("true");
+    expect(document.getElementById(email.getAttribute("aria-describedby") ?? "")?.textContent).toBe(
+      "Use an email address such as hello@example.com.",
+    );
 
-      await user.clear(email);
-      await user.click(screen.getByRole("button", { name: "Save" }));
-      expect(onSave).toHaveBeenCalledTimes(1);
-    },
-    SLOW,
-  );
+    await user.clear(email);
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
 
-  it(
-    "adds and removes social profiles, and asks for the form service's value",
-    async () => {
-      const { onSave, user } = setUp();
-      await user.click(screen.getByRole("tab", { name: "Social & sharing" }));
-      // Each added profile opens; the second is removed again.
-      await user.click(screen.getByRole("button", { name: "Add a profile" }));
-      await user.selectOptions(screen.getByLabelText("Network"), "instagram");
-      await user.type(screen.getByLabelText("Profile address"), "https://instagram.com/rosas");
-      await user.click(screen.getByRole("button", { name: "Add a profile" }));
-      await user.click(
-        screen.getAllByRole("button", { name: "Remove this profile" })[1] as HTMLElement,
-      );
-      await user.click(screen.getByRole("tab", { name: "Forms" }));
-      await user.selectOptions(screen.getByLabelText("Form service"), "formsubmit");
-      await user.type(screen.getByLabelText("Email address for messages"), "hi@example.com");
+  it("adds and removes social profiles, and asks for the form service's value", async () => {
+    const { onSave, user } = setUp();
+    await user.click(screen.getByRole("tab", { name: "Social & sharing" }));
+    // Each added profile opens; the second is removed again.
+    await user.click(screen.getByRole("button", { name: "Add a profile" }));
+    await user.selectOptions(screen.getByLabelText("Network"), "instagram");
+    await user.type(screen.getByLabelText("Profile address"), "https://instagram.com/rosas");
+    await user.click(screen.getByRole("button", { name: "Add a profile" }));
+    await user.click(
+      screen.getAllByRole("button", { name: "Remove this profile" })[1] as HTMLElement,
+    );
+    await user.click(screen.getByRole("tab", { name: "Forms" }));
+    await user.selectOptions(screen.getByLabelText("Form service"), "formsubmit");
+    await user.type(screen.getByLabelText("Email address for messages"), "hi@example.com");
 
-      await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
 
-      expect(onSave.mock.calls[0]?.[0]).toMatchObject({
-        social: { profiles: [{ network: "instagram", url: "https://instagram.com/rosas" }] },
-        forms: { service: { kind: "formsubmit", email: "hi@example.com" } },
-      });
-    },
-    SLOW,
-  );
+    expect(onSave.mock.calls[0]?.[0]).toMatchObject({
+      social: { profiles: [{ network: "instagram", url: "https://instagram.com/rosas" }] },
+      forms: { service: { kind: "formsubmit", email: "hi@example.com" } },
+    });
+  });
 
-  it(
-    "says beside the banner switch that, with it off, visits are counted without cookies (#650)",
-    async () => {
-      const { user } = setUp();
-      await user.click(screen.getByRole("tab", { name: "Analytics" }));
+  it("says beside the banner switch that, with it off, visits are counted without cookies (#650)", async () => {
+    const { user } = setUp();
+    await user.click(screen.getByRole("tab", { name: "Analytics" }));
 
-      const banner = screen.getByLabelText("Ask visitors before counting them (cookie banner)");
-      expect(
-        (banner.getAttribute("aria-describedby") ?? "")
-          .split(" ")
-          .map((id) => document.getElementById(id)?.textContent)
-          .join(" "),
-      ).toContain(
-        "With the banner off, visits are still counted, without cookies and in less detail.",
-      );
-    },
-    SLOW,
-  );
+    const banner = screen.getByLabelText("Ask visitors before counting them (cookie banner)");
+    expect(
+      (banner.getAttribute("aria-describedby") ?? "")
+        .split(" ")
+        .map((id) => document.getElementById(id)?.textContent)
+        .join(" "),
+    ).toContain(
+      "With the banner off, visits are still counted, without cookies and in less detail.",
+    );
+  });
 
-  it(
-    "closes without saving on Cancel",
-    async () => {
-      const { onSave, onCancel, user } = setUp();
+  it("closes without saving on Cancel", async () => {
+    const { onSave, onCancel, user } = setUp();
 
-      await user.click(screen.getByRole("button", { name: "Cancel" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
 
-      expect(onCancel).toHaveBeenCalled();
-      expect(onSave).not.toHaveBeenCalled();
-    },
-    SLOW,
-  );
+    expect(onCancel).toHaveBeenCalled();
+    expect(onSave).not.toHaveBeenCalled();
+  });
 });

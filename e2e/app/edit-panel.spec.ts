@@ -1,3 +1,4 @@
+import { rm } from "node:fs/promises";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
@@ -8,9 +9,12 @@ import { chooseFromMenu } from "./menus.js";
 
 let app: ElectronApplication;
 let page: Page;
+/** The app's user data, its own for each test: UX-13 restarts the app with it. */
+let userDataDir: string;
 
 test.beforeEach(async () => {
-  app = await launchDesktopApp();
+  userDataDir = newUserDataDir();
+  app = await launchDesktopApp({ userDataDir });
   page = await app.firstWindow();
   // Undo History is the left column's second tab, after Add.
   await page
@@ -22,6 +26,10 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   await app.close();
+  // Best effort, as launchDesktopApp's own clean-up: a helper process can hold a file for a moment.
+  await rm(userDataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(
+    () => undefined,
+  );
 });
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
@@ -285,21 +293,19 @@ test("underlines a section's title from its Appearance group, as one step (2.22,
 });
 
 test("remembers the option groups closed for a kind of element, after a restart (UX-13)", async () => {
-  const userDataDir = newUserDataDir();
-  const reopen = async () => {
-    await app.close();
-    app = await launchDesktopApp({ userDataDir });
-    page = await app.firstWindow();
-    await waitForCanvas(page);
-  };
-  await reopen();
+  // Two launches and a close: on a busy machine each launch takes about 20 s (#1099).
+  test.slow();
   await selectHeading();
   await panel().getByRole("tab", { name: "Style" }).click();
   const appearance = panel().getByRole("button", { name: "Appearance", exact: true });
   await appearance.click();
   await expect(appearance).toHaveAttribute("aria-expanded", "false");
 
-  await reopen();
+  // The same user data, so the same preferences.
+  await app.close();
+  app = await launchDesktopApp({ userDataDir });
+  page = await app.firstWindow();
+  await waitForCanvas(page);
   await selectHeading();
   await panel().getByRole("tab", { name: "Style" }).click();
   await expect(panel().getByRole("button", { name: "Appearance", exact: true })).toHaveAttribute(
