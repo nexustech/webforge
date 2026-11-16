@@ -344,8 +344,9 @@ const PAGE_LINK = /^(?:([a-z0-9-]+)\.md)?(?:#([^#\s]+))?$/;
  * What's wrong with the help pages (HP-5): front matter that doesn't parse, an `id` that's repeated
  * or isn't its file's name, a link or anchor between pages that doesn't resolve, a link outside the
  * help pages or to a plain `http://` page, a `related` page that isn't there, a component type on
- * no page, on two or with no heading there, a page that spells out the app's name, raw HTML or a
- * picture, and a **?** link that reaches no page or heading.
+ * no page, on two or with no heading there, a page that spells out the app's name, a placeholder in
+ * a title or summary other than `{appName}`, raw HTML or a picture, and a **?** link that reaches
+ * no page or heading.
  * Each problem is one line, starting with the file it's in. None means all is well.
  */
 export function checkHelpPages(input: HelpCheckInput): readonly string[] {
@@ -365,6 +366,15 @@ export function checkHelpPages(input: HelpCheckInput): readonly string[] {
 
     const spelled = new RegExp(`\\b${input.appName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
     if (spelled.test(text)) problems.push(`${name}: spells out ${input.appName}; write {appName}`);
+    // The Help window fills `{appName}` in a title and summary, and nothing else (#1016).
+    for (const field of ["title", "summary"] as const) {
+      for (const [placeholder] of page[field].matchAll(/\{[^{}\s]*\}/g)) {
+        if (placeholder === "{appName}") continue;
+        problems.push(
+          `${name}: its ${field} has ${placeholder}, which Help doesn't fill; only {appName} is`,
+        );
+      }
+    }
     for (const token of eachToken(page.tokens)) {
       if (token.type === "html") problems.push(`${name}: raw HTML: ${token.raw.trim()}`);
       if (token.type === "image") problems.push(`${name}: a picture: ${token.raw.trim()}`);
