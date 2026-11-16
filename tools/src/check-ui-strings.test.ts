@@ -3,9 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   checkCatalogue,
   checkFolders,
+  checkTitleFolders,
   findAppNames,
+  findTitleAttributes,
   findUiStrings,
   formatAppNameViolations,
+  formatTitleViolations,
   formatUiStringViolations,
   isCheckedFile,
   isUserFacingAttribute,
@@ -88,6 +91,45 @@ describe("check-ui-strings", () => {
     ]);
     expect(message).toContain("Found 1 hard-coded UI string(s)");
     expect(message).toContain('a/Panel.tsx:3  title: "Pages"');
+  });
+});
+
+describe("title attributes in the editor (#1011)", () => {
+  it("reports a title on an element, with its line, but not on a frame or a component", () => {
+    const source = [
+      "export const A = () => (",
+      "  <div>",
+      '    <button type="button" title={t("x")} />',
+      '    <iframe title={t("frame")} />',
+      '    <Dialog title={t("dialog")} />',
+      '    <RichTextMenu.Control title={t("bold")} />',
+      '    <a {...(web ? { title: t("web") } : {})} {...{ href: "#" }} />',
+      "  </div>",
+      ");",
+    ].join("\n");
+    expect(findTitleAttributes(source, "a/Panel.tsx")).toEqual([
+      { file: "a/Panel.tsx", line: 3, where: "button", text: "title" },
+      { file: "a/Panel.tsx", line: 7, where: "a", text: "title" },
+    ]);
+  });
+
+  it("finds none in the editor: its controls use the editor's own tooltips", () => {
+    const root = join(import.meta.dirname, "../..");
+    const folders = ["apps/desktop/src/renderer", "packages/editor-ui/src", "packages/engine/src"];
+    expect(
+      checkTitleFolders(
+        folders.map((folder) => join(root, folder)),
+        root,
+      ),
+    ).toEqual([]);
+  });
+
+  it("formats one line per attribute", () => {
+    const message = formatTitleViolations([
+      { file: "a/Panel.tsx", line: 3, where: "button", text: "title" },
+    ]);
+    expect(message).toContain("Found 1 title attribute(s)");
+    expect(message).toContain("a/Panel.tsx:3  <button title>");
   });
 });
 

@@ -1,3 +1,4 @@
+import { WithTooltip } from "@webforge/editor-ui";
 import type { HelpPage, Token, Tokens } from "@webforge/help";
 import { t } from "@webforge/i18n";
 import type { ReactNode } from "react";
@@ -30,11 +31,13 @@ function Link({ token, context }: { readonly token: Tokens.Link; readonly contex
   const destination = helpLinkDestination(token.href, context.page.id);
   if (destination.kind === "none") return <>{children}</>;
   const web = destination.kind === "web";
-  return (
+  const external = web ? t("help.link.external", { text: withAppName(token.text) }) : undefined;
+  const link = (
     <a
       href={web ? destination.url : `#${destination.target.anchor ?? ""}`}
       className="font-medium underline underline-offset-2 hover:no-underline"
-      {...(web ? { title: t("help.link.external", { text: withAppName(token.text) }) } : {})}
+      // Said whenever a screen reader reaches it, not only while the tooltip is open.
+      {...(external === undefined ? {} : { "aria-description": external })}
       onClick={(event) => {
         event.preventDefault();
         if (destination.kind === "web") context.onWebLink(destination.url);
@@ -44,6 +47,8 @@ function Link({ token, context }: { readonly token: Tokens.Link; readonly contex
       {children}
     </a>
   );
+  // A link to the web says it opens the browser, in the app's tooltip (#1011).
+  return external === undefined ? link : <WithTooltip tooltip={external}>{link}</WithTooltip>;
 }
 
 /** Inline tokens as React: text, emphasis, code, links. Raw HTML is shown as text. */
