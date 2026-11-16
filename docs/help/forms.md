@@ -4,7 +4,7 @@ id: forms
 title: Forms
 summary: Let visitors send you messages, and choose the service that delivers them to you.
 related: [sections, elements, site-settings, site-check]
-updated: 2026-11-08
+updated: 2026-11-16
 ---
 
 # Forms
@@ -18,7 +18,7 @@ Your website is a set of plain files, with no server of its own to receive messa
 
 ## Choosing a form service
 
-Open **File › Site Settings…** and choose **Forms**. Then pick a **Form service**:
+Open **Site › Site Settings…** and choose **Forms**. Then pick a **Form service**:
 
 | Form service      | What to enter                                          |
 | ----------------- | ------------------------------------------------------ |

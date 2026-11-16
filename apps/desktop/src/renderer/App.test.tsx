@@ -100,6 +100,14 @@ describe("App", () => {
     expect(screen.getByRole("main")).toBeTruthy();
   });
 
+  it("names the open site in the window's title, and only the app once it closes (#1016)", () => {
+    renderApp();
+    expect(document.title).toBe("My site - Webforge");
+
+    cleanup();
+    expect(document.title).toBe("Webforge");
+  });
+
   it("spell checks in the site's language (F-ED-19)", () => {
     setSpellCheckLanguage.mockClear();
     renderApp();

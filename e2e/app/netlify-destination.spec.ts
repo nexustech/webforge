@@ -71,7 +71,7 @@ async function open(path: string, mock: MockNetlify): Promise<Page> {
 /** Site Settings' Forms section, open on `page`. */
 async function formSettings(page: Page) {
   if (app === undefined) throw new Error("no app");
-  await chooseFromMenu(app, page, "File", "Site Settings…");
+  await chooseFromMenu(app, page, "Site", "Site Settings…");
   const settings = page.getByRole("dialog", { name: "Settings", exact: true });
   await settings.getByRole("tab", { name: "Forms" }).click();
   return settings;

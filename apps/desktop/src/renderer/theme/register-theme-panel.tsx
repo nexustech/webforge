@@ -11,7 +11,7 @@ import type { StudioState } from "./studio/studio-state.js";
 import { ThemePanel } from "./ThemePanel.js";
 import type { ThemeSiteWide } from "./theme-edits.js";
 
-/** The Theme tab's id, which View → Theme… shows. */
+/** The Theme tab's id, which Site → Theme… shows. */
 export const THEME_PANEL_ID = "theme";
 
 /**

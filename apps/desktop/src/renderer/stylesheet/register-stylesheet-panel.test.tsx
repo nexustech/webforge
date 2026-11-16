@@ -57,19 +57,27 @@ describe("registerStylesheetPanel (CT-8, 6.8)", () => {
     expect(panels.list()).toEqual([]);
   });
 
-  it("shows the panel from View › Stylesheet, on only in Advanced mode", () => {
+  it("shows the panel from Site › Stylesheet, there only in Advanced mode (#1016)", () => {
     const { commands, preferences, show } = setUp("simple");
+    const ids = () => commands.list().map((command) => command.id);
 
-    expect(commands.get(COMMAND_IDS.stylesheet)).toMatchObject({
-      menu: "view",
-      enabled: false,
-      disabledReason: "Turn on Advanced mode to use the Stylesheet.",
-    });
+    // Not in Simple mode's menus or command box at all, nor its CSS-only commands.
+    expect(ids().some((id) => id === COMMAND_IDS.stylesheet || id.startsWith("stylesheet."))).toBe(
+      false,
+    );
     expect(commands.run(COMMAND_IDS.stylesheet)).toBe(false);
 
     act(() => preferences.change({ editorLevel: "advanced" }));
+    expect(commands.get(COMMAND_IDS.stylesheet)).toMatchObject({ menu: "site" });
     expect(commands.run(COMMAND_IDS.stylesheet)).toBe(true);
     expect(show).toHaveBeenCalledWith(STYLESHEET_PANEL_ID);
+
+    // Back to Simple mode: gone again, and a change of something else leaves them as they are.
+    act(() => preferences.change({ editorLevel: "simple" }));
+    expect(commands.get(COMMAND_IDS.stylesheet)).toBeUndefined();
+    act(() => preferences.change({ editorLevel: "advanced" }));
+    act(() => preferences.change({ theme: "dark" }));
+    expect(commands.get(COMMAND_IDS.stylesheet)).toBeDefined();
   });
 
   it("draws the site's stylesheet in a code editor, with the buttons off until something is selected", async () => {

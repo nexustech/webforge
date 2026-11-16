@@ -34,7 +34,7 @@ export type StudioState = {
 };
 
 /**
- * Theme Studio's state, made once for the window: the Theme tab's button and View → Theme Studio…
+ * Theme Studio's state, made once for the window: the Theme tab's button and Site → Theme Studio…
  * open it, and the tab draws it, so it stays as it was while the tab is hidden and shown again.
  */
 export function createStudio(): StoreApi<StudioState> {

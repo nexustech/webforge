@@ -1,6 +1,8 @@
 /** App-wide strings: the app's name and version. */
 export const app = {
   "app.name": "Webforge",
+  // The editor window's title while a site is open (#1016).
+  "app.windowTitle": "{site} - {appName}",
   "app.version": "Version {version}",
   // The start-up screen (index.html, filled in at build time), and what replaces it if starting
   // fails.
