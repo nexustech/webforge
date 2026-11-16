@@ -1,4 +1,5 @@
 import type { HistoryCommand } from "@webforge/engine";
+import type { HistoryState } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { HistoryIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
@@ -8,9 +9,24 @@ import { UndoHistoryPanel, type UndoHistoryPanelProps } from "../editor/UndoHist
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { availability } from "../shell/commands.js";
 
-/** Undo's or Redo's `enabled`, and when off why (#1010): there's no step to undo or redo. */
-const undoable = (can: boolean, none: "editor.undo.none" | "editor.redo.none") =>
-  availability(can ? undefined : t(none));
+/**
+ * Undo's and Redo's `enabled`, when off why (#1010): there's no step to undo or redo, and when on
+ * their tooltips, naming the step (#1011).
+ */
+function undoable(state: HistoryState<unknown>) {
+  const undo = state.canUndo ? state.entries[state.cursor - 1] : undefined;
+  const redo = state.canRedo ? state.entries[state.cursor] : undefined;
+  return {
+    undo: {
+      ...availability(undo === undefined ? t("editor.undo.none") : undefined),
+      tooltip: undo === undefined ? undefined : t("editor.undo.step", { step: undo.label }),
+    },
+    redo: {
+      ...availability(redo === undefined ? t("editor.redo.none") : undefined),
+      tooltip: redo === undefined ? undefined : t("editor.redo.step", { step: redo.label }),
+    },
+  };
+}
 
 /** The Undo History panel for `history`, jumping to a step with `jumpTo`. */
 function undoHistoryPanel(
@@ -41,23 +57,25 @@ export const undoHistoryArea: Area<EditorContext> = {
       engine.flush();
       runHistoryCommand(session, command);
     };
+    const now = undoable(history.state.getState());
     const removeUndo = commands.register({
       id: COMMAND_IDS.undo,
       label: t("editor.undo"),
       menu: "edit",
-      ...undoable(history.state.getState().canUndo, "editor.undo.none"),
+      ...now.undo,
       run: () => runCommand("undo"),
     });
     const removeRedo = commands.register({
       id: COMMAND_IDS.redo,
       label: t("editor.redo"),
       menu: "edit",
-      ...undoable(history.state.getState().canRedo, "editor.redo.none"),
+      ...now.redo,
       run: () => runCommand("redo"),
     });
     const stopFollowing = history.state.subscribe((state) => {
-      commands.update(COMMAND_IDS.undo, undoable(state.canUndo, "editor.undo.none"));
-      commands.update(COMMAND_IDS.redo, undoable(state.canRedo, "editor.redo.none"));
+      const next = undoable(state);
+      commands.update(COMMAND_IDS.undo, next.undo);
+      commands.update(COMMAND_IDS.redo, next.redo);
     });
     const removePanel = panels.register({
       id: "undoHistory",

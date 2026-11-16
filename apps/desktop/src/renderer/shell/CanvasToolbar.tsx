@@ -36,14 +36,16 @@ import {
   widthOf,
 } from "./canvas-size.js";
 import { type CanvasZoom, ZOOM_LEVELS, zoomStep } from "./canvas-view.js";
+import { COMMAND_IDS } from "./command-ids.js";
+import { withShortcut } from "./commands.js";
 import { DeviceDialog, type NewDevice, WidthDialog } from "./DeviceDialog.js";
 import { useFitLevel } from "./toolbar-fit.js";
 
 const DEVICES = [
-  { id: "desktop", icon: MonitorIcon },
-  { id: "tablet", icon: TabletIcon },
-  { id: "mobile", icon: SmartphoneIcon },
-] as const satisfies readonly { id: DeviceView; icon: unknown }[];
+  { id: "desktop", icon: MonitorIcon, command: COMMAND_IDS.desktopView },
+  { id: "tablet", icon: TabletIcon, command: COMMAND_IDS.tabletView },
+  { id: "mobile", icon: SmartphoneIcon, command: COMMAND_IDS.mobileView },
+] as const satisfies readonly { id: DeviceView; icon: unknown; command: string }[];
 
 /** Props of {@link CanvasToolbar}. */
 export type CanvasToolbarProps = {
@@ -121,14 +123,14 @@ export function CanvasToolbar({
       {/* LF-4: the zoom, Rotate, Fit, View and the size on the left; page and device on the right. */}
       {fit < FIT.zoom && (
         <>
-          {zoomSteps(scale).map(({ direction, label, Icon, next, disabled }) => (
+          {zoomSteps(scale).map(({ direction, label, tooltip, Icon, next, disabled }) => (
             <Button
               key={direction}
               type="button"
               size="icon"
               variant="ghost"
               aria-label={label}
-              tooltip={label}
+              tooltip={tooltip}
               disabled={disabled}
               onClick={() => onZoomChange(next)}
             >
@@ -237,12 +239,12 @@ export function CanvasToolbar({
             }
           }}
         >
-          {DEVICES.map(({ id, icon: Icon }) => (
+          {DEVICES.map(({ id, icon: Icon, command }) => (
             <ToggleGroupItem
               key={id}
               value={id}
               aria-label={t(`device.${id}`)}
-              title={t(`device.${id}`)}
+              tooltip={withShortcut(t(`device.${id}`), command)}
             >
               <Icon />
             </ToggleGroupItem>
@@ -260,9 +262,11 @@ export function CanvasToolbar({
 function zoomSteps(scale: number) {
   return (["in", "out"] as const).map((direction) => {
     const next = zoomStep(scale, direction);
+    const label = t(direction === "in" ? "command.zoomIn" : "command.zoomOut");
     return {
       direction,
-      label: t(direction === "in" ? "command.zoomIn" : "command.zoomOut"),
+      label,
+      tooltip: withShortcut(label, direction === "in" ? COMMAND_IDS.zoomIn : COMMAND_IDS.zoomOut),
       Icon: direction === "in" ? ZoomInIcon : ZoomOutIcon,
       next,
       disabled: Math.abs(next - scale) < 0.005,
@@ -399,7 +403,8 @@ function DeviceMenu({
             size={compact ? "icon" : "sm"}
             variant="ghost"
             className="text-xs whitespace-nowrap tabular-nums"
-            tooltip={compact ? (readout ?? t("canvasToolbar.devices")) : undefined}
+            // In both sizes, so the button doesn't remount (closing its menu) as the toolbar narrows.
+            tooltip={compact && readout !== undefined ? readout : t("canvasToolbar.devices")}
             aria-label={
               readout === undefined
                 ? t("canvasToolbar.devices")

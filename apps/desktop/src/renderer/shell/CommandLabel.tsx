@@ -1,8 +1,24 @@
+import type { ReactNode } from "react";
 import type { Command } from "./commands.js";
 
 /** Why `command` is disabled, while it is and its owner says (#1010). */
 export const reasonOf = (command: Command): string | undefined =>
   command.enabled === false ? command.disabledReason : undefined;
+
+/**
+ * A disabled control's tooltip (#1010, #1011): what it does, then why it's off, on lines of their
+ * own. Just the one there is when it lacks either.
+ */
+export function tipWithReason(tip: string | undefined, reason: string | undefined): ReactNode {
+  if (tip === undefined || reason === undefined) return tip ?? reason;
+  return (
+    <span className="flex flex-col">
+      <span>{tip}</span>
+      {/* Unseen in the column; parts the two when it's read as one description. */}{" "}
+      <span>{reason}</span>
+    </span>
+  );
+}
 
 /**
  * A menu or command box row's props for `command`'s reason, while it shows one (#1010): two lines

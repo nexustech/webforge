@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createStore } from "zustand/vanilla";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
@@ -15,7 +16,7 @@ afterEach(cleanup);
 // run can take seconds over; the editor is still drawn after the panel, so each test waits for it.
 beforeAll(async () => {
   await import("./css-editor.js");
-}, 30_000);
+}, scaledTestTimeout(30_000));
 
 /** The panel's editor, once CodeMirror has drawn it. */
 const findEditor = () => screen.findByRole("textbox", { name: "Stylesheet (custom.css)" });

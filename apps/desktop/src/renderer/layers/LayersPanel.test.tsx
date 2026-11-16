@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { t } from "@webforge/i18n";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Layer } from "../editor/layers.js";
@@ -8,6 +9,24 @@ import { isMac } from "../shell/commands.js";
 import { dragRow, pickUp } from "../testing/row-drag.js";
 import { LayersPanel, type LayersPanelActions, type LayersPanelProps } from "./LayersPanel.js";
 import { dropIndex } from "./layer-rows.js";
+
+/** The tooltip `element` shows on pointing at it (#1011). */
+async function tooltipOf(element: Element | null | undefined): Promise<string | null> {
+  if (element === null || element === undefined) return null;
+  await userEvent.hover(element);
+  const text = (await screen.findByRole("tooltip")).textContent;
+  // Leaving the mark keeps it open while the pointer could be on its way to it: Escape closes it.
+  await userEvent.keyboard("{Escape}");
+  await waitFor(() => expect(screen.queryByRole("tooltip")).toBeNull());
+  return text;
+}
+
+/** The first row's arrow, for the mouse: hidden from screen readers, so it has no name. */
+function firstArrow(): HTMLElement {
+  const arrow = screen.getAllByRole("treeitem")[0]?.querySelector("button");
+  if (arrow === null || arrow === undefined) throw new Error("no arrow");
+  return arrow;
+}
 
 /** The platform's Mod key: Ctrl, or Cmd on a Mac. */
 const MOD = isMac() ? { metaKey: true } : { ctrlKey: true };
@@ -102,8 +121,21 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(noted?.textContent).toBe("Heading, has a note");
     expect(noted?.getAttribute("aria-description")).toBe("Swap this photo");
     expect(plain?.hasAttribute("aria-description")).toBe(false);
-    expect(noted?.querySelector('[title="Swap this photo"]')).not.toBeNull();
     expect(plain?.textContent).toBe("Heading");
+  });
+
+  it("shows a note's text on pointing at its mark (#1011)", async () => {
+    render(
+      <LayersPanel
+        layers={[layer("a", { note: "Swap this photo" })]}
+        selectedId={null}
+        alsoSelected={[]}
+        actions={setUpActions()}
+        layoutLocked={false}
+      />,
+    );
+    const mark = screen.getByText(", has a note").parentElement;
+    expect(await tooltipOf(mark)).toBe("Swap this photo");
   });
 
   it("shows the tree with levels, names, the selection and hidden layers", () => {
@@ -406,6 +438,26 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(dropIndex(2, 0, true)).toBe(1);
   });
 
+  it("says in the toolbar's tooltips why a button is off in Content mode (#1010)", async () => {
+    // A canvas command's reason is its command's, as the Edit menu shows it.
+    const actions = { ...setUpActions(), reasons: { moveUp: t("shell.disabled.layoutLocked") } };
+    render(<LayersPanel layers={LAYERS} selectedId="a" actions={actions} layoutLocked />);
+    const moveUp = screen.getByRole("button", { name: "Move up" });
+    expect(await tooltipOf(moveUp.parentElement)).toBe(
+      "Move up Switch to Design mode to change the layout.",
+    );
+    cleanup();
+    // Hiding isn't a command: the panel says why itself.
+    render(<LayersPanel layers={LAYERS} selectedId="a" actions={actions} layoutLocked />);
+    const hide = screen.getByRole("button", { name: /^Don't publish/ });
+    expect(await tooltipOf(hide.parentElement)).toMatch(/Switch to Design mode/);
+    cleanup();
+    // Renaming isn't locked: on, so just its name.
+    render(<LayersPanel layers={LAYERS} selectedId="a" actions={actions} layoutLocked />);
+    const rename = screen.getByRole("button", { name: "Rename" });
+    expect(await tooltipOf(rename.parentElement)).toBe("Rename");
+  });
+
   it("runs the toolbar on the selected layer, and disables what isn't available", async () => {
     const { actions } = setUp("b");
 
@@ -421,12 +473,15 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(screen.getByRole("textbox")).toBeTruthy();
   });
 
-  it("disables the toolbar without a selection or commands, and says when the page is empty", () => {
+  it("disables the toolbar without a selection or commands, and says when the page is empty", async () => {
     setUp(null, false);
 
     expect((screen.getByRole("button", { name: "Rename" }) as HTMLButtonElement).disabled).toBe(
       true,
     );
+    // Its name with nothing after it, not "Don't publish " (#1011); its tooltip says why it's off.
+    const hide = screen.getByRole("button", { name: "Don't publish" });
+    expect(await tooltipOf(hide.parentElement)).toBe("Don't publish Select an element first.");
     expect(screen.getAllByRole("treeitem")[0]?.tabIndex).toBe(0);
     cleanup();
 
@@ -458,7 +513,7 @@ describe("LayersPanel (F-ED-12)", () => {
       expect(first()?.getAttribute("aria-expanded")).toBe("true");
       expect(screen.getAllByRole("treeitem")[4]?.getAttribute("aria-expanded")).toBeNull();
 
-      await userEvent.click(screen.getAllByTitle("Collapse Section")[0] as HTMLElement);
+      await userEvent.click(firstArrow());
       expect(shown()).toEqual(["Section", "Section"]);
       expect(first()?.getAttribute("aria-expanded")).toBe("false");
       expect(screen.getByRole("treeitem", { name: "Section", expanded: false })).toBeTruthy();
@@ -503,7 +558,7 @@ describe("LayersPanel (F-ED-12)", () => {
       const view = render(<LayersPanel {...props} selectedId="a" />);
 
       // Collapsing the selected layer's parent hides it (#223 review).
-      await userEvent.click(screen.getAllByTitle("Collapse Section")[0] as HTMLElement);
+      await userEvent.click(firstArrow());
       expect(shown()).toEqual(["Section", "Section"]);
 
       // Selected elsewhere (the canvas): the layers it is in open, once.
@@ -593,7 +648,7 @@ describe("LayersPanel (F-ED-12)", () => {
       expect(document.activeElement).toBe(field);
     });
 
-    it("marks locked and animated layers, as it marks linked and hidden ones", () => {
+    it("marks locked and animated layers, as it marks linked and hidden ones", async () => {
       render(
         <LayersPanel
           layers={[
@@ -622,8 +677,10 @@ describe("LayersPanel (F-ED-12)", () => {
         "Animated Text",
         "Linked copy of 'Hours' Section",
       ]);
-      expect(screen.getByTitle("Locked: it can't be moved or deleted")).toBeTruthy();
-      expect(screen.getByTitle("Animated")).toBeTruthy();
+      const locked = screen.getByText("Locked: it can't be moved or deleted").parentElement;
+      const animated = screen.getByText("Animated").parentElement;
+      expect(await tooltipOf(locked)).toBe("Locked: it can't be moved or deleted");
+      expect(await tooltipOf(animated)).toBe("Animated");
     });
   });
 });

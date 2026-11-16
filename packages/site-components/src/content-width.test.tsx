@@ -90,15 +90,19 @@ describe("a section's content width (3.21, PF-4)", () => {
     expect(siteLibrary.components.Section?.fields).not.toHaveProperty("fullWidth");
   });
 
-  it("caps every section's content at each width, its background still across the page", () => {
-    for (const type of sections) {
+  // One test for each kind, each with its own time: all twenty at once ran past 5 s in a full,
+  // parallel run (#1093).
+  it.for(sections)(
+    "caps a %s's content at each width, its background still across the page",
+    (type) => {
+      // With no width saved: the same at every width.
+      const html = render([
+        {
+          type,
+          props: { ...siteLibrary.components[type]?.defaults, ...DRAWN[type], id: "s" },
+        },
+      ]);
       for (const width of CONTENT_WIDTHS) {
-        const html = render([
-          {
-            type,
-            props: { ...siteLibrary.components[type]?.defaults, ...DRAWN[type], id: "s" },
-          },
-        ]);
         const own = render([
           {
             type,
@@ -119,8 +123,8 @@ describe("a section's content width (3.21, PF-4)", () => {
         // Its default draws as it did, with no width saved.
         if (width === DEFAULTS[type]) expect(own, type).toBe(html);
       }
-    }
-  });
+    },
+  );
 
   it("lines up a new Section with a Features section: both Wide, inside the same padding", () => {
     const html = render([

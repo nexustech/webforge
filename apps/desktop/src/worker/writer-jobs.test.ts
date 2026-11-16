@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { heroPhoto } from "@webforge/test-utils";
-import { tempDirFactory } from "@webforge/test-utils/vitest";
+import { scaledTestTimeout, tempDirFactory } from "@webforge/test-utils/vitest";
 import { describe, expect, it, vi } from "vitest";
 import { createWriterJobs } from "./writer-jobs.js";
 
@@ -110,6 +110,6 @@ describe("createWriterJobs", () => {
       // Opening it to read would wait for a writer that never comes.
       expect(await jobs.prepare(1, "photo.jpg", { path: pipe })).toEqual({ status: "skipped" });
     },
-    5_000,
+    scaledTestTimeout(5_000),
   );
 });

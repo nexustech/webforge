@@ -81,7 +81,13 @@ import { ScrollArea, ScrollBar } from "./scroll-area.js";
 import { Toaster, toast } from "./sonner.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs.js";
 import { ToggleGroup, ToggleGroupItem } from "./toggle-group.js";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip.js";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  WithTooltip,
+} from "./tooltip.js";
 
 // Test content is not UI text; the UI-string guard skips test files.
 
@@ -464,6 +470,57 @@ describe("Tooltip", () => {
     expect((await screen.findByRole("tooltip")).textContent).toBe("Move Up");
   });
 
+  it("keeps a button that can be disabled in its wrapper, enabled or not (#1011)", () => {
+    const view = render(
+      <Button size="icon" aria-label="Move Up" tooltip="Move Up" disabled={false}>
+        U
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Move Up" });
+    expect(button.parentElement?.tagName).toBe("SPAN");
+    view.rerender(
+      <Button size="icon" aria-label="Move Up" tooltip="Move Up" disabled>
+        U
+      </Button>,
+    );
+    // The same element: turning disabled didn't remount it.
+    expect(screen.getByRole("button", { name: "Move Up" })).toBe(button);
+  });
+
+  it("describes a button in a wrapper by its tooltip while it's open (#1011)", async () => {
+    render(
+      <Button size="icon" aria-label="Copy" tooltip="Copy (Ctrl+C)" disabled={false}>
+        C
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Copy" });
+    expect(button.hasAttribute("aria-describedby")).toBe(false);
+    await userEvent.tab();
+    expect(document.activeElement).toBe(button);
+    await screen.findByRole("tooltip");
+    // The button, not only the wrapper Radix describes: it's what a screen reader is on.
+    const description = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+    expect(description?.textContent).toBe("Copy (Ctrl+C)");
+  });
+
+  it("describes a disabled button by its tooltip while it's disabled (#1011)", () => {
+    const view = render(
+      <Button size="icon" aria-label="Undo" tooltip="Nothing to undo." disabled>
+        U
+      </Button>,
+    );
+    // Not focusable, so its tooltip never opens from the keyboard: the reason is there anyway.
+    const button = screen.getByRole("button", { name: "Undo" });
+    const description = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+    expect(description?.textContent).toBe("Nothing to undo.");
+    view.rerender(
+      <Button size="icon" aria-label="Undo" tooltip="Nothing to undo." disabled={false}>
+        U
+      </Button>,
+    );
+    expect(button.hasAttribute("aria-describedby")).toBe(false);
+  });
+
   it("keeps a button with a tooltip working as a menu's trigger (#1011)", async () => {
     render(
       <DropdownMenu modal={false}>
@@ -479,6 +536,45 @@ describe("Tooltip", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Add" }));
     expect(await screen.findByRole("menuitem", { name: "Link" })).toBeTruthy();
+  });
+
+  it("gives a toggle's option a tooltip, keeping its own on or off (#1011)", async () => {
+    render(
+      <ToggleGroup type="single" value="mobile">
+        <ToggleGroupItem value="desktop" aria-label="Desktop" tooltip="Desktop (Ctrl+1)">
+          D
+        </ToggleGroupItem>
+        <ToggleGroupItem value="mobile" aria-label="Mobile" tooltip="Mobile (Ctrl+3)">
+          M
+        </ToggleGroupItem>
+      </ToggleGroup>,
+    );
+    const mobile = screen.getByRole("radio", { name: "Mobile" });
+    expect(mobile.getAttribute("data-state")).toBe("on");
+    expect(mobile.hasAttribute("title")).toBe(false);
+    await userEvent.hover(mobile);
+    expect((await screen.findByRole("tooltip")).textContent).toBe("Mobile (Ctrl+3)");
+    // The tooltip's trigger sets `data-state` too ("delayed-open"): the option's must win.
+    expect(mobile.getAttribute("data-state")).toBe("on");
+  });
+
+  it("shows a tooltip on any element, and on a cut-short one only when it's cut (#1011)", async () => {
+    render(
+      <TooltipProvider delayDuration={0}>
+        <WithTooltip tooltip="Locked">
+          <span>L</span>
+        </WithTooltip>
+        <WithTooltip tooltip="Published to example.com" whenCut>
+          <p className="truncate">Published to example.com</p>
+        </WithTooltip>
+      </TooltipProvider>,
+    );
+    // Its text fits (a test's page lays nothing out): no tooltip, even after a while.
+    await userEvent.hover(screen.getByText("Published to example.com"));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    await userEvent.hover(screen.getByText("L"));
+    expect((await screen.findByRole("tooltip")).textContent).toBe("Locked");
   });
 });
 
