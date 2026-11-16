@@ -35,7 +35,7 @@ test("edits Site Settings from the File menu, fixing what Save points at, as one
   const status = page.getByRole("banner").getByRole("status");
   await expect(status).toHaveText("Saved", { timeout: 30_000 });
 
-  await chooseFromMenu(app as ElectronApplication, page, "File", "Site Settings…");
+  await chooseFromMenu(app as ElectronApplication, page, "Site", "Site Settings…");
   const dialog = page.getByRole("dialog", { name: "Settings", exact: true });
   await dialog.getByLabel("Site name").fill("Rosa's Bakery");
   await dialog.getByRole("tab", { name: "Contact & hours" }).click();
@@ -77,12 +77,12 @@ test("Ctrl/Cmd+Z in Site Settings' text undoes the text, not the site's last ste
   const dialog = page.getByRole("dialog", { name: "Settings", exact: true });
   const name = dialog.getByLabel("Site name");
   // A step of the site's own to undo, if the keys went to the site.
-  await chooseFromMenu(app, page, "File", "Site Settings…");
+  await chooseFromMenu(app, page, "Site", "Site Settings…");
   await name.fill("Rosa's");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toHaveCount(0);
 
-  await chooseFromMenu(app, page, "File", "Site Settings…");
+  await chooseFromMenu(app, page, "Site", "Site Settings…");
   await name.click();
   await name.press("End");
   await name.pressSequentially(" Bakery", { delay: 20 });
@@ -100,7 +100,7 @@ test("Ctrl/Cmd+Z in Site Settings' text undoes the text, not the site's last ste
   await expect(dialog).toHaveCount(0);
 
   // The site kept its step: its name is still the saved one.
-  await chooseFromMenu(app, page, "File", "Site Settings…");
+  await chooseFromMenu(app, page, "Site", "Site Settings…");
   await expect(name).toHaveValue("Rosa's");
 });
 
@@ -130,7 +130,7 @@ test("shows Site Settings values in bound elements, on the canvas and in the exp
   );
   await expect(heading).toHaveText("Add your phone number in Site Settings");
 
-  await chooseFromMenu(app as ElectronApplication, page, "File", "Site Settings…");
+  await chooseFromMenu(app as ElectronApplication, page, "Site", "Site Settings…");
   const dialog = page.getByRole("dialog", { name: "Settings", exact: true });
   await dialog.getByLabel("Site name").fill("Hightown Bakery");
   await dialog.getByRole("tab", { name: "Contact & hours" }).click();
@@ -164,7 +164,7 @@ test("lists Site Settings' opening hours and contact details, on the canvas and 
   // Until Site Settings have them, the canvas says where to add them.
   await expect(section).toContainText("Add your phone number in Site Settings");
 
-  await chooseFromMenu(app as ElectronApplication, page, "File", "Site Settings…");
+  await chooseFromMenu(app as ElectronApplication, page, "Site", "Site Settings…");
   const dialog = page.getByRole("dialog", { name: "Settings", exact: true });
   await dialog.getByRole("tab", { name: "Contact & hours" }).click();
   await dialog.getByLabel("Phone number").fill("+44 1234 567890");

@@ -2,7 +2,7 @@
 export const theme = {
   "theme.panelTitle": "Theme",
   "theme.heading": "Theme: {name}",
-  // View → Theme… (#452): shows the Theme tab.
+  // Site → Theme… (#452, #1016): shows the Theme tab.
   "theme.show": "Theme…",
 
   // The option groups, in the tab's order (UX-13).

@@ -1,7 +1,7 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { OVERLAY } from "@webforge/engine/puck-dom";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
-import { chooseFromMenu } from "./menus.js";
+import { chooseFromMenu, chooseFromSubmenu } from "./menus.js";
 
 // Shared sections in the panels (1.29, F-ED-23): the Add panel places linked copies, Layers marks
 // them, and deleting inside a copy asks first, as it changes every copy (D7).
@@ -34,6 +34,11 @@ const DELETE = /^Delete(?! shared)/;
 /** Runs an Edit menu command. */
 async function editMenu(name: string | RegExp): Promise<void> {
   await chooseFromMenu(app, page, "Edit", name);
+}
+
+/** Runs a command in Edit › Shared Section (#1016). */
+async function sharedSectionMenu(name: string): Promise<void> {
+  await chooseFromSubmenu(app, page, "Edit", "Shared Section", name);
 }
 
 /**
@@ -69,7 +74,7 @@ async function deleteHeading(index: number): Promise<void> {
 
 test("places a copy from the Add panel, asks before deleting inside one, marks copies in Layers, and deletes whole copies without asking", async () => {
   await selectSection();
-  await editMenu("Save as shared section…");
+  await sharedSectionMenu("Save as shared section…");
   const dialog = page.getByRole("dialog", { name: "Save as shared section" });
   await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await dialog.getByRole("button", { name: "Save" }).click();

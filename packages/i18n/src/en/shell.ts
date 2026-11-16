@@ -49,7 +49,16 @@ export const shell = {
   "shell.menu": "App menu",
   "shell.menu.file": "File",
   "shell.menu.edit": "Edit",
+  // Edit's submenus (#1016), their items named without the submenu's own word.
+  "shell.menu.edit.style": "Style",
+  "shell.menu.edit.select": "Select",
+  "shell.menu.edit.sharedSection": "Shared Section",
+  "shell.menu.edit.sharedSection.rename": "Rename…",
+  "shell.menu.edit.sharedSection.delete": "Delete…",
+  "shell.menu.edit.sharedSection.detach": "Detach",
   "shell.menu.view": "View",
+  // The site's settings, theme and stylesheet (#1016).
+  "shell.menu.site": "Site",
   "shell.menu.help": "Help",
 
   // Title-bar buttons: short labels; the command's full label is in its tooltip.

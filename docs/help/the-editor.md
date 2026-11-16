@@ -12,7 +12,7 @@ updated: 2026-11-16
 When a site is open, the editor fills the window.
 
 - **Title bar:**
-  - the menus (on a Mac they're in the menu bar at the top of the screen);
+  - the menus, **File**, **Edit**, **View**, **Site** and **Help** (on a Mac they're in the menu bar at the top of the screen). **Site** holds what sets up the whole site: **Site Settings…**, **Theme…**, **Theme Studio…** and, in Advanced mode, **Stylesheet**. **Edit** lists its items in groups: undo, the clipboard, arranging, notes and find, with three submenus between them: **Style**, **Select** and **Shared Section**. Point at a submenu, or press the right arrow key on it, to open it; the left arrow key closes it;
   - **New** and **Open**;
   - whether your work is saved;
   - **Undo** and **Redo**;

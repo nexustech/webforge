@@ -4,7 +4,7 @@ id: styling
 title: Styling
 summary: Change how a section or element looks, and give the same look to others like it.
 related: [edit-panel, themes, sections, elements]
-updated: 2026-11-14
+updated: 2026-11-16
 ---
 
 # Styling
@@ -54,7 +54,7 @@ Sections of cards (Features, Testimonials, Team and Pricing) have **Cards when h
 
 - the button at the top of the Style tab;
 - **Style** on the item's bar;
-- the right-click menu or the Edit menu.
+- the right-click menu, or **Edit › Style**.
 
 It offers more than the Style tab: gradients, a border on each side, each corner's rounding, inner shadows, a background when hovered, and the look of a section's title.
 
@@ -87,4 +87,4 @@ Each choice says how many other items it changes. Click **Apply** to make the ch
 - **Copy Style** (Ctrl+Alt+C) and **Paste Style** (Ctrl+Alt+V) copy one item's Style settings onto another of the same kind.
 - **Apply Look to Every ‹item› on This Page**, or **on the Site**, gives the selected item's look to every other item of its kind, in the Header, the Footer, shared sections and a [blog](blog.md)'s design too. {appName} asks first when other pages would change. The blog's design changes once, for every post.
 
-These are on the right-click menu and the Edit menu. On a Mac, use Cmd instead of Ctrl.
+These are on the right-click menu and in **Edit › Style**. On a Mac, use Cmd instead of Ctrl.

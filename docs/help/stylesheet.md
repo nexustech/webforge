@@ -4,14 +4,14 @@ id: stylesheet
 title: The Stylesheet panel
 summary: Write CSS of your own for your site, with suggestions, warnings and a live view on the page.
 related: [custom-code, edit-panel, styling, site-check]
-updated: 2026-11-10
+updated: 2026-11-16
 ---
 
 # The Stylesheet panel
 
 Your site's own stylesheet (`custom.css`) holds CSS you write yourself, for a look {appName}'s Style options don't give. It's an Advanced mode feature: turn that on with **View › Use Advanced Mode**.
 
-Open it with **View › Stylesheet**, or the **Stylesheet** tab at the bottom of the window, beside Site Check. The **Open Stylesheet** link in an item's CSS tab opens it too.
+In Advanced mode, open it with **Site › Stylesheet**, or the **Stylesheet** tab at the bottom of the window, beside Site Check. The **Open Stylesheet** link in an item's CSS tab opens it too.
 
 ## Writing CSS
 
