@@ -5,6 +5,7 @@ import {
   EyeIcon,
   FilePlusIcon,
   FolderOpenIcon,
+  ListChecksIcon,
   Redo2Icon,
   Undo2Icon,
 } from "lucide-react";
@@ -44,10 +45,11 @@ const NO_DRAG = "[-webkit-app-region:no-drag]";
 /**
  * The 40 px custom title bar (UI1, LF-13, {@link TITLE_BAR_HEIGHT}): app menu, New and Open, save
  * status, Undo (with its latest steps) and Redo, the command box with the site name, then panel
- * tools and Preview, Export and Publish, which get a caret once there is more to choose. Its
- * buttons are icons, each named by its command and with a tooltip that gives the shortcut; Preview,
- * Export and Publish show their names too while the title bar is wide, Publish filled (#1009). A
- * button shows once its command is registered: the start screen has no Undo or Publish (#1009).
+ * tools, Site Check, and Preview, Export and Publish, which get a caret once there is more to
+ * choose. Its buttons are icons, each named by its command and with a tooltip that gives the
+ * shortcut. While the title bar is wide, Site Check shows what it found and Preview, Export and
+ * Publish their names, Publish filled (#1009). A button shows once its command is registered: the
+ * start screen has no Undo, Site Check or Publish (#1009).
  * The empty parts drag the window. The native window controls (Windows, Linux) or traffic lights
  * (macOS) are drawn over it by Electron; the padding keeps them clear, using the Window Controls
  * Overlay area the window reports. Its container is the whole window's width, padding and all.
@@ -69,7 +71,7 @@ export function TitleBar({
     [registry, menuBar],
   );
   return (
-    // Its container: Preview, Export and Publish show their names while it's wide (#1009).
+    // Its container: Site Check, Preview, Export and Publish show their text while it's wide.
     <div className="@container/title-bar shrink-0">
       <header
         data-slot="title-bar"
@@ -109,6 +111,8 @@ export function TitleBar({
         >
           {tools}
           <PhonePreviewCue />
+          {/* What Site Check found, "5 to fix · 13 tips": it opens the panel (#1009). */}
+          <CommandButton commandId={COMMAND_IDS.siteCheck} icon={<ListChecksIcon />} />
           <CommandButton
             commandId={COMMAND_IDS.preview}
             icon={<EyeIcon className="text-info" />}

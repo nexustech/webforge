@@ -34,6 +34,8 @@ const COMMANDS: readonly CommandSpec[] = [
     enabled: false,
     run: noop,
   },
+  // What Site Check found (#1009).
+  { id: COMMAND_IDS.siteCheck, label: "Site Check", status: "5 to fix · 13 tips", run: noop },
   { id: COMMAND_IDS.preview, label: "Preview", menu: "file", run: noop },
   { id: COMMAND_IDS.exportSite, label: "Export Site…", menu: "file", run: noop },
   { id: COMMAND_IDS.publish, label: "Publish…", menu: "file", run: noop },
@@ -89,18 +91,21 @@ export const Complete: Story = {
 
 const START = new Set<string>([COMMAND_IDS.newSite, COMMAND_IDS.openSite]);
 
-/** The start screen: no site open, so no Undo, Redo, Preview, Export or Publish (#1009). */
+/** The start screen: no site open, so no Undo, Redo, Site Check, Preview, Export or Publish (#1009). */
 export const StartScreen: Story = {
   render: () => <WithCommands commands={COMMANDS.filter((command) => START.has(command.id))} />,
 };
 
-/** A 960 px window: Preview, Export and Publish are icons, nothing cut off (#1009). */
+/** A 960 px window: Site Check, Preview, Export and Publish are icons, nothing cut off (#1009). */
 export const At960: Story = {
   tags: ["wide-window"],
   render: () => <WithCommands commands={COMMANDS} width={960} />,
 };
 
-/** A 1280 px window: Preview, Export and Publish show their names, Publish filled (#1009). */
+/**
+ * A 1280 px window: Site Check shows what it found, and Preview, Export and Publish their names,
+ * Publish filled (#1009).
+ */
 export const At1280: Story = {
   tags: ["wide-window"],
   render: () => <WithCommands commands={COMMANDS} width={1280} />,
@@ -110,6 +115,19 @@ export const At1280: Story = {
 export const At1440: Story = {
   tags: ["wide-window"],
   render: () => <WithCommands commands={COMMANDS} width={1440} />,
+};
+
+/** Site Check found nothing to fix and no tips (#1009). */
+export const NoProblems: Story = {
+  tags: ["wide-window"],
+  render: () => (
+    <WithCommands
+      commands={COMMANDS.map((command) =>
+        command.id === COMMAND_IDS.siteCheck ? { ...command, status: "No problems" } : command,
+      )}
+      width={1280}
+    />
+  ),
 };
 
 /** A phone can open the preview (3.2): the cue says so, with Stop beside it. */

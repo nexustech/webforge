@@ -56,6 +56,12 @@ export type Command = {
    */
   readonly tooltip?: string | undefined;
   /**
+   * How things stand, already translated, for its title-bar button to show in place of a name
+   * (#1009): Site Check's "5 to fix · 13 tips". Its tooltip and its name for a screen reader
+   * give the label first ("Site Check: 5 to fix · 13 tips").
+   */
+  readonly status?: string | undefined;
+  /**
    * The title-bar button whose caret menu lists it, by that button's command id (LF-13): Export's
    * caret for a ZIP export, say. A button shows its caret only while some command names it.
    */
@@ -127,7 +133,9 @@ export type CommandSpec = Omit<
 };
 
 /** What a registered command's owner may change later, such as Undo becoming available. */
-type CommandChanges = Partial<Pick<Command, "label" | "enabled" | "disabledReason" | "tooltip">>;
+type CommandChanges = Partial<
+  Pick<Command, "label" | "enabled" | "disabledReason" | "tooltip" | "status">
+>;
 
 /**
  * A command's `enabled` and `disabledReason` (#1010): disabled with `reason` when there is one,
@@ -259,7 +267,8 @@ export function createCommandRegistry({
         next.label === command.label &&
         next.enabled === command.enabled &&
         next.disabledReason === command.disabledReason &&
-        next.tooltip === command.tooltip
+        next.tooltip === command.tooltip &&
+        next.status === command.status
       ) {
         return;
       }
