@@ -28,9 +28,12 @@ async function openHelp(): Promise<Page> {
 
 test("opens Help with F1, with its contents, pages, links between them, Back and search", async () => {
   const help = await openHelp();
-  await expect(help).toHaveTitle(/Help$/);
+  await expect(help).toHaveTitle("Webforge Help");
   const main = help.getByRole("main");
   await expect(main.getByRole("heading", { level: 1, name: "All help pages" })).toBeVisible();
+  // Every summary with the app's name filled in (#1016).
+  await expect(main).toContainText("The words Webforge uses");
+  await expect(help.locator("body")).not.toContainText("{appName}");
 
   // A page from the contents, and a link on it to another page, then Back.
   const contents = help.getByRole("navigation", { name: "Contents" });

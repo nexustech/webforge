@@ -4,6 +4,7 @@ import {
   parseHelpContents,
   parseHelpPage,
 } from "@webforge/help";
+import { t } from "@webforge/i18n";
 
 /** The help pages, read from `docs/help/` (5.4b, HP-6). */
 export type HelpLibrary = {
@@ -14,6 +15,9 @@ export type HelpLibrary = {
   /** The Help window's contents, from the README's groups. */
   readonly contents: readonly HelpContentsGroup[];
 };
+
+/** `{appName}` in a page's title or summary, as the app's name (`docs/branding.md`). */
+const withAppName = (text: string) => text.replaceAll("{appName}", t("app.name"));
 
 /**
  * The help library in `files` (each file's path, ending in its name, and its text) and `readme`.
@@ -28,7 +32,12 @@ export function helpLibraryOf(
     if (path.endsWith("/README.md")) continue;
     try {
       const page = parseHelpPage(text);
-      pages.set(page.id, page);
+      // `{appName}` filled in where the contents, search and the **?** buttons show them (#1016).
+      pages.set(page.id, {
+        ...page,
+        title: withAppName(page.title),
+        summary: withAppName(page.summary),
+      });
     } catch {
       // Left out; help-check names it.
     }
