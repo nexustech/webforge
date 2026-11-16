@@ -18,9 +18,16 @@ const SKIP_DELAY = 300;
 /** The gap between a control and its tooltip. */
 const GAP = 4;
 
-/** The tooltip's own rules, in the chrome's stylesheet: the editor's tooltip, 12 px on screen. */
+/**
+ * The tooltip's own rules, in the chrome's stylesheet: the editor's tooltip, 12 px on screen. It
+ * sits in the site's own body, so it starts from `all: initial`: the site's text and `div` rules
+ * (letter-spacing, text-transform, margins…) don't reach it. Custom properties still do.
+ */
 export const FRAME_TOOLTIP_CSS = `
 .wf-tip {
+  all: initial;
+  display: block;
+  box-sizing: border-box;
   position: fixed;
   z-index: 2147483647;
   max-width: calc(320px / var(--wf-zoom, 1));

@@ -66,6 +66,20 @@ test("shows the canvas's own controls' tooltips, and Puck's, in place of the bro
 
   await canvas().getByRole("button", { name: "Add a section here" }).hover();
   await expect(frameTip()).toHaveText("Add a section here");
+  // A site whose own rules would reach the tooltip, which sits in the site's body: added, read
+  // and removed at once, so the canvas's layout never moves under the pointer.
+  expect(
+    await frameTip().evaluate((tip) => {
+      const site = tip.ownerDocument.createElement("style");
+      site.textContent =
+        "body { letter-spacing: 3px; text-transform: uppercase; } div { margin: 20px; }";
+      tip.ownerDocument.head.append(site);
+      const style = getComputedStyle(tip);
+      const read = [style.letterSpacing, style.textTransform, style.marginTop];
+      site.remove();
+      return read;
+    }),
+  ).toEqual(["normal", "none", "0px"]);
 
   const remove = canvas()
     .locator(ACTION_BAR_ACTION)
