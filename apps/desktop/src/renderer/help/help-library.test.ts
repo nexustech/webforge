@@ -24,6 +24,27 @@ describe("helpLibraryOf (5.4b)", () => {
     // Search goes through the contents' order, then the pages the contents leave out.
     expect(library.ordered.map((each) => each.id)).toEqual(["publish", "export", "themes"]);
   });
+
+  it("fills {appName} in a page's title and summary (#1016)", () => {
+    const glossary = page("glossary", "{appName}'s words").replace(
+      "About glossary.",
+      "The words {appName} uses.",
+    );
+    const library = helpLibraryOf({ "/docs/help/glossary.md": glossary }, "");
+
+    expect(library.pages.get("glossary")).toMatchObject({
+      title: "Webforge's words",
+      summary: "The words Webforge uses.",
+    });
+  });
+});
+
+describe("the bundled pages' contents (#1016)", () => {
+  it("shows no {appName} in any title or summary", () => {
+    for (const each of bundledHelpLibrary().ordered) {
+      expect(`${each.title} ${each.summary}`).not.toContain("{appName}");
+    }
+  });
 });
 
 describe("bundledHelpLibrary (HP-6)", () => {

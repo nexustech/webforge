@@ -258,6 +258,20 @@ describe("checkHelpPages (HP-5)", () => {
     ]);
   });
 
+  it("fails a placeholder in a title or summary that the Help window doesn't fill (#1016)", () => {
+    const files = [
+      page("export", "# Export", {
+        title: "{appName}'s export",
+        summary: "What {app} makes, and what {appName} keeps.",
+      }),
+      page("pages", "# Pages", { title: "{siteName} pages" }),
+    ];
+    expect(check(files)).toEqual([
+      "export.md: its summary has {app}, which Help doesn't fill; only {appName} is",
+      "pages.md: its title has {siteName}, which Help doesn't fill; only {appName} is",
+    ]);
+  });
+
   it("fails a ? link to a page or heading that isn't there", () => {
     const files = [page("export", "# Export\n\n## Options")];
     expect(

@@ -66,6 +66,7 @@ async function closeWindow(): Promise<void> {
 test("creates a blank site, keeps an edit and reopens it from the Recent list", async () => {
   let page = await startWithoutSite();
   await expect(page.getByText("Sites you open or create appear here.")).toBeVisible();
+  await expect(page).toHaveTitle("Webforge");
 
   // New Site, Blank: the save dialog (stubbed) names the file, and the editor opens on it.
   const sitePath = join(dir, "Rosa's Bakery.wforge");
@@ -80,6 +81,8 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   await newSite.getByRole("button", { name: "Create" }).click();
   await waitForCanvas(page);
   await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved");
+  // The window's title names the site (#1016).
+  await expect(page).toHaveTitle("Rosa's Bakery - Webforge");
   // The Blank template: Home, About and Contact, and its "Page not found" page.
   const blank = await page.evaluate(async () => {
     const read = await (window as unknown as RendererWindow).webforge.project.readSite();
