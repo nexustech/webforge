@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { join } from "node:path";
-import { expect, test } from "@playwright/test";
-import { launchDesktopApp, newUserDataDir, type WebforgeApp } from "./launch.js";
+import { type ElectronApplication, expect, test } from "@playwright/test";
+import { launchDesktopApp, newUserDataDir, removeWhenFree } from "./launch.js";
 
 // Publish passwords and tokens are encrypted with Electron's safeStorage, whose key the OS keeps
 // (ADR 0006: Windows DPAPI, macOS Keychain), and the credential store keeps the encrypted bytes in
@@ -11,23 +10,8 @@ import { launchDesktopApp, newUserDataDir, type WebforgeApp } from "./launch.js"
 // uses (#843). That includes what Electron 44 and earlier saved with the synchronous ones, which
 // Electron 46 removes. The store's own file handling is unit-tested.
 
+let app: ElectronApplication | undefined;
 let userData: string;
-/** The apps each test has launched, closed in its teardown. */
-const launched: WebforgeApp[] = [];
-
-/** Webforge with the test's user data, closed in the teardown. */
-async function launch(): Promise<WebforgeApp> {
-  const app = await launchDesktopApp({ userDataDir: userData, site: false });
-  launched.push(app);
-  return app;
-}
-
-/**
- * How long the teardown waits for each app's process to end before removing the user data. Once
- * the app had closed, Electron's process held its `DIPS` database for up to half a minute more
- * while it ended, on a computer busy with other tests (#1112).
- */
-const GONE_TIMEOUT_MS = 30_000;
 
 /**
  * Whether Windows' safeStorage key is on disk, in the profile's `Local State` (DPAPI-encrypted, as
@@ -52,19 +36,11 @@ test.beforeEach(() => {
 });
 
 test.afterEach(async () => {
-  // Time for that wait, on top of the test's own.
-  test.info().setTimeout(test.info().timeout + GONE_TIMEOUT_MS);
-  const apps = launched.splice(0);
-  for (const app of apps) await app.close();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  await Promise.race([
-    Promise.all(apps.map((app) => app.gone)),
-    new Promise((resolve) => {
-      timer = setTimeout(resolve, GONE_TIMEOUT_MS);
-    }),
-  ]);
-  clearTimeout(timer);
-  await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  await app?.close();
+  app = undefined;
+  // Not waited for: Electron's process, ending, can hold the user data's `DIPS` database for up to
+  // two minutes more on a busy computer (#1112), longer than the test may take.
+  void removeWhenFree(userData);
 });
 
 test("a secret encrypted by one run decrypts in the next, saved as before or now (safeStorage, 0.3, #843)", async () => {
@@ -75,7 +51,7 @@ test("a secret encrypted by one run decrypts in the next, saved as before or now
   // A made-up value: the test never touches a real credential.
   const secret = "test-only-ftp-password-ü";
 
-  const app = await launch();
+  app = await launchDesktopApp({ userDataDir: userData, site: false });
   const sealed = await app.evaluate(async ({ safeStorage }, value) => {
     if (!(await safeStorage.isAsyncEncryptionAvailable())) return null;
     return {
@@ -101,8 +77,8 @@ test("a secret encrypted by one run decrypts in the next, saved as before or now
     expect(Buffer.from(base64, "base64").toString("latin1")).not.toContain("test-only");
   }
 
-  const reopened = await launch();
-  const opened = await reopened.evaluate(
+  app = await launchDesktopApp({ userDataDir: userData, site: false });
+  const opened = await app.evaluate(
     async ({ safeStorage }, saved) =>
       Promise.all(
         [saved.now, saved.before].map(

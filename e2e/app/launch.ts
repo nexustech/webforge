@@ -148,18 +148,24 @@ export async function launchDesktopApp(
   ];
   if (temporary.length > 0) {
     app.on("close", () => {
-      for (const folder of temporary) {
-        // Best effort: after a killed app, its helper processes can hold files for a moment.
-        rm(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => {
-          // Left in the temp folder; the OS cleans it up eventually.
-        });
-      }
+      for (const folder of temporary) void removeWhenFree(folder);
     });
   }
-  // Electron's own process: on Windows, Playwright starts Electron in a shell, and the process it
-  // gives is the shell's (#1112). None for an app that has already closed by itself.
-  const electronPid = await app.evaluate(() => process.pid).catch(() => undefined);
-  return closingWithin(app, CLOSE_TIMEOUT_MS, KILL_TIMEOUT_MS, electronPid);
+  return closingWithin(app);
+}
+
+/**
+ * Removes `folder`, a test's temporary folder, once nothing holds it, and never fails (#1112).
+ * After a close, Electron's own process can still hold the user data as it ends: on Windows,
+ * Playwright starts Electron in a shell, the process a close waits for and kills, and on a busy
+ * computer Electron's process took up to two minutes more to end once killed, keeping its `DIPS`
+ * database open. It retries for about that long, 200 ms more between each try; a folder still held
+ * after that is left in the temp folder, which the OS cleans up eventually.
+ */
+export function removeWhenFree(folder: string): Promise<void> {
+  return rm(folder, { recursive: true, force: true, maxRetries: 40, retryDelay: 200 }).catch(() => {
+    // Left in the temp folder.
+  });
 }
 
 /**
@@ -196,44 +202,27 @@ export type ClosingApp<App> = App & {
    * which a busy machine slows (#1099). Never resolves for an app that doesn't say so.
    */
   readonly saidClosed: Promise<void>;
-  /**
-   * Resolves once the app's process has exited, and with it Electron's hold on the user data.
-   * `close()` stops waiting for that after its time limits, where Windows took up to half a minute
-   * more to finish ending a process on a busy machine (#1112): a test removing the user data waits
-   * for this too. Never rejects.
-   */
-  readonly gone: Promise<void>;
 };
 
 /** A launched Webforge, as {@link launchDesktopApp} returns it. */
 export type WebforgeApp = ClosingApp<ElectronApplication>;
 
 /**
- * Ends the process `pid` (`child`'s own by default) and, on Windows, every process it started:
- * there, ending a process leaves its children running, and an orphaned renderer or GPU process
- * keeps the test's folders busy (EPERM). Elsewhere Electron's helpers end with their parent.
- * `force` kills outright (SIGKILL), which Windows' `taskkill /F` always does. Resolves once that's
- * done: at once elsewhere, and on Windows when `taskkill` has ended the tree. It runs
- * asynchronously: run synchronously, it stopped the test's own timers for as long as it took to
- * walk the process tree on a busy machine (#1099).
+ * Ends `child` and, on Windows, every process it started: there, ending a process leaves its
+ * children running, and an orphaned renderer or GPU process keeps the test's folders busy (EPERM).
+ * Elsewhere Electron's helpers end with their parent. `force` kills outright (SIGKILL), which
+ * Windows' `taskkill /F` always does. Resolves once that's done: at once elsewhere, and on
+ * Windows when `taskkill` has ended the tree. It runs asynchronously: run synchronously, it stopped
+ * the test's own timers for as long as it took to walk the process tree on a busy machine (#1099).
  */
-function endProcess(child: ChildProcess, force = false, pid = child.pid): Promise<void> {
-  if (process.platform === "win32" && pid !== undefined) {
+function endProcess(child: ChildProcess, force = false): Promise<void> {
+  if (process.platform === "win32" && child.pid !== undefined) {
     return new Promise((resolve) => {
       // An error is a process gone already, or exiting.
-      execFile("taskkill", ["/pid", String(pid), "/T", "/F"], () => resolve());
+      execFile("taskkill", ["/pid", String(child.pid), "/T", "/F"], () => resolve());
     });
   }
-  const signal = force ? "SIGKILL" : "SIGTERM";
-  if (pid === undefined || pid === child.pid) {
-    child.kill(signal);
-  } else {
-    try {
-      process.kill(pid, signal);
-    } catch {
-      // Gone already.
-    }
-  }
+  child.kill(force ? "SIGKILL" : "SIGTERM");
   return Promise.resolve();
 }
 
@@ -259,18 +248,11 @@ function closedLine(child: ChildProcess | undefined): Promise<void> {
  * outlast the test either; one that still hasn't exited `killTimeoutMs` after that is left, so a
  * close never takes more than `timeoutMs` and twice `killTimeoutMs` (#1099). Closing it again (a
  * test that closes it, then its `afterEach`) waits for the first close.
- *
- * `electronPid` is Electron's own process, where that isn't the app's: on Windows, Playwright
- * starts Electron in a shell (`cmd.exe /c`), whose process is the one `app.process()` gives. The
- * app is then ended from Electron's process, and the shell left to exit once Electron has, so
- * the wait for the shell's exit is a wait for Electron's. Ended from the shell, the shell exited at
- * once while Electron's process, ending, held the user data for up to half a minute more (#1112).
  */
 export function closingWithin<App extends Pick<ElectronApplication, "close" | "process">>(
   app: App,
   timeoutMs = CLOSE_TIMEOUT_MS,
   killTimeoutMs = KILL_TIMEOUT_MS,
-  electronPid?: number,
 ): ClosingApp<App> {
   const close = app.close.bind(app);
   let started: ChildProcess | undefined;
@@ -315,22 +297,14 @@ export function closingWithin<App extends Pick<ElectronApplication, "close" | "p
       done.catch(() => undefined);
       // Ended when the process has exited and, on Windows, the processes it started with it.
       const ended = (killed: Promise<void>) => Promise.all([exited, killed]).then(() => false);
-      const pid = electronPid ?? child.pid;
-      if (await Promise.race([ended(endProcess(child, false, pid)), after(killTimeoutMs)])) {
-        await Promise.race([ended(endProcess(child, true, pid)), after(killTimeoutMs)]);
+      if (await Promise.race([ended(endProcess(child)), after(killTimeoutMs)])) {
+        await Promise.race([ended(endProcess(child, true)), after(killTimeoutMs)]);
       }
     } finally {
       for (const timer of timers) clearTimeout(timer);
     }
   };
-  const gone = new Promise<void>((resolve) => {
-    if (started === undefined || started.exitCode !== null || started.signalCode !== null) {
-      resolve();
-    } else {
-      started.once("exit", () => resolve());
-    }
-  });
-  const closing = Object.assign(app, { saidClosed: announced, gone }) as ClosingApp<App>;
+  const closing = Object.assign(app, { saidClosed: announced }) as ClosingApp<App>;
   closing.close = () => {
     closed ??= settle(() => close());
     return closed;
@@ -360,9 +334,12 @@ export const APP_START_TIMEOUT_MS = 30_000;
 const CANVAS_START_TIMEOUT_MS = 30_000;
 
 /**
- * Waits until `page`'s canvas shows the site with its compiled CSS (1.12) and the fonts it uses.
- * Both change the layout when they arrive (a heading set in its font is wider or narrower), so
- * clicks, hovers, drags and measurements wait for them.
+ * Waits until `page`'s canvas shows the site with its compiled CSS (1.12) and the fonts it uses,
+ * and the cover over it while it opens has gone (#1013), as a person waits.
+ * - The styles and fonts change the layout when they arrive (a heading set in its font is wider or
+ *   narrower), so clicks, hovers, drags and measurements wait for them.
+ * - The cover takes the clicks until then: a click on the canvas lands on it and selects nothing
+ *   (#1101). A forced click or `page.mouse` doesn't wait for it, as an ordinary click does.
  */
 export async function waitForCanvas(page: Page): Promise<void> {
   const canvas = page.frameLocator(".editor__canvas iframe");
@@ -379,4 +356,7 @@ export async function waitForCanvas(page: Page): Promise<void> {
           requestAnimationFrame(() => void document.fonts.ready.then(() => resolve())),
         ),
     );
+  await expect(page.locator(".editor__canvas-cover")).toHaveCount(0, {
+    timeout: CANVAS_START_TIMEOUT_MS,
+  });
 }

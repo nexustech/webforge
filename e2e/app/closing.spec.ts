@@ -1,9 +1,11 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { EventEmitter, once } from "node:events";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
-import { closingWithin } from "./launch.js";
+import { closingWithin, removeWhenFree } from "./launch.js";
 
 // Closing the app in a test's teardown never outlasts the test (#393): Electron's process teardown
 // after quitting took up to a minute on a busy machine. Once Webforge says it has closed, the tests
@@ -180,38 +182,29 @@ test("ends the processes the app started too, before it says it's done (#534)", 
   expect(() => process.kill(helper, 0)).toThrow();
 });
 
-test("ends the app from Electron's own process, not the shell it runs in, and waits for it (#1112)", async () => {
-  // Electron's process, and a shell that exits once it has, as Windows' `cmd.exe /c` does, where
-  // Playwright starts Electron in one.
-  const electron = endless();
-  const shell = spawn(
-    process.execPath,
+test("removes a test's folder once the process holding it has ended (#1112)", async () => {
+  // Elsewhere a file that's open can be removed.
+  test.skip(process.platform !== "win32", "Windows only");
+  const folder = mkdtempSync(join(tmpdir(), "webforge-e2e-held-"));
+  // A process with a file in the folder open and shared with no one, as an ending Electron holds
+  // its user data's DIPS database. Node's own opens let a file be deleted, so PowerShell's.
+  const holder = spawn(
+    "powershell",
     [
-      "-e",
-      `const pid = Number(process.argv[1]);
-       const timer = setInterval(() => { try { process.kill(pid, 0); } catch { clearInterval(timer); } }, 50);`,
-      String(electron.pid),
+      "-NoProfile",
+      "-Command",
+      "$file = [IO.File]::Open('DIPS', 'OpenOrCreate', 'ReadWrite', 'None'); 'open'; Start-Sleep 60",
     ],
-    { stdio: "ignore" },
+    { cwd: folder, stdio: ["ignore", "pipe", "ignore"] },
   );
-  const app = closingWithin(
-    { close: () => new Promise<void>(() => undefined), process: () => shell },
-    500,
-    5_000,
-    electron.pid,
-  );
+  await once(holder.stdout, "data");
+  await expect(rm(folder, { recursive: true, force: true })).rejects.toThrow(/EBUSY/);
 
-  try {
-    await app.close();
-    await app.gone;
+  const removed = removeWhenFree(folder);
+  setTimeout(() => holder.kill(), 1_000);
+  await removed;
 
-    await expect.poll(() => ended(electron)).toBe(true);
-    // The shell exited by itself once Electron had: it wasn't ended in Electron's place.
-    expect(shell.exitCode).toBe(0);
-  } finally {
-    electron.kill();
-    shell.kill();
-  }
+  expect(existsSync(folder)).toBe(false);
 });
 
 test("cleans up with the asynchronous rm, whose retries work (#534)", () => {
