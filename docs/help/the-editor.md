@@ -68,7 +68,7 @@ Switch with **View › Use Advanced Mode**, or in [Settings](settings.md#interfa
 
 ## Devices and zoom
 
-Your site adapts to the visitor's screen. Use **Desktop**, **Tablet** and **Mobile**, at the top right of the canvas, to see and edit each size (Ctrl+1, Ctrl+2 and Ctrl+3; Cmd on a Mac). Hover over a toolbar button to see its name and shortcut.
+Your site adapts to the visitor's screen. Use **Desktop**, **Tablet** and **Mobile**, at the top right of the canvas, to see and edit each size (Ctrl+1, Ctrl+2 and Ctrl+3; Cmd on a Mac). Hover over a toolbar button to see its name and its shortcut, if it has one.
 
 On the left of the canvas toolbar:
 
