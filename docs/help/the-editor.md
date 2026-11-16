@@ -4,7 +4,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-15
+updated: 2026-11-16
 ---
 
 # The editor
@@ -68,7 +68,7 @@ Switch with **View › Use Advanced Mode**, or in [Settings](settings.md#interfa
 
 ## Devices and zoom
 
-Your site adapts to the visitor's screen. Use **Desktop**, **Tablet** and **Mobile**, at the top right of the canvas, to see and edit each size (Ctrl+1, Ctrl+2 and Ctrl+3; Cmd on a Mac).
+Your site adapts to the visitor's screen. Use **Desktop**, **Tablet** and **Mobile**, at the top right of the canvas, to see and edit each size (Ctrl+1, Ctrl+2 and Ctrl+3; Cmd on a Mac). Hover over a toolbar button to see its name and shortcut.
 
 On the left of the canvas toolbar:
 
