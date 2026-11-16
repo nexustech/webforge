@@ -67,70 +67,10 @@ test("shows the canvas's own controls' tooltips, and Puck's, in place of the bro
   // Pointed at again until it shows: on a cold start the + can still move as the selection
   // settles, out from under the pointer before the tooltip's delay is up. The pointer goes back
   // to the Section between tries, not off the canvas: the + is there while the Section is hovered.
-  // TEMPORARY (#1009, macOS CI): counts the pointer's events in the frame.
-  await section.evaluate((element) => {
-    const counts: Record<string, number> = {};
-    Object.assign(element.ownerDocument.defaultView ?? {}, { wfCounts: counts });
-    for (const type of ["pointerover", "pointerout", "pointermove", "pointerdown"]) {
-      element.ownerDocument.addEventListener(
-        type,
-        (event) => {
-          const target = event.target instanceof Element ? event.target.className : "?";
-          const key = `${type}:${String(target).slice(0, 20)}`;
-          counts[key] = (counts[key] ?? 0) + 1;
-        },
-        true,
-      );
-    }
-  });
   await expect(async () => {
     await section.hover({ force: true, position: { x: 10, y: box.height - 4 }, timeout: 2000 });
-    const plus = canvas().getByRole("button", { name: "Add a section here" });
-    await plus.hover({ timeout: 2000 });
-    try {
-      await expect(frameTip()).toHaveText("Add a section here", { timeout: 2000 });
-    } catch (error) {
-      // TEMPORARY (#1009, macOS CI): what the frame saw, to find why no tooltip showed.
-      const seen = await plus
-        .evaluate((element) => {
-          const box = element.getBoundingClientRect();
-          const under = element.ownerDocument.elementFromPoint(
-            box.left + box.width / 2,
-            box.top + box.height / 2,
-          );
-          const named = (each: Element | null) =>
-            each === null ? "null" : `${each.tagName}.${each.className}`.slice(0, 120);
-          return {
-            connected: element.isConnected,
-            tip: element.getAttribute("data-wf-tip"),
-            box: [box.left, box.top, box.width, box.height].map(Math.round),
-            under: named(under),
-            underIsPlus: under !== null && element.contains(under),
-            active: named(element.ownerDocument.activeElement),
-            frameFocused: element.ownerDocument.hasFocus(),
-          };
-        })
-        .catch((reason: unknown) => String(reason));
-      const counts = await plus
-        .evaluate(
-          (element) =>
-            (element.ownerDocument.defaultView as unknown as { wfCounts: unknown }).wfCounts,
-        )
-        .catch((reason: unknown) => String(reason));
-      // How late the editor window's 400 ms timer (the tooltip's delay) fires.
-      const late = await page.evaluate(
-        () =>
-          new Promise<number>((resolve) => {
-            const start = performance.now();
-            setTimeout(() => resolve(Math.round(performance.now() - start)), 400);
-          }),
-      );
-      const visibility = await page.evaluate(() => [document.visibilityState, document.hasFocus()]);
-      console.log(
-        `frame tooltip diagnostics: ${JSON.stringify({ seen, counts, late, visibility })}`,
-      );
-      throw error;
-    }
+    await canvas().getByRole("button", { name: "Add a section here" }).hover({ timeout: 2000 });
+    await expect(frameTip()).toHaveText("Add a section here", { timeout: 2000 });
   }).toPass();
   // A site whose own rules would reach the tooltip, which sits in the site's body: added, read
   // and removed at once, so the canvas's layout never moves under the pointer.
