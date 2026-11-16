@@ -195,6 +195,15 @@ export function registerProjectHandlers(
     await recent?.clearUnpinned();
     return null;
   });
+  // File › Close Site (#1016): saved and its canvas kept for Recent, as before a switch, then
+  // closed. Only by the editor loaded for the site open now: one a hand-off replaced closes nothing.
+  registerIpcHandler(ipc, "closeProject", isTrustedSender, async (sessionId) => {
+    if (session.staleReason(sessionId) !== undefined) return null;
+    await beforeSwitch?.();
+    about = undefined;
+    await session.close();
+    return null;
+  });
   registerIpcHandler(ipc, "getCurrentProject", isTrustedSender, () => session.current());
   registerIpcHandler(ipc, "readSite", isTrustedSender, () => session.readSite());
   // Only from a renderer loaded for the site open now (R6): a save on its way while another site
