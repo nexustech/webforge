@@ -180,6 +180,40 @@ test("ends the processes the app started too, before it says it's done (#534)", 
   expect(() => process.kill(helper, 0)).toThrow();
 });
 
+test("ends the app from Electron's own process, not the shell it runs in, and waits for it (#1112)", async () => {
+  // Electron's process, and a shell that exits once it has, as Windows' `cmd.exe /c` does, where
+  // Playwright starts Electron in one.
+  const electron = endless();
+  const shell = spawn(
+    process.execPath,
+    [
+      "-e",
+      `const pid = Number(process.argv[1]);
+       const timer = setInterval(() => { try { process.kill(pid, 0); } catch { clearInterval(timer); } }, 50);`,
+      String(electron.pid),
+    ],
+    { stdio: "ignore" },
+  );
+  const app = closingWithin(
+    { close: () => new Promise<void>(() => undefined), process: () => shell },
+    500,
+    5_000,
+    electron.pid,
+  );
+
+  try {
+    await app.close();
+    await app.gone;
+
+    await expect.poll(() => ended(electron)).toBe(true);
+    // The shell exited by itself once Electron had: it wasn't ended in Electron's place.
+    expect(shell.exitCode).toBe(0);
+  } finally {
+    electron.kill();
+    shell.kill();
+  }
+});
+
 test("cleans up with the asynchronous rm, whose retries work (#534)", () => {
   // Node 24's rmSync gives up on a busy folder at once on Windows (EPERM), whatever its
   // maxRetries, where rm waits for the app's helper processes to let it go.
