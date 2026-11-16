@@ -4,6 +4,7 @@ import type { CheckLevel, CheckReport, Finding, RuleResult } from "@webforge/sit
 import { ExternalLinkIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { HelpButton, type HelpTopic } from "../help/index.js";
+import { countsByLevel, LEVELS } from "./counts.js";
 
 /** A finding as the panel writes it: where it is, and anything else worth saying. */
 type DescribedFinding = { readonly place: string; readonly detail?: string | undefined };
@@ -24,8 +25,6 @@ export type SiteCheckPanelProps = {
   /** Brings back what was ignored. */
   readonly onRestore: () => void;
 };
-
-const LEVELS: readonly CheckLevel[] = ["must", "should", "tip"];
 
 /** A rule's dot (SP-13): green when it passes, red for a Must fix, amber otherwise. */
 type Status = "pass" | "warn" | "fail";
@@ -60,16 +59,11 @@ function helpTopicOf(result: RuleResult): HelpTopic {
 
 /** "2 must fix · 1 should fix · 3 tips", or the all-clear. */
 function summary(report: CheckReport): string {
-  const counts = LEVELS.map((level) =>
-    report.results
-      .filter((result) => result.level === level)
-      .reduce((count, result) => count + result.findings.length, 0),
-  );
-  if (counts.every((count) => count === 0)) return t("siteCheck.allClear");
-  return LEVELS.flatMap((level, index) => {
-    const count = counts[index] ?? 0;
-    return count === 0 ? [] : [plural(`siteCheck.count.${level}`, count)];
-  }).join(" · ");
+  const counts = countsByLevel(report);
+  if (LEVELS.every((level) => counts[level] === 0)) return t("siteCheck.allClear");
+  return LEVELS.flatMap((level) =>
+    counts[level] === 0 ? [] : [plural(`siteCheck.count.${level}`, counts[level])],
+  ).join(" · ");
 }
 
 /**

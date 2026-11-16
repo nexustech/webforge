@@ -20,10 +20,10 @@ export type CommandButtonProps = {
   readonly commandId: string;
   readonly icon: ReactNode;
   /**
-   * A short visible label ("Export"), without which the button shows only its icon. It shows only
-   * while the title bar (its container, `title-bar`) is at least 1180 px wide, icon only below
-   * that, the button still named by it (#1009): windows 1280 px wide and up always show it, and at
-   * 960 px nothing is cut off.
+   * A short visible label ("Export"). Without it the button shows the command's `status`, if it
+   * has one ("5 to fix · 13 tips"), else only its icon. Either shows only while the title bar (its
+   * container, `title-bar`) is at least 1180 px wide, icon only below that, the button still named
+   * by it (#1009): windows 1280 px wide and up always show it, and at 960 px nothing is cut off.
    */
   readonly text?: string;
   /** Ghost unless given: Publish is the title bar's one filled button (#1009). */
@@ -42,10 +42,15 @@ export function CommandButton({ commandId, icon, text, variant = "ghost" }: Comm
   const command = commands.find((each) => each.id === commandId);
   const more = commands.filter((each) => each.more === commandId);
   if (command === undefined) return null;
-  const tip =
-    command.shortcut === undefined
+  const { status } = command;
+  // "Site Check: 5 to fix · 13 tips": the label first, where the button shows only the status.
+  const name =
+    status === undefined
       ? (command.tooltip ?? command.label)
-      : `${command.tooltip ?? command.label} (${formatShortcut(command.shortcut)})`;
+      : t("shell.withStatus", { name: command.label, status });
+  const tip =
+    command.shortcut === undefined ? name : `${name} (${formatShortcut(command.shortcut)})`;
+  const shown = text ?? status;
 
   // `disabled` is always given, so it doesn't come and go, which would remount the button.
   const button = (
@@ -55,18 +60,19 @@ export function CommandButton({ commandId, icon, text, variant = "ghost" }: Comm
       className={cn(
         "[&_svg]:transition-colors",
         // Written out in full: Tailwind finds its classes in the source as they are.
-        text !== undefined && "@min-[1180px]/title-bar:w-auto @min-[1180px]/title-bar:px-2.5",
+        shown !== undefined && "@min-[1180px]/title-bar:w-auto @min-[1180px]/title-bar:px-2.5",
       )}
       disabled={command.enabled === false}
       tooltip={tipWithReason(tip, reasonOf(command))}
       // Found by the tour, which points at it (OB-3).
       data-command={commandId}
-      aria-label={text ?? command.label}
+      // A status alone doesn't say what it counts: the label goes first.
+      aria-label={text ?? (status === undefined ? command.label : name)}
       onClick={() => registry.run(commandId)}
     >
       {icon}
-      {text === undefined ? null : (
-        <span className="hidden @min-[1180px]/title-bar:inline">{text}</span>
+      {shown === undefined ? null : (
+        <span className="hidden @min-[1180px]/title-bar:inline">{shown}</span>
       )}
     </Button>
   );

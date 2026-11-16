@@ -13,6 +13,7 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 import { starterSite } from "../../shared/starter-site.js";
 import { createSettingsRegistry } from "../editor/settings-registry.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
+import { createCommandRegistry } from "../shell/commands.js";
 import { createPanelRegistry, panelsInSlot } from "../shell/panels.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { registerSiteCheckPanel, SITE_CHECK_PANEL_ID } from "./register-site-check-panel.js";
@@ -474,5 +475,42 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     await userEvent.click(first);
 
     expect(showPanel).toHaveBeenCalledWith("theme");
+  });
+});
+
+describe("Site Check's title-bar button (#1009)", () => {
+  it("is a command that opens the panel, saying what the check found, gone with the panel", () => {
+    const { recheck } = driveRecheck();
+    const session = sessionWith(siteWith());
+    const panels = createPanelRegistry();
+    const showPanel = vi.spyOn(panels, "show");
+    const titleBar = createCommandRegistry();
+    const remove = registerSiteCheckPanel(panels, {
+      session,
+      settings: createSettingsRegistry(),
+      commands: { run: vi.fn(() => true) },
+      titleBar,
+      openGuide: vi.fn(),
+      ignored: [],
+      saveIgnored: vi.fn(),
+    });
+
+    const status = () => titleBar.get(COMMAND_IDS.siteCheck)?.status;
+    const before = status();
+    expect(before).toMatch(/to fix|tips?$|^No problems$/);
+    titleBar.run(COMMAND_IDS.siteCheck);
+    expect(showPanel).toHaveBeenCalledWith(SITE_CHECK_PANEL_ID);
+
+    // A page named as Windows names a device, which it can't save: one more to fix.
+    session.edit("props", "Renamed", (draft) => {
+      const about = draft.pages[ABOUT];
+      if (about !== undefined) about.slug = "nul";
+    });
+    recheck();
+    expect(status()).not.toBe(before);
+    expect(status()).toMatch(/^\d+ to fix/);
+
+    remove();
+    expect(titleBar.get(COMMAND_IDS.siteCheck)).toBeUndefined();
   });
 });

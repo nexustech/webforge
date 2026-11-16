@@ -11,6 +11,10 @@ export const siteCheck = {
   "siteCheck.count.should.other": "{count} should fix",
   "siteCheck.count.tip.one": "1 tip",
   "siteCheck.count.tip.other": "{count} tips",
+  // The title bar's Site Check button (#1009): Must fix and Should fix together, then tips.
+  "siteCheck.button.toFix.one": "1 to fix",
+  "siteCheck.button.toFix.other": "{count} to fix",
+  "siteCheck.button.clear": "No problems",
   "siteCheck.fix": "Fix",
   // The assistant drafts what's missing, for the person to review (#873).
   "siteCheck.write": "Write One…",
