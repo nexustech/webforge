@@ -14,12 +14,15 @@ import type { AiApi } from "../../shared/ipc/ai.js";
 import type { AppApi } from "../../shared/ipc/app.js";
 import type { HelpApi } from "../../shared/ipc/help.js";
 import type { PrefsApi } from "../../shared/ipc/prefs.js";
+import { DEFAULT_PREFERENCES, type Preferences } from "../../shared/ipc/prefs.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { TemplatesApi } from "../../shared/ipc/templates.js";
 import type { UpdatesApi } from "../../shared/ipc/updates.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
+import { createSettingsRegistry } from "../editor/settings-registry.js";
 import { HelpCommands } from "../help/index.js";
 import { reportFailure } from "../log.js";
+import { registerAppSettings, SettingsHost } from "../settings/index.js";
 import { AboutDialog } from "../shell/AboutDialog.js";
 import { AppMark } from "../shell/AppMark.js";
 import {
@@ -29,8 +32,10 @@ import {
 } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry, installCommandShortcuts, isMac } from "../shell/commands.js";
+import { createPreferencesStore } from "../shell/preferences-store.js";
 import { ShortcutSheet } from "../shell/ShortcutSheet.js";
 import { TitleBar } from "../shell/TitleBar.js";
+import { applyTheme } from "../startup.js";
 import { watchUpdates } from "../updates/index.js";
 import { openSiteWith } from "./open-site.js";
 import { RecentSites } from "./RecentSites.js";
@@ -40,6 +45,8 @@ import { StartHelp } from "./StartHelp.js";
 /** Props of {@link StartScreen}. */
 export type StartScreenProps = {
   readonly info: AppInfo;
+  /** The person's preferences as the window started, for Settings… (#1016). */
+  readonly preferences?: Preferences;
   /** The preload API's site calls; injectable for tests. */
   readonly project?: Pick<
     ProjectApi,
@@ -77,6 +84,7 @@ export type StartScreenProps = {
  */
 export function StartScreen({
   info,
+  preferences,
   project,
   templates,
   app,
@@ -96,6 +104,29 @@ export function StartScreen({
   const [api] = useState(() => project ?? window.webforge.project);
 
   useEffect(() => installCommandShortcuts(window, registry), [registry]);
+
+  // File › Settings… with the app's own parts (#1016): its look, devices and updates can be set
+  // before any site is open. A new appearance shows at once, as in the editor.
+  const [settings] = useState(createSettingsRegistry);
+  const [preferenceStore] = useState(() =>
+    createPreferencesStore(
+      { preferences: preferences ?? DEFAULT_PREFERENCES },
+      { preferences: (change) => (prefs ?? window.webforge.prefs).set(change) },
+    ),
+  );
+  useEffect(
+    () => registerAppSettings(settings, preferenceStore, undefined, info.version),
+    [settings, preferenceStore, info.version],
+  );
+  useEffect(
+    () =>
+      preferenceStore.subscribe((state, before) => {
+        if (state.preferences.theme !== before.preferences.theme) {
+          applyTheme(state.preferences.theme, window);
+        }
+      }),
+    [preferenceStore],
+  );
 
   // Nothing to save here: answer at once, so closing the window never waits for a timeout.
   useEffect(() => (app ?? window.webforge.app).onFlushRequest(async () => undefined), [app]);
@@ -200,6 +231,7 @@ export function StartScreen({
           {...(prefs === undefined ? {} : { prefs })}
         />
         <AboutDialog info={info} />
+        <SettingsHost registry={settings} site={false} />
         <ShortcutSheet editor={false} />
         <Toaster theme="dark" />
       </TooltipProvider>

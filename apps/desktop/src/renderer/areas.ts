@@ -32,6 +32,7 @@ import { viewCommandsArea } from "./shell/area.js";
 import { canvasItemArea, pageCommandsArea, sitePanelArea } from "./site/area.js";
 import { siteCheckArea } from "./site-check/area.js";
 import { canvasSettingsArea, siteCodeArea, siteSettingsArea } from "./site-settings/area.js";
+import { closeSiteArea } from "./start/close-site.js";
 import { saveSiteZipArea } from "./start/save-site-zip.js";
 import { crashReportsArea } from "./storage/area.js";
 import { stylesheetPanelArea } from "./stylesheet/area.js";
@@ -103,4 +104,6 @@ export const WINDOW_AREAS: readonly Area<WindowContext>[] = [
   updatesArea,
   findReplacePanelArea,
   stylesheetPanelArea,
+  // Last in File (#1016).
+  closeSiteArea,
 ];

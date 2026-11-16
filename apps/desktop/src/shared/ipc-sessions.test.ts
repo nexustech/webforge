@@ -13,6 +13,8 @@ const SITE_CHANNELS = [
   "project:set-ui-state",
   "project:save-zip",
   "project:take-about",
+  // File › Close Site (#1016): closes only the opening its page was loaded for.
+  "project:close",
   "media:import",
   "media:import-paths",
   "media:choose",

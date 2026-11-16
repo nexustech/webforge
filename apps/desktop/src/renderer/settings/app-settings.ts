@@ -194,13 +194,13 @@ const itemOf = (device: CustomDevice): DeviceItem => ({
 /**
  * The app's parts of Settings (LF-12): Interface, Devices and Updates, which save the person's
  * preferences, never an undo step; and AI apps, a line that opens its own dialog with `openAiApps`
- * (#752). Updates shows the channel `appVersion` follows until the person chooses one (5.2).
- * Backups joins when it has settings of its own.
+ * (#752), left out without it (the start screen, #1016). Updates shows the channel `appVersion`
+ * follows until the person chooses one (5.2). Backups joins when it has settings of its own.
  */
 export function registerAppSettings(
   registry: SettingsRegistry,
   preferences: PreferencesStore,
-  openAiApps: () => void,
+  openAiApps: (() => void) | undefined,
   appVersion: string,
 ): () => void {
   const now = () => preferences.getState().preferences;
@@ -274,22 +274,26 @@ export function registerAppSettings(
           },
         }),
     }),
-    registry.register({
-      id: "aiApps",
-      heading: "app",
-      // The last of App's parts.
-      order: 4,
-      open: () =>
-        settingsPart({
-          id: "aiApps",
-          heading: "app",
-          label: t("settings.aiApps"),
-          spec: aiAppsSpec(openAiApps),
-          initial: {},
-          // Nothing to keep: what AI apps changes, it changes at once.
-          save: () => undefined,
-        }),
-    }),
+    ...(openAiApps === undefined
+      ? []
+      : [
+          registry.register({
+            id: "aiApps",
+            heading: "app",
+            // The last of App's parts.
+            order: 4,
+            open: () =>
+              settingsPart({
+                id: "aiApps",
+                heading: "app",
+                label: t("settings.aiApps"),
+                spec: aiAppsSpec(openAiApps),
+                initial: {},
+                // Nothing to keep: what AI apps changes, it changes at once.
+                save: () => undefined,
+              }),
+          }),
+        ]),
   ];
   return () => {
     for (const stop of stops) stop();
