@@ -143,6 +143,24 @@ describe("TitleBar", () => {
     expect((await screen.findByRole("tooltip")).textContent).toBe("Undo (Ctrl+Z)Nothing to undo.");
   });
 
+  it("gives a command's tooltip, with its shortcut, in place of its label (#1011)", async () => {
+    const registry = createCommandRegistry();
+    registry.register({
+      id: COMMAND_IDS.undo,
+      label: "Undo",
+      tooltip: "Undo Edited Heading text",
+      run: vi.fn(),
+    });
+    renderTitleBar(registry);
+
+    const undo = screen.getByRole("button", { name: "Undo" });
+    await userEvent.hover(undo.parentElement ?? undo);
+
+    expect((await screen.findByRole("tooltip")).textContent).toBe(
+      "Undo Edited Heading text (Ctrl+Z)",
+    );
+  });
+
   it("says a button's command needs a site while nobody has registered it (#1010)", async () => {
     renderTitleBar();
 

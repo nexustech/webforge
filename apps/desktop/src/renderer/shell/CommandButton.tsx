@@ -51,8 +51,8 @@ export function CommandButton({
     command === undefined
       ? (text ?? label)
       : command.shortcut === undefined
-        ? command.label
-        : `${command.label} (${formatShortcut(command.shortcut)})`;
+        ? (command.tooltip ?? command.label)
+        : `${command.tooltip ?? command.label} (${formatShortcut(command.shortcut)})`;
   const reason = command === undefined ? t("shell.disabled.noSite") : reasonOf(command);
 
   // Always some text (a missing command has its reason), so the button keeps its tooltip, and

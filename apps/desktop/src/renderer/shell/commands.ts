@@ -51,6 +51,11 @@ export type Command = {
    */
   readonly disabledReason?: string | undefined;
   /**
+   * What the title bar's button says it does, already translated, where that's more than the
+   * label (#1011): "Undo Edited Heading text", where menus have "Undo".
+   */
+  readonly tooltip?: string | undefined;
+  /**
    * The title-bar button whose caret menu lists it, by that button's command id (LF-13): Export's
    * caret for a ZIP export, say. A button shows its caret only while some command names it.
    */
@@ -122,7 +127,7 @@ export type CommandSpec = Omit<
 };
 
 /** What a registered command's owner may change later, such as Undo becoming available. */
-type CommandChanges = Partial<Pick<Command, "label" | "enabled" | "disabledReason">>;
+type CommandChanges = Partial<Pick<Command, "label" | "enabled" | "disabledReason" | "tooltip">>;
 
 /**
  * A command's `enabled` and `disabledReason` (#1010): disabled with `reason` when there is one,
@@ -253,7 +258,8 @@ export function createCommandRegistry({
       if (
         next.label === command.label &&
         next.enabled === command.enabled &&
-        next.disabledReason === command.disabledReason
+        next.disabledReason === command.disabledReason &&
+        next.tooltip === command.tooltip
       ) {
         return;
       }

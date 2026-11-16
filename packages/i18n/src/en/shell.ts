@@ -5,6 +5,9 @@ export const shell = {
   // Why a command is disabled (#1010): under it in menus and the command box, in its tooltip.
   "editor.undo.none": "Nothing to undo.",
   "editor.redo.none": "Nothing to redo.",
+  // Their title-bar buttons' tooltips, naming the step (#1011): "Undo Edited Heading text".
+  "editor.undo.step": "Undo {step}",
+  "editor.redo.step": "Redo {step}",
   // A title-bar button whose command isn't there yet, as on the start screen.
   "shell.disabled.noSite": "Open a site first.",
   // Content mode's lock (M3) on a command that changes the layout.
