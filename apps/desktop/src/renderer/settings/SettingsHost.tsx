@@ -22,8 +22,8 @@ type Shown = {
 };
 
 /**
- * File → Settings… and Site → Site Settings… (LF-12, F-SET-1, #1016), also in the command box: both open
- * the one {@link SettingsDialog}, on App's first section or on This site's.
+ * File → Settings… and Site → Site Settings… (LF-12, F-SET-1, #1016), also in the command box:
+ * both open the one {@link SettingsDialog}, on App's first section or on This site's.
  */
 export function SettingsHost({ registry }: SettingsHostProps) {
   const commands = useCommandRegistry();

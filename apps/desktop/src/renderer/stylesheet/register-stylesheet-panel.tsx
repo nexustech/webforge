@@ -166,7 +166,8 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
   ];
   let removeCommands = advanced() ? register() : [];
   const stopFollowing = preferences.subscribe(() => {
-    if (advanced() === removeCommands.length > 0) return;
+    const registered = removeCommands.length > 0;
+    if (advanced() === registered) return;
     for (const remove of removeCommands) remove();
     removeCommands = advanced() ? register() : [];
   });
