@@ -4,7 +4,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-15
+updated: 2026-11-16
 ---
 
 # The editor
@@ -25,7 +25,7 @@ When a site is open, the editor fills the window.
 - **Right column:** the [Edit panel](edit-panel.md) for whatever you've selected, with tabs beside it for **Site** ([Pages](pages.md) and the menu), [Media](media.md) and [Theme](themes.md).
 - **Bottom panel:** [Site Check](site-check.md). Show or hide it with Ctrl+J (Cmd+J on a Mac).
 
-A button or menu item you can't use at the moment is greyed out, and most say why: hover over the button, or look under the item in a menu or in the command search. Undo says there's nothing to undo, for example, and Paste Style asks you to copy a style first.
+A button or menu item you can't use at the moment is greyed out, and most say why: hover over the button, or look under the item in a menu or in the command search. Undo says there's nothing to undo, for example, Paste Style asks you to copy a style first, and the Edit menu's Duplicate, Delete and moves ask you to select an element first.
 
 ## Moving the panels
 
@@ -68,7 +68,7 @@ Switch with **View › Use Advanced Mode**, or in [Settings](settings.md#interfa
 
 ## Devices and zoom
 
-Your site adapts to the visitor's screen. Use **Desktop**, **Tablet** and **Mobile**, at the top right of the canvas, to see and edit each size (Ctrl+1, Ctrl+2 and Ctrl+3; Cmd on a Mac).
+Your site adapts to the visitor's screen. Use **Desktop**, **Tablet** and **Mobile**, at the top right of the canvas, to see and edit each size (Ctrl+1, Ctrl+2 and Ctrl+3; Cmd on a Mac). Hover over a toolbar button to see its name and its shortcut, if it has one.
 
 On the left of the canvas toolbar:
 

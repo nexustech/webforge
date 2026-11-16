@@ -4,7 +4,7 @@ id: layers
 title: Layers
 summary: See everything on the page as a list, and select, reorder, hide, leave off your website and rename it.
 related: [editing-on-the-page, header-and-footer, blog, keyboard-shortcuts]
-updated: 2026-11-11
+updated: 2026-11-16
 ---
 
 # Layers
@@ -36,7 +36,7 @@ It's the easiest way to reach something small or hidden, or to see how a page is
 - **Open and close:** the arrow beside a name, or **Expand all** and **Collapse all**.
 - **Filter:** type in the box at the bottom to find items by name or kind. Esc clears it.
 
-The toolbar at the bottom has **Move up**, **Move down**, **Duplicate**, **Don't publish**, **Rename** and **Delete**. Right-click a row for the same menu as on the page.
+The toolbar at the bottom has **Move up**, **Move down**, **Duplicate**, **Don't publish**, **Rename** and **Delete**. Hover over a greyed-out one to see why: nothing is selected, or Content mode is locking the layout. Right-click a row for the same menu as on the page.
 
 ## Keys in Layers
 

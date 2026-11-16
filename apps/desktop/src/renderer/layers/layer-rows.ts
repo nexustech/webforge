@@ -22,6 +22,10 @@ export type LayersPanelActions = {
   readonly moveDown: (() => void) | undefined;
   readonly duplicate: (() => void) | undefined;
   readonly remove: (() => void) | undefined;
+  /** Why each of those is off, from its command (#1010): the toolbar's tooltips say it. */
+  readonly reasons?: {
+    readonly [action in "moveUp" | "moveDown" | "duplicate" | "remove"]?: string | undefined;
+  };
 };
 
 /** A layer as a row: where it sits among its siblings, so moves stay within its parent. */

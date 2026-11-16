@@ -16,6 +16,7 @@ import {
 } from "../editor/layers.js";
 import { useUi } from "../editor/use-document.js";
 import { ElementMenu } from "../element-menu/index.js";
+import { reasonOf } from "../shell/CommandLabel.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import {
@@ -41,6 +42,12 @@ function useCommandAction(id: string): (() => void) | undefined {
   const registry = useCommandRegistry();
   const command = useCommand(id);
   return command === undefined || command.enabled === false ? undefined : () => registry.run(id);
+}
+
+/** Why a toolbar's command is off, as the Edit menu says it (#1010). */
+function useCommandReason(id: string): string | undefined {
+  const command = useCommand(id);
+  return command === undefined ? undefined : reasonOf(command);
 }
 
 /** The list a top-level layer is in: the Header's, a Blog design's part, the page's, the Footer's. */
@@ -160,6 +167,12 @@ export function registerLayersPanel(
           moveDown: useCommandAction(TOOLBAR_COMMANDS.moveDown),
           duplicate: useCommandAction(TOOLBAR_COMMANDS.duplicate),
           remove: useCommandAction(TOOLBAR_COMMANDS.remove),
+          reasons: {
+            moveUp: useCommandReason(TOOLBAR_COMMANDS.moveUp),
+            moveDown: useCommandReason(TOOLBAR_COMMANDS.moveDown),
+            duplicate: useCommandReason(TOOLBAR_COMMANDS.duplicate),
+            remove: useCommandReason(TOOLBAR_COMMANDS.remove),
+          },
         }}
       />
     );

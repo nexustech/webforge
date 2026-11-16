@@ -1,3 +1,4 @@
+import { WithTooltip } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { Lexer, type Token, type Tokens } from "marked";
 import { Fragment, type ReactNode } from "react";
@@ -35,19 +36,22 @@ function ReplyLink({
   const address = webAddress(href);
   if (address === undefined) return <>{children}</>;
   return (
-    <a
-      href={address}
-      title={t("assistant.link.open", { address })}
-      className="font-medium underline underline-offset-2 hover:no-underline"
-      onClick={(event) => {
-        event.preventDefault();
-        // As the reply wrote it: main opens only an address its copy of the reply holds.
-        onOpenLink(href);
-      }}
-    >
-      {children}
-      <span className="ml-1 text-xs font-normal break-all text-muted-foreground">({address})</span>
-    </a>
+    <WithTooltip tooltip={t("assistant.link.open", { address })}>
+      <a
+        href={address}
+        className="font-medium underline underline-offset-2 hover:no-underline"
+        onClick={(event) => {
+          event.preventDefault();
+          // As the reply wrote it: main opens only an address its copy of the reply holds.
+          onOpenLink(href);
+        }}
+      >
+        {children}
+        <span className="ml-1 text-xs font-normal break-all text-muted-foreground">
+          ({address})
+        </span>
+      </a>
+    </WithTooltip>
   );
 }
 

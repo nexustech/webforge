@@ -1,5 +1,15 @@
 import { Tooltip as TooltipPrimitive } from "radix-ui";
-import { type ComponentProps, createContext, useContext } from "react";
+import {
+  type ComponentProps,
+  cloneElement,
+  createContext,
+  type ReactElement,
+  type ReactNode,
+  useContext,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "../../lib/cn.js";
 
 /** Whether a {@link TooltipProvider} is above: the app's, a story's or a test's. */
@@ -56,10 +66,107 @@ export function TooltipTrigger({
       {...props}
       onFocus={(event) => {
         onFocus?.(event);
-        // Radix opens the tooltip on focus unless the event's default is prevented.
-        if (!focusVisible(event.currentTarget)) event.preventDefault();
+        // Radix opens the tooltip on focus unless the event's default is prevented. The element
+        // focused, not the trigger: a wrapper's trigger hears its button's focus.
+        if (event.target instanceof Element && !focusVisible(event.target)) {
+          event.preventDefault();
+        }
       }}
     />
+  );
+}
+
+/** Whether `element`'s text, or text in it cut short with an ellipsis (`truncate`), doesn't fit. */
+function cut(element: Element | null): boolean {
+  if (element === null) return false;
+  return [element, ...element.querySelectorAll(".truncate")].some(
+    (each) => each.scrollWidth > each.clientWidth,
+  );
+}
+
+/**
+ * A tooltip's root, whether it's open, and the ref for its trigger. With `whenCut` it opens only
+ * while the trigger's text is cut short: a label whose tooltip shows the whole of it.
+ */
+export function useTooltipRoot(whenCut: boolean) {
+  // The element under the trigger, whatever it is: Radix types it as a button.
+  const trigger = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const root: ComponentProps<typeof Tooltip> = {
+    open,
+    onOpenChange: (next) => setOpen(next && (!whenCut || cut(trigger.current))),
+  };
+  return { trigger, root, open };
+}
+
+/**
+ * `children`, one element, with a tooltip: on pointing at it, and on the keyboard's focus when it
+ * takes focus. In place of the browser's `title`, which is slow, unstyled and never shown on focus
+ * (#1011); it names nothing, so an icon still needs its `aria-label`.
+ *
+ * - `disableable`: the element is a control that can be disabled. A disabled one gets no pointer
+ *   events, so the tooltip hangs on a wrapper, enabled or not: a wrapper that came and went would
+ *   remount the control, closing a menu it had open. Radix describes the wrapper by the tooltip, so
+ *   the control gets the description itself while it's open, as a control under the trigger would,
+ *   and for as long as it's disabled, when the keyboard can't reach it to open the tooltip.
+ * - `whenCut`: only while its text is cut short, to show the whole of it.
+ *
+ * Not for an element that sets `data-state` itself (a toggle or a tab): the tooltip's would
+ * replace it. `ToggleGroupItem` takes a `tooltip` of its own.
+ */
+export function WithTooltip({
+  tooltip,
+  disableable = false,
+  whenCut = false,
+  children,
+}: {
+  readonly tooltip: ReactNode;
+  readonly disableable?: boolean;
+  readonly whenCut?: boolean;
+  readonly children: ReactElement<{
+    readonly "aria-describedby"?: string | undefined;
+    readonly disabled?: boolean | undefined;
+    readonly "aria-hidden"?: boolean | "true" | "false" | undefined;
+  }>;
+}) {
+  const { trigger, root, open } = useTooltipRoot(whenCut);
+  const description = useId();
+  if (!disableable) {
+    return (
+      <Tooltip {...root}>
+        <TooltipTrigger asChild ref={trigger}>
+          {children}
+        </TooltipTrigger>
+        <TooltipContent>{tooltip}</TooltipContent>
+      </Tooltip>
+    );
+  }
+  // A disabled button can't take the keyboard's focus, so its tooltip (why it's off) is its
+  // description for as long as it's disabled, not only while the pointer opens it. One hidden
+  // from screen readers (a mouse's shortcut) has no one to describe it to.
+  const hidden = children.props["aria-hidden"];
+  const described =
+    hidden !== true && hidden !== "true" && (open || children.props.disabled === true);
+  const describedBy = [children.props["aria-describedby"], described ? description : undefined]
+    .filter((each) => each !== undefined)
+    .join(" ");
+  return (
+    <Tooltip {...root}>
+      <TooltipTrigger asChild ref={trigger}>
+        <span className="inline-flex">
+          {cloneElement(children, {
+            "aria-describedby": describedBy === "" ? undefined : describedBy,
+          })}
+          {described && (
+            // A description is read from a hidden element too, and this one isn't read twice.
+            <span id={description} hidden>
+              {tooltip}
+            </span>
+          )}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
   );
 }
 

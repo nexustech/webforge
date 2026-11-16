@@ -58,6 +58,21 @@ describe("undoHistoryArea (#668)", () => {
     expect(enabled(COMMAND_IDS.redo)).toBe(true);
   });
 
+  it("names the step Undo and Redo would take in their tooltips, not in menus (#1011)", () => {
+    const { ctx, edit, session, registries } = setUp();
+    undoHistoryArea.register(ctx);
+    const command = (id: string) => registries.commands.get(id);
+
+    expect(command(COMMAND_IDS.undo)?.tooltip).toBeUndefined();
+    edit();
+    expect(command(COMMAND_IDS.undo)?.tooltip).toBe("Undo Removed a section");
+    expect(command(COMMAND_IDS.undo)?.label).toBe("Undo");
+
+    session.history.undo();
+    expect(command(COMMAND_IDS.undo)?.tooltip).toBeUndefined();
+    expect(command(COMMAND_IDS.redo)?.tooltip).toBe("Redo Removed a section");
+  });
+
   it("registers them on when the history already has a step", () => {
     const { ctx, enabled, edit } = setUp();
     edit();

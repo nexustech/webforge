@@ -1,7 +1,7 @@
 import { generateKeyPairSync } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { utils } from "ssh2";
+import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { BuildOutput, PublishEvent } from "./publisher.js";
 import { describePublisherContract } from "./publisher-contract.test-helper.js";
@@ -202,13 +202,9 @@ describe("what a key file holds, by its format's own marker (4.3, review)", () =
         }).privateKey;
 
   it("reads an OpenSSH key's cipher, encrypted or not", () => {
-    const locked = utils.generateKeyPairSync("ed25519", {
-      passphrase: "test-only-passphrase",
-      cipher: "aes256-ctr",
-      rounds: 1,
-    });
+    const locked = readableKeyPair({ passphrase: "test-only-passphrase" });
     expect(describePrivateKey(locked.private)).toBe("encrypted");
-    expect(describePrivateKey(utils.generateKeyPairSync("ed25519").private)).toBe("key");
+    expect(describePrivateKey(readableKeyPair().private)).toBe("key");
   });
 
   it("reads a PEM key's Proc-Type header, encrypted or not", () => {
@@ -271,5 +267,27 @@ describe("the tests' key pairs (#588, #901)", () => {
     const unlocked = readableKeyPair();
     const unreadable = () => ({ ...unlocked, public: "ssh-ed25519 AAAA" });
     expect(() => readableKeyPair({ generate: unreadable })).toThrow(/Malformed OpenSSH public key/);
+  });
+
+  it("is where every test's ed25519 key comes from (#1100)", () => {
+    // ssh2 makes a malformed one about 1 in 250 times; only `readableKeyPair` makes another.
+    const root = fileURLToPath(new URL("../../../", import.meta.url));
+    /** The TypeScript files under `folder`, past dependencies and hidden folders. */
+    const sources = (folder: string): string[] =>
+      readdirSync(join(root, folder), { withFileTypes: true }).flatMap((entry) => {
+        const path = `${folder}/${entry.name}`;
+        if (entry.isDirectory()) {
+          return entry.name === "node_modules" || entry.name.startsWith(".") ? [] : sources(path);
+        }
+        return path.endsWith(".ts") ? [path] : [];
+      });
+    // Where tests import ssh2: this package and the packaged app's SFTP server.
+    const made = ["packages/publish/src", "e2e/packaged"]
+      .flatMap(sources)
+      .filter((path) =>
+        /generateKeyPairSync\(\s*["']ed25519/.test(readFileSync(join(root, path), "utf8")),
+      );
+
+    expect(made).toEqual(["packages/publish/src/sftp-server.test-helper.ts"]);
   });
 });

@@ -1,5 +1,5 @@
 import { type ChildProcess, spawn } from "node:child_process";
-import { once } from "node:events";
+import { EventEmitter, once } from "node:events";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
@@ -49,7 +49,30 @@ test("kills a process outright that doesn't end when told to", async () => {
   await app.close();
 
   expect(Date.now() - start).toBeLessThan(5_000);
-  expect(ended(child)).toBe(true);
+  // On a busy machine, taskkill can take longer than this test's half-second kills (#1099).
+  await expect.poll(() => ended(child)).toBe(true);
+});
+
+test("gives up on a process that never exits, so a close can't outlast the test (#1099)", async () => {
+  // A process no signal ends: its kill does nothing and its exit never comes, as a process stuck in
+  // the kernel looks. It has no pid, so Windows' taskkill isn't asked to end a real one.
+  const child = Object.assign(new EventEmitter(), {
+    pid: undefined,
+    exitCode: null,
+    signalCode: null,
+    kill: () => true,
+  }) as unknown as ChildProcess;
+  const app = closingWithin(
+    { close: () => new Promise<void>(() => undefined), process: () => child },
+    200,
+    300,
+  );
+
+  const start = Date.now();
+  await app.close();
+
+  // Its time limit and two waits for the kills, and no more.
+  expect(Date.now() - start).toBeLessThan(5_000);
 });
 
 test("closes once, however often it's asked: a test, then its afterEach", async () => {

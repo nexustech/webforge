@@ -49,7 +49,8 @@ export function SwatchField({ id, labelId, options, value, onChoose, warning }: 
           <ToggleGroupItem
             key={option.value}
             value={option.value}
-            title={option.label}
+            tooltip={option.label}
+            tooltipWhenCut
             className="h-7 justify-start gap-1.5 px-1.5 text-xs"
           >
             <span

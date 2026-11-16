@@ -51,6 +51,11 @@ export type Command = {
    */
   readonly disabledReason?: string | undefined;
   /**
+   * What the title bar's button says it does, already translated, where that's more than the
+   * label (#1011): "Undo Edited Heading text", where menus have "Undo".
+   */
+  readonly tooltip?: string | undefined;
+  /**
    * The title-bar button whose caret menu lists it, by that button's command id (LF-13): Export's
    * caret for a ZIP export, say. A button shows its caret only while some command names it.
    */
@@ -122,7 +127,7 @@ export type CommandSpec = Omit<
 };
 
 /** What a registered command's owner may change later, such as Undo becoming available. */
-type CommandChanges = Partial<Pick<Command, "label" | "enabled" | "disabledReason">>;
+type CommandChanges = Partial<Pick<Command, "label" | "enabled" | "disabledReason" | "tooltip">>;
 
 /**
  * A command's `enabled` and `disabledReason` (#1010): disabled with `reason` when there is one,
@@ -159,6 +164,29 @@ export type CommandRegistry = {
   subscribe(listener: () => void): () => void;
 };
 
+/**
+ * This platform's keys of `standard`, the one shown first: the first this keyboard has. This
+ * platform's only (#290): a Mac's Cmd+Esc is no key on Windows, Windows' Alt+arrows none on a Mac.
+ */
+function shownFirst(standard: StandardShortcut, mac: boolean): readonly string[] {
+  const keys = platformKeys(standard, mac);
+  return [
+    ...keys.filter((key) => onKeyboard(key, mac)),
+    ...keys.filter((key) => !onKeyboard(key, mac)),
+  ];
+}
+
+/**
+ * `label` with the shortcut the standard gives command `id`, as a tooltip shows it: "Zoom In
+ * (Ctrl+=)". For a control that does what a command does without running it (the canvas
+ * toolbar's, #1011); just `label` when the command has none.
+ */
+export function withShortcut(label: string, id: string, mac = isMac()): string {
+  const standard = COMMAND_SHORTCUTS[id];
+  const [shown] = standard === undefined ? [] : shownFirst(standard, mac);
+  return shown === undefined ? label : `${label} (${formatShortcut(shown, mac)})`;
+}
+
 /** `command` with its keys from `standard`, the shown one first: the first this keyboard has. */
 function withKeys(
   command: CommandSpec,
@@ -168,13 +196,8 @@ function withKeys(
   if (standard === undefined) {
     return command;
   }
-  // This platform's keys only (#290): a Mac's Cmd+Esc is no key on Windows, Windows' Alt+arrows
-  // none on a Mac.
   const keys = platformKeys(standard, mac);
-  const [shown, ...others] = [
-    ...keys.filter((key) => onKeyboard(key, mac)),
-    ...keys.filter((key) => !onKeyboard(key, mac)),
-  ];
+  const [shown, ...others] = shownFirst(standard, mac);
   const text = standard.text === true ? keys : (standard.text ?? []);
   return {
     ...command,
@@ -235,7 +258,8 @@ export function createCommandRegistry({
       if (
         next.label === command.label &&
         next.enabled === command.enabled &&
-        next.disabledReason === command.disabledReason
+        next.disabledReason === command.disabledReason &&
+        next.tooltip === command.tooltip
       ) {
         return;
       }

@@ -48,65 +48,76 @@ function paths(outcome: PreviewOutcome) {
 }
 
 describe("createPreviewBuilds (3.2)", () => {
-  it("answers with every file first, then only what each change changed", async () => {
-    const build = createPreviewBuilds(loadResources, { pipeline: createPipeline(siteLibrary) });
-    const preview = (each: PreviewJob) => build(each, { readMedia: async () => undefined });
-    const site = sampleSite();
+  it(
+    "answers with every file first, then only what each change changed",
+    async () => {
+      const build = createPreviewBuilds(loadResources, { pipeline: createPipeline(siteLibrary) });
+      const preview = (each: PreviewJob) => build(each, { readMedia: async () => undefined });
+      const site = sampleSite();
 
-    const first = paths(await preview(await job(site)));
-    expect(first).toMatchObject({ full: true, removed: [] });
-    expect(first.changed).toEqual(expect.arrayContaining(["index.html", PREVIEW_STYLESHEET]));
+      const first = paths(await preview(await job(site)));
+      expect(first).toMatchObject({ full: true, removed: [] });
+      expect(first.changed).toEqual(expect.arrayContaining(["index.html", PREVIEW_STYLESHEET]));
 
-    // The same site again: nothing to send.
-    expect(paths(await preview(await job(site)))).toEqual({
-      full: false,
-      changed: [],
-      removed: [],
-    });
+      // The same site again: nothing to send.
+      expect(paths(await preview(await job(site)))).toEqual({
+        full: false,
+        changed: [],
+        removed: [],
+      });
 
-    // A colour of the theme: the stylesheet alone, swapped in place in the browser.
-    const recoloured: SiteSnapshot = {
-      ...site,
-      theme: {
-        ...site.theme,
-        colors: { ...site.theme.colors, primary: { l: 0.4, c: 0.2, h: 20 } },
-      },
-    };
-    expect(paths(await preview(await job(recoloured)))).toEqual({
-      full: false,
-      changed: [PREVIEW_STYLESHEET],
-      removed: [],
-    });
+      // A colour of the theme: the stylesheet alone, swapped in place in the browser.
+      const recoloured: SiteSnapshot = {
+        ...site,
+        theme: {
+          ...site.theme,
+          colors: { ...site.theme.colors, primary: { l: 0.4, c: 0.2, h: 20 } },
+        },
+      };
+      expect(paths(await preview(await job(recoloured)))).toEqual({
+        full: false,
+        changed: [PREVIEW_STYLESHEET],
+        removed: [],
+      });
 
-    // A word on the home page: that page alone.
-    const edited: SiteSnapshot = {
-      ...recoloured,
-      pages: recoloured.pages.map((page, at) =>
-        at === 0
-          ? { ...page, doc: JSON.parse(JSON.stringify(page.doc).replace("Our bakery", "Our shop")) }
-          : page,
-      ),
-    };
-    expect(paths(await preview(await job(edited)))).toEqual({
-      full: false,
-      changed: ["index.html"],
-      removed: [],
-    });
+      // A word on the home page: that page alone.
+      const edited: SiteSnapshot = {
+        ...recoloured,
+        pages: recoloured.pages.map((page, at) =>
+          at === 0
+            ? {
+                ...page,
+                doc: JSON.parse(JSON.stringify(page.doc).replace("Our bakery", "Our shop")),
+              }
+            : page,
+        ),
+      };
+      expect(paths(await preview(await job(edited)))).toEqual({
+        full: false,
+        changed: ["index.html"],
+        removed: [],
+      });
 
-    // A page gone: its file is gone too.
-    const fewer: SiteSnapshot = { ...edited, pages: edited.pages.slice(0, 1) };
-    expect(paths(await preview(await job(fewer))).removed.length).toBeGreaterThan(0);
-  }, 120_000);
+      // A page gone: its file is gone too.
+      const fewer: SiteSnapshot = { ...edited, pages: edited.pages.slice(0, 1) };
+      expect(paths(await preview(await job(fewer))).removed.length).toBeGreaterThan(0);
+    },
+    scaledTestTimeout(120_000),
+  );
 
-  it("fails with a code, never the site's content", async () => {
-    const build = createPreviewBuilds(loadResources, { pipeline: createPipeline(siteLibrary) });
-    const preview = (each: PreviewJob) => build(each, { readMedia: async () => undefined });
-    // No font files sent: the build can't write the site's fonts.
-    const site = sampleSite();
+  it(
+    "fails with a code, never the site's content",
+    async () => {
+      const build = createPreviewBuilds(loadResources, { pipeline: createPipeline(siteLibrary) });
+      const preview = (each: PreviewJob) => build(each, { readMedia: async () => undefined });
+      // No font files sent: the build can't write the site's fonts.
+      const site = sampleSite();
 
-    expect(await preview({ type: "preview", snapshot: site, fonts: [], families: [] })).toEqual({
-      type: "preview-failed",
-      detail: "missing-font",
-    });
-  }, 60_000);
+      expect(await preview({ type: "preview", snapshot: site, fonts: [], families: [] })).toEqual({
+        type: "preview-failed",
+        detail: "missing-font",
+      });
+    },
+    scaledTestTimeout(60_000),
+  );
 });

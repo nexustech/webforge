@@ -228,26 +228,30 @@ function SharedSectionMenu({
   readonly onCloseAutoFocus: (event: Event) => void;
 }) {
   return (
-    // Not modal, as the Pages panel's: a modal menu hides the window from screen readers.
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={t("add.sharedActions", { name: item.label })}
-          className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
-        >
-          <EllipsisIcon />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" onCloseAutoFocus={onCloseAutoFocus}>
-        <DropdownMenuItem onSelect={onRename}>{t("add.sharedRename")}</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onSelect={onDelete}>
-          {t("add.sharedDelete")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    // Not modal, as the Pages panel's: a modal menu hides the window from screen readers. Placed
+    // by a wrapper, as the Pages panel's, so the tooltip's wrapper isn't in the card's flow.
+    <span className="absolute top-0.5 right-0.5 flex">
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t("add.sharedActions", { name: item.label })}
+            tooltip={t("add.sharedActions", { name: item.label })}
+            className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+          >
+            <EllipsisIcon />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" onCloseAutoFocus={onCloseAutoFocus}>
+          <DropdownMenuItem onSelect={onRename}>{t("add.sharedRename")}</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+            {t("add.sharedDelete")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
   );
 }
 

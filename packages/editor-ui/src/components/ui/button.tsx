@@ -2,7 +2,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { Slot } from "radix-ui";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip.js";
+import { WithTooltip } from "./tooltip.js";
 
 /**
  * Button styles (UI1: small corners; a standard button 24.5 px high at the editor's 14 px rem,
@@ -40,7 +40,8 @@ export type ButtonProps = Omit<ComponentProps<"button">, "title"> &
     /**
      * What the button does, shown on hover and on keyboard focus, disabled or not (#1011). The
      * browser's `title` is slow, unstyled and never shown on focus, so a button has none. It
-     * doesn't name the button: an icon-only one still needs its `aria-label`.
+     * doesn't name the button: an icon-only one still needs its `aria-label`. Keep it (and
+     * `disabled`) given or not for good: adding or dropping either one remounts the button.
      */
     readonly tooltip?: ReactNode;
   };
@@ -66,12 +67,8 @@ export function Button({
   );
   if (tooltip === undefined) return button;
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        {/* A disabled button gets no pointer events, so its tooltip hangs on a wrapper. */}
-        {props.disabled === true ? <span className="inline-flex">{button}</span> : button}
-      </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
-    </Tooltip>
+    <WithTooltip tooltip={tooltip} disableable={props.disabled !== undefined}>
+      {button}
+    </WithTooltip>
   );
 }

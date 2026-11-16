@@ -1,4 +1,4 @@
-import { Button } from "@webforge/editor-ui";
+import { Button, WithTooltip } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import { useId } from "react";
 import type { ReplyUndo } from "./reply-undo.js";
@@ -68,14 +68,15 @@ export function ReviewCard({
               {step.target === undefined ? (
                 <span className="px-1">{label}</span>
               ) : (
-                <button
-                  type="button"
-                  title={t("assistant.review.show", { change: label })}
-                  className="rounded-sm px-1 text-left underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-                  onClick={() => onShowStep(step)}
-                >
-                  {label}
-                </button>
+                <WithTooltip tooltip={t("assistant.review.show", { change: label })}>
+                  <button
+                    type="button"
+                    className="rounded-sm px-1 text-left underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                    onClick={() => onShowStep(step)}
+                  >
+                    {label}
+                  </button>
+                </WithTooltip>
               )}
             </li>
           );

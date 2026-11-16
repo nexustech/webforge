@@ -115,7 +115,11 @@ export function StylesheetPanel({
           {t("stylesheet.move")}
         </Button>
       </div>
-      <div ref={host} className="min-h-0 flex-1 border-t border-border" />
+      {/* The editor's text size is set here, where the window's stylesheet sets it from the first
+          frame, not in CodeMirror's theme: that applied a moment after the editor first measured
+          its lines, and the gutter kept the larger lines' spacing (#1096). The working text size,
+          13 px (#1015). */}
+      <div ref={host} className="min-h-0 flex-1 border-t border-border text-xs" />
     </div>
   );
 }

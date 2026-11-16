@@ -7,14 +7,11 @@ import {
   DropdownMenuItem,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { ChevronDownIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { CommandLabel, reasonOf, reasonRowProps } from "./CommandLabel.js";
+import { CommandLabel, reasonOf, reasonRowProps, tipWithReason } from "./CommandLabel.js";
 import { useCommandRegistry, useCommands } from "./command-context.js";
 import { type Command, formatShortcut } from "./commands.js";
 
@@ -54,16 +51,19 @@ export function CommandButton({
     command === undefined
       ? (text ?? label)
       : command.shortcut === undefined
-        ? command.label
-        : `${command.label} (${formatShortcut(command.shortcut)})`;
+        ? (command.tooltip ?? command.label)
+        : `${command.tooltip ?? command.label} (${formatShortcut(command.shortcut)})`;
   const reason = command === undefined ? t("shell.disabled.noSite") : reasonOf(command);
 
+  // Always some text (a missing command has its reason), so the button keeps its tooltip, and
+  // `disabled` is always given: neither comes and goes, which would remount it.
   const button = (
     <Button
       variant="ghost"
       size={size ?? (text === undefined ? "icon" : "default")}
       className={cn("[&_svg]:transition-colors", className)}
       disabled={disabled}
+      tooltip={tipWithReason(tip, reason)}
       // Found by the tour, which points at it (OB-3).
       data-command={commandId}
       aria-label={text === undefined ? name : undefined}
@@ -73,33 +73,12 @@ export function CommandButton({
       {text}
     </Button>
   );
-  const withTip =
-    tip === undefined ? (
-      button
-    ) : (
-      <Tooltip>
-        {/* A disabled button gets no pointer events, so the tooltip hangs on a wrapper. */}
-        <TooltipTrigger asChild>
-          <span className="inline-flex">{button}</span>
-        </TooltipTrigger>
-        <TooltipContent>
-          {reason === undefined ? (
-            tip
-          ) : (
-            <span className="flex flex-col">
-              <span>{tip}</span>
-              <span>{reason}</span>
-            </span>
-          )}
-        </TooltipContent>
-      </Tooltip>
-    );
   if (more.length === 0) {
-    return withTip;
+    return button;
   }
   return (
     <span className="inline-flex">
-      {withTip}
+      {button}
       <MoreMenu name={label ?? text ?? name ?? commandId} commands={more} />
     </span>
   );

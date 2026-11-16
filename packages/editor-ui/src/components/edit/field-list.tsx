@@ -9,6 +9,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "../ui/context-menu.js";
+import { WithTooltip } from "../ui/tooltip.js";
 import type {
   EditPanelField,
   EditPanelProps,
@@ -93,21 +94,22 @@ function GroupButton({
   readonly children: ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={onClick === undefined}
-      onClick={onClick}
-      className={cn(
-        "flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground",
-        "opacity-0 group-hover/header:opacity-100 group-focus-within/header:opacity-100",
-        "hover:bg-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring",
-        "disabled:pointer-events-none disabled:text-disabled [&_svg]:size-3.5",
-      )}
-    >
-      {children}
-    </button>
+    <WithTooltip tooltip={label} disableable>
+      <button
+        type="button"
+        aria-label={label}
+        disabled={onClick === undefined}
+        onClick={onClick}
+        className={cn(
+          "flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground",
+          "opacity-0 group-hover/header:opacity-100 group-focus-within/header:opacity-100",
+          "hover:bg-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring",
+          "disabled:pointer-events-none disabled:text-disabled [&_svg]:size-3.5",
+        )}
+      >
+        {children}
+      </button>
+    </WithTooltip>
   );
 }
 

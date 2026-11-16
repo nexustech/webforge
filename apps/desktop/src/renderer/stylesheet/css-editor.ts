@@ -8,12 +8,13 @@ import { defaultKeymap } from "@codemirror/commands";
 import { css, cssLanguage } from "@codemirror/lang-css";
 import {
   bracketMatching,
+  ensureSyntaxTree,
   HighlightStyle,
   indentOnInput,
   syntaxHighlighting,
   syntaxTree,
 } from "@codemirror/language";
-import { linter, lintGutter, lintKeymap } from "@codemirror/lint";
+import { type Diagnostic, linter, lintGutter, lintKeymap } from "@codemirror/lint";
 import { Annotation, EditorState } from "@codemirror/state";
 import {
   drawSelection,
@@ -35,20 +36,31 @@ import {
 /** How long after the last keystroke the stylesheet is checked again. */
 const LINT_DELAY_MS = 500;
 
+/** How long a check may parse the rest of the stylesheet first. */
+const LINT_PARSE_MS = 100;
+
+/**
+ * What's wrong in `state`'s stylesheet, once all of it is parsed: CodeMirror parses a while at a
+ * time, and the part not yet parsed would read as invalid CSS, a mark nothing took away again
+ * on a busy machine (#1096). Nothing while it isn't; the editor checks again once it is.
+ */
+export function lintStylesheet(state: EditorState, data: CssLintData): readonly Diagnostic[] {
+  const tree = ensureSyntaxTree(state, state.doc.length, LINT_PARSE_MS);
+  return tree === null ? [] : cssDiagnostics(state.doc.toString(), tree, data);
+}
+
 /** Marks a change the document made (undo, another window's edit), not the person's typing. */
 const fromDocument = Annotation.define<boolean>();
 
 /**
  * The editor's colours (CT-8): the window's own tokens, so it follows the light and dark themes,
- * and the canvas's code font.
+ * and the canvas's code font. Its text size is its parent's (the Stylesheet panel's).
  */
 const editorTheme = EditorView.theme({
   "&": {
     height: "100%",
     color: "var(--color-foreground)",
     backgroundColor: "var(--color-background)",
-    // The working text size (theme.css) in px: in rem it would follow the spacing (#1015).
-    fontSize: "13px",
   },
   ".cm-scroller": { fontFamily: "var(--font-mono)", lineHeight: "1.5" },
   ".cm-content": { caretColor: "var(--color-foreground)" },
@@ -130,17 +142,11 @@ export function createCssEditor(parent: HTMLElement, options: CssEditorOptions):
         }),
         autocompletion(),
         syntaxHighlighting(highlighting),
-        linter(
-          (current) =>
-            cssDiagnostics(
-              current.state.doc.toString(),
-              syntaxTree(current.state),
-              options.lintData(),
-            ),
-          {
-            delay: LINT_DELAY_MS,
-          },
-        ),
+        linter((current) => lintStylesheet(current.state, options.lintData()), {
+          delay: LINT_DELAY_MS,
+          // Checked again as the parse goes on, not only as the stylesheet changes.
+          needsRefresh: (update) => syntaxTree(update.startState) !== syntaxTree(update.state),
+        }),
         lintGutter(),
         keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...completionKeymap, ...lintKeymap]),
         editorTheme,
