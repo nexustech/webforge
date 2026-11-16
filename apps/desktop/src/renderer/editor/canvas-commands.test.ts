@@ -158,4 +158,26 @@ describe("registerCanvasCommands", () => {
     commands.remove();
     expect(registry.list()).toEqual([]);
   });
+
+  it("says why an edit is off, for the Edit menu and the Layers toolbar (#1010)", () => {
+    const registry = createCommandRegistry();
+    const engine = createFakeEngine();
+    const commands = registerCanvasCommands(registry, engine, () => undefined);
+    const reason = (id: string) => registry.get(id)?.disabledReason;
+
+    expect(reason("edit.duplicate")).toBe("Select an element first.");
+    expect(reason("edit.selectNext")).toBeUndefined();
+    commands.setHasSelection(true);
+    expect(reason("edit.duplicate")).toBeUndefined();
+    commands.setLayoutLocked(true);
+    expect(reason("edit.moveUp")).toBe("Switch to Design mode to change the layout.");
+    expect(reason("edit.editText")).toBeUndefined();
+    // Several selected: text is off, with no one step that turns it on to name.
+    commands.setLayoutLocked(false);
+    commands.setSeveral(true);
+    expect(registry.get("edit.editText")?.enabled).toBe(false);
+    expect(reason("edit.editText")).toBeUndefined();
+    commands.setHasSelection(false);
+    expect(reason("edit.editText")).toBe("Select an element first.");
+  });
 });

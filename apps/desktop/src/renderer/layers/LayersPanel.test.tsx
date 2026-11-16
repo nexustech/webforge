@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { t } from "@webforge/i18n";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Layer } from "../editor/layers.js";
@@ -437,6 +438,26 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(dropIndex(2, 0, true)).toBe(1);
   });
 
+  it("says in the toolbar's tooltips why a button is off in Content mode (#1010)", async () => {
+    // A canvas command's reason is its command's, as the Edit menu shows it.
+    const actions = { ...setUpActions(), reasons: { moveUp: t("shell.disabled.layoutLocked") } };
+    render(<LayersPanel layers={LAYERS} selectedId="a" actions={actions} layoutLocked />);
+    const moveUp = screen.getByRole("button", { name: "Move up" });
+    expect(await tooltipOf(moveUp.parentElement)).toBe(
+      "Move up Switch to Design mode to change the layout.",
+    );
+    cleanup();
+    // Hiding isn't a command: the panel says why itself.
+    render(<LayersPanel layers={LAYERS} selectedId="a" actions={actions} layoutLocked />);
+    const hide = screen.getByRole("button", { name: /^Don't publish/ });
+    expect(await tooltipOf(hide.parentElement)).toMatch(/Switch to Design mode/);
+    cleanup();
+    // Renaming isn't locked: on, so just its name.
+    render(<LayersPanel layers={LAYERS} selectedId="a" actions={actions} layoutLocked />);
+    const rename = screen.getByRole("button", { name: "Rename" });
+    expect(await tooltipOf(rename.parentElement)).toBe("Rename");
+  });
+
   it("runs the toolbar on the selected layer, and disables what isn't available", async () => {
     const { actions } = setUp("b");
 
@@ -452,12 +473,15 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(screen.getByRole("textbox")).toBeTruthy();
   });
 
-  it("disables the toolbar without a selection or commands, and says when the page is empty", () => {
+  it("disables the toolbar without a selection or commands, and says when the page is empty", async () => {
     setUp(null, false);
 
     expect((screen.getByRole("button", { name: "Rename" }) as HTMLButtonElement).disabled).toBe(
       true,
     );
+    // Its name with nothing after it, not "Don't publish " (#1011); its tooltip says why it's off.
+    const hide = screen.getByRole("button", { name: "Don't publish" });
+    expect(await tooltipOf(hide.parentElement)).toBe("Don't publish Select an element first.");
     expect(screen.getAllByRole("treeitem")[0]?.tabIndex).toBe(0);
     cleanup();
 

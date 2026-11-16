@@ -16,6 +16,7 @@ import { type ComponentType, type ReactNode, useState } from "react";
 import type { CanvasPointer } from "../editor/canvas-pointer.js";
 import { type Layer, layerItem } from "../editor/layers.js";
 import type { MenuPoint } from "../element-menu/index.js";
+import { tipWithReason } from "../shell/CommandLabel.js";
 import { LayerRow, type LayerRowEvents } from "./LayerRow.js";
 import type { LayersPanelActions } from "./layer-rows.js";
 import { useLayerDrag } from "./use-layer-drag.js";
@@ -131,6 +132,14 @@ export function LayersPanel({
   }
 
   const selected = selectedRow?.layer;
+  // Hiding changes the layout, so it's off without a selection or while Content mode locks it
+  // (M3), and its tooltip says which (#1010). The canvas commands' reasons are their own.
+  const hideOff =
+    selected === undefined
+      ? t("shell.disabled.noSelection")
+      : layoutLocked
+        ? t("shell.disabled.layoutLocked")
+        : undefined;
   return (
     <div className="flex h-full flex-col">
       <ScrollArea className="min-h-0 flex-1">
@@ -206,34 +215,54 @@ export function LayersPanel({
         aria-label={t("layers.toolbar")}
         className="flex h-8 shrink-0 items-center gap-0.5 border-t border-border px-1"
       >
-        <ToolButton label={t("canvas.moveUp")} onClick={actions.moveUp}>
+        <ToolButton
+          label={t("canvas.moveUp")}
+          onClick={actions.moveUp}
+          reason={actions.reasons?.moveUp}
+        >
           <ArrowUpIcon />
         </ToolButton>
-        <ToolButton label={t("canvas.moveDown")} onClick={actions.moveDown}>
+        <ToolButton
+          label={t("canvas.moveDown")}
+          onClick={actions.moveDown}
+          reason={actions.reasons?.moveDown}
+        >
           <ArrowDownIcon />
         </ToolButton>
-        <ToolButton label={t("canvas.duplicate")} onClick={actions.duplicate}>
+        <ToolButton
+          label={t("canvas.duplicate")}
+          onClick={actions.duplicate}
+          reason={actions.reasons?.duplicate}
+        >
           <CopyIcon />
         </ToolButton>
         <ToolButton
-          label={t(selected?.hidden === true ? "layers.show" : "layers.hide", {
-            item: selected === undefined ? "" : layerItem(selected),
-          })}
+          label={
+            selected === undefined
+              ? t("layers.hideSelected")
+              : t(selected.hidden ? "layers.show" : "layers.hide", { item: layerItem(selected) })
+          }
           onClick={
             selected === undefined || layoutLocked
               ? undefined
               : () => actions.setShown(selected.id, selected.hidden ? "shown" : "hidden")
           }
+          reason={hideOff}
         >
           {selected?.hidden === true ? <EyeOffIcon /> : <EyeIcon />}
         </ToolButton>
         <ToolButton
           label={t("layers.rename")}
           onClick={selected === undefined ? undefined : () => setRenaming(selected.id)}
+          reason={selected === undefined ? t("shell.disabled.noSelection") : undefined}
         >
           <PencilIcon />
         </ToolButton>
-        <ToolButton label={t("canvas.delete")} onClick={actions.remove}>
+        <ToolButton
+          label={t("canvas.delete")}
+          onClick={actions.remove}
+          reason={actions.reasons?.remove}
+        >
           <Trash2Icon />
         </ToolButton>
         <span className="flex-1" />
@@ -259,14 +288,19 @@ export function LayersPanel({
   );
 }
 
-/** A toolbar button; disabled while its action is unavailable. */
+/**
+ * A toolbar button; disabled while its action is unavailable, its tooltip then saying why when
+ * there's a `reason` (#1010).
+ */
 function ToolButton({
   label,
   onClick,
+  reason,
   children,
 }: {
   readonly label: string;
   readonly onClick: (() => void) | undefined;
+  readonly reason?: string | undefined;
   readonly children: ReactNode;
 }) {
   return (
@@ -274,7 +308,7 @@ function ToolButton({
       variant="ghost"
       size="icon-sm"
       aria-label={label}
-      tooltip={label}
+      tooltip={tipWithReason(label, onClick === undefined ? reason : undefined)}
       disabled={onClick === undefined}
       onClick={onClick}
     >
