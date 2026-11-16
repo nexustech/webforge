@@ -325,9 +325,12 @@ export const APP_START_TIMEOUT_MS = 30_000;
 const CANVAS_START_TIMEOUT_MS = 30_000;
 
 /**
- * Waits until `page`'s canvas shows the site with its compiled CSS (1.12) and the fonts it uses.
- * Both change the layout when they arrive (a heading set in its font is wider or narrower), so
- * clicks, hovers, drags and measurements wait for them.
+ * Waits until `page`'s canvas shows the site with its compiled CSS (1.12) and the fonts it uses,
+ * and the cover over it while it opens has gone (#1013), as a person waits.
+ * - The styles and fonts change the layout when they arrive (a heading set in its font is wider or
+ *   narrower), so clicks, hovers, drags and measurements wait for them.
+ * - The cover takes the clicks until then: a click on the canvas lands on it and selects nothing
+ *   (#1101). A forced click or `page.mouse` doesn't wait for it, as an ordinary click does.
  */
 export async function waitForCanvas(page: Page): Promise<void> {
   const canvas = page.frameLocator(".editor__canvas iframe");
@@ -344,4 +347,7 @@ export async function waitForCanvas(page: Page): Promise<void> {
           requestAnimationFrame(() => void document.fonts.ready.then(() => resolve())),
         ),
     );
+  await expect(page.locator(".editor__canvas-cover")).toHaveCount(0, {
+    timeout: CANVAS_START_TIMEOUT_MS,
+  });
 }
