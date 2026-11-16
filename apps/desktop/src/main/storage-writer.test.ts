@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { Worker } from "node:worker_threads";
 import { ProjectStore } from "@webforge/storage";
 import { TYPESCRIPT_HOOK } from "@webforge/test-utils";
-import { tempDirFactory } from "@webforge/test-utils/vitest";
+import { scaledTestTimeout, tempDirFactory } from "@webforge/test-utils/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
 import { ProjectSession } from "./project-session.js";
@@ -265,47 +265,55 @@ describe("the storage writer thread (R13b)", () => {
     await writer.stop();
   });
 
-  it("stores a 50 MB image without keeping the main thread busy", async () => {
-    const dir = tempDir();
-    const sitePath = join(dir, "Large.wforge");
-    ProjectStore.create(sitePath, { name: "Large" }).close();
-    const photo = join(dir, "poster.png");
-    writeFileSync(photo, bigPng());
-    const session = new ProjectSession({}, { writer: createStorageWriter(startThread) });
-    // Opening the site starts the writer thread, before the import.
-    await session.open(sitePath);
-    try {
-      await expectQuickImport(session, photo);
-    } finally {
+  it(
+    "stores a 50 MB image without keeping the main thread busy",
+    async () => {
+      const dir = tempDir();
+      const sitePath = join(dir, "Large.wforge");
+      ProjectStore.create(sitePath, { name: "Large" }).close();
+      const photo = join(dir, "poster.png");
+      writeFileSync(photo, bigPng());
+      const session = new ProjectSession({}, { writer: createStorageWriter(startThread) });
+      // Opening the site starts the writer thread, before the import.
+      await session.open(sitePath);
+      try {
+        await expectQuickImport(session, photo);
+      } finally {
+        await session.close();
+      }
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
+    "cleans a closing site's file up without keeping the main thread busy (#664)",
+    async () => {
+      const sitePath = join(tempDir(), "Cluttered.wforge");
+      const store = ProjectStore.create(sitePath, { name: "Cluttered" });
+      // 120 MB that nothing names any more, as undone imports leave behind: garbage collection, then
+      // a VACUUM that rewrites the file.
+      // One buffer, filled afresh for each: 120 MB of garbage left on this thread would be collected
+      // while the close is measured.
+      const blob = new Uint8Array(10 * 1024 * 1024);
+      for (let index = 0; index < 12; index += 1) {
+        store.putBlob(blob.fill(index + 1), "image/png");
+      }
+      store.close();
+      const before = statSync(sitePath).size;
+      const session = new ProjectSession({}, { writer: createStorageWriter(startThread) });
+      await session.open(sitePath);
+
+      const cpu = process.threadCpuUsage();
       await session.close();
-    }
-  }, 60_000);
+      const { user, system } = process.threadCpuUsage(cpu);
 
-  it("cleans a closing site's file up without keeping the main thread busy (#664)", async () => {
-    const sitePath = join(tempDir(), "Cluttered.wforge");
-    const store = ProjectStore.create(sitePath, { name: "Cluttered" });
-    // 120 MB that nothing names any more, as undone imports leave behind: garbage collection, then
-    // a VACUUM that rewrites the file.
-    // One buffer, filled afresh for each: 120 MB of garbage left on this thread would be collected
-    // while the close is measured.
-    const blob = new Uint8Array(10 * 1024 * 1024);
-    for (let index = 0; index < 12; index += 1) {
-      store.putBlob(blob.fill(index + 1), "image/png");
-    }
-    store.close();
-    const before = statSync(sitePath).size;
-    const session = new ProjectSession({}, { writer: createStorageWriter(startThread) });
-    await session.open(sitePath);
-
-    const cpu = process.threadCpuUsage();
-    await session.close();
-    const { user, system } = process.threadCpuUsage(cpu);
-
-    // As for an import: this thread's CPU time, which an IPC call would wait behind.
-    expect((user + system) / 1000).toBeLessThan(MAIN_THREAD_BUDGET_MS);
-    expect(statSync(sitePath).size).toBeLessThan(before / 10);
-    ProjectStore.open(sitePath).close();
-  }, 120_000);
+      // As for an import: this thread's CPU time, which an IPC call would wait behind.
+      expect((user + system) / 1000).toBeLessThan(MAIN_THREAD_BUDGET_MS);
+      expect(statSync(sitePath).size).toBeLessThan(before / 10);
+      ProjectStore.open(sitePath).close();
+    },
+    scaledTestTimeout(120_000),
+  );
 
   /**
    * The most CPU time this thread may spend on an import or a close (#664, #1052). Windows counts a

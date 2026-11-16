@@ -55,99 +55,119 @@ async function job(snapshot: SiteSnapshot, destination: string): Promise<ExportJ
 }
 
 describe("runExport", () => {
-  it("tells its progress through the build, then the writing (3.1)", async () => {
-    const destination = join(tempDir(), "site");
-    const stages: string[] = [];
+  it(
+    "tells its progress through the build, then the writing (3.1)",
+    async () => {
+      const destination = join(tempDir(), "site");
+      const stages: string[] = [];
 
-    await runExport(await job(sampleSite(), destination), loadResources, {
-      ...channel(),
-      onProgress: (progress) => stages.push(progress.stage),
-    });
+      await runExport(await job(sampleSite(), destination), loadResources, {
+        ...channel(),
+        onProgress: (progress) => stages.push(progress.stage),
+      });
 
-    expect(stages.slice(-3)).toEqual(["styles", "fonts", "writing"]);
-    expect(stages).toContain("images");
-    expect(stages).toContain("pages");
-  }, 60_000);
+      expect(stages.slice(-3)).toEqual(["styles", "fonts", "writing"]);
+      expect(stages).toContain("images");
+      expect(stages).toContain("pages");
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("builds the site and writes it to the destination", async () => {
-    const destination = join(tempDir(), "site");
+  it(
+    "builds the site and writes it to the destination",
+    async () => {
+      const destination = join(tempDir(), "site");
 
-    const outcome = await runExport(await job(sampleSite(), destination), loadResources, channel());
+      const outcome = await runExport(
+        await job(sampleSite(), destination),
+        loadResources,
+        channel(),
+      );
 
-    expect(outcome).toMatchObject({
-      type: "exported",
-      pages: 3,
-      // With robots.txt (3.5).
-      files: 17,
-      // The sample's second Newsletter has no form address, on purpose (3.7).
-      warnings: [{ code: "form-unset", page: "about", detail: "noAddress" }],
-      warningCount: 1,
-    });
-    expect(readFileSync(join(destination, "about.html"), "utf8")).toContain(
-      "A family bakery since 1998.",
-    );
-  }, 60_000);
+      expect(outcome).toMatchObject({
+        type: "exported",
+        pages: 3,
+        // With robots.txt (3.5).
+        files: 17,
+        // The sample's second Newsletter has no form address, on purpose (3.7).
+        warnings: [{ code: "form-unset", page: "about", detail: "noAddress" }],
+        warningCount: 1,
+      });
+      expect(readFileSync(join(destination, "about.html"), "utf8")).toContain(
+        "A family bakery since 1998.",
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("writes a ZIP file, minified and with developer files, as the person chose (3.3)", async () => {
-    const destination = join(tempDir(), "my-site.zip");
+  it(
+    "writes a ZIP file, minified and with developer files, as the person chose (3.3)",
+    async () => {
+      const destination = join(tempDir(), "my-site.zip");
 
-    const outcome = await runExport(
-      {
-        ...(await job(sampleSite(), destination)),
-        format: "zip",
-        output: { minify: true, developerFiles: true },
-      },
-      loadResources,
-      channel(),
-    );
-
-    expect(outcome).toMatchObject({ type: "exported", pages: 3 });
-    const zip = readFileSync(destination);
-    // A ZIP: its local file header's signature, and the names it holds (stored as they are).
-    expect(zip.subarray(0, 4)).toEqual(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
-    expect(zip.includes("developer/README.md")).toBe(true);
-    expect(zip.includes("index.html")).toBe(true);
-  }, 60_000);
-
-  it("passes the build's warnings on for the report, page by page (3.3)", async () => {
-    const site = sampleSite();
-    const [home, ...rest] = site.pages;
-    if (home === undefined) throw new Error("The sample site has no pages");
-    const withBrokenLink = {
-      ...site,
-      pages: [
+      const outcome = await runExport(
         {
-          ...home,
-          doc: {
-            ...home.doc,
-            content: [
-              ...home.doc.content,
-              {
-                type: "Hero",
-                props: { id: "gone", title: "Hi", buttonLabel: "Go", buttonLink: "old-page" },
-              },
-            ],
-          },
+          ...(await job(sampleSite(), destination)),
+          format: "zip",
+          output: { minify: true, developerFiles: true },
         },
-        ...rest,
-      ],
-    };
+        loadResources,
+        channel(),
+      );
 
-    const outcome = await runExport(
-      await job(withBrokenLink, join(tempDir(), "site")),
-      loadResources,
-      channel(),
-    );
+      expect(outcome).toMatchObject({ type: "exported", pages: 3 });
+      const zip = readFileSync(destination);
+      // A ZIP: its local file header's signature, and the names it holds (stored as they are).
+      expect(zip.subarray(0, 4)).toEqual(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+      expect(zip.includes("developer/README.md")).toBe(true);
+      expect(zip.includes("index.html")).toBe(true);
+    },
+    scaledTestTimeout(60_000),
+  );
 
-    expect(outcome).toMatchObject({
-      type: "exported",
-      warnings: [
-        { code: "broken-link", page: "index", detail: "old-page" },
-        { code: "form-unset", page: "about", detail: "noAddress" },
-      ],
-      warningCount: 2,
-    });
-  }, 60_000);
+  it(
+    "passes the build's warnings on for the report, page by page (3.3)",
+    async () => {
+      const site = sampleSite();
+      const [home, ...rest] = site.pages;
+      if (home === undefined) throw new Error("The sample site has no pages");
+      const withBrokenLink = {
+        ...site,
+        pages: [
+          {
+            ...home,
+            doc: {
+              ...home.doc,
+              content: [
+                ...home.doc.content,
+                {
+                  type: "Hero",
+                  props: { id: "gone", title: "Hi", buttonLabel: "Go", buttonLink: "old-page" },
+                },
+              ],
+            },
+          },
+          ...rest,
+        ],
+      };
+
+      const outcome = await runExport(
+        await job(withBrokenLink, join(tempDir(), "site")),
+        loadResources,
+        channel(),
+      );
+
+      expect(outcome).toMatchObject({
+        type: "exported",
+        warnings: [
+          { code: "broken-link", page: "index", detail: "old-page" },
+          { code: "form-unset", page: "about", detail: "noAddress" },
+        ],
+        warningCount: 2,
+      });
+    },
+    scaledTestTimeout(60_000),
+  );
 
   it("reports a build failure by code without writing anything", async () => {
     const destination = join(tempDir(), "site");
@@ -165,31 +185,43 @@ describe("runExport", () => {
     expect(existsSync(destination)).toBe(false);
   });
 
-  it("reports a folder with other files", async () => {
-    const destination = tempDir();
-    writeFileSync(join(destination, "notes.txt"), "mine");
+  it(
+    "reports a folder with other files",
+    async () => {
+      const destination = tempDir();
+      writeFileSync(join(destination, "notes.txt"), "mine");
 
-    const outcome = await runExport(await job(sampleSite(), destination), loadResources, channel());
+      const outcome = await runExport(
+        await job(sampleSite(), destination),
+        loadResources,
+        channel(),
+      );
 
-    expect(outcome).toEqual({
-      type: "failed",
-      code: "folder-not-empty",
-      detail: "folder-not-empty",
-    });
-  }, 60_000);
+      expect(outcome).toEqual({
+        type: "failed",
+        code: "folder-not-empty",
+        detail: "folder-not-empty",
+      });
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("fails the build when the site's fonts didn't come with the job (2.2)", async () => {
-    const destination = join(tempDir(), "site");
+  it(
+    "fails the build when the site's fonts didn't come with the job (2.2)",
+    async () => {
+      const destination = join(tempDir(), "site");
 
-    const outcome = await runExport(
-      { ...(await job(sampleSite(), destination)), fonts: [] },
-      loadResources,
-      channel(),
-    );
+      const outcome = await runExport(
+        { ...(await job(sampleSite(), destination)), fonts: [] },
+        loadResources,
+        channel(),
+      );
 
-    expect(outcome).toEqual({ type: "failed", code: "build-failed", detail: "missing-font" });
-    expect(existsSync(destination)).toBe(false);
-  }, 60_000);
+      expect(outcome).toEqual({ type: "failed", code: "build-failed", detail: "missing-font" });
+      expect(existsSync(destination)).toBe(false);
+    },
+    scaledTestTimeout(60_000),
+  );
 
   it("reports anything unexpected as a failed build", async () => {
     const outcome = await runExport(
@@ -203,65 +235,79 @@ describe("runExport", () => {
     expect(outcome).toEqual({ type: "failed", code: "build-failed", detail: "unexpected" });
   });
 
-  it("stops when the main process cancels, writing nothing (R15)", async () => {
-    const destination = join(tempDir(), "site");
-    const controller = new AbortController();
-    controller.abort();
+  it(
+    "stops when the main process cancels, writing nothing (R15)",
+    async () => {
+      const destination = join(tempDir(), "site");
+      const controller = new AbortController();
+      controller.abort();
 
-    const outcome = await runExport(
-      await job(sampleSite(), destination),
-      loadResources,
-      channel(controller.signal),
-    );
+      const outcome = await runExport(
+        await job(sampleSite(), destination),
+        loadResources,
+        channel(controller.signal),
+      );
 
-    expect(outcome).toEqual({ type: "cancelled" });
-    expect(existsSync(destination)).toBe(false);
-  }, 60_000);
+      expect(outcome).toEqual({ type: "cancelled" });
+      expect(existsSync(destination)).toBe(false);
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("names an image over 50 megapixels, writing nothing (S12)", async () => {
-    const destination = join(tempDir(), "site");
-    const site = sampleSite();
-    // The photo's first bytes, as a crafted site file could hold them: 30,000 × 30,000 pixels.
-    const claim = new Uint8Array([
-      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0,
-      0x75, 0x30, 0, 0, 0x75, 0x30, 8, 6, 0, 0, 0,
-    ]);
-    const huge = {
-      ...site,
-      media: site.media.map((item) =>
-        item.id === "hero-photo" ? { ...item, mimeType: "image/png" as const, data: claim } : item,
-      ),
-    };
+  it(
+    "names an image over 50 megapixels, writing nothing (S12)",
+    async () => {
+      const destination = join(tempDir(), "site");
+      const site = sampleSite();
+      // The photo's first bytes, as a crafted site file could hold them: 30,000 × 30,000 pixels.
+      const claim = new Uint8Array([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0,
+        0x75, 0x30, 0, 0, 0x75, 0x30, 8, 6, 0, 0, 0,
+      ]);
+      const huge = {
+        ...site,
+        media: site.media.map((item) =>
+          item.id === "hero-photo"
+            ? { ...item, mimeType: "image/png" as const, data: claim }
+            : item,
+        ),
+      };
 
-    const outcome = await runExport(await job(huge, destination), loadResources, channel());
+      const outcome = await runExport(await job(huge, destination), loadResources, channel());
 
-    expect(outcome).toEqual({
-      type: "failed",
-      code: "unreadable-image",
-      detail: "unreadable-image",
-      image: "hero-photo",
-    });
-    expect(existsSync(destination)).toBe(false);
-  }, 60_000);
+      expect(outcome).toEqual({
+        type: "failed",
+        code: "unreadable-image",
+        detail: "unreadable-image",
+        image: "hero-photo",
+      });
+      expect(existsSync(destination)).toBe(false);
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("names the page to rename when Windows keeps its name, writing nothing (R16)", async () => {
-    const destination = join(tempDir(), "site");
-    const site = sampleSite();
-    const named = {
-      ...site,
-      pages: site.pages.map((page) =>
-        page.path === "about" ? { ...page, path: "con", title: "Contact" } : page,
-      ),
-    };
+  it(
+    "names the page to rename when Windows keeps its name, writing nothing (R16)",
+    async () => {
+      const destination = join(tempDir(), "site");
+      const site = sampleSite();
+      const named = {
+        ...site,
+        pages: site.pages.map((page) =>
+          page.path === "about" ? { ...page, path: "con", title: "Contact" } : page,
+        ),
+      };
 
-    const outcome = await runExport(await job(named, destination), loadResources, channel());
+      const outcome = await runExport(await job(named, destination), loadResources, channel());
 
-    expect(outcome).toEqual({
-      type: "failed",
-      code: "reserved-name",
-      detail: "reserved-name",
-      page: "Contact",
-    });
-    expect(existsSync(destination)).toBe(false);
-  }, 60_000);
+      expect(outcome).toEqual({
+        type: "failed",
+        code: "reserved-name",
+        detail: "reserved-name",
+        page: "Contact",
+      });
+      expect(existsSync(destination)).toBe(false);
+    },
+    scaledTestTimeout(60_000),
+  );
 });
