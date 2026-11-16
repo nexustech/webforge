@@ -1,7 +1,8 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { ACTION_BAR_ACTION } from "@webforge/engine/puck-dom";
 import { OPEN_WAIT } from "./budget.js";
-import { launchDesktopApp } from "./launch.js";
+import { clickOnCanvas } from "./canvas-click.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The editor's tooltips (#1011): on pointing at a control and on the keyboard's focus, with its
 // shortcut, and why it's off when it is; the canvas's own controls and Puck's too, in the frame.
@@ -58,20 +59,25 @@ test("says why a greyed-out Layers button is off", async () => {
 });
 
 test("shows the canvas's own controls' tooltips, and Puck's, in place of the browser's", async () => {
+  // The canvas styled and uncovered first (#1125): until then a click lands on the cover, or the
+  // Section measured unstyled puts it on the Footer, and nothing is selected. The only + is then
+  // a hovered section's, which comes and goes with the pointer, and never stays for its tooltip.
+  await waitForCanvas(page);
   const section = canvas().locator(".site-section");
   const box = await section.boundingBox();
   if (box === null) throw new Error("Section not visible");
   // The Section's bottom padding selects the Section itself.
-  await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
+  await clickOnCanvas(section, { position: { x: 10, y: box.height - 4 } });
+  await expect(
+    page.getByRole("navigation", { name: "Where the selection is" }).getByRole("button").last(),
+  ).toHaveText("Section");
 
-  // Pointed at again until it shows: on a cold start the + can still move as the selection
-  // settles, out from under the pointer before the tooltip's delay is up. The pointer goes back
-  // to the Section between tries, not off the canvas: the + is there while the Section is hovered.
-  await expect(async () => {
-    await section.hover({ force: true, position: { x: 10, y: box.height - 4 }, timeout: 2000 });
-    await canvas().getByRole("button", { name: "Add a section here" }).hover({ timeout: 2000 });
-    await expect(frameTip()).toHaveText("Add a section here", { timeout: 2000 });
-  }).toPass();
+  // The selected Section's +, there while the pointer is on it: pointed at once.
+  await canvas()
+    .locator('.wf-outline[data-state="selected"]')
+    .getByRole("button", { name: "Add a section here" })
+    .hover();
+  await expect(frameTip()).toHaveText("Add a section here");
   // A site whose own rules would reach the tooltip, which sits in the site's body: added, read
   // and removed at once, so the canvas's layout never moves under the pointer.
   expect(
