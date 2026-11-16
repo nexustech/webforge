@@ -62,25 +62,37 @@ async function windowWidth(width: number): Promise<void> {
   await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(width);
 }
 
-/** Whether the page's frame fits in the canvas: false while it still has a wider window's width. */
-const frameFits = () =>
-  page.evaluate(() => {
-    const frame = document.querySelector(".editor__canvas iframe")?.getBoundingClientRect();
-    const canvas = document.querySelector(".editor__canvas")?.getBoundingClientRect();
-    return frame !== undefined && canvas !== undefined && frame.width <= canvas.width + 1;
-  });
+/**
+ * Whether the page's frame fills the room Desktop measures (its content box), to a pixel (Desktop
+ * takes its whole pixels). False while the frame still has the width of the window before it last
+ * changed, wider (#1084) or narrower (#1108): the layout after a resize comes a moment later.
+ */
+const frameFills = () =>
+  page.evaluate((selector) => {
+    const frame = document.querySelector<HTMLIFrameElement>(".editor__canvas iframe");
+    const room = document.querySelector<HTMLElement>(selector);
+    const width = frame?.contentWindow?.innerWidth;
+    if (width === undefined || room === null) return false;
+    const style = getComputedStyle(room);
+    const inner =
+      room.clientWidth -
+      Number.parseFloat(style.paddingLeft) -
+      Number.parseFloat(style.paddingRight);
+    return Math.abs(inner - width) <= 1;
+  }, CANVAS_INNER);
 
 /**
- * The page's width once Desktop fills the canvas at 100% (PH2-18): its frame fits in the canvas,
- * and the readout and the page agree. A width taken before then can be the window's before it
- * last changed (#1084): on a 3440 px screen, the maximised window's 2910 px.
+ * The page's width once Desktop fills the canvas at 100% (PH2-18): its frame fills the room, and
+ * the readout and the page agree. A width taken before then can be the window's before it last
+ * changed: on a 3440 px screen, the maximised window's 2910 px (#1084), or after the window grows,
+ * the smaller window's (#1108).
  */
 async function desktopWidth(): Promise<number> {
   await expect
     .poll(async () => {
       const width = await pageWidth();
       const shown = await size();
-      return (await frameFits()) && shown.startsWith(`${width} × `) && shown.endsWith(" @ 100%");
+      return (await frameFills()) && shown.startsWith(`${width} × `) && shown.endsWith(" @ 100%");
     })
     .toBe(true);
   return pageWidth();
@@ -209,8 +221,8 @@ test("lays a long page out in Desktop view without overflowing sideways, its scr
   // Wide enough for a page wider than Desktop's least, 1024 px, beside two 300 px columns (#1007).
   await windowWidth(1800);
   // Its scrollbar is inside the frame, so the readout counts 15 px more than the page has: the
-  // frame fitting the canvas tells the new layout from the old (#1084).
-  await expect.poll(frameFits).toBe(true);
+  // frame filling the room tells the new layout from the old (#1084, #1108).
+  await expect.poll(frameFills).toBe(true);
   await expect.poll(pageWidth).toBeGreaterThan(1100);
 
   const frame = await canvas()
