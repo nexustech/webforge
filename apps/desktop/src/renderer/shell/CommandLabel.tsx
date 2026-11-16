@@ -14,6 +14,7 @@ export function tipWithReason(tip: string | undefined, reason: string | undefine
   return (
     <span className="flex flex-col">
       <span>{tip}</span>
+      {/* Unseen in the column; parts the two when it's read as one description. */}{" "}
       <span>{reason}</span>
     </span>
   );

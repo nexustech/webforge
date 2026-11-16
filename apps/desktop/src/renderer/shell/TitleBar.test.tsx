@@ -140,7 +140,7 @@ describe("TitleBar", () => {
     const undo = screen.getByRole("button", { name: "Undo" });
     await userEvent.hover(undo.parentElement ?? undo);
 
-    expect((await screen.findByRole("tooltip")).textContent).toBe("Undo (Ctrl+Z)Nothing to undo.");
+    expect((await screen.findByRole("tooltip")).textContent).toBe("Undo (Ctrl+Z) Nothing to undo.");
   });
 
   it("gives a command's tooltip, with its shortcut, in place of its label (#1011)", async () => {
@@ -167,7 +167,7 @@ describe("TitleBar", () => {
     const publish = screen.getByRole("button", { name: "Publish" });
     await userEvent.hover(publish.parentElement ?? publish);
 
-    expect((await screen.findByRole("tooltip")).textContent).toBe("PublishOpen a site first.");
+    expect((await screen.findByRole("tooltip")).textContent).toBe("Publish Open a site first.");
   });
 
   it("shows no reason once the command is enabled again (#1010)", async () => {
