@@ -122,7 +122,7 @@ export function WithTooltip({
   readonly tooltip: ReactNode;
   readonly disableable?: boolean;
   readonly whenCut?: boolean;
-  readonly children: ReactElement<{ "aria-describedby"?: string }>;
+  readonly children: ReactElement<{ "aria-describedby"?: string | undefined }>;
 }) {
   const { trigger, root, open } = useTooltipRoot(whenCut);
   const description = useId();
