@@ -76,7 +76,7 @@ export function TitleBar({
         {...{ [REGION_ATTRIBUTE]: "" }}
         // As tall as the native window controls, whatever the type scale makes a rem (#484).
         style={{ height: TITLE_BAR_HEIGHT }}
-        className="flex shrink-0 items-center gap-2 border-b border-border-strong bg-titlebar pr-[calc(100vw-env(titlebar-area-x,0px)-env(titlebar-area-width,100vw))] pl-[max(env(titlebar-area-x,0px),4px)] select-none [-webkit-app-region:drag]"
+        className="flex shrink-0 items-center gap-2 border-b border-border-strong bg-titlebar pr-[max(calc(100vw-env(titlebar-area-x,0px)-env(titlebar-area-width,100vw)),4px)] pl-[max(env(titlebar-area-x,0px),4px)] select-none [-webkit-app-region:drag]"
       >
         {/* The window's heading for screen readers; the window title says the same. */}
         <h1 className="sr-only">{t("app.name")}</h1>
@@ -113,19 +113,16 @@ export function TitleBar({
             commandId={COMMAND_IDS.preview}
             icon={<EyeIcon className="text-info" />}
             text={t("shell.preview")}
-            textWhenWide
           />
           <CommandButton
             commandId={COMMAND_IDS.exportSite}
             icon={<DownloadIcon className="text-success" />}
             text={t("shell.export")}
-            textWhenWide
           />
           <CommandButton
             commandId={COMMAND_IDS.publish}
             icon={<CloudUploadIcon />}
             text={t("shell.publish")}
-            textWhenWide
             variant="default"
           />
         </div>
