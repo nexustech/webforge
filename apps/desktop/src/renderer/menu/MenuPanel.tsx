@@ -357,69 +357,75 @@ function ItemMenu({ row, name, groups, actions, onEdit, onCloseAutoFocus }: Item
   const { item } = row;
   const id = item.id;
   return (
-    // Not modal, as the Pages panel's: a modal menu hides the window from screen readers.
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={t("menu.actions", { name })}
-          className="absolute top-0 right-0.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
-        >
-          <EllipsisIcon />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" onCloseAutoFocus={onCloseAutoFocus}>
-        <DropdownMenuItem onSelect={onEdit}>
-          {item.kind === "page" || item.kind === "group" ? t("menu.rename") : t("menu.changeLink")}
-        </DropdownMenuItem>
-        {item.kind === "page" && item.label !== undefined && (
-          <DropdownMenuItem onSelect={() => actions.rename(id, "")}>
-            {t("menu.usePageName")}
+    // Not modal, as the Pages panel's: a modal menu hides the window from screen readers. Placed
+    // by a wrapper, as the Pages panel's, so the tooltip's wrapper isn't in the row's flow.
+    <span className="absolute top-0 right-0.5 flex">
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t("menu.actions", { name })}
+            tooltip={t("menu.actions", { name })}
+            className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+          >
+            <EllipsisIcon />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" onCloseAutoFocus={onCloseAutoFocus}>
+          <DropdownMenuItem onSelect={onEdit}>
+            {item.kind === "page" || item.kind === "group"
+              ? t("menu.rename")
+              : t("menu.changeLink")}
           </DropdownMenuItem>
-        )}
-        <DropdownMenuItem onSelect={() => actions.setHidden(id, !item.hidden)}>
-          {item.hidden ? t("menu.show") : t("menu.hide")}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          disabled={row.index === 0}
-          onSelect={() => actions.move(id, { group: row.group, index: row.index - 1 })}
-        >
-          {t("menu.moveUp")}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          disabled={row.index === row.siblings - 1}
-          onSelect={() => actions.move(id, { group: row.group, index: row.index + 1 })}
-        >
-          {t("menu.moveDown")}
-        </DropdownMenuItem>
-        {item.kind !== "group" &&
-          groups
-            .filter((group) => group.id !== row.group)
-            .map((group) => (
-              <DropdownMenuItem
-                key={group.id}
-                onSelect={() =>
-                  actions.move(id, {
-                    group: group.id,
-                    index: group.children.length,
-                  })
-                }
-              >
-                {t("menu.moveInto", { name: group.label })}
-              </DropdownMenuItem>
-            ))}
-        {row.group !== null && (
-          <DropdownMenuItem onSelect={() => actions.move(id, { group: null, index: Infinity })}>
-            {t("menu.moveOut")}
+          {item.kind === "page" && item.label !== undefined && (
+            <DropdownMenuItem onSelect={() => actions.rename(id, "")}>
+              {t("menu.usePageName")}
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onSelect={() => actions.setHidden(id, !item.hidden)}>
+            {item.hidden ? t("menu.show") : t("menu.hide")}
           </DropdownMenuItem>
-        )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onSelect={() => actions.remove(id)}>
-          {item.kind === "page" ? t("menu.removePage") : t("menu.delete")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={row.index === 0}
+            onSelect={() => actions.move(id, { group: row.group, index: row.index - 1 })}
+          >
+            {t("menu.moveUp")}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={row.index === row.siblings - 1}
+            onSelect={() => actions.move(id, { group: row.group, index: row.index + 1 })}
+          >
+            {t("menu.moveDown")}
+          </DropdownMenuItem>
+          {item.kind !== "group" &&
+            groups
+              .filter((group) => group.id !== row.group)
+              .map((group) => (
+                <DropdownMenuItem
+                  key={group.id}
+                  onSelect={() =>
+                    actions.move(id, {
+                      group: group.id,
+                      index: group.children.length,
+                    })
+                  }
+                >
+                  {t("menu.moveInto", { name: group.label })}
+                </DropdownMenuItem>
+              ))}
+          {row.group !== null && (
+            <DropdownMenuItem onSelect={() => actions.move(id, { group: null, index: Infinity })}>
+              {t("menu.moveOut")}
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onSelect={() => actions.remove(id)}>
+            {item.kind === "page" ? t("menu.removePage") : t("menu.delete")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
   );
 }
