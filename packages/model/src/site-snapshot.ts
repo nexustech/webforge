@@ -26,7 +26,6 @@ import { type MenuDoc, menuDocSchema } from "./menu.js";
 import {
   BUSINESS_TYPES,
   type BusinessType,
-  CONSENT_MESSAGE_MAX,
   type FormService,
   formServiceSchema,
   KEPT_ADDRESSES_MAX,
@@ -37,7 +36,9 @@ import {
   openingHoursSchema,
   PRICE_RANGE_MAX,
   SITE_DESCRIPTION_MAX,
+  SITE_LABEL_MAX,
   type SocialProfile,
+  siteLabelKeySchema,
   socialProfileSchema,
   verificationCodeSchema,
   X_HANDLE_MAX,
@@ -168,6 +169,12 @@ export type SiteSnapshot = {
   readonly name: string;
   /** `<html lang>`, e.g. `en` or `en-GB`. */
   readonly language: string;
+  /**
+   * The site's labels in the owner's own words (6.12, CC-1), by label key, in place of its
+   * language's: Site Settings' *Labels on your site*, and the consent banner's own message. None
+   * when left out.
+   */
+  readonly labels?: Readonly<Record<string, string>> | undefined;
   readonly theme: Theme;
   readonly layout: LayoutDoc;
   readonly pages: readonly SitePage[];
@@ -270,7 +277,6 @@ type SiteVerification = {
 export type SiteAnalytics = {
   readonly measurementId: string;
   readonly consentBanner: boolean;
-  readonly consentMessage?: string | undefined;
 };
 
 /** An item's field values by name, as a snapshot carries them (6.10a). */
@@ -351,6 +357,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
     .object({
       name: z.string().min(1),
       language: languageTagSchema,
+      labels: z.record(siteLabelKeySchema, z.string().max(SITE_LABEL_MAX)).optional(),
       theme: themeSchema,
       layout: layoutDocSchema,
       pages: z.array(sitePageSchema).min(1),
@@ -381,7 +388,6 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
         .strictObject({
           measurementId: measurementIdSchema,
           consentBanner: z.boolean(),
-          consentMessage: z.string().max(CONSENT_MESSAGE_MAX).optional(),
         })
         .optional(),
       search: z

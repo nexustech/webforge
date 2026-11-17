@@ -40,6 +40,20 @@ describe("siteText (6.12, CC-1)", () => {
     expect(labels("siteText.imageOf", { n: 3, total: 8 })).toBe("3 of 8");
   });
 
+  it("gives the owner's own wording first, for each label they changed (6.12)", () => {
+    const labels = siteTextFor("de", {
+      "siteText.menu": "Speisekarte",
+      "siteText.slideOf": "Bild {n}/{total}",
+      // Left empty: the language's.
+      "siteText.backToTop": "  ",
+    });
+    expect(labels("siteText.menu")).toBe("Speisekarte");
+    expect(labels("siteText.slideOf", { n: 2, total: 5 })).toBe("Bild 2/5");
+    expect(labels("siteText.backToTop")).toBe("Nach oben");
+    expect(labels("siteText.close")).toBe("Schließen");
+    expect(siteTextFor("it", { "siteText.menu": "Menù" })("siteText.menu")).toBe("Menù");
+  });
+
   it("leaves a placeholder in when it's given as itself, for a site's script to fill", () => {
     expect(siteTextFor("de")("siteText.slideOf", { n: "{n}", total: "{total}" })).toBe(
       "{n} von {total}",

@@ -198,6 +198,10 @@ describe("the cookie policy (#866)", () => {
     expect(sections[3]?.text[0]).toContain("Alle akzeptieren");
     expect(sections[3]?.text[0]).not.toContain("Accept all");
     expect(sections[4]?.text[0]).toContain("Cookie-Einstellungen");
+
+    // Or in the owner's own words, where they changed the label.
+    site.settings.general.labels = { "siteText.consent.accept": "Alles klar" };
+    expect(sectionsOf(cookiePageContent(site))[3]?.text[0]).toContain("Alles klar");
   });
 
   it("says the site sets no cookies once Google Analytics is off", () => {

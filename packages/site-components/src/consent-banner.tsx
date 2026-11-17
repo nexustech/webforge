@@ -28,9 +28,7 @@ function ConsentBanner({
     >
       {analytics.consentBanner ? (
         <>
-          <p className="text-sm">
-            {analytics.consentMessage?.trim() || siteText("siteText.consent.message")}
-          </p>
+          <p className="text-sm">{siteText("siteText.consent.message")}</p>
           <div className="mt-3 flex flex-wrap justify-end gap-2">
             <button type="button" className="btn btn-sm btn-ghost" data-wf-consent-decline="">
               {siteText("siteText.consent.decline")}

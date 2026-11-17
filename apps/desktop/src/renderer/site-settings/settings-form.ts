@@ -48,6 +48,15 @@ export type SettingsForm = {
   readonly businessType: BusinessType | "";
   /** Its schema.org type within it (3.15, SEO-1), or `""` for the type's own. */
   readonly businessKind: string;
+  /**
+   * The site's labels in the owner's own words (6.12, CC-1): each row a label's key and its
+   * wording, as typed.
+   */
+  readonly labels: readonly {
+    readonly id: string;
+    readonly key: string;
+    readonly text: string;
+  }[];
   readonly url: string;
   readonly profiles: readonly {
     readonly id: string;
@@ -105,6 +114,11 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     backToTop: general.backToTop === true,
     businessType: general.businessType ?? "",
     businessKind: general.businessKind ?? "",
+    labels: Object.entries(general.labels ?? {}).map(([key, text], index) => ({
+      id: `label-${index}`,
+      key,
+      text,
+    })),
     url: address.url ?? "",
     profiles: social.profiles.map((profile, index) => ({ id: `profile-${index}`, ...profile })),
     shareImage: social.shareImage,
@@ -213,6 +227,19 @@ function geoOf(form: SettingsForm): { geo?: { latitude: number; longitude: numbe
   return { geo: { latitude: number(form.latitude), longitude: number(form.longitude) } };
 }
 
+/**
+ * The labels in the owner's words (6.12), by key; absent when there are none, as before them. A row
+ * left empty says nothing: Site Settings' check asks for its wording before saving.
+ */
+function labelsOf(form: SettingsForm): { labels?: Record<string, string> } {
+  const labels = Object.fromEntries(
+    form.labels
+      .filter((row) => row.text.trim() !== "")
+      .map((row) => [row.key, row.text.trim()] as const),
+  );
+  return Object.keys(labels).length === 0 ? {} : { labels };
+}
+
 function formServiceOf(form: SettingsForm): Record<string, string> | undefined {
   const value = form.formValue.trim();
   switch (form.formService) {
@@ -247,6 +274,7 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       // Absent when off, as in files from before it.
       ...(form.backToTop ? { backToTop: true } : {}),
       ...businessOf(form),
+      ...labelsOf(form),
     },
     address: optional("url", form.url.trim().replace(/\/$/, "")),
     social: {
@@ -374,6 +402,16 @@ export type Section = (typeof SECTIONS)[number];
  * them.
  */
 function savedLabel(before: SiteSettings, after: SiteSettings): string {
+  // Only the labels on the site (6.12): named for them.
+  const { labels: labelsBefore, ...generalBefore } = before.general;
+  const { labels: labelsAfter, ...generalAfter } = after.general;
+  if (
+    !sameJson(labelsBefore, labelsAfter) &&
+    sameJson(generalBefore, generalAfter) &&
+    sameJson({ ...before, general: undefined }, { ...after, general: undefined })
+  ) {
+    return t("site.settings.history.labels");
+  }
   const sections = SECTIONS.filter((section) => !sameJson(before[section], after[section]));
   const earlier: Readonly<Record<string, unknown>> = before;
   const outside = Object.entries(after).some(

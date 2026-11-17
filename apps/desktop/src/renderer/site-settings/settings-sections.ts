@@ -8,12 +8,12 @@ import {
   CONSENT_MESSAGE_MAX,
   fileKey,
   type ImageMeta,
-  LANGUAGE_TAG_MAX,
   MEASUREMENT_ID_MAX,
   OPENING_HOURS_NOTE_MAX,
   POSTAL_ADDRESS_MAX,
   PRICE_RANGE_MAX,
   SITE_DESCRIPTION_MAX,
+  SITE_LABEL_MAX,
   SITE_NAME_MAX,
   type SiteSettings,
   SOCIAL_NETWORKS,
@@ -30,6 +30,8 @@ import {
   type SettingsForm,
   settingsSchema,
 } from "./settings-form.js";
+import { labelOptions } from "./site-labels.js";
+import { languageOptions } from "./site-languages.js";
 
 /** Room for a verification code pasted with its whole `<meta>` tag (3.15, SEO-8). */
 const VERIFICATION_PASTE_MAX = 300;
@@ -202,6 +204,61 @@ export function keptAddressClashes(
   );
 }
 
+/**
+ * *Labels on your site* (6.12, CC-1): the labels the owner says differently, each chosen from the
+ * site's labels as its language has them now, with their own wording. Removing one goes back to
+ * the standard label.
+ */
+function labelsField(language: string): FormField {
+  const options = labelOptions(language);
+  return {
+    kind: "list",
+    name: "labels",
+    path: "general.labels",
+    label: t("site.settings.labels"),
+    help: t("site.settings.labelsHint"),
+    itemLabel: t("site.settings.label"),
+    addLabel: t("site.settings.addLabel"),
+    removeLabel: t("site.settings.removeLabel"),
+    orderless: true,
+    itemFields: [
+      { kind: "select", name: "key", label: t("site.settings.labelKey"), options },
+      {
+        kind: "text",
+        name: "text",
+        label: t("site.settings.labelText"),
+        maxLength: SITE_LABEL_MAX,
+      },
+    ],
+    newItem: () => ({ key: options[0]?.value ?? "", text: "" }),
+  };
+}
+
+/**
+ * Labels the owner left without wording, or changed twice (6.12): saving would drop the one, and
+ * keep only the last of the other, so each says what to do instead.
+ */
+export function labelIssues(values: SettingsForm): FormIssue[] {
+  return values.labels.flatMap((row, index) => {
+    if (row.text.trim() === "") {
+      return [
+        {
+          path: ["general", "labels", index, "text"],
+          message: t("site.settings.error.labelEmpty"),
+        },
+      ];
+    }
+    return values.labels.slice(0, index).some((earlier) => earlier.key === row.key)
+      ? [
+          {
+            path: ["general", "labels", index, "key"],
+            message: t("site.settings.error.labelTwice"),
+          },
+        ]
+      : [];
+  });
+}
+
 /** Site Settings' sections, in the dialog's order, each a group of the form's fields. */
 function sections(media: SettingsMedia): readonly SettingsSection[] {
   return [
@@ -217,13 +274,14 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           multiline: true,
           maxLength: SITE_DESCRIPTION_MAX,
         },
+        // By name, over the codes the site stores (6.12, CC-1).
         {
-          kind: "text",
+          kind: "select",
           name: "language",
           label: t("site.settings.language"),
           help: t("site.settings.languageHint"),
-          maxLength: LANGUAGE_TAG_MAX,
-          width: "sm",
+          width: "md",
+          options: languageOptions(values.language),
         },
         imageField("icon", t("site.settings.icon"), t("site.settings.iconHint"), media),
         {
@@ -270,6 +328,7 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           label: t("site.settings.askNoAiTraining"),
           help: t("site.settings.askNoAiTrainingHint"),
         },
+        labelsField(values.language),
       ],
     },
     {
@@ -500,7 +559,7 @@ export function siteSettingsSpec(
       ),
     schema: settingsSchema,
     toModel: (values) => fromSettingsForm(values, previous),
-    check: (values) => keptAddressClashes(values, media.pages ?? []),
+    check: (values) => [...keptAddressClashes(values, media.pages ?? []), ...labelIssues(values)],
     adjust: (next, before) => {
       // A new service's value is another kind of value: it starts empty.
       const service = next.formService === before.formService ? next : { ...next, formValue: "" };
