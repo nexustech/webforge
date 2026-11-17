@@ -22,6 +22,7 @@ import { postTagsComponents } from "./post-tags.js";
 import { pricingComponents } from "./pricing.js";
 import { sectionsComponents } from "./sections.js";
 import { statsComponents } from "./stats.js";
+import { stepsComponents } from "./steps.js";
 import { tabsComponents } from "./tabs.js";
 import { teamComponents } from "./team.js";
 import { testimonialsComponents } from "./testimonials.js";
@@ -55,6 +56,7 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   latestPostsComponents,
   postTagsComponents,
   contactButtonsComponents,
+  stepsComponents,
   accordionComponents,
 );
 

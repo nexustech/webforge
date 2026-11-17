@@ -19,6 +19,7 @@ import { pricing } from "./pricing.js";
 import { sections } from "./sections.js";
 import { shared } from "./shared.js";
 import { stats } from "./stats.js";
+import { steps } from "./steps.js";
 import { tabs } from "./tabs.js";
 import { team } from "./team.js";
 import { testimonials } from "./testimonials.js";
@@ -52,6 +53,7 @@ export const componentFamilies = {
   latestPosts,
   postTags,
   contactButtons,
+  steps,
   accordion,
 } as const;
 
@@ -80,5 +82,6 @@ export const components = {
   ...latestPosts,
   ...postTags,
   ...contactButtons,
+  ...steps,
   ...accordion,
 } as const;

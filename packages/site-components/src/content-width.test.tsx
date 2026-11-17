@@ -62,6 +62,8 @@ const DEFAULTS: Readonly<Record<string, ContentWidth>> = {
   LatestPosts: "wide",
   // New in 6.16d (#1136): its row on the canvas; on the site it keeps to the screen's corner.
   ContactButtons: "full",
+  // New in 6.16b (#1134): its steps side by side across a wide column.
+  Steps: "wide",
 };
 
 /** What a kind needs to draw its whole width: an image beside the text, a form beside it. */

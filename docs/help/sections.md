@@ -3,7 +3,7 @@
 id: sections
 title: Sections
 summary: Every section you can add to a page, what it's for and what you can change.
-components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat, ContactButtons]
+components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat, Steps, Step, ContactButtons]
 related: [elements, add-panel, edit-panel, forms, header-and-footer]
 updated: 2026-11-17
 ---
@@ -89,6 +89,12 @@ Questions and answers. A new FAQ comes with three sample questions to change, su
 A row of numbers you're proud of ("25 years in business"). Each **Stat** is a number and what it counts. The numbers are shown as you type them.
 
 **Layouts:** _Row_, _Cards_ or _Beside the text_.
+
+## Steps
+
+How it works, in a few steps: "Get in touch", "Get a quote", "We get to work". Each **Step** has a title, some text and a **Date**. The steps are numbered for you, in their order, and read out as a numbered list by screen readers. Side by side on a computer or tablet, one under another on a phone.
+
+**Layouts:** _Numbered_, or _Timeline_, which shows each step's date ("Week 1", "March") along a line instead of its number.
 
 ## Logos
 
