@@ -89,19 +89,31 @@ describe("a site's own labels in its language (6.12, CC-1)", () => {
     expect(html(`${THANKS_PATH}.html`)).toContain("Vielen Dank");
   });
 
-  it("has every element and page of the export take its labels from the site's language", () => {
-    // `t` and `template` give the app's language, English: never a label of the site (6.12).
-    const packages = join(import.meta.dirname, "..", "..");
-    const offending = ["site-components/src", "pipeline/src"].flatMap((folder) =>
-      readdirSync(join(packages, folder), { recursive: true, encoding: "utf8" })
-        .filter((file) => /\.tsx?$/.test(file) && !/\.(test|stories)\.tsx?$/.test(file))
-        .filter((file) =>
-          /\b(?:t|template)\(\s*["`]siteText\./.test(
-            readFileSync(join(packages, folder, file), "utf8"),
-          ),
-        )
-        .map((file) => join(folder, file)),
-    );
-    expect(offending).toEqual([]);
-  });
+  // Its timeout: every source file of the renderer, read as the whole suite runs (#1052).
+  it(
+    "has everything that writes into a site take its labels from the site's language",
+    () => {
+      // `t` and `template` give the app's language, English: never a label of the site (6.12). The
+      // site components and the pipeline write the site; the editor writes pages into it (the
+      // Cookie page names the banner's buttons).
+      const root = join(import.meta.dirname, "..", "..", "..");
+      const folders = [
+        "packages/site-components/src",
+        "packages/pipeline/src",
+        "apps/desktop/src/renderer",
+      ];
+      const offending = folders.flatMap((folder) =>
+        readdirSync(join(root, folder), { recursive: true, encoding: "utf8" })
+          .filter((file) => /\.tsx?$/.test(file) && !/\.(test|stories)\.tsx?$/.test(file))
+          .filter((file) =>
+            /\b(?:t|template)\(\s*["`]siteText\./.test(
+              readFileSync(join(root, folder, file), "utf8"),
+            ),
+          )
+          .map((file) => join(folder, file)),
+      );
+      expect(offending).toEqual([]);
+    },
+    scaledTestTimeout(60_000),
+  );
 });

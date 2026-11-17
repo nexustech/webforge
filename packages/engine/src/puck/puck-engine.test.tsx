@@ -1,6 +1,6 @@
-import { siteTextFor } from "@webforge/i18n/site-text";
 // @vitest-environment happy-dom
 
+import { siteTextFor } from "@webforge/i18n/site-text";
 import {
   copiedNodeId,
   DEFAULT_THEME,
