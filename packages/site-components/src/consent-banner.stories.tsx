@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { siteTextFor } from "@webforge/i18n";
+import { siteTextFor } from "@webforge/i18n/site-text";
 import type { SiteAnalytics } from "@webforge/model";
 import { consentBannerHtml } from "./consent-banner.js";
 

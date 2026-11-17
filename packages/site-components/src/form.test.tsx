@@ -1,4 +1,4 @@
-import { siteTextFor } from "@webforge/i18n";
+import { siteTextFor } from "@webforge/i18n/site-text";
 import { httpsAddress } from "@webforge/model";
 import { Window } from "happy-dom";
 import type { ReactElement } from "react";

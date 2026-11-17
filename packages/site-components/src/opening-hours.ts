@@ -1,4 +1,4 @@
-import type { SiteText } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n/site-text";
 import { DAYS, type Day, type OpeningHours } from "@webforge/model";
 
 /** One line of a site's opening hours: when, and the hours then. */

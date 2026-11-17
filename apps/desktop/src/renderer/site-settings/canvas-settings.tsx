@@ -1,5 +1,6 @@
 import type { CanvasEngine } from "@webforge/engine";
-import { siteTextFor, t } from "@webforge/i18n";
+import { t } from "@webforge/i18n";
+import { siteTextFor } from "@webforge/i18n/site-text";
 import { type BindableSetting, type SiteDoc, settingValues } from "@webforge/model";
 
 type Unsubscribe = () => void;

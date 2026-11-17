@@ -1,4 +1,4 @@
-import { siteTextFor } from "@webforge/i18n";
+import { siteTextFor } from "@webforge/i18n/site-text";
 import type { NodeDoc, SiteAnalytics } from "@webforge/model";
 import { Window } from "happy-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";

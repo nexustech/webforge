@@ -1,4 +1,4 @@
-import type { SiteText } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n/site-text";
 import { type FormService, formServiceUnset, httpsAddress, THANKS_FIELD } from "@webforge/model";
 import type { ReactNode } from "react";
 import type { FormUnset } from "./schema.js";

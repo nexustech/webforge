@@ -1,4 +1,4 @@
-import { type SiteText, siteTextFor } from "@webforge/i18n";
+import { type SiteText, siteTextFor } from "@webforge/i18n/site-text";
 import type { SiteSnapshot } from "@webforge/model";
 
 /**

@@ -1,4 +1,5 @@
-import { type SiteText, t } from "@webforge/i18n";
+import { t } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n/site-text";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
 import { boundText, type ComponentDef } from "../library.js";

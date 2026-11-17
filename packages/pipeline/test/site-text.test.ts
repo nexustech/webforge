@@ -1,6 +1,11 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { SITE_TEXT_KEYS, type SiteText, type SiteTextKey, siteTextFor } from "@webforge/i18n";
+import {
+  SITE_TEXT_KEYS,
+  type SiteText,
+  type SiteTextKey,
+  siteTextFor,
+} from "@webforge/i18n/site-text";
 import { escapeHtml, escapeHtmlText, type SiteSnapshot, THANKS_PATH } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";

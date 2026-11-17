@@ -1,9 +1,14 @@
+// The site's own labels in its language (6.12, CC-1): `@webforge/i18n/site-text`, an entry of its
+// own, so the app's start-up, which needs `t` alone, doesn't load the other languages' catalogues.
 import { de } from "./de/site-text.js";
 import { en } from "./en.js";
 import { es } from "./es/site-text.js";
 import { fr } from "./fr/site-text.js";
 import type { SiteText, SiteTextCatalogue, SiteTextKey } from "./site-text-key.js";
+
 import { filled, type MessageParams, type ParamsArg } from "./translate.js";
+
+export type { SiteText, SiteTextCatalogue, SiteTextKey } from "./site-text-key.js";
 
 /** Every label of the exported site, in the English catalogue's order (6.12). */
 export const SITE_TEXT_KEYS: readonly SiteTextKey[] = Object.keys(en).filter(

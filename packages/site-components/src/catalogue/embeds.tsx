@@ -1,4 +1,5 @@
-import { type SiteText, t } from "@webforge/i18n";
+import { t } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n/site-text";
 import { bindingOf } from "@webforge/model";
 import type { ReactNode } from "react";
 import { defineComponent } from "../define.js";

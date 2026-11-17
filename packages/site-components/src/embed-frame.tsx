@@ -1,4 +1,4 @@
-import type { SiteText } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n/site-text";
 import type { Embed } from "./embed.js";
 import { StrokeIcon } from "./stroke-icon.js";
 import { BUTTON_CLASSES } from "./typography.js";

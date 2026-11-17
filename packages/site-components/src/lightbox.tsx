@@ -1,4 +1,4 @@
-import type { SiteText } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n/site-text";
 import { renderToStaticMarkup } from "react-dom/server";
 import { StrokeIcon } from "./stroke-icon.js";
 import { BUTTON_CLASSES } from "./typography.js";

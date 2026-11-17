@@ -1,4 +1,4 @@
-import type { SiteText } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n/site-text";
 // The site components' schema (R7): what a component's fields are, what they store and what its
 // render receives, and what rendering is given. Types only, so it loads without React or Vite, in
 // plain Node too (`@webforge/site-components/schema`): a tool can read a component's fields

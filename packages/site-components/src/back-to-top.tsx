@@ -1,4 +1,4 @@
-import type { SiteText } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n/site-text";
 import { renderToStaticMarkup } from "react-dom/server";
 import { LucideIcon } from "./icons.js";
 

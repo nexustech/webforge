@@ -1,4 +1,4 @@
-import { siteTextFor } from "@webforge/i18n";
+import { siteTextFor } from "@webforge/i18n/site-text";
 import {
   BOX_SIDES,
   type BoxSide,

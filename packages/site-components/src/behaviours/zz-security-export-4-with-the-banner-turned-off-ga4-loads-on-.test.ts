@@ -1,4 +1,4 @@
-import { siteTextFor } from "@webforge/i18n";
+import { siteTextFor } from "@webforge/i18n/site-text";
 // Security review S25 (docs/reviews/2026-10-30-security-review.md), restored by #650.
 import type { SiteAnalytics } from "@webforge/model";
 import { Window } from "happy-dom";

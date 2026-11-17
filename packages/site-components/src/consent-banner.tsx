@@ -1,4 +1,4 @@
-import type { SiteText } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n/site-text";
 import type { SiteAnalytics } from "@webforge/model";
 import { renderToStaticMarkup } from "react-dom/server";
 
