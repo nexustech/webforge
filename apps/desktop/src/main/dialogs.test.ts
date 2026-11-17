@@ -106,13 +106,13 @@ describe("createNativeDialogs", () => {
       "/backups/Bakery.zip",
     );
     expect(dialog.showSaveDialog.mock.calls[0]?.at(-1)).toMatchObject({
-      title: "Save a copy of your site as a ZIP file",
+      title: "Save a Copy of Your Site as a ZIP File",
       defaultPath: "Rosa's Bakery.zip",
       filters: [{ extensions: ["zip"] }],
     });
     await expect(dialogs.project.chooseSiteZipToOpen()).resolves.toBe("/a");
     expect(dialog.showOpenDialog.mock.calls[0]?.at(-1)).toMatchObject({
-      title: "Open a site from a ZIP file",
+      title: "Open a Site from a ZIP File",
       filters: [{ extensions: ["zip"] }],
       properties: ["openFile"],
     });

@@ -110,12 +110,12 @@ export const templates = {
   "newSite.pages.other": "{count} pages",
   "newSite.details": "Details",
   "newSite.detailsOf": "Details of {name}",
-  "newSite.useTemplate": "Use this template",
+  "newSite.useTemplate": "Use This Template",
   "newSite.create": "Create",
   "newSite.cancel": "Cancel",
   "newSite.noTemplates": "No templates of this type yet.",
   // The quick start (QS-1, 3.11b): four steps, each optional, then the site.
-  "quickStart.title": "Start a site",
+  "quickStart.title": "Start a Site",
   "quickStart.description":
     "A few questions, each one optional. You can change every answer later.",
   "quickStart.steps": "Steps",
@@ -126,9 +126,9 @@ export const templates = {
   "quickStart.stepOf": "Step {step} of {count}",
   "quickStart.back": "Back",
   "quickStart.next": "Next",
-  "quickStart.create": "Create site",
+  "quickStart.create": "Create Site",
   "quickStart.cancel": "Cancel",
-  "quickStart.chooseTemplate": "Choose a template yourself",
+  "quickStart.chooseTemplate": "Choose a Template Yourself",
   // Your business.
   "quickStart.businessType": "What kind of business is it?",
   "quickStart.name": "Business or site name",
@@ -142,7 +142,7 @@ export const templates = {
   "quickStart.templates": "Templates",
   "quickStart.templatesFor": "Templates for {type}",
   "quickStart.exampleText": "Want to look around first? Open a finished {name} site to explore.",
-  "quickStart.tryExample": "Try an example",
+  "quickStart.tryExample": "Try an Example",
   "quickStart.theme": "Theme",
   // Pages.
   "quickStart.layout": "How your site is laid out",
@@ -163,7 +163,7 @@ export const templates = {
   // Colours and details.
   "quickStart.colours": "Colours",
   "quickStart.colours.theme": "The theme's own",
-  "quickStart.colours.logo": "From my logo…",
+  "quickStart.colours.logo": "From My Logo…",
   "quickStart.colours.logoChosen": "From my logo",
   "quickStart.colours.logoHint":
     "Colours are taken from the picture on this computer. The picture isn't added to the site.",

@@ -135,7 +135,7 @@ describe("App", () => {
       within(screen.getByRole("banner")).getByRole("button", { name: "Export" }),
     );
     // The starter site has no web address yet (X3).
-    await userEvent.click(await screen.findByRole("button", { name: "Export without it" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Export Without It" }));
     await userEvent.click(await screen.findByRole("button", { name: "Export…" }));
 
     expect(exportSite).toHaveBeenCalledWith({
@@ -145,7 +145,7 @@ describe("App", () => {
       choices: { format: "folder", minify: false, developerFiles: false, askWebAddress: true },
       output: { minify: false, developerFiles: false },
     });
-    const report = await screen.findByRole("dialog", { name: "Site exported" });
+    const report = await screen.findByRole("dialog", { name: "Site Exported" });
     expect(report.textContent).toContain("Saved in the folder “my-site”.");
   });
 

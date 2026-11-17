@@ -81,7 +81,7 @@ export const assistant = {
   "assistant.held.replaced":
     "These changes were dropped when you sent a new message. Your site is as it was.",
   // Consent (product/14 §5.3, AIA-6, ADR 0026 §4): the app's once, then each site's.
-  "assistant.consent.title": "Turn on the assistant?",
+  "assistant.consent.title": "Turn On the Assistant?",
   "assistant.consent.description":
     "Read what the assistant sends, and to whom, before you turn it on.",
   "assistant.consent.sent":
@@ -196,7 +196,7 @@ export const assistant = {
   "assistant.model.signInFirst": "Sign in to OpenRouter to choose a model.",
   "assistant.model.perReply": "about {cost} a reply",
   "assistant.model.tested": "tested",
-  "assistant.model.priceyTitle": "Use a costlier model?",
+  "assistant.model.priceyTitle": "Use a Costlier Model?",
   "assistant.model.priceyBody":
     "{model} costs about {cost} a reply, more than most. Your monthly limit still applies.",
   "assistant.model.usePricey": "Use This Model",
@@ -208,7 +208,7 @@ export const assistant = {
   "assistant.model.allowRetaining": "Allow models that may keep requests",
   "assistant.model.allowRetainingHint":
     "Off: only models whose providers don't keep or train on what you send.",
-  "assistant.model.retainingTitle": "Allow models that may keep requests?",
+  "assistant.model.retainingTitle": "Allow Models That May Keep Requests?",
   "assistant.model.retainingBody":
     "With these models, the model's maker may keep what you send, your site's text included, or use it to train its models.",
   "assistant.model.allowRetainingConfirm": "Allow Them",

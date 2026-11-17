@@ -39,15 +39,15 @@ describe("the icon field (F-ED-22)", () => {
   it("chooses an icon in the picker, searched by what it shows, as one step", async () => {
     const { button, labels, user } = setUp();
 
-    await user.click(screen.getByRole("button", { name: "Icon Choose an icon…" }));
-    const picker = screen.getByRole("dialog", { name: "Choose an icon" });
+    await user.click(screen.getByRole("button", { name: "Icon Choose an Icon…" }));
+    const picker = screen.getByRole("dialog", { name: "Choose an Icon" });
     // "call" is one of the phone icon's tags.
     await user.type(within(picker).getByRole("searchbox"), "call");
     await user.dblClick(within(picker).getByRole("option", { name: "phone" }));
 
     expect(button()?.icon).toBe("phone");
     expect(labels()).toEqual(["Changed Button icon"]);
-    expect(screen.getByRole("button", { name: "Icon Change icon (phone)…" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Icon Change Icon (phone)…" })).toBeTruthy();
   });
 
   it("takes the icon away again, as one step", async () => {
@@ -60,7 +60,7 @@ describe("the icon field (F-ED-22)", () => {
       }),
     );
 
-    await user.click(screen.getByRole("button", { name: "Remove icon" }));
+    await user.click(screen.getByRole("button", { name: "Remove Icon" }));
 
     expect(button()?.icon).toBeUndefined();
     expect(labels().at(-1)).toBe("Changed Button icon");
@@ -97,7 +97,7 @@ describe("a List's icon (F-ED-22)", () => {
     ).toBeTruthy();
 
     await user.click(screen.getByRole("tab", { name: "Content" }));
-    await user.click(screen.getByRole("button", { name: "Remove icon" }));
+    await user.click(screen.getByRole("button", { name: "Remove Icon" }));
 
     expect((await style()).disabled).toBe(false);
   });

@@ -143,7 +143,7 @@ describe("ShellLayout", () => {
     await userEvent.setup().click(left.getByRole("tab", { name: "Layers" }));
 
     expect(left.getByRole("alert").textContent).toBe(
-      "Something went wrong in this panel. Your work is saved.Reload panel",
+      "Something went wrong in this panel. Your work is saved.Reload Panel",
     );
     expect(screen.getByText("Canvas")).toBeTruthy();
     expect(
@@ -152,7 +152,7 @@ describe("ShellLayout", () => {
       }),
     ).toBeTruthy();
     broken = false;
-    await userEvent.setup().click(left.getByRole("button", { name: "Reload panel" }));
+    await userEvent.setup().click(left.getByRole("button", { name: "Reload Panel" }));
     expect(left.getByText("Layers", { selector: "p" })).toBeTruthy();
     // Its neighbour in the column was never touched.
     await userEvent.setup().click(left.getByRole("tab", { name: "Add" }));
@@ -187,7 +187,7 @@ describe("ShellLayout", () => {
     expect(screen.getByRole("alert").textContent).toContain(
       "Something went wrong showing this page",
     );
-    expect(screen.getByRole("button", { name: "Reload page" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Reload Page" })).toBeTruthy();
     expect(
       within(screen.getByRole("region", { name: "Left panels" })).getByText("Add", {
         selector: "p",

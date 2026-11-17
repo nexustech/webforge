@@ -4,7 +4,7 @@ id: publish
 title: Publish
 summary: Put your website on your web host or on Netlify, and update it with one click whenever you change something.
 related: [export, site-check, site-settings, version-history]
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Publish
@@ -51,7 +51,7 @@ Once your site has a Netlify destination, [forms](forms.md) can send their messa
 
 ### When visitors have to log in
 
-Netlify can show visitors its log-in page instead of your site. {appName} warns you when it does: for the site you choose, and on **Your site is live** after publishing to Netlify. It's usually because the site is still **private**: Netlify may keep a new site private, and {appName} reminds you of this when you choose **A new site**. If your site is for everyone:
+Netlify can show visitors its log-in page instead of your site. {appName} warns you when it does: for the site you choose, and on **Your Site Is Live** after publishing to Netlify. It's usually because the site is still **private**: Netlify may keep a new site private, and {appName} reminds you of this when you choose **A new site**. If your site is for everyone:
 
 - **A private site:** open it on Netlify and choose **Make public**. Netlify offers this once the site has been published.
 - **Visitor access or password protection:** turn it off in the site's settings on Netlify.
@@ -66,7 +66,7 @@ Click **Publish** beside a destination. {appName}:
 
 If the folder already has another site that {appName} published, it asks before replacing it.
 
-When it's done, **Your site is live** says where visitors can see it, and how many files were sent, unchanged and removed. **Open in Browser** opens it and **Copy Link** copies its address. A new site can take a few minutes to appear.
+When it's done, **Your Site Is Live** says where visitors can see it, and how many files were sent, unchanged and removed. **Open in Browser** opens it and **Copy Link** copies its address. A new site can take a few minutes to appear.
 
 Each publish is kept in [Version History](version-history.md) as _Published_. To put an earlier version back on your host, use its **Republish…** there: see [Publishing an earlier version](version-history.md#publishing-an-earlier-version).
 

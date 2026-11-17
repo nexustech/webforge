@@ -17,7 +17,7 @@ export const ai = {
   // change, links to it on other pages included.
   "ai.confirm.removePage": "Allow {app} to delete the page {title}?",
   // A plan (4.12a): one question for a build of many changes, its title the app's.
-  "ai.confirm.plan": "Allow {app} to make these changes: {title}?",
+  "ai.confirm.plan": "Allow {app} to Make These Changes: {title}?",
   "ai.plan.pagesAdded": "It adds the pages {pages}.",
   "ai.plan.pagesRemoved": "It deletes the pages {pages}.",
   "ai.plan.pageRenamed": 'It renames the page "{from}" to "{to}".',
@@ -56,7 +56,7 @@ export const ai = {
   "ai.confirm.yes": "yes",
   "ai.confirm.no": "no",
   // An AI app asks for pictures or files (4.12b): its reason in its own words, quoted.
-  "ai.media.title": "{app} asks you to add pictures or files",
+  "ai.media.title": "{app} Asks You to Add Pictures or Files",
   "ai.media.description":
     'Its reason: "{reason}" Only the files you choose are added to Media, and you can undo it.',
   "ai.media.addFiles": "Add Files…",

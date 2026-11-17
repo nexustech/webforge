@@ -74,11 +74,11 @@ describe("the tour (5.4a, OB-1…OB-3)", () => {
   it("is offered once the quick start has asked, and Not now remembers it as skipped", async () => {
     const { tourState } = setUp("offer");
     expect(card().getAttribute("aria-labelledby")).not.toBeNull();
-    expect(screen.getByRole("heading", { name: "Want a quick tour?" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Want a Quick Tour?" })).toBeTruthy();
     expect(document.activeElement).toBe(card());
     // Shown once: left unanswered (the window closes), it isn't offered again (#787 review).
     expect(tourState()).toBe("skipped");
-    await userEvent.click(screen.getByRole("button", { name: "Not now" }));
+    await userEvent.click(screen.getByRole("button", { name: "Not Now" }));
     expect(screen.queryByRole("region")).toBeNull();
     expect(tourState()).toBe("skipped");
   });
@@ -91,12 +91,12 @@ describe("the tour (5.4a, OB-1…OB-3)", () => {
   it("shows three steps and where help is, with Back, Next, Skip tour and Learn more", async () => {
     const { tourState, open } = setUp("offer");
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Show me around" }));
+    await user.click(screen.getByRole("button", { name: "Show Me Around" }));
     expect(tourState()).toBe("done");
     expect(screen.getByRole("heading", { name: "Change your words" })).toBeTruthy();
     expect(card().textContent).toContain("Step 1 of 3");
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Learn more: Editing on the page" }));
+    await user.click(screen.getByRole("button", { name: "Learn More: Editing on the page" }));
     expect(open).toHaveBeenCalledWith({ page: "editing-on-the-page" });
 
     await user.click(screen.getByRole("button", { name: "Next" }));
@@ -109,7 +109,7 @@ describe("the tour (5.4a, OB-1…OB-3)", () => {
     expect(card().textContent).toContain("Step 3 of 3");
     await user.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("heading", { name: "Help is always here" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Skip tour" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Skip Tour" })).toBeNull();
     await user.click(screen.getByRole("button", { name: "Done" }));
     expect(screen.queryByRole("region")).toBeNull();
     expect(tourState()).toBe("done");
@@ -169,7 +169,7 @@ describe("the first-time tips (5.4a, OB-4…OB-6)", () => {
     expect(screen.getByRole("heading", { name: "Change what you've selected" })).toBeTruthy();
     expect(card().textContent).toContain("Press Enter, or Edit on its bar");
     expect(seen()).toEqual(["selection"]);
-    await userEvent.click(screen.getByRole("button", { name: "Got it" }));
+    await userEvent.click(screen.getByRole("button", { name: "Got It" }));
     expect(screen.queryByRole("region")).toBeNull();
     act(() => session.select(null));
     act(() => session.select(firstElement(session)));
@@ -183,7 +183,7 @@ describe("the first-time tips (5.4a, OB-4…OB-6)", () => {
     // It leaves the focus where it was, and is read out as it appears.
     expect(card().contains(document.activeElement)).toBe(false);
     expect(card().getAttribute("aria-live")).toBe("polite");
-    await userEvent.click(screen.getByRole("button", { name: "Got it" }));
+    await userEvent.click(screen.getByRole("button", { name: "Got It" }));
     expect(screen.queryByRole("region")).toBeNull();
     act(() => preferences.changeMode("content"));
     expect(screen.getByRole("heading", { name: "Content mode" })).toBeTruthy();

@@ -42,7 +42,7 @@ describe("MenuPanel (F-ED-17)", () => {
     await user.click(menu().getByRole("button", { name: "Add to Menu" }));
     await user.click(screen.getByRole("menuitem", { name: "Button…" }));
     // The dialog opens once the menu has closed.
-    const dialog = await openedDialog("Menu button");
+    const dialog = await openedDialog("Menu Button");
     await user.click(dialog.getByRole("textbox", { name: "Label" }));
     await user.paste("Book now");
     await user.click(dialog.getByRole("radio", { name: "Web address" }));
@@ -82,7 +82,7 @@ describe("MenuPanel (F-ED-17)", () => {
     const { menu, rows, user, remove } = setUp();
 
     await user.click(menu().getByRole("button", { name: "About, page" }));
-    const dialog = await openedDialog("Rename menu item");
+    const dialog = await openedDialog("Rename Menu Item");
     // As long as a menu label may be, not the 200 characters a page title may (R10).
     expect(dialog.getByRole("textbox", { name: "Name in the menu" })).toHaveProperty(
       "maxLength",
@@ -141,7 +141,7 @@ describe("MenuPanel (F-ED-17)", () => {
     await user.click(menu().getByRole("button", { name: "Add to Menu" }));
     await user.click(screen.getByRole("menuitem", { name: "Dropdown…" }));
     // Its field has focus, so typing goes there.
-    await openedDialog("Add a dropdown");
+    await openedDialog("Add a Dropdown");
     await user.paste("More");
     await user.click(screen.getByRole("button", { name: "Add Dropdown" }));
     await user.click(menu().getByRole("button", { name: "Actions for About" }));

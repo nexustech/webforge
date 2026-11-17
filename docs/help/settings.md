@@ -4,7 +4,7 @@ id: settings
 title: Settings
 summary: {appName}'s own preferences, such as its appearance, Simple or Advanced mode, your devices and where updates come from.
 related: [site-settings, the-editor, ai-apps, assistant]
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Settings
@@ -48,4 +48,4 @@ How updates arrive is in [Getting started](getting-started.md#updates). On a Mac
 
 ## AI apps
 
-**Open AI apps…** opens [AI apps](ai-apps.md), where you let AI apps such as Claude work on your site. What you change there happens at once, without **Save**. Settings stays open behind it, with any changes you haven't saved yet.
+**Open AI Apps…** opens [AI apps](ai-apps.md), where you let AI apps such as Claude work on your site. What you change there happens at once, without **Save**. Settings stays open behind it, with any changes you haven't saved yet.

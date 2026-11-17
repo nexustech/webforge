@@ -4,7 +4,7 @@ id: themes
 title: Themes, colours and fonts
 summary: Change your whole site's colours, fonts, corners and spacing at once, in the Theme panel or Theme Studio.
 related: [styling, templates, media]
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Themes, colours and fonts
@@ -57,8 +57,8 @@ Built-in themes never change. The first time you change one, {appName} asks you 
 
 **Open Theme Studio**, at the top of the Theme panel (or **Site › Theme Studio…**), shows the whole theme in a window that fills {appName}'s window. Its parts are tabs at the top:
 
-- **Themes:** every theme drawn in its own colours and fonts, to compare. Create a **New theme…** from any theme, and rename or delete your own.
-- **Colours:** every colour and its shades, for the page and for reversed sections side by side. **Colours from an image…** suggests brand colours from your logo or a photo in Media.
+- **Themes:** every theme drawn in its own colours and fonts, to compare. Create a **New Theme…** from any theme, and rename or delete your own.
+- **Colours:** every colour and its shades, for the page and for reversed sections side by side. **Colours from an Image…** suggests brand colours from your logo or a photo in Media.
 - **Text:** size, weight and line spacing for each kind of text.
 - **Styles:** corners, shadows and the other settings, drawn as examples.
 - **Components:** the look of every kind of section and element across the site, such as every Button or every card. Choose which kind from the list beside the tabs. A gradient is added as in **Style This…**: choose its direction, and it starts as Brand to Accent ([Gradients](styling.md#gradients)).
@@ -69,8 +69,8 @@ In **Components**, the kind you chose is shown in the same place. Your changes s
 
 ## Fonts
 
-Choosing a font opens **Choose a font**, which shows each font written in itself. Type your own sample text to try them.
+Choosing a font opens **Choose a Font**, which shows each font written in itself. Type your own sample text to try them.
 
-Fifty fonts come with {appName} and work without the internet. **Browse all fonts** lists many more, which download when you choose one and then work offline too. Only fonts that are free to use on websites are offered. Your website carries its own copy of its fonts, so it never loads them from elsewhere.
+Fifty fonts come with {appName} and work without the internet. **Browse All Fonts** lists many more, which download when you choose one and then work offline too. Only fonts that are free to use on websites are offered. Your website carries its own copy of its fonts, so it never loads them from elsewhere.
 
 You can't add font files of your own yet.

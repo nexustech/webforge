@@ -40,7 +40,7 @@ test.afterEach(async () => {
 });
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
-const dialog = () => page.getByRole("dialog", { name: "AI apps" });
+const dialog = () => page.getByRole("dialog", { name: "AI Apps" });
 const step = (label: string) =>
   page.getByRole("list", { name: "Undo History" }).getByRole("button", { name: label });
 

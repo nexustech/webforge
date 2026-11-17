@@ -5,7 +5,7 @@ title: Elements
 summary: Every element you can put inside a section, what it's for and what you can change.
 components: [Heading, Text, List, ListItem, Image, Carousel, CarouselSlide, EmbedVideo, Button, Spacer, Divider, Icon, SocialLinks, Columns, Column, Tabs, Tab, EmbedMap, Form, FormField, BuyButton]
 related: [sections, add-panel, edit-panel, media, links, forms, custom-code]
-updated: 2026-11-09
+updated: 2026-11-17
 ---
 
 # Elements
@@ -78,7 +78,7 @@ A line between elements, with optional **Text on the line**, such as "or".
 
 ### Icon
 
-One icon. Choose it with **Choose an icon…**, then set its **Size**, **Colour** and **Alignment**. If the icon means something on its own, such as a phone icon used as a link, describe it in **Name for screen readers**. If it's only decoration, leave that empty.
+One icon. Choose it with **Choose an Icon…**, then set its **Size**, **Colour** and **Alignment**. If the icon means something on its own, such as a phone icon used as a link, describe it in **Name for screen readers**. If it's only decoration, leave that empty.
 
 ### Social links
 

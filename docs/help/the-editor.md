@@ -4,7 +4,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # The editor

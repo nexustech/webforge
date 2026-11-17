@@ -4,7 +4,7 @@ id: ai-apps
 title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
 related: [undo-and-history, version-history, site-check]
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # AI apps
@@ -15,13 +15,13 @@ This is off until you turn it on. When it's on, only apps on this computer that 
 
 ## Turning it on
 
-Choose **File › AI Apps…** (or search for it in **Search Commands…**, or choose **Open AI apps…** in [Settings](settings.md#ai-apps)) and tick **Let AI apps connect**. Untick it to cut off every app at once.
+Choose **File › AI Apps…** (or search for it in **Search Commands…**, or choose **Open AI Apps…** in [Settings](settings.md#ai-apps)) and tick **Let AI apps connect**. Untick it to cut off every app at once.
 
 ## Connecting Claude Desktop
 
 You need Claude Desktop installed on this computer.
 
-1. Click **Add AI app**. **Claude Desktop** is already chosen, and named so. Click **Add**.
+1. Click **Add AI App**. **Claude Desktop** is already chosen, and named so. Click **Add**.
 2. {appName} shows the app's **Key**. Click **Copy the key**: you won't see it again, and it stops working if Claude Desktop doesn't use it within 5 minutes.
 3. Click **Install in Claude Desktop**. Claude Desktop opens {appName}'s extension and asks whether to install it.
 4. In Claude Desktop, paste the key into **Key**, and install the extension.
@@ -57,17 +57,17 @@ If {appName} says **{appName}'s address for AI apps has changed**, another progr
 
 ## Starting a new site from a description
 
-You can ask an app to start a whole new site, such as "a site for my garage, Rapidfix Vehicle Repair, in red". The app never makes the site itself. {appName} opens **Start a site** filled in with what the app chose: the kind of business, the name, what you do, a template, its pages, the colours and any contact details. It opens on the last step, so you can check each step with **Back** and change anything.
+You can ask an app to start a whole new site, such as "a site for my garage, Rapidfix Vehicle Repair, in red". The app never makes the site itself. {appName} opens **Start a Site** filled in with what the app chose: the kind of business, the name, what you do, a template, its pages, the colours and any contact details. It opens on the last step, so you can check each step with **Back** and change anything.
 
-Nothing is made until you click **Create site**. The site you have open is saved first, and the new one opens in its place. Click **Cancel** and nothing is made: the app is told you said no.
+Nothing is made until you click **Create Site**. The site you have open is saved first, and the new one opens in its place. Click **Cancel** and nothing is made: the app is told you said no.
 
-An app can't start a new site while you're in [Content mode](the-editor.md#design-and-content-mode), or while you have **Start a site** or **New Site** open yourself.
+An app can't start a new site while you're in [Content mode](the-editor.md#design-and-content-mode), or while you have **Start a Site** or **New Site** open yourself.
 
 ### Build a site from a description
 
 {appName} offers apps a prompt, **Build a site from a description**, which Claude Desktop lists with its other prompts. Choose it, describe your business and the site you want, and the app works in this order:
 
-1. it starts the site with **Start a site**, for you to check and create;
+1. it starts the site with **Start a Site**, for you to check and create;
 2. it makes the pages, sections, text and colours as one set of changes, which you allow once (see [Many changes at once](#many-changes-at-once));
 3. it runs Site Check, and asks you for your own pictures to replace the template's;
 4. it opens the [Preview](preview.md) in your browser;
@@ -77,7 +77,7 @@ An app can't start a new site while you're in [Content mode](the-editor.md#desig
 
 An app never adds a picture itself, and {appName} downloads nothing. To use your own photos, the app asks you: {appName} shows **_app_ asks you to add pictures or files**, with the app's reason, such as "Photos of your workshop and team".
 
-- Click **Add Files…** to choose them on your computer, as **Add images or files…** in [Media](media.md#adding-files) does. They're added to Media as one step in Undo History, and the app is told which you added.
+- Click **Add Files…** to choose them on your computer, as **Add Images or Files…** in [Media](media.md#adding-files) does. They're added to Media as one step in Undo History, and the app is told which you added.
 - Click **Not Now**, or choose no files, and nothing is added.
 
 A site made from a template starts with the template's pictures. Site Check's tip **Pictures from the template** lists those your pages still show, so you and the app know which to replace.
@@ -130,7 +130,7 @@ ChatGPT can't connect to {appName} yet.
 
 ## For developers: Claude Code, VS Code and other apps
 
-Developer tools connect to {appName} directly, at an address on this computer: `http://127.0.0.1:<port>/mcp`. **Add AI app** sets up Claude Code and VS Code for you, and shows the address for any other app.
+Developer tools connect to {appName} directly, at an address on this computer: `http://127.0.0.1:<port>/mcp`. **Add AI App** sets up Claude Code and VS Code for you, and shows the address for any other app.
 
 Unlike Claude Desktop's extension, these tools can't check who answers at the address. While {appName} is closed, another program on this computer could answer there and get the key. So turn {appName}'s server off in the tool while {appName} is closed: in Claude Code, with `/mcp`; in VS Code, with **MCP: List Servers** › **webforge** › **Stop Server**.
 
@@ -138,7 +138,7 @@ Unlike Claude Desktop's extension, these tools can't check who answers at the ad
 
 You need [Claude Code](https://code.claude.com/docs/en/setup) installed.
 
-1. Click **Add AI app**, choose **Claude Code**, and click **Add**.
+1. Click **Add AI App**, choose **Claude Code**, and click **Add**.
 2. Click **Copy the command**, and run it in a terminal (Bash, Zsh or PowerShell). It adds {appName}'s server, named `webforge`, to Claude Code for all your projects:
 
    ```
@@ -169,7 +169,7 @@ If Claude Code says a server named `webforge` already exists, from an earlier ti
 
 You need VS Code with GitHub Copilot, whose agent mode uses {appName}'s tools.
 
-1. Click **Add AI app**, choose **VS Code (GitHub Copilot)**, and click **Add**.
+1. Click **Add AI App**, choose **VS Code (GitHub Copilot)**, and click **Add**.
 2. Click **Copy the key**.
 3. Click **Install in VS Code**. VS Code shows {appName}'s server, named `webforge`: click **Install**.
 4. When VS Code starts the server, it asks for {appName}'s key: paste it. VS Code keeps it in its own secret storage, not in its settings. If it doesn't start the server itself, choose **MCP: List Servers** › **webforge** › **Start Server** within 5 minutes of adding it.
@@ -181,7 +181,7 @@ If VS Code already has a server named `webforge`, from an earlier time you added
 
 ### Other apps
 
-1. Click **Add AI app**, choose **Another app**, give it a **Name** such as "Cursor", and click **Add**.
+1. Click **Add AI App**, choose **Another app**, give it a **Name** such as "Cursor", and click **Add**.
 2. {appName} shows an **Address** and a **Key**. Copy both with **Copy the address** and **Copy the key**.
 3. In the app's settings for MCP servers, add an HTTP (Streamable HTTP) server at that address, with this header:
 

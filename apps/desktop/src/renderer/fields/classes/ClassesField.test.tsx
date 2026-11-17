@@ -70,7 +70,7 @@ describe("the CSS classes field (#276)", () => {
     const { input, onChange, onCommit, user } = setUp();
     // The catalogue comes from the worker once.
     await vi.waitFor(() =>
-      expect(screen.getByRole("button", { name: "Browse classes…" })).toHaveProperty(
+      expect(screen.getByRole("button", { name: "Browse Classes…" })).toHaveProperty(
         "disabled",
         false,
       ),
@@ -99,11 +99,11 @@ describe("the CSS classes field (#276)", () => {
 
   it("browses the classes by category, each previewed with its CSS, and adds one", async () => {
     const { onChange, onCommit, user } = setUp("shadow-lg");
-    const browse = screen.getByRole("button", { name: "Browse classes…" });
+    const browse = screen.getByRole("button", { name: "Browse Classes…" });
     await vi.waitFor(() => expect(browse).toHaveProperty("disabled", false));
 
     await user.click(browse);
-    const picker = within(screen.getByRole("dialog", { name: "Browse classes" }));
+    const picker = within(screen.getByRole("dialog", { name: "Browse Classes" }));
     expect(picker.getByRole("button", { name: "Colours" })).toBeTruthy();
     await user.type(picker.getByRole("searchbox"), "p-4");
     expect(await picker.findByText(".p-4 { padding: 1rem; }")).toBeTruthy();

@@ -2,12 +2,12 @@
 export const onboarding = {
   "command.tour": "Take the Tour",
   // The offer, the first time the editor opens a site made with the quick start (OB-1).
-  "tour.offer.title": "Want a quick tour?",
+  "tour.offer.title": "Want a Quick Tour?",
   "tour.offer.text":
     "Three short steps: change your words, see your site as visitors will, and put it online.",
   "tour.offer.later": "You can take it any time from Help › Take the Tour.",
-  "tour.offer.start": "Show me around",
-  "tour.offer.notNow": "Not now",
+  "tour.offer.start": "Show Me Around",
+  "tour.offer.notNow": "Not Now",
   // The steps (OB-2), each beside the control it's about.
   "tour.region": "Tour: {title}",
   "tour.step": "Step {step} of {count}",
@@ -22,14 +22,14 @@ export const onboarding = {
   "tour.help.title": "Help is always here",
   "tour.help.text":
     "Press F1 for {appName} Help, or a ? button for help with what's beside it. Help › Take the Tour shows you around again.",
-  "tour.learnMore": "Learn more: {page}",
+  "tour.learnMore": "Learn More: {page}",
   "tour.back": "Back",
   "tour.next": "Next",
-  "tour.skip": "Skip tour",
+  "tour.skip": "Skip Tour",
   "tour.done": "Done",
   // First-time tips (OB-4), each shown once, the first time the person reaches its place.
   "tip.label": "Tip",
-  "tip.gotIt": "Got it",
+  "tip.gotIt": "Got It",
   "tip.selection.title": "Change what you've selected",
   "tip.selection.text":
     "Press Enter, or Edit on its bar, to change its text. The bar also moves, hides, copies and deletes it.",

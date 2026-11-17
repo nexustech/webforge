@@ -25,8 +25,8 @@ export const blog = {
   "blog.banner.one": "Editing the design of {name}: changes show on its 1 post",
   "blog.banner.many": "Editing the design of {name}: changes show on all {count} posts",
   // Asked before an element leaves the design, and so every post (D7).
-  "blog.designDelete.title": "Delete {item} from the design of {name}?",
-  "blog.designCut.title": "Cut {item} from the design of {name}?",
+  "blog.designDelete.title": "Delete {item} from the Design of {name}?",
+  "blog.designCut.title": "Cut {item} from the Design of {name}?",
   "blog.designChange": "Every post shows the change.",
   // What an element of the design shows while the post's field is empty, on the canvas only.
   "blog.empty": "The post's {field}: add it in Page Settings",
@@ -42,7 +42,7 @@ export const blog = {
     "Separated by commas: Opening times, News. Each tag gets a page listing its posts.",
   // Import Posts… (6.10b).
   "blog.import": "Import Posts…",
-  "blog.import.chooseTitle": "Import posts",
+  "blog.import.chooseTitle": "Import Posts",
   "blog.import.fileType": "Markdown or CSV",
   "blog.import.done.one": "Imported 1 post",
   "blog.import.done.other": "Imported {count} posts",
@@ -68,7 +68,7 @@ export const blog = {
   "blog.renameDialog.moveHint": "Each post's address changes from {from}/… to {folder}/….",
   "blog.renameDialog.moveHintKept":
     "Each post's address changes from {from}/… to {folder}/…. Links and search results that use the old addresses go on to the new ones. Your blog's feed gets a new address.",
-  "blog.deleteDialog.title": "Delete blog '{name}'?",
+  "blog.deleteDialog.title": "Delete Blog '{name}'?",
   "blog.deleteDialog.description": "It has no posts. Its design goes with it.",
   "blog.deleteDialog.cancel": "Cancel",
   "blog.deleteDialog.confirm": "Delete Blog",

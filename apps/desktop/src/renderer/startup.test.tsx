@@ -93,7 +93,7 @@ describe("StartFailed", () => {
     expect(screen.getByRole("alert").textContent).toContain(
       "Something went wrong starting Webforge. Your work is saved.",
     );
-    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await userEvent.click(screen.getByRole("button", { name: "Try Again" }));
 
     expect(onRetry).toHaveBeenCalledOnce();
   });

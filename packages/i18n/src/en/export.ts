@@ -1,7 +1,7 @@
 /** Exporting the site to a folder or a ZIP file. */
 export const exportSite = {
-  "export.dialogTitle": "Choose a folder for your site",
-  "export.zipDialogTitle": "Save your site as a ZIP file",
+  "export.dialogTitle": "Choose a Folder for Your Site",
+  "export.zipDialogTitle": "Save Your Site as a ZIP File",
   "export.zipFileType": "ZIP file",
   // Why Export Site… is disabled while one runs (#1010).
   "export.running": "An export is already running.",
@@ -21,11 +21,11 @@ export const exportSite = {
   "export.dialog.developerFiles.help":
     "Adds the stylesheet's source, the theme and a README in a developer folder, for a web developer.",
   // Before the export, while the site has no web address (X3).
-  "export.webAddress.title": "Add your site's web address?",
+  "export.webAddress.title": "Add Your Site's Web Address?",
   "export.webAddress.body":
     "It's used for search engines (sitemap) and link previews on social media.",
-  "export.webAddress.add": "Add address",
-  "export.webAddress.skip": "Export without it",
+  "export.webAddress.add": "Add Address",
+  "export.webAddress.skip": "Export Without It",
   "export.webAddress.dontAsk": "Don't ask again for this site",
   "export.working": "Exporting…",
   "export.progress.images": "Preparing image {done} of {total}",
@@ -36,7 +36,7 @@ export const exportSite = {
   "export.cancel": "Cancel",
   "export.cancelling": "Cancelling…",
   // The export report (07).
-  "export.report.title": "Site exported",
+  "export.report.title": "Site Exported",
   "export.report.folder": "Saved in the folder “{name}”.",
   "export.report.zip": "Saved as “{name}”.",
   "export.report.summary": "Pages: {pages} · Files: {files} · Size: {size}",

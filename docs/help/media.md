@@ -4,7 +4,7 @@ id: media
 title: Media
 summary: Add pictures and documents to your site, describe them, and choose what stays in view.
 related: [elements, links, site-check]
-updated: 2026-11-06
+updated: 2026-11-17
 ---
 
 # Media
@@ -13,9 +13,9 @@ updated: 2026-11-06
 
 ## Adding files
 
-- Click **Add images or files…**, or drag files from your computer onto the Media panel.
+- Click **Add Images or Files…**, or drag files from your computer onto the Media panel.
 - Paste a picture onto the page and it's added to Media.
-- In an image option, **Add a new image…** adds one and places it straight away.
+- In an image option, **Add a New Image…** adds one and places it straight away.
 
 {appName} takes:
 
@@ -36,7 +36,7 @@ Select a picture in Media to see:
 
 ## Placing a picture
 
-Image options in the Edit panel have **Choose an image…**. Double-click a picture, or press Enter, to place it. **Alt text here** gives this one place its own description; leave it empty to use the one from Media.
+Image options in the Edit panel have **Choose an Image…**. Double-click a picture, or press Enter, to place it. **Alt text here** gives this one place its own description; leave it empty to use the one from Media.
 
 ## Documents
 

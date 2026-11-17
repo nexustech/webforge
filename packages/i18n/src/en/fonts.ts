@@ -23,9 +23,9 @@ export const fonts = {
   "fonts.pairing.strong": "Strong",
   "fonts.pairing.luxury": "Luxury",
   // A theme font's field and the font picker (2.3a, UX-15).
-  "fonts.choose": "Choose a font…",
+  "fonts.choose": "Choose a Font…",
   "fonts.change": "{name}",
-  "fonts.picker.title": "Choose a font",
+  "fonts.picker.title": "Choose a Font",
   "fonts.picker.description": "Double-click a font, or press Enter, to use it.",
   "fonts.picker.none": "No font matches.",
   "fonts.picker.tile": "Aa",
@@ -33,7 +33,7 @@ export const fonts = {
   "fonts.picker.sample": "The quick brown fox jumps over the lazy dog",
   // Fonts to download (2.3c, S4, P8): Fontsource is reached only when the person asks.
   "fonts.category.toDownload": "To download",
-  "fonts.browse": "Browse all fonts",
+  "fonts.browse": "Browse All Fonts",
   "fonts.browse.loading": "Listing the fonts there are to download…",
   "fonts.browse.listed.one": "1 more font to download, under To download.",
   "fonts.browse.listed.other": "{count} more fonts to download, under To download.",

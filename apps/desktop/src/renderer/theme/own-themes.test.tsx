@@ -157,7 +157,7 @@ describe("My themes (2.23)", () => {
 
     // The first change to the built-in theme asks for a name, in the window's dialog.
     const changed = setColor(session, { names: themes }, "primary", { l: 0.5, c: 0.2, h: 30 });
-    const dialog = await screen.findByRole("dialog", { name: "Save your own version of 'Light'?" });
+    const dialog = await screen.findByRole("dialog", { name: "Save Your Own Version of 'Light'?" });
     const name = within(dialog).getByRole("textbox", { name: "Theme name" });
     expect((name as HTMLInputElement).value).toBe("Light (my version)");
     await userEvent.clear(name);

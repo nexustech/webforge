@@ -121,7 +121,7 @@ describe("the Theme tab (2.3a)", () => {
 
     await vi.waitFor(() => expect(labels(session)).toEqual(["Changed accent colour"]));
     expect(siteWide.confirmSiteWide).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "Change the Accent colour?" }),
+      expect.objectContaining({ action: "Change the Accent Colour?" }),
     );
   });
 });

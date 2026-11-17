@@ -25,7 +25,7 @@ export const find = {
   "findReplace.group.settings": "Site Settings",
   "findReplace.group.shared": "Shared section '{name}'",
   "findReplace.group.design": "The design of {name}",
-  "findReplace.confirm.action": "Replace '{find}' with '{replace}' everywhere?",
+  "findReplace.confirm.action": "Replace '{find}' with '{replace}' Everywhere?",
   "findReplace.history.replacedOne": "Replaced '{find}' with '{replace}'",
   "findReplace.history.replacedAll.one": "Replaced '{find}' with '{replace}' in 1 place",
   "findReplace.history.replacedAll.other": "Replaced '{find}' with '{replace}' in {count} places",

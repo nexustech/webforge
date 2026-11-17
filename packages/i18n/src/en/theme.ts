@@ -25,13 +25,13 @@ export const theme = {
   // The preset (S3); each preset's name is the templates area's (`theme.preset.<name>`).
   "theme.preset.label": "Theme",
   // Switching (D7): asked first, with the pages it changes.
-  "theme.preset.confirm": "Switch to the theme '{name}'?",
+  "theme.preset.confirm": "Switch to the Theme '{name}'?",
   "theme.preset.confirmDescription":
     "Its colours, fonts and styles replace the site's, on every page.",
   "theme.preset.confirmButton": "Switch Theme",
 
   // Colours (the glossary's names are `colour.role.*`) and what their contrast lacks (WCAG AA).
-  "theme.color.confirm": "Change the {name} colour?",
+  "theme.color.confirm": "Change the {name} Colour?",
   "theme.color.confirmReversed": "Change the {name} colour in reversed sections?",
   "theme.color.confirmDescription": "Everything in this colour changes, on every page.",
   "theme.color.confirmButton": "Change Colour",
@@ -60,7 +60,7 @@ export const theme = {
   // The third font (3.22, PF-5): only what an element's or a title's Font sets to Accent uses it.
   "theme.fonts.accent": "Accent",
   "theme.fonts.accentHelp": "For text whose Font is set to Accent in its Style tab.",
-  "theme.fonts.confirm": "Change the fonts?",
+  "theme.fonts.confirm": "Change the Fonts?",
   "theme.fonts.confirmDescription": "The text on every page changes to the new fonts.",
   "theme.fonts.confirmAccentDescription":
     "Text whose Font is set to Accent changes to the new font, on every page.",
@@ -180,13 +180,13 @@ export const theme = {
   "theme.components.previewShow": "Look shown",
   "theme.components.previewNow": "Theme now",
   "theme.components.previewDraft": "With your changes",
-  "theme.components.pending.title": "Apply your changes to every {item}?",
+  "theme.components.pending.title": "Apply Your Changes to Every {item}?",
   "theme.components.pending.description":
     "They aren't in the theme yet. Apply them as one change, or discard them.",
   "theme.components.pending.apply": "Apply Changes",
   "theme.components.pending.discard": "Discard Changes",
   "theme.components.pending.cancel": "Keep Editing",
-  "theme.look.confirm": "Change how every {item} looks?",
+  "theme.look.confirm": "Change How Every {item} Looks?",
   "theme.look.confirm.one": "This restyles the one on the site that has no look of its own.",
   "theme.look.confirm.other":
     "This restyles the {count} on the site that have no look of their own.",
@@ -220,9 +220,9 @@ export const theme = {
 
   // A palette from an image (2.3b, PG-2): brand colours proposed from a logo or photo in Media.
   "theme.image.title": "Colours from an image",
-  "theme.image.choose": "Colours from an image…",
+  "theme.image.choose": "Colours from an Image…",
   "theme.image.hint": "Choose your logo or a photo, and see the brand colours it suggests.",
-  "theme.image.pickerTitle": "Choose an image",
+  "theme.image.pickerTitle": "Choose an Image",
   "theme.image.pickerDescription":
     "Double-click an image, or press Enter, to see the colours it suggests. It stays on this computer.",
   "theme.image.noImages": "Add your logo or a photo to Media first.",
@@ -231,7 +231,7 @@ export const theme = {
   "theme.image.unreadable": "That image couldn't be read. Try another.",
   "theme.image.use": "Use These Colours",
   "theme.image.dismiss": "Not Now",
-  "theme.image.confirm": "Use the colours from '{name}'?",
+  "theme.image.confirm": "Use the Colours from '{name}'?",
   "theme.image.confirmDescription":
     "Brand, Accent and Second accent change, with their text, on every page.",
   "theme.image.confirmButton": "Use Colours",
@@ -268,7 +268,7 @@ export const theme = {
 
   // Your own themes (2.23, PH2-17): built-in themes are read-only, so the first change to one
   // saves the person's own version, by a name they choose.
-  "theme.own.title": "Save your own version of '{name}'?",
+  "theme.own.title": "Save Your Own Version of '{name}'?",
   "theme.own.description":
     "Built-in themes stay as they are. Your change is saved in a theme of your own, which your other sites on this computer can use too.",
   "theme.own.name": "Theme name",
@@ -277,8 +277,8 @@ export const theme = {
   "theme.own.mine": "My themes",
   "theme.own.builtIn": "Built-in themes",
   "theme.own.none": "Themes you save or create are listed here.",
-  "theme.own.new": "New theme…",
-  "theme.own.newTitle": "New theme",
+  "theme.own.new": "New Theme…",
+  "theme.own.newTitle": "New Theme",
   "theme.own.newDescription":
     "Start from a built-in theme or the site's theme, then change it as you like.",
   "theme.own.startFrom": "Start from",
@@ -286,10 +286,10 @@ export const theme = {
   "theme.own.newName": "{name} copy",
   "theme.own.create": "Create Theme",
   "theme.own.rename": "Rename {name}",
-  "theme.own.renameTitle": "Rename theme",
+  "theme.own.renameTitle": "Rename Theme",
   "theme.own.renameButton": "Rename",
   "theme.own.delete": "Delete {name}",
-  "theme.own.deleteTitle": "Delete the theme '{name}'?",
+  "theme.own.deleteTitle": "Delete the Theme '{name}'?",
   "theme.own.deleteDescription": "It's removed from My themes on this computer.",
   "theme.own.deleteInUse":
     "It's removed from My themes on this computer. This site keeps its copy, so it looks the same.",
@@ -304,7 +304,7 @@ export const theme = {
   // The selected item, named so when it has no kind to name.
   "style.item": "item",
   "style.command.any": "Style This…",
-  "style.title": "Style this {item}",
+  "style.title": "Style This {item}",
   "style.tabs": "What to show",
   "style.description":
     "Changes show on the page as you make them. Choose where they apply, then select Apply.",

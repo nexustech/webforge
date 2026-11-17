@@ -38,7 +38,7 @@ test("starts a site from the quick start's answers: the business, a look, pages,
   await stubFileDialogs(app, join(dir, "Rosa's Bakery.wforge"));
 
   // Exactly: the welcome's card says what it does as well.
-  await page.getByRole("button", { name: "Start a site…", exact: true }).click();
+  await page.getByRole("button", { name: "Start a Site…", exact: true }).click();
   const quickStart = page.getByRole("dialog", { name: "Start a site" });
 
   // Your business.
@@ -146,7 +146,7 @@ test("starts a one-page site: every page a section of the home page, the menu sc
   });
   await stubFileDialogs(app, join(dir, "Brightside.wforge"));
 
-  await page.getByRole("button", { name: "Start a site…", exact: true }).click();
+  await page.getByRole("button", { name: "Start a Site…", exact: true }).click();
   const quickStart = page.getByRole("dialog", { name: "Start a site" });
   await quickStart.getByRole("radio", { name: "Trades" }).click();
   await quickStart.getByRole("textbox", { name: "Business or site name" }).fill("Brightside");

@@ -5,7 +5,7 @@ title: Custom Code
 summary: Add your own HTML, CSS or JavaScript, and what {appName} asks when code comes from somewhere else.
 components: [CustomCode]
 related: [elements, site-settings, edit-panel, export, stylesheet]
-updated: 2026-11-13
+updated: 2026-11-17
 ---
 
 # Custom Code
@@ -31,8 +31,8 @@ The **Custom Code** element, in the Add panel's **Advanced** group, places your 
 
 Code runs for everyone who visits your website. Before you preview or export a site whose code was written somewhere other than in {appName} on this computer, {appName} asks first. That includes code in a site someone sent you, or code you pasted in. It lists each piece of code and offers:
 
-- **Keep the code:** you trust where it came from. {appName} won't ask about it again on this computer.
-- **Leave it out:** builds your site without it, this time.
+- **Keep the Code:** you trust where it came from. {appName} won't ask about it again on this computer.
+- **Leave It Out:** builds your site without it, this time.
 - **Review:** shows you the code first.
 
 The Stylesheet counts as code when it can load files (with `url()`, `image-set()` or `@import`) or add words to your pages (with `content:`, a list's markers in quotes, or `@counter-style`), as either could change what visitors see or tell another website they visited. CSS that only changes colours, sizes and spacing is never asked about.

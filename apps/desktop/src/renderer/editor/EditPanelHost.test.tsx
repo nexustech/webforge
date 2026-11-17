@@ -1059,7 +1059,7 @@ describe("EditPanelHost", () => {
 
       // The image is content, like the Hero's texts.
       await user.click(screen.getByRole("tab", { name: "Content" }));
-      await user.click(screen.getByRole("button", { name: "Image Choose an image…" }));
+      await user.click(screen.getByRole("button", { name: "Image Choose an Image…" }));
       await user.dblClick(screen.getByRole("option", { name: "shop.jpg" }));
       const alt = screen.getByLabelText("Alt text here");
       await user.type(alt, "Fresh");
@@ -1096,7 +1096,7 @@ describe("EditPanelHost", () => {
       const steps = labels().length;
 
       await user.click(screen.getByRole("tab", { name: "Content" }));
-      await user.click(screen.getByRole("button", { name: "Background image Choose an image…" }));
+      await user.click(screen.getByRole("button", { name: "Background image Choose an Image…" }));
       await user.dblClick(screen.getByRole("option", { name: "shop.jpg" }));
 
       // Dark's text needs a very strong overlay over any image.
@@ -1144,7 +1144,7 @@ describe("EditPanelHost", () => {
       expect(overlayFor({ ...def.defaults, ...look })).not.toBe(overlayFor(def.defaults));
 
       await user.click(screen.getByRole("tab", { name: "Content" }));
-      await user.click(screen.getByRole("button", { name: "Background image Choose an image…" }));
+      await user.click(screen.getByRole("button", { name: "Background image Choose an Image…" }));
       await user.dblClick(screen.getByRole("option", { name: "shop.jpg" }));
 
       expect(faq()?.overlay).toBe(overlayFor({ ...def.defaults, ...look }));

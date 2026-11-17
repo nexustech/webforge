@@ -82,7 +82,7 @@ describe("MediaPanel", () => {
     const { media: api } = await render();
     expect(container.textContent).toContain("No images or files yet.");
 
-    await act(async () => button("Add images or files")?.click());
+    await act(async () => button("Add Images or Files")?.click());
 
     expect(api.choose).toHaveBeenCalled();
     expect(lastLabel()).toBe("Added image 'shop.jpg'");
