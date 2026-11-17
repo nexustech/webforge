@@ -383,3 +383,13 @@ describe("the site's labels in the owner's words (6.12, CC-1)", () => {
     expect(session.history.document.getState().settings).toEqual(before);
   });
 });
+
+describe("asking AI companies not to train on the site (6.15, CC-9)", () => {
+  it("saves it only when ticked, as in files from before it", () => {
+    const off = checkSettings(edit(full, { askNoAiTraining: false }), full);
+    expect(off.ok && off.settings.search).not.toHaveProperty("askNoAiTraining");
+    const on = checkSettings(edit(full, { askNoAiTraining: true, readableByAi: false }), full);
+    expect(on).toMatchObject({ ok: true, settings: { search: { askNoAiTraining: true } } });
+    expect(toSettingsForm(on.ok ? on.settings : full).askNoAiTraining).toBe(true);
+  });
+});

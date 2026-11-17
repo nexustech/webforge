@@ -116,6 +116,7 @@ export function siteToSnapshot(
       allowIndexing: site.settings.search.allowIndexing,
       includeSitemap: site.settings.search.includeSitemap,
       readableByAi: site.settings.search.readableByAi ?? false,
+      ...(site.settings.search.askNoAiTraining === true ? { askNoAiTraining: true } : {}),
       ...(site.settings.general.description === undefined
         ? {}
         : { description: site.settings.general.description }),

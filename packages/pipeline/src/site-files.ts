@@ -29,7 +29,7 @@ export function pageTitle(site: SiteSnapshot, page: SitePage): string {
 const pageAddress = exportedAddress;
 
 /** The site's search settings, with what a snapshot without them means. */
-export function searchOf(site: SiteSnapshot): NonNullable<SiteSnapshot["search"]> {
+function searchOf(site: SiteSnapshot): NonNullable<SiteSnapshot["search"]> {
   return site.search ?? { allowIndexing: true, includeSitemap: true, readableByAi: false };
 }
 
@@ -136,13 +136,44 @@ export function webManifest(site: SiteSnapshot, icons: readonly SiteIcon[]): str
 }
 
 /**
+ * The crawlers AI companies train their models with (6.15, CC-9), by the name each gives in
+ * `robots.txt`: what *Ask AI companies not to train on this site* asks to stay away. The one list;
+ * add a company's crawler here.
+ */
+export const AI_TRAINING_CRAWLERS = [
+  "GPTBot",
+  "ClaudeBot",
+  "Google-Extended",
+  "CCBot",
+  "Applebot-Extended",
+  "PerplexityBot",
+  "Bytespider",
+  "meta-externalagent",
+] as const;
+
+/**
+ * Whether the export writes AI tools' copies of the site (`llms.txt`, F-EX-5): when Site Settings
+ * ask for them, and never while they ask AI companies not to train on it (6.15), which says the
+ * opposite.
+ */
+export function readableByAi(site: SiteSnapshot): boolean {
+  const search = searchOf(site);
+  return search.readableByAi && search.askNoAiTraining !== true;
+}
+
+/**
  * `robots.txt` (3.5): every page open to search engines, with the sitemap's address when there is
  * one. Crawling stays allowed when Site Settings keep the site out of search: its pages say
- * `noindex`, which a search engine only reads on a page it may fetch (3.15, SEO-3).
+ * `noindex`, which a search engine only reads on a page it may fetch (3.15, SEO-3). When Site
+ * Settings ask AI companies not to train on the site (6.15, CC-9), their crawlers are asked to
+ * stay away: a request, which a crawler may ignore.
  */
 export function robotsTxt(site: SiteSnapshot): string {
   const address = siteAddress(site);
   return [
+    ...(searchOf(site).askNoAiTraining === true
+      ? [...AI_TRAINING_CRAWLERS.map((crawler) => `User-agent: ${crawler}`), "Disallow: /", ""]
+      : []),
     "User-agent: *",
     "Allow: /",
     ...(hasSitemap(site) && address !== undefined ? ["", `Sitemap: ${address}/sitemap.xml`] : []),

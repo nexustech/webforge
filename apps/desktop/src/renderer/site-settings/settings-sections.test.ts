@@ -158,3 +158,37 @@ describe("Site Settings' Labels on your site (6.12, CC-1)", () => {
     ]);
   });
 });
+
+describe("Site Settings' Ask AI companies not to train on this site (6.15, CC-9)", () => {
+  const settings = defaultSiteSettings("Rosa's Bakery", "en");
+  const spec = siteSettingsSpec(settings, { images: [], imageUrl: () => "" });
+  const fieldsFor = (values: SettingsForm) =>
+    typeof spec.fields === "function" ? spec.fields(values) : spec.fields;
+
+  it("is a tick box in General, off by default", () => {
+    const values = toSettingsForm(settings);
+    expect(values.askNoAiTraining).toBe(false);
+    expect(fieldsFor(values).find((each) => each.name === "askNoAiTraining")).toMatchObject({
+      kind: "toggle",
+      group: "general",
+      path: "search.askNoAiTraining",
+    });
+  });
+
+  it("turns Help AI tools read your site off when ticked, and keeps it off while it's on", () => {
+    const before = { ...toSettingsForm(settings), readableByAi: true };
+    const ticked = spec.adjust?.({ ...before, askNoAiTraining: true }, before);
+    expect(ticked).toMatchObject({ askNoAiTraining: true, readableByAi: false });
+    if (ticked === undefined) throw new Error("no adjust");
+
+    const readable = fieldsFor(ticked).find((each) => each.name === "readableByAi");
+    expect(readable).toMatchObject({ disabled: true });
+    expect(fieldsFor(before).find((each) => each.name === "readableByAi")).not.toHaveProperty(
+      "disabled",
+    );
+    // Unticked again, AI tools' copies stay as they are: the owner turns them back on.
+    expect(spec.adjust?.({ ...ticked, askNoAiTraining: false }, ticked)).toMatchObject({
+      readableByAi: false,
+    });
+  });
+});

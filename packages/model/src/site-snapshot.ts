@@ -251,6 +251,11 @@ export type SiteSearch = {
   readonly allowIndexing: boolean;
   readonly includeSitemap: boolean;
   readonly readableByAi: boolean;
+  /**
+   * Whether `robots.txt` asks AI companies' crawlers not to train on the site (6.15, CC-9); no
+   * `llms.txt` then, whatever `readableByAi` says. Off when left out.
+   */
+  readonly askNoAiTraining?: boolean | undefined;
   /** The site's description (Site Settings), for `llms.txt`; a page's own falls back to it. */
   readonly description?: string | undefined;
   /** `@name`, for `twitter:site`. */
@@ -390,6 +395,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
           allowIndexing: z.boolean(),
           includeSitemap: z.boolean(),
           readableByAi: z.boolean(),
+          askNoAiTraining: z.boolean().optional(),
           description: z.string().max(SITE_DESCRIPTION_MAX).optional(),
           xHandle: z
             .string()

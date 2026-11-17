@@ -83,6 +83,8 @@ export type SettingsForm = {
   readonly allowIndexing: boolean;
   readonly includeSitemap: boolean;
   readonly readableByAi: boolean;
+  /** Asking AI companies not to train on the site, in `robots.txt` (6.15, CC-9). */
+  readonly askNoAiTraining: boolean;
   /** Google's and Bing's verification codes, or the tags they come in (3.15, SEO-8). */
   readonly googleVerification: string;
   readonly bingVerification: string;
@@ -137,6 +139,7 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     allowIndexing: search.allowIndexing,
     includeSitemap: search.includeSitemap,
     readableByAi: search.readableByAi === true,
+    askNoAiTraining: search.askNoAiTraining === true,
     googleVerification: search.verification?.google ?? "",
     bingVerification: search.verification?.bing ?? "",
     keptAddresses: (search.keptAddresses ?? []).map((kept, index) => ({
@@ -304,6 +307,8 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       ...(form.readableByAi || previous.search.readableByAi !== undefined
         ? { readableByAi: form.readableByAi }
         : {}),
+      // Absent when off (6.15), as in files from before it.
+      ...(form.askNoAiTraining ? { askNoAiTraining: true } : {}),
       ...verificationOf(form),
       ...keptAddressesOf(form),
     },
