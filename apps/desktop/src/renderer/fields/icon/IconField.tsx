@@ -1,4 +1,4 @@
-import { Button, type FieldRendererProps, Picker } from "@webforge/editor-ui";
+import { Button, type FieldRendererProps, Picker, WithTooltip } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { ICON_NAMES, iconNameOf, LucideIcon } from "@webforge/site-components";
 // Search data only the picker needs, so it stays out of the site components and the export.
@@ -43,26 +43,34 @@ export function IconField({
     setPicking(false);
   };
 
+  const action =
+    current === undefined
+      ? t("site.icon.choose")
+      : t("site.icon.change", { name: current.replaceAll("-", " ") });
+
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {current === undefined ? null : <LucideIcon name={current} className="size-5 shrink-0" />}
-      <Button
-        id={id}
-        type="button"
-        size="sm"
-        variant="outline"
-        // "Icon, Choose an icon…": the field's label, then what the button does.
-        aria-labelledby={`${labelId} ${actionId}`}
-        aria-haspopup="dialog"
-        disabled={disabled}
-        onClick={() => setPicking(true)}
-      >
-        <span id={actionId}>
-          {current === undefined
-            ? t("site.icon.choose")
-            : t("site.icon.change", { name: current.replaceAll("-", " ") })}
-        </span>
-      </Button>
+      {/* A long icon name shortens the label rather than widen the panel; a tooltip shows it whole
+          while it's cut, and the accessible name keeps it whole (#1015). */}
+      <WithTooltip tooltip={action} whenCut>
+        <Button
+          id={id}
+          type="button"
+          size="sm"
+          variant="outline"
+          className="min-w-0 max-w-full shrink"
+          // "Icon, Choose an icon…": the field's label, then what the button does.
+          aria-labelledby={`${labelId} ${actionId}`}
+          aria-haspopup="dialog"
+          disabled={disabled}
+          onClick={() => setPicking(true)}
+        >
+          <span id={actionId} className="truncate">
+            {action}
+          </span>
+        </Button>
+      </WithTooltip>
       {current === undefined ? null : (
         <Button
           type="button"

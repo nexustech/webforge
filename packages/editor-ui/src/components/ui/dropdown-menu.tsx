@@ -30,7 +30,7 @@ export function DropdownMenuContent({
       <DropdownMenuPrimitive.Content
         data-slot="dropdown-menu-content"
         sideOffset={sideOffset}
-        className={cn(menuStyles.content, className)}
+        className={cn(menuStyles.content, menuStyles.height.dropdownMenu, className)}
         {...props}
         onAnimationStart={closing.onAnimationStart}
         onPointerDownOutside={closing.onPointerDownOutside}
@@ -187,7 +187,7 @@ export function DropdownMenuSubContent({
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.SubContent
         data-slot="dropdown-menu-sub-content"
-        className={cn(menuStyles.content, className)}
+        className={cn(menuStyles.content, menuStyles.height.dropdownMenu, className)}
         {...props}
       />
     </DropdownMenuPrimitive.Portal>

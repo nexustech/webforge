@@ -59,7 +59,7 @@ export function MenubarContent({
         align={align}
         alignOffset={alignOffset}
         sideOffset={sideOffset}
-        className={cn(menuStyles.content, "min-w-48", className)}
+        className={cn(menuStyles.content, menuStyles.height.menubar, "min-w-48", className)}
         {...props}
         onAnimationStart={closing.onAnimationStart}
         onPointerDownOutside={closing.onPointerDownOutside}
@@ -168,7 +168,7 @@ export function MenubarSubContent({
     <MenubarPrimitive.Portal>
       <MenubarPrimitive.SubContent
         data-slot="menubar-sub-content"
-        className={cn(menuStyles.content, className)}
+        className={cn(menuStyles.content, menuStyles.height.menubar, className)}
         {...props}
       />
     </MenubarPrimitive.Portal>

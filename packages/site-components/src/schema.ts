@@ -510,8 +510,16 @@ export type ValuesOf<
  * goes on the element that holds them, Puck's drop zone on the canvas and a `<div>` in the export,
  * so a layout set there (a grid) lays out the slot's elements alike in both. Without one, the
  * export adds no element: the elements are the component's own children.
+ *
+ * `as` makes that element a list, `<ol>` or `<ul>`, for a slot whose elements are each an `<li>`
+ * (a Steps section's steps, #1134). Puck's drop zone takes the same `as`. On the canvas each
+ * element still sits in Puck's wrapper inside the list, so the list's layout is a grid or flex,
+ * never a rule for its own `li`s.
  */
-export type SlotComponent = ComponentType<{ readonly className?: string }>;
+export type SlotComponent = ComponentType<{
+  readonly className?: string;
+  readonly as?: "ol" | "ul";
+}>;
 
 /** What a component's `render` gets, from `defineComponent`'s fields. */
 export type RenderPropsOf<
