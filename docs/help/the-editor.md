@@ -92,7 +92,7 @@ Changes you make while viewing Tablet or Mobile can apply to that device only. S
 
 ## Making everything bigger or smaller
 
-The zoom above changes only the page on the canvas. To make all of {appName} bigger or smaller (its menus, panels and text, the Help window too), use the **View** menu:
+The zoom above changes only the page on the canvas. To make all of {appName} bigger or smaller (its menus, panels and text, the Help window too), choose a **Text size** in [Settings](settings.md#interface), or use the **View** menu:
 
 - **Zoom In Interface** (Ctrl+Alt+=)
 - **Zoom Out Interface** (Ctrl+Alt+−)

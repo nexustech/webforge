@@ -303,7 +303,7 @@ function DocumentTile({ file }: { readonly file: FileMeta }) {
     <span className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-1">
       <Icon aria-hidden className="size-6 text-muted-foreground" />
       {file.size === undefined ? null : (
-        <span className="text-[0.6875rem] text-muted-foreground">{fileSizeLabel(file.size)}</span>
+        <span className="text-2xs text-muted-foreground">{fileSizeLabel(file.size)}</span>
       )}
     </span>
   );

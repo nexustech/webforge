@@ -65,6 +65,32 @@ describe("the icon field (F-ED-22)", () => {
     expect(button()?.icon).toBeUndefined();
     expect(labels().at(-1)).toBe("Changed Button icon");
   });
+
+  it("shortens a long icon's name to fit the panel, showing it whole on hover (#1015)", async () => {
+    const { session, user } = setUp();
+    act(() =>
+      session.edit("props", "Gave it an icon", (draft) => {
+        const section = draft.pages[draft.homePageId]?.doc.content[0];
+        const node = (section?.props.content as NodeDoc[] | undefined)?.at(-1);
+        if (node !== undefined) node.props.icon = "croissant";
+      }),
+    );
+    const change = screen.getByRole("button", { name: "Icon Change Icon (croissant)…" });
+    // It may shrink below its text, which then ends in "…", rather than widen the panel. On
+    // Linux's wider font the name took 9 px more than the panel had.
+    expect(change.className).toMatch(/(^| )shrink( |$)/);
+    expect(change.className).toContain("min-w-0");
+    const label = within(change).getByText("Change Icon (croissant)…");
+    expect(label.className).toContain("truncate");
+
+    // A test's page lays nothing out: cut it short by hand.
+    Object.defineProperty(label, "scrollWidth", { configurable: true, value: 180 });
+    Object.defineProperty(label, "clientWidth", { configurable: true, value: 120 });
+    await user.hover(change);
+    expect((await screen.findByRole("tooltip", {}, { timeout: 2000 })).textContent).toBe(
+      "Change Icon (croissant)…",
+    );
+  });
 });
 
 describe("a List's icon (F-ED-22)", () => {

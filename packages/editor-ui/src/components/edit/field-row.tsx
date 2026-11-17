@@ -242,7 +242,7 @@ export function FieldRow({
             </p>
           )}
           {field.help === undefined ? null : (
-            <p className="text-xs text-muted-foreground">{field.help}</p>
+            <p className="text-2xs text-muted-foreground">{field.help}</p>
           )}
           {field.source === undefined ? null : <SourceLine source={field.source} />}
         </div>
