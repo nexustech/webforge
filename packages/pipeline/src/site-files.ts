@@ -29,7 +29,7 @@ export function pageTitle(site: SiteSnapshot, page: SitePage): string {
 const pageAddress = exportedAddress;
 
 /** The site's search settings, with what a snapshot without them means. */
-export function searchOf(site: SiteSnapshot): NonNullable<SiteSnapshot["search"]> {
+function searchOf(site: SiteSnapshot): NonNullable<SiteSnapshot["search"]> {
   return site.search ?? { allowIndexing: true, includeSitemap: true, readableByAi: false };
 }
 
