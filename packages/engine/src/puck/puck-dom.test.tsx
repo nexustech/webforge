@@ -168,6 +168,38 @@ describe("Puck's DOM contract (R8)", () => {
     expect(hovered()).toEqual([expect.stringMatching(/^Text/)]);
   });
 
+  it("keeps a hovered element hovered with the pointer on its +, until it leaves (#1129)", async () => {
+    const heading = element.querySelector(componentSelector("a"));
+    const text = element.querySelector(componentSelector("t"));
+    if (heading == null || text == null) throw new Error("the page isn't drawn as expected");
+    const hovered = () =>
+      [...element.querySelectorAll(HOVERED_COMPONENT)].map((overlay) => overlay.textContent);
+    const plus = () => element.querySelector('.wf-outline[data-wf-id="a"] .wf-add');
+    const move = async (from: Element | null, to: Element) => {
+      await act(async () => {
+        from?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: to }));
+        to.dispatchEvent(new MouseEvent("mouseover", { bubbles: true, relatedTarget: from }));
+      });
+      await settle();
+    };
+
+    await move(null, heading);
+    const add = plus();
+    if (add === null) throw new Error("a hovered section has no +");
+    // Onto its +, outside the wrapper, in Puck's overlay: the Heading stays hovered, + and all.
+    await move(heading, add);
+    expect(hovered()).toEqual([expect.stringMatching(/^Heading/)]);
+    expect(plus()).toBe(add);
+    // Back onto the Heading, then onto the + again.
+    await move(add, heading);
+    await move(heading, add);
+    expect(plus()).toBe(add);
+    // Off the + onto the next element: that one alone is hovered, and the + goes.
+    await move(add, text);
+    expect(hovered()).toEqual([expect.stringMatching(/^Text/)]);
+    expect(plus()).toBeNull();
+  });
+
   it("draws a drag source as an item of Puck's drawer", async () => {
     const item = document.createElement("div");
     document.body.append(item);
