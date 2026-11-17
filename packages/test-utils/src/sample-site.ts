@@ -258,6 +258,34 @@ export function sampleSite(): SiteSnapshot {
               },
             },
             {
+              // A Table of three columns, its rows' fourth cells kept but not shown (6.16c).
+              type: "Section",
+              props: {
+                id: "prices",
+                content: [
+                  { type: "Heading", props: { id: "prices-title", text: "Bread prices" } },
+                  {
+                    type: "Table",
+                    props: {
+                      id: "prices-table",
+                      columns: "3",
+                      heading1: "Loaf",
+                      heading2: "Weight",
+                      heading3: "Price",
+                      heading4: "Baker",
+                      rows: [
+                        ["Sourdough", "800 g", "£4.20"],
+                        ["Rye", "600 g", "£3.60"],
+                      ].map(([cell1, cell2, cell3], index) => ({
+                        type: "TableRow",
+                        props: { id: `prices-row-${index}`, cell1, cell2, cell3, cell4: "Rosa" },
+                      })),
+                    },
+                  },
+                ],
+              },
+            },
+            {
               // Opens each image larger in its lightbox (2.7a).
               type: "Gallery",
               props: {

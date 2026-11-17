@@ -5,6 +5,7 @@ import {
   type CollectionField,
   collectionById,
   findNode,
+  findParent,
   type NodeDoc,
   type PageDoc,
   type PageId,
@@ -35,6 +36,11 @@ export type FieldTarget = {
   readonly page: PageDoc;
   readonly node: NodeDoc;
   readonly component: ComponentDef;
+  /**
+   * The element holding it, where it is kept (6.16c): a Table row's Table. None for a section,
+   * whether on the page, in the Header or Footer, or a copy's shared section.
+   */
+  readonly parent: NodeDoc | undefined;
   /** The element's id as the canvas shows it: two copies show one element under two ids. */
   readonly id: string;
   /** Set for an element of the shared Header or Footer: its changes go to the site's layout. */
@@ -90,12 +96,19 @@ export function fieldTarget(
   const design = typeof home === "object" ? home : undefined;
   const inCopy =
     ownNode === undefined && home === undefined ? copySelection(site, pageId, nodeId) : undefined;
-  const node =
-    home === undefined ? (ownNode ?? inCopy?.node) : findNode(nodesAtHome(site, home), isSelected);
+  // The nodes the element is kept among, where its parent is too.
+  const tree =
+    home !== undefined
+      ? nodesAtHome(site, home)
+      : ownNode === undefined && inCopy !== undefined
+        ? [inCopy.shared.section]
+        : page.content;
+  const node = home === undefined ? (ownNode ?? inCopy?.node) : findNode(tree, isSelected);
   const component = node === undefined ? undefined : library.components[node.type];
   if (node === undefined || component === undefined) {
     return undefined;
   }
+  const parent = findParent(tree, node.props.id);
   const id = nodeId;
 
   // The theme's look for the element's kind (3.12, CT-1): what a field it doesn't set takes.
@@ -150,6 +163,7 @@ export function fieldTarget(
     page,
     node,
     component,
+    parent,
     id,
     region,
     design,

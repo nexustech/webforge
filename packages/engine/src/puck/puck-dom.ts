@@ -44,7 +44,20 @@ export function componentSelector(id: string): string {
  * than the element (a Small Image in a wide column).
  */
 export function elementOf(document: Document, id: string): Element | null | undefined {
-  return document.querySelector(componentSelector(id))?.firstElementChild;
+  const wrapper = document.querySelector(componentSelector(id));
+  return wrapper === null ? undefined : shownElementOf(wrapper);
+}
+
+/**
+ * What to measure for the element in Puck's `wrapper`: the element it draws, or the wrapper itself
+ * when that element has no box of its own (a table row, laid out through its wrapper, 6.16c).
+ */
+export function shownElementOf(wrapper: Element): Element | null {
+  const element = wrapper.firstElementChild;
+  const view = wrapper.ownerDocument.defaultView;
+  return element !== null && view?.getComputedStyle(element).display === "contents"
+    ? wrapper
+    : element;
 }
 
 /** Puck's overlay over a component on the canvas, which holds its outline and action bar. */
@@ -55,6 +68,22 @@ export const DRAWER_ITEM = "[data-puck-drawer-item]";
 
 /** The page's own drop zone, which holds its top-level elements. */
 export const ROOT_DROP_ZONE = '[data-puck-dropzone="root:default-zone"]';
+
+/** Any drop zone: the page's, or a slot's, which holds an element's elements (a Table's rows). */
+export const COMPONENT_DROP_ZONE = "[data-puck-dropzone]";
+
+/**
+ * A table row's wrapper on the canvas (6.16c): the wrapper of an element drawn as a `<tr>`, in a
+ * table's body, which is the slot's drop zone (`as: "tbody"`). The canvas styles (`chrome.tsx`)
+ * draw the wrapper as the row, keyed on the row, never on a component's name.
+ */
+export const TABLE_ROW_WRAPPER = `tbody${COMPONENT_DROP_ZONE} > ${COMPONENT}:has(> tr)`;
+
+/**
+ * A table's body with no rows on the canvas (6.16c): a slot's drop zone, which Puck keeps open
+ * with a minimum height that a table's body, laid out as one, doesn't take (`chrome.tsx`).
+ */
+export const EMPTY_TABLE_BODY = `tbody${COMPONENT_DROP_ZONE}:not(:has(> ${COMPONENT}))`;
 
 /** A rich-text editor (Tiptap's ProseMirror) on the canvas. */
 export const RICH_TEXT = ".ProseMirror";

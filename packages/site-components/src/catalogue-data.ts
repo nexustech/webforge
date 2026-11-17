@@ -135,6 +135,20 @@ export const catalogueComponentSchema = z.strictObject({
   /** The fields each layout doesn't use (#311): its pictures aren't exported, nor checked (#670). */
   variantHides: z.record(z.string(), z.array(z.string())).optional(),
   /**
+   * The fields shown only while a number field, its own or its parent's, is at least some number
+   * (6.16c): a Table's headings and its rows' cells past its Columns. Not exported, nor checked.
+   */
+  shownAtLeast: z
+    .record(
+      z.string(),
+      z.strictObject({
+        field: z.string(),
+        atLeast: z.int(),
+        of: z.literal("parent").optional(),
+      }),
+    )
+    .optional(),
+  /**
    * The text style its text is set in (#670): one, or one for each value of a field (a Heading's
    * size), so Site Check knows how much contrast it needs, as the colour field does.
    */

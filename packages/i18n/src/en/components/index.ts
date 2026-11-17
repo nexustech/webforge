@@ -20,6 +20,7 @@ import { sections } from "./sections.js";
 import { shared } from "./shared.js";
 import { stats } from "./stats.js";
 import { steps } from "./steps.js";
+import { table } from "./table.js";
 import { tabs } from "./tabs.js";
 import { team } from "./team.js";
 import { testimonials } from "./testimonials.js";
@@ -55,6 +56,7 @@ export const componentFamilies = {
   contactButtons,
   steps,
   accordion,
+  table,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -84,4 +86,5 @@ export const components = {
   ...contactButtons,
   ...steps,
   ...accordion,
+  ...table,
 } as const;

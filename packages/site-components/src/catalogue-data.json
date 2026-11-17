@@ -1397,7 +1397,8 @@
             "Tabs",
             "CustomCode",
             "PostTags",
-            "Accordion"
+            "Accordion",
+            "Table"
           ]
         },
         "contentWidth": {
@@ -2553,7 +2554,8 @@
             "Tabs",
             "CustomCode",
             "PostTags",
-            "Accordion"
+            "Accordion",
+            "Table"
           ]
         }
       },
@@ -7911,7 +7913,8 @@
             "Tabs",
             "CustomCode",
             "PostTags",
-            "Accordion"
+            "Accordion",
+            "Table"
           ]
         }
       },
@@ -9537,6 +9540,269 @@
       "defaults": {
         "title": "Item 1",
         "text": "<p>What visitors see when they open this item.</p>"
+      }
+    },
+    "Table": {
+      "label": "Table",
+      "place": "element",
+      "category": "Layout",
+      "appearance": "all",
+      "deeper": "element",
+      "fields": {
+        "columns": {
+          "kind": "select",
+          "label": "Columns",
+          "help": "With fewer columns the last ones are hidden, and keep what's in them for when you add them back.",
+          "options": [
+            {
+              "label": "2",
+              "value": "2"
+            },
+            {
+              "label": "3",
+              "value": "3"
+            },
+            {
+              "label": "4",
+              "value": "4"
+            },
+            {
+              "label": "5",
+              "value": "5"
+            },
+            {
+              "label": "6",
+              "value": "6"
+            }
+          ]
+        },
+        "heading1": {
+          "kind": "text",
+          "label": "Heading 1"
+        },
+        "heading2": {
+          "kind": "text",
+          "label": "Heading 2"
+        },
+        "heading3": {
+          "kind": "text",
+          "label": "Heading 3"
+        },
+        "heading4": {
+          "kind": "text",
+          "label": "Heading 4"
+        },
+        "heading5": {
+          "kind": "text",
+          "label": "Heading 5"
+        },
+        "heading6": {
+          "kind": "text",
+          "label": "Heading 6"
+        },
+        "rows": {
+          "kind": "slot",
+          "label": "Rows",
+          "allow": [
+            "TableRow"
+          ]
+        },
+        "margin": {
+          "kind": "box",
+          "label": "Margin",
+          "property": "margin",
+          "responsive": true,
+          "sides": [
+            "top",
+            "bottom"
+          ]
+        },
+        "entrance": {
+          "kind": "select",
+          "label": "Entrance animation",
+          "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+          "group": "style",
+          "options": [
+            {
+              "label": "None",
+              "value": "none"
+            },
+            {
+              "label": "Fade in",
+              "value": "fade"
+            },
+            {
+              "label": "Slide up",
+              "value": "slideUp"
+            },
+            {
+              "label": "Slide in from the left",
+              "value": "slideLeft"
+            },
+            {
+              "label": "Slide in from the right",
+              "value": "slideRight"
+            },
+            {
+              "label": "Zoom in",
+              "value": "zoom"
+            }
+          ]
+        },
+        "entranceDelay": {
+          "kind": "slider",
+          "label": "Delay",
+          "group": "style",
+          "steps": [
+            {
+              "label": "None",
+              "value": "none"
+            },
+            {
+              "label": "Short",
+              "value": "short"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Long",
+              "value": "long"
+            }
+          ]
+        }
+      },
+      "defaults": {
+        "columns": "2",
+        "heading1": "Item",
+        "heading2": "Price",
+        "heading3": "Notes",
+        "heading4": "",
+        "heading5": "",
+        "heading6": "",
+        "rows": [
+          {
+            "type": "TableRow",
+            "props": {
+              "id": "table-row-1",
+              "cell1": "Something you offer",
+              "cell2": "£10",
+              "cell3": "",
+              "cell4": "",
+              "cell5": "",
+              "cell6": ""
+            }
+          },
+          {
+            "type": "TableRow",
+            "props": {
+              "id": "table-row-2",
+              "cell1": "Something you offer",
+              "cell2": "£10",
+              "cell3": "",
+              "cell4": "",
+              "cell5": "",
+              "cell6": ""
+            }
+          },
+          {
+            "type": "TableRow",
+            "props": {
+              "id": "table-row-3",
+              "cell1": "Something you offer",
+              "cell2": "£10",
+              "cell3": "",
+              "cell4": "",
+              "cell5": "",
+              "cell6": ""
+            }
+          }
+        ]
+      },
+      "shownAtLeast": {
+        "heading3": {
+          "field": "columns",
+          "atLeast": 3
+        },
+        "heading4": {
+          "field": "columns",
+          "atLeast": 4
+        },
+        "heading5": {
+          "field": "columns",
+          "atLeast": 5
+        },
+        "heading6": {
+          "field": "columns",
+          "atLeast": 6
+        }
+      }
+    },
+    "TableRow": {
+      "label": "Table row",
+      "place": "child",
+      "fields": {
+        "cell1": {
+          "kind": "text",
+          "label": "Column 1",
+          "inline": true
+        },
+        "cell2": {
+          "kind": "text",
+          "label": "Column 2",
+          "inline": true
+        },
+        "cell3": {
+          "kind": "text",
+          "label": "Column 3",
+          "inline": true
+        },
+        "cell4": {
+          "kind": "text",
+          "label": "Column 4",
+          "inline": true
+        },
+        "cell5": {
+          "kind": "text",
+          "label": "Column 5",
+          "inline": true
+        },
+        "cell6": {
+          "kind": "text",
+          "label": "Column 6",
+          "inline": true
+        }
+      },
+      "defaults": {
+        "cell1": "Something you offer",
+        "cell2": "£10",
+        "cell3": "",
+        "cell4": "",
+        "cell5": "",
+        "cell6": ""
+      },
+      "shownAtLeast": {
+        "cell3": {
+          "field": "columns",
+          "atLeast": 3,
+          "of": "parent"
+        },
+        "cell4": {
+          "field": "columns",
+          "atLeast": 4,
+          "of": "parent"
+        },
+        "cell5": {
+          "field": "columns",
+          "atLeast": 5,
+          "of": "parent"
+        },
+        "cell6": {
+          "field": "columns",
+          "atLeast": 6,
+          "of": "parent"
+        }
       }
     }
   }

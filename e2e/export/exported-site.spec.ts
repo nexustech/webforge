@@ -586,6 +586,64 @@ test.describe("exported site from disk", () => {
     });
   });
 
+  test.describe("table (6.16c)", () => {
+    const table = (page: Page) => page.getByRole("table");
+
+    test("is a table of its columns' headings and cells, the hidden column left out", async ({
+      page,
+    }) => {
+      await open(page, "about.html");
+
+      await expect(table(page).getByRole("columnheader")).toHaveText(["Loaf", "Weight", "Price"]);
+      expect(
+        await table(page)
+          .locator("th")
+          .evaluateAll((each) => each.map((th) => th.getAttribute("scope"))),
+      ).toEqual(["col", "col", "col"]);
+      await expect(table(page).getByRole("row").nth(1).getByRole("cell")).toHaveText([
+        "Sourdough",
+        "800 g",
+        "£4.20",
+      ]);
+      // A fourth cell, kept in the site, isn't drawn while the Table has three columns.
+      await expect(table(page)).not.toContainText("Rosa");
+    });
+
+    test("stacks each row as heading and value pairs on a phone, still read as a table", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 375, height: 800 });
+      await open(page, "about.html");
+
+      // Every cell shows its column's heading beside its value, the value under the one before.
+      const cells = table(page).getByRole("row").nth(1).getByRole("cell");
+      await expect(cells).toHaveCount(3);
+      const labels = await cells.evaluateAll((each) =>
+        each.map((cell) => getComputedStyle(cell, "::before").content),
+      );
+      expect(labels.map((label) => label.replace(/\s*\/\s*""$/, ""))).toEqual([
+        '"Loaf"',
+        '"Weight"',
+        '"Price"',
+      ]);
+      const boxes = await cells.evaluateAll((each) =>
+        each.map((cell) => cell.getBoundingClientRect().toJSON() as DOMRect),
+      );
+      for (const [above, below] of boxes.slice(0, -1).map((box, i) => [box, boxes[i + 1]])) {
+        expect(below?.top ?? 0).toBeGreaterThanOrEqual((above?.bottom ?? 0) - 1);
+      }
+      // Nothing to scroll sideways.
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+      // Its headings are still its columns' for a screen reader, though shown no more.
+      await expect(table(page).getByRole("columnheader")).toHaveCount(3);
+
+      const results = await new AxeBuilder({ page }).include(".site-table").analyze();
+      expect(results.violations).toEqual([]);
+    });
+  });
+
   test.describe("tabs (2.11)", () => {
     const list = (page: Page) => page.getByRole("tablist");
     const tab = (page: Page, name: string) => page.getByRole("tab", { name });

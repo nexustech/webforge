@@ -14,6 +14,7 @@ import {
   APPEARANCE_FIELDS,
   type ComponentLibrary,
   type FieldDef,
+  type FieldParent,
   type FieldSite,
   fieldsHiddenBy,
   MAX_TEXT_LENGTH,
@@ -114,12 +115,30 @@ function itemSpecOf(field: FieldDef): FieldSpec<PlainFieldKind> | undefined {
   }
 }
 
+/**
+ * `parent`, the element holding the one selected, as its fields' rules see it (6.16c): its values
+ * over its kind's look and its defaults.
+ */
+function parentOf(
+  parent: NodeDoc | undefined,
+  library: ComponentLibrary,
+  theme: SiteDoc["theme"],
+): FieldParent | undefined {
+  if (parent === undefined) return undefined;
+  const values = {
+    ...library.components[parent.type]?.defaults,
+    ...withLook(parent.props, parent.type, theme.looks),
+  };
+  return { type: parent.type, values };
+}
+
 /** The Edit panel field for a list: its items, and the fields of an item's row. */
 function listField(
   name: string,
   field: FieldDef,
   list: EditableList,
   stored: unknown,
+  hidden: ReadonlySet<string> = new Set(),
 ): EditPanelField {
   return {
     name,
@@ -129,6 +148,7 @@ function listField(
     value: listItems(stored, list),
     itemLabel: list.itemLabel,
     itemFields: Object.entries(list.fields).flatMap(([itemName, def]) => {
+      if (hidden.has(itemName)) return [];
       const spec = itemSpecOf(def);
       return spec === undefined ? [] : [{ ...spec, name: itemName }];
     }),
@@ -197,8 +217,29 @@ function samePanelValues(
 }
 
 /**
+ * Whether two states of the element holding the selected one hold the same values for its fields'
+ * rules (6.16c): its type, and its values besides its slots. Typing in another row of a Table leaves
+ * a row's panel as it is; changing the Table's Columns doesn't.
+ */
+function sameParent(
+  a: NodeDoc | undefined,
+  b: NodeDoc | undefined,
+  library: ComponentLibrary,
+): boolean {
+  if (a === b) return true;
+  if (a === undefined || b === undefined || a.type !== b.type) return false;
+  const fields = library.components[a.type]?.fields ?? {};
+  const names = new Set([...Object.keys(a.props), ...Object.keys(b.props)]);
+  for (const name of names) {
+    if (fields[name]?.kind !== "slot" && !sameJson(a.props[name], b.props[name])) return false;
+  }
+  return true;
+}
+
+/**
  * Whether the panel would draw the same: the same element, with the same values, in the same place
- * (R9). Anything else in the document, such as typing in another element, leaves it as it is.
+ * (R9), held by an element with the same values. Anything else in the document, such as typing in
+ * another element, leaves it as it is.
  */
 export function sameSlice(a: PanelSlice, b: PanelSlice, library: ComponentLibrary): boolean {
   const x = a.target;
@@ -211,6 +252,7 @@ export function sameSlice(a: PanelSlice, b: PanelSlice, library: ComponentLibrar
     x.design?.collection === y.design?.collection &&
     x.copyLabel === y.copyLabel &&
     samePanelValues(x.node, y.node, x.component, library) &&
+    sameParent(x.parent, y.parent, library) &&
     sameJson(a.anchors, b.anchors)
   );
 }
@@ -259,7 +301,11 @@ export function fieldsFor(target: FieldTarget, options: FieldsOptions): EditPane
   // the theme (3.12) and its defaults.
   const values = { ...component.defaults, ...withLook(node.props, node.type, theme.looks) };
   // A layout that doesn't use a field hides it; its value stays for the layouts that do (#311).
-  const hidden = fieldsHiddenBy(component, values, site);
+  // So do the element holding it, as its parent's values ask (a Table row's cells, 6.16c).
+  const hidden = fieldsHiddenBy(component, values, {
+    menuLinksToSections: site?.menuLinksToSections ?? false,
+    parent: parentOf(target.parent, library, theme),
+  });
   // What the Appearance group's words say its values come from (3.12, CT-3).
   const look: Readonly<Record<string, unknown>> = theme.looks?.[node.type] ?? {};
   const textStyles = textStylesOf(node, library, theme.looks);
@@ -296,7 +342,17 @@ export function fieldsFor(target: FieldTarget, options: FieldsOptions): EditPane
     if (hidden.has(name) || (field.inDialog === true && dialogGroups === undefined)) return [];
     const list = editableList(field, library);
     if (list !== undefined) {
-      return [listField(name, field, list, node.props[name])];
+      // A list of elements leaves out the fields this element hides in them: a Table's rows,
+      // the cells past its Columns (6.16c).
+      const itemType = list.holds === "elements" ? library.components[list.type] : undefined;
+      const itemHidden =
+        itemType === undefined
+          ? new Set<string>()
+          : fieldsHiddenBy(itemType, itemType.defaults, {
+              menuLinksToSections: site?.menuLinksToSections ?? false,
+              parent: { type: node.type, values },
+            });
+      return [listField(name, field, list, node.props[name], itemHidden)];
     }
     const spec = specOf(field);
     if (spec === undefined) {
