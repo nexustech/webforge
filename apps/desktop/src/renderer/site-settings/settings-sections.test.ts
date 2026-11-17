@@ -125,6 +125,13 @@ describe("Site Settings' Labels on your site (6.12, CC-1)", () => {
       label: "Carousel: {n} von {total}",
       value: "siteText.slideOf",
     });
+    // Made once per language, then again for another.
+    expect(labelOptions("de")).toBe(options);
+    expect(labelOptions("fr")).toContainEqual({
+      label: "Header and Footer: Menu",
+      value: "siteText.menu",
+    });
+    expect(labelOptions("fr")).not.toBe(options);
   });
 
   it("is a list in General, a new row the first label, without wording yet", () => {

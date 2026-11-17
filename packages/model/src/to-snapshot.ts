@@ -163,13 +163,13 @@ export function siteCollectionsOf(site: SiteDoc): SiteCollection[] {
   );
 }
 
-/** Site Settings' Google Analytics for the export (3.8): nothing without a Measurement ID. */
 /** The site's labels in the owner's words (6.12), when there are any. */
 function labelsOf(settings: SiteSettings): Pick<SiteSnapshot, "labels"> {
   const labels = siteLabelsOf(settings);
   return Object.keys(labels).length === 0 ? {} : { labels };
 }
 
+/** Site Settings' Google Analytics for the export (3.8): nothing without a Measurement ID. */
 function analyticsOf(analytics: SiteSettings["analytics"]): Pick<SiteSnapshot, "analytics"> {
   const { measurementId, consentBanner } = analytics;
   // Its own message is a label in the owner's words (6.12): `labels`.

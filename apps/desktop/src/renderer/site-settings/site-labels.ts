@@ -56,9 +56,22 @@ export const CHANGEABLE_LABELS: readonly SiteTextKey[] = SITE_TEXT_KEYS.filter(
  * The labels to choose from, for a site in `language`: where each shows and its words in that
  * language now ("Forms: Name"), placeholders left in, by place and then the catalogue's order.
  */
-export function labelOptions(
-  language: string,
-): readonly { readonly label: string; readonly value: SiteTextKey }[] {
+export function labelOptions(language: string): readonly LabelOption[] {
+  // Made once per language: the dialog asks again on every change to its values.
+  if (lastOptions?.language !== language) {
+    lastOptions = { language, options: optionsIn(language) };
+  }
+  return lastOptions.options;
+}
+
+type LabelOption = { readonly label: string; readonly value: SiteTextKey };
+
+/** {@link labelOptions}' last answer, for the language it was for. */
+let lastOptions:
+  | { readonly language: string; readonly options: readonly LabelOption[] }
+  | undefined;
+
+function optionsIn(language: string): readonly LabelOption[] {
   const words = siteTextFor(language) as (key: SiteTextKey) => string;
   return CHANGEABLE_LABELS.map((key) => {
     const place = labelPlace(key);
