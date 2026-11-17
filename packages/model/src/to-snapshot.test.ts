@@ -184,6 +184,13 @@ describe("siteToSnapshot", () => {
     const older = bakery();
     older.settings.search = { allowIndexing: true, includeSitemap: true };
     expect(siteToSnapshot(older, new Map()).search?.readableByAi).toBe(false);
+    expect(siteToSnapshot(older, new Map()).search).not.toHaveProperty("askNoAiTraining");
+  });
+
+  it("passes on asking AI companies not to train on the site, when ticked (6.15, CC-9)", () => {
+    const asking = bakery();
+    asking.settings.search = { allowIndexing: true, includeSitemap: true, askNoAiTraining: true };
+    expect(siteToSnapshot(asking, new Map()).search?.askNoAiTraining).toBe(true);
   });
 
   it("falls back to the site description and keeps the 'Page not found' page out of navigation", () => {
