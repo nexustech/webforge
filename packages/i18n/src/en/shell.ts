@@ -116,6 +116,12 @@ export const shell = {
   "settings.interface.advanced": "Advanced mode",
   "settings.interface.levelHelp":
     "Advanced mode adds the Edit panel's Advanced tab and Custom Code.",
+  // The interface zoom (View › Zoom In Interface), named for what people want from it (#1015).
+  "settings.interface.textSize": "Text size",
+  "settings.interface.textSizeHelp":
+    "Makes all of {appName} bigger or smaller: its text, buttons and panels. Your website stays as it is.",
+  "settings.interface.textSizeLevel": "{percent}%",
+  "settings.interface.textSizeStandard": "{percent}% (standard)",
   "settings.devices": "Devices",
   "settings.devices.label": "Your devices",
   "settings.devices.item": "Device",

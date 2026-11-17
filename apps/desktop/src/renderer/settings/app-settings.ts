@@ -6,6 +6,7 @@ import {
   DEVICE_NAME_MAX,
   DEVICE_SIZE,
   deviceSchema,
+  INTERFACE_ZOOM_LEVELS,
   MAX_DEVICES,
   type Preferences,
 } from "../../shared/ipc/prefs.js";
@@ -21,6 +22,8 @@ import { type SettingsRegistry, settingsPart } from "../editor/settings-registry
 type InterfaceValues = {
   readonly theme: Preferences["theme"];
   readonly editorLevel: Preferences["editorLevel"];
+  /** The interface zoom as its option's value: "1.1" for 110%. */
+  readonly textSize: string;
   readonly showTips: boolean;
   readonly showAgain: boolean;
 };
@@ -28,13 +31,31 @@ type InterfaceValues = {
 const interfaceSchema = z.strictObject({
   theme: z.enum(["dark", "light"]),
   editorLevel: z.enum(["simple", "advanced"]),
+  textSize: z
+    .string()
+    .transform(Number)
+    .refine((zoom) => INTERFACE_ZOOM_LEVELS.includes(zoom)),
   showTips: z.boolean(),
   showAgain: z.boolean(),
 });
 
+/** Text size's choices (#1015): the interface zoom's levels, 100% named as the standard size. */
+const textSizeOptions = () =>
+  INTERFACE_ZOOM_LEVELS.map((zoom) => {
+    const percent = Math.round(zoom * 100);
+    return {
+      label:
+        zoom === 1
+          ? t("settings.interface.textSizeStandard", { percent })
+          : t("settings.interface.textSizeLevel", { percent }),
+      value: String(zoom),
+    };
+  });
+
 /**
- * Interface (LF-12): the editor's theme and its level, which the View menu switches too; and the
- * first-time tips, with the tour and tips shown again from the start (OB-5).
+ * Interface (LF-12): the editor's theme and its level, which the View menu switches too; its text
+ * size, the interface zoom of View › Zoom In Interface (#1015); and the first-time tips, with the
+ * tour and tips shown again from the start (OB-5).
  */
 const INTERFACE: FormSpec<InterfaceValues, z.infer<typeof interfaceSchema>> = {
   fields: () => [
@@ -57,6 +78,14 @@ const INTERFACE: FormSpec<InterfaceValues, z.infer<typeof interfaceSchema>> = {
         { label: t("settings.interface.simple"), value: "simple" },
         { label: t("settings.interface.advanced"), value: "advanced" },
       ],
+      width: "md",
+    },
+    {
+      kind: "select",
+      name: "textSize",
+      label: t("settings.interface.textSize"),
+      help: t("settings.interface.textSizeHelp"),
+      options: textSizeOptions(),
       width: "md",
     },
     {
@@ -219,14 +248,16 @@ export function registerAppSettings(
           initial: {
             theme: now().theme,
             editorLevel: now().editorLevel,
+            textSize: String(now().interfaceZoom),
             showTips: now().onboarding.showTips,
             showAgain: false,
           },
-          save: ({ showTips, showAgain, ...change }) => {
-            const { theme, editorLevel, onboarding } = now();
+          save: ({ showTips, showAgain, textSize, ...change }) => {
+            const { theme, editorLevel, interfaceZoom, onboarding } = now();
             if (change.theme !== theme || change.editorLevel !== editorLevel) {
               preferences.change(change);
             }
+            if (textSize !== interfaceZoom) preferences.change({ interfaceZoom: textSize });
             // Shown again: the tour is offered when a site next opens, and each tip once more.
             const next = showAgain
               ? { tour: "offer" as const, tipsSeen: [], showTips }

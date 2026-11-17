@@ -211,7 +211,7 @@ export function CanvasToolbar({
           className={cn(
             fieldControlClass,
             "w-44",
-            fit >= FIT.zoom ? "min-w-24 shrink" : "shrink-0",
+            fit >= FIT.zoom ? "min-w-20 shrink" : "shrink-0",
           )}
           value={shownPageId}
           onChange={(event) => {

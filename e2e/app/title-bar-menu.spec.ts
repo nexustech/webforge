@@ -1,4 +1,4 @@
-import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The editor's own menus in the title bar, on Windows and Linux; macOS uses the system's menu bar
@@ -24,6 +24,19 @@ const title = (name: string) => menuBar().getByRole("menuitem", { name, exact: t
 
 /** Waits until no menu is fading out: when the press used to leave its menu closed (#689). */
 const closingDone = () => expect(page.locator('[role="menu"][data-state="closed"]')).toHaveCount(0);
+
+/** Where `menu`'s bottom edge is on the page, in CSS pixels. */
+async function bottomOf(menu: Locator): Promise<number> {
+  const box = await menu.boundingBox();
+  return box === null ? Number.POSITIVE_INFINITY : box.y + box.height;
+}
+
+/** Whether all of `item` is in sight in `menu`, which scrolls when it doesn't fit (#1015). */
+async function isShownIn(item: Locator, menu: Locator): Promise<boolean> {
+  const [inner, outer] = await Promise.all([item.boundingBox(), menu.boundingBox()]);
+  if (inner === null || outer === null) return false;
+  return inner.y >= outer.y && inner.y + inner.height <= outer.y + outer.height;
+}
 
 /** Opens View and chooses Show or Hide Bottom Panel, which starts View's menu fading out. */
 async function chooseFromView(): Promise<void> {
@@ -69,14 +82,28 @@ test("closes an open menu from its title, or a press outside it", async () => {
 });
 
 test("lists Edit in its groups, and the site's settings, theme and stylesheet under Site (#1016)", async () => {
+  // The smallest window there is (MIN_WINDOW_SIZE), where Edit is taller than the room below it.
+  await app.evaluate(({ BrowserWindow }) => {
+    const main = BrowserWindow.getAllWindows()[0];
+    main?.unmaximize();
+    main?.setSize(960, 600);
+  });
+  await expect.poll(() => page.evaluate(() => window.innerHeight)).toBeLessThanOrEqual(600);
+  const windowHeight = await page.evaluate(() => window.innerHeight);
+
   await title("Edit").click();
   const edit = page.getByRole("menu", { name: "Edit" });
   await expect(edit).toBeVisible();
   // Undo; clipboard; arranging; the Style, Select and Shared Section submenus; notes; find.
   await expect(edit.getByRole("separator")).toHaveCount(5);
-  // It fits a 600 px window, with room to spare.
-  const box = await edit.boundingBox();
-  expect(box?.height ?? Number.POSITIVE_INFINITY).toBeLessThan(540);
+  // It ends inside the window and scrolls instead (#1015)…
+  await expect.poll(() => bottomOf(edit)).toBeLessThanOrEqual(windowHeight);
+  // …so its last item can still be reached, and is shown in it.
+  await edit.getByRole("menuitem").first().focus();
+  await page.keyboard.press("End");
+  const last = edit.locator('[role="menuitem"]:not([data-disabled])').last();
+  await expect(last).toBeFocused();
+  await expect.poll(() => isShownIn(last, edit)).toBe(true);
 
   // → opens a submenu, ← closes it; a disabled item there still says why.
   const styleItem = edit.getByRole("menuitem", { name: "Style", exact: true });
@@ -102,6 +129,9 @@ test("lists Edit in its groups, and the site's settings, theme and stylesheet un
   await edit.getByRole("menuitem", { name: "Shared Section", exact: true }).focus();
   await page.keyboard.press("ArrowRight");
   const shared = page.getByRole("menu", { name: "Shared Section" });
+  // Opened near the bottom, it stays inside the window too.
+  await expect(shared).toBeVisible();
+  await expect.poll(() => bottomOf(shared)).toBeLessThanOrEqual(windowHeight);
   await expect(shared.getByRole("menuitem")).toHaveText([
     /^Save as Shared Section…/,
     /^Rename…/,
