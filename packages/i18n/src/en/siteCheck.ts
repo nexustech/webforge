@@ -266,7 +266,7 @@ export const siteCheck = {
   "siteCheck.history.bundled": "Kept a copy of a file from {host}",
 
   // Download and bundle (C8, 3.9): asked first, nothing downloaded without the person's yes.
-  "siteCheck.bundle.title": "Keep a copy of this file with your site?",
+  "siteCheck.bundle.title": "Keep a Copy of This File with Your Site?",
   "siteCheck.bundle.description":
     "{appName} downloads {url} now and keeps it in your site, so the exported site loads its own copy and works offline.",
   "siteCheck.bundle.licence":

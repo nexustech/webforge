@@ -4,7 +4,7 @@ id: assistant
 title: The assistant
 summary: Ask {appName}'s built-in assistant to change your site, and check, keep or undo what it changed.
 related: [settings, undo-and-history, version-history, ai-apps]
-updated: 2026-11-14
+updated: 2026-11-17
 status: partial
 ---
 
@@ -60,7 +60,7 @@ Change the text as you like, then click **Use This**, **Try Again** for another,
 
 ## Writing your pages' words
 
-While the assistant is on, **Start a site…**'s first step asks you to **Tell us about your business**: a few sentences on what you offer, who for, and what makes you different.
+While the assistant is on, **Start a Site…**'s first step asks you to **Tell us about your business**: a few sentences on what you offer, who for, and what makes you different.
 
 1. Once your new site opens, the assistant writes the words of its home page and About page from what you said, in place of the template's. The site's question comes first, as {appName} asks it for every site.
 2. {appName} shows each one under where it goes, such as _Home · Hero · Title_. Change any of them, or empty one to keep the template's words there.

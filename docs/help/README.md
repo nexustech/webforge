@@ -20,7 +20,7 @@ The pages describe `main` as it is. Each page's `updated` date says when it was 
 - [Sections](sections.md) and [Elements](elements.md): everything you can add
 - [Layers](layers.md)
 - [The Edit panel](edit-panel.md): options, different on each device, resetting
-- [Styling](styling.md): Appearance, hover effects, entrance animations, _Style this…_, copying a look
+- [Styling](styling.md): Appearance, hover effects, entrance animations, _Style This…_, copying a look
 - [Header, Footer and shared sections](header-and-footer.md)
 - [Links](links.md)
 - [Pages and the menu](pages.md), with Page Settings

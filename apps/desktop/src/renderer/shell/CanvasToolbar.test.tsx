@@ -329,7 +329,7 @@ describe("View menu and devices (F-ED-25)", () => {
     await user().click(screen.getByRole("button", { name: "Devices" }));
     await user().click(screen.getByRole("menuitem", { name: "Add Device…" }));
     // It opens as the menu closes: wait until it takes clicks.
-    const dialog = await openedDialog("Add a device");
+    const dialog = await openedDialog("Add a Device");
     await user().type(dialog.getByRole("textbox", { name: "Name" }), "Kiosk");
     await user().type(dialog.getByRole("spinbutton", { name: "Width in pixels" }), "1080");
     await user().type(dialog.getByRole("spinbutton", { name: "Height in pixels" }), "100");
@@ -414,7 +414,7 @@ describe("a narrow toolbar (#1008)", () => {
 
     await user().click(screen.getByRole("button", { name: "View" }));
     await user().click(screen.getByRole("menuitem", { name: "Canvas Width…" }));
-    const dialog = await openedDialog("Canvas width");
+    const dialog = await openedDialog("Canvas Width");
     const width = dialog.getByRole("spinbutton", { name: "Width in pixels" });
     expect((width as HTMLInputElement).value).toBe("375");
     await user().clear(width);
@@ -430,7 +430,7 @@ describe("a narrow toolbar (#1008)", () => {
     const { redraw } = setUp(375);
     await user().click(screen.getByRole("button", { name: "View" }));
     await user().click(screen.getByRole("menuitem", { name: "Canvas Width…" }));
-    await openedDialog("Canvas width");
+    await openedDialog("Canvas Width");
 
     // Wide: the width box is back in the toolbar, and the dialog stays until it's answered.
     resize(2000);
@@ -439,7 +439,7 @@ describe("a narrow toolbar (#1008)", () => {
     expect(
       screen.getByRole("spinbutton", { name: "Canvas width in pixels", hidden: true }),
     ).toBeTruthy();
-    const dialog = screen.getByRole("dialog", { name: "Canvas width" });
+    const dialog = screen.getByRole("dialog", { name: "Canvas Width" });
     await user().click(within(dialog).getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).toBeNull();
 

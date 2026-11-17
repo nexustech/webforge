@@ -117,7 +117,7 @@ describe("Site panel", () => {
 
     // It is in the menu that every page shows: all 3 pages change.
     expect(confirmSiteWide).toHaveBeenLastCalledWith({
-      action: "Delete page 'About'?",
+      action: "Delete Page 'About'?",
       description: "This removes the page and its content.",
       confirm: "Delete Page",
       affectedPages: 3,

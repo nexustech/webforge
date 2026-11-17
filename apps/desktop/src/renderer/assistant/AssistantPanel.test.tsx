@@ -88,7 +88,7 @@ describe("the assistant's panel (6.9c)", () => {
       },
     });
     const enable = vi.spyOn(moved.api, "setEnabled");
-    const consent = within(await screen.findByRole("dialog", { name: "Turn on the assistant?" }));
+    const consent = within(await screen.findByRole("dialog", { name: "Turn On the Assistant?" }));
     expect(consent.getByText(/server at ai.example.org/)).toBeDefined();
     await moved.user.click(consent.getByRole("button", { name: "Turn On" }));
     expect(enable).toHaveBeenCalledWith(true, FAKE_STATUS.consentVersion);

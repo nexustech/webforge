@@ -4,7 +4,7 @@ id: templates
 title: Templates and example sites
 summary: The ready-made starting sites, their pages and their themes.
 related: [getting-started, themes, pages]
-updated: 2026-11-06
+updated: 2026-11-17
 ---
 
 # Templates and example sites
@@ -28,7 +28,7 @@ The templates' photos are free to use, and they're copied into your site's [Medi
 
 ## Example sites
 
-**Café / Restaurant** and **Trades** also come as finished examples, with complete sample content. **Try an example** on the start screen (or **Help › Try an Example** there) opens the Café / Restaurant one. In the quick start, choosing Food and drink or Trades offers that business's example. Open one to look around and try things. It's a site of your own, so nothing you change affects anything else.
+**Café / Restaurant** and **Trades** also come as finished examples, with complete sample content. **Try an Example** on the start screen (or **Help › Try an Example** there) opens the Café / Restaurant one. In the quick start, choosing Food and drink or Trades offers that business's example. Open one to look around and try things. It's a site of your own, so nothing you change affects anything else.
 
 ## Suggested pages
 

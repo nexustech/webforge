@@ -62,7 +62,7 @@ test("an AI app adds a section and changes the theme, each one undo step", async
     app: "Claude",
   });
   const question = page.getByRole("alertdialog");
-  await expect(question).toHaveAccessibleName("Allow Claude to change the theme?");
+  await expect(question).toHaveAccessibleName("Allow Claude to Change the Theme?");
   await question.getByRole("button", { name: "Allow" }).click();
   expect(await theme).toMatchObject({ status: "done", label: "AI (Claude): Changed the theme" });
   await expect(step("AI (Claude): Changed the theme")).toBeVisible();

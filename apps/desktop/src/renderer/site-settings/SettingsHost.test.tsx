@@ -106,7 +106,7 @@ describe("SettingsHost (LF-12)", () => {
     run(COMMAND_IDS.settings);
 
     await user.click(await screen.findByRole("tab", { name: "AI apps" }));
-    const open = screen.getByRole("button", { name: "Open AI apps…" });
+    const open = screen.getByRole("button", { name: "Open AI Apps…" });
     open.focus();
     await user.keyboard("{Enter}");
 
@@ -220,7 +220,7 @@ describe("SettingsHost (LF-12)", () => {
     );
     run(COMMAND_IDS.settings);
     await user.click(await screen.findByRole("tab", { name: "Devices" }));
-    await user.click(screen.getByRole("button", { name: "Add a device" }));
+    await user.click(screen.getByRole("button", { name: "Add a Device" }));
     await user.type(screen.getByLabelText("Name"), "Kiosk");
     await user.type(screen.getByLabelText("Width in pixels"), "1080");
     await user.type(screen.getByLabelText("Height in pixels"), "1920");
@@ -267,7 +267,7 @@ describe("SettingsHost (LF-12)", () => {
 
     await user.click(await screen.findByRole("tab", { name: "Contact & hours" }));
     // Each added item opens: a day for each, as hours need one.
-    const add = screen.getByRole("button", { name: "Add opening hours" });
+    const add = screen.getByRole("button", { name: "Add Opening Hours" });
     for (const day of ["Mon", "Tue", "Wed"]) {
       await user.click(add);
       await user.click(screen.getByRole("checkbox", { name: day }));

@@ -7,7 +7,7 @@ export const site = {
   "site.media.chooseTitle": "Add Images or Files",
   "site.media.fileType": "Images and documents",
   "site.media.title": "Media",
-  "site.media.add": "Add images or files…",
+  "site.media.add": "Add Images or Files…",
   "site.media.dropHint": "Drop images or documents here.",
   "site.media.empty": "No images or files yet.",
   "site.media.list": "Images and files",
@@ -84,17 +84,17 @@ export const site = {
   "site.media.failed.readOnly": "This site is read-only, so nothing can be added to it.",
   "site.media.failed.unknown": "{appName} couldn't add the files.",
   // The icon field and its picker (F-ED-22).
-  "site.icon.choose": "Choose an icon…",
-  "site.icon.change": "Change icon ({name})…",
-  "site.icon.remove": "Remove icon",
-  "site.icon.picker.title": "Choose an icon",
+  "site.icon.choose": "Choose an Icon…",
+  "site.icon.change": "Change Icon ({name})…",
+  "site.icon.remove": "Remove Icon",
+  "site.icon.picker.title": "Choose an Icon",
   "site.icon.picker.description": "Double-click an icon, or press Enter, to use it here.",
   "site.icon.picker.none": "No icon matches.",
-  "site.media.field.choose": "Choose an image…",
-  "site.media.field.change": "Change image…",
-  "site.media.field.remove": "Remove image",
-  "site.media.field.addNew": "Add a new image…",
-  "site.media.picker.title": "Choose an image",
+  "site.media.field.choose": "Choose an Image…",
+  "site.media.field.change": "Change Image…",
+  "site.media.field.remove": "Remove Image",
+  "site.media.field.addNew": "Add a New Image…",
+  "site.media.picker.title": "Choose an Image",
   "site.media.picker.description": "Double-click an image, or press Enter, to place it here.",
   "site.media.field.noImages": "Media has no images yet.",
   "site.media.field.missing": "This image is no longer in Media.",
@@ -191,12 +191,12 @@ export const site = {
   "site.code.allowedHint":
     "Your site works from any folder or host because it loads nothing from elsewhere. Add an address here only if your code must load a file from it.",
   "site.code.allowedAddress": "Address",
-  "site.code.allowedAdd": "Add an address",
+  "site.code.allowedAdd": "Add an Address",
   "site.code.allowedRemove": "Remove this address",
   "site.code.error.address": "Enter a web address that starts with https://.",
   "site.code.history": "Changed Custom Code",
   // The code trust step (#649), approved by the product owner (31 Oct 2026).
-  "site.code.trust.title": "This site contains code that will run for your visitors",
+  "site.code.trust.title": "This Site Contains Code That Will Run for Your Visitors",
   "site.code.trust.body":
     "It came with the site's file or was pasted in, rather than written in {appName} on this computer. Keep it only if you trust where it came from.",
   "site.code.trust.part.head": "Custom Code in Settings: Head",
@@ -209,8 +209,8 @@ export const site = {
   // (product owner, 1 Nov 2026). Site Check keeps its "{element} on {page}".
   "site.code.trust.place.page": "{element} element on {page}",
   "site.code.trust.review": "Review",
-  "site.code.trust.leave": "Leave it out",
-  "site.code.trust.keep": "Keep the code",
+  "site.code.trust.leave": "Leave It Out",
+  "site.code.trust.keep": "Keep the Code",
   "site.code.trust.failed": "{appName} couldn't remember that you trust this code. Try again.",
   "site.settings.historySections": "Changed Site Settings: {sections}",
   "site.settings.section.general": "General",
@@ -239,7 +239,7 @@ export const site = {
   "site.settings.profiles": "Social profiles",
   "site.settings.network": "Network",
   "site.settings.profileUrl": "Profile address",
-  "site.settings.addProfile": "Add a profile",
+  "site.settings.addProfile": "Add a Profile",
   "site.settings.removeProfile": "Remove this profile",
   "site.settings.profilesHint":
     "Social links show each network's logo, linking to your page there. The logos belong to their brands: follow each brand's guidelines when you use them.",
@@ -259,7 +259,7 @@ export const site = {
   "site.settings.phone": "Phone number",
   "site.settings.address": "Address",
   "site.settings.openingHours": "Opening hours",
-  "site.settings.addHours": "Add opening hours",
+  "site.settings.addHours": "Add Opening Hours",
   "site.settings.removeHours": "Remove these hours",
   "site.settings.days": "Days",
   "site.settings.opens": "Opens",
@@ -335,7 +335,7 @@ export const site = {
   "site.settings.keptAddressesHint":
     "Each old address sends visitors and search engines on to its page. They're added when you rename or move a page after publishing, and you can add an address from an older website.",
   "site.settings.keptAddress": "Old address",
-  "site.settings.addKeptAddress": "Add an old address",
+  "site.settings.addKeptAddress": "Add an Old Address",
   "site.settings.removeKeptAddress": "Remove this old address",
   "site.settings.keptAddressFrom": "Old address",
   "site.settings.keptAddressPage": "Goes to",
@@ -384,9 +384,9 @@ export const site = {
   "site.settings.error.formUrl": "Use a full web address, starting with https://.",
   "site.start.title": "Get started",
   // The primary way in opens the quick start (QS-4, 3.11b); New Site stays one click away.
-  "site.start.quickStart": "Start a site…",
-  "site.start.new": "Choose a template yourself…",
-  "site.start.open": "Open a site…",
+  "site.start.quickStart": "Start a Site…",
+  "site.start.new": "Choose a Template Yourself…",
+  "site.start.open": "Open a Site…",
   "site.start.recent": "Recent sites",
   "site.start.noRecent": "Sites you open or create appear here.",
   "site.start.edited": "Edited {when}",
@@ -395,7 +395,7 @@ export const site = {
   "site.start.remove": "Remove {name} from the list",
   // The start screen (2.14b, LF-10): its actions, the Recent list's search and pins, and Help.
   "site.start.version": "Version {version}",
-  "site.start.tryExample": "Try an example",
+  "site.start.tryExample": "Try an Example",
   "site.start.search": "Search sites",
   "site.start.noMatch": "No site matches “{query}”.",
   // The pin is a toggle: its name stays "Pin …" whether pressed or not; its tooltip says what a
@@ -405,7 +405,7 @@ export const site = {
   "site.start.unpin": "Unpin {name}",
   "site.start.listFailed": "The list of recent sites couldn't be changed. Try again.",
   // File › Open Recent › Clear Recent (3.18): pinned sites stay.
-  "site.clearRecent.title": "Clear the list of recent sites?",
+  "site.clearRecent.title": "Clear the List of Recent Sites?",
   "site.clearRecent.description":
     "Sites you've pinned stay, in this menu and on the start screen. No site files are deleted.",
   "site.clearRecent.confirm": "Clear Recent",
@@ -432,8 +432,8 @@ export const site = {
   // A copy of the whole site as a ZIP, for a backup or another computer (4.7, F-SITE-5): not the
   // website, which Export makes.
   "site.zip.fileType": "ZIP file",
-  "site.zip.saveDialogTitle": "Save a copy of your site as a ZIP file",
-  "site.zip.openDialogTitle": "Open a site from a ZIP file",
+  "site.zip.saveDialogTitle": "Save a Copy of Your Site as a ZIP File",
+  "site.zip.openDialogTitle": "Open a Site from a ZIP File",
   "site.zip.saved": "Saved a copy of your site as “{name}”.",
   "site.zip.savedDescription":
     "It has everything in your site, its versions too. Open it with File › Open Site from ZIP.",

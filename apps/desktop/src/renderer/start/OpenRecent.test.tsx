@@ -272,7 +272,7 @@ describe("File › Open Recent (3.18, PF-1)", () => {
       registry.run(COMMAND_IDS.clearRecent);
     });
     const dialog = await screen.findByRole("alertdialog", {
-      name: "Clear the list of recent sites?",
+      name: "Clear the List of Recent Sites?",
     });
     expect(dialog.textContent).toContain(
       "Sites you've pinned stay, in this menu and on the start screen.",

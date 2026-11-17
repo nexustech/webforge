@@ -174,9 +174,9 @@ describe("StartScreen", () => {
     expect(container.textContent).toContain("Get started");
     expect(container.textContent).toContain("Sites you open or create appear here.");
     // The quick start (QS-4): every step skipped makes the untitled Blank site.
-    await act(async () => button("Start a site…")?.click());
+    await act(async () => button("Start a Site…")?.click());
     const createSite = [...document.querySelectorAll("button")].find(
-      (element) => element.textContent === "Create site",
+      (element) => element.textContent === "Create Site",
     );
     await act(async () => createSite?.click());
     expect(project.create).toHaveBeenCalledWith({
@@ -191,7 +191,7 @@ describe("StartScreen", () => {
     });
     prefs.set.mockClear();
 
-    await act(async () => button("Choose a template yourself…")?.click());
+    await act(async () => button("Choose a Template Yourself…")?.click());
     // New Site's dialog, in a portal on the body (2.14a).
     const create = [...document.querySelectorAll("button")].find(
       (element) => element.textContent === "Create",
@@ -201,7 +201,7 @@ describe("StartScreen", () => {
     expect(restart).toHaveBeenCalled();
     // New Site's: no tour offered.
     expect(prefs.set).not.toHaveBeenCalled();
-    await act(async () => button("Open a site…")?.click());
+    await act(async () => button("Open a Site…")?.click());
     expect(project.open).toHaveBeenCalled();
   });
 
@@ -210,7 +210,7 @@ describe("StartScreen", () => {
     try {
       const project = api([]);
       await render(project);
-      await act(async () => button("Start a site…")?.click());
+      await act(async () => button("Start a Site…")?.click());
       const about = [...document.querySelectorAll("textarea")].find(
         (each) => each.labels?.[0]?.textContent === "Tell us about your business",
       );
@@ -222,7 +222,7 @@ describe("StartScreen", () => {
         about?.dispatchEvent(new Event("input", { bubbles: true }));
       });
       const createSite = [...document.querySelectorAll("button")].find(
-        (element) => element.textContent === "Create site",
+        (element) => element.textContent === "Create Site",
       );
       await act(async () => createSite?.click());
       expect(project.create).toHaveBeenCalledWith(
@@ -239,7 +239,7 @@ describe("StartScreen", () => {
       throw new Error("templates folder missing");
     });
 
-    await act(async () => button("Choose a template yourself…")?.click());
+    await act(async () => button("Choose a Template Yourself…")?.click());
     expect(document.body.textContent).toContain("No templates of this type yet.");
     const create = [...document.querySelectorAll("button")].find(
       (element) => element.textContent === "Create",
@@ -372,7 +372,7 @@ describe("StartScreen", () => {
       example,
     ]);
 
-    await act(async () => button("Try an example")?.click());
+    await act(async () => button("Try an Example")?.click());
 
     expect(project.create).toHaveBeenCalledWith({
       name: "Café / Restaurant",
@@ -385,7 +385,7 @@ describe("StartScreen", () => {
   it("offers no example when the app ships none", async () => {
     await render(api([]));
 
-    expect(button("Try an example")).toBeUndefined();
+    expect(button("Try an Example")).toBeUndefined();
   });
 
   it("lists the help pages to start with, the shortcuts and the example on the Help tab, and runs them (2.14b, 5.4b)", async () => {
@@ -456,7 +456,7 @@ describe("StartScreen", () => {
     const welcome = [...container.querySelectorAll<HTMLButtonElement>('[role="tabpanel"] button')];
 
     await act(async () =>
-      welcome.find((each) => each.textContent?.includes("Open a site"))?.click(),
+      welcome.find((each) => each.textContent?.includes("Open a Site"))?.click(),
     );
     expect(project.open).toHaveBeenCalled();
     // New Site one click away (QS-4).
@@ -557,9 +557,9 @@ describe("an AI app's brief (4.12a, AIB-5)", () => {
     const { project, answers, hand } = await withBrief();
 
     await hand();
-    expect(document.querySelector("[role=dialog]")?.textContent).toContain("Start a site");
+    expect(document.querySelector("[role=dialog]")?.textContent).toContain("Start a Site");
     expect(project.create).not.toHaveBeenCalled();
-    await act(async () => dialogButton("Create site")?.click());
+    await act(async () => dialogButton("Create Site")?.click());
 
     await vi.waitFor(() => expect(answers).toEqual(["created", "restart"]));
     const request = project.create.mock.calls[0]?.[0];
@@ -592,7 +592,7 @@ describe("an AI app's brief (4.12a, AIB-5)", () => {
     await failed.hand();
     await failed.hand();
     expect(failed.answers).toEqual(["busy"]);
-    await act(async () => dialogButton("Create site")?.click());
+    await act(async () => dialogButton("Create Site")?.click());
 
     await vi.waitFor(() => expect(failed.answers).toEqual(["busy", "declined"]));
   });

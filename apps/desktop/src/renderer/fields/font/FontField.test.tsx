@@ -46,7 +46,7 @@ describe("the font field (2.3a)", () => {
     expect(button.querySelector("span")?.style.fontFamily).toContain("Webforge preview Inter");
 
     await user.click(button);
-    const picker = within(screen.getByRole("dialog", { name: "Choose a font" }));
+    const picker = within(screen.getByRole("dialog", { name: "Choose a Font" }));
     await user.type(picker.getByRole("searchbox"), "Lora");
     await user.keyboard("{Enter}");
 
@@ -77,7 +77,7 @@ describe("the font field (2.3a)", () => {
     const { onChange, user } = setUp();
 
     await user.click(screen.getByRole("button", { name: "Headings Inter" }));
-    const picker = within(screen.getByRole("dialog", { name: "Choose a font" }));
+    const picker = within(screen.getByRole("dialog", { name: "Choose a Font" }));
     await user.type(picker.getByRole("searchbox"), "Comic");
     const comic = await picker.findByRole("option", { name: /Comic Neue/ });
     expect(comic.querySelector("span")?.style.fontFamily).toContain("Webforge preview Comic Neue");
@@ -93,9 +93,9 @@ describe("the font field (2.3a)", () => {
     const { onChange, onCommit, user } = setUp(undefined, fonts);
 
     await user.click(screen.getByRole("button", { name: "Headings Inter" }));
-    const picker = within(screen.getByRole("dialog", { name: "Choose a font" }));
+    const picker = within(screen.getByRole("dialog", { name: "Choose a Font" }));
     expect(browse).not.toHaveBeenCalled();
-    await user.click(picker.getByRole("button", { name: "Browse all fonts" }));
+    await user.click(picker.getByRole("button", { name: "Browse All Fonts" }));
     expect(await picker.findByText("1 more font to download, under To download.")).toBeTruthy();
     await user.click(picker.getByRole("button", { name: "To download" }));
     // Comic Neue is already on this computer: only Lobster is to download.
@@ -148,8 +148,8 @@ describe("the font field (2.3a)", () => {
         fakeFonts(() => Promise.resolve({ status: "failed", reason })),
       );
       await user.click(screen.getByRole("button", { name: "Headings Inter" }));
-      const picker = within(screen.getByRole("dialog", { name: "Choose a font" }));
-      await user.click(picker.getByRole("button", { name: "Browse all fonts" }));
+      const picker = within(screen.getByRole("dialog", { name: "Choose a Font" }));
+      await user.click(picker.getByRole("button", { name: "Browse All Fonts" }));
       await user.click(await picker.findByRole("button", { name: "To download" }));
       await user.dblClick(picker.getByRole("option", { name: /Lobster/ }));
 
@@ -166,19 +166,19 @@ describe("the font field (2.3a)", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Headings Inter" }));
-    const picker = within(screen.getByRole("dialog", { name: "Choose a font" }));
-    await user.click(picker.getByRole("button", { name: "Browse all fonts" }));
+    const picker = within(screen.getByRole("dialog", { name: "Choose a Font" }));
+    await user.click(picker.getByRole("button", { name: "Browse All Fonts" }));
 
     expect(
       await picker.findByText("You're offline, so the fonts to download can't be listed now."),
     ).toBeTruthy();
-    expect(picker.getByRole("button", { name: "Browse all fonts" })).toBeTruthy();
+    expect(picker.getByRole("button", { name: "Browse All Fonts" })).toBeTruthy();
   });
 
   it("asks for a font when it has none", () => {
     setUp(null);
 
-    expect(screen.getByRole("button", { name: "Headings Choose a font…" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Headings Choose a Font…" })).toBeTruthy();
   });
 });
 

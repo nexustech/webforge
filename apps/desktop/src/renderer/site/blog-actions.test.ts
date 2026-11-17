@@ -450,7 +450,7 @@ describe("removing from a post's design or Header (6.10a, D7)", () => {
 
     expect(confirmSiteWide).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: "Delete Button from the design of 'Blog'?",
+        action: "Delete Button from the Design of 'Blog'?",
         description: "Every post shows the change.",
         affectedPages: 1,
       }),

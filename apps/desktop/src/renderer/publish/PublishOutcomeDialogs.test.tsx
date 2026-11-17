@@ -22,7 +22,7 @@ describe("Your site is live, for a Netlify site visitors can't see (4.4b, #826 r
     const outcomes = createPublishOutcomes();
     outcomes.showLive(LIVE);
     render(<PublishOutcomeDialogs state={outcomes.state} openLive={vi.fn()} copyLink={vi.fn()} />);
-    expect(screen.getByRole("dialog", { name: "Your site is live" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Your Site Is Live" })).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
 
     // A check for an earlier publish, answering late: not this one's.

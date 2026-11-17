@@ -28,7 +28,7 @@ describe("the assistant's settings (6.9c, AIA-6, AIA-8)", () => {
     });
 
     await user.click(await dialog.findByRole("button", { name: "Turn On…" }));
-    const consent = within(screen.getByRole("dialog", { name: "Turn on the assistant?" }));
+    const consent = within(screen.getByRole("dialog", { name: "Turn On the Assistant?" }));
     expect(consent.getByText("OpenRouter and Example AI receive it.")).toBeDefined();
     expect(enable).not.toHaveBeenCalled();
 

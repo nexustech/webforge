@@ -223,8 +223,8 @@ describe("Theme Studio's My themes (2.23, PH2-17)", () => {
   it("creates a new theme from a built-in one, by name", async () => {
     const { dialog, labels, theme, user } = await withMyThemes();
 
-    await user.click(dialog().getByRole("button", { name: "New theme…" }));
-    const form = within(await screen.findByRole("dialog", { name: "New theme" }));
+    await user.click(dialog().getByRole("button", { name: "New Theme…" }));
+    const form = within(await screen.findByRole("dialog", { name: "New Theme" }));
     await user.selectOptions(form.getByRole("combobox", { name: "Start from" }), "bistro");
     const name = form.getByRole("textbox", { name: "Theme name" });
     await user.clear(name);
@@ -242,7 +242,7 @@ describe("Theme Studio's My themes (2.23, PH2-17)", () => {
     await vi.waitFor(() => expect(theme().own?.name).toBe("Night"));
 
     await user.click(dialog().getByRole("button", { name: "Rename Night" }));
-    const rename = within(await screen.findByRole("dialog", { name: "Rename theme" }));
+    const rename = within(await screen.findByRole("dialog", { name: "Rename Theme" }));
     const name = rename.getByRole("textbox", { name: "Theme name" });
     await user.clear(name);
     await user.type(name, "Late night");
@@ -355,14 +355,14 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
     await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
 
     await user.selectOptions(kinds(), "Card");
-    let ask = screen.getByRole("alertdialog", { name: "Apply your changes to every Button?" });
+    let ask = screen.getByRole("alertdialog", { name: "Apply Your Changes to Every Button?" });
     await user.click(within(ask).getByRole("button", { name: "Keep Editing" }));
     expect(studio.getState().kind).toBe("Button");
     expect((kinds() as HTMLSelectElement).value).toBe("Button");
     expect(theme().looks).toBeUndefined();
 
     await user.selectOptions(kinds(), "Card");
-    ask = screen.getByRole("alertdialog", { name: "Apply your changes to every Button?" });
+    ask = screen.getByRole("alertdialog", { name: "Apply Your Changes to Every Button?" });
     await user.click(within(ask).getByRole("button", { name: "Apply Changes" }));
     expect(theme().looks).toEqual({ Button: { lookCorners: "full" } });
     expect(labels()).toEqual(["Changed the theme's look for Button"]);
@@ -374,7 +374,7 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
     await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
 
     await user.keyboard("{Escape}");
-    const ask = screen.getByRole("alertdialog", { name: "Apply your changes to every Button?" });
+    const ask = screen.getByRole("alertdialog", { name: "Apply Your Changes to Every Button?" });
     expect(studio.getState().open).toBe(true);
     await user.click(within(ask).getByRole("button", { name: "Discard Changes" }));
 
@@ -498,7 +498,7 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
 
     act(() => studio.setState({ pending: { kind: "Card" } }));
     const ask = await screen.findByRole("alertdialog", {
-      name: "Apply your changes to every Button?",
+      name: "Apply Your Changes to Every Button?",
     });
     await user.click(within(ask).getByRole("button", { name: "Discard Changes" }));
     expect(studio.getState().kind).toBe("Card");

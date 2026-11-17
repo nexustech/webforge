@@ -11,13 +11,13 @@ export const ai = {
   "ai.version.beforePlan": "Before {app}'s changes: {title}",
   // The D7 question an AI app's change to more than one page waits for; the dialog then says how
   // many pages change ("This changes 3 pages.").
-  "ai.confirm.theme": "Allow {app} to change the theme?",
-  "ai.confirm.addPage": "Allow {app} to add the page {title}, with a menu entry on every page?",
+  "ai.confirm.theme": "Allow {app} to Change the Theme?",
+  "ai.confirm.addPage": "Allow {app} to Add the Page {title}, with a Menu Entry on Every Page?",
   // Deleting a page, as the person's Delete Page asks (4.11): the dialog then says how many pages
   // change, links to it on other pages included.
-  "ai.confirm.removePage": "Allow {app} to delete the page {title}?",
+  "ai.confirm.removePage": "Allow {app} to Delete the Page {title}?",
   // A plan (4.12a): one question for a build of many changes, its title the app's.
-  "ai.confirm.plan": "Allow {app} to make these changes: {title}?",
+  "ai.confirm.plan": "Allow {app} to Make These Changes: {title}?",
   "ai.plan.pagesAdded": "It adds the pages {pages}.",
   "ai.plan.pagesRemoved": "It deletes the pages {pages}.",
   "ai.plan.pageRenamed": 'It renames the page "{from}" to "{to}".',
@@ -42,13 +42,13 @@ export const ai = {
   "ai.plan.moreAsks.one": "And {count} more question like these.",
   "ai.plan.moreAsks.other": "And {count} more questions like these.",
   // Site Settings show on every page (4.11): "Allow Claude to change Site Settings: Contact & hours?"
-  "ai.confirm.settings": "Allow {app} to change Site Settings: {sections}?",
-  "ai.confirm.layout": "Allow {app} to change the {part}?",
-  "ai.confirm.shared": "Allow {app} to change the shared section {name}?",
+  "ai.confirm.settings": "Allow {app} to Change Site Settings: {sections}?",
+  "ai.confirm.layout": "Allow {app} to Change the {part}?",
+  "ai.confirm.shared": "Allow {app} to Change the Shared Section {name}?",
   "ai.confirm.allow": "Allow",
   // Asked whenever an AI app sets where visitors' money or details go (S18), on one page too:
   // "Allow Claude to change the Buy button's Payment link?", then where it goes now and would go.
-  "ai.confirm.destination": "Allow {app} to change the {item}'s {field}?",
+  "ai.confirm.destination": "Allow {app} to Change the {item}'s {field}?",
   "ai.confirm.destinationFromTo": "{field}: from {from} to {to}.",
   // Where a field with no address sends visitors.
   "ai.confirm.noAddress": "no address",
@@ -56,7 +56,7 @@ export const ai = {
   "ai.confirm.yes": "yes",
   "ai.confirm.no": "no",
   // An AI app asks for pictures or files (4.12b): its reason in its own words, quoted.
-  "ai.media.title": "{app} asks you to add pictures or files",
+  "ai.media.title": "{app} Asks You to Add Pictures or Files",
   "ai.media.description":
     'Its reason: "{reason}" Only the files you choose are added to Media, and you can undo it.',
   "ai.media.addFiles": "Add Files…",

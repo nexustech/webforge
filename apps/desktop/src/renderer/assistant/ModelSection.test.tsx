@@ -43,7 +43,7 @@ describe("which model answers (AIA-8, ADR 0026 §2)", () => {
     const list = await screen.findByRole("combobox", { name: "The model that answers" });
 
     await user.selectOptions(list, "example/model-large");
-    const ask = within(screen.getByRole("alertdialog", { name: "Use a costlier model?" }));
+    const ask = within(screen.getByRole("alertdialog", { name: "Use a Costlier Model?" }));
     expect(ask.getByText(/about \$2\.50 a reply/)).toBeDefined();
     await user.click(ask.getByRole("button", { name: "Cancel" }));
     expect(api.update).not.toHaveBeenCalled();
@@ -60,7 +60,7 @@ describe("which model answers (AIA-8, ADR 0026 §2)", () => {
     await user.click(screen.getByRole("checkbox", { name: /Allow models that may keep requests/ }));
     expect(api.update).not.toHaveBeenCalled();
     const warning = within(
-      screen.getByRole("alertdialog", { name: "Allow models that may keep requests?" }),
+      screen.getByRole("alertdialog", { name: "Allow Models That May Keep Requests?" }),
     );
     expect(warning.getByText(/use it to train its models/)).toBeDefined();
     await user.click(warning.getByRole("button", { name: "Allow Them" }));

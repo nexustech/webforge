@@ -77,7 +77,7 @@ function setUp(start: Partial<McpStatus> = {}) {
       onClose={() => undefined}
     />,
   );
-  const dialog = () => within(screen.getByRole("dialog", { name: "AI apps" }));
+  const dialog = () => within(screen.getByRole("dialog", { name: "AI Apps" }));
   return { ...fake, copyText, copySecret, notify, dialog, user: userEvent.setup({ delay: null }) };
 }
 
@@ -134,7 +134,7 @@ describe("AI apps (4.9)", () => {
 
   it("adds Claude Desktop, with its key once to copy and its extension to install", async () => {
     const { dialog, mcp, copySecret, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
     // Claude Desktop first, named so already.
     expect(
       dialog().getByRole("radio", { name: "Claude Desktop" }).getAttribute("aria-checked"),
@@ -180,7 +180,7 @@ describe("AI apps (4.9)", () => {
 
   it("adds another app, showing its key once to copy, with the address to give it", async () => {
     const { dialog, mcp, copyText, copySecret, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
     expect(
       dialog().getByText("The app will read and change the sites you open in Webforge."),
     ).toBeTruthy();
@@ -213,7 +213,7 @@ describe("AI apps (4.9)", () => {
 
   it("adds Claude Code as another app is added, with a command to run that has no key (5.13)", async () => {
     const { dialog, mcp, copyText, copySecret, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
     await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
     // Its name offered in place of Claude Desktop's.
     expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty("value", "Claude Code");
@@ -236,7 +236,7 @@ describe("AI apps (4.9)", () => {
 
   it("adds VS Code as another app is added, and opens its install link (5.13)", async () => {
     const { dialog, mcp, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
     await user.click(dialog().getByRole("radio", { name: "VS Code (GitHub Copilot)" }));
     expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty("value", "VS Code");
     await user.click(dialog().getByRole("button", { name: "Add" }));
@@ -265,7 +265,7 @@ describe("AI apps (4.9)", () => {
 
   it("keeps a name the person typed when they choose another app, and swaps an offered one", async () => {
     const { dialog, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
     await user.click(dialog().getByRole("radio", { name: "VS Code (GitHub Copilot)" }));
     await user.click(dialog().getByRole("radio", { name: "Another app" }));
     expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty("value", "");
@@ -277,7 +277,7 @@ describe("AI apps (4.9)", () => {
   it("says why an app wasn't added, and adds nothing while AI apps is off", async () => {
     const { dialog, mcp, user } = setUp();
     mcp.add.mockResolvedValueOnce({ status: "name-taken" });
-    await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
     await user.clear(dialog().getByRole("textbox", { name: "Name" }));
     await user.type(dialog().getByRole("textbox", { name: "Name" }), "Claude");
     await user.click(dialog().getByRole("button", { name: "Add" }));
@@ -287,7 +287,7 @@ describe("AI apps (4.9)", () => {
 
     cleanup();
     const off = setUp({ enabled: false, address: null });
-    const add = await off.dialog().findByRole("button", { name: "Add AI app" });
+    const add = await off.dialog().findByRole("button", { name: "Add AI App" });
     expect((add as HTMLButtonElement).disabled).toBe(true);
   });
 
@@ -298,7 +298,7 @@ describe("AI apps (4.9)", () => {
     expect(mcp.setEnabled).toHaveBeenCalledWith(true);
     await waitFor(() =>
       expect(
-        (dialog().getByRole("button", { name: "Add AI app" }) as HTMLButtonElement).disabled,
+        (dialog().getByRole("button", { name: "Add AI App" }) as HTMLButtonElement).disabled,
       ).toBe(false),
     );
   });

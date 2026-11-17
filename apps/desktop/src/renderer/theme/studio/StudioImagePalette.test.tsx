@@ -47,9 +47,9 @@ function setUp(
 
 /** Chooses the logo in the picker. */
 async function chooseLogo(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: "Colours from an image…" }));
+  await user.click(screen.getByRole("button", { name: "Colours from an Image…" }));
   await user.dblClick(
-    within(screen.getByRole("dialog", { name: "Choose an image" })).getByRole("option", {
+    within(screen.getByRole("dialog", { name: "Choose an Image" })).getByRole("option", {
       name: /Logo\.png/,
     }),
   );
@@ -129,7 +129,7 @@ describe("a palette from an image (2.3b, PG-2)", () => {
   it("asks for an image in Media when there is none", async () => {
     const { user } = setUp({});
 
-    await user.click(screen.getByRole("button", { name: "Colours from an image…" }));
+    await user.click(screen.getByRole("button", { name: "Colours from an Image…" }));
 
     expect(screen.getByText("Add your logo or a photo to Media first.")).toBeTruthy();
   });

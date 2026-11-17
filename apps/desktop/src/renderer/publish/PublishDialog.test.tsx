@@ -202,7 +202,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
       await screen.findByRole("button", { name: "A web host with a control panel" }),
     );
 
-    const form = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
+    const form = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     await user.type(form.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
     await user.type(form.getByLabelText("User name", { exact: true }), "rosa");
     await user.type(form.getByLabelText("Password", { exact: true }), "test-only-password");
@@ -220,7 +220,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     );
     // The list is read again, with the new one in it.
     expect(await screen.findByText("ftp.rosasbakery.co.uk", { selector: "p" })).toBeTruthy();
-    expect(screen.queryByRole("dialog", { name: "Publish to your web host" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Publish to Your Web Host" })).toBeNull();
   });
 
   it("starts each Add afresh: nothing typed or trusted in the last one stays", async () => {
@@ -228,15 +228,15 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     await user.click(
       await screen.findByRole("button", { name: "A web host with a control panel" }),
     );
-    let form = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
+    let form = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     await user.type(form.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
     await user.click(form.getByRole("button", { name: "Cancel" }));
     await waitFor(() =>
-      expect(screen.queryByRole("dialog", { name: "Publish to your web host" })).toBeNull(),
+      expect(screen.queryByRole("dialog", { name: "Publish to Your Web Host" })).toBeNull(),
     );
 
     await user.click(screen.getByRole("button", { name: "A web host with a control panel" }));
-    form = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
+    form = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     expect((form.getByLabelText("Host", { exact: true }) as HTMLInputElement).value).toBe("");
   });
 
@@ -247,14 +247,14 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
       "https://www.rosasbakery.co.uk",
     );
     await user.click(await screen.findByRole("button", { name: "Add Destination" }));
-    const added = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
+    const added = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     expect((added.getByLabelText("Web address", { exact: true }) as HTMLInputElement).value).toBe(
       "https://www.rosasbakery.co.uk",
     );
     await user.click(added.getByRole("button", { name: "Cancel" }));
 
     await user.click(await screen.findByRole("button", { name: "Edit Old host" }));
-    const edited = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
+    const edited = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     // It has none of its own: the site's isn't put in its place.
     expect((edited.getByLabelText("Web address", { exact: true }) as HTMLInputElement).value).toBe(
       "",
@@ -267,7 +267,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     ]);
     await user.click(await screen.findByRole("button", { name: "Edit Live" }));
 
-    const form = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
+    const form = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     expect((form.getByLabelText("Name", { exact: true }) as HTMLInputElement).value).toBe("Live");
     expect((form.getByLabelText("Password", { exact: true }) as HTMLInputElement).value).toBe("");
     await user.click(form.getByRole("button", { name: "Save" }));
@@ -317,7 +317,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     await user.click(
       await screen.findByRole("button", { name: "A web host with a control panel" }),
     );
-    const form = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
+    const form = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     await user.type(form.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
     await user.type(form.getByLabelText("User name", { exact: true }), "rosa");
     await user.type(form.getByLabelText("Password", { exact: true }), "test-only-password");
@@ -328,7 +328,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
         "This computer can't keep passwords safely, so Webforge can't save one.",
       ),
     );
-    expect(screen.getByRole("dialog", { name: "Publish to your web host" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Publish to Your Web Host" })).toBeTruthy();
   });
 });
 
@@ -466,7 +466,7 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
     await user.click(await screen.findByRole("button", { name: "Add Destination" }));
     expect(screen.getByRole("menuitem", { name: "Netlify…" })).toBeTruthy();
     await user.click(screen.getByRole("menuitem", { name: "Web Host with a Control Panel…" }));
-    expect(await screen.findByRole("dialog", { name: "Publish to your web host" })).toBeTruthy();
+    expect(await screen.findByRole("dialog", { name: "Publish to Your Web Host" })).toBeTruthy();
   });
 
   it("lists one by its site, publishes and tests it, and can't before it has its site", async () => {

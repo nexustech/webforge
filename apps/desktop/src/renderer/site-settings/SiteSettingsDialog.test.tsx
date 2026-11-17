@@ -56,7 +56,7 @@ describe("SiteSettingsDialog", () => {
     await user.click(screen.getByLabelText("Help AI tools read your site"));
     await user.click(screen.getByRole("tab", { name: "Contact & hours" }));
     await user.type(screen.getByLabelText("Phone number"), "+44 1234 567890");
-    await user.click(screen.getByRole("button", { name: "Add opening hours" }));
+    await user.click(screen.getByRole("button", { name: "Add Opening Hours" }));
     await user.click(screen.getByText("Tue"));
     await user.click(screen.getByRole("tab", { name: "Search engines" }));
     await user.click(screen.getByLabelText("Include a sitemap for search engines"));
@@ -101,10 +101,10 @@ describe("SiteSettingsDialog", () => {
     const { onSave, user } = setUp();
     await user.click(screen.getByRole("tab", { name: "Social & sharing" }));
     // Each added profile opens; the second is removed again.
-    await user.click(screen.getByRole("button", { name: "Add a profile" }));
+    await user.click(screen.getByRole("button", { name: "Add a Profile" }));
     await user.selectOptions(screen.getByLabelText("Network"), "instagram");
     await user.type(screen.getByLabelText("Profile address"), "https://instagram.com/rosas");
-    await user.click(screen.getByRole("button", { name: "Add a profile" }));
+    await user.click(screen.getByRole("button", { name: "Add a Profile" }));
     await user.click(
       screen.getAllByRole("button", { name: "Remove this profile" })[1] as HTMLElement,
     );
