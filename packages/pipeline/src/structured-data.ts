@@ -115,6 +115,15 @@ function shownOn(nodes: readonly NodeDoc[], library: ComponentLibrary): Shown {
       if (node.props.showHours !== false) hours = true;
       if (node.props.showContact !== false) for (const key of CONTACT_KEYS) contact.add(key);
     }
+    // Contact buttons link to Site Settings' phone and email where they have none of their own,
+    // as a button bound to one would (6.16d).
+    if (node.type === "ContactButtons") {
+      const unset = (value: unknown) => typeof value !== "string" || value.trim() === "";
+      if (node.props.call !== false && unset(node.props.phone)) contact.add("contact.phone");
+      if (node.props.email !== false && unset(node.props.emailAddress)) {
+        contact.add("contact.email");
+      }
+    }
     const bindings = node.props.bindings;
     if (bindings !== undefined) {
       for (const field of Object.keys(bindings as object)) {

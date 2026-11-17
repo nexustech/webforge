@@ -8972,6 +8972,166 @@
       },
       "defaults": {}
     },
+    "ContactButtons": {
+      "label": "Contact buttons",
+      "place": "section",
+      "category": "Contact",
+      "framed": true,
+      "appearance": "noText",
+      "fields": {
+        "call": {
+          "kind": "toggle",
+          "label": "Call button"
+        },
+        "phone": {
+          "kind": "text",
+          "label": "Phone number",
+          "help": "Leave it empty to use the one in Site Settings › Contact."
+        },
+        "whatsapp": {
+          "kind": "toggle",
+          "label": "WhatsApp button"
+        },
+        "whatsappNumber": {
+          "kind": "text",
+          "label": "WhatsApp number",
+          "help": "With its country code (+44 7700 900123). Leave it empty to use the phone number."
+        },
+        "email": {
+          "kind": "toggle",
+          "label": "Email button"
+        },
+        "emailAddress": {
+          "kind": "text",
+          "label": "Email address",
+          "help": "Leave it empty to use the one in Site Settings › Contact."
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
+        "colors": {
+          "kind": "select",
+          "label": "Colours",
+          "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+          "options": [
+            {
+              "label": "Page colours",
+              "value": "page"
+            },
+            {
+              "label": "Reversed",
+              "value": "inverse"
+            }
+          ]
+        },
+        "padding": {
+          "kind": "box",
+          "label": "Padding",
+          "property": "padding",
+          "responsive": true
+        },
+        "margin": {
+          "kind": "box",
+          "label": "Margin",
+          "property": "margin",
+          "responsive": true,
+          "sides": [
+            "top",
+            "bottom"
+          ]
+        },
+        "entrance": {
+          "kind": "select",
+          "label": "Entrance animation",
+          "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+          "group": "style",
+          "options": [
+            {
+              "label": "None",
+              "value": "none"
+            },
+            {
+              "label": "Fade in",
+              "value": "fade"
+            },
+            {
+              "label": "Slide up",
+              "value": "slideUp"
+            },
+            {
+              "label": "Slide in from the left",
+              "value": "slideLeft"
+            },
+            {
+              "label": "Slide in from the right",
+              "value": "slideRight"
+            },
+            {
+              "label": "Zoom in",
+              "value": "zoom"
+            }
+          ]
+        },
+        "entranceDelay": {
+          "kind": "slider",
+          "label": "Delay",
+          "group": "style",
+          "steps": [
+            {
+              "label": "None",
+              "value": "none"
+            },
+            {
+              "label": "Short",
+              "value": "short"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Long",
+              "value": "long"
+            }
+          ]
+        }
+      },
+      "defaults": {
+        "colors": "page",
+        "call": true,
+        "phone": "",
+        "whatsapp": false,
+        "whatsappNumber": "",
+        "email": true,
+        "emailAddress": "",
+        "contentWidth": "full",
+        "padding": {
+          "top": "none",
+          "bottom": "none"
+        }
+      }
+    },
     "Steps": {
       "label": "Steps",
       "place": "section",

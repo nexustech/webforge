@@ -3,7 +3,7 @@
 id: sections
 title: Sections
 summary: Every section you can add to a page, what it's for and what you can change.
-components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat, Steps, Step]
+components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat, Steps, Step, ContactButtons]
 related: [elements, add-panel, edit-panel, forms, header-and-footer]
 updated: 2026-11-17
 ---
@@ -133,3 +133,7 @@ This section sends sign-ups straight to that service, not to the form service in
 ## Section
 
 A blank band to fill with any elements you like. **Space between elements** sets how far apart they sit.
+
+## Contact buttons
+
+Round **Call**, **WhatsApp** and **Email** buttons that stay at the bottom left of the screen while visitors scroll, so they can get in touch from anywhere on the page. Adding them from the Add panel puts them after the Footer, so they're on every page; on the canvas they show there, and on your site they stay in the corner. They use the phone number and email address in Site Settings › Contact, unless you type others in the Edit panel. Turn each button on or off; **WhatsApp** is off until you turn it on, and needs the number with its country code (+44 7700 900123). A button with no number or address isn't shown. Each is a plain link: your site loads nothing from anyone until a visitor taps one.

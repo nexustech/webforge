@@ -335,7 +335,13 @@ export type SiteBindings = {
  * What an element is missing, for {@link SiteBindings.elementHint}: a video's or a map's address,
  * a Buy button's payment link.
  */
-export type ElementHint = "videoAddress" | "mapAddress" | "paymentLink" | "blog";
+export type ElementHint =
+  | "videoAddress"
+  | "mapAddress"
+  | "paymentLink"
+  | "blog"
+  | "contactButtons"
+  | "whatsappNumber";
 
 /**
  * Why a form has nowhere to send to (2.8): no form service chosen in Site Settings, Netlify Forms
@@ -401,6 +407,12 @@ export type RenderContext = SiteBindings & {
    * and its consent banner, so a visitor can change their choice at any time.
    */
   readonly cookieSettings?: true;
+  /**
+   * What stays on screen stays at its corner (the Contact buttons, 6.16d): set by the export.
+   * Without it, as on the canvas, they are drawn where they are on the page, so they can be
+   * selected.
+   */
+  readonly pinned?: true;
   /**
    * Each form's name in Netlify Forms by its element's id, set by a build for a Netlify destination
    * (4.2): forms whose service is Netlify Forms are drawn for Netlify to find and take their

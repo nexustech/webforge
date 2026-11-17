@@ -167,6 +167,10 @@ export const site = {
   "site.binding.elementHint.mapAddress": "Add an address or a map link in the Edit panel",
   "site.binding.elementHint.blog":
     "Add a blog (Site panel › Add Page › Blog) to list its posts here",
+  "site.binding.elementHint.contactButtons":
+    "Add a phone number or email address in Site Settings › Contact, or in the Edit panel",
+  "site.binding.elementHint.whatsappNumber":
+    "Give the WhatsApp number with its country code (+44 …) in the Edit panel",
   "site.binding.elementHint.paymentLink":
     "Add the payment link (https://…) from Stripe, PayPal or your shop, in the Edit panel",
   "site.settings.title": "Site Settings",
