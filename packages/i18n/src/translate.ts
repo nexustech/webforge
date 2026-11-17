@@ -22,7 +22,7 @@ export type ParamsOf<K extends MessageKey> = Exclude<Placeholders<(typeof en)[K]
  * as params; nothing for a message without any. A key typed only as `MessageKey` (chosen at run
  * time from the whole catalogue) can't be checked, so it takes any params.
  */
-type ParamsArg<K extends MessageKey> = MessageKey extends K
+export type ParamsArg<K extends MessageKey> = MessageKey extends K
   ? [params?: MessageParams]
   : [ParamsOf<K>] extends [never]
     ? []
@@ -46,12 +46,19 @@ const withAppName = (message: string) => message.replaceAll("{appName}", en["app
  * @example t("app.version", { version: "1.2.0" }) // "Version 1.2.0"
  */
 export function t<K extends MessageKey>(key: K, ...[params]: ParamsArg<K>): string {
-  const message = withAppName(en[key]);
+  return filled(withAppName(en[key]), params);
+}
+
+/**
+ * `message` with its `{placeholder}`s replaced by `params`; one without a matching param is left
+ * as is, so a missing value shows instead of silently disappearing.
+ */
+export function filled(message: string, params: MessageParams | undefined): string {
   if (params === undefined) {
     return message;
   }
   return message.replace(PLACEHOLDER, (match, name: string) => {
-    const value = (params as MessageParams)[name];
+    const value = params[name];
     return value === undefined ? match : String(value);
   });
 }

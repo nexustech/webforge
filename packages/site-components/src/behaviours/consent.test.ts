@@ -1,3 +1,4 @@
+import { siteTextFor } from "@webforge/i18n/site-text";
 import type { NodeDoc, SiteAnalytics } from "@webforge/model";
 import { Window } from "happy-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -54,7 +55,7 @@ function page(
     ...EDITOR_RENDER_CONTEXT,
     ...(analytics.consentBanner ? { cookieSettings: true as const } : {}),
   };
-  document.body.innerHTML = `${renderNodesToHtml([video, footer], siteLibrary, context)}${consentBannerHtml(analytics)}`;
+  document.body.innerHTML = `${renderNodesToHtml([video, footer], siteLibrary, context)}${consentBannerHtml(analytics, siteTextFor("en"))}`;
   for (const name of ["consent", "embed"] as const) {
     new Function("window", "document", "HTMLElement", "Event", BEHAVIOUR_SCRIPTS[name] ?? "")(
       window,
@@ -164,7 +165,7 @@ describe("the consent behaviour (3.8, B4, B7)", () => {
     const window = happy as unknown as typeof globalThis & { dataLayer?: unknown[] };
     const { document } = window;
     // Written by hand, as Advanced attributes no longer can (S3).
-    document.body.innerHTML = `<main><h1 data-wf-consent data-measurement-id="G-ATTACKER1">Hi</h1></main><div data-wf-consent data-measurement-id="G-ATTACKER2"></div>${consentBannerHtml(ANALYTICS)}`;
+    document.body.innerHTML = `<main><h1 data-wf-consent data-measurement-id="G-ATTACKER1">Hi</h1></main><div data-wf-consent data-measurement-id="G-ATTACKER2"></div>${consentBannerHtml(ANALYTICS, siteTextFor("en"))}`;
     new Function("window", "document", "HTMLElement", "Event", BEHAVIOUR_SCRIPTS.consent ?? "")(
       window,
       document,
@@ -270,7 +271,10 @@ describe("changing the choice: Cookie settings in the Footer (#539)", () => {
 
 describe("the consent banner (3.8)", () => {
   it("is a named region, hidden until the script shows it, with the person's text if they wrote one", () => {
-    const html = consentBannerHtml({ ...ANALYTICS, consentMessage: "Cookies? Yes or no." });
+    const html = consentBannerHtml(
+      { ...ANALYTICS, consentMessage: "Cookies? Yes or no." },
+      siteTextFor("en"),
+    );
 
     expect(html).toMatch(
       /^<section data-wf-consent="" data-measurement-id="G-ABC123DEF4" data-ask=""/,
@@ -280,11 +284,11 @@ describe("the consent banner (3.8)", () => {
     expect(html).toContain('<p class="text-sm">Cookies? Yes or no.</p>');
     // An empty text of the person's, or only spaces, is the standard one (#539).
     for (const consentMessage of ["", "   "]) {
-      expect(consentBannerHtml({ ...ANALYTICS, consentMessage })).toContain(
+      expect(consentBannerHtml({ ...ANALYTICS, consentMessage }, siteTextFor("en"))).toContain(
         "We&#x27;d like to use cookies",
       );
     }
-    expect(consentBannerHtml(ANALYTICS)).toContain(
+    expect(consentBannerHtml(ANALYTICS, siteTextFor("en"))).toContain(
       "We&#x27;d like to use cookies to count visits and see which pages are popular. Is that all right?",
     );
   });

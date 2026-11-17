@@ -174,6 +174,9 @@ export default {
           // Declared subpath export: @webforge/mcp-bridge/build (bundles the bridge with esbuild,
           // for the desktop app's build and the tests that run it bundled, ADR 0021).
           "^packages/mcp-bridge/src/build\\.ts$",
+          // Declared subpath export: @webforge/i18n/site-text (a site's labels in its language,
+          // 6.12), so main's start-up, which needs `t` alone, loads no other language's catalogue.
+          "^packages/i18n/src/site-text\\.ts$",
         ],
       },
     },

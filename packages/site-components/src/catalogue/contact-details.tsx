@@ -23,13 +23,13 @@ const settingOf = (context: RenderContext, key: BindableSetting): string | React
 
 /** The business's opening hours, one line for each group of days, and the note under them. */
 function Hours({ context }: { readonly context: RenderContext }) {
-  const lines = openingHoursLines(context.openingHours ?? [], context.language);
+  const lines = openingHoursLines(context.openingHours ?? [], context.siteText, context.language);
   const note = settingOf(context, "contact.openingHoursNote");
   // Nothing to say in the export without hours or a note; the canvas still shows the note's hint.
   if (lines.length === 0 && note === null) return null;
   return (
     <div className="space-y-3">
-      <PartTitle>{t("siteText.openingHours")}</PartTitle>
+      <PartTitle>{context.siteText("siteText.openingHours")}</PartTitle>
       {lines.length > 0 && (
         <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1">
           {lines.map((line) => (
@@ -97,16 +97,20 @@ function Contact({ context }: { readonly context: RenderContext }) {
   });
   return (
     <div className="space-y-3">
-      <PartTitle>{t("siteText.contactUs")}</PartTitle>
+      <PartTitle>{context.siteText("siteText.contactUs")}</PartTitle>
       <address className="space-y-2 not-italic">
-        <Detail label={t("siteText.address")} multiline {...detail("contact.address")} />
         <Detail
-          label={t("siteText.phone")}
+          label={context.siteText("siteText.address")}
+          multiline
+          {...detail("contact.address")}
+        />
+        <Detail
+          label={context.siteText("siteText.phone")}
           {...detail("contact.phone")}
           href={(number) => context.href({ kind: "phone", number, newTab: false })}
         />
         <Detail
-          label={t("siteText.email")}
+          label={context.siteText("siteText.email")}
           {...detail("contact.email")}
           href={(address) => context.href({ kind: "email", address, newTab: false })}
         />

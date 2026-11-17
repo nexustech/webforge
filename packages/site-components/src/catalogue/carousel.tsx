@@ -1,4 +1,4 @@
-import { t, template } from "@webforge/i18n";
+import { t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import type { ComponentDef } from "../library.js";
@@ -47,21 +47,25 @@ const carousel = defineComponent({
   },
   defaults: { label: t("starter.carouselLabel"), slides: [], autoplay: false, interval: "7" },
   behaviours: ["carousel"],
-  render: ({ values, slots }) => {
+  render: ({ values, slots, context }) => {
     const Slides = slots.slides;
     const button = BUTTON_CLASSES.iconSmall;
     return (
       // A labelled <section> is a region landmark: the carousel's own, named by its label.
       <section
         className={`site-carousel group/carousel space-y-3${marginClasses(values.margin)}`}
-        aria-roledescription={t("siteText.carousel")}
+        aria-roledescription={context.siteText("siteText.carousel")}
         // Named even with its name left empty: a nameless region is no landmark (axe).
         aria-label={values.label.trim() === "" ? t("starter.carouselLabel") : values.label}
         data-layout={values.variant}
         data-wf-carousel=""
-        data-slide-label={t("siteText.slide")}
-        data-slide-of={template("siteText.slideOf")}
-        data-slides-of={template("siteText.slidesOf")}
+        data-slide-label={context.siteText("siteText.slide")}
+        data-slide-of={context.siteText("siteText.slideOf", { n: "{n}", total: "{total}" })}
+        data-slides-of={context.siteText("siteText.slidesOf", {
+          from: "{from}",
+          to: "{to}",
+          total: "{total}",
+        })}
         {...(values.autoplay ? { "data-interval": `${Number(values.interval) * 1000}` } : {})}
       >
         {/* Shown by the script, which makes them work; the rotation button comes first (APG). */}
@@ -71,9 +75,9 @@ const carousel = defineComponent({
               type="button"
               className={button}
               data-wf-carousel-play=""
-              data-label-stop={t("siteText.stopSlides")}
-              data-label-start={t("siteText.startSlides")}
-              aria-label={t("siteText.stopSlides")}
+              data-label-stop={context.siteText("siteText.stopSlides")}
+              data-label-start={context.siteText("siteText.startSlides")}
+              aria-label={context.siteText("siteText.stopSlides")}
             >
               <span className="hidden group-data-[playing]/carousel:inline">
                 <StrokeIcon path={PAUSE_ICON} />
@@ -87,7 +91,7 @@ const carousel = defineComponent({
             type="button"
             className={button}
             data-wf-carousel-previous=""
-            aria-label={t("siteText.previousSlide")}
+            aria-label={context.siteText("siteText.previousSlide")}
           >
             <StrokeIcon path={PREVIOUS_ICON} />
           </button>
@@ -95,7 +99,7 @@ const carousel = defineComponent({
             type="button"
             className={button}
             data-wf-carousel-next=""
-            aria-label={t("siteText.nextSlide")}
+            aria-label={context.siteText("siteText.nextSlide")}
           >
             <StrokeIcon path={NEXT_ICON} />
           </button>
@@ -106,7 +110,7 @@ const carousel = defineComponent({
           className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth rounded-box motion-reduce:scroll-auto"
           data-wf-carousel-track=""
           role="group"
-          aria-label={t("siteText.slides")}
+          aria-label={context.siteText("siteText.slides")}
           // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrolling region the keyboard must reach (axe's scrollable-region-focusable).
           tabIndex={0}
         >

@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n/site-text";
 import type { SiteAnalytics } from "@webforge/model";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -10,27 +10,33 @@ import { renderToStaticMarkup } from "react-dom/server";
  * chosen yet, so without JavaScript nothing shows and nothing is counted. In the theme's page
  * colours.
  */
-function ConsentBanner({ analytics }: { readonly analytics: SiteAnalytics }) {
+function ConsentBanner({
+  analytics,
+  siteText,
+}: {
+  readonly analytics: SiteAnalytics;
+  readonly siteText: SiteText;
+}) {
   return (
     <section
       data-wf-consent=""
       data-measurement-id={analytics.measurementId}
       {...(analytics.consentBanner ? { "data-ask": "" } : {})}
-      aria-label={t("siteText.consent.label")}
+      aria-label={siteText("siteText.consent.label")}
       className="site-consent fixed inset-x-4 bottom-4 z-50 mx-auto max-w-xl rounded-box border border-base-300 bg-base-100 p-4 text-base-content shadow-xl print:hidden"
       hidden
     >
       {analytics.consentBanner ? (
         <>
           <p className="text-sm">
-            {analytics.consentMessage?.trim() || t("siteText.consent.message")}
+            {analytics.consentMessage?.trim() || siteText("siteText.consent.message")}
           </p>
           <div className="mt-3 flex flex-wrap justify-end gap-2">
             <button type="button" className="btn btn-sm btn-ghost" data-wf-consent-decline="">
-              {t("siteText.consent.decline")}
+              {siteText("siteText.consent.decline")}
             </button>
             <button type="button" className="btn btn-sm btn-primary" data-wf-consent-accept="">
-              {t("siteText.consent.accept")}
+              {siteText("siteText.consent.accept")}
             </button>
           </div>
         </>
@@ -39,6 +45,6 @@ function ConsentBanner({ analytics }: { readonly analytics: SiteAnalytics }) {
   );
 }
 
-/** {@link ConsentBanner} as the export writes it. */
-export const consentBannerHtml = (analytics: SiteAnalytics): string =>
-  renderToStaticMarkup(<ConsentBanner analytics={analytics} />);
+/** {@link ConsentBanner} as the export writes it, in the site's language. */
+export const consentBannerHtml = (analytics: SiteAnalytics, siteText: SiteText): string =>
+  renderToStaticMarkup(<ConsentBanner analytics={analytics} siteText={siteText} />);
