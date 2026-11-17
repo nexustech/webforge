@@ -30,7 +30,7 @@ const PLACES: readonly (readonly [RegExp, LabelPlace])[] = [
     "carousel",
   ],
   [/^siteText\.consent\./, "consent"],
-  [/^siteText\.(openingHours|contactUs|phone|email|address|days?\.)/, "contact"],
+  [/^siteText\.(openingHours|contactUs|contactButtons\.|phone|email|address|days?\.)/, "contact"],
   [/^siteText\.embed\./, "embed"],
   [/^siteText\.(form|thanks)\./, "forms"],
   [/^siteText\.logo$/, "logos"],

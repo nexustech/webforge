@@ -232,7 +232,7 @@ export const site = {
   "site.settings.labelsHint":
     "Words your site writes itself, such as Menu or Back to top. Change any you'd say differently. The cookie banner's text is under Analytics.",
   "site.settings.label": "Label",
-  "site.settings.labelKey": "Label",
+  "site.settings.labelKey": "Which label",
   "site.settings.labelText": "Your wording",
   "site.settings.addLabel": "Change a Label",
   "site.settings.removeLabel": "Remove this label, going back to the standard one",

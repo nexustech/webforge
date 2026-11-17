@@ -61,6 +61,14 @@ const settings: fc.Arbitrary<SiteSettings> = fc.record({
       name: anyText(40).filter((name) => name.length > 0),
       description: anyText(60),
       language: fc.constantFrom("en", "en-GB", "de", "fr-CA"),
+      // Labels in the owner's words (6.12): wording as the schema keeps it, trimmed and not blank.
+      labels: fc.dictionary(
+        fc.constantFrom("siteText.menu", "siteText.backToTop"),
+        anyText(20)
+          .map((text) => text.trim())
+          .filter((text) => text !== ""),
+        { minKeys: 1 },
+      ),
     },
     { requiredKeys: ["name", "language"] },
   ),

@@ -1,3 +1,4 @@
+import type { SiteTextKey } from "@webforge/i18n/site-text";
 import { CONSENT_MESSAGE_LABEL, defaultSiteSettings } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { type SettingsForm, toSettingsForm } from "./settings-form.js";
@@ -114,6 +115,8 @@ describe("Site Settings' Labels on your site (6.12, CC-1)", () => {
   it("offers every label but the cookie banner's text, by where it shows, in the site's language", () => {
     expect(CHANGEABLE_LABELS).not.toContain(CONSENT_MESSAGE_LABEL);
     expect(CHANGEABLE_LABELS.filter((key) => labelPlace(key) === undefined)).toEqual([]);
+    // The contact buttons' (6.16) are with the other contact details.
+    expect(labelPlace("siteText.contactButtons.call" as SiteTextKey)).toBe("contact");
     const options = labelOptions("de");
     expect(options.map((option) => option.value).toSorted()).toEqual(
       [...CHANGEABLE_LABELS].toSorted(),
