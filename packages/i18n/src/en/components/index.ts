@@ -3,6 +3,7 @@ import { announcementBar } from "./announcementBar.js";
 import { basic } from "./basic.js";
 import { carousel } from "./carousel.js";
 import { commerce } from "./commerce.js";
+import { contactButtons } from "./contactButtons.js";
 import { contactDetails } from "./contactDetails.js";
 import { customCode } from "./customCode.js";
 import { elements } from "./elements.js";
@@ -53,6 +54,7 @@ export const componentFamilies = {
   announcementBar,
   latestPosts,
   postTags,
+  contactButtons,
   steps,
   accordion,
   table,
@@ -83,6 +85,7 @@ export const components = {
   ...announcementBar,
   ...latestPosts,
   ...postTags,
+  ...contactButtons,
   ...steps,
   ...accordion,
   ...table,

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { t } from "@webforge/i18n";
 import type { SiteDoc } from "@webforge/model";
 import { starterSite } from "../../shared/starter-site.js";
 import { SiteSettingsDialog } from "./SiteSettingsDialog.js";
@@ -37,6 +38,34 @@ type Story = StoryObj<typeof meta>;
 
 /** General: name, description, language, icon and the business type. */
 export const General: Story = {};
+
+/**
+ * General for a German site with two labels in the owner's own words (6.12, CC-1): the language
+ * by name, and *Labels on your site* below the switches, scrolled to.
+ */
+export const LabelsOnYourSite: Story = {
+  args: {
+    site: (() => {
+      const site = bakery();
+      site.settings.general = {
+        ...site.settings.general,
+        language: "de-AT",
+        labels: { "siteText.menu": "Speisekarte", "siteText.backToTop": "Ganz nach oben" },
+      };
+      return site;
+    })(),
+  },
+  // The list is below the AI switches: scrolled to, as the owner would.
+  play: async ({ canvasElement }) => {
+    const heading = [
+      ...canvasElement.ownerDocument.querySelectorAll<HTMLElement>("[role=dialog] *"),
+    ].find(
+      (each) => each.childElementCount === 0 && each.textContent === t("site.settings.labels"),
+    );
+    if (heading === undefined) throw new Error("No Labels on your site");
+    heading.scrollIntoView({ block: "start" });
+  },
+};
 
 /** Contact details and opening hours. */
 export const Contact: Story = { args: { initialSection: "contact" } };

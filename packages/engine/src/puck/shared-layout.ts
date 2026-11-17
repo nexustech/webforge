@@ -5,7 +5,7 @@ import {
   type PageDoc,
   type SharedSectionsDoc,
 } from "@webforge/model";
-import { ABOVE_THE_HEADER } from "@webforge/site-components";
+import { ABOVE_THE_HEADER, BELOW_THE_FOOTER } from "@webforge/site-components";
 import { allNodes, findNode } from "./tree.js";
 
 /** A site without a shared Header or Footer. */
@@ -73,8 +73,10 @@ export function sameNodes(a: readonly NodeDoc[], b: readonly NodeDoc[]): boolean
 /** Whether `id` is the Header's or Footer's own top-level node: the Header or Footer itself. */
 export function isSharedRegion(layout: LayoutDoc, id: string): boolean {
   return [...layout.header, ...layout.footer].some(
-    // An Announcement bar above the Header is deleted like any section, from every page (6.4).
-    (node) => node.props.id === id && !ABOVE_THE_HEADER.has(node.type),
+    // An Announcement bar above the Header (6.4), or Contact buttons after the Footer (6.16d), is
+    // deleted like any section, from every page.
+    (node) =>
+      node.props.id === id && !ABOVE_THE_HEADER.has(node.type) && !BELOW_THE_FOOTER.has(node.type),
   );
 }
 

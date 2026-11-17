@@ -17,12 +17,13 @@ They're in the same **Settings** window as {appName}'s own preferences, under **
 
 - **Site name:** shown in the Header, in browser tabs and in search results.
 - **Description:** a sentence or two about your business. Search engines show it for any page without a description of its own.
-- **Language:** the language your site is written in, as a code such as `en`, `en-GB` or `de`. Spelling checks use it too. The words your site writes itself, such as _Menu_, _Back to top_, _Accept all_ and the days of the week, are in this language when it's French, German or Spanish, and in English for any other.
+- **Language:** the language your site is written in, chosen by name, such as _English (United Kingdom)_ or _German_. Spelling checks use it too. The words your site writes itself, such as _Menu_, _Back to top_, _Accept all_ and the days of the week, are in this language when it's French, German or Spanish, and in English for any other.
 - **Site icon:** the small picture in browser tabs and bookmarks. Choose a square picture from Media.
 - **Show a back-to-top button:** a button that appears once visitors scroll down. It isn't shown in the editor.
 - **Business type** and **More precisely:** what kind of business this is, such as _Restaurant_, _Plumber_ or _Vehicle repair_. Search engines use it.
 - **Help AI tools read your site:** adds a plain-text copy of each page to your website, for AI tools that read them. Search engines don't read them. Off unless you turn it on.
 - **Ask AI companies not to train on this site:** asks the crawlers of OpenAI, Anthropic, Google, Apple and other AI companies not to use your site to train their AI. It's a request, not a block: well-behaved crawlers follow it, others may not. It turns off **Help AI tools read your site**, which would invite them in. Off unless you turn it on.
+- **Labels on your site:** the words your site writes itself, in your own wording. Click **Change a Label**, choose one by where it shows, such as _Header and Footer: Menu_, and type what it should say. Remove it to go back to the standard label. The cookie banner's text is under **Analytics**.
 
 ## Web address
 

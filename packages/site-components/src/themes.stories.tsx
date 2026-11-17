@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type NodeDoc, pastedCopies, type ThemeTokens } from "@webforge/model";
 import { CURATED_THEMES_A, CURATED_THEMES_B, CURATED_THEMES_C } from "@webforge/themes";
 import { ABOVE_THE_HEADER } from "./catalogue/announcement-bar.js";
+import { BELOW_THE_FOOTER } from "./catalogue/contact-buttons.js";
 import { siteLibrary, starterLayout } from "./catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
@@ -14,12 +15,13 @@ const BODY_CLASS = "flex min-h-screen flex-col bg-base-100 font-sans text-base-c
 /**
  * A page with every section the Add panel offers, each as it's added, between the starter Header
  * and Footer: the last section on the theme's inverse colours (2.4), as a dark band. What the Add
- * panel puts above the Header (the Announcement bar, 6.4) is above it here too.
+ * panel puts above the Header (the Announcement bar, 6.4) is above it here too. The Contact buttons
+ * (6.16d), which stay at the screen's corner, have stories of their own.
  */
 function samplePage(): string {
   const { header, footer } = starterLayout("Rosa's Bakery");
   const sectionTypes = Object.entries(siteLibrary.components)
-    .filter(([, def]) => def.place === "section")
+    .filter(([type, def]) => def.place === "section" && !BELOW_THE_FOOTER.has(type))
     .map(([type]) => type);
   const node = (type: string, id: string, props: Record<string, unknown> = {}): NodeDoc => ({
     type,

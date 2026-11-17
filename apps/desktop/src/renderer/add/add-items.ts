@@ -12,7 +12,11 @@ import {
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
-import { ABOVE_THE_HEADER, type ComponentLibrary } from "@webforge/site-components";
+import {
+  ABOVE_THE_HEADER,
+  BELOW_THE_FOOTER,
+  type ComponentLibrary,
+} from "@webforge/site-components";
 import type { AddItem } from "../editor/add-item.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor } from "../editor/labels.js";
@@ -362,12 +366,20 @@ export function addComponent(session: AddSession, key: string, point?: InsertPoi
   }
   const { pageId, viewport } = session.ui.getState();
   const site = session.history.document.getState();
-  // A click puts it above the Header, once, on every page; a second click shows the one there
-  // (6.4). A page that hides the Header shows none of it: there it goes on the page, as a drop does.
-  const toHeader =
-    ABOVE_THE_HEADER.has(type) && point === undefined && !regionHidden(site, pageId, "header");
-  if (toHeader) {
-    const there = site.layout.header.find((node) => node.type === type);
+  // A click puts it above the Header (6.4), or after the Footer (6.16d), once, on every page; a
+  // second click shows the one there. A page that hides that region shows none of it: there it
+  // goes on the page, as a drop does.
+  const region =
+    point !== undefined
+      ? undefined
+      : ABOVE_THE_HEADER.has(type)
+        ? "header"
+        : BELOW_THE_FOOTER.has(type)
+          ? "footer"
+          : undefined;
+  const toRegion = region !== undefined && !regionHidden(site, pageId, region) ? region : undefined;
+  if (toRegion !== undefined) {
+    const there = site.layout[toRegion].find((node) => node.type === type);
     if (there !== undefined) {
       session.select(there.props.id);
       return true;
@@ -382,7 +394,8 @@ export function addComponent(session: AddSession, key: string, point?: InsertPoi
     "insert",
     label,
     (draft) => {
-      const content = toHeader ? draft.layout.header : draft.pages[pageId]?.doc.content;
+      const content =
+        toRegion === undefined ? draft.pages[pageId]?.doc.content : draft.layout[toRegion];
       if (content === undefined) return;
       // Every element in its defaults (a Columns' columns) gets an id of its own too.
       const ids = [id];
@@ -392,7 +405,8 @@ export function addComponent(session: AddSession, key: string, point?: InsertPoi
         () => ids.shift() ?? newId("node"),
       );
       if (node === undefined) return;
-      if (toHeader) content.unshift(node);
+      if (toRegion === "header") content.unshift(node);
+      else if (toRegion === "footer") content.push(node);
       else insertAt(content, target, [node]);
     },
     { selectionAfter: { pageId, viewport, nodeId: id }, apply: true },

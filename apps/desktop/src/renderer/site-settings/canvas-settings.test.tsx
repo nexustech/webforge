@@ -95,7 +95,7 @@ describe("connectCanvasSettings", () => {
     expect(bindingsGiven(engine.setSettings, 1).formService).toEqual(service);
   });
 
-  it("gives the canvas the site's labels in its language, again when it changes (6.12)", () => {
+  it("gives the canvas the site's labels in its language and the owner's words, again when they change (6.12)", () => {
     const session = sessionWith();
     const engine = { setSettings: vi.fn() };
     connectCanvasSettings(engine, session);
@@ -106,5 +106,17 @@ describe("connectCanvasSettings", () => {
     saveSiteSettings(session, { ...settings, general: { ...settings.general, language: "de-AT" } });
 
     expect(bindingsGiven(engine.setSettings, 1).siteText("siteText.menu")).toBe("Menü");
+
+    // And the owner's own wording, where they changed one, the banner's text among them.
+    const labels = { "siteText.menu": "Speisekarte" };
+    saveSiteSettings(session, {
+      ...settings,
+      general: { ...settings.general, language: "de-AT", labels },
+      analytics: { ...settings.analytics, consentMessage: "Cookies?" },
+    });
+    const own = bindingsGiven(engine.setSettings, 2).siteText;
+    expect(own("siteText.menu")).toBe("Speisekarte");
+    expect(own("siteText.consent.message")).toBe("Cookies?");
+    expect(own("siteText.close")).toBe("Schließen");
   });
 });

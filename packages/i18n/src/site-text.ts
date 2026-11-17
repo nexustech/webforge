@@ -37,12 +37,18 @@ export function siteTextFrom(catalogue: SiteTextCatalogue): SiteText {
 }
 
 /**
- * The labels of a site whose language is `language` (6.12, CC-1): its language's catalogue, and
- * English for a label it lacks or a language without one. What the canvas and the export give site
- * components as `context.siteText`.
+ * The labels of a site whose language is `language` (6.12, CC-1): the owner's own wording for any
+ * they changed (`overrides`, by key: Site Settings' *Labels on your site*), else its language's
+ * catalogue, and English for a label it lacks or a language without one. What the canvas and the
+ * export give site components as `context.siteText`.
  */
-export function siteTextFor(language: string | undefined): SiteText {
-  return siteTextFrom(siteTextCatalogue(language));
+export function siteTextFor(
+  language: string | undefined,
+  overrides: Readonly<Record<string, string>> = {},
+): SiteText {
+  const catalogue = siteTextCatalogue(language);
+  const own = Object.entries(overrides).filter(([, text]) => text.trim() !== "");
+  return siteTextFrom(own.length === 0 ? catalogue : { ...catalogue, ...Object.fromEntries(own) });
 }
 
 /**

@@ -271,9 +271,10 @@ describe("changing the choice: Cookie settings in the Footer (#539)", () => {
 
 describe("the consent banner (3.8)", () => {
   it("is a named region, hidden until the script shows it, with the person's text if they wrote one", () => {
+    // Its own message is its label in the owner's words (6.12).
     const html = consentBannerHtml(
-      { ...ANALYTICS, consentMessage: "Cookies? Yes or no." },
-      siteTextFor("en"),
+      ANALYTICS,
+      siteTextFor("en", { "siteText.consent.message": "Cookies? Yes or no." }),
     );
 
     expect(html).toMatch(
@@ -284,7 +285,8 @@ describe("the consent banner (3.8)", () => {
     expect(html).toContain('<p class="text-sm">Cookies? Yes or no.</p>');
     // An empty text of the person's, or only spaces, is the standard one (#539).
     for (const consentMessage of ["", "   "]) {
-      expect(consentBannerHtml({ ...ANALYTICS, consentMessage }, siteTextFor("en"))).toContain(
+      const labels = { "siteText.consent.message": consentMessage };
+      expect(consentBannerHtml(ANALYTICS, siteTextFor("en", labels))).toContain(
         "We&#x27;d like to use cookies",
       );
     }

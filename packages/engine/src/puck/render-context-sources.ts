@@ -32,6 +32,8 @@ export const RENDER_CONTEXT_SOURCES = {
   rawCustomCode: "export",
   // The Footer's Cookie settings: only an exported site has a consent banner to reopen.
   cookieSettings: "export",
+  // The Contact buttons at their corner: on the canvas they stay on the page, to be selected.
+  pinned: "export",
   // A form's thank-you page: an absolute address on the site, which only the export knows.
   thanksPage: "export",
   // Netlify Forms send only from a site Netlify serves, which only a publish to Netlify builds.

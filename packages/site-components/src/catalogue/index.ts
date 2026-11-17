@@ -7,6 +7,7 @@ import { announcementBarComponents } from "./announcement-bar.js";
 import { basicComponents } from "./basic.js";
 import { carouselComponents } from "./carousel.js";
 import { commerceComponents } from "./commerce.js";
+import { contactButtonsComponents } from "./contact-buttons.js";
 import { contactDetailsComponents } from "./contact-details.js";
 import { customCodeComponents } from "./custom-code.js";
 import { elementsComponents } from "./elements.js";
@@ -56,6 +57,7 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   announcementBarComponents,
   latestPostsComponents,
   postTagsComponents,
+  contactButtonsComponents,
   stepsComponents,
   accordionComponents,
   tableComponents,

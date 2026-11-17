@@ -58,6 +58,14 @@ describe("shared layout (F-ED-7)", () => {
     expect(isShared(announced, "news")).toBe(true);
     expect(isSharedRegion(announced, "news")).toBe(false);
     expect(isSharedRegion(announced, "header")).toBe(true);
+    // As are Contact buttons after the Footer (6.16d).
+    const buttons: LayoutDoc = {
+      ...layout,
+      footer: [...layout.footer, { type: "ContactButtons", props: { id: "buttons" } }],
+    };
+    expect(isShared(buttons, "buttons")).toBe(true);
+    expect(isSharedRegion(buttons, "buttons")).toBe(false);
+    expect(isSharedRegion(buttons, "footer")).toBe(true);
   });
 
   it("compares the order of top-level nodes", () => {

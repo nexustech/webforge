@@ -248,6 +248,31 @@ describe("addComponent", () => {
     expect(header().map((node) => node.type)).toEqual(before);
   });
 
+  it("puts Contact buttons after the Footer on every page, once (6.16d)", () => {
+    const session = sessionWith();
+    const footer = () => session.history.document.getState().layout.footer;
+    const before = footer().map((node) => node.type);
+    const content = currentPage(session)?.doc.content.length;
+
+    expect(addComponent(session, "ContactButtons")).toBe(true);
+    const buttons = footer().at(-1);
+    expect(footer().map((node) => node.type)).toEqual([...before, "ContactButtons"]);
+    expect(currentPage(session)?.doc.content).toHaveLength(content ?? 0);
+    expect(session.ui.getState().nodeId).toBe(buttons?.props.id);
+    expect(session.history.entries().map((entry) => entry.label)).toEqual([
+      "Added Contact buttons",
+    ]);
+
+    // A second click shows the ones there.
+    session.select(null);
+    expect(addComponent(session, "ContactButtons")).toBe(true);
+    expect(footer().filter((node) => node.type === "ContactButtons")).toHaveLength(1);
+    expect(session.ui.getState().nodeId).toBe(buttons?.props.id);
+
+    session.history.undo();
+    expect(footer().map((node) => node.type)).toEqual(before);
+  });
+
   it("puts an Announcement bar dropped on a page on that page", () => {
     const session = sessionWith();
     expect(addComponent(session, "AnnouncementBar", { index: 0 })).toBe(true);
