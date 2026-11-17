@@ -84,10 +84,10 @@ const chooseImage = (name: string) =>
 describe("ImageField", () => {
   it("chooses an image from Media in one step", async () => {
     const { onChange, onCommit } = await render(undefined);
-    expect(button("Choose an image")?.id).toBe("field-image");
+    expect(button("Choose an Image")?.id).toBe("field-image");
 
-    await act(async () => button("Choose an image")?.click());
-    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Choose an image");
+    await act(async () => button("Choose an Image")?.click());
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Choose an Image");
     expect(options().map((each) => each.textContent)).toEqual(["a1.jpg", "b2.jpg"]);
     await chooseImage("b2.jpg");
 
@@ -99,7 +99,7 @@ describe("ImageField", () => {
   it("finds an image by its alt text, and starts on the image placed", async () => {
     await render({ mediaId: "b2" });
 
-    await act(async () => button("Change image")?.click());
+    await act(async () => button("Change Image")?.click());
     expect(option("b2.jpg")?.getAttribute("aria-selected")).toBe("true");
     const search = document.querySelector<HTMLInputElement>('input[type="search"]');
     const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
@@ -116,11 +116,11 @@ describe("ImageField", () => {
     expect(container.querySelector("figure img")?.getAttribute("src")).toBe("test://a1");
     expect(container.textContent).toContain("a1.jpg");
 
-    await act(async () => button("Change image")?.click());
+    await act(async () => button("Change Image")?.click());
     await chooseImage("b2.jpg");
     expect(onChange).toHaveBeenLastCalledWith({ mediaId: "b2" });
 
-    await act(async () => button("Remove image")?.click());
+    await act(async () => button("Remove Image")?.click());
     expect(onChange).toHaveBeenLastCalledWith(undefined);
   });
 
@@ -164,8 +164,8 @@ describe("ImageField", () => {
       vi.fn(async () => ({ status: "imported", items: [fresh], rejected: [] }) as const),
     );
 
-    await act(async () => button("Choose an image")?.click());
-    await act(async () => button("Add a new image")?.click());
+    await act(async () => button("Choose an Image")?.click());
+    await act(async () => button("Add a New Image")?.click());
 
     expect(choose).toHaveBeenCalled();
     expect(session.history.document.getState().media[fresh.id]).toEqual(fresh);
@@ -188,7 +188,7 @@ describe("ImageField", () => {
     picks.request("img");
     await render(undefined, undefined, picks);
     const picker = () => document.querySelector('[role="dialog"]');
-    expect(picker()?.textContent).toContain("Choose an image");
+    expect(picker()?.textContent).toContain("Choose an Image");
 
     // Closed, focus goes back to the field's button, which opened it.
     await act(async () => button("Cancel")?.click());

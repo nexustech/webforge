@@ -1,7 +1,7 @@
 /** AI apps (`apps/desktop/src/renderer/ai-apps/`, F-AI-1, 4.9): pairing them and seeing them. */
 export const aiApps = {
   "aiApps.command": "AI Apps…",
-  "aiApps.title": "AI apps",
+  "aiApps.title": "AI Apps",
   "aiApps.description":
     "Let AI apps on this computer, such as Claude, work on the site you have open. Each change they make is a step in Undo History, named after the app.",
   "aiApps.enabled": "Let AI apps connect",
@@ -22,7 +22,7 @@ export const aiApps = {
   "aiApps.removeDescription":
     "{name} can't reach your sites any more. To use it again, add it again with a new key.",
   "aiApps.removeConfirm": "Remove",
-  "aiApps.add": "Add AI app",
+  "aiApps.add": "Add AI App",
   "aiApps.add.which": "Which app?",
   "aiApps.client.claude.label": "Claude Desktop",
   "aiApps.client.claude.hint":

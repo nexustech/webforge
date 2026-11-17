@@ -488,7 +488,7 @@ describe("PagesPanel with a Blog (6.10a)", () => {
 
     await openMenu("Blog");
     await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
-    const asked = screen.getByRole("alertdialog", { name: "Delete blog 'Blog'?" });
+    const asked = screen.getByRole("alertdialog", { name: "Delete Blog 'Blog'?" });
     await userEvent.click(within(asked).getByRole("button", { name: "Cancel" }));
     expect(panel.removeBlog).not.toHaveBeenCalled();
 

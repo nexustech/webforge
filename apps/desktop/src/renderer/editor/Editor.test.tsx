@@ -212,7 +212,7 @@ describe("Editor", () => {
 
     await act(async () => registry.run("edit.deleteSharedSection"));
     expect(siteWide.current()).toMatchObject({
-      action: "Delete shared section 'Opening hours'?",
+      action: "Delete Shared Section 'Opening hours'?",
       affectedPages: 1,
     });
     await act(async () => siteWide.answer(true));

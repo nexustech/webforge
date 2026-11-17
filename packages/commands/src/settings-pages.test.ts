@@ -160,7 +160,7 @@ describe("updateSettings, the business part of Site Settings (4.11, AIB-2)", () 
     });
     expect(confirm).toHaveBeenCalledOnce();
     expect(confirm.mock.calls[0]?.[0]).toEqual({
-      action: "Allow Claude to change Site Settings: General, Contact & hours?",
+      action: "Allow Claude to Change Site Settings: General, Contact & hours?",
       description: "Phone number: from no address to 01234 567890.",
       confirm: "Allow",
       affectedPages: history.document.getState().pageOrder.length,
@@ -258,7 +258,7 @@ describe("updateSettings, the business part of Site Settings (4.11, AIB-2)", () 
     );
 
     expect(confirm.mock.calls[0]?.[0]).toMatchObject({
-      action: "Allow Claude to change Site Settings: Web address, Search engines?",
+      action: "Allow Claude to Change Site Settings: Web address, Search engines?",
       description:
         "Web address: from https://rosas.example to https://rosas-garage.example. Let search engines show the site: from yes to no.",
     });
@@ -300,7 +300,7 @@ describe("the page tools (4.11, AIB-3)", () => {
 
     expect(result).toMatchObject({ status: "done", label: "AI (Claude): Deleted page 'About'" });
     expect(confirm.mock.calls[0]?.[0]).toEqual({
-      action: "Allow Claude to delete the page About?",
+      action: "Allow Claude to Delete the Page About?",
       description: "This removes the page and its content.",
       confirm: "Allow",
       // About itself, and the home page, whose link to it breaks.

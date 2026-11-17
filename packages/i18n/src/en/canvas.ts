@@ -5,7 +5,7 @@ export const canvas = {
   "canvas.frame": "Page you're editing: {site}",
   // The canvas ran into an error (R3): it shows this instead, and the panels keep working.
   "canvas.error.message": "Something went wrong showing this page. Your work is saved.",
-  "canvas.error.reload": "Reload page",
+  "canvas.error.reload": "Reload Page",
   // An empty page's next step, where its sections would go (#1012).
   "canvas.addFirstSection": "Add Your First Section…",
   // Over the canvas until the site's styles and fonts arrive (#1013), so it never shows unstyled.
@@ -78,11 +78,11 @@ export const canvas = {
   "canvas.sharedRegion.header": "Header",
   "canvas.sharedRegion.footer": "Footer",
   // Asked before an element of the shared Header or Footer goes from every page (D7).
-  "canvas.sharedDelete.title": "Delete {item} from the shared {region}?",
-  "canvas.sharedCut.title": "Cut {item} from the shared {region}?",
+  "canvas.sharedDelete.title": "Delete {item} from the Shared {region}?",
+  "canvas.sharedCut.title": "Cut {item} from the Shared {region}?",
   // Asked before an element of a shared section goes from every copy of it (1.29, D7, F-ED-23).
-  "canvas.sharedSectionDelete.title": "Delete {item} from the shared section {name}?",
-  "canvas.sharedSectionCut.title": "Cut {item} from the shared section {name}?",
+  "canvas.sharedSectionDelete.title": "Delete {item} from the Shared Section {name}?",
+  "canvas.sharedSectionCut.title": "Cut {item} from the Shared Section {name}?",
   "canvas.sharedSectionChange.one": "The section's 1 copy shows the change.",
   "canvas.sharedSectionChange.many": "All {copies} copies of the section show the change.",
   "canvas.sharedBanner.all": "Editing shared {region}: changes apply to all {count} pages",
@@ -101,7 +101,7 @@ export const canvas = {
   "canvas.sharedSection.selectOne": "Select just one section.",
   "canvas.saveSharedSection.select": "Select a section of this page to save it.",
   "canvas.sharedSection.selectCopy": "Select a shared section on this page first.",
-  "canvas.saveSharedSection.title": "Save as shared section",
+  "canvas.saveSharedSection.title": "Save as Shared Section",
   "canvas.saveSharedSection.description":
     "A shared section is stored once. Place copies of it on any page; editing one copy changes them all.",
   "canvas.saveSharedSection.name": "Name",
@@ -109,11 +109,11 @@ export const canvas = {
   // Names are unique (1.29): {name} is quoted, "'Opening hours'".
   "canvas.sharedSectionNameTaken": "A shared section called {name} already exists",
   "canvas.renameSharedSection": "Rename Shared Section…",
-  "canvas.renameSharedSection.title": "Rename shared section",
+  "canvas.renameSharedSection.title": "Rename Shared Section",
   "canvas.renameSharedSection.confirm": "Rename",
   "canvas.deleteSharedSection": "Delete Shared Section…",
   // D7's question before deleting a shared section: {name} is quoted.
-  "canvas.deleteSharedSection.title": "Delete shared section {name}?",
+  "canvas.deleteSharedSection.title": "Delete Shared Section {name}?",
   "canvas.deleteSharedSection.description":
     "Its copies stay on their pages as normal sections, so no content is lost.",
   "canvas.deleteSharedSection.confirm": "Delete Shared Section",
@@ -165,8 +165,8 @@ export const canvas = {
   "editPanel.optionGroup.options": "Options",
   "editPanel.optionGroup.advanced": "Advanced",
   // Apply Look to Every… (2.27, ST-4), asked before it changes other pages (D7).
-  "look.confirm.title.page": "Give every {item} on this page this look?",
-  "look.confirm.title.site": "Give every {item} on the site this look?",
+  "look.confirm.title.page": "Give Every {item} on This Page This Look?",
+  "look.confirm.title.site": "Give Every {item} on the Site This Look?",
   "look.confirm.elements.one": "This gives 1 other {item} the same look.",
   "look.confirm.elements.other": "This gives {count} other {item} elements the same look.",
   "look.confirm.sections.one": "This gives 1 other {item} the same look.",
@@ -228,8 +228,8 @@ export const canvas = {
   "editPanel.advanced.classNameInvalid": "Use class names separated by spaces",
   // The CSS classes field's suggestions, browser and warning (#276).
   "editPanel.classes.suggestions": "Suggested classes",
-  "editPanel.classes.browse": "Browse classes…",
-  "editPanel.classes.browseTitle": "Browse classes",
+  "editPanel.classes.browse": "Browse Classes…",
+  "editPanel.classes.browseTitle": "Browse Classes",
   "editPanel.classes.browseDescription":
     "Double-click a class, or press Enter, to add it to this element.",
   "editPanel.classes.none": "No class matches.",

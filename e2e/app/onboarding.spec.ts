@@ -50,7 +50,7 @@ test("offers the tour after the quick start, and shows the three steps beside th
     timeout: APP_START_TIMEOUT_MS,
   });
   await stubFileDialogs(app, join(dir, "Rosa's Bakery.wforge"));
-  await page.getByRole("button", { name: "Start a site…", exact: true }).click();
+  await page.getByRole("button", { name: "Start a Site…", exact: true }).click();
   const quickStart = page.getByRole("dialog", { name: "Start a site" });
   await quickStart.getByRole("radio", { name: "Food and drink" }).click();
   await quickStart.getByRole("button", { name: "Create site" }).click();
@@ -73,7 +73,7 @@ test("offers the tour after the quick start, and shows the three steps beside th
     await page.evaluate(() => document.activeElement?.closest("header[data-region]") !== null),
   ).toBe(true);
   await page.keyboard.press("Shift+F6");
-  await expect(words.getByRole("button", { name: /^Learn more/ })).toBeFocused();
+  await expect(words.getByRole("button", { name: /^Learn More/ })).toBeFocused();
   await words.getByRole("button", { name: "Next" }).click();
 
   // See it as visitors will, below Preview; Put it online, below Publish.

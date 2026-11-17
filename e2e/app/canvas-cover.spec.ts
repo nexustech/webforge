@@ -89,7 +89,7 @@ test("never shows a site's page unstyled, as it's created or opened again", asyn
   await holdCanvasCss(app, 2_000);
 
   // The Café template: a photo at full size, and a menu as a bulleted list, unstyled.
-  await page.getByRole("button", { name: "Start a site…", exact: true }).click();
+  await page.getByRole("button", { name: "Start a Site…", exact: true }).click();
   const quickStart = page.getByRole("dialog", { name: "Start a site" });
   await quickStart.getByRole("radio", { name: "Food and drink" }).click();
   await quickStart.getByRole("textbox", { name: "Business or site name" }).fill("Rosa's Bakery");

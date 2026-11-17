@@ -93,7 +93,7 @@ test("places a copy from the Add panel, asks before deleting inside one, marks c
   // Deleting a Heading inside a copy deletes it from every copy: asked first.
   await deleteHeading(1);
   await expect(confirmation()).toHaveAccessibleName(
-    "Delete Heading from the shared section 'Welcome'?",
+    "Delete Heading from the Shared Section 'Welcome'?",
   );
   await expect(confirmation()).toContainText(
     "All 2 copies of the section show the change. This changes 1 page.",

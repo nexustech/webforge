@@ -10,7 +10,7 @@ function app(reach: ConsentReach) {
   const onAgree = vi.fn();
   const onCancel = vi.fn();
   render(<AppConsentDialog open reach={reach} onAgree={onAgree} onCancel={onCancel} />);
-  const dialog = within(screen.getByRole("dialog", { name: "Turn on the assistant?" }));
+  const dialog = within(screen.getByRole("dialog", { name: "Turn On the Assistant?" }));
   return { dialog, onAgree, onCancel, points: () => dialog.getAllByRole("listitem") };
 }
 

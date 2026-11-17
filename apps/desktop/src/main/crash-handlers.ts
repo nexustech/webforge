@@ -177,7 +177,7 @@ export function installCrashHandlers(
 /**
  * The next-launch notice (F-SITE-7): if Webforge crashed since the user was last told, say so
  * (autosave means the work up to the last few seconds is in the file) and offer the folder.
- * `ask` shows the message box and resolves true for "Open crash reports folder".
+ * `ask` shows the message box and resolves true for "Open Crash Reports Folder".
  */
 export async function noticeAfterCrash(
   reports: Pick<CrashReports, "hasUnseen" | "markSeen">,

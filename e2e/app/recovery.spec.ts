@@ -89,7 +89,7 @@ test.describe("backups and recovery", () => {
     const asked = await app.evaluate(
       () => (globalThis as unknown as { recoveryAsked: { title: string }[] }).recoveryAsked,
     );
-    expect(asked.map((options) => options.title)).toEqual(["Site file damaged"]);
+    expect(asked.map((options) => options.title)).toEqual(["Site File Damaged"]);
     // The damaged file is kept next to the restored one.
     expect(readdirSync(dir).filter((name) => name.includes("(damaged "))).toHaveLength(1);
   });

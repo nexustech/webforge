@@ -31,11 +31,11 @@ describe("ExportDialogs (3.3)", () => {
       answer = dialogs.askWebAddress();
     });
     const prompt = await screen.findByRole("alertdialog", {
-      name: "Add your site's web address?",
+      name: "Add Your Site's Web Address?",
     });
     expect(prompt.textContent).toContain("search engines (sitemap)");
     await user.click(screen.getByRole("checkbox", { name: "Don't ask again for this site" }));
-    await user.click(screen.getByRole("button", { name: "Export without it" }));
+    await user.click(screen.getByRole("button", { name: "Export Without It" }));
 
     await expect(answer).resolves.toBe("skip-always");
     expect(screen.queryByRole("alertdialog")).toBeNull();
@@ -43,7 +43,7 @@ describe("ExportDialogs (3.3)", () => {
     act(() => {
       answer = dialogs.askWebAddress();
     });
-    await user.click(await screen.findByRole("button", { name: "Add address" }));
+    await user.click(await screen.findByRole("button", { name: "Add Address" }));
     await expect(answer).resolves.toBe("add");
     act(() => {
       answer = dialogs.askWebAddress();
@@ -95,7 +95,7 @@ describe("ExportDialogs (3.3)", () => {
     };
 
     act(() => dialogs.showReport(report));
-    const shown = await screen.findByRole("dialog", { name: "Site exported" });
+    const shown = await screen.findByRole("dialog", { name: "Site Exported" });
 
     expect(shown.textContent).toContain("Saved as “bakery.zip”.");
     expect(shown.textContent).toContain("Pages: 3 · Files: 16 · Size: 2.4 MB");
@@ -118,7 +118,7 @@ describe("ExportDialogs (3.3)", () => {
         noWebAddress: false,
       }),
     );
-    expect((await screen.findByRole("dialog", { name: "Site exported" })).textContent).toContain(
+    expect((await screen.findByRole("dialog", { name: "Site Exported" })).textContent).toContain(
       "Every link and image is in place.",
     );
     expect(screen.getByRole("button", { name: "Open in Browser" })).toBeDefined();

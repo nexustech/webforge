@@ -185,7 +185,7 @@ test("swaps the stylesheet in place in under 100 ms, the median of five (#622)",
     // A change of a built-in theme first names the person's own copy of it (2.23): the only
     // question a token change asks (`setToken` asks no D7 question). Any other fails the test,
     // named, rather than being answered.
-    const save = page.getByRole("dialog", { name: /^Save your own version of/ });
+    const save = page.getByRole("dialog", { name: /^Save Your Own Version of/ });
     const ask = page.getByRole("alertdialog");
     await expect
       .poll(

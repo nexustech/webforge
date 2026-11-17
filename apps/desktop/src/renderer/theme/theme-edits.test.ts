@@ -109,7 +109,7 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(await switchPreset(session, confirm, bistro)).toBe(true);
     expect(confirm.confirmSiteWide).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: "Switch to the theme 'Bistro'?",
+        action: "Switch to the Theme 'Bistro'?",
         confirm: "Switch Theme",
         affectedPages: pages,
       }),
@@ -263,7 +263,7 @@ describe("the Theme tab's edits (2.3a)", () => {
     await setPaletteColor(session, confirm, "inverse", "primary", BRAND);
 
     expect(confirm.confirmSiteWide).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "Change the Brand colour in reversed sections?" }),
+      expect.objectContaining({ action: "Change the Brand Colour in Reversed Sections?" }),
     );
     expect(theme().inverse?.primary).toEqual(BRAND);
     // Its surface was the neutral colour, as such a theme shows reversed sections.
@@ -341,7 +341,7 @@ describe("your own themes (2.23, PH2-17)", () => {
     expect(await setColor(session, asks, "primary", BRAND)).toBe(true);
 
     expect(asks.askName).toHaveBeenCalledWith({
-      title: "Save your own version of 'Light'?",
+      title: "Save Your Own Version of 'Light'?",
       description: expect.stringContaining("Built-in themes stay as they are."),
       initial: "Light (my version)",
       confirm: "Save Theme",
@@ -516,7 +516,7 @@ describe("the theme's looks (3.12, CT-1)", () => {
     expect(labels()).toEqual(["Changed the theme's look for Button"]);
     expect(confirmSiteWide).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: "Change how every Button looks?",
+        action: "Change How Every Button Looks?",
         description: "This restyles the 2 on the site that have no look of their own.",
       }),
     );

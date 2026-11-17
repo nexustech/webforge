@@ -15,7 +15,7 @@ function setup(mode: "design" | "content" = "design") {
 }
 
 const confirmation = {
-  action: "Allow Claude to change the theme?",
+  action: "Allow Claude to Change the Theme?",
   confirm: "Allow",
   affectedPages: 3,
 };

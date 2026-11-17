@@ -183,7 +183,7 @@ describe("publishArea (4.4a)", () => {
     await user.click(
       await screen.findByRole("menuitem", { name: "Web Host with a Control Panel…" }),
     );
-    const form = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
+    const form = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     await user.type(form.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
     await user.type(form.getByLabelText("User name", { exact: true }), "rosa");
     await user.type(form.getByLabelText("Password", { exact: true }), "test-only-password");
@@ -203,7 +203,7 @@ describe("publishArea (4.4a)", () => {
     const { registries, api, flush } = setUp();
     const user = await publishToRosas(registries);
 
-    const live = within(await screen.findByRole("dialog", { name: "Your site is live" }));
+    const live = within(await screen.findByRole("dialog", { name: "Your Site Is Live" }));
     expect(live.getByText("Visitors can see it at https://www.rosasbakery.co.uk/.")).toBeTruthy();
     // The canvas's edit ended before main was asked; main has the window save first (A4).
     expect(flush.mock.invocationCallOrder[0]).toBeLessThan(
@@ -218,14 +218,14 @@ describe("publishArea (4.4a)", () => {
     expect(api.clipboard.copyText).toHaveBeenCalledWith("https://www.rosasbakery.co.uk/");
     expect(live.queryByText(/Version History/)).toBeNull();
     await user.click(live.getByRole("button", { name: "Done" }));
-    expect(screen.queryByRole("dialog", { name: "Your site is live" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Your Site Is Live" })).toBeNull();
   });
 
   it("still says the site is live when its version couldn't be kept, quietly", async () => {
     const { registries } = setUp({ published: { ...LIVE, versionSaved: false } });
     await publishToRosas(registries);
 
-    const live = within(await screen.findByRole("dialog", { name: "Your site is live" }));
+    const live = within(await screen.findByRole("dialog", { name: "Your Site Is Live" }));
     expect(live.getByText("This publish couldn't be kept in Version History.")).toBeTruthy();
     expect(live.queryByRole("alert")).toBeNull();
   });
@@ -241,14 +241,14 @@ describe("publishArea (4.4a)", () => {
 
     const { registries, publishedYear } = setUp();
     await publishToRosas(registries);
-    await screen.findByRole("dialog", { name: "Your site is live" });
+    await screen.findByRole("dialog", { name: "Your Site Is Live" });
     expect(publishedYear.getState()).toBe(new Date().getFullYear());
   });
 
   it("says what the live check found when the address shows another page", async () => {
     const { registries } = setUp({ published: { ...LIVE, check: "different" } });
     await publishToRosas(registries);
-    const live = within(await screen.findByRole("dialog", { name: "Your site is live" }));
+    const live = within(await screen.findByRole("dialog", { name: "Your Site Is Live" }));
     expect(live.getByText(/That address shows another page for now/)).toBeTruthy();
   });
 
@@ -261,12 +261,12 @@ describe("publishArea (4.4a)", () => {
     const user = await publishToRosas(registries);
 
     const question = within(
-      await screen.findByRole("alertdialog", { name: "Replace the site in this folder?" }),
+      await screen.findByRole("alertdialog", { name: "Replace the Site in This Folder?" }),
     );
     expect(question.getByText(/The folder on Rosa's Bakery has another site/)).toBeTruthy();
     await user.click(question.getByRole("button", { name: "Replace It" }));
 
-    expect(await screen.findByRole("dialog", { name: "Your site is live" })).toBeTruthy();
+    expect(await screen.findByRole("dialog", { name: "Your Site Is Live" })).toBeTruthy();
     expect(vi.mocked(api.publish.publish).mock.calls[1]?.[3]).toEqual({ replaceOtherSite: true });
   });
 
@@ -292,7 +292,7 @@ describe("publishArea (4.4a)", () => {
     const listener = vi.fn();
     publishing.onPublished(listener);
     await publishToRosas(registries);
-    await screen.findByRole("dialog", { name: "Your site is live" });
+    await screen.findByRole("dialog", { name: "Your Site Is Live" });
     expect(listener).toHaveBeenCalledOnce();
   });
 });
@@ -318,7 +318,7 @@ describe("Republish from Version History (4.6b)", () => {
     const { api, publishing, flush, publishedYear, codeTrust } = setUp();
     await republishToRosas(publishing);
 
-    expect(await screen.findByRole("dialog", { name: "Your site is live" })).toBeTruthy();
+    expect(await screen.findByRole("dialog", { name: "Your Site Is Live" })).toBeTruthy();
     expect(api.versions.readSite).toHaveBeenCalledWith(expect.any(String), VERSION.id);
     expect(codeTrust.confirm).toHaveBeenCalledOnce();
     expect(vi.mocked(api.publish.publish).mock.calls[0]?.[3]).toEqual({
@@ -333,11 +333,11 @@ describe("Republish from Version History (4.6b)", () => {
   it("publishes the site again, not the version, once File → Publish… opens the destinations", async () => {
     const { registries, api, publishing } = setUp();
     await republishToRosas(publishing);
-    await screen.findByRole("dialog", { name: "Your site is live" });
+    await screen.findByRole("dialog", { name: "Your Site Is Live" });
     await userEvent.click(screen.getByRole("button", { name: "Done" }));
 
     await publishToRosas(registries);
-    await screen.findByRole("dialog", { name: "Your site is live" });
+    await screen.findByRole("dialog", { name: "Your Site Is Live" });
     expect(vi.mocked(api.publish.publish).mock.calls[1]?.[3]).toEqual({ replaceOtherSite: false });
   });
 

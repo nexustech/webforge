@@ -71,7 +71,7 @@ export const shell = {
   // Preview and Preview on Phone (3.2, F-PV-1).
   "preview.opened": "Opened in your browser",
   "preview.failed": "{appName} couldn't open the preview. Try again in a moment.",
-  "preview.phone.title": "Preview on your phone",
+  "preview.phone.title": "Preview on Your Phone",
   "preview.phone.description":
     "Point your phone's camera at this code. Your phone needs to be on the same Wi-Fi as this computer.",
   "preview.phone.starting": "Starting the preview…",
@@ -125,7 +125,7 @@ export const shell = {
   "settings.devices": "Devices",
   "settings.devices.label": "Your devices",
   "settings.devices.item": "Device",
-  "settings.devices.add": "Add a device",
+  "settings.devices.add": "Add a Device",
   "settings.devices.remove": "Remove this device",
   // Where updates come from (5.2): Stable, or Beta, which gets each new version first.
   "settings.updates": "Updates",
@@ -139,7 +139,7 @@ export const shell = {
   "settings.aiApps.label": "AI apps on this computer",
   "settings.aiApps.help":
     "Let AI apps such as Claude work on your site. What you change there happens at once.",
-  "settings.aiApps.open": "Open AI apps…",
+  "settings.aiApps.open": "Open AI Apps…",
 
   // Command box.
   "shell.commandBox.open": "Search commands",
@@ -336,7 +336,7 @@ export const shell = {
   // Desktop fills the canvas, as a site fills a browser (PH2-18); fixed widths follow it.
   "canvasToolbar.desktopFills": "Desktop (Fills the Canvas)",
   "canvasToolbar.addDevice": "Add Device…",
-  "canvasToolbar.addDevice.title": "Add a device",
+  "canvasToolbar.addDevice.title": "Add a Device",
   "canvasToolbar.addDevice.description":
     "Its width and height show in the device list, for you only, on every site.",
   "canvasToolbar.addDevice.name": "Name",
@@ -346,7 +346,7 @@ export const shell = {
   "canvasToolbar.addDevice.confirm": "Add Device",
   // The width box, from the View menu once the toolbar is too narrow for it (#1008).
   "canvasToolbar.widthItem": "Canvas Width…",
-  "canvasToolbar.widthDialog.title": "Canvas width",
+  "canvasToolbar.widthDialog.title": "Canvas Width",
   "canvasToolbar.widthDialog.description":
     "Shows the page at a width of your own, without adding a device.",
   "canvasToolbar.widthDialog.confirm": "Show Width",

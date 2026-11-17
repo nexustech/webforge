@@ -75,7 +75,7 @@ test("opens Settings on the start screen, and File › Close Site goes back to i
   const sitePath = join(dir, "Rosa's Bakery.wforge");
   await stubFileDialogs(running(), sitePath);
   await page
-    .getByRole("button", { name: "Choose a template yourself…", exact: true })
+    .getByRole("button", { name: "Choose a Template Yourself…", exact: true })
     .first()
     .click();
   const newSite = page.getByRole("dialog", { name: "New Site" });
@@ -103,7 +103,7 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   await stubFileDialogs(running(), sitePath);
   // The start screen's own (the welcome offers it too), not the title bar's New Site….
   await page
-    .getByRole("button", { name: "Choose a template yourself…", exact: true })
+    .getByRole("button", { name: "Choose a Template Yourself…", exact: true })
     .first()
     .click();
   const newSite = page.getByRole("dialog", { name: "New Site" });
@@ -148,7 +148,7 @@ test("makes a site from a template, named as typed and in the chosen theme, with
   // New Site (2.14a, F-SITE-1): the name, a template (which brings its theme), then another theme.
   // The start screen's own (the welcome offers it too), not the title bar's New Site….
   await page
-    .getByRole("button", { name: "Choose a template yourself…", exact: true })
+    .getByRole("button", { name: "Choose a Template Yourself…", exact: true })
     .first()
     .click();
   const newSite = page.getByRole("dialog", { name: "New Site" });
@@ -184,7 +184,7 @@ test("makes a Personal / CV site within its opening budget, accessible on the ca
   await stubFileDialogs(running(), join(dir, "Sam Lee.wforge"));
 
   await page
-    .getByRole("button", { name: "Choose a template yourself…", exact: true })
+    .getByRole("button", { name: "Choose a Template Yourself…", exact: true })
     .first()
     .click();
   const newSite = page.getByRole("dialog", { name: "New Site" });
@@ -223,7 +223,7 @@ test("tries the example: a pre-filled site named after it, within its opening bu
   const opened = await measureWork(running());
   // Straight from the start screen: no New Site dialog, the example's own name and theme.
   // Exactly: the first start's welcome has a Try an example card too.
-  await page.getByRole("button", { name: "Try an example", exact: true }).click();
+  await page.getByRole("button", { name: "Try an Example", exact: true }).click();
   // The first example the app ships: Café / Restaurant (Trades is the second).
   const hero = canvas(page).locator("h1", { hasText: "Good coffee and proper breakfasts" });
   await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
@@ -244,7 +244,7 @@ test("pins a site to the top of the Recent list, which it keeps after a restart 
     const page = await app.firstWindow();
     await stubFileDialogs(running(), join(dir, `${name}.wforge`));
     await page
-      .getByRole("button", { name: "Choose a template yourself…", exact: true })
+      .getByRole("button", { name: "Choose a Template Yourself…", exact: true })
       .first()
       .click();
     const newSite = page.getByRole("dialog", { name: "New Site" });
@@ -281,7 +281,7 @@ test("opens a site from File › Open Recent, and Clear Recent keeps the pinned 
     const page = await app.firstWindow();
     await stubFileDialogs(running(), join(dir, `${name}.wforge`));
     await page
-      .getByRole("button", { name: "Choose a template yourself…", exact: true })
+      .getByRole("button", { name: "Choose a Template Yourself…", exact: true })
       .first()
       .click();
     const newSite = page.getByRole("dialog", { name: "New Site" });
@@ -360,7 +360,7 @@ test("says when a site can't be opened, and removes sites from the list", async 
   writeFileSync(notes, "just text");
   await stubFileDialogs(running(), notes);
   // Exactly: the welcome has an Open a site card too.
-  await page.getByRole("button", { name: "Open a site…", exact: true }).click();
+  await page.getByRole("button", { name: "Open a Site…", exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText("This file isn't a Webforge site.");
 
   // With nothing to save, the window closes. That it doesn't sit out the save request's 5 s

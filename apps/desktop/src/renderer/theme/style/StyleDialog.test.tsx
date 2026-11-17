@@ -65,7 +65,7 @@ function setUp(editorLevel: "simple" | "advanced" = "simple", css = false) {
     session,
     state,
     props,
-    dialog: () => within(screen.getByRole("dialog", { name: "Style this Button" })),
+    dialog: () => within(screen.getByRole("dialog", { name: "Style This Button" })),
     labels: () => session.history.entries().map((entry) => entry.label),
     user: userEvent.setup({ delay: null }),
   };

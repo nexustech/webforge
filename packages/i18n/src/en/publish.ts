@@ -1,7 +1,7 @@
 /** Publishing (Phase 4): publish destinations, and connecting to them. */
 export const publish = {
   // An FTP, FTPS or SFTP publish destination (4.3, F-PB-1, B5).
-  "publish.fileTransfer.title": "Publish to your web host",
+  "publish.fileTransfer.title": "Publish to Your Web Host",
   "publish.fileTransfer.description":
     "{appName} uploads your site to the folder your web host serves. Your host's control panel shows these details.",
   "publish.fileTransfer.confirm": "Save",
@@ -107,7 +107,7 @@ export const publish = {
   "publish.fileTransfer.error.plainFtp": "Read the warning about plain FTP first.",
   "publish.fileTransfer.error.hostKey": "Test the connection to check this host first.",
   // The private key file (SFTP).
-  "publish.keyFile.chooseTitle": "Choose your private key file",
+  "publish.keyFile.chooseTitle": "Choose Your Private Key File",
   "publish.keyFile.choose": "Choose Key File…",
   "publish.keyFile.chosen": "Using {name}",
   "publish.keyFile.none": "No key file chosen.",
@@ -222,7 +222,7 @@ export const publish = {
   "publish.republish.mustFix.other":
     "This version has {count} things to fix before it's published. Restore it, fix them in Site Check, then publish.",
   // Your site is live: where, what the live check found, and Open and Copy Link.
-  "publish.live.title": "Your site is live",
+  "publish.live.title": "Your Site Is Live",
   "publish.live.at": "Visitors can see it at {url}.",
   "publish.live.noAddress":
     "It's on your host now. Edit the destination to add its web address, so {appName} can check it and link to it.",
@@ -241,7 +241,7 @@ export const publish = {
   "publish.live.openFailed": "Your site couldn't be opened in your browser.",
   "publish.live.done": "Done",
   // A folder another site was published to with {appName} (A8): replace it only when asked.
-  "publish.replace.title": "Replace the site in this folder?",
+  "publish.replace.title": "Replace the Site in This Folder?",
   "publish.replace.body":
     "The folder on {name} has another site that {appName} published. Publishing this one replaces it.",
   "publish.replace.cancel": "Cancel",

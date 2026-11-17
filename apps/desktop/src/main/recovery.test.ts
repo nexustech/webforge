@@ -122,7 +122,7 @@ describe("recoveryMessage", () => {
     const message = recoveryMessage(latest, "en-GB");
 
     expect(message.detail).toContain("20 Oct 2026");
-    expect(message.buttons).toEqual(["Restore latest backup", "Choose a backup…", "Cancel"]);
-    expect(message.title).toBe("Site file damaged");
+    expect(message.buttons).toEqual(["Restore Latest Backup", "Choose a Backup…", "Cancel"]);
+    expect(message.title).toBe("Site File Damaged");
   });
 });

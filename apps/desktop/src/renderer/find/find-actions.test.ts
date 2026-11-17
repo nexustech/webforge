@@ -82,7 +82,7 @@ describe("replaceAll", () => {
 
     expect(asked).toEqual([
       expect.objectContaining({
-        action: "Replace 'Smith' with 'Smyth' everywhere?",
+        action: "Replace 'Smith' with 'Smyth' Everywhere?",
         confirm: "Replace All",
         affectedPages: 2,
       }),

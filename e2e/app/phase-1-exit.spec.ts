@@ -103,7 +103,7 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   await stubFileDialogs(running(), sitePath);
   // New Site, Blank (2.14a); exactly, as the title bar's New Site… has the same name in another case.
   await page
-    .getByRole("button", { name: "Choose a template yourself…", exact: true })
+    .getByRole("button", { name: "Choose a Template Yourself…", exact: true })
     .first()
     .click();
   const newSite = page.getByRole("dialog", { name: "New Site" });

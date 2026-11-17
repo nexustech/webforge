@@ -27,7 +27,7 @@ export async function createFromTemplate(
 ): Promise<void> {
   // The start screen's own (the welcome offers it too), not the title bar's New Site….
   await page
-    .getByRole("button", { name: "Choose a template yourself…", exact: true })
+    .getByRole("button", { name: "Choose a Template Yourself…", exact: true })
     .first()
     .click();
   const newSite = page.getByRole("dialog", { name: "New Site" });

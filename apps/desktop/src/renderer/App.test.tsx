@@ -135,7 +135,7 @@ describe("App", () => {
       within(screen.getByRole("banner")).getByRole("button", { name: "Export" }),
     );
     // The starter site has no web address yet (X3).
-    await userEvent.click(await screen.findByRole("button", { name: "Export without it" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Export Without It" }));
     await userEvent.click(await screen.findByRole("button", { name: "Export…" }));
 
     expect(exportSite).toHaveBeenCalledWith({
@@ -145,7 +145,7 @@ describe("App", () => {
       choices: { format: "folder", minify: false, developerFiles: false, askWebAddress: true },
       output: { minify: false, developerFiles: false },
     });
-    const report = await screen.findByRole("dialog", { name: "Site exported" });
+    const report = await screen.findByRole("dialog", { name: "Site Exported" });
     expect(report.textContent).toContain("Saved in the folder “my-site”.");
   });
 
@@ -194,7 +194,7 @@ describe("App's AI apps (4.8)", () => {
       app: "Claude",
     });
     const dialog = await screen.findByRole("alertdialog");
-    expect(within(dialog).getByText("Allow Claude to change the theme?")).toBeTruthy();
+    expect(within(dialog).getByText("Allow Claude to Change the Theme?")).toBeTruthy();
     // Radix keeps pointer events off the page under the dialog, which happy-dom applies to it too.
     await act(async () => within(dialog).getByRole("button", { name: "Allow" }).click());
     expect(await theme).toMatchObject({ status: "done", label: "AI (Claude): Changed the theme" });
