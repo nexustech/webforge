@@ -19,11 +19,13 @@ import {
   CANVAS_ROOT,
   COMPONENT,
   COMPONENT_ATTRIBUTE,
+  COMPONENT_DROP_ZONE,
   componentSelector,
   DISABLED_ATTRIBUTE,
   DRAGGING,
   DRAWER_ITEM,
   DROP_PREVIEW,
+  elementOf,
   HOVERED_COMPONENT,
   INLINE_TEXT,
   LAYOUT,
@@ -34,6 +36,7 @@ import {
   RICH_TEXT_MENU,
   ROOT_DROP_ZONE,
   SELECTED_COMPONENT,
+  TABLE_ROW_WRAPPER,
 } from "./puck-dom.js";
 import { createPuckEngine } from "./puck-engine.js";
 
@@ -353,6 +356,103 @@ describe("a slot drawn as a list (#1134)", () => {
     engine.destroy();
     await settle();
     element.remove();
+  });
+});
+
+describe("a table's rows on the canvas (6.16c)", () => {
+  // A table whose rows are elements in its slot, as a Table's are. Happy-dom lays nothing out, so
+  // what the rows look like (their boxes, the outline, the hover size, the menu's place and the
+  // drag's placeholder) is checked in a real canvas, by e2e/app/table.spec.ts; here, that the
+  // canvas styles' selectors find Puck's markup around them as installed.
+  const tables: ComponentLibrary = {
+    components: {
+      Rows: {
+        label: "Rows",
+        fields: { rows: { kind: "slot", label: "Rows", allow: ["Row"] } },
+        defaults: { rows: [] },
+        render: ({ slots }) => {
+          const Rows = slots.rows;
+          return <table>{Rows === undefined ? null : <Rows as="tbody" />}</table>;
+        },
+      },
+      Row: {
+        label: "Row",
+        place: "child",
+        fields: { cell: { kind: "text", label: "Cell", inline: true } },
+        defaults: { cell: "Cell" },
+        render: ({ values }) => (
+          <tr>
+            <td>{textValue(values.cell)}</td>
+          </tr>
+        ),
+      },
+    },
+  };
+  const row = (id: string) => ({ type: "Row", props: { id, cell: id } });
+
+  let element: HTMLDivElement;
+  let engine: CanvasEngine;
+
+  beforeEach(async () => {
+    element = document.createElement("div");
+    document.body.append(element);
+    engine = createPuckEngine({ iframe: false });
+    await act(async () => {
+      engine.mount(element, { library: tables, theme: { ...DEFAULT_THEME, preset: "test" } });
+      engine.loadPage(
+        {
+          root: { props: {} },
+          content: [{ type: "Rows", props: { id: "table", rows: [row("r1"), row("r2")] } }],
+        },
+        { header: [], footer: [] },
+      );
+    });
+    await settle(50);
+  });
+
+  afterEach(async () => {
+    engine.destroy();
+    await settle();
+    element.remove();
+  });
+
+  it("draws the slot as the table's body, each row in a wrapper of its own, the row its child", () => {
+    const wrappers = [...element.querySelectorAll(TABLE_ROW_WRAPPER)];
+
+    expect(wrappers.map((wrapper) => wrapper.getAttribute(COMPONENT_ATTRIBUTE))).toEqual([
+      "r1",
+      "r2",
+    ]);
+    expect(wrappers.map((wrapper) => wrapper.firstElementChild?.tagName)).toEqual(["TR", "TR"]);
+    // The body is Puck's drop zone, so a drag finds its box; the table's own wrapper isn't a row's.
+    expect(element.querySelector("table > tbody")?.matches(COMPONENT_DROP_ZONE)).toBe(true);
+    expect(element.querySelector(componentSelector("table"))?.matches(TABLE_ROW_WRAPPER)).toBe(
+      false,
+    );
+  });
+
+  it("measures a row by its wrapper while the row has no box of its own, other elements by theirs", () => {
+    const tr = element.querySelector(`${componentSelector("r1")} > tr`) as HTMLElement | null;
+    if (tr === null) throw new Error("no row");
+    // As the canvas styles draw it, its wrapper the row. Set here by hand: happy-dom doesn't apply
+    // the canvas's :has() rule, which the Table's E2E (e2e/app/table.spec.ts) checks in Electron.
+    tr.style.display = "contents";
+
+    // What the hover size, the keyboard's menu and the spacing view measure.
+    expect(elementOf(document, "r1")).toBe(tr.parentElement);
+    expect(elementOf(document, "table")?.tagName).toBe("TABLE");
+  });
+
+  it("edits a cell where it is, and outlines a selected row with Puck's overlay", async () => {
+    expect(
+      element.querySelector(`${componentSelector("r1")} > tr td ${INLINE_TEXT}`),
+    ).not.toBeNull();
+
+    await act(async () => engine.select("r2"));
+    await settle();
+
+    expect(element.querySelector(OVERLAY)).not.toBeNull();
+    expect(element.querySelector(`${ACTION_BAR} ${ACTION_BAR_LABEL}`)?.textContent).toMatch(/^Row/);
   });
 });
 

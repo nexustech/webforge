@@ -17,6 +17,14 @@ describe("htmlToMarkdown (F-EX-5)", () => {
     );
   });
 
+  it("writes a table as a pipe table, its heading row first, a cell's pipe escaped (6.16c)", () => {
+    expect(
+      markdown(`<table><thead><tr><th scope="col">Loaf</th><th scope="col">Price</th></tr></thead>
+        <tbody><tr><td>Sourdough</td><td>£4 | £7</td></tr><tr><td>Rye</td></tr></tbody></table>`),
+    ).toBe("| Loaf | Price |\n| --- | --- |\n| Sourdough | £4 \\| £7 |\n| Rye |  |\n");
+    expect(markdown("<table><tbody></tbody></table>")).toBe("");
+  });
+
   it("writes links and images' alt text, resolving their addresses; decorative images say nothing", () => {
     expect(
       markdown(

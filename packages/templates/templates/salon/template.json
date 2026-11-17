@@ -588,12 +588,63 @@
               }
             },
             {
-              "type": "TextSection",
+              "type": "Section",
               "props": {
                 "id": "beauty",
                 "colors": "page",
-                "title": "Nails, brows and lashes",
-                "text": "<p><strong>Gel manicure</strong> · £30<br>Shaping, cuticle care and gel colour that lasts two to three weeks.</p><p><strong>Brow shape and tint</strong> · £20<br>Waxed and tinted to suit your face.</p><p><strong>Lash lift and tint</strong> · £45<br>Curls and darkens your own lashes for six to eight weeks.</p>"
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "id": "beauty-title",
+                      "text": "Nails, brows and lashes",
+                      "size": "medium"
+                    }
+                  },
+                  {
+                    "type": "Table",
+                    "props": {
+                      "id": "beauty-prices",
+                      "columns": "4",
+                      "heading1": "Treatment",
+                      "heading2": "What it is",
+                      "heading3": "Lasts",
+                      "heading4": "Price",
+                      "rows": [
+                        {
+                          "type": "TableRow",
+                          "props": {
+                            "id": "beauty-prices-0",
+                            "cell1": "Gel manicure",
+                            "cell2": "Shaping, cuticle care and gel colour",
+                            "cell3": "2 to 3 weeks",
+                            "cell4": "£30"
+                          }
+                        },
+                        {
+                          "type": "TableRow",
+                          "props": {
+                            "id": "beauty-prices-1",
+                            "cell1": "Brow shape and tint",
+                            "cell2": "Waxed and tinted to suit your face",
+                            "cell3": "4 to 6 weeks",
+                            "cell4": "£20"
+                          }
+                        },
+                        {
+                          "type": "TableRow",
+                          "props": {
+                            "id": "beauty-prices-2",
+                            "cell1": "Lash lift and tint",
+                            "cell2": "Curls and darkens your own lashes",
+                            "cell3": "6 to 8 weeks",
+                            "cell4": "£45"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             },
             {

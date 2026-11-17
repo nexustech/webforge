@@ -10,7 +10,7 @@ import {
 } from "react";
 import type { FieldDrag } from "../canvas-engine.js";
 import { startGripDrag } from "./grip-drag.js";
-import { componentSelector, elementOf } from "./puck-dom.js";
+import { componentSelector, elementOf, shownElementOf } from "./puck-dom.js";
 
 /** A slider field that sets how wide its element is, as its width handles need it (2.17). */
 export type WidthHandleField = {
@@ -177,14 +177,14 @@ export function WidthHandles({
     // time.
     const resizes = new frame.ResizeObserver(() => measure());
     const measure = () => {
-      const now = wrapper.firstElementChild;
+      const now = shownElementOf(wrapper) ?? wrapper;
       if (now !== element) {
-        if (element !== null) resizes.unobserve(element);
-        if (now !== null) resizes.observe(now);
+        // The wrapper stays observed for the whole effect, even while it is what's measured.
+        if (element !== null && element !== wrapper) resizes.unobserve(element);
+        resizes.observe(now);
         element = now;
       }
-      if (element === null) return;
-      const shown = element.getBoundingClientRect();
+      const shown = now.getBoundingClientRect();
       const around = outline.getBoundingClientRect();
       const left = Math.round(shown.left - around.left);
       const right = Math.round(around.right - shown.right);

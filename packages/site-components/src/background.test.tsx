@@ -162,11 +162,13 @@ describe("the section frame's background (2.26)", () => {
   const sections = Object.entries(siteLibrary.components).filter(
     ([, def]) => def.place === "section",
   );
+  /** The Hero, which draws its own, and the Contact buttons (6.16d), which have no band to fill. */
+  const withoutBackground = new Set(["Hero", "ContactButtons"]);
 
-  it("is on every section, after the Appearance group, but the Hero, which draws its own", () => {
+  it("is on every section, after the Appearance group, but those without one", () => {
     for (const [type, def] of sections) {
       const names = Object.keys(def.fields);
-      if (type === "Hero") {
+      if (withoutBackground.has(type)) {
         expect(
           names.some((name) => BACKGROUND_FIELD_NAMES.includes(name as never)),
           type,
@@ -205,7 +207,7 @@ describe("the section frame's background (2.26)", () => {
 
   it("gives a new section a strong overlay in the page colour, so the panel shows it", () => {
     for (const [type, def] of sections) {
-      if (type === "Hero") continue;
+      if (withoutBackground.has(type)) continue;
       expect(def.defaults, type).toMatchObject({ overlay: "60", overlayColor: "base" });
     }
   });
