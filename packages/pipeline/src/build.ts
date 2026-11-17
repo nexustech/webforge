@@ -57,9 +57,9 @@ import {
   markdownPage,
   markdownUrl,
   pageTitle,
+  readableByAi,
   readablePages,
   robotsTxt,
-  searchOf,
   shareTags,
   siteAddress,
   sitemapXml,
@@ -741,9 +741,9 @@ export async function* buildEvents(
       files.set(path, text.encode(content));
     }
   }
-  // AI tools' copies (F-EX-5), when Site Settings ask for them; never in a preview, which no one
-  // else reads.
-  if (searchOf(site).readableByAi && run.mode !== "preview") {
+  // AI tools' copies (F-EX-5), when Site Settings ask for them and don't ask AI companies not to
+  // train on the site (6.15); never in a preview, which no one else reads.
+  if (readableByAi(site) && run.mode !== "preview") {
     files.set("llms.txt", text.encode(withYear(llmsTxt(site), year)));
     const readable = new Set(readablePages(site));
     for (const entry of rendered) {

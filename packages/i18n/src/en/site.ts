@@ -347,6 +347,12 @@ export const site = {
     "A page has this address now, so visitors already reach that page. Remove this one.",
   "site.settings.readableByAiHint":
     "For AI tools: adds llms.txt and a plain-text copy of each page when you export. Some AI tools read these; search engines don't.",
+  "site.settings.readableByAiOffHint":
+    "Off while you ask AI companies not to train on your site: the copies would invite them in.",
+  // Asking AI companies' crawlers to stay away, in robots.txt (6.15, CC-9).
+  "site.settings.askNoAiTraining": "Ask AI companies not to train on this site",
+  "site.settings.askNoAiTrainingHint":
+    "Asks the crawlers of OpenAI, Anthropic, Google, Apple and others not to use your site to train their AI. It's a request, not a block: well-behaved crawlers follow it, others may not. Turns off Help AI tools read your site.",
   "site.settings.measurementId": "Google Analytics measurement ID",
   "site.settings.measurementIdHint": "Such as G-ABC123DEF4. Leave empty for no analytics.",
   "site.settings.consentBanner": "Ask visitors before counting them (cookie banner)",

@@ -3,10 +3,12 @@ import { sampleSite } from "@webforge/test-utils";
 import { describe, expect, it } from "vitest";
 import type { SiteIcon } from "./html.js";
 import {
+  AI_TRAINING_CRAWLERS,
   hasSitemap,
   llmsTxt,
   markdownPage,
   markdownUrl,
+  readableByAi,
   readablePages,
   robotsTxt,
   shareTags,
@@ -247,6 +249,33 @@ describe("robots.txt and sitemap.xml (3.5)", () => {
     // A page they may not fetch is one whose noindex they never read (SEO-3).
     expect(robotsTxt(site({ allowIndexing: false }))).toBe("User-agent: *\nAllow: /\n");
     expect(hasSitemap(site({ allowIndexing: false }))).toBe(false);
+  });
+
+  it("asks AI companies' crawlers not to train on the site only when ticked (6.15, CC-9)", () => {
+    expect(robotsTxt(site())).not.toContain("Disallow");
+    expect(robotsTxt(site({ askNoAiTraining: false }))).not.toContain("Disallow");
+
+    expect(robotsTxt(site({ askNoAiTraining: true }))).toBe(
+      [
+        ...AI_TRAINING_CRAWLERS.map((crawler) => `User-agent: ${crawler}`),
+        "Disallow: /",
+        "",
+        "User-agent: *",
+        "Allow: /",
+        "",
+        `Sitemap: ${ADDRESS}/sitemap.xml`,
+        "",
+      ].join("\n"),
+    );
+    expect(AI_TRAINING_CRAWLERS).toContain("GPTBot");
+    expect(AI_TRAINING_CRAWLERS).toContain("ClaudeBot");
+  });
+
+  it("writes no AI files while it asks AI companies not to train on the site (6.15)", () => {
+    expect(readableByAi(site())).toBe(true);
+    expect(readableByAi(site({ readableByAi: false }))).toBe(false);
+    // Both on, as a file edited by hand could have them: the request wins.
+    expect(readableByAi(site({ askNoAiTraining: true }))).toBe(false);
   });
 
   it("leaves out a page hidden from search engines, from the sitemap and the AI files (3.15)", () => {

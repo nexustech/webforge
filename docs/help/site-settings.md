@@ -22,6 +22,7 @@ They're in the same **Settings** window as {appName}'s own preferences, under **
 - **Show a back-to-top button:** a button that appears once visitors scroll down. It isn't shown in the editor.
 - **Business type** and **More precisely:** what kind of business this is, such as _Restaurant_, _Plumber_ or _Vehicle repair_. Search engines use it.
 - **Help AI tools read your site:** adds a plain-text copy of each page to your website, for AI tools that read them. Search engines don't read them. Off unless you turn it on.
+- **Ask AI companies not to train on this site:** asks the crawlers of OpenAI, Anthropic, Google, Apple and other AI companies not to use your site to train their AI. It's a request, not a block: well-behaved crawlers follow it, others may not. It turns off **Help AI tools read your site**, which would invite them in. Off unless you turn it on.
 
 ## Web address
 
