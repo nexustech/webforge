@@ -3,7 +3,7 @@
 id: elements
 title: Elements
 summary: Every element you can put inside a section, what it's for and what you can change.
-components: [Heading, Text, List, ListItem, Image, Carousel, CarouselSlide, EmbedVideo, Button, Spacer, Divider, Icon, SocialLinks, Columns, Column, Tabs, Tab, EmbedMap, Form, FormField, BuyButton]
+components: [Heading, Text, List, ListItem, Image, Carousel, CarouselSlide, EmbedVideo, Button, Spacer, Divider, Icon, SocialLinks, Columns, Column, Tabs, Tab, EmbedMap, Form, FormField, BuyButton, Accordion, AccordionItem]
 related: [sections, add-panel, edit-panel, media, links, forms, custom-code]
 updated: 2026-11-17
 ---
@@ -98,6 +98,14 @@ Places elements side by side, in 1 to 4 **Columns**. Select it to see the **Add 
 Panels under labels, one shown at a time on your site. Each **Tab** has a **Label** and holds any elements. Visitors can use the arrow keys to move between tabs.
 
 In the editor, and for visitors whose browser has scripts turned off, every panel is shown in turn under its label.
+
+### Accordion
+
+Items that open and close: each **Accordion item** has a **Title**, which visitors click or tap to show its **Text** under it, and click again to hide it. Use it for details most visitors can skip, such as delivery times or what to bring to a first visit. For questions and answers, the FAQ section does the same.
+
+- **One open at a time:** opening an item closes the one that was open. Leave it off to let visitors open several.
+
+It needs no scripts, so it works for every visitor, and with the keyboard: Tab to an item's title, then Enter or Space opens it.
 
 ## Contact
 

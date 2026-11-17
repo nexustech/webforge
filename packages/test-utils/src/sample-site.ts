@@ -376,6 +376,22 @@ export function sampleSite(): SiteSnapshot {
                       })),
                     },
                   },
+                  // More about the order, in an Accordion (6.16a): one item open at a time.
+                  {
+                    type: "Accordion",
+                    props: {
+                      id: "more",
+                      oneOpen: true,
+                      items: [
+                        ["allergies", "Allergies", "Our cakes are made with nuts, eggs and milk."],
+                        ["delivery", "Delivery", "We deliver within five miles of the shop."],
+                        ["cancelling", "Cancelling", "Cancel up to two days before you collect."],
+                      ].map(([id, title, words]) => ({
+                        type: "AccordionItem",
+                        props: { id: `more-${id}`, title, text: `<p>${words}</p>` },
+                      })),
+                    },
+                  },
                   ...Array.from({ length: 16 }, (_, index) => ({
                     type: "Spacer",
                     props: { id: `thanks-space-${index}`, height: "xlarge" },

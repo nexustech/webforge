@@ -1396,7 +1396,8 @@
             "BuyButton",
             "Tabs",
             "CustomCode",
-            "PostTags"
+            "PostTags",
+            "Accordion"
           ]
         },
         "contentWidth": {
@@ -2551,7 +2552,8 @@
             "BuyButton",
             "Tabs",
             "CustomCode",
-            "PostTags"
+            "PostTags",
+            "Accordion"
           ]
         }
       },
@@ -7908,7 +7910,8 @@
             "BuyButton",
             "Tabs",
             "CustomCode",
-            "PostTags"
+            "PostTags",
+            "Accordion"
           ]
         }
       },
@@ -8965,6 +8968,141 @@
         }
       },
       "defaults": {}
+    },
+    "Accordion": {
+      "label": "Accordion",
+      "place": "element",
+      "category": "Layout",
+      "appearance": "all",
+      "deeper": "element",
+      "fields": {
+        "items": {
+          "kind": "slot",
+          "label": "Items",
+          "allow": [
+            "AccordionItem"
+          ]
+        },
+        "oneOpen": {
+          "kind": "toggle",
+          "label": "One open at a time",
+          "help": "Opening an item closes the one that was open."
+        },
+        "margin": {
+          "kind": "box",
+          "label": "Margin",
+          "property": "margin",
+          "responsive": true,
+          "sides": [
+            "top",
+            "bottom"
+          ]
+        },
+        "entrance": {
+          "kind": "select",
+          "label": "Entrance animation",
+          "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+          "group": "style",
+          "options": [
+            {
+              "label": "None",
+              "value": "none"
+            },
+            {
+              "label": "Fade in",
+              "value": "fade"
+            },
+            {
+              "label": "Slide up",
+              "value": "slideUp"
+            },
+            {
+              "label": "Slide in from the left",
+              "value": "slideLeft"
+            },
+            {
+              "label": "Slide in from the right",
+              "value": "slideRight"
+            },
+            {
+              "label": "Zoom in",
+              "value": "zoom"
+            }
+          ]
+        },
+        "entranceDelay": {
+          "kind": "slider",
+          "label": "Delay",
+          "group": "style",
+          "steps": [
+            {
+              "label": "None",
+              "value": "none"
+            },
+            {
+              "label": "Short",
+              "value": "short"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Long",
+              "value": "long"
+            }
+          ]
+        }
+      },
+      "defaults": {
+        "oneOpen": false,
+        "items": [
+          {
+            "type": "AccordionItem",
+            "props": {
+              "id": "accordion-item-1",
+              "title": "Item 1",
+              "text": "<p>What visitors see when they open this item.</p>"
+            }
+          },
+          {
+            "type": "AccordionItem",
+            "props": {
+              "id": "accordion-item-2",
+              "title": "Item 2",
+              "text": "<p>What visitors see when they open this item.</p>"
+            }
+          },
+          {
+            "type": "AccordionItem",
+            "props": {
+              "id": "accordion-item-3",
+              "title": "Item 3",
+              "text": "<p>What visitors see when they open this item.</p>"
+            }
+          }
+        ]
+      }
+    },
+    "AccordionItem": {
+      "label": "Accordion item",
+      "place": "child",
+      "fields": {
+        "title": {
+          "kind": "text",
+          "label": "Title",
+          "inline": true
+        },
+        "text": {
+          "kind": "richtext",
+          "label": "Text",
+          "inline": true
+        }
+      },
+      "defaults": {
+        "title": "Item 1",
+        "text": "<p>What visitors see when they open this item.</p>"
+      }
     }
   }
 }
