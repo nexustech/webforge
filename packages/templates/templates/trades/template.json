@@ -357,6 +357,10 @@
             "id": "footer",
             "text": "Brightside Electrical · Registered and insured electricians in Leeds"
           }
+        },
+        {
+          "type": "ContactButtons",
+          "props": { "id": "contact-buttons", "whatsapp": true }
         }
       ]
     },

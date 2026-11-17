@@ -5,7 +5,7 @@ title: Header, Footer, announcements and shared sections
 summary: The parts that are the same on every page, an announcement bar above them, and sections you share between pages.
 components: [Header, Footer, AnnouncementBar]
 related: [pages, layers, add-panel, site-check]
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Header, Footer, announcements and shared sections
@@ -43,6 +43,10 @@ The bar is in your theme's dark colour, and has a close button for visitors. Clo
 To remove the bar, select it and press Delete. A page whose Header is hidden (in its Page Settings) hides the bar too: clicking **Announcement bar** there adds one to that page only. If you drag the Announcement bar onto a page instead, it shows on that page only.
 
 Your site hides the bar once the page has opened, so a visitor who closed it, or a bar past its last day, still shows for a moment on each page. Visitors whose browser runs no scripts see the bar without its close button, even after its last day. Delete the bar once it's out of date: [Site Check](site-check.md) reminds you.
+
+## Contact buttons
+
+**Contact buttons** (under **Contact** in the Add panel) go after the Footer on every page, the way the Announcement bar goes above the Header. Click them again to select the ones that are there: a site has one set. On your site they stay at the bottom left of the screen; on the canvas they show after the Footer, so you can select them. What each button does is in [Sections](sections.md#contact-buttons). To remove them, select them and press Delete. A page whose Footer is hidden hides them too: clicking **Contact buttons** there adds them to that page only.
 
 ## Shared sections
 
