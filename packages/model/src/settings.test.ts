@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  CONSENT_MESSAGE_LABEL,
   defaultSiteSettings,
+  SITE_LABEL_MAX,
+  siteLabelsOf,
   siteSettingsSchema,
   verificationCodeOf,
   verificationCodeSchema,
@@ -127,5 +130,45 @@ describe("webAddressSchema", () => {
     "https://localhost",
   ])("rejects %s", (url) => {
     expect(webAddressSchema.safeParse(url).success).toBe(false);
+  });
+});
+
+describe("the site's labels in the owner's words (6.12, CC-1)", () => {
+  const settings = defaultSiteSettings("Rosa's Bakery", "de");
+
+  it("keeps the changed labels by key, and none when absent", () => {
+    const labels = { "siteText.menu": "Speisekarte", "siteText.backToTop": "Hoch" };
+    const parsed = siteSettingsSchema.parse({
+      ...settings,
+      general: { ...settings.general, labels },
+    });
+    expect(parsed.general.labels).toEqual(labels);
+    expect(siteSettingsSchema.parse(settings).general.labels).toBeUndefined();
+  });
+
+  it("refuses a key that isn't a site label, an empty wording and the consent message", () => {
+    for (const labels of [
+      { "site.settings.name": "Name" },
+      { "siteText.menu": "   " },
+      { "siteText.menu": "x".repeat(SITE_LABEL_MAX + 1) },
+      // The banner's own text (3.8) stays where it was.
+      { [CONSENT_MESSAGE_LABEL]: "Cookies?" },
+    ]) {
+      const general = { ...settings.general, labels };
+      expect(
+        siteSettingsSchema.safeParse({ ...settings, general }).success,
+        JSON.stringify(labels),
+      ).toBe(false);
+    }
+  });
+
+  it("gives the changed labels and the banner's own text as one set", () => {
+    expect(siteLabelsOf(settings)).toEqual({});
+    const general = { ...settings.general, labels: { "siteText.menu": "Speisekarte" } };
+    const analytics = { ...settings.analytics, consentMessage: " Cookies? " };
+    expect(siteLabelsOf({ ...settings, general, analytics })).toEqual({
+      "siteText.menu": "Speisekarte",
+      [CONSENT_MESSAGE_LABEL]: "Cookies?",
+    });
   });
 });

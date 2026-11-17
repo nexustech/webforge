@@ -27,6 +27,8 @@ const germanSite = (): SiteSnapshot => {
   return {
     ...site,
     language: "de-DE",
+    // Two labels in the owner's own words (6.12): theirs, not the language's.
+    labels: { "siteText.backToTop": "Ganz nach oben", "siteText.consent.message": "Cookies okay?" },
     // Its own page that says "Thank you" in English: what's checked is the labels, not its words.
     pages: site.pages.filter((page) => page.path !== "thanks"),
     settings: { ...site.settings, "address.url": "https://rosas-bakery.example" },
@@ -76,8 +78,9 @@ describe("a site's own labels in its language (6.12, CC-1)", () => {
     expect(found).toEqual([]);
   });
 
-  it("writes them in German instead", () => {
-    expect(html("index.html")).toContain('aria-label="Nach oben"');
+  it("writes them in German instead, or in the owner's words where they changed one", () => {
+    expect(html("index.html")).toContain('aria-label="Ganz nach oben"');
+    expect(html("index.html")).toContain("Cookies okay?");
     expect(html("index.html")).toContain('aria-label="Hauptnavigation"');
     expect(html("index.html")).toContain("Alle akzeptieren");
     expect(html("about.html")).toContain("Öffnungszeiten");

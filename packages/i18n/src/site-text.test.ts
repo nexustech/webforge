@@ -11,8 +11,8 @@ const placeholders = (message: string) =>
   [...message.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
 
 describe("siteText (6.12, CC-1)", () => {
-  it("lists the 77 labels of the site, each a key of the English catalogue", () => {
-    expect(SITE_TEXT_KEYS).toHaveLength(77);
+  it("lists the 81 labels of the site, each a key of the English catalogue", () => {
+    expect(SITE_TEXT_KEYS).toHaveLength(81);
     expect(SITE_TEXT_KEYS.every((key) => key.startsWith("siteText.") && key in en)).toBe(true);
   });
 
@@ -38,6 +38,20 @@ describe("siteText (6.12, CC-1)", () => {
     expect(labels("siteText.menu")).toBe("Menü");
     expect(labels("siteText.backToTop")).toBe("Back to top");
     expect(labels("siteText.imageOf", { n: 3, total: 8 })).toBe("3 of 8");
+  });
+
+  it("gives the owner's own wording first, for each label they changed (6.12)", () => {
+    const labels = siteTextFor("de", {
+      "siteText.menu": "Speisekarte",
+      "siteText.slideOf": "Bild {n}/{total}",
+      // Left empty: the language's.
+      "siteText.backToTop": "  ",
+    });
+    expect(labels("siteText.menu")).toBe("Speisekarte");
+    expect(labels("siteText.slideOf", { n: 2, total: 5 })).toBe("Bild 2/5");
+    expect(labels("siteText.backToTop")).toBe("Nach oben");
+    expect(labels("siteText.close")).toBe("Schließen");
+    expect(siteTextFor("it", { "siteText.menu": "Menù" })("siteText.menu")).toBe("Menù");
   });
 
   it("leaves a placeholder in when it's given as itself, for a site's script to fill", () => {

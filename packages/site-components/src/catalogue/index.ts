@@ -7,6 +7,7 @@ import { announcementBarComponents } from "./announcement-bar.js";
 import { basicComponents } from "./basic.js";
 import { carouselComponents } from "./carousel.js";
 import { commerceComponents } from "./commerce.js";
+import { contactButtonsComponents } from "./contact-buttons.js";
 import { contactDetailsComponents } from "./contact-details.js";
 import { customCodeComponents } from "./custom-code.js";
 import { elementsComponents } from "./elements.js";
@@ -23,6 +24,7 @@ import { pricingComponents } from "./pricing.js";
 import { sectionsComponents } from "./sections.js";
 import { statsComponents } from "./stats.js";
 import { stepsComponents } from "./steps.js";
+import { tableComponents } from "./table.js";
 import { tabsComponents } from "./tabs.js";
 import { teamComponents } from "./team.js";
 import { testimonialsComponents } from "./testimonials.js";
@@ -55,9 +57,11 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   announcementBarComponents,
   latestPostsComponents,
   postTagsComponents,
+  contactButtonsComponents,
   stepsComponents,
   accordionComponents,
   menuComponents,
+  tableComponents,
 );
 
 /** The page a new site starts with. */

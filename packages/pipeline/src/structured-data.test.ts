@@ -157,6 +157,21 @@ describe("structured data (3.15, SEO-1)", () => {
     });
     expect(called).toContain('"telephone": "+44 1234 567890"');
     expect(called).not.toContain("email");
+
+    // Contact buttons linking to Site Settings' email show it; with their own phone, not its.
+    const buttons: NodeDoc = {
+      type: "ContactButtons",
+      props: { id: "b", call: true, phone: "+44 7700 900123", email: true, emailAddress: "" },
+    };
+    const [, linked] = structuredData({
+      site: site(),
+      page: home,
+      nodes: [buttons],
+      library: siteLibrary,
+      shareImage: undefined,
+    });
+    expect(linked).toContain('"email": "hello@rosas.example"');
+    expect(linked).not.toContain("telephone");
   });
 
   it("takes the type's own schema.org type when the kind isn't one of its, and LocalBusiness when unknown", () => {

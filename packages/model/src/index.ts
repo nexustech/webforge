@@ -221,7 +221,7 @@ export type {
   SiteMigration,
 } from "./migrations.js";
 export { MIGRATIONS, migrateSite, migrateSiteWith, SiteFormatError } from "./migrations.js";
-export { findNode, removeNode } from "./node-tree.js";
+export { findNode, findParent, removeNode } from "./node-tree.js";
 export {
   canDeletePage,
   deletePageFrom,
@@ -283,6 +283,7 @@ export {
   BUSINESS_KINDS,
   BUSINESS_NAME_MAX,
   BUSINESS_TYPES,
+  CONSENT_MESSAGE_LABEL,
   CONSENT_MESSAGE_MAX,
   DAYS,
   defaultSiteSettings,
@@ -290,7 +291,6 @@ export {
   KEPT_ADDRESSES_MAX,
   keptAddressFileSchema,
   keptAddressSchema,
-  LANGUAGE_TAG_MAX,
   languageTagSchema,
   MEASUREMENT_ID_MAX,
   OPENING_HOURS_NOTE_MAX,
@@ -298,8 +298,10 @@ export {
   POSTAL_ADDRESS_MAX,
   PRICE_RANGE_MAX,
   SITE_DESCRIPTION_MAX,
+  SITE_LABEL_MAX,
   SITE_NAME_MAX,
   SOCIAL_NETWORKS,
+  siteLabelsOf,
   siteSettingsSchema,
   socialProfileSchema,
   VERIFICATION_TAGS,

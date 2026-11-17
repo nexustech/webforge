@@ -190,6 +190,8 @@ export function pageRender(
     ...(thanksPage === undefined ? {} : { thanksPage }),
     // The Footer's link back to the consent banner, wherever it asks (#539).
     ...(cookieSettings ? { cookieSettings: true } : {}),
+    // The Contact buttons at the screen's corner (6.16d).
+    pinned: true,
     // Netlify Forms, drawn for Netlify only in a build for it, each under its own name (4.2).
     ...(netlifyForms === undefined ? {} : { netlifyForms }),
   };

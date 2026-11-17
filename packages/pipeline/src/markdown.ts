@@ -148,6 +148,8 @@ function block(element: Element, options: MarkdownOptions): string[] {
       return list(element, options);
     case "dl":
       return definitions(element, options);
+    case "table":
+      return table(element, options);
     case "blockquote": {
       const quoted = blocksOf(element.children, options).join("\n\n");
       return quoted === "" ? [] : [quoted.replace(/^/gm, "> ").replace(/^> $/gm, ">")];
@@ -214,6 +216,37 @@ function definitions(element: Element, options: MarkdownOptions): string[] {
   }
   endPair();
   return lines.length === 0 ? [] : [lines.join("\n")];
+}
+
+/** The shown elements among `nodes`. */
+const shownElements = (nodes: readonly Node[]) =>
+  nodes.filter((node): node is Element => typeof node !== "string" && !isHidden(node));
+
+/**
+ * A table as a pipe table (6.16c), its first row its headings: a Table's heading row, or a table
+ * without one's first row. Each cell's text is on one line, its pipes escaped.
+ */
+function table(element: Element, options: MarkdownOptions): string[] {
+  const rows = shownElements(element.children).flatMap((part) =>
+    part.name === "tr"
+      ? [part]
+      : ["thead", "tbody", "tfoot"].includes(part.name)
+        ? shownElements(part.children).filter((row) => row.name === "tr")
+        : [],
+  );
+  const cells = rows.map((row) =>
+    shownElements(row.children)
+      .filter((cell) => cell.name === "th" || cell.name === "td")
+      .map((cell) =>
+        tidy(inlineOf(cell.children, options)).replaceAll("\n", " ").replaceAll("|", "\\|"),
+      ),
+  );
+  const width = Math.max(0, ...cells.map((row) => row.length));
+  if (width === 0) return [];
+  const line = (row: readonly string[]) =>
+    `| ${Array.from({ length: width }, (_, index) => row[index] ?? "").join(" | ")} |`;
+  const [head = [], ...body] = cells;
+  return [[line(head), line(Array(width).fill("---")), ...body.map(line)].join("\n")];
 }
 
 /** A list, each item's marker before its first line and the rest of it indented under it. */

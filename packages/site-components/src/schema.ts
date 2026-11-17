@@ -39,9 +39,20 @@ export type FieldOption = { readonly label: string; readonly value: string };
  */
 /**
  * What a field's `shownWhen` knows of the site besides the element's values: whether its menu links
- * to a section of a page (`menuLinksToSections`), for the Header's section highlight (5.10b).
+ * to a section of a page (`menuLinksToSections`), for the Header's section highlight (5.10b), and
+ * the element holding it, if any (6.16c): its type and values, with its defaults. Only the one
+ * holding it, never further out: a Table row's cells follow its Table's Columns.
  */
-export type FieldSite = { readonly menuLinksToSections: boolean };
+export type FieldSite = {
+  readonly menuLinksToSections: boolean;
+  readonly parent?: FieldParent | undefined;
+};
+
+/** The element holding another, as {@link FieldSite} knows it: its type and values. */
+export type FieldParent = {
+  readonly type: string;
+  readonly values: Readonly<Record<string, unknown>>;
+};
 
 export type FieldDef = {
   readonly group?: "content" | "style";
@@ -324,7 +335,13 @@ export type SiteBindings = {
  * What an element is missing, for {@link SiteBindings.elementHint}: a video's or a map's address,
  * a Buy button's payment link.
  */
-export type ElementHint = "videoAddress" | "mapAddress" | "paymentLink" | "blog";
+export type ElementHint =
+  | "videoAddress"
+  | "mapAddress"
+  | "paymentLink"
+  | "blog"
+  | "contactButtons"
+  | "whatsappNumber";
 
 /**
  * Why a form has nowhere to send to (2.8): no form service chosen in Site Settings, Netlify Forms
@@ -390,6 +407,12 @@ export type RenderContext = SiteBindings & {
    * and its consent banner, so a visitor can change their choice at any time.
    */
   readonly cookieSettings?: true;
+  /**
+   * What stays on screen stays at its corner (the Contact buttons, 6.16d): set by the export.
+   * Without it, as on the canvas, they are drawn where they are on the page, so they can be
+   * selected.
+   */
+  readonly pinned?: true;
   /**
    * Each form's name in Netlify Forms by its element's id, set by a build for a Netlify destination
    * (4.2): forms whose service is Netlify Forms are drawn for Netlify to find and take their
@@ -514,11 +537,12 @@ export type ValuesOf<
  * `as` makes that element a list, `<ol>` or `<ul>`, for a slot whose elements are each an `<li>`
  * (a Steps section's steps, #1134). Puck's drop zone takes the same `as`. On the canvas each
  * element still sits in Puck's wrapper inside the list, so the list's layout is a grid or flex,
- * never a rule for its own `li`s.
+ * never a rule for its own `li`s. `tbody` makes it a table's body, for a slot whose elements are
+ * each a `<tr>` (a Table's rows, 6.16c): the canvas styles draw each row's wrapper as the row.
  */
 export type SlotComponent = ComponentType<{
   readonly className?: string;
-  readonly as?: "ol" | "ul";
+  readonly as?: "ol" | "ul" | "tbody";
 }>;
 
 /** What a component's `render` gets, from `defineComponent`'s fields. */

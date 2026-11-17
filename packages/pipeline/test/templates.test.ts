@@ -183,8 +183,12 @@ describe.each(readTemplates().map((folder) => [folder.template.id, folder] as co
         const home = visibleOf((await page("index.html")) ?? "");
         const street = contact.address?.split(/[\n,]/)[0]?.trim();
         const shows = (value: string | undefined) => value !== undefined && home.includes(value);
+        // A phone number is shown as itself, or by the Contact buttons' link that calls it.
+        const dials = (value: string | undefined) =>
+          value !== undefined &&
+          home.includes(`href="tel:${value.replace(/[^0-9+]/g, "")}" class="site-contact-button`);
         expect(data.telephone, `${id}: telephone`).toBe(
-          shows(contact.phone) ? contact.phone : undefined,
+          shows(contact.phone) || dials(contact.phone) ? contact.phone : undefined,
         );
         expect(data.email, `${id}: email`).toBe(shows(contact.email) ? contact.email : undefined);
         if (shows(street)) expect(data.address?.streetAddress, id).toContain(street);

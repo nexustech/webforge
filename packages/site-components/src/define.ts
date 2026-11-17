@@ -407,6 +407,17 @@ function build<const F extends Fields, const Variant extends string = never>(
       }
     }
   }
+  for (const [shown, { field: by, of }] of Object.entries(def.shownAtLeast ?? {})) {
+    if (!Object.hasOwn(fields, shown))
+      fail(`shows "${shown}" from some number, which isn't a field`);
+    // A parent's field is the parent's to have: only a child's own number is checked here.
+    if (of === undefined && !Object.hasOwn(fields, by)) {
+      fail(`shows "${shown}" by "${by}", which isn't a field`);
+    }
+    if (of === "parent" && def.place !== "child") {
+      fail(`shows "${shown}" by its parent's "${by}", but only a child has a parent of one kind`);
+    }
+  }
   for (const [fieldName, field] of Object.entries(fields)) {
     if (field.kind === "list") {
       // An item with one of these would read as an element, or lose its id (ListItem).

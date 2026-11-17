@@ -20,6 +20,19 @@ export function findNode(
 }
 
 /**
+ * The node in `nodes` or their slots whose slot holds the node `id`, or undefined for one at the top
+ * of `nodes` (a page's section), or one that isn't there.
+ */
+export function findParent(nodes: readonly NodeDoc[], id: string): NodeDoc | undefined {
+  return findNode(nodes, (node) =>
+    Object.values(node.props).some(
+      (value) =>
+        Array.isArray(value) && value.some((child) => isNodeDoc(child) && child.props.id === id),
+    ),
+  );
+}
+
+/**
  * Removes the node `id` from `nodes` or their slots; whether it was there. Only arrays of nodes are
  * slots: a list field's plain items (an FAQ's questions as data, menu links) are left alone.
  */

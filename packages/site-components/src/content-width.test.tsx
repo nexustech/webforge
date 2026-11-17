@@ -60,6 +60,8 @@ const DEFAULTS: Readonly<Record<string, ContentWidth>> = {
   AnnouncementBar: "full",
   // New in 6.10b: the Blog's posts in cards across a wide column.
   LatestPosts: "wide",
+  // New in 6.16d (#1136): its row on the canvas; on the site it keeps to the screen's corner.
+  ContactButtons: "full",
   // New in 6.16b (#1134): its steps side by side across a wide column.
   Steps: "wide",
   // New in 6.17a (#1137): one column, so the dots join each name to its price.
@@ -71,6 +73,7 @@ const DRAWN: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   TextImage: { image: { mediaId: "photo" } },
   ContactForm: { variant: "split" },
   Newsletter: { variant: "split" },
+  ContactButtons: { phone: "01632 960123" },
 };
 
 describe("a section's content width (3.21, PF-4)", () => {

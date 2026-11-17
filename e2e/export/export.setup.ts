@@ -24,6 +24,7 @@ import {
   ANNOUNCEMENT_SITE_DIR,
   BLOG_SITE_DIR,
   CHECK_TEMPLATES,
+  CONTACT_BUTTONS_SITE_DIR,
   EXPORTED_SITE_DIR,
   NO_BANNER_SITE_DIR,
   TEMPLATES_DIR,
@@ -420,6 +421,38 @@ setup("export a site with an Announcement bar above the Header (6.4)", async () 
       layout: { ...sample.layout, header: [bar, ...sample.layout.header] },
     },
     ANNOUNCEMENT_SITE_DIR,
+  );
+  expect(pages).toEqual(expect.arrayContaining(["index.html", "about.html"]));
+});
+
+setup("export a site with Contact buttons after the Footer (6.16d)", async () => {
+  const sample = sampleSite();
+  rmSync(CONTACT_BUTTONS_SITE_DIR, { recursive: true, force: true });
+  // Its pages without their files, through the pipeline alone: only the buttons and the Footer's
+  // last link, Cookie settings with the banner on (#539), matter here.
+  const buttons: NodeDoc = {
+    type: "ContactButtons",
+    props: {
+      id: "contact-buttons",
+      call: true,
+      phone: "01632 960123",
+      whatsapp: false,
+      whatsappNumber: "",
+      email: true,
+      emailAddress: "hello@example.com",
+      padding: { top: "none", bottom: "none" },
+      contentWidth: "full",
+    },
+  };
+  const pages = await exportSnapshot(
+    {
+      ...sample,
+      media: [],
+      documents: [],
+      layout: { ...sample.layout, footer: [...sample.layout.footer, buttons] },
+      analytics: { measurementId: "G-ABC123DEF4", consentBanner: true },
+    },
+    CONTACT_BUTTONS_SITE_DIR,
   );
   expect(pages).toEqual(expect.arrayContaining(["index.html", "about.html"]));
 });
