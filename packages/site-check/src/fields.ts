@@ -122,6 +122,22 @@ function planFor(
 }
 
 /**
+ * The values of `parent`, the element holding another, as the export draws it: its own, else its
+ * kind's look, else its defaults. A Table row's cells follow its Table's Columns (6.16c).
+ */
+function parentValues(
+  catalogue: CheckInput["catalogue"],
+  parent: NodeDoc | undefined,
+  looks: SiteDoc["theme"]["looks"],
+): Readonly<Record<string, unknown>> | undefined {
+  if (parent === undefined) return undefined;
+  return {
+    ...catalogue[parent.type]?.defaults,
+    ...valuesWithLook(parent.props, looks?.[parent.type]),
+  };
+}
+
+/**
  * Calls `visit` with each value of a field of one of `kinds` on the site's elements, as the
  * catalogue describes them, list items' fields included. A field the element doesn't set itself
  * reads its kind's look in the theme, as the export draws it (#670). Hidden elements, and shared
@@ -155,7 +171,11 @@ export function eachFieldValue(
         const value = values[name];
         if (value === undefined) continue;
         if (mayHide && component !== undefined) {
-          hidden ??= hiddenFieldsOf(component, { ...component.defaults, ...values });
+          hidden ??= hiddenFieldsOf(
+            component,
+            { ...component.defaults, ...values },
+            parentValues(catalogue, ancestors.at(-1), looks),
+          );
           if (hidden.has(name)) continue;
         }
         if (wantedField) {

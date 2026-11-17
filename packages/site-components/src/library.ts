@@ -22,7 +22,7 @@ import {
 } from "@webforge/model";
 import { cloneElement, createElement, isValidElement, type ReactNode } from "react";
 import { isDocumentPath } from "./document-path.js";
-import { hiddenFieldsOf } from "./hidden-fields.js";
+import { hiddenFieldsOf, type ShownAtLeast } from "./hidden-fields.js";
 import type { MainHeading } from "./main-heading.js";
 import type { PictureBehind } from "./picture-behind.js";
 import type {
@@ -88,6 +88,13 @@ export type ComponentDef = {
    * hides them while it is chosen ({@link fieldsHiddenBy}). Their values stay in the document.
    */
   readonly variantHides?: Readonly<Record<string, readonly string[]>>;
+  /**
+   * Fields shown only while a number field, its own or its parent's, is at least some number
+   * (6.16c): a Table's headings past its Columns, and its rows' cells. Hidden, they keep their
+   * values; the Edit panel, the catalogue as data and Site Check read it ({@link fieldsHiddenBy}),
+   * and the component draws only those shown.
+   */
+  readonly shownAtLeast?: Readonly<Record<string, ShownAtLeast>>;
   /**
    * The text colour a section's frame draws by itself, from its values (#544): a colour ref, such
    * as a Call to action Banner's `neutral-content`, or `undefined` for the page's own. The check of
@@ -197,15 +204,17 @@ export { drawsPictureBehind } from "./picture-behind.js";
  * The fields `def`'s chosen layout doesn't use (#311), or its values or `site` don't (a field's
  * `shownWhen`), from its `values` (with its defaults): the Edit panel hides them, and shows them
  * again with their values once they are used. Without `site`, as on a site whose menu links to no
- * section.
+ * section; without its `parent`, a field shown by its parent's values shows.
  */
 export function fieldsHiddenBy(
-  def: Pick<ComponentDef, "variantHides"> & { readonly fields?: ComponentDef["fields"] },
+  def: Pick<ComponentDef, "variantHides" | "shownAtLeast"> & {
+    readonly fields?: ComponentDef["fields"];
+  },
   values: Readonly<Record<string, unknown>>,
   site: FieldSite = { menuLinksToSections: false },
 ): ReadonlySet<string> {
   // The rule Site Check and the catalogue as data read too (#670).
-  const hidden = hiddenFieldsOf(def, values);
+  const hidden = hiddenFieldsOf(def, values, site.parent?.values);
   // A field shown only with some values (3.19), an Image's Height, or on some sites (5.10b).
   for (const [name, field] of Object.entries(def.fields ?? {})) {
     if (field.shownWhen?.(values, site) === false) hidden.add(name);

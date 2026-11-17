@@ -17,6 +17,7 @@ import { pricing } from "./pricing.js";
 import { sections } from "./sections.js";
 import { shared } from "./shared.js";
 import { stats } from "./stats.js";
+import { table } from "./table.js";
 import { tabs } from "./tabs.js";
 import { team } from "./team.js";
 import { testimonials } from "./testimonials.js";
@@ -49,6 +50,7 @@ export const componentFamilies = {
   announcementBar,
   latestPosts,
   postTags,
+  table,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -75,4 +77,5 @@ export const components = {
   ...announcementBar,
   ...latestPosts,
   ...postTags,
+  ...table,
 } as const;

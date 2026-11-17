@@ -38,9 +38,20 @@ export type FieldOption = { readonly label: string; readonly value: string };
  */
 /**
  * What a field's `shownWhen` knows of the site besides the element's values: whether its menu links
- * to a section of a page (`menuLinksToSections`), for the Header's section highlight (5.10b).
+ * to a section of a page (`menuLinksToSections`), for the Header's section highlight (5.10b), and
+ * the element holding it, if any (6.16c): its type and values, with its defaults. Only the one
+ * holding it, never further out: a Table row's cells follow its Table's Columns.
  */
-export type FieldSite = { readonly menuLinksToSections: boolean };
+export type FieldSite = {
+  readonly menuLinksToSections: boolean;
+  readonly parent?: FieldParent | undefined;
+};
+
+/** The element holding another, as {@link FieldSite} knows it: its type and values. */
+export type FieldParent = {
+  readonly type: string;
+  readonly values: Readonly<Record<string, unknown>>;
+};
 
 export type FieldDef = {
   readonly group?: "content" | "style";

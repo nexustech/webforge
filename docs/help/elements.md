@@ -3,7 +3,7 @@
 id: elements
 title: Elements
 summary: Every element you can put inside a section, what it's for and what you can change.
-components: [Heading, Text, List, ListItem, Image, Carousel, CarouselSlide, EmbedVideo, Button, Spacer, Divider, Icon, SocialLinks, Columns, Column, Tabs, Tab, EmbedMap, Form, FormField, BuyButton]
+components: [Heading, Text, List, ListItem, Image, Carousel, CarouselSlide, EmbedVideo, Button, Spacer, Divider, Icon, SocialLinks, Columns, Column, Tabs, Tab, EmbedMap, Form, FormField, BuyButton, Table, TableRow]
 related: [sections, add-panel, edit-panel, media, links, forms, custom-code]
 updated: 2026-11-17
 ---
@@ -98,6 +98,16 @@ Places elements side by side, in 1 to 4 **Columns**. Select it to see the **Add 
 Panels under labels, one shown at a time on your site. Each **Tab** has a **Label** and holds any elements. Visitors can use the arrow keys to move between tabs.
 
 In the editor, and for visitors whose browser has scripts turned off, every panel is shown in turn under its label.
+
+### Table
+
+Prices, sizes or a timetable, in rows under column headings. Click a cell to change its text, or select the Table to edit its rows as a list.
+
+- **Columns:** 2 to 6. Type each column's heading in **Heading 1**, **Heading 2** and so on.
+- **Rows:** add, move or delete them in the Table's **Rows**, or select a **Table row** to change its cells.
+- **Dropping the last column:** choose one fewer in **Columns**. Its heading and cells are hidden, not deleted: choose more columns again to get them back. To drop a column in the middle, move its text into the columns after it, then drop the last one.
+
+On a phone, each row is shown as a list of headings and values, so visitors never scroll sideways. Screen readers read it as a table.
 
 ## Contact
 

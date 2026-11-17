@@ -221,7 +221,7 @@ export type {
   SiteMigration,
 } from "./migrations.js";
 export { MIGRATIONS, migrateSite, migrateSiteWith, SiteFormatError } from "./migrations.js";
-export { findNode, removeNode } from "./node-tree.js";
+export { findNode, findParent, removeNode } from "./node-tree.js";
 export {
   canDeletePage,
   deletePageFrom,

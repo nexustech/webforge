@@ -17,9 +17,21 @@ export function onAnyDevice(value: unknown, on: (one: unknown) => boolean): bool
   );
 }
 
+/**
+ * A field shown only while a number field is at least `atLeast` (6.16c): the element's own, or with
+ * `of: "parent"` the element holding it. A Table's headings past its Columns, and its rows' cells.
+ * The number is the field's value read as one (a select's `"3"`).
+ */
+export type ShownAtLeast = {
+  readonly field: string;
+  readonly atLeast: number;
+  readonly of?: "parent" | undefined;
+};
+
 /** What {@link hiddenFieldsOf} reads of a component: its layouts' hidden fields, and its fields. */
 type Hiding = {
   readonly variantHides?: Readonly<Record<string, readonly string[]>> | undefined;
+  readonly shownAtLeast?: Readonly<Record<string, ShownAtLeast>> | undefined;
   readonly fields?: Readonly<Record<string, unknown>> | undefined;
   readonly pictureBehind?: readonly PictureBehind[] | undefined;
   readonly defaults?: Readonly<Record<string, unknown>> | undefined;
@@ -45,7 +57,10 @@ const HIDDEN_BY_VALUES = [
  * reader can leave the work of hiding out for it (#670).
  */
 export function hideableFieldsOf(component: Hiding): Set<string> {
-  const names = new Set(Object.values(component.variantHides ?? {}).flat());
+  const names = new Set([
+    ...Object.values(component.variantHides ?? {}).flat(),
+    ...Object.keys(component.shownAtLeast ?? {}),
+  ]);
   const fields = component.fields ?? {};
   for (const name of HIDDEN_BY_VALUES) {
     if (Object.hasOwn(fields, name)) names.add(name);
@@ -55,18 +70,27 @@ export function hideableFieldsOf(component: Hiding): Set<string> {
 
 /**
  * The fields `component`'s chosen layout doesn't use (#311), or that its values leave unused, from
- * its `values` (with its defaults): the Edit panel hides them, the export leaves their pictures
- * and files out, and Site Check doesn't read them (#670). React-free, so Site Check and the
- * catalogue as data read it as the library does.
+ * its `values` (with its defaults), or its parent's `parentValues` (with theirs) leave unused: the
+ * Edit panel hides them, the export leaves their pictures and files out, and Site Check doesn't
+ * read them (#670). React-free, so Site Check and the catalogue as data read it as the library
+ * does. Without `parentValues`, a field shown by its parent's values shows.
  */
 export function hiddenFieldsOf(
   component: Hiding,
   values: Readonly<Record<string, unknown>>,
+  parentValues?: Readonly<Record<string, unknown>>,
 ): Set<string> {
   const variant = values.variant;
   const hidden = new Set(
     typeof variant === "string" ? (component.variantHides?.[variant] ?? []) : [],
   );
+  // A field shown only from some number on (6.16c): a Table's sixth heading, with six Columns.
+  for (const [name, { field, atLeast, of }] of Object.entries(component.shownAtLeast ?? {})) {
+    const from = of === "parent" ? parentValues : values;
+    if (from === undefined) continue;
+    const number = Number(from[field]);
+    if (!(number >= atLeast)) hidden.add(name);
+  }
   const fields = component.fields ?? {};
   // The Appearance group's Border colour, only while it draws a border on some device (2.22b).
   if (
