@@ -166,7 +166,7 @@
   --color-disabled: var(--disabled);
 
   /*
-   * One density (#1015, product owner 15 Nov 2026): 13 px working text, 12 px secondary text.
+   * One density (LF-14, #1015, product owner 15 Nov 2026): 13 px working text, 12 px secondary text.
    * Settings › Interface › Text size scales it all, through the interface zoom.
    * - 2xs, 12 px: secondary text: help under a field, hints, errors, counts and badges. Nothing in
    *   the editor is smaller.
