@@ -58,7 +58,8 @@ async function placeTable() {
  * `<tr>` itself has no box there, its cells laid out in the wrapper.
  */
 const row = (n: number) => canvas().locator("tr.site-table-row").nth(n);
-const wrapperOf = (n: number) => canvas().locator(`table.site-table > tbody > ${COMPONENT}`).nth(n);
+const wrapperOf = (n: number) =>
+  canvas().locator(`.site-table > table > tbody > ${COMPONENT}`).nth(n);
 
 /** A point on row `n`'s left edge, in its first cell's padding: not on text, which edits. */
 async function edgeOf(n: number) {
@@ -76,7 +77,7 @@ const ownBox = (locator: Locator) =>
 test("lays its rows out as the table's, selects a row and shows its Table's columns", async () => {
   await left().getByRole("tab", { name: "Elements" }).click();
   await left().getByRole("button", { name: "Table", exact: true }).click();
-  await expect(canvas().locator("table.site-table")).toHaveCount(1);
+  await expect(canvas().locator(".site-table > table")).toHaveCount(1);
   await expect(canvas().locator("tr.site-table-row")).toHaveCount(3);
   await expect(canvas().locator("th")).toHaveText(["Item", "Price"]);
 
@@ -211,6 +212,6 @@ test("leaves the page as it was when a row is dragged and dropped on another (#1
 
   // Nothing moved, nothing went, and no step was made.
   await expect(firsts()).toHaveText(["One", "Two", "Three"]);
-  await expect(canvas().locator("table.site-table")).toHaveCount(1);
+  await expect(canvas().locator(".site-table > table")).toHaveCount(1);
   await expect(steps).toHaveCount(before);
 });

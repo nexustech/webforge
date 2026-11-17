@@ -111,37 +111,43 @@ const table = defineComponent({
     const headings = COLUMNS.slice(0, columnCount(values.columns)).map((n) =>
       plainText(values[headingField(n)]),
     );
-    // Each part says its role, as a narrow screen draws it as blocks (see the Table's comment).
+    // The element is a box around its table, which its Appearance styles: a table with collapsed
+    // borders takes no padding or rounded corners itself. Each part of the table says its role, as
+    // a narrow screen draws it as blocks (see the Table's comment).
     return (
-      <table
-        className={`site-table w-full border-collapse text-left text-body max-md:block${marginClasses(values.margin)}${entranceClasses(values)}`}
-        // biome-ignore lint/a11y/noRedundantRoles: kept while drawn as a block
-        role="table"
+      <div
+        className={`site-table${marginClasses(values.margin)}${entranceClasses(values)}`}
         {...entranceAttributes(values)}
       >
-        {/* biome-ignore lint/a11y/noRedundantRoles: kept while visually hidden */}
-        <thead className="max-md:sr-only" role="rowgroup">
+        <table
+          className="w-full border-collapse text-left text-body max-md:block"
+          // biome-ignore lint/a11y/noRedundantRoles: kept while drawn as a block
+          role="table"
+        >
           {/* biome-ignore lint/a11y/noRedundantRoles: kept while visually hidden */}
-          <tr className="border-b-2 border-base-300" role="row">
-            {headings.map((heading, index) => (
-              <th
-                // A heading's place is its column: it never moves.
-                key={index}
-                className="px-3 py-2 align-bottom font-semibold"
-                // biome-ignore lint/a11y/noRedundantRoles: kept while visually hidden
-                role="columnheader"
-                scope="col"
-              >
-                {heading}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        {/* The slot is the table's body: on the canvas, Puck's drop zone, its rows in it. */}
-        <TableContext value={headings}>
-          <Rows as="tbody" className="max-md:block" />
-        </TableContext>
-      </table>
+          <thead className="max-md:sr-only" role="rowgroup">
+            {/* biome-ignore lint/a11y/noRedundantRoles: kept while visually hidden */}
+            <tr className="border-b-2 border-base-300" role="row">
+              {headings.map((heading, index) => (
+                <th
+                  // A heading's place is its column: it never moves.
+                  key={index}
+                  className="px-3 py-2 align-bottom font-semibold"
+                  // biome-ignore lint/a11y/noRedundantRoles: kept while visually hidden
+                  role="columnheader"
+                  scope="col"
+                >
+                  {heading}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          {/* The slot is the table's body: on the canvas, Puck's drop zone, its rows in it. */}
+          <TableContext value={headings}>
+            <Rows as="tbody" className="max-md:block" />
+          </TableContext>
+        </table>
+      </div>
     );
   },
 });

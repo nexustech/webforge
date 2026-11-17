@@ -595,7 +595,11 @@ test.describe("exported site from disk", () => {
       await open(page, "about.html");
 
       await expect(table(page).getByRole("columnheader")).toHaveText(["Loaf", "Weight", "Price"]);
-      await expect(table(page).locator("th")).toHaveAttribute("scope", "col");
+      expect(
+        await table(page)
+          .locator("th")
+          .evaluateAll((each) => each.map((th) => th.getAttribute("scope"))),
+      ).toEqual(["col", "col", "col"]);
       await expect(table(page).getByRole("row").nth(1).getByRole("cell")).toHaveText([
         "Sourdough",
         "800 g",

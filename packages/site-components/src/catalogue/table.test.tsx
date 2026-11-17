@@ -61,7 +61,7 @@ describe("the Table (6.16c)", () => {
   it("is a real table, its rows straight in its body, each heading a column's", () => {
     const doc = page([prices()]);
 
-    const table = doc.querySelector("table.site-table");
+    const table = doc.querySelector(".site-table > table");
     expect(table?.querySelector(":scope > thead > tr")?.children).toHaveLength(3);
     expect(table?.querySelectorAll(":scope > tbody > tr.site-table-row")).toHaveLength(2);
     expect([...doc.querySelectorAll("th")].every((th) => th.getAttribute("scope") === "col")).toBe(
