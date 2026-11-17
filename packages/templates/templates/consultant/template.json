@@ -607,6 +607,54 @@
               }
             },
             {
+              "type": "Steps",
+              "props": {
+                "id": "how-we-work",
+                "variant": "timeline",
+                "colors": "inverse",
+                "title": "How we'll work together",
+                "text": "<p>A typical first project, from our first call to a plan you can act on.</p>",
+                "items": [
+                  {
+                    "type": "Step",
+                    "props": {
+                      "id": "how-we-work-step-0",
+                      "title": "Free call",
+                      "text": "<p>We talk about your business and what's holding it back.</p>",
+                      "date": "Week 1"
+                    }
+                  },
+                  {
+                    "type": "Step",
+                    "props": {
+                      "id": "how-we-work-step-1",
+                      "title": "Deep dive",
+                      "text": "<p>I look at your numbers, your customers and how you work.</p>",
+                      "date": "Weeks 2–3"
+                    }
+                  },
+                  {
+                    "type": "Step",
+                    "props": {
+                      "id": "how-we-work-step-2",
+                      "title": "Your plan",
+                      "text": "<p>You get a clear, costed plan with the three changes that matter most.</p>",
+                      "date": "Week 4"
+                    }
+                  },
+                  {
+                    "type": "Step",
+                    "props": {
+                      "id": "how-we-work-step-3",
+                      "title": "Check-ins",
+                      "text": "<p>Monthly calls to keep things on track, for as long as they help.</p>",
+                      "date": "After"
+                    }
+                  }
+                ]
+              }
+            },
+            {
               "type": "Faq",
               "props": {
                 "variant": "accordion",

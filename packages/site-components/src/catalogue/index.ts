@@ -2,6 +2,7 @@ import { t } from "@webforge/i18n";
 import type { LayoutDoc, PageDoc } from "@webforge/model";
 import { createLibrary } from "../define.js";
 import type { ComponentLibrary } from "../library.js";
+import { accordionComponents } from "./accordion.js";
 import { announcementBarComponents } from "./announcement-bar.js";
 import { basicComponents } from "./basic.js";
 import { carouselComponents } from "./carousel.js";
@@ -20,6 +21,7 @@ import { postTagsComponents } from "./post-tags.js";
 import { pricingComponents } from "./pricing.js";
 import { sectionsComponents } from "./sections.js";
 import { statsComponents } from "./stats.js";
+import { stepsComponents } from "./steps.js";
 import { tabsComponents } from "./tabs.js";
 import { teamComponents } from "./team.js";
 import { testimonialsComponents } from "./testimonials.js";
@@ -52,6 +54,8 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   announcementBarComponents,
   latestPostsComponents,
   postTagsComponents,
+  stepsComponents,
+  accordionComponents,
 );
 
 /** The page a new site starts with. */

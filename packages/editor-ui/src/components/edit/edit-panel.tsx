@@ -152,7 +152,7 @@ export function EditPanel({
       <div className="flex h-full flex-col">
         {headingHidden ? null : (
           <div className="flex items-center gap-1 px-3 pt-2">
-            <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+            <h2 className="min-w-0 flex-1 truncate text-lg font-semibold text-foreground">
               {heading}
             </h2>
             {headingAside}

@@ -169,12 +169,16 @@ function renderNode(node: NodeDoc, rendering: Rendering): ReactNode {
     } else if (field.kind === "slot") {
       const children = childrenIn(value);
       // As Puck's drop zone holds them on the canvas: in an element of their own, if it is styled.
-      slots[name] = ({ className }) =>
-        className === undefined ? (
+      slots[name] = ({ className, as: List }) => {
+        if (List !== undefined) {
+          return <List className={className}>{renderNodes(children, rendering)}</List>;
+        }
+        return className === undefined ? (
           renderNodes(children, rendering)
         ) : (
           <div className={className}>{renderNodes(children, rendering)}</div>
         );
+      };
     }
   }
   return withAdvanced(def.render({ id, values, slots, context }), props.advanced);

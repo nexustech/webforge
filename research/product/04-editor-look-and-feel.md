@@ -135,6 +135,7 @@ These must be checked for WCAG AA contrast. Adjust light values where needed. Th
   - tree rows **24 px**, tab strips **32 px**, title bar **40 px**, canvas toolbar **36 px**
   - panel padding 8 px; gaps 4–8 px
   - radius **3–4 px** (small, like Bootstrap Studio), not shadcn's 8–10 px
+- **Changed 15 Nov 2026 ([LF-14](07-look-and-feel-pass.md#4-decision), #1015, product owner):** the [UI/UX audit](../../docs/reviews/2026-11-14-ui-ux-audit.md) found the compact sizes too small for the audience: 12 px working text, and `h-7` buttons drawn 23 px high, since the editor's rem was 13 px. The one density is now **13 px working text and 12 px secondary text** (help, hints, errors, badges), nothing smaller, with a group's heading a step above its labels. The rem is 14 px, so `h-7` is 24.5 px, over WCAG 2.2's 24 px target. There is no Compact or Comfortable pair: **Settings › Interface › Text size** scales the whole editor through the interface zoom (80–150%).
 - **Icons:** Lucide at 16 px (14 px in dense trees), stroke 1.75; tinted per the action colours above.
 - **Tree items:** disclosure triangles, bold element type followed by its muted label (Bootstrap Studio shows "Navbar _Navbar Centered Links_"); a small badge for shared Header/Footer (C5) and a lock icon for locked items.
 - **Canvas chrome:** 1 px ~~magenta~~ accent-blue outline on hover, 2 px on selection (UI6 LF-1), with a small label chip ("Section · Hero") and quick actions (move up/down, duplicate, delete) on the selected element, in a solid accent bar with white icons (LF-3).
