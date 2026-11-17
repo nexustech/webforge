@@ -1,6 +1,12 @@
 import type { ViewOptions } from "../canvas-engine.js";
 import { canvasZoom } from "./chrome.js";
-import { COMPONENT, COMPONENT_ATTRIBUTE, OVERLAY, ROOT_DROP_ZONE } from "./puck-dom.js";
+import {
+  COMPONENT,
+  COMPONENT_ATTRIBUTE,
+  OVERLAY,
+  ROOT_DROP_ZONE,
+  shownElementOf,
+} from "./puck-dom.js";
 import { paddingBoxOf } from "./spacing-handles.js";
 import { ensureStyle } from "./styles.js";
 import { OPTION_ATTRIBUTES } from "./view-attributes.js";
@@ -179,8 +185,8 @@ function showSpacingOnHover(document: Document, view: Window, layer: HTMLElement
   const show = () => {
     // An element taken off the page (deleted, undone) shows nothing.
     if (hovered?.isConnected === false) hovered = null;
-    // The element's own markup, inside Puck's wrapper.
-    const shown = hovered?.firstElementChild ?? hovered;
+    // The element's own markup, inside Puck's wrapper (or the wrapper, for a table row's).
+    const shown = hovered === null ? null : (shownElementOf(hovered) ?? hovered);
     if (shown === null) {
       margin.remove();
       padding.remove();

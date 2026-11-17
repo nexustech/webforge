@@ -36,7 +36,6 @@ import {
   RICH_TEXT_MENU,
   ROOT_DROP_ZONE,
   SELECTED_COMPONENT,
-  TABLE_ROW_PASSAGES,
   TABLE_ROW_WRAPPER,
 } from "./puck-dom.js";
 import { createPuckEngine } from "./puck-engine.js";
@@ -372,14 +371,8 @@ describe("a table's rows on the canvas (6.16c)", () => {
         fields: { rows: { kind: "slot", label: "Rows", allow: ["Row"] } },
         defaults: { rows: [] },
         render: ({ slots }) => {
-          const Rows = slots.rows ?? (() => null);
-          return (
-            <table>
-              <tbody>
-                <Rows />
-              </tbody>
-            </table>
-          );
+          const Rows = slots.rows;
+          return <table>{Rows === undefined ? null : <Rows as="tbody" />}</table>;
         },
       },
       Row: {
@@ -423,23 +416,30 @@ describe("a table's rows on the canvas (6.16c)", () => {
     element.remove();
   });
 
-  it("wraps each row in a wrapper of its own, the row its first child, in the slot's drop zone", () => {
+  it("draws the slot as the table's body, each row in a wrapper of its own, the row its child", () => {
     const wrappers = [...element.querySelectorAll(TABLE_ROW_WRAPPER)];
 
     expect(wrappers.map((wrapper) => wrapper.getAttribute(COMPONENT_ATTRIBUTE))).toEqual([
       "r1",
       "r2",
     ]);
-    // What the hover size and the keyboard's menu measure: the row, not its wrapper.
-    expect(elementOf(document, "r1")?.tagName).toBe("TR");
-    // The body and the drop zone between it and the wrappers, which the rows pass through.
-    const passages = [...element.querySelectorAll(TABLE_ROW_PASSAGES)];
-    expect(passages.map((passage) => passage.tagName)).toEqual(["TBODY", "DIV"]);
-    expect(passages[1]?.matches(COMPONENT_DROP_ZONE)).toBe(true);
-    // The table's own wrapper isn't a row's: it's not in a body.
+    expect(wrappers.map((wrapper) => wrapper.firstElementChild?.tagName)).toEqual(["TR", "TR"]);
+    // The body is Puck's drop zone, so a drag finds its box; the table's own wrapper isn't a row's.
+    expect(element.querySelector("table > tbody")?.matches(COMPONENT_DROP_ZONE)).toBe(true);
     expect(element.querySelector(componentSelector("table"))?.matches(TABLE_ROW_WRAPPER)).toBe(
       false,
     );
+  });
+
+  it("measures a row by its wrapper while the row has no box of its own, other elements by theirs", () => {
+    const tr = element.querySelector(`${componentSelector("r1")} > tr`) as HTMLElement | null;
+    if (tr === null) throw new Error("no row");
+    // As the canvas styles draw it, its wrapper the row.
+    tr.style.display = "contents";
+
+    // What the hover size, the keyboard's menu and the spacing view measure.
+    expect(elementOf(document, "r1")).toBe(tr.parentElement);
+    expect(elementOf(document, "table")?.tagName).toBe("TABLE");
   });
 
   it("edits a cell where it is, and outlines a selected row with Puck's overlay", async () => {

@@ -27,7 +27,6 @@ import {
   NOTE_ATTRIBUTE,
   OVERLAY,
   SELECTED_COMPONENT,
-  TABLE_ROW_PASSAGES,
   TABLE_ROW_WRAPPER,
 } from "./puck-dom.js";
 import { canPerform, performOnSelected } from "./selected-actions.js";
@@ -90,17 +89,22 @@ const CHROME_CSS = `
   outline-offset: calc(-1px / var(--wf-zoom, 1));
 }
 /*
- * A table's rows (6.16c): Puck wraps each element in a div of its own, and a slot's elements in its
- * drop zone, which a table can't lay out between its body and its rows. The body and the drop zone
- * let them through, and each row's wrapper is a group of that one row, so the row keeps its own box,
- * borders and cells as the export draws them, and Puck's outline has a box to fit. At a phone's
- * width (the themes' 48rem) the wrapper stacks, as the export's rows do.
+ * A table's rows (6.16c): a table's body is a slot's drop zone (as "tbody"), and Puck wraps each
+ * row in it in a div of its own, which a table can't lay out. The wrapper is drawn as the row, the
+ * row's own element letting its cells through to it, so Puck's outline, its drag and its drop
+ * line have the row's box. A browser finds a pointer on a table's cells, never on its rows, and
+ * Puck takes it from everything in a wrapper: the cells take it again, for the row's wrapper, so
+ * a click or a drag on a row is the row's, not its table's. At a phone's width (the themes'
+ * 48rem) the wrapper stacks its cells, as the export's rows do.
  */
-${TABLE_ROW_PASSAGES} {
+${TABLE_ROW_WRAPPER} {
+  display: table-row;
+}
+${TABLE_ROW_WRAPPER} > tr {
   display: contents;
 }
-${TABLE_ROW_WRAPPER} {
-  display: table-row-group;
+${TABLE_ROW_WRAPPER} > tr > * {
+  pointer-events: auto;
 }
 @media (width < 48rem) {
   ${TABLE_ROW_WRAPPER} {

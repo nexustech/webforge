@@ -519,11 +519,12 @@ export type ValuesOf<
  * `as` makes that element a list, `<ol>` or `<ul>`, for a slot whose elements are each an `<li>`
  * (a Steps section's steps, #1134). Puck's drop zone takes the same `as`. On the canvas each
  * element still sits in Puck's wrapper inside the list, so the list's layout is a grid or flex,
- * never a rule for its own `li`s.
+ * never a rule for its own `li`s. `tbody` makes it a table's body, for a slot whose elements are
+ * each a `<tr>` (a Table's rows, 6.16c): the canvas styles draw each row's wrapper as the row.
  */
 export type SlotComponent = ComponentType<{
   readonly className?: string;
-  readonly as?: "ol" | "ul";
+  readonly as?: "ol" | "ul" | "tbody";
 }>;
 
 /** What a component's `render` gets, from `defineComponent`'s fields. */
