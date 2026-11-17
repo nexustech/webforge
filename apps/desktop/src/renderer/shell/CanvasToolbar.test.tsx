@@ -251,9 +251,9 @@ describe("View menu and devices (F-ED-25)", () => {
     const { onCanvasChange } = setUp();
 
     await user().click(screen.getByRole("button", { name: "View" }));
-    const outlines = screen.getByRole("menuitemcheckbox", { name: "Show outlines" });
+    const outlines = screen.getByRole("menuitemcheckbox", { name: "Show Outlines" });
     expect(outlines.getAttribute("aria-checked")).toBe("true");
-    await user().click(screen.getByRole("menuitemcheckbox", { name: "Show spacing on hover" }));
+    await user().click(screen.getByRole("menuitemcheckbox", { name: "Show Spacing on Hover" }));
     await user().click(outlines);
 
     expect(screen.getByRole("menu")).toBeTruthy();
@@ -274,14 +274,14 @@ describe("View menu and devices (F-ED-25)", () => {
       screen.getByRole("button", { name: "Page size 1280 × 900 @ 50%: choose a device" }),
     );
     expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
-      "Desktop (fills the canvas)",
+      "Desktop (Fills the Canvas)",
       "Tablet (768)",
       "Mobile (375)",
       "Desktop (1280)",
       "Desktop (1440)",
       "Desktop (1920)",
       "Old laptop (1024 × 600)",
-      "Add device…",
+      "Add Device…",
     ]);
     await user().click(screen.getByRole("menuitem", { name: "Old laptop (1024 × 600)" }));
     await user().click(screen.getByRole("button", { name: /Page size/ }));
@@ -290,7 +290,7 @@ describe("View menu and devices (F-ED-25)", () => {
     await user().click(screen.getByRole("button", { name: /Page size/ }));
     await user().click(screen.getByRole("menuitem", { name: "Desktop (1440)" }));
     await user().click(screen.getByRole("button", { name: /Page size/ }));
-    await user().click(screen.getByRole("menuitem", { name: "Desktop (fills the canvas)" }));
+    await user().click(screen.getByRole("menuitem", { name: "Desktop (Fills the Canvas)" }));
 
     expect(onViewportChange.mock.calls).toEqual([[1024], ["mobile"], [1440], ["desktop"]]);
   });
@@ -319,7 +319,7 @@ describe("View menu and devices (F-ED-25)", () => {
     await user().click(screen.getByRole("button", { name: "Devices" }));
 
     expect(
-      screen.getByRole("menuitem", { name: "Add device…" }).getAttribute("aria-disabled"),
+      screen.getByRole("menuitem", { name: "Add Device…" }).getAttribute("aria-disabled"),
     ).toBe("true");
   });
 
@@ -327,7 +327,7 @@ describe("View menu and devices (F-ED-25)", () => {
     const { onCanvasChange, onViewportChange } = setUp();
 
     await user().click(screen.getByRole("button", { name: "Devices" }));
-    await user().click(screen.getByRole("menuitem", { name: "Add device…" }));
+    await user().click(screen.getByRole("menuitem", { name: "Add Device…" }));
     // It opens as the menu closes: wait until it takes clicks.
     const dialog = await openedDialog("Add a device");
     await user().type(dialog.getByRole("textbox", { name: "Name" }), "Kiosk");
@@ -399,7 +399,7 @@ describe("a narrow toolbar (#1008)", () => {
       "Zoom In",
       "Zoom Out",
       "Rotate",
-      "Canvas width…",
+      "Canvas Width…",
     ]);
     // Kept open, to zoom again.
     await user().click(screen.getByRole("menuitem", { name: "Zoom Out" }));
@@ -408,12 +408,12 @@ describe("a narrow toolbar (#1008)", () => {
     expect(onViewportChange).toHaveBeenCalledExactlyOnceWith(812);
   });
 
-  it("takes a width from the View menu's Canvas width…, as the width box did", async () => {
+  it("takes a width from the View menu's Canvas Width…, as the width box did", async () => {
     toolbarOf(380, 1000);
     const { onViewportChange } = setUp(375);
 
     await user().click(screen.getByRole("button", { name: "View" }));
-    await user().click(screen.getByRole("menuitem", { name: "Canvas width…" }));
+    await user().click(screen.getByRole("menuitem", { name: "Canvas Width…" }));
     const dialog = await openedDialog("Canvas width");
     const width = dialog.getByRole("spinbutton", { name: "Width in pixels" });
     expect((width as HTMLInputElement).value).toBe("375");
@@ -425,11 +425,11 @@ describe("a narrow toolbar (#1008)", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("keeps Canvas width… open as the window widens, and never opens it again unasked", async () => {
+  it("keeps Canvas Width… open as the window widens, and never opens it again unasked", async () => {
     const resize = toolbarOf(380, 1000);
     const { redraw } = setUp(375);
     await user().click(screen.getByRole("button", { name: "View" }));
-    await user().click(screen.getByRole("menuitem", { name: "Canvas width…" }));
+    await user().click(screen.getByRole("menuitem", { name: "Canvas Width…" }));
     await openedDialog("Canvas width");
 
     // Wide: the width box is back in the toolbar, and the dialog stays until it's answered.

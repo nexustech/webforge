@@ -174,11 +174,11 @@ describe("File › Open Recent (3.18, PF-1)", () => {
     expect(label.endsWith("…")).toBe(true);
   });
 
-  it("shows a disabled No recent sites when there are none", async () => {
+  it("shows a disabled No Recent Sites when there are none", async () => {
     const { registry } = await setUp(api([]));
 
     expect(submenu(registry).map((command) => [command.label, command.enabled])).toEqual([
-      ["No recent sites", false],
+      ["No Recent Sites", false],
     ]);
   });
 

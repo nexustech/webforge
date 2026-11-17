@@ -28,13 +28,13 @@ const CANVAS_COMMANDS: readonly {
   {
     id: "edit.moveUp",
     action: "moveUp",
-    label: "canvas.moveUp",
+    label: "canvas.moveUp.command",
     menu: "edit",
   },
   {
     id: "edit.moveDown",
     action: "moveDown",
-    label: "canvas.moveDown",
+    label: "canvas.moveDown.command",
     menu: "edit",
   },
   {

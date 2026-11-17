@@ -163,7 +163,7 @@ export const shell = {
   "command.openRecent.inFolder": "{name} ({folder})",
   // A recent site in the command box, named by the menu it's in.
   "command.openRecent.palette": "Open Recent: {name}",
-  "command.noRecent": "No recent sites",
+  "command.noRecent": "No Recent Sites",
   "command.clearRecent": "Clear Recent",
   // A copy of the whole site as a ZIP, and a site opened from one (4.7): not Export's website.
   "command.saveSiteZip": "Save a Copy as ZIP…",
@@ -295,10 +295,10 @@ export const shell = {
   "canvasToolbar.size": "{width} × {height} @ {zoom}%",
   // The canvas's View menu and devices (1.33, F-ED-25): view state, never an undo step.
   "canvasToolbar.view": "View",
-  "canvasToolbar.view.outlines": "Show outlines",
-  "canvasToolbar.view.spacing": "Show spacing on hover",
-  "canvasToolbar.view.names": "Show element names",
-  "canvasToolbar.view.extraSpace": "Extra space at the bottom",
+  "canvasToolbar.view.outlines": "Show Outlines",
+  "canvasToolbar.view.spacing": "Show Spacing on Hover",
+  "canvasToolbar.view.names": "Show Element Names",
+  "canvasToolbar.view.extraSpace": "Extra Space at the Bottom",
   "canvasToolbar.devices": "Devices",
   "canvasToolbar.rotate": "Rotate",
   // The selected element's toolbar, in the row under the canvas toolbar (SP-4): a Heading's level.
@@ -334,8 +334,8 @@ export const shell = {
   "canvasToolbar.deviceSize": "{name} ({width} × {height})",
   "canvasToolbar.deviceWidth": "{name} ({width})",
   // Desktop fills the canvas, as a site fills a browser (PH2-18); fixed widths follow it.
-  "canvasToolbar.desktopFills": "Desktop (fills the canvas)",
-  "canvasToolbar.addDevice": "Add device…",
+  "canvasToolbar.desktopFills": "Desktop (Fills the Canvas)",
+  "canvasToolbar.addDevice": "Add Device…",
   "canvasToolbar.addDevice.title": "Add a device",
   "canvasToolbar.addDevice.description":
     "Its width and height show in the device list, for you only, on every site.",
@@ -345,7 +345,7 @@ export const shell = {
   "canvasToolbar.addDevice.range": "Between {min} and {max} pixels.",
   "canvasToolbar.addDevice.confirm": "Add Device",
   // The width box, from the View menu once the toolbar is too narrow for it (#1008).
-  "canvasToolbar.widthItem": "Canvas width…",
+  "canvasToolbar.widthItem": "Canvas Width…",
   "canvasToolbar.widthDialog.title": "Canvas width",
   "canvasToolbar.widthDialog.description":
     "Shows the page at a width of your own, without adding a device.",

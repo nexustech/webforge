@@ -48,9 +48,9 @@ Your site hides the bar once the page has opened, so a visitor who closed it, or
 
 A **shared section** is a section stored once and placed on several pages, such as an offer or a "Book now" banner. Edit any copy and every copy changes.
 
-- **Share a section:** right-click it and choose **Save as shared section…**, then give it a name.
+- **Share a section:** right-click it and choose **Save as Shared Section…**, then give it a name.
 - **Place another copy:** click it in the Add panel's **Shared sections** group. Or copy it and use **Paste as Linked Copy** (Ctrl+Shift+V, Cmd+Shift+V on a Mac).
-- **Make one copy separate:** right-click it and choose **Detach from shared section**. That copy becomes an ordinary section; the others stay shared.
+- **Make one copy separate:** right-click it and choose **Detach from Shared Section**. That copy becomes an ordinary section; the others stay shared.
 - **Rename or delete a shared section:** use its **…** menu in the Add panel. Deleting it leaves every copy on its page as an ordinary section.
 
 All of these are also in **Edit › Shared Section**, for the selected section.

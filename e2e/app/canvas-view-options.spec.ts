@@ -53,15 +53,15 @@ test("shows outlines, element names, spacing on hover and extra space, none an u
   // Outlines are on by default: a dashed line around every element.
   await expect(root).toHaveAttribute("data-wf-view-outlines", "");
   await expect(wrapper.first()).toHaveCSS("outline-style", "dashed");
-  await toggle("Show outlines");
+  await toggle("Show Outlines");
   await expect(wrapper.first()).not.toHaveCSS("outline-style", "dashed");
 
   // Element names: one for each element, the Heading's among them.
-  await toggle("Show element names");
+  await toggle("Show Element Names");
   await expect(canvas().locator(".wf-view-name", { hasText: "Heading" }).first()).toBeVisible();
 
   // Spacing on hover: the hovered element's margin and padding.
-  await toggle("Show spacing on hover");
+  await toggle("Show Spacing on Hover");
   await canvas().locator("h1").hover();
   await expect(canvas().locator(".wf-view-margin")).toHaveCount(1);
   await expect(canvas().locator(".wf-view-padding")).toHaveCount(1);
@@ -69,7 +69,7 @@ test("shows outlines, element names, spacing on hover and extra space, none an u
   // Extra space at the bottom: room below the page's last section, however long the page is.
   const zone = canvas().locator(ROOT_DROP_ZONE);
   await expect(zone).toHaveCSS("padding-bottom", "0px");
-  await toggle("Extra space at the bottom");
+  await toggle("Extra Space at the Bottom");
   await expect(zone).toHaveCSS("padding-bottom", "320px");
   const room = await zone.evaluate((element) => {
     const last = element.lastElementChild?.getBoundingClientRect().bottom ?? 0;
@@ -78,7 +78,7 @@ test("shows outlines, element names, spacing on hover and extra space, none an u
   expect(room).toBeGreaterThanOrEqual(320);
 
   // Off again: the canvas shows the page alone.
-  await toggle("Show element names");
+  await toggle("Show Element Names");
   await expect(canvas().locator(".wf-view-name")).toHaveCount(0);
   await expect(steps()).toHaveCount(before);
 });
@@ -92,7 +92,7 @@ test("names a hovered element in a chip, with its size while spacing on hover is
   await expect(chip).toBeVisible();
   await expect(chip).toHaveText("Heading");
 
-  await toggle("Show spacing on hover");
+  await toggle("Show Spacing on Hover");
   // Away and back, as the person moves on.
   await page.mouse.move(0, 0);
   await text.hover();

@@ -212,13 +212,13 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   await page.keyboard.press("Enter");
   await expect(row("Intro")).toBeVisible();
   await tree().getByRole("button", { name: "Show or hide Image (now: Show)" }).click();
-  await page.getByRole("menuitemradio", { name: "Don't publish" }).click();
+  await page.getByRole("menuitemradio", { name: "Don't Publish" }).click();
   await expect(
-    tree().getByRole("button", { name: "Show or hide Image (now: Don't publish)" }),
+    tree().getByRole("button", { name: "Show or hide Image (now: Don't Publish)" }),
   ).toBeVisible();
 
   await selectSection();
-  await chooseFromSubmenu(running(), page, "Edit", "Shared Section", "Save as shared section…");
+  await chooseFromSubmenu(running(), page, "Edit", "Shared Section", "Save as Shared Section…");
   const save = page.getByRole("dialog", { name: "Save as shared section" });
   await save.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await save.getByRole("button", { name: "Save" }).click();

@@ -76,8 +76,8 @@ When a section or element is selected, drag the handles on its edges to change t
 Right-click a section or element, on the page or in [Layers](layers.md), for:
 
 - **Rename** and **Duplicate**;
-- **Save as shared section…**, or **Detach from shared section** (see [Header, Footer and shared sections](header-and-footer.md));
-- **Select similar** (every item like this one on the page) and **Select parent**;
+- **Save as Shared Section…**, or **Detach from Shared Section** (see [Header, Footer and shared sections](header-and-footer.md));
+- **Select Similar** (every item like this one on the page) and **Select Parent**;
 - **Cut**, **Copy**, **Paste** and **Paste as Linked Copy**;
 - **Style This…**, **Copy Style**, **Paste Style**, and **Apply Look to Every…** on this page or the whole site (see [Styling](styling.md));
 - **Add Note…** or **Edit Note…**, and **Resolve Note** (see [Notes](#notes));
