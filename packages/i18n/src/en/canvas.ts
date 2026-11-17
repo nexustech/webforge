@@ -165,8 +165,8 @@ export const canvas = {
   "editPanel.optionGroup.options": "Options",
   "editPanel.optionGroup.advanced": "Advanced",
   // Apply Look to Every… (2.27, ST-4), asked before it changes other pages (D7).
-  "look.confirm.title.page": "Give every {item} on this page this look?",
-  "look.confirm.title.site": "Give every {item} on the site this look?",
+  "look.confirm.title.page": "Give Every {item} on This Page This Look?",
+  "look.confirm.title.site": "Give Every {item} on the Site This Look?",
   "look.confirm.elements.one": "This gives 1 other {item} the same look.",
   "look.confirm.elements.other": "This gives {count} other {item} elements the same look.",
   "look.confirm.sections.one": "This gives 1 other {item} the same look.",

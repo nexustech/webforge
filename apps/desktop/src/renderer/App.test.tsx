@@ -194,7 +194,7 @@ describe("App's AI apps (4.8)", () => {
       app: "Claude",
     });
     const dialog = await screen.findByRole("alertdialog");
-    expect(within(dialog).getByText("Allow Claude to change the theme?")).toBeTruthy();
+    expect(within(dialog).getByText("Allow Claude to Change the Theme?")).toBeTruthy();
     // Radix keeps pointer events off the page under the dialog, which happy-dom applies to it too.
     await act(async () => within(dialog).getByRole("button", { name: "Allow" }).click());
     expect(await theme).toMatchObject({ status: "done", label: "AI (Claude): Changed the theme" });

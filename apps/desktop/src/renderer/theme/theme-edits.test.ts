@@ -263,7 +263,7 @@ describe("the Theme tab's edits (2.3a)", () => {
     await setPaletteColor(session, confirm, "inverse", "primary", BRAND);
 
     expect(confirm.confirmSiteWide).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "Change the Brand colour in reversed sections?" }),
+      expect.objectContaining({ action: "Change the Brand Colour in Reversed Sections?" }),
     );
     expect(theme().inverse?.primary).toEqual(BRAND);
     // Its surface was the neutral colour, as such a theme shows reversed sections.

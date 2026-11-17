@@ -54,9 +54,9 @@ describe("a plan (4.12a, AIB-6)", () => {
     );
     // What each would have asked on its own, the phone named from and to.
     expect(asked?.description).toContain("On their own, these would each have asked first:");
-    expect(asked?.description).toContain("Allow Claude to delete the page About?");
+    expect(asked?.description).toContain("Allow Claude to Delete the Page About?");
     expect(asked?.description).toContain("Phone number: from no address to 01234 567890.");
-    expect(asked?.description).toContain("Allow Claude to change the theme?");
+    expect(asked?.description).toContain("Allow Claude to Change the Theme?");
 
     const after = history.document.getState();
     expect(history.state.getState().entries).toHaveLength(1);
@@ -307,7 +307,7 @@ describe("a long plan's question (S30, #795)", () => {
     const description = confirm.mock.calls[0]?.[0].description ?? "";
     const [first, ...rest] = description.split("\n\n");
     expect(first).toMatch(
-      /^Check these first: .* Allow Claude to change Site Settings: Contact & hours\? Phone number: from no address to 09999 999999\.$/,
+      /^Check these first: .* Allow Claude to Change Site Settings: Contact & hours\? Phone number: from no address to 09999 999999\.$/,
     );
     expect(rest.join(" ")).not.toContain("09999");
     // 150 pages: ten named, the rest counted, and the long title cut short.

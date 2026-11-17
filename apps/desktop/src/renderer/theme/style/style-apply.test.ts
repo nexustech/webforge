@@ -122,7 +122,7 @@ describe("Style this ‹kind›…: where its changes apply (3.13a)", () => {
 
     const declined = confirmer(false);
     expect(await applyStyle(session, since, "site", { siteWide: declined })).toBe(false);
-    expect(declined.asked[0]?.action).toBe("Give every Button on the site this look?");
+    expect(declined.asked[0]?.action).toBe("Give Every Button on the Site This Look?");
     expect(props(about, "other")).not.toHaveProperty("lookShadow");
     expect(props(home, "styled")?.lookShadow).toBe("large");
 

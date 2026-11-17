@@ -163,7 +163,7 @@ describe("Apply Look to Every… (2.27, ST-4)", () => {
     // The question said how many change, how many of them are hidden, and on how many pages.
     expect(siteWide.asked).toEqual([
       {
-        action: "Give every Button on the site this look?",
+        action: "Give Every Button on the Site This Look?",
         description:
           "This gives 3 other Button elements the same look. 1 of them is hidden in Layers.",
         confirm: "Apply Look",
@@ -312,7 +312,7 @@ describe("Apply Look to Every… (2.27, ST-4)", () => {
     expect(lookOf(inside[0]?.props)).toEqual(LOOK);
     // "On this page" says why other pages change.
     expect(siteWide.asked[0]).toMatchObject({
-      action: "Give every Button on this page this look?",
+      action: "Give Every Button on This Page This Look?",
       description:
         "This gives 2 other Button elements the same look. The Footer is on other pages too.",
       affectedPages: Object.keys(session.history.document.getState().pages).length,
@@ -383,7 +383,7 @@ describe("Apply Look to Every… (2.27, ST-4)", () => {
     const change = lookChange(session, "site");
     if (change === undefined) throw new Error("no change");
     expect(lookConfirmation(change, "site")).toEqual({
-      action: "Give every Section on the site this look?",
+      action: "Give Every Section on the Site This Look?",
       description:
         "This gives 3 other Section sections the same look. 1 of them is hidden in Layers.",
       confirm: "Apply Look",

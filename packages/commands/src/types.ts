@@ -8,7 +8,7 @@ import type {} from "./web-globals.js";
  * question asks it: a change to more than one page, or to where visitors' money or details go.
  */
 export type Confirmation = {
-  /** The question, as the dialog's title: "Allow Claude to change the Header?". */
+  /** The question, as the dialog's title: "Allow Claude to Change the Header?". */
   readonly action: string;
   /** More about it, before the pages it changes: "Payment link: from pay.example to …" (S18). */
   readonly description?: string;

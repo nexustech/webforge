@@ -32,7 +32,7 @@ export const theme = {
 
   // Colours (the glossary's names are `colour.role.*`) and what their contrast lacks (WCAG AA).
   "theme.color.confirm": "Change the {name} Colour?",
-  "theme.color.confirmReversed": "Change the {name} colour in reversed sections?",
+  "theme.color.confirmReversed": "Change the {name} Colour in Reversed Sections?",
   "theme.color.confirmDescription": "Everything in this colour changes, on every page.",
   "theme.color.confirmButton": "Change Colour",
   "theme.role.surface2": "Second surface",

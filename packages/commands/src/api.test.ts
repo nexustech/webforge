@@ -360,7 +360,7 @@ describe("the command API's commands (4.8)", () => {
     const allowed = setup(true);
     await createCommandApi(allowed.host).run("addPage", { title: "Menu" }, app);
     expect(allowed.confirm.mock.calls[0]?.[0]).toEqual<Confirmation>({
-      action: "Allow Claude to add the page Menu, with a menu entry on every page?",
+      action: "Allow Claude to Add the Page Menu, with a Menu Entry on Every Page?",
       confirm: "Allow",
       affectedPages: 3,
     });
@@ -424,7 +424,7 @@ describe("the command API's commands (4.8)", () => {
       label: "AI (Claude): Changed the theme",
     });
     expect(allowed.confirm.mock.calls[0]?.[0]).toEqual<Confirmation>({
-      action: "Allow Claude to change the theme?",
+      action: "Allow Claude to Change the Theme?",
       confirm: "Allow",
       affectedPages: 3,
     });
@@ -478,7 +478,7 @@ describe("the command API's commands (4.8)", () => {
       app,
     );
     expect(header.confirm.mock.calls[0]?.[0]).toMatchObject({
-      action: "Allow Claude to change the Header?",
+      action: "Allow Claude to Change the Header?",
       affectedPages: 3,
     });
     await api.run(
@@ -546,7 +546,7 @@ describe("the command API's commands on shared parts (4.8)", () => {
       ),
     ).toMatchObject({ status: "done", label: "AI (Claude): Edited Heading text" });
     expect(confirm.mock.calls[0]?.[0]).toMatchObject({
-      action: "Allow Claude to change the shared section Opening hours?",
+      action: "Allow Claude to Change the Shared Section Opening hours?",
       affectedPages: 2,
     });
     expect((await api.run("removeNode", { location: shared, nodeId: "hours" }, app)).status).toBe(
@@ -840,7 +840,7 @@ describe("where visitors' money and details go (S18, #658)", () => {
       );
       expect(repointed.status).toBe("declined");
       expect(confirm.mock.calls[0]?.[0]).toEqual({
-        action: "Allow Claude to change the Buy button's Payment link?",
+        action: "Allow Claude to Change the Buy button's Payment link?",
         description: "Payment link: from buy.stripe.com to pay.example.net.",
         confirm: "Allow",
         affectedPages: 1,
