@@ -1,7 +1,7 @@
-import { t } from "@webforge/i18n";
 import { exportedAddress, type SiteRedirect, type SiteSnapshot } from "@webforge/model";
 import { escapeHtml } from "./html.js";
 import { pageTitle, siteAddress } from "./site-files.js";
+import { siteTextOf } from "./site-text.js";
 
 // Old addresses kept working (#862, SEO-5, G7). At each, the export writes a small page that sends
 // visitors and search engines on to the page: a 0-second refresh, which Google takes as a
@@ -31,7 +31,7 @@ export function redirectPage(site: SiteSnapshot, redirect: SiteRedirect): string
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     "</head>",
     "<body>",
-    `<p>${escapeHtml(t("siteText.redirect.moved"))} <a href="${escapeHtml(href)}">${escapeHtml(title)}</a></p>`,
+    `<p>${escapeHtml(siteTextOf(site)("siteText.redirect.moved"))} <a href="${escapeHtml(href)}">${escapeHtml(title)}</a></p>`,
     "</body>",
     "</html>",
     "",

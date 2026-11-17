@@ -27,7 +27,7 @@ import {
   entranceBehaviours,
   entranceClasses,
 } from "./motion.js";
-import type { DefaultsOf, FieldDef, RenderPropsOf, ValuesOf } from "./schema.js";
+import type { DefaultsOf, FieldDef, RenderContext, RenderPropsOf, ValuesOf } from "./schema.js";
 import { SectionSubtitleAppearance, SectionTitleAppearance } from "./typography.js";
 
 /** A section's own padding (`px-4 py-16`), for the sides left unset (1.32). */
@@ -203,9 +203,13 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
   readonly background?: false;
   /** The frame's classes from its values: its background and layout ("hero bg-base-200"). */
   readonly frame?: (values: ValuesOf<F & FrameFields, Variant>) => string;
-  /** Attributes on the frame from its values, for its behaviour (`data-wf-gallery`). */
+  /**
+   * Attributes on the frame from its values, for its behaviour (`data-wf-gallery`), and its name
+   * in the site's words (`context.siteText`).
+   */
   readonly frameAttributes?: (
     values: ValuesOf<F & FrameFields, Variant>,
+    context: RenderContext,
   ) => Readonly<Record<string, string>>;
   /**
    * Whether the section's padding goes on its column instead, which its render draws with
@@ -320,7 +324,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
       return (
         <section
           className={classes.join(" ")}
-          {...(frameAttributes?.(values) ?? {})}
+          {...(frameAttributes?.(values, props.context) ?? {})}
           {...theme}
           {...entranceAttributes(stored)}
         >

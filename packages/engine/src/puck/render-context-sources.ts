@@ -51,6 +51,7 @@ export const RENDER_CONTEXT_SOURCES = {
   socialProfiles: "setSettings",
   socialHint: "setSettings",
   language: "setSettings",
+  siteText: "setSettings",
   formService: "setSettings",
   formHint: "setSettings",
   elementHint: "setSettings",

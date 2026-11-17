@@ -36,8 +36,8 @@ const announcementBar = defineSection({
   },
   frame: () => "bg-neutral text-neutral-content",
   // A landmark of its own, so a screen reader can find it, or skip it.
-  frameAttributes: (values) => ({
-    "aria-label": t("siteText.announcement.label"),
+  frameAttributes: (values, context) => ({
+    "aria-label": context.siteText("siteText.announcement.label"),
     "data-wf-announcement": "",
     ...(LAST_DAY.test(values.lastDay) ? { "data-last-day": values.lastDay } : {}),
   }),
@@ -60,8 +60,8 @@ const announcementBar = defineSection({
         <button
           type="button"
           className={`${BUTTON_CLASSES.icon} btn-xs shrink-0`}
-          aria-label={t("siteText.announcement.close")}
-          title={t("siteText.announcement.close")}
+          aria-label={context.siteText("siteText.announcement.close")}
+          title={context.siteText("siteText.announcement.close")}
           data-wf-announcement-close=""
           hidden
         >

@@ -1,4 +1,3 @@
-import { t } from "@webforge/i18n";
 import {
   escapeHtmlText,
   type NodeDoc,
@@ -8,6 +7,7 @@ import {
   THANKS_PATH,
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
+import { siteTextOf } from "./site-text.js";
 
 /** The elements that post to Site Settings' form service: a Newsletter posts to its own. */
 const SERVICE_FORMS = new Set(["ContactForm", "Form"]);
@@ -50,10 +50,11 @@ const node = (
  */
 function madeThanksPage(site: SiteSnapshot, library: ComponentLibrary): SitePage {
   const home = site.pages.find((page) => page.path === "index");
+  const siteText = siteTextOf(site);
   return {
     id: THANKS_PATH,
     path: THANKS_PATH,
-    title: t("siteText.thanks.title"),
+    title: siteText("siteText.thanks.title"),
     hideFromNavigation: true,
     // Nothing for search engines: it is only reached by sending a form (3.15, SEO-2).
     hideFromSearch: true,
@@ -65,19 +66,19 @@ function madeThanksPage(site: SiteSnapshot, library: ComponentLibrary): SitePage
           content: [
             node(library, "Heading", {
               id: "thank-you-heading",
-              text: t("siteText.thanks.title"),
+              text: siteText("siteText.thanks.title"),
               size: "large",
             }),
             node(library, "Text", {
               id: "thank-you-text",
-              text: `<p>${escapeHtmlText(t("siteText.thanks.text"))}</p>`,
+              text: `<p>${escapeHtmlText(siteText("siteText.thanks.text"))}</p>`,
             }),
             ...(home === undefined
               ? []
               : [
                   node(library, "Button", {
                     id: "thank-you-home",
-                    label: t("siteText.thanks.home"),
+                    label: siteText("siteText.thanks.home"),
                     link: { kind: "page", pageId: home.id },
                   }),
                 ]),
