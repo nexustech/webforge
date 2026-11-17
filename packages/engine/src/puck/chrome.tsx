@@ -22,6 +22,7 @@ import {
   ACTIONS,
   ACTIONS_OVERLAY,
   componentSelector,
+  EMPTY_TABLE_BODY,
   elementOf,
   HOVERED_COMPONENT,
   NOTE_ATTRIBUTE,
@@ -95,7 +96,11 @@ const CHROME_CSS = `
  * line have the row's box. A browser finds a pointer on a table's cells, never on its rows, and
  * Puck takes it from everything in a wrapper: the cells take it again, for the row's wrapper, so
  * a click or a drag on a row is the row's, not its table's. At a phone's width (the themes'
- * 48rem) the wrapper stacks its cells, as the export's rows do.
+ * 48rem, which the Table's own classes reach as Tailwind's max-md: in site-components'
+ * catalogue/table.tsx) the wrapper stacks its cells, as the export's rows do.
+ *
+ * A body with no rows keeps the room Puck gives an empty slot, to drop a row in: a table's body
+ * takes no minimum height, so a cell of that height holds it open.
  */
 ${TABLE_ROW_WRAPPER} {
   display: table-row;
@@ -105,6 +110,11 @@ ${TABLE_ROW_WRAPPER} > tr {
 }
 ${TABLE_ROW_WRAPPER} > tr > * {
   pointer-events: auto;
+}
+${EMPTY_TABLE_BODY}::after {
+  content: "";
+  display: table-cell;
+  height: var(--puck-slot-min-empty-height, 128px);
 }
 @media (width < 48rem) {
   ${TABLE_ROW_WRAPPER} {

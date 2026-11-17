@@ -142,8 +142,10 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
 
   // Hovered with spacing on hover, its chip gives the row's own size.
   await page.getByRole("toolbar", { name: "Canvas" }).getByRole("button", { name: "View" }).click();
-  await page.getByRole("menuitemcheckbox", { name: "Show Spacing on Hover" }).click();
+  const spacing = page.getByRole("menuitemcheckbox", { name: "Show Spacing on Hover" });
+  await spacing.click();
   await page.keyboard.press("Escape");
+  await expect(spacing).toBeHidden();
   const second = await edgeOf(1);
   await page.mouse.move(second.x, second.y);
   const size = await ownBox(wrapperOf(1));
@@ -159,6 +161,8 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   expect(Math.abs(menuBox.x - second.x)).toBeLessThan(24);
   expect(Math.abs(menuBox.y - second.y)).toBeLessThan(24);
   await page.keyboard.press("Escape");
+  // Gone before the canvas is clicked again: it closes with an animation.
+  await expect(menu).toBeHidden();
 
   // A cell is edited where it is: the third row's first.
   const third = row(2).locator("td").first().locator("[contenteditable]");
@@ -182,6 +186,48 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   // Its cells moved with it, still in columns.
   const { a1, b1 } = await cellBoxes();
   expect(Math.abs(b1.x - a1.x)).toBeLessThan(1);
+});
+
+test("keeps a Table with no rows open on the canvas, and lays a row added again out under its headings", async () => {
+  await placeTable();
+  await clickOnCanvas(canvas().locator("th").first());
+  await expect(right().getByRole("heading", { name: "Table", exact: true })).toBeVisible();
+  const list = right().getByRole("group", { name: "Rows" });
+  await expect(list.getByRole("listitem")).toHaveCount(3);
+
+  for (let rows = 3; rows > 0; rows -= 1) {
+    await list.getByRole("button", { name: "Delete Table row" }).first().click();
+    await expect(canvas().locator("tr.site-table-row")).toHaveCount(rows - 1);
+  }
+
+  // The body, a slot with nothing in it, keeps the room Puck gives one, across the table.
+  const body = canvas().locator(".site-table > table > tbody");
+  await expect.poll(async () => (await boxOf(body)).height).toBeGreaterThanOrEqual(100);
+  const [bodyBox, tableBox] = await Promise.all([
+    boxOf(body),
+    boxOf(canvas().locator(".site-table > table")),
+  ]);
+  expect(Math.abs(bodyBox.width - tableBox.width)).toBeLessThan(1);
+
+  await list.getByRole("button", { name: "Add Table row" }).click();
+  await expect(canvas().locator("tr.site-table-row")).toHaveCount(1);
+  // A row again, its cells under the headings, and the room gone.
+  await expect
+    .poll(async () => {
+      const cells = canvas().locator("tr.site-table-row td");
+      const [first, second, heading] = await Promise.all([
+        boxOf(cells.nth(0)),
+        boxOf(cells.nth(1)),
+        boxOf(canvas().locator("th").nth(1)),
+      ]);
+      const room = await boxOf(body);
+      return (
+        Math.abs(second.x - heading.x) < 1 &&
+        Math.abs(second.y - first.y) < 1 &&
+        Math.abs(room.height - first.height) < 1
+      );
+    })
+    .toBe(true);
 });
 
 test("leaves the page as it was when a row is dragged and dropped on another (#1144)", async () => {

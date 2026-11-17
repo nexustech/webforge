@@ -10,7 +10,7 @@ import {
 } from "react";
 import type { FieldDrag } from "../canvas-engine.js";
 import { startGripDrag } from "./grip-drag.js";
-import { componentSelector, elementOf } from "./puck-dom.js";
+import { componentSelector, elementOf, shownElementOf } from "./puck-dom.js";
 
 /** A slider field that sets how wide its element is, as its width handles need it (2.17). */
 export type WidthHandleField = {
@@ -177,7 +177,7 @@ export function WidthHandles({
     // time.
     const resizes = new frame.ResizeObserver(() => measure());
     const measure = () => {
-      const now = wrapper.firstElementChild;
+      const now = shownElementOf(wrapper) ?? wrapper;
       if (now !== element) {
         if (element !== null) resizes.unobserve(element);
         if (now !== null) resizes.observe(now);

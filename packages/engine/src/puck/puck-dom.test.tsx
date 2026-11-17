@@ -434,7 +434,8 @@ describe("a table's rows on the canvas (6.16c)", () => {
   it("measures a row by its wrapper while the row has no box of its own, other elements by theirs", () => {
     const tr = element.querySelector(`${componentSelector("r1")} > tr`) as HTMLElement | null;
     if (tr === null) throw new Error("no row");
-    // As the canvas styles draw it, its wrapper the row.
+    // As the canvas styles draw it, its wrapper the row. Set here by hand: happy-dom doesn't apply
+    // the canvas's :has() rule, which the Table's E2E (e2e/app/table.spec.ts) checks in Electron.
     tr.style.display = "contents";
 
     // What the hover size, the keyboard's menu and the spacing view measure.

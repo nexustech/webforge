@@ -79,6 +79,12 @@ export const COMPONENT_DROP_ZONE = "[data-puck-dropzone]";
  */
 export const TABLE_ROW_WRAPPER = `tbody${COMPONENT_DROP_ZONE} > ${COMPONENT}:has(> tr)`;
 
+/**
+ * A table's body with no rows on the canvas (6.16c): a slot's drop zone, which Puck keeps open
+ * with a minimum height that a table's body, laid out as one, doesn't take (`chrome.tsx`).
+ */
+export const EMPTY_TABLE_BODY = `tbody${COMPONENT_DROP_ZONE}:not(:has(> ${COMPONENT}))`;
+
 /** A rich-text editor (Tiptap's ProseMirror) on the canvas. */
 export const RICH_TEXT = ".ProseMirror";
 

@@ -52,6 +52,8 @@ const TableContext = createContext<readonly string[]>(["", ""]);
  * The heading drawn there has empty alt text, so a screen reader reads it once, from the table's
  * own headings, not twice. A row's line under it and its space are its cells' (the last's, on a
  * narrow screen), not the `<tr>`'s, which the canvas draws through Puck's wrapper around it.
+ * `max-md:` is the themes' phone width (48rem), which the canvas's rule for the wrapper repeats
+ * (engine's puck/chrome.tsx): change both together.
  */
 const CELL_CLASSES =
   "border-b border-base-300 px-3 py-2 align-top max-md:grid max-md:grid-cols-2 max-md:gap-4 max-md:border-b-0 max-md:px-0 max-md:py-1 max-md:first:pt-3 max-md:last:border-b max-md:last:pb-3 max-md:before:font-semibold max-md:before:content-[attr(data-label)_/_'']";
