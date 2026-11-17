@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import { siteTextFor } from "@webforge/i18n/site-text";
 import type { BindableSetting } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
@@ -89,6 +90,10 @@ describe("the Contact buttons (#1136)", () => {
     expect(renderButtons({ padding: { top: "16", bottom: "16" } })).toContain(
       '<section class="site-contact-buttons">',
     );
+    // Only room for the buttons, so the end of the page scrolls clear of them (the Footer's
+    // Cookie settings link, #539); none when there are no buttons.
+    expect(pinned).toContain('<div aria-hidden="true" class="site-contact-buttons-room h-18');
+    expect(renderButtons({}, { setting: () => undefined })).not.toContain("buttons-room");
 
     // On the canvas, where they are on the page, to be selected; with a hint while they show none.
     const canvas = { elementHint: (missing: string) => `[${missing}]` };
@@ -97,5 +102,20 @@ describe("the Contact buttons (#1136)", () => {
       "[contactButtons]",
     );
     expect(renderOnCanvas({ whatsapp: true }, canvas)).toContain("[whatsappNumber]");
+    expect(renderOnCanvas({}, canvas)).not.toContain("buttons-room");
+  });
+
+  it("names them in the site's language (6.12)", () => {
+    const html = renderButtons(
+      { whatsapp: true, phone: "+49 30 1234567" },
+      {
+        siteText: siteTextFor("de"),
+      },
+    );
+
+    expect(html).toContain('<nav aria-label="Kontakt"');
+    expect(html).toContain('aria-label="Rufen Sie uns an"');
+    expect(html).toContain('aria-label="Schreiben Sie uns auf WhatsApp"');
+    expect(html).toContain('aria-label="Schreiben Sie uns eine E-Mail"');
   });
 });

@@ -94,7 +94,7 @@ const contactButtons = defineSection({
   titled: false,
   background: false,
   // Its padding is the canvas's column's, which only the canvas draws: on the site the band holds
-  // the pinned buttons alone and takes no room after the Footer, whatever its padding.
+  // the pinned buttons and the room they need after the Footer, whatever its padding.
   paddedColumn: () => true,
   fields: {
     call: { kind: "toggle", label: t("field.contactButtons.call") },
@@ -137,7 +137,7 @@ const contactButtons = defineSection({
         <ContactButton
           key="call"
           href={links.call}
-          name={t("siteText.contactButtons.call")}
+          name={context.siteText("siteText.contactButtons.call")}
           icon="phone"
         />
       ),
@@ -145,7 +145,7 @@ const contactButtons = defineSection({
         <ContactButton
           key="whatsapp"
           href={links.whatsapp}
-          name={t("siteText.contactButtons.whatsapp")}
+          name={context.siteText("siteText.contactButtons.whatsapp")}
           icon="message-circle"
         />
       ),
@@ -153,23 +153,28 @@ const contactButtons = defineSection({
         <ContactButton
           key="email"
           href={links.email}
-          name={t("siteText.contactButtons.email")}
+          name={context.siteText("siteText.contactButtons.email")}
           icon="mail"
         />
       ),
     ].filter((button) => button !== null);
     // Links with a name, so a screen reader can find the buttons, or skip them.
-    const label = t("siteText.contactButtons.label");
+    const label = context.siteText("siteText.contactButtons.label");
     if (context.pinned === true) {
       return buttons.length === 0 ? null : (
-        <nav
-          aria-label={label}
-          // At the bottom left: the back-to-top button is at the bottom right (2.9b), and the
-          // cookie banner (z-50) is above them. Not on paper.
-          className="fixed bottom-4 left-4 z-40 flex gap-2 print:hidden"
-        >
-          {buttons}
-        </nav>
+        <>
+          <nav
+            aria-label={label}
+            // At the bottom left: the back-to-top button is at the bottom right (2.9b), and the
+            // cookie banner (z-50) is above them. Not on paper.
+            className="fixed bottom-4 left-4 z-40 flex gap-2 print:hidden"
+          >
+            {buttons}
+          </nav>
+          {/* Room after the Footer for the buttons and the space below them, so the page's end
+              scrolls clear of them: the Footer's last links, Cookie settings among them. */}
+          <div aria-hidden="true" className="site-contact-buttons-room h-18 print:hidden" />
+        </>
       );
     }
     const hint = links.whatsappMissing

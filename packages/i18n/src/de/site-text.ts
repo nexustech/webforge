@@ -34,6 +34,10 @@ export const de = {
   "siteText.openLargerPictureOf": "Größeres Bild öffnen: {name}",
   "siteText.openLargerPicture": "Größeres Bild öffnen",
   "siteText.backToTop": "Nach oben",
+  "siteText.contactButtons.label": "Kontakt",
+  "siteText.contactButtons.call": "Rufen Sie uns an",
+  "siteText.contactButtons.whatsapp": "Schreiben Sie uns auf WhatsApp",
+  "siteText.contactButtons.email": "Schreiben Sie uns eine E-Mail",
   "siteText.consent.label": "Cookies",
   "siteText.consent.message":
     "Wir möchten Cookies verwenden, um Besuche zu zählen und zu sehen, welche Seiten beliebt sind. Sind Sie damit einverstanden?",

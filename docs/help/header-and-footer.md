@@ -46,7 +46,7 @@ Your site hides the bar once the page has opened, so a visitor who closed it, or
 
 ## Contact buttons
 
-**Contact buttons** (under **Contact** in the Add panel) go after the Footer on every page, the way the Announcement bar goes above the Header. Click them again to select the ones that are there: a site has one set. On your site they stay at the bottom left of the screen; on the canvas they show after the Footer, so you can select them. What each button does is in [Sections](sections.md#contact-buttons). To remove them, select them and press Delete. A page whose Footer is hidden hides them too: clicking **Contact buttons** there adds them to that page only.
+**Contact buttons** (under **Contact** in the Add panel) go after the Footer on every page, the way the Announcement bar goes above the Header. Click them again to select the ones that are there: a site has one set. On your site they stay at the bottom left of the screen, with room left for them at the end of the page so they never cover the Footer; on the canvas they show after the Footer, so you can select them. What each button does is in [Sections](sections.md#contact-buttons). To remove them, select them and press Delete. A page whose Footer is hidden hides them too: clicking **Contact buttons** there adds them to that page only.
 
 ## Shared sections
 
