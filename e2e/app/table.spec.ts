@@ -1,11 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
-import {
-  ACTION_BAR_LABEL,
-  COMPONENT,
-  DRAGGING,
-  DROP_PREVIEW,
-  OVERLAY,
-} from "@webforge/engine/puck-dom";
+import { ACTION_BAR_ACTION, ACTION_BAR_LABEL, COMPONENT, OVERLAY } from "@webforge/engine/puck-dom";
 import { clickOnCanvas } from "./canvas-click.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
@@ -59,16 +53,16 @@ async function placeTable() {
     .toBe(true);
 }
 
-/** Row `n`'s (from 0) element on the canvas, and its wrapper. */
+/**
+ * Row `n`'s (from 0) element on the canvas, and its wrapper, which the canvas draws as the row: the
+ * `<tr>` itself has no box there, its cells laid out in the wrapper.
+ */
 const row = (n: number) => canvas().locator("tr.site-table-row").nth(n);
-const wrapperOf = (n: number) =>
-  canvas()
-    .locator(COMPONENT, { has: row(n) })
-    .last();
+const wrapperOf = (n: number) => canvas().locator(`table.site-table > tbody > ${COMPONENT}`).nth(n);
 
 /** A point on row `n`'s left edge, in its first cell's padding: not on text, which edits. */
 async function edgeOf(n: number) {
-  const box = await boxOf(row(n));
+  const box = await boxOf(wrapperOf(n));
   return { x: box.x + 4, y: box.y + box.height / 2 };
 }
 
@@ -101,10 +95,12 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
     })
     .toBe(true);
 
-  // A row's wrapper has the row's box, which Puck's outline fits.
-  const [rowBox, wrapperBox] = await Promise.all([boxOf(row(0)), boxOf(wrapperOf(0))]);
-  expect(Math.abs(rowBox.height - wrapperBox.height)).toBeLessThan(1);
-  expect(Math.abs(rowBox.width - wrapperBox.width)).toBeLessThan(1);
+  // A row's wrapper is drawn as the row: around its cells, from the first to the last.
+  const { a1, a2 } = await cellBoxes();
+  const wrapperBox = await boxOf(wrapperOf(0));
+  expect(Math.abs(wrapperBox.x - a1.x)).toBeLessThan(1);
+  expect(Math.abs(wrapperBox.x + wrapperBox.width - (a2.x + a2.width))).toBeLessThan(1);
+  expect(Math.abs(wrapperBox.height - a1.height)).toBeLessThan(1);
 
   await clickOnCanvas(row(0).locator("td").first());
   await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible();
@@ -124,7 +120,7 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
     .toBe(true);
 });
 
-test("outlines a row, names its size, opens its menu where it is, edits a cell and drags the row", async () => {
+test("outlines a row, names its size, opens its menu where it is, edits a cell and moves the row", async () => {
   await placeTable();
 
   // Selected, Puck's outline fits the row.
@@ -134,7 +130,7 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   const overlay = canvas().locator(OVERLAY).first();
   await expect
     .poll(async () => {
-      const [rowBox, outline] = await Promise.all([boxOf(row(0)), boxOf(overlay)]);
+      const [rowBox, outline] = await Promise.all([boxOf(wrapperOf(0)), boxOf(overlay)]);
       return (
         Math.abs(rowBox.y - outline.y) < 2 &&
         Math.abs(rowBox.height - outline.height) < 2 &&
@@ -149,7 +145,7 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   await page.keyboard.press("Escape");
   const second = await edgeOf(1);
   await page.mouse.move(second.x, second.y);
-  const size = await ownBox(row(1));
+  const size = await ownBox(wrapperOf(1));
   await expect(canvas().locator(ACTION_BAR_LABEL, { hasText: /^Table row ·/ })).toHaveText(
     `Table row · ${size.width} × ${size.height}`,
   );
@@ -170,38 +166,51 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   await page.keyboard.type("Third");
   await expect(row(2).locator("td").first()).toHaveText("Third");
 
-  // Dragged by its edge above the first row, Puck's placeholder shows between the rows, and the
-  // row lands first.
+  // Moved up twice with its bar, the row comes first.
+  const end = await edgeOf(2);
+  await page.mouse.click(end.x, end.y);
+  await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible();
+  const moveUp = canvas()
+    .locator(ACTION_BAR_ACTION)
+    .and(canvas().getByRole("button", { name: "Move up", exact: true }));
+  await moveUp.click();
+  await expect(row(1).locator("td").first()).toHaveText("Third");
+  await moveUp.click();
+  await expect(row(0).locator("td").first()).toHaveText("Third");
+  await expect(canvas().locator("tr.site-table-row")).toHaveCount(3);
+  // Its cells moved with it, still in columns.
+  const { a1, b1 } = await cellBoxes();
+  expect(Math.abs(b1.x - a1.x)).toBeLessThan(1);
+});
+
+test("leaves the page as it was when a row is dragged and dropped on another (#1144)", async () => {
+  await placeTable();
+  // Its cells told apart, to see any order change.
+  for (const [n, text] of ["One", "Two", "Three"].entries()) {
+    await clickOnCanvas(row(n).locator("td").first().locator("[contenteditable]"));
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type(text);
+  }
+  await page.keyboard.press("Escape");
+  const firsts = () => canvas().locator("tr.site-table-row > td:first-child");
+  await expect(firsts()).toHaveText(["One", "Two", "Three"]);
+  await left().getByRole("tab", { name: "Undo History" }).click();
+  const steps = page.locator(".undo-history__step");
+  const before = await steps.count();
+
+  // Pressed on the third row's edge, moved over the first and let go there.
   const from = await edgeOf(2);
-  const firstBox = await boxOf(row(0));
+  const to = await boxOf(wrapperOf(0));
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   await page.mouse.move(from.x + 10, from.y + 10, { steps: 5 });
-  const target = { x: firstBox.x + firstBox.width / 2, y: firstBox.y + firstBox.height * 0.25 };
-  const preview = canvas().locator(DROP_PREVIEW).first();
-  await expect
-    .poll(
-      async () => {
-        await page.mouse.move(target.x, target.y - 6, { steps: 2 });
-        await page.mouse.move(target.x, target.y, { steps: 4 });
-        if ((await canvas().locator(DROP_PREVIEW).count()) === 0) return false;
-        const at = await boxOf(preview);
-        const table = await boxOf(canvas().locator("table.site-table"));
-        // Within the table, across it, and above the second row: before or around the first.
-        return (
-          at.x >= table.x - 2 &&
-          at.x + at.width <= table.x + table.width + 2 &&
-          at.y < firstBox.y + firstBox.height
-        );
-      },
-      { timeout: 10_000 },
-    )
-    .toBe(true);
+  for (let y = from.y; y >= to.y + 4; y -= 6) {
+    await page.mouse.move(from.x + 12, y, { steps: 2 });
+  }
   await page.mouse.up();
-  await expect(canvas().locator(DRAGGING)).toHaveCount(0);
-  await expect(row(0).locator("td").first()).toHaveText("Third");
-  await expect(canvas().locator("tr.site-table-row")).toHaveCount(3);
-  // Each wrapper still holds one row, laid out as one.
-  const [rowBox, wrapperBox] = await Promise.all([boxOf(row(0)), boxOf(wrapperOf(0))]);
-  expect(Math.abs(rowBox.height - wrapperBox.height)).toBeLessThan(1);
+
+  // Nothing moved, nothing went, and no step was made.
+  await expect(firsts()).toHaveText(["One", "Two", "Three"]);
+  await expect(canvas().locator("table.site-table")).toHaveCount(1);
+  await expect(steps).toHaveCount(before);
 });

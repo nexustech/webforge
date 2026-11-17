@@ -50,10 +50,11 @@ const TableContext = createContext<readonly string[]>(["", ""]);
  * The cell classes (6.16c). On a narrow screen a row stacks its cells, each with its column's
  * heading (`data-label`) beside its value; the heading row is then read by screen readers only.
  * The heading drawn there has empty alt text, so a screen reader reads it once, from the table's
- * own headings, not twice.
+ * own headings, not twice. A row's line under it and its space are its cells' (the last's, on a
+ * narrow screen), not the `<tr>`'s, which the canvas draws through Puck's wrapper around it.
  */
 const CELL_CLASSES =
-  "px-3 py-2 align-top max-md:grid max-md:grid-cols-2 max-md:gap-4 max-md:px-0 max-md:py-1 max-md:before:font-semibold max-md:before:content-[attr(data-label)_/_'']";
+  "border-b border-base-300 px-3 py-2 align-top max-md:grid max-md:grid-cols-2 max-md:gap-4 max-md:border-b-0 max-md:px-0 max-md:py-1 max-md:first:pt-3 max-md:last:border-b max-md:last:pb-3 max-md:before:font-semibold max-md:before:content-[attr(data-label)_/_'']";
 
 /**
  * A Table (6.16c, CC-10): prices, sizes or a timetable, as a real `<table>` with a heading for each
@@ -136,13 +137,10 @@ const table = defineComponent({
             ))}
           </tr>
         </thead>
-        {/* Without a class the slot adds no element, so its rows are the body's own <tr>s. */}
-        {/* biome-ignore lint/a11y/noRedundantRoles: kept while drawn as a block */}
-        <tbody className="max-md:block" role="rowgroup">
-          <TableContext value={headings}>
-            <Rows />
-          </TableContext>
-        </tbody>
+        {/* The slot is the table's body: on the canvas, Puck's drop zone, its rows in it. */}
+        <TableContext value={headings}>
+          <Rows as="tbody" className="max-md:block" />
+        </TableContext>
       </table>
     );
   },
@@ -153,7 +151,7 @@ function TableRowView({ cells }: { readonly cells: readonly ReactNode[] }) {
   const headings = useContext(TableContext);
   return (
     // biome-ignore lint/a11y/noRedundantRoles: kept while drawn as a block (see the Table's comment)
-    <tr className="site-table-row border-b border-base-300 max-md:block max-md:py-2" role="row">
+    <tr className="site-table-row max-md:block" role="row">
       {headings.map((heading, index) => (
         // A cell's place is its column, its key.
         // biome-ignore lint/a11y/noRedundantRoles: kept while drawn as a grid
