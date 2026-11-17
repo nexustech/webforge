@@ -13,6 +13,7 @@ import { gallery } from "./gallery.js";
 import { latestPosts } from "./latestPosts.js";
 import { layout } from "./layout.js";
 import { logos } from "./logos.js";
+import { menu } from "./menu.js";
 import { postTags } from "./postTags.js";
 import { pricing } from "./pricing.js";
 import { sections } from "./sections.js";
@@ -53,6 +54,7 @@ export const componentFamilies = {
   postTags,
   steps,
   accordion,
+  menu,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -81,4 +83,5 @@ export const components = {
   ...postTags,
   ...steps,
   ...accordion,
+  ...menu,
 } as const;

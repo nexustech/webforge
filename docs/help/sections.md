@@ -3,7 +3,7 @@
 id: sections
 title: Sections
 summary: Every section you can add to a page, what it's for and what you can change.
-components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat, Steps, Step]
+components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat, Steps, Step, Menu, MenuItem]
 related: [elements, add-panel, edit-panel, forms, header-and-footer]
 updated: 2026-11-17
 ---
@@ -75,6 +75,15 @@ Your plans or a price list. Each **Plan** has a name, a price, what it's per ("a
 
 - **Layouts:** _Cards_ or _Price list_.
 - Turn on **Highlight this plan** to show one plan in your brand colour. Only a highlighted plan shows its **Badge** ("Most popular").
+- For a café's or a restaurant's dishes and drinks, or any list of prices without buttons, use the [Food and drink menu](#food-and-drink-menu).
+
+## Food and drink menu
+
+Your menu, or any list of prices: each **Dish or drink** has a name and a price, joined by a dotted line, with a **Description** under them. A new menu comes with breakfast and drinks to change.
+
+- **Groups:** give a dish a **Group heading** ("Starters", "Drinks") to start a group above it. The dishes after it are in that group until the next one with a heading.
+- **No price:** leave the **Price** empty for a dish that has none ("Ask at the counter"). It then has no dotted line.
+- On a phone, a long name wraps, with the dotted line and the price on its last line.
 
 ## FAQ
 

@@ -62,6 +62,8 @@ const DEFAULTS: Readonly<Record<string, ContentWidth>> = {
   LatestPosts: "wide",
   // New in 6.16b (#1134): its steps side by side across a wide column.
   Steps: "wide",
+  // New in 6.17a (#1137): one column, so the dots join each name to its price.
+  Menu: "narrow",
 };
 
 /** What a kind needs to draw its whole width: an image beside the text, a form beside it. */
