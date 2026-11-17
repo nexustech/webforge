@@ -38,6 +38,24 @@ type Story = StoryObj<typeof meta>;
 /** General: name, description, language, icon and the business type. */
 export const General: Story = {};
 
+/**
+ * General for a German site with two labels in the owner's own words (6.12, CC-1): the language
+ * by name, and *Labels on your site* below the switches.
+ */
+export const LabelsOnYourSite: Story = {
+  args: {
+    site: (() => {
+      const site = bakery();
+      site.settings.general = {
+        ...site.settings.general,
+        language: "de-AT",
+        labels: { "siteText.menu": "Speisekarte", "siteText.backToTop": "Ganz nach oben" },
+      };
+      return site;
+    })(),
+  },
+};
+
 /** Contact details and opening hours. */
 export const Contact: Story = { args: { initialSection: "contact" } };
 

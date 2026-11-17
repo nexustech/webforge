@@ -22,6 +22,8 @@ export const POSTAL_ADDRESS_MAX = 500;
 export const OPENING_HOURS_NOTE_MAX = 300;
 /** The consent banner's own text (3.8), in place of the standard one. */
 export const CONSENT_MESSAGE_MAX = 300;
+/** A label of the site in the owner's own words (6.12): "Menu", "Accept all". */
+export const SITE_LABEL_MAX = 300;
 /** An X handle: up to 15 letters, digits and underscores, with or without its `@`. */
 export const X_HANDLE_MAX = 16;
 /** A GA4 Measurement ID: `G-` and 4 to 12 capitals or digits (B4). */
@@ -29,6 +31,21 @@ export const MEASUREMENT_ID_MAX = 14;
 
 /** Optional text: absent until the user types something. */
 const text = (max: number) => z.string().max(max).optional();
+
+/**
+ * A label of the exported site by its key in the app's catalogues (6.12, CC-1): `siteText.menu`.
+ * The model doesn't know the catalogue, so a key it lacks is kept and does nothing.
+ */
+export const siteLabelKeySchema = z
+  .string()
+  .regex(/^siteText\.[A-Za-z0-9.]+$/)
+  .max(100);
+
+/**
+ * The key of the consent banner's message (3.8): its own text, `analytics.consentMessage`, is that
+ * label in the owner's words, kept where it was before labels could be changed (6.12).
+ */
+export const CONSENT_MESSAGE_LABEL = "siteText.consent.message";
 
 /**
  * The site's public address, e.g. `https://www.example.com` (X3): https only, nothing after the
@@ -229,6 +246,16 @@ export const siteSettingsSchema = z.strictObject({
      * type's first when absent, or when it isn't one of that type's.
      */
     businessKind: z.enum(ALL_BUSINESS_KINDS).optional(),
+    /**
+     * The site's own labels the owner has put in their own words (6.12, CC-1), by label key,
+     * each in place of the one in the site's language: "Speisekarte" for `siteText.menu`. Only
+     * the changed ones; none when absent (ADR 0012). The consent banner's message is
+     * `analytics.consentMessage`, as before.
+     */
+    labels: z
+      .record(siteLabelKeySchema, z.string().trim().min(1).max(SITE_LABEL_MAX))
+      .refine((labels) => !Object.hasOwn(labels, CONSENT_MESSAGE_LABEL))
+      .optional(),
   }),
   address: z.strictObject({ url: webAddressSchema.optional() }),
   social: z.strictObject({
@@ -316,5 +343,18 @@ export function defaultSiteSettings(name: string, language: string): SiteSetting
     analytics: { consentBanner: true },
     forms: {},
     allowedExternalUrls: [],
+  };
+}
+
+/**
+ * The site's labels in the owner's own words (6.12, CC-1), by label key: what Site Settings'
+ * *Labels on your site* changed, and the consent banner's own message as its label. Empty when the
+ * site says everything in its language's words.
+ */
+export function siteLabelsOf(settings: SiteSettings): Readonly<Record<string, string>> {
+  const message = settings.analytics.consentMessage?.trim() ?? "";
+  return {
+    ...settings.general.labels,
+    ...(message === "" ? {} : { [CONSENT_MESSAGE_LABEL]: message }),
   };
 }

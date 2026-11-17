@@ -334,3 +334,52 @@ describe("saveSiteSettings", () => {
     expect(session.history.document.getState().settings).toEqual(before);
   });
 });
+
+describe("the site's labels in the owner's words (6.12, CC-1)", () => {
+  const labelled: SiteSettings = {
+    ...full,
+    general: { ...full.general, labels: { "siteText.menu": "Our menu", "siteText.close": "Shut" } },
+  };
+
+  it("shows each changed label as a row, and saves them by key", () => {
+    const form = toSettingsForm(labelled);
+    expect(form.labels.map(({ key, text }) => ({ key, text }))).toEqual([
+      { key: "siteText.menu", text: "Our menu" },
+      { key: "siteText.close", text: "Shut" },
+    ]);
+    expect(checkSettings(form, labelled)).toEqual({ ok: true, settings: labelled });
+  });
+
+  it("trims the wording, and saves none at all once every row is gone", () => {
+    const rows = [{ id: "a", key: "siteText.menu", text: "  Our menu " }];
+    expect(checkSettings(edit(full, { labels: rows }), full)).toMatchObject({
+      ok: true,
+      settings: { general: { labels: { "siteText.menu": "Our menu" } } },
+    });
+    const none = checkSettings(edit(labelled, { labels: [] }), labelled);
+    expect(none.ok && none.settings.general).not.toHaveProperty("labels");
+  });
+
+  it("names the undo step for the labels when only they changed", () => {
+    const session = sessionWith();
+    const before = session.history.document.getState().settings;
+    const labels = () => session.history.state.getState().entries.map((entry) => entry.label);
+
+    saveSiteSettings(session, {
+      ...before,
+      general: { ...before.general, labels: { "siteText.menu": "Our menu" } },
+    });
+    expect(labels()).toEqual([t("site.settings.history.labels")]);
+    expect(labels()).toEqual(["Changed Labels on your site"]);
+
+    saveSiteSettings(session, {
+      ...before,
+      general: { ...before.general, name: "Rosa's", labels: { "siteText.menu": "Menu, please" } },
+    });
+    expect(labels().at(-1)).toBe("Changed Site Settings: General");
+
+    session.history.undo();
+    session.history.undo();
+    expect(session.history.document.getState().settings).toEqual(before);
+  });
+});

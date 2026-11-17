@@ -151,7 +151,7 @@ describe("siteToSnapshot", () => {
     expect(snapshot).not.toHaveProperty("business");
   });
 
-  it("passes Google Analytics on once there is a Measurement ID, with the banner's text (3.8)", () => {
+  it("passes Google Analytics on once there is a Measurement ID, its banner's text as a label (3.8, 6.12)", () => {
     const counted = bakery();
     counted.settings.analytics = {
       measurementId: "G-ABC123DEF4",
@@ -159,11 +159,9 @@ describe("siteToSnapshot", () => {
       consentMessage: "Cookies?",
     };
 
-    expect(siteToSnapshot(counted, new Map([[HASH, bytes]])).analytics).toEqual({
-      measurementId: "G-ABC123DEF4",
-      consentBanner: true,
-      consentMessage: "Cookies?",
-    });
+    const counting = siteToSnapshot(counted, new Map([[HASH, bytes]]));
+    expect(counting.analytics).toEqual({ measurementId: "G-ABC123DEF4", consentBanner: true });
+    expect(counting.labels).toEqual({ "siteText.consent.message": "Cookies?" });
     // The banner switched on with no ID counts nothing: no analytics at all.
     expect(snapshot.analytics).toBeUndefined();
   });

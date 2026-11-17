@@ -225,7 +225,35 @@ export const site = {
   "site.settings.siteDescriptionHint":
     "Shown by search engines when a page has no description of its own.",
   "site.settings.language": "Language",
-  "site.settings.languageHint": "A language code such as en, en-GB or de.",
+  "site.settings.languageHint":
+    "Spelling checks use it. The words your site writes itself, such as Menu and the days of the week, are in this language when it's French, German or Spanish, and in English for any other.",
+  // The site's own labels in the owner's words (6.12, CC-1): Site Settings › General.
+  "site.settings.labels": "Labels on your site",
+  "site.settings.labelsHint":
+    "Words your site writes itself, such as Menu or Back to top. Change any you'd say differently. The cookie banner's text is under Analytics.",
+  "site.settings.label": "Label",
+  "site.settings.labelKey": "Label",
+  "site.settings.labelText": "Your wording",
+  "site.settings.addLabel": "Change a Label",
+  "site.settings.removeLabel": "Remove this label, going back to the standard one",
+  // A label as the list of labels offers it: where it shows, then its words now ("Forms: Name").
+  "site.settings.labelOption": "{place}: {label}",
+  "site.settings.labelPlace.announcement": "Announcement bar",
+  "site.settings.labelPlace.backToTop": "Back-to-top button",
+  "site.settings.labelPlace.blog": "Blog",
+  "site.settings.labelPlace.carousel": "Carousel",
+  "site.settings.labelPlace.consent": "Cookie banner",
+  "site.settings.labelPlace.contact": "Contact details",
+  "site.settings.labelPlace.embed": "Videos and maps",
+  "site.settings.labelPlace.forms": "Forms",
+  "site.settings.labelPlace.logos": "Logos",
+  "site.settings.labelPlace.menu": "Header and Footer",
+  "site.settings.labelPlace.moved": "Moved pages",
+  "site.settings.labelPlace.pictures": "Pictures and galleries",
+  "site.settings.error.labelEmpty":
+    "Type your wording, or remove this label to keep the standard one.",
+  "site.settings.error.labelTwice": "This label is changed above already. Remove one of them.",
+  "site.settings.history.labels": "Changed Labels on your site",
   "site.settings.icon": "Site icon",
   "site.settings.iconHint": "Shown in browser tabs and bookmarks.",
   "site.settings.backToTop": "Show a back-to-top button",

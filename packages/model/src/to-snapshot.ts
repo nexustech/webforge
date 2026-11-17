@@ -2,7 +2,7 @@ import { settingValues } from "./bindings.js";
 import { collectionItems, collectionOf, itemValues } from "./collections.js";
 import { fileKey, keptAddressesOf, keptAddressWorks, pageFiles } from "./kept-addresses.js";
 import { isImageMeta } from "./media.js";
-import type { SiteSettings } from "./settings.js";
+import { type SiteSettings, siteLabelsOf } from "./settings.js";
 import { expandSharedCopies } from "./shared-sections.js";
 import { pagePath, type SiteDoc } from "./site-doc.js";
 import type {
@@ -98,6 +98,7 @@ export function siteToSnapshot(
   return {
     name: site.settings.general.name,
     language: site.settings.general.language,
+    ...labelsOf(site.settings),
     theme: site.theme,
     layout: site.layout,
     pages,
@@ -163,16 +164,16 @@ export function siteCollectionsOf(site: SiteDoc): SiteCollection[] {
 }
 
 /** Site Settings' Google Analytics for the export (3.8): nothing without a Measurement ID. */
+/** The site's labels in the owner's words (6.12), when there are any. */
+function labelsOf(settings: SiteSettings): Pick<SiteSnapshot, "labels"> {
+  const labels = siteLabelsOf(settings);
+  return Object.keys(labels).length === 0 ? {} : { labels };
+}
+
 function analyticsOf(analytics: SiteSettings["analytics"]): Pick<SiteSnapshot, "analytics"> {
-  const { measurementId, consentBanner, consentMessage } = analytics;
-  if (measurementId === undefined) return {};
-  return {
-    analytics: {
-      measurementId,
-      consentBanner,
-      ...(consentMessage === undefined ? {} : { consentMessage }),
-    },
-  };
+  const { measurementId, consentBanner } = analytics;
+  // Its own message is a label in the owner's words (6.12): `labels`.
+  return measurementId === undefined ? {} : { analytics: { measurementId, consentBanner } };
 }
 
 /**
