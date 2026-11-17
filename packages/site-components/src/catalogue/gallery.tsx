@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import { defineComponent } from "../define.js";
 import { contentWidthClass, defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";

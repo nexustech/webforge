@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import type { NodeDoc, SiteSnapshot } from "@webforge/model";
 import { sampleSite } from "@webforge/test-utils";
 import { describe, expect, it } from "vitest";

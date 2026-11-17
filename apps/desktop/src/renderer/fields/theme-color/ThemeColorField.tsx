@@ -1,5 +1,5 @@
 import { cn, type FieldRendererProps, fieldControlClass } from "@webforge/editor-ui";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import { oklchSchema } from "@webforge/model";
 import { hexOf, hexToOklch } from "@webforge/themes";
 import { TriangleAlertIcon } from "lucide-react";

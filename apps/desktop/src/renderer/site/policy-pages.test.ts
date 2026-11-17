@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import { type NodeDoc, type PageId, type SiteDoc, siteDocSchema } from "@webforge/model";
 import { checkSite } from "@webforge/site-check";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";

@@ -9,7 +9,7 @@ import {
   ToggleGroupItem,
 } from "@webforge/editor-ui";
 import type { ReadonlyStore } from "@webforge/history";
-import { type MessageKey, t } from "@webforge/i18n";
+import { type ComponentMessageKey, t } from "@webforge/i18n/components";
 import {
   COLOR_ROLES,
   type ColorRef,
@@ -68,7 +68,7 @@ export type ColourFieldContext = {
  * The names people see for the theme's colour roles (glossary, 23 Oct 2026): Brand, Accent and the
  * second accent, Surface and Text. The model keeps daisyUI's names.
  */
-const ROLE_NAMES: Partial<Record<ColorRole, MessageKey>> = {
+const ROLE_NAMES: Partial<Record<ColorRole, ComponentMessageKey>> = {
   primary: "colour.role.brand",
   secondary: "colour.role.accent",
   accent: "colour.role.secondAccent",

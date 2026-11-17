@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { de } from "./de/site-text.js";
-import { en } from "./en.js";
+import { components as en } from "./en/components/index.js";
 import { es } from "./es/site-text.js";
 import { fr } from "./fr/site-text.js";
 import { SITE_TEXT_KEYS, siteText, siteTextFor, siteTextFrom } from "./site-text.js";
