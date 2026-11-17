@@ -29,31 +29,33 @@ export const OnTheSite: Story = {
   },
 };
 
-/**
- * With the back-to-top button at the bottom right, and the cookie banner as a visitor first sees
- * it (its script shows it): the buttons cover neither, and the banner covers them until the
- * visitor chooses.
- */
-const NEIGHBOURS = `${backToTopHtml()}${consentBannerHtml({
-  measurementId: "G-ABC123DEF4",
-  consentBanner: true,
-}).replace(' hidden=""', "")}`;
-
-/** Beside the back-to-top button, and under the cookie banner. */
-export const WithBackToTopAndCookieBanner: Story = {
+/** A story's args, with `html` from the export drawn after the buttons. */
+const besideThe = (html: string): Story => ({
   args: OnTheSite.args,
   decorators: [
     (Story) => (
       <>
         <Story />
-        <div
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: the export's own HTML for both.
-          dangerouslySetInnerHTML={{ __html: NEIGHBOURS }}
-        />
+        {/* The export's own HTML. */}
+        <div dangerouslySetInnerHTML={{ __html: html }} />
       </>
     ),
   ],
-};
+});
+
+/** At the bottom left, clear of the back-to-top button at the bottom right. */
+export const WithBackToTop: Story = besideThe(backToTopHtml());
+
+/**
+ * Under the cookie banner, as a visitor first sees it (its script shows it): it covers them until
+ * the visitor chooses, and they never cover it.
+ */
+export const UnderTheCookieBanner: Story = besideThe(
+  consentBannerHtml({ measurementId: "G-ABC123DEF4", consentBanner: true }).replace(
+    ' hidden=""',
+    "",
+  ),
+);
 
 /** As the canvas draws them: where they are on the page, after the Footer, to be selected. */
 export const OnTheCanvas: Story = {
