@@ -96,12 +96,18 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
     })
     .toBe(true);
 
-  // A row's wrapper is drawn as the row: around its cells, from the first to the last.
-  const { a1, a2 } = await cellBoxes();
-  const wrapperBox = await boxOf(wrapperOf(0));
-  expect(Math.abs(wrapperBox.x - a1.x)).toBeLessThan(1);
-  expect(Math.abs(wrapperBox.x + wrapperBox.width - (a2.x + a2.width))).toBeLessThan(1);
-  expect(Math.abs(wrapperBox.height - a1.height)).toBeLessThan(1);
+  // A row's wrapper is drawn as the row: around its cells, from the first to the last. Polled, as
+  // the canvas's fonts can still re-wrap a cell.
+  await expect
+    .poll(async () => {
+      const [{ a1, a2 }, wrapperBox] = await Promise.all([cellBoxes(), boxOf(wrapperOf(0))]);
+      return (
+        Math.abs(wrapperBox.x - a1.x) < 1 &&
+        Math.abs(wrapperBox.x + wrapperBox.width - (a2.x + a2.width)) < 1 &&
+        Math.abs(wrapperBox.height - a1.height) < 1
+      );
+    })
+    .toBe(true);
 
   await clickOnCanvas(row(0).locator("td").first());
   await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible();
@@ -140,6 +146,18 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
     })
     .toBe(true);
 
+  // A cell is edited where it is: the third row's first. Before any menu opens, which can take
+  // the focus back as it closes.
+  const third = row(2).locator("td").first().locator("[contenteditable]");
+  await clickOnCanvas(third);
+  await expect(third).toBeFocused();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.type("Third");
+  await expect(row(2).locator("td").first()).toHaveText("Third");
+  // The first row selected again, the text no longer edited.
+  await page.mouse.click(start.x, start.y);
+  await expect(third).not.toBeFocused();
+
   // Hovered with spacing on hover, its chip gives the row's own size.
   await page.getByRole("toolbar", { name: "Canvas" }).getByRole("button", { name: "View" }).click();
   const spacing = page.getByRole("menuitemcheckbox", { name: "Show Spacing on Hover" });
@@ -163,13 +181,6 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   await page.keyboard.press("Escape");
   // Gone before the canvas is clicked again: it closes with an animation.
   await expect(menu).toBeHidden();
-
-  // A cell is edited where it is: the third row's first.
-  const third = row(2).locator("td").first().locator("[contenteditable]");
-  await clickOnCanvas(third);
-  await page.keyboard.press("ControlOrMeta+a");
-  await page.keyboard.type("Third");
-  await expect(row(2).locator("td").first()).toHaveText("Third");
 
   // Moved up twice with its bar, the row comes first.
   const end = await edgeOf(2);
@@ -200,14 +211,15 @@ test("keeps a Table with no rows open on the canvas, and lays a row added again 
     await expect(canvas().locator("tr.site-table-row")).toHaveCount(rows - 1);
   }
 
-  // The body, a slot with nothing in it, keeps the room Puck gives one, across the table.
+  // The body, a slot with nothing in it, keeps the room Puck gives one (128px at the canvas's own
+  // scale, which zooms out to fit a small window), across the table.
   const body = canvas().locator(".site-table > table > tbody");
-  await expect.poll(async () => (await boxOf(body)).height).toBeGreaterThanOrEqual(100);
+  await expect.poll(async () => (await ownBox(body)).height).toBeGreaterThanOrEqual(100);
   const [bodyBox, tableBox] = await Promise.all([
-    boxOf(body),
-    boxOf(canvas().locator(".site-table > table")),
+    ownBox(body),
+    ownBox(canvas().locator(".site-table > table")),
   ]);
-  expect(Math.abs(bodyBox.width - tableBox.width)).toBeLessThan(1);
+  expect(Math.abs(bodyBox.width - tableBox.width)).toBeLessThanOrEqual(1);
 
   await list.getByRole("button", { name: "Add Table row" }).click();
   await expect(canvas().locator("tr.site-table-row")).toHaveCount(1);
@@ -234,7 +246,9 @@ test("leaves the page as it was when a row is dragged and dropped on another (#1
   await placeTable();
   // Its cells told apart, to see any order change.
   for (const [n, text] of ["One", "Two", "Three"].entries()) {
-    await clickOnCanvas(row(n).locator("td").first().locator("[contenteditable]"));
+    const cell = row(n).locator("td").first().locator("[contenteditable]");
+    await clickOnCanvas(cell);
+    await expect(cell).toBeFocused();
     await page.keyboard.press("ControlOrMeta+a");
     await page.keyboard.type(text);
   }
