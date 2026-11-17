@@ -66,7 +66,9 @@ describe("the Food and drink menu (6.17a, #1137)", () => {
       "site-menu-leader",
       "site-menu-price",
     ]);
-    expect(row?.className).toContain("items-baseline");
+    // On a long name's last line, at the text's size.
+    expect(row?.className).toContain("items-baseline-last");
+    expect(row?.className.split(" ")).toContain("text-body");
     expect(leader?.getAttribute("aria-hidden")).toBe("true");
     expect(leader?.className).toContain("border-dotted");
     expect(leader?.className).toContain("flex-1");

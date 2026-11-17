@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { defineComponent } from "../define.js";
 import { contentWidthClass, defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
-import { BodyText, SectionIntro, SectionTitle } from "../typography.js";
+import { BodyText, LEAD_TEXT_CLASSES, SectionIntro, SectionTitle } from "../typography.js";
 
 /** The starter menu: two groups of a café's dishes and drinks. */
 const STARTER_ITEMS = [
@@ -97,10 +97,10 @@ function MenuItemView({
           <SectionTitle size="small">{heading}</SectionTitle>
         </div>
       )}
-      {/* The name and the price on one line, joined by dots that fill the space between them; a
-          long name wraps, and the dots and the price stay on its last line. The dots are
-          decoration: a screen reader reads the name, then the price. */}
-      <div className="flex items-baseline gap-2 font-semibold">
+      {/* The name and the price on one line, at the text's size, joined by dots that fill the
+          space between them. A long name wraps, and the dots and the price line up with its last
+          line. The dots are decoration: a screen reader reads the name, then the price. */}
+      <div className={`flex items-baseline-last gap-2 font-semibold ${LEAD_TEXT_CLASSES}`}>
         <span className="site-menu-name">{name}</span>{" "}
         {hasPrice && (
           <>
