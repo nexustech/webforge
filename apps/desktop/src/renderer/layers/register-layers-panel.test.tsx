@@ -244,7 +244,7 @@ describe("Layers' shared Header and Footer (#673)", () => {
     const { pageId } = session.ui.getState();
     const others = Object.keys(site().pages).filter((id) => id !== pageId);
 
-    await setShown("Header", "Show", "Don't publish");
+    await setShown("Header", "Show", "Don't Publish");
 
     expect(site().pages[pageId as keyof SiteDoc["pages"]]?.settings.hideHeader).toBe(true);
     for (const id of others) {
@@ -252,7 +252,7 @@ describe("Layers' shared Header and Footer (#673)", () => {
     }
     expect(labels(session)).toEqual(["Hid the Header on this page"]);
     // Dimmed, as other hidden layers are, and shown again from the same menu.
-    expect(eye("Header", "Don't publish")).toBeTruthy();
+    expect(eye("Header", "Don't Publish")).toBeTruthy();
 
     act(() => session.history.undo());
     expect(site().pages[pageId as keyof SiteDoc["pages"]]?.settings.hideHeader).toBe(false);
@@ -269,7 +269,7 @@ describe("Layers' shared Header and Footer (#673)", () => {
     const doc = () => session.history.document.getState();
     const { pageId } = session.ui.getState();
 
-    await setShown("Header", "Don't publish", "Show");
+    await setShown("Header", "Don't Publish", "Show");
 
     expect(doc().layout.header[0]?.props.hidden).toBeUndefined();
     expect(doc().pages[pageId as keyof SiteDoc["pages"]]?.settings.hideHeader).toBe(false);
@@ -284,7 +284,7 @@ describe("Layers' shared Header and Footer (#673)", () => {
     const row = document.querySelector('[data-layer="banner"]') as HTMLElement;
 
     await userEvent.click(within(row).getByRole("button", { name: /^Show or hide / }));
-    await userEvent.click(screen.getByRole("menuitemradio", { name: "Don't publish" }));
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "Don't Publish" }));
 
     expect(labels(session)).toEqual(["Hid the Header on this page"]);
   });

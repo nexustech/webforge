@@ -4,7 +4,7 @@ id: ai-apps
 title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
 related: [undo-and-history, version-history, site-check]
-updated: 2026-11-13
+updated: 2026-11-16
 ---
 
 # AI apps
@@ -15,7 +15,7 @@ This is off until you turn it on. When it's on, only apps on this computer that 
 
 ## Turning it on
 
-Choose **File › AI apps…** (or search for it in **Search Commands…**, or choose **Open AI apps…** in [Settings](settings.md#ai-apps)) and tick **Let AI apps connect**. Untick it to cut off every app at once.
+Choose **File › AI Apps…** (or search for it in **Search Commands…**, or choose **Open AI apps…** in [Settings](settings.md#ai-apps)) and tick **Let AI apps connect**. Untick it to cut off every app at once.
 
 ## Connecting Claude Desktop
 

@@ -8,8 +8,8 @@ import { type Layer, type LayersSession, shownLayer, toggleLayerHidden } from ".
 import { splitText } from "./split-text.js";
 
 /**
- * *Hide or show* for the selected element (F-ED-27: Mod + /) in the Edit menu and the command
- * box, and what the canvas's quick actions ask of the app (F-ED-25): hiding or showing an element,
+ * *Leave Off the Website*, or *Put Back on the Website* for an element that's off it (F-ED-27:
+ * Mod + /, named by what it will do, #1016), in the Edit menu and the command box, and what the canvas's quick actions ask of the app (F-ED-25): hiding or showing an element,
  * the image picker for *Edit* on an image (`pickImage`), and *Style this ‹kind›…* (3.13a), the
  * command of that name, for the element the bar is on, which is the one selected. Hiding is Layers' own step ("Hid
  * Heading"), so it reads the same wherever it is done, and only a layer can be hidden: not an
@@ -44,10 +44,23 @@ export function registerElementCommands(
     beforeAction();
     toggleLayerHidden(session, id);
   };
+  /**
+   * Whether Mod + / puts the selection back on the website: every selected element is off it.
+   * Otherwise it leaves them off, as one element's switch and Layers' toolbar do.
+   */
+  const putsBack = () => {
+    const { nodeId, others = [] } = session.ui.getState();
+    if (nodeId === null) return false;
+    return [nodeId, ...others].every((id) => shownLayer(session, id)?.hidden === true);
+  };
+  /** The command's name, by what it will do (#1016). */
+  const toggleLabel = () => t(putsBack() ? "canvas.putBack" : "canvas.leaveOff");
   const removeCommand = registry.register({
     id: "edit.toggleHidden",
-    label: t("canvas.toggleHidden"),
+    label: toggleLabel(),
     menu: "edit",
+    // Found by what it does, whichever name it has now.
+    keywords: [t("canvas.leaveOff"), t("canvas.putBack"), t("canvas.hide"), t("canvas.show")],
     enabled: false,
     run: () => {
       const { nodeId } = session.ui.getState();
@@ -109,7 +122,10 @@ export function registerElementCommands(
     }
   });
   const update = () => {
-    registry.update("edit.toggleHidden", { enabled: canHide(session.ui.getState().nodeId) });
+    registry.update("edit.toggleHidden", {
+      enabled: canHide(session.ui.getState().nodeId),
+      label: toggleLabel(),
+    });
     registry.update("edit.rename", { enabled: selectedLayer() !== undefined });
     registry.update("edit.selectSimilar", { enabled: similar() !== undefined });
   };

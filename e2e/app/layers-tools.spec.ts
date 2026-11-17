@@ -67,9 +67,9 @@ test("opens the same menu on the canvas and in Layers, acting on what was right-
   expect(onCanvas.map(([label]) => String(label).split("\n")[0])).toEqual([
     "Rename",
     "Duplicate",
-    "Save as shared section…",
-    "Select similar",
-    "Select parent",
+    "Save as Shared Section…",
+    "Select Similar",
+    "Select Parent",
     "Cut",
     "Copy",
     "Paste",
@@ -149,7 +149,7 @@ test("Select similar selects every element of the kind on the page, from the men
   await expect(async () => {
     await page.keyboard.press("Escape");
     await canvas().locator("h1").last().click({ button: "right", timeout: 2_000 });
-    await menu().getByRole("menuitem", { name: "Select similar" }).click({ timeout: 2_000 });
+    await menu().getByRole("menuitem", { name: "Select Similar" }).click({ timeout: 2_000 });
   }).toPass({ timeout: 20_000 });
 
   await expect(page.getByRole("status").filter({ hasText: "2 elements selected" })).toBeVisible();
@@ -167,7 +167,7 @@ test("copies a layer dragged with Ctrl/Cmd, and places another linked copy with 
 
   // A linked copy of a shared section, dragged onto itself with Shift too: another linked copy.
   await row("Section").first().click();
-  await chooseFromSubmenu(app, page, "Edit", "Shared Section", "Save as shared section…");
+  await chooseFromSubmenu(app, page, "Edit", "Shared Section", "Save as Shared Section…");
   const dialog = page.getByRole("dialog", { name: "Save as shared section" });
   await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await dialog.getByRole("button", { name: "Save" }).click();
@@ -232,10 +232,10 @@ test("in Content mode, leaves the canvas's right-clicks alone and Layers' menu t
   expect((await menuItems()).map(([label, on]) => [String(label).split("\n")[0], on])).toEqual([
     ["Rename", true],
     ["Duplicate", false],
-    ["Save as shared section…", false],
+    ["Save as Shared Section…", false],
     // Selecting changes no layout (M3).
-    ["Select similar", true],
-    ["Select parent", true],
+    ["Select Similar", true],
+    ["Select Parent", true],
     // Copying isn't a change to the layout: Content mode keeps it (M3).
     ["Cut", false],
     ["Copy", true],

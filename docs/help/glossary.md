@@ -4,7 +4,7 @@ id: glossary
 title: Glossary
 summary: The words {appName} uses, what each one means, and where to read more.
 related: [getting-started, the-editor, pages, publish]
-updated: 2026-11-14
+updated: 2026-11-16
 ---
 
 # Glossary
@@ -19,7 +19,7 @@ The words you meet in {appName}, in plain English. Each one links to the page th
 - **Element:** anything inside a section: a heading, text, a picture, a button, a form. See [Elements](elements.md).
 - **Header and Footer:** the top and bottom of every page. Change them once and every page changes. See [Header, Footer and shared sections](header-and-footer.md).
 - **Announcement bar:** a thin strip of news above the Header on every page, such as "Closed 24–26 December", with a close button for visitors. See [Announcement bar](header-and-footer.md#announcement-bar).
-- **Shared section:** a section kept once and placed on several pages, so a change to it shows everywhere. **Detach from shared section** turns one copy back into a section of its own. See [Shared sections](header-and-footer.md#shared-sections).
+- **Shared section:** a section kept once and placed on several pages, so a change to it shows everywhere. **Detach from Shared Section** turns one copy back into a section of its own. See [Shared sections](header-and-footer.md#shared-sections).
 - **Blog** and **post:** your blog holds your news; each post is a page of it, with a date, a summary and a picture. The blog's **design** is drawn above and below every post. See [Your blog](blog.md).
 - **Tags** and **Post tags:** words that group your posts, such as _Opening times_ or _News_. Each tag gets a page listing its posts, and the **Post tags** element links to them. See [Post tags](blog.md#post-tags).
 - **One-page site:** a site with everything on its home page, one section after another, and a menu that scrolls to each. See [One-page sites](one-page-sites.md).
@@ -34,7 +34,7 @@ The words you meet in {appName}, in plain English. Each one links to the page th
 - **Hide while editing** and **Don't publish:** two ways to put something out of sight without deleting it. Hidden while editing, it's off the page in the editor but on your website; not published, it's dimmed in the editor and off your website. See [Layers](layers.md#what-you-can-do).
 - **Edit panel:** the options of what you've selected, on its **Content**, **Style** and **Advanced** tabs. See [The Edit panel](edit-panel.md).
 - **Note:** a reminder for you on a section or element, never on your website. Site Check lists it until you resolve it. See [Notes](editing-on-the-page.md#notes).
-- **Select parent:** selects the section or element around the one you've selected. See [Editing on the page](editing-on-the-page.md).
+- **Select Parent:** selects the section or element around the one you've selected. See [Editing on the page](editing-on-the-page.md).
 - **Columns:** an element that puts things side by side. See [Elements](elements.md).
 - **Form** and **Contact form:** let visitors send you messages, through the form service you choose in Site Settings. See [Forms](forms.md).
 - **Buy button:** sells one thing: its price, a picture and a button to your payment page on Stripe, PayPal or your shop. See [Elements](elements.md).

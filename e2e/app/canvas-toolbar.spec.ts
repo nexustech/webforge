@@ -303,7 +303,7 @@ test("keeps Desktop, Tablet and Mobile in view in the smallest windows, the rest
 
   // What has no room is in the View menu: zoom in, and a width of the person's own.
   await toolbar().getByRole("button", { name: "View" }).click();
-  await page.getByRole("menuitem", { name: "Canvas width…" }).click();
+  await page.getByRole("menuitem", { name: "Canvas Width…" }).click();
   const dialog = page.getByRole("dialog", { name: "Canvas width" });
   await dialog.getByRole("spinbutton", { name: "Width in pixels" }).fill("900");
   await dialog.getByRole("button", { name: "Show Width" }).click();
@@ -385,7 +385,7 @@ test("keeps a device the person added, after a restart (F-ED-25)", async () => {
     await toolbar()
       .getByRole("button", { name: /^Page size|^Devices$/ })
       .click();
-    await page.getByRole("menuitem", { name: "Add device…" }).click();
+    await page.getByRole("menuitem", { name: "Add Device…" }).click();
     const dialog = page.getByRole("dialog", { name: "Add a device" });
     await dialog.getByRole("textbox", { name: "Name" }).fill("Kiosk");
     await dialog.getByRole("spinbutton", { name: "Width in pixels" }).fill("1080");
