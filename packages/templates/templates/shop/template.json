@@ -954,6 +954,47 @@
                       },
                       "gap": "medium"
                     }
+                  },
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "id": "shop-care-title",
+                      "text": "Delivery and care",
+                      "size": "medium"
+                    }
+                  },
+                  {
+                    "type": "Accordion",
+                    "props": {
+                      "id": "shop-care",
+                      "oneOpen": true,
+                      "items": [
+                        {
+                          "type": "AccordionItem",
+                          "props": {
+                            "id": "shop-care-0",
+                            "title": "Delivery",
+                            "text": "<p>We post within three working days, wrapped in recycled paper. Delivery is free on orders over £40.</p>"
+                          }
+                        },
+                        {
+                          "type": "AccordionItem",
+                          "props": {
+                            "id": "shop-care-1",
+                            "title": "Returns",
+                            "text": "<p>Send a piece back unused within 30 days and we'll refund you in full.</p>"
+                          }
+                        },
+                        {
+                          "type": "AccordionItem",
+                          "props": {
+                            "id": "shop-care-2",
+                            "title": "Caring for your pots",
+                            "text": "<p>Wash by hand in warm, soapy water. Our planters are frost-proof, but bring them in during a hard freeze.</p>"
+                          }
+                        }
+                      ]
+                    }
                   }
                 ],
                 "id": "section-26"
