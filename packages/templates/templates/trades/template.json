@@ -616,6 +616,50 @@
               }
             },
             {
+              "type": "Steps",
+              "props": {
+                "id": "how-it-works",
+                "variant": "steps",
+                "colors": "page",
+                "title": "How it works",
+                "text": "<p>From your first call to a signed-off job.</p>",
+                "items": [
+                  {
+                    "type": "Step",
+                    "props": {
+                      "id": "how-it-works-step-0",
+                      "title": "Call or message us",
+                      "text": "<p>Tell us what needs doing. We'll usually reply the same day.</p>"
+                    }
+                  },
+                  {
+                    "type": "Step",
+                    "props": {
+                      "id": "how-it-works-step-1",
+                      "title": "Free visit and quote",
+                      "text": "<p>We come and look, then give you a fixed price in writing.</p>"
+                    }
+                  },
+                  {
+                    "type": "Step",
+                    "props": {
+                      "id": "how-it-works-step-2",
+                      "title": "The job, done tidily",
+                      "text": "<p>We turn up when we said, keep the mess down and clear up after.</p>"
+                    }
+                  },
+                  {
+                    "type": "Step",
+                    "props": {
+                      "id": "how-it-works-step-3",
+                      "title": "Signed off",
+                      "text": "<p>You get your safety certificate and our 12-month guarantee.</p>"
+                    }
+                  }
+                ]
+              }
+            },
+            {
               "type": "Pricing",
               "props": {
                 "id": "prices",

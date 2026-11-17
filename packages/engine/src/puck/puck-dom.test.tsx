@@ -114,8 +114,6 @@ describe("Puck's DOM contract (R8)", () => {
     expect(element.querySelector(CANVAS)).not.toBeNull();
     expect(element.querySelector(CANVAS_ROOT)).not.toBeNull();
     expect(element.querySelector(ROOT_DROP_ZONE)).not.toBeNull();
-    // Every drop zone is marked so, a slot's too: a Table's rows are laid out through it (6.16c).
-    expect(element.querySelector(ROOT_DROP_ZONE)?.matches(COMPONENT_DROP_ZONE)).toBe(true);
     expect(element.querySelector(`${componentSelector("t")} ${RICH_TEXT}`)).not.toBeNull();
   });
 
@@ -298,6 +296,64 @@ describe("the canvas's every second section (2.13d, A19)", () => {
 
     // The second and fourth shown, c and e: b is hidden in Layers, which the export leaves out.
     expect(striped).toEqual(["c", "e"]);
+    engine.destroy();
+    await settle();
+    element.remove();
+  });
+});
+
+describe("a slot drawn as a list (#1134)", () => {
+  it("is Puck's drop zone as the <ol> the component asks for, its items in their wrappers", async () => {
+    const steps: ComponentLibrary = {
+      components: {
+        Steps: {
+          label: "Steps",
+          place: "section",
+          fields: { items: { kind: "slot", label: "Steps", allow: ["Step"] } },
+          defaults: { items: [] },
+          render: ({ slots }) => {
+            const Items = slots.items;
+            return (
+              <section>{Items === undefined ? null : <Items as="ol" className="grid" />}</section>
+            );
+          },
+        },
+        Step: {
+          label: "Step",
+          place: "child",
+          fields: { title: { kind: "text", label: "Title", inline: true } },
+          defaults: { title: "Step" },
+          render: ({ values }) => <li className="site-step">{textValue(values.title)}</li>,
+        },
+      },
+    };
+    const step = (id: string) => ({ type: "Step", props: { id, title: id } });
+    const element = document.createElement("div");
+    document.body.append(element);
+    const engine = createPuckEngine({ iframe: false });
+    await act(async () => {
+      engine.mount(element, { library: steps, theme: { ...DEFAULT_THEME, preset: "test" } });
+      engine.loadPage(
+        {
+          root: { props: {} },
+          content: [{ type: "Steps", props: { id: "s", items: [step("one"), step("two")] } }],
+        },
+        { header: [], footer: [] },
+      );
+    });
+    await settle(50);
+
+    const list = element.querySelector("section > ol.grid");
+    // Each step in its wrapper, in the list: a layout on the list itself (a grid) lays them out.
+    expect(
+      [...(list?.children ?? [])].map((wrapper) => [
+        wrapper.matches(COMPONENT),
+        wrapper.querySelector("li.site-step")?.textContent,
+      ]),
+    ).toEqual([
+      [true, "one"],
+      [true, "two"],
+    ]);
     engine.destroy();
     await settle();
     element.remove();

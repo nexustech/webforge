@@ -60,6 +60,8 @@ const DEFAULTS: Readonly<Record<string, ContentWidth>> = {
   AnnouncementBar: "full",
   // New in 6.10b: the Blog's posts in cards across a wide column.
   LatestPosts: "wide",
+  // New in 6.16b (#1134): its steps side by side across a wide column.
+  Steps: "wide",
 };
 
 /** What a kind needs to draw its whole width: an image beside the text, a form beside it. */

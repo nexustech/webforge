@@ -686,6 +686,43 @@ test.describe("exported site from disk", () => {
     });
   });
 
+  test.describe("accordion (6.16a)", () => {
+    // It needs no script: everything below works with scripts turned off.
+    test.use({ javaScriptEnabled: false });
+
+    /** The item whose title is `name`: a <details>, which its <summary> opens with no script. */
+    const item = (page: Page, name: string) => {
+      const details = page.locator(".site-accordion-item").filter({
+        has: page.locator("summary", { hasText: name }),
+      });
+      return { details, summary: details.locator(":scope > summary") };
+    };
+
+    test("opens by pointer and keyboard, one item at a time, with no script", async ({ page }) => {
+      await open(page, "thanks.html");
+      const allergies = item(page, "Allergies");
+      const delivery = item(page, "Delivery");
+
+      // Closed, as it starts.
+      await expect(allergies.details).not.toHaveAttribute("open");
+      await expect(page.getByText("Our cakes are made with nuts")).toBeHidden();
+
+      await allergies.summary.click();
+      await expect(page.getByText("Our cakes are made with nuts")).toBeVisible();
+
+      // One open at a time: opening Delivery by keyboard closes Allergies.
+      await delivery.summary.focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByText("We deliver within five miles")).toBeVisible();
+      await expect(allergies.details).not.toHaveAttribute("open");
+      await expect(page.getByText("Our cakes are made with nuts")).toBeHidden();
+
+      // And closes again.
+      await page.keyboard.press("Space");
+      await expect(delivery.details).not.toHaveAttribute("open");
+    });
+  });
+
   test.describe("back-to-top button (F-CM-9)", () => {
     const backToTop = (page: Page) => page.getByRole("link", { name: "Back to top" });
     /**
