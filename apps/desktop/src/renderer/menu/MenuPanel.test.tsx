@@ -151,7 +151,7 @@ describe("MenuPanel (F-ED-17)", () => {
     await user.click(menu().getByRole("button", { name: "Actions for About" }));
     // A dropdown is never offered as a place for itself or other dropdowns.
     expect(screen.queryByRole("menuitem", { name: "Move into 'More'" })).toBeNull();
-    await user.click(screen.getByRole("menuitem", { name: "Move out of Dropdown" }));
+    await user.click(screen.getByRole("menuitem", { name: "Move Out of Dropdown" }));
     expect(rows()).toEqual(["My site, page", "More, dropdown", "About, page"]);
     remove();
   });

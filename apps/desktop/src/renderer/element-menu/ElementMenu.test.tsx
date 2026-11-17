@@ -26,24 +26,24 @@ function registry(shared: { save: boolean; detach: boolean }) {
   });
   commands.register({
     id: ELEMENT_MENU_COMMANDS.saveShared,
-    label: "Save as shared section…",
+    label: "Save as Shared Section…",
     enabled: shared.save,
     run: () => run("save"),
   });
   commands.register({
     id: ELEMENT_MENU_COMMANDS.detachShared,
-    label: "Detach from shared section",
+    label: "Detach from Shared Section",
     enabled: shared.detach,
     run: () => run("detach"),
   });
   commands.register({
     id: ELEMENT_MENU_COMMANDS.selectSimilar,
-    label: "Select similar",
+    label: "Select Similar",
     run: () => run("similar"),
   });
   commands.register({
     id: ELEMENT_MENU_COMMANDS.selectParent,
-    label: "Select parent",
+    label: "Select Parent",
     run: () => run("parent"),
   });
   commands.register({
@@ -74,9 +74,9 @@ describe("ElementMenu (1.35)", () => {
     expect(items()).toEqual([
       ["Rename", false],
       ["DuplicateCtrl+D", false],
-      ["Save as shared section…", false],
-      ["Select similar", false],
-      ["Select parentCtrl+↑", false],
+      ["Save as Shared Section…", false],
+      ["Select Similar", false],
+      ["Select ParentCtrl+↑", false],
       ["DeleteDelete", true],
     ]);
     await userEvent.click(menu().getByRole("menuitem", { name: /Duplicate/ }));
@@ -91,7 +91,7 @@ describe("ElementMenu (1.35)", () => {
       </CommandRegistryProvider>,
     );
 
-    await userEvent.click(menu().getByRole("menuitem", { name: /Select parent/ }));
+    await userEvent.click(menu().getByRole("menuitem", { name: /Select Parent/ }));
     expect(run).toHaveBeenCalledWith("parent");
   });
 
@@ -134,9 +134,9 @@ describe("ElementMenu (1.35)", () => {
     expect(items()).toEqual([
       ["Rename", true],
       ["DuplicateCtrl+D", false],
-      ["Detach from shared section", false],
-      ["Select similar", false],
-      ["Select parentCtrl+↑", false],
+      ["Detach from Shared Section", false],
+      ["Select Similar", false],
+      ["Select ParentCtrl+↑", false],
       ["DeleteDelete", true],
     ]);
   });

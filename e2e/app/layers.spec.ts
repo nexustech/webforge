@@ -87,9 +87,9 @@ test("moves a layer with Ctrl/Cmd+Alt+↓ and hides one, each as one undo step",
     `${STARTER_TEXT}${STARTER_HEADING}`,
   );
 
-  await setShown("Text", "Show", "Don't publish");
+  await setShown("Text", "Show", "Don't Publish");
   await expect(
-    tree().getByRole("button", { name: "Show or hide Text (now: Don't publish)" }),
+    tree().getByRole("button", { name: "Show or hide Text (now: Don't Publish)" }),
   ).toBeVisible();
   // Still on the canvas, dimmed (#141), but left out of the export.
   const text = canvas().locator(".site-text");
@@ -113,10 +113,10 @@ test("lists the shared Header first and Footer last; the Header's eye hides it o
   await expect(rows.first()).toHaveAttribute("aria-selected", "true");
 
   // Its eye is the page's Hide the Header on this page: gone from the canvas, one step.
-  await setShown("Header", "Show", "Don't publish", rows.first());
+  await setShown("Header", "Show", "Don't Publish", rows.first());
   await expect(canvas().locator(".site-header")).toHaveCount(0);
   await expect(
-    tree().getByRole("button", { name: "Show or hide Header (now: Don't publish)" }),
+    tree().getByRole("button", { name: "Show or hide Header (now: Don't Publish)" }),
   ).toBeVisible();
   await left().getByRole("tab", { name: "Undo History" }).click();
   await expect(steps().first()).toHaveText("Hid the Header on this page");
@@ -128,9 +128,9 @@ test("leaves out of the export a layer not published, and a draft page, but not 
   const parent = mkdtempSync(join(tmpdir(), "webforge-e2e-layers-"));
   try {
     await expect(row("Section")).toBeVisible();
-    await setShown("Heading", "Show", "Don't publish");
+    await setShown("Heading", "Show", "Don't Publish");
     // Hidden while editing: gone from the canvas, still exported.
-    await setShown("Text", "Show", "Hide while editing");
+    await setShown("Text", "Show", "Hide While Editing");
     await expect(canvas().locator(".site-text")).toHaveCount(0);
     await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
 

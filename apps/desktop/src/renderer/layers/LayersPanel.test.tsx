@@ -154,7 +154,7 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(items[1]?.tabIndex).toBe(0);
     expect(items[0]?.tabIndex).toBe(-1);
     expect(
-      screen.getByRole("button", { name: "Show or hide Heading (now: Don't publish)" }),
+      screen.getByRole("button", { name: "Show or hide Heading (now: Don't Publish)" }),
     ).toBeTruthy();
   });
 
@@ -280,11 +280,11 @@ describe("LayersPanel (F-ED-12)", () => {
     const { actions } = setUp();
 
     await userEvent.click(screen.getByRole("button", { name: "Show or hide 'Hours' (now: Show)" }));
-    await userEvent.click(screen.getByRole("menuitemradio", { name: "Don't publish" }));
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "Don't Publish" }));
     await userEvent.click(
-      screen.getByRole("button", { name: "Show or hide Heading (now: Don't publish)" }),
+      screen.getByRole("button", { name: "Show or hide Heading (now: Don't Publish)" }),
     );
-    await userEvent.click(screen.getByRole("menuitemradio", { name: "Hide while editing" }));
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "Hide While Editing" }));
 
     expect(actions.setShown.mock.calls).toEqual([
       ["b", "hidden"],
@@ -293,7 +293,7 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(actions.select).not.toHaveBeenCalled();
   });
 
-  it("offers Hide while editing on any layer but the shared Header or Footer itself (UX-23)", async () => {
+  it("offers Hide While Editing on any layer but the shared Header or Footer itself (UX-23)", async () => {
     render(
       <LayersPanel
         layers={[layer("header", { kind: "Header", region: "header" }), layer("a")]}
@@ -305,7 +305,7 @@ describe("LayersPanel (F-ED-12)", () => {
     );
     const disabled = () =>
       screen
-        .getByRole("menuitemradio", { name: "Hide while editing" })
+        .getByRole("menuitemradio", { name: "Hide While Editing" })
         .getAttribute("aria-disabled");
 
     await userEvent.click(screen.getByRole("button", { name: "Show or hide Header (now: Show)" }));

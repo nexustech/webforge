@@ -8,9 +8,11 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { describe, expect, it, vi } from "vitest";
+import type { NativeMenus } from "../../shared/ipc/app.js";
 import { starterSite } from "../../shared/starter-site.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";
+import { syncNativeMenus } from "../shell/native-menus.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { currentPage } from "./editor-session.js";
 import { registerElementCommands } from "./element-commands.js";
@@ -91,15 +93,56 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
       menu: "edit",
       textKeys: ["Mod+/"],
       enabled: true,
-      label: "Don't publish, or show",
+      label: "Leave Off the Website",
     });
     registry.run("edit.toggleHidden");
     expect(hidden()).toBe(true);
+    // Named by what it will do now (#1016).
+    expect(registry.get("edit.toggleHidden")?.label).toBe("Put Back on the Website");
     registry.run("edit.toggleHidden");
 
     expect(hidden()).toBeUndefined();
+    expect(registry.get("edit.toggleHidden")?.label).toBe("Leave Off the Website");
     expect(labels()).toEqual(["Kept Heading off your website", "Showed Heading"]);
     expect(beforeAction).toHaveBeenCalledTimes(2);
+  });
+
+  it("renames Mod + / as the selection changes, in macOS's menu bar and the command box too (#1016)", () => {
+    vi.useFakeTimers();
+    try {
+      const { session, engine, registry } = setUp();
+      const app = {
+        setNativeMenus: vi.fn(async (_menus: NativeMenus) => null),
+        onRunCommand: vi.fn(() => () => undefined),
+      };
+      const doc = { querySelector: () => null, execCommand: () => true };
+      const stop = syncNativeMenus(registry, app, doc);
+      // The command box lists the registry's commands as they change.
+      const listed = vi.fn();
+      const stopListing = registry.subscribe(() =>
+        listed(registry.list().find((command) => command.id === "edit.toggleHidden")?.label),
+      );
+      const native = () =>
+        app.setNativeMenus.mock.lastCall?.[0]
+          .find((menu) => menu.id === "edit")
+          ?.items.find((item) => item.id === "edit.toggleHidden")?.label;
+
+      // The Heading is taken off the website by its chip, then the Section is selected: still on it.
+      engine.requestFromElement({ kind: "toggleHidden", nodeId: "a" });
+      session.select("s1");
+      vi.runAllTimers();
+      expect(native()).toBe("Leave Off the Website");
+
+      // Back on the Heading, which is off it: no command has run, and both say what it will do.
+      session.select("a");
+      vi.runAllTimers();
+      expect(native()).toBe("Put Back on the Website");
+      expect(listed).toHaveBeenLastCalledWith("Put Back on the Website");
+      stopListing();
+      stop();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("does what the chip asks: hides or shows, or opens the image picker", () => {
@@ -206,7 +249,7 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     const enabled = () => registry.get("edit.selectSimilar")?.enabled;
 
     expect(registry.get("edit.selectSimilar")).toMatchObject({
-      label: "Select similar",
+      label: "Select Similar",
       menu: "edit",
     });
     // Selecting changes no layout (M3).

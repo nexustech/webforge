@@ -216,7 +216,7 @@ export const OpenRecentEmpty: Story = {
         { id: COMMAND_IDS.openRecent, label: "Open Recent", menu: "file", run: noop },
         {
           id: COMMAND_IDS.noRecent,
-          label: "No recent sites",
+          label: "No Recent Sites",
           submenu: COMMAND_IDS.openRecent,
           enabled: false,
           run: noop,

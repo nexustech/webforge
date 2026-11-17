@@ -103,7 +103,7 @@ test("lists Edit in its groups, and the site's settings, theme and stylesheet un
   await page.keyboard.press("ArrowRight");
   const shared = page.getByRole("menu", { name: "Shared Section" });
   await expect(shared.getByRole("menuitem")).toHaveText([
-    /^Save as shared section…/i,
+    /^Save as Shared Section…/,
     /^Rename…/,
     /^Delete…/,
     /^Detach/,

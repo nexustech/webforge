@@ -30,8 +30,8 @@ It's the easiest way to reach something small or hidden, or to see how a page is
 - **Reorder:** drag a row up or down. Places it can't go are dimmed, with a line saying why. Hold Ctrl (Cmd on a Mac) while dragging to drop a copy, or Ctrl+Shift to place a linked copy of a shared section.
 - **Show or hide:** click the eye on a row and choose:
   - **Show:** on the page and on your website.
-  - **Hide while editing:** out of your way in the editor, still on your website. Use it for something that covers what you're working on, such as a full-width banner.
-  - **Don't publish:** stays in your site's file, dimmed on the page, but isn't on your website. Not publishing the Header or Footer leaves it off this page only.
+  - **Hide While Editing:** out of your way in the editor, still on your website. Use it for something that covers what you're working on, such as a full-width banner.
+  - **Don't Publish:** stays in your site's file, dimmed on the page, but isn't on your website. Not publishing the Header or Footer leaves it off this page only.
 - **Rename:** double-click a name, or press F2. Names are only for you; visitors never see them.
 - **Open and close:** the arrow beside a name, or **Expand all** and **Collapse all**.
 - **Filter:** type in the box at the bottom to find items by name or kind. Esc clears it.
