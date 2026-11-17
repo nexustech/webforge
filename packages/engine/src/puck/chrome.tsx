@@ -27,6 +27,8 @@ import {
   NOTE_ATTRIBUTE,
   OVERLAY,
   SELECTED_COMPONENT,
+  TABLE_ROW_PASSAGES,
+  TABLE_ROW_WRAPPER,
 } from "./puck-dom.js";
 import { canPerform, performOnSelected } from "./selected-actions.js";
 import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spacing-handles.js";
@@ -86,6 +88,24 @@ const CHROME_CSS = `
 [${PREVIEW_ATTRIBUTE}="column-outline"] {
   outline: calc(1px / var(--wf-zoom, 1)) dashed color-mix(in srgb, var(--wf-grid-color) 55%, transparent);
   outline-offset: calc(-1px / var(--wf-zoom, 1));
+}
+/*
+ * A table's rows (6.16c): Puck wraps each element in a div of its own, and a slot's elements in its
+ * drop zone, which a table can't lay out between its body and its rows. The body and the drop zone
+ * let them through, and each row's wrapper is a group of that one row, so the row keeps its own box,
+ * borders and cells as the export draws them, and Puck's outline has a box to fit. At a phone's
+ * width (the themes' 48rem) the wrapper stacks, as the export's rows do.
+ */
+${TABLE_ROW_PASSAGES} {
+  display: contents;
+}
+${TABLE_ROW_WRAPPER} {
+  display: table-row-group;
+}
+@media (width < 48rem) {
+  ${TABLE_ROW_WRAPPER} {
+    display: block;
+  }
 }
 /* A hidden element (Layers' Hide): dimmed, still there to select and show again. */
 [${HIDDEN_ATTRIBUTE}] {

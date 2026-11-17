@@ -56,6 +56,25 @@ export const DRAWER_ITEM = "[data-puck-drawer-item]";
 /** The page's own drop zone, which holds its top-level elements. */
 export const ROOT_DROP_ZONE = '[data-puck-dropzone="root:default-zone"]';
 
+/** Any drop zone: the page's, or a slot's, which holds an element's elements (a Table's rows). */
+export const COMPONENT_DROP_ZONE = "[data-puck-dropzone]";
+
+/**
+ * A table row's wrapper on the canvas (6.16c): the wrapper of an element drawn as a `<tr>`, in a
+ * table's body. The canvas styles (`chrome.tsx`) lay a table's rows out through it, keyed on the
+ * row, never on a component's name. (`:has()` can't hold another `:has()`, so none of these do.)
+ */
+export const TABLE_ROW_WRAPPER = `tbody ${COMPONENT}:has(> tr)`;
+
+/**
+ * What lies between a table's body and its rows' wrappers on the canvas: the body that holds its
+ * rows through a slot's drop zone, and that drop zone. The canvas styles let the rows through them.
+ */
+export const TABLE_ROW_PASSAGES = [
+  `tbody:has(> ${COMPONENT_DROP_ZONE} > ${COMPONENT} > tr)`,
+  `tbody > ${COMPONENT_DROP_ZONE}:has(> ${COMPONENT} > tr)`,
+].join(", ");
+
 /** A rich-text editor (Tiptap's ProseMirror) on the canvas. */
 export const RICH_TEXT = ".ProseMirror";
 
