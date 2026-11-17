@@ -179,12 +179,12 @@ export function WidthHandles({
     const measure = () => {
       const now = shownElementOf(wrapper) ?? wrapper;
       if (now !== element) {
-        if (element !== null) resizes.unobserve(element);
-        if (now !== null) resizes.observe(now);
+        // The wrapper stays observed for the whole effect, even while it is what's measured.
+        if (element !== null && element !== wrapper) resizes.unobserve(element);
+        resizes.observe(now);
         element = now;
       }
-      if (element === null) return;
-      const shown = element.getBoundingClientRect();
+      const shown = now.getBoundingClientRect();
       const around = outline.getBoundingClientRect();
       const left = Math.round(shown.left - around.left);
       const right = Math.round(around.right - shown.right);
