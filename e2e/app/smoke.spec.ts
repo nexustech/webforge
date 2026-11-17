@@ -38,7 +38,9 @@ test.afterAll(async () => {
 
 test.describe("desktop shell", () => {
   test("opens a window showing Webforge and the version from the main process", async () => {
-    await expect(page).toHaveTitle("Webforge");
+    // With a site open, the window's title names it (#1016): app.windowTitle, "{site} - {appName}".
+    // The launcher's new site is always "My site".
+    await expect(page).toHaveTitle("My site - Webforge");
     await expect(page.getByRole("heading", { level: 1, name: "Webforge" })).toBeAttached();
     // The version travels main → IPC → preload → renderer, so this proves the whole round trip.
     await chooseFromMenu(app, page, "Help", "About Webforge");

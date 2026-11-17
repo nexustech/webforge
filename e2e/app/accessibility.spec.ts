@@ -30,7 +30,7 @@ test("the start screen, the editor and its main dialogs pass axe", async () => {
   app = await launchDesktopApp({ site: false });
   const start = await app.firstWindow();
   await start
-    .getByRole("button", { name: /Start a site/ })
+    .getByRole("button", { name: /Start a Site/ })
     .first()
     .waitFor();
   expect(await windowAxe(start)).toEqual([]);

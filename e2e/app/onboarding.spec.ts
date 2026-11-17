@@ -73,7 +73,7 @@ test("offers the tour after the quick start, and shows the three steps beside th
     await page.evaluate(() => document.activeElement?.closest("header[data-region]") !== null),
   ).toBe(true);
   await page.keyboard.press("Shift+F6");
-  await expect(words.getByRole("button", { name: /^Learn more/ })).toBeFocused();
+  await expect(words.getByRole("button", { name: /^Learn More/ })).toBeFocused();
   await words.getByRole("button", { name: "Next" }).click();
 
   // See it as visitors will, below Preview; Put it online, below Publish.

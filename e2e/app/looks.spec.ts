@@ -47,7 +47,7 @@ test("a kind's look set in Theme Studio shows on an item without its own, once i
   await studio.getByRole("button", { name: "Apply Changes" }).click();
   // A built-in theme is changed as the person's own copy of it (2.23), named first.
   await page
-    .getByRole("dialog", { name: /^Save your own version of/ })
+    .getByRole("dialog", { name: /^Save Your Own Version of/ })
     .getByRole("button", { name: "Save Theme" })
     .click();
   // It restyles every Features on the site, so it asks first (D7).
