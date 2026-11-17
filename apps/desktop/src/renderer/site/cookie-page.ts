@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import { siteTextFor } from "@webforge/i18n/site-text";
 import type { NodeDoc, PageId, SiteDoc } from "@webforge/model";
 import { siteEmbeds } from "@webforge/site-check";
 import { insertPolicyPage, openingSection, textSection } from "./policy-sections.js";
@@ -20,13 +21,16 @@ export const offersCookiePolicy = (site: SiteDoc): boolean =>
  * - without it, visits are counted without cookies (B4, amended 30 Oct 2026);
  * - videos and maps (YouTube, Vimeo, a map's site) load when the visitor clicks them, or accepts
  *   all in the banner, and may set their own cookies.
- * It opens with the page's main heading and the note to the owner ({@link openingSection}).
+ * It opens with the page's main heading and the note to the owner ({@link openingSection}). Its
+ * sentences are starter text, in the app's language; the banner's and the Footer's buttons it
+ * names are as the site writes them, in the site's language (6.12).
  */
 export function cookiePageContent(site: SiteDoc): NodeDoc[] {
   const { analytics, contact } = site.settings;
   const counted = analytics.measurementId !== undefined;
   // The banner shows only while Google Analytics counts visits.
   const asks = counted && analytics.consentBanner;
+  const labels = siteTextFor(site.settings.general.language);
   const ours = asks
     ? [t("cookiePage.analyticsConsent"), t("cookiePage.choiceKept")]
     : [counted ? t("cookiePage.analyticsCookieless") : t("cookiePage.none")];
@@ -39,7 +43,7 @@ export function cookiePageContent(site: SiteDoc): NodeDoc[] {
     sections.push(
       textSection("cookies-embeds", t("cookiePage.embedsTitle"), [
         asks
-          ? t("cookiePage.embedsConsent", { acceptAll: t("siteText.consent.accept") })
+          ? t("cookiePage.embedsConsent", { acceptAll: labels("siteText.consent.accept") })
           : t("cookiePage.embedsClick"),
       ]),
     );
@@ -47,7 +51,7 @@ export function cookiePageContent(site: SiteDoc): NodeDoc[] {
   sections.push(
     textSection("cookies-change", t("cookiePage.changeTitle"), [
       ...(asks
-        ? [t("cookiePage.changeSettings", { settings: t("siteText.consent.settings") })]
+        ? [t("cookiePage.changeSettings", { settings: labels("siteText.consent.settings") })]
         : []),
       t("cookiePage.changeBrowser"),
     ]),

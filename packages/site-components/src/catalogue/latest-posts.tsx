@@ -162,7 +162,7 @@ const latestPosts = defineSection({
       <div className={`mx-auto ${contentWidthClass(values.contentWidth)} space-y-8`}>
         {heading}
         {shown.length === 0 ? (
-          <p className="text-center">{t("siteText.noPosts")}</p>
+          <p className="text-center">{context.siteText("siteText.noPosts")}</p>
         ) : (
           <ul
             className={
@@ -186,17 +186,20 @@ const latestPosts = defineSection({
           </ul>
         )}
         {page !== undefined && pages > 1 ? (
-          <nav aria-label={t("siteText.postPages")} className="flex justify-between gap-4">
+          <nav
+            aria-label={context.siteText("siteText.postPages")}
+            className="flex justify-between gap-4"
+          >
             {page > 1 ? (
               <a href={pageLink(page - 1)} className="link" rel="prev">
-                {t("siteText.newerPosts")}
+                {context.siteText("siteText.newerPosts")}
               </a>
             ) : (
               <span />
             )}
             {page < pages ? (
               <a href={pageLink(page + 1)} className="link" rel="next">
-                {t("siteText.olderPosts")}
+                {context.siteText("siteText.olderPosts")}
               </a>
             ) : null}
           </nav>
@@ -204,7 +207,7 @@ const latestPosts = defineSection({
         {page === undefined && listing.tag === undefined && values.allPosts ? (
           <p className="text-center">
             <a href={pageLink(1)} className="link">
-              {t("siteText.allPosts")}
+              {context.siteText("siteText.allPosts")}
             </a>
           </p>
         ) : null}

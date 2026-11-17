@@ -1,4 +1,4 @@
-import { t, template } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n/site-text";
 import { renderToStaticMarkup } from "react-dom/server";
 import { StrokeIcon } from "./stroke-icon.js";
 import { BUTTON_CLASSES } from "./typography.js";
@@ -14,19 +14,31 @@ import { BUTTON_CLASSES } from "./typography.js";
  * `single`, the one a page shares for its Images that open larger (3.20, #646): one picture,
  * without the previous and next buttons or the count. A Gallery has a lightbox of its own.
  */
-export function Lightbox({ single = false }: { readonly single?: boolean }) {
+export function Lightbox({
+  single = false,
+  siteText,
+}: {
+  readonly single?: boolean;
+  /** The site's labels, in its language. */
+  readonly siteText: SiteText;
+}) {
   return (
     <dialog
       className="modal"
-      aria-label={t("siteText.lightbox")}
+      aria-label={siteText("siteText.lightbox")}
       data-wf-lightbox=""
       {...(single
         ? { "data-wf-lightbox-single": "" }
-        : { "data-image-of": template("siteText.imageOf") })}
+        : // Its placeholders left in, for the script to fill.
+          { "data-image-of": siteText("siteText.imageOf", { n: "{n}", total: "{total}" }) })}
     >
       <div className="modal-box flex max-w-5xl flex-col items-center gap-3 p-4">
         <form method="dialog" className="self-end">
-          <button type="submit" className={BUTTON_CLASSES.icon} aria-label={t("siteText.close")}>
+          <button
+            type="submit"
+            className={BUTTON_CLASSES.icon}
+            aria-label={siteText("siteText.close")}
+          >
             <StrokeIcon path="M18 6 6 18M6 6l12 12" />
           </button>
         </form>
@@ -45,7 +57,7 @@ export function Lightbox({ single = false }: { readonly single?: boolean }) {
             <button
               type="button"
               className={BUTTON_CLASSES.icon}
-              aria-label={t("siteText.previousImage")}
+              aria-label={siteText("siteText.previousImage")}
               data-wf-lightbox-previous=""
             >
               <StrokeIcon path="m15 18-6-6 6-6" />
@@ -54,7 +66,7 @@ export function Lightbox({ single = false }: { readonly single?: boolean }) {
             <button
               type="button"
               className={BUTTON_CLASSES.icon}
-              aria-label={t("siteText.nextImage")}
+              aria-label={siteText("siteText.nextImage")}
               data-wf-lightbox-next=""
             >
               <StrokeIcon path="m9 18 6-6-6-6" />
@@ -65,7 +77,7 @@ export function Lightbox({ single = false }: { readonly single?: boolean }) {
       {/* A click beside the image closes it, as daisyUI's modals do; not a tab stop of its own. */}
       <form method="dialog" className="modal-backdrop">
         <button type="submit" tabIndex={-1}>
-          {t("siteText.close")}
+          {siteText("siteText.close")}
         </button>
       </form>
     </dialog>
@@ -82,4 +94,5 @@ export const ENLARGE_ATTRIBUTE = "data-wf-enlarge";
  * The single-picture lightbox the export adds once to a page whose Images open larger (#646),
  * rather than one in each Image: the `lightbox` behaviour shows each Image's picture in it.
  */
-export const singleLightboxHtml = (): string => renderToStaticMarkup(<Lightbox single />);
+export const singleLightboxHtml = (siteText: SiteText): string =>
+  renderToStaticMarkup(<Lightbox single siteText={siteText} />);

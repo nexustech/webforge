@@ -40,7 +40,7 @@ const gallery = defineSection({
   behaviours: ["lightbox"],
   frame: () => "bg-base-100",
   frameAttributes: () => ({ "data-wf-gallery": "" }),
-  render: ({ values, slots }) => {
+  render: ({ values, slots, context }) => {
     const Images = slots.images;
     return (
       <>
@@ -48,7 +48,7 @@ const gallery = defineSection({
           <SectionTitle>{values.title}</SectionTitle>
           <Images className={IMAGES_CLASSES[values.variant]} />
         </div>
-        <Lightbox />
+        <Lightbox siteText={context.siteText} />
       </>
     );
   },
@@ -74,7 +74,12 @@ const galleryImage = defineComponent({
     const alt = placed?.alt ?? image?.alt ?? "";
     // On the canvas an inline caption is the editor, not text: then the alt text or the fallback.
     const caption = typeof values.caption === "string" ? values.caption.trim() : "";
-    const name = alt.trim() !== "" ? alt : caption !== "" ? caption : t("siteText.galleryImage");
+    const name =
+      alt.trim() !== ""
+        ? alt
+        : caption !== ""
+          ? caption
+          : context.siteText("siteText.galleryImage");
     // Until an image is chosen: a space to see and select on the canvas, and nothing in the export.
     if (image === null && context.emptyImage === undefined) return null;
     return (
@@ -85,7 +90,7 @@ const galleryImage = defineComponent({
           <a
             href={image.src}
             className="block"
-            aria-label={t("siteText.openLarger", { name })}
+            aria-label={context.siteText("siteText.openLarger", { name })}
             data-wf-lightbox-item=""
           >
             <Picture

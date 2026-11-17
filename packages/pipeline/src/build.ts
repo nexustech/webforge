@@ -67,6 +67,7 @@ import {
   withYear,
 } from "./site-files.js";
 import { iconFiles, shareImageFile } from "./site-images.js";
+import { siteTextOf } from "./site-text.js";
 import { structuredData } from "./structured-data.js";
 import { withThanksPage } from "./thanks-page.js";
 
@@ -619,10 +620,11 @@ export async function* buildEvents(
   }
 
   // The back-to-top button (F-CM-9) on the pages that show it, its classes compiled with theirs.
-  const backToTop = backToTopHtml();
+  const siteText = siteTextOf(site);
+  const backToTop = backToTopHtml(siteText);
   // One single-picture lightbox on each page with an Image that opens larger, which they share
   // (#646), its classes compiled too.
-  const lightbox = singleLightboxHtml();
+  const lightbox = singleLightboxHtml(siteText);
   const enlarges = (entry: {
     readonly header: string;
     readonly main: string;
@@ -630,7 +632,7 @@ export async function* buildEvents(
   }) =>
     [entry.header, entry.main, entry.footer].some((html) => html.includes(`${ENLARGE_ATTRIBUTE}=`));
   // The consent banner on every page, its classes compiled too (3.8).
-  const consent = analytics === undefined ? undefined : consentBannerHtml(analytics);
+  const consent = analytics === undefined ? undefined : consentBannerHtml(analytics, siteText);
   const markup = rendered.flatMap((entry) => [
     entry.header,
     entry.main,

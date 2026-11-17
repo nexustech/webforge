@@ -1,5 +1,8 @@
+import { siteTextFor } from "@webforge/i18n/site-text";
 import { describe, expect, it } from "vitest";
 import { daysText, openingHoursLines, timeText } from "./opening-hours.js";
+
+const english = siteTextFor("en");
 
 describe("opening hours' days (2.8)", () => {
   it.each([
@@ -12,15 +15,28 @@ describe("opening hours' days (2.8)", () => {
     [["fri", "tue", "thu", "wed"], "Tuesday to Friday"],
     [[], ""],
   ] as const)("reads %j as %j, in the week's order", (days, text) => {
-    expect(daysText(days)).toBe(text);
+    expect(daysText(days, english)).toBe(text);
+  });
+
+  it.each([
+    ["fr", ["tue", "wed", "thu", "fri"], "Mardi au vendredi"],
+    ["fr", ["mon", "wed", "fri"], "Lundi, mercredi et vendredi"],
+    ["fr", ["sun"], "Dimanche"],
+    ["de", ["sat", "sun"], "Samstag und Sonntag"],
+    ["es-MX", ["mon", "tue", "wed", "thu", "fri"], "Lunes a viernes"],
+  ] as const)("reads them in the site's language, %s: %j as %j (6.12)", (language, days, text) => {
+    expect(daysText(days, siteTextFor(language), language)).toBe(text);
   });
 
   it("lists each group of days with its hours, in the order they were entered", () => {
     expect(
-      openingHoursLines([
-        { days: ["sat", "sun"], opens: "08:00", closes: "13:00" },
-        { days: ["tue", "wed", "thu", "fri"], opens: "07:00", closes: "15:00" },
-      ]),
+      openingHoursLines(
+        [
+          { days: ["sat", "sun"], opens: "08:00", closes: "13:00" },
+          { days: ["tue", "wed", "thu", "fri"], opens: "07:00", closes: "15:00" },
+        ],
+        english,
+      ),
     ).toEqual([
       {
         days: "Saturday and Sunday",
@@ -48,7 +64,11 @@ describe("opening hours' days (2.8)", () => {
     expect(timeText("17:30", undefined)).toBe("17:30");
     expect(timeText("17:30", "not a language")).toBe("17:30");
 
-    const [line] = openingHoursLines([{ days: ["mon"], opens: "08:00", closes: "13:00" }], "en-US");
+    const [line] = openingHoursLines(
+      [{ days: ["mon"], opens: "08:00", closes: "13:00" }],
+      english,
+      "en-US",
+    );
     expect(line).toMatchObject({ opens: "08:00", closes: "13:00" });
     expect(line?.closesText).toMatch(/^1:00\s?PM$/u);
   });

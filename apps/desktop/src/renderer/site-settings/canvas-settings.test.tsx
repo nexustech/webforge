@@ -94,4 +94,17 @@ describe("connectCanvasSettings", () => {
 
     expect(bindingsGiven(engine.setSettings, 1).formService).toEqual(service);
   });
+
+  it("gives the canvas the site's labels in its language, again when it changes (6.12)", () => {
+    const session = sessionWith();
+    const engine = { setSettings: vi.fn() };
+    connectCanvasSettings(engine, session);
+    const settings = session.history.document.getState().settings;
+    expect(settings.general.language).toMatch(/^en\b/);
+    expect(bindingsGiven(engine.setSettings, 0).siteText("siteText.menu")).toBe("Menu");
+
+    saveSiteSettings(session, { ...settings, general: { ...settings.general, language: "de-AT" } });
+
+    expect(bindingsGiven(engine.setSettings, 1).siteText("siteText.menu")).toBe("Menü");
+  });
 });

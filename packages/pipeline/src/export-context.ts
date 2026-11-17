@@ -16,6 +16,7 @@ import {
 import { imageAt } from "./images.js";
 import { toBundled, withCustomCode } from "./site-code.js";
 import { NOT_FOUND_PATH } from "./site-files.js";
+import { siteTextOf } from "./site-text.js";
 
 /**
  * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, an
@@ -174,6 +175,8 @@ export function pageRender(
     openingHours: site.openingHours ?? [],
     socialProfiles: site.socialProfiles ?? [],
     language: site.language,
+    // The site's labels in its language (6.12): the canvas's, from the same settings.
+    siteText: siteTextOf(site),
     ...(site.formService === undefined ? {} : { formService: site.formService }),
     // Custom Code as written (F-ED-15): the export is the one place it runs (3.9 checks it).
     rawCustomCode: true,

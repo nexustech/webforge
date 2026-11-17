@@ -1,3 +1,4 @@
+import { siteTextFor } from "@webforge/i18n/site-text";
 import {
   BOX_SIDES,
   type BoxSide,
@@ -36,6 +37,8 @@ import type {
 
 /** The context on the editor canvas: no site navigation, links go nowhere, no images yet. */
 export const EDITOR_RENDER_CONTEXT: RenderContext = {
+  // The site's labels in English, until Site Settings give its language.
+  siteText: siteTextFor(undefined),
   navigation: [],
   link: () => "#",
   href: () => "#",

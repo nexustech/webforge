@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n/site-text";
 import {
   exportedAddress,
   listPath,
@@ -11,6 +11,7 @@ import {
 import { type ComponentLibrary, POSTS_PER_PAGE } from "@webforge/site-components";
 import { escapeHtml } from "./html.js";
 import { siteAddress } from "./site-files.js";
+import { siteTextOf } from "./site-text.js";
 
 /**
  * The Blog's own pages and feed (6.10b, ADR 0025, decision 8), which the export writes from the
@@ -51,14 +52,18 @@ const ownPage = (id: string, path: string, title: string, node: NodeDoc): SitePa
 });
 
 /** The pages `collection` gets: its list, page by page, then each tag's, in its posts' order. */
-function pagesOf(collection: SiteCollection, library: ComponentLibrary): SitePage[] {
+function pagesOf(
+  collection: SiteCollection,
+  library: ComponentLibrary,
+  siteText: SiteText,
+): SitePage[] {
   const count = Math.max(1, Math.ceil(collection.items.length / POSTS_PER_PAGE));
   const lists = Array.from({ length: count }, (_, index) => {
     const page = index + 1;
     const title =
       page === 1
         ? collection.name
-        : t("siteText.blogPage", { name: collection.name, page: String(page) });
+        : siteText("siteText.blogPage", { name: collection.name, page: String(page) });
     const id = `${collection.id}-list-${page}`;
     return ownPage(
       id,
@@ -74,7 +79,7 @@ function pagesOf(collection: SiteCollection, library: ComponentLibrary): SitePag
     for (const tag of value.tags) if (!tags.has(tag.path)) tags.set(tag.path, tag.name);
   }
   const tagPages = [...tags].map(([path, name]) => {
-    const title = t("siteText.postsTagged", { tag: name });
+    const title = siteText("siteText.postsTagged", { tag: name });
     const id = `${collection.id}-tag-${path.split("/").at(-1) ?? ""}`;
     return ownPage(id, path, title, listSection(library, collection, id, title, { tag: path }));
   });
@@ -107,7 +112,9 @@ export function withBlogPages(site: SiteSnapshot, library: ComponentLibrary): Si
   const pages = [...site.pages];
   const redirects = [...(site.redirects ?? [])];
   for (const collection of site.collections) {
-    const own = pagesOf(collection, library).filter((page) => !paths.has(page.path));
+    const own = pagesOf(collection, library, siteTextOf(site)).filter(
+      (page) => !paths.has(page.path),
+    );
     pages.push(...own);
     redirects.push(...formerAddresses(collection, own));
   }

@@ -1,3 +1,4 @@
+import { siteTextFor } from "@webforge/i18n/site-text";
 // Security review S25 (docs/reviews/2026-10-30-security-review.md), restored by #650.
 import type { SiteAnalytics } from "@webforge/model";
 import { Window } from "happy-dom";
@@ -17,7 +18,7 @@ describe("security: GA4 with the consent banner turned off", () => {
     const window = happy as unknown as typeof globalThis & { dataLayer?: unknown[] };
     const { document } = window;
     const analytics: SiteAnalytics = { measurementId: "G-ABC123DEF4", consentBanner: false };
-    document.body.innerHTML = consentBannerHtml(analytics);
+    document.body.innerHTML = consentBannerHtml(analytics, siteTextFor("en"));
     new Function("window", "document", "HTMLElement", "Event", BEHAVIOUR_SCRIPTS.consent ?? "")(
       window,
       document,

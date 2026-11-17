@@ -190,6 +190,16 @@ describe("the cookie policy (#866)", () => {
     expect(unasked[3]?.text).toEqual([t("cookiePage.embedsClick")]);
   });
 
+  it("names the banner's and the Footer's buttons as the site writes them, in its language (6.12)", () => {
+    const site = siteWith([video], analytics);
+    site.settings.general.language = "de-AT";
+    const sections = sectionsOf(cookiePageContent(site));
+
+    expect(sections[3]?.text[0]).toContain("Alle akzeptieren");
+    expect(sections[3]?.text[0]).not.toContain("Accept all");
+    expect(sections[4]?.text[0]).toContain("Cookie-Einstellungen");
+  });
+
   it("says the site sets no cookies once Google Analytics is off", () => {
     expect(sectionsOf(cookiePageContent(siteWith()))[2]?.text).toEqual([t("cookiePage.none")]);
   });

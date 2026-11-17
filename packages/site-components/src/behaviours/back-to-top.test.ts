@@ -1,3 +1,4 @@
+import { siteTextFor } from "@webforge/i18n/site-text";
 import { Window } from "happy-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { backToTopHtml } from "../back-to-top.js";
@@ -16,7 +17,7 @@ function page({ still = false } = {}) {
   windows.push(happy);
   const window = happy as unknown as typeof globalThis;
   const { document } = window;
-  document.body.innerHTML = `<a href="#first">First link</a>${backToTopHtml()}`;
+  document.body.innerHTML = `<a href="#first">First link</a>${backToTopHtml(siteTextFor("en"))}`;
   window.matchMedia = ((query: string) => ({
     matches: still && query === "(prefers-reduced-motion: reduce)",
   })) as typeof window.matchMedia;
