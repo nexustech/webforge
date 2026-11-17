@@ -333,9 +333,9 @@ export type SiteBindings = {
 
 /**
  * What an element is missing, for {@link SiteBindings.elementHint}: a video's or a map's address,
- * a Buy button's payment link.
+ * a Buy button's payment link, or the site's web address, which Share buttons share (6.17b).
  */
-export type ElementHint = "videoAddress" | "mapAddress" | "paymentLink" | "blog";
+export type ElementHint = "videoAddress" | "mapAddress" | "paymentLink" | "blog" | "webAddress";
 
 /**
  * Why a form has nowhere to send to (2.8): no form service chosen in Site Settings, Netlify Forms
@@ -360,6 +360,12 @@ export type RenderContext = SiteBindings & {
   readonly posts?: (id?: string) => SiteCollection | undefined;
   /** What an element bound to an item's empty field shows: a hint on the canvas; nothing in the export. */
   readonly emptyItem?: (field: string) => ReactNode;
+  /**
+   * The page's whole address on the web (`https://rosasbakery.co.uk/blog/spring.html`), which
+   * Share buttons share (6.17b): set when the site has its web address, by the export for every
+   * page and on the canvas for a post. Left out without one.
+   */
+  readonly pageAddress?: string;
   /** The site's pages, for navigation. Empty on the canvas. */
   readonly navigation: readonly NavItem[];
   /** The relative URL of a page path (`about`) or the link itself if it is external. */

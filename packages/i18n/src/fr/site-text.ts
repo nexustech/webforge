@@ -84,4 +84,6 @@ export const fr = {
   "siteText.footerNavigation": "Navigation du pied de page",
   "siteText.logo": "Logo",
   "siteText.postTags": "Étiquettes",
+  "siteText.shareButtons": "Partager cet article",
+  "siteText.shareEmail": "E-mail",
 } as const satisfies SiteTextCatalogue;

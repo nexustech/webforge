@@ -84,4 +84,6 @@ export const es = {
   "siteText.footerNavigation": "Navegación del pie de página",
   "siteText.logo": "Logotipo",
   "siteText.postTags": "Etiquetas",
+  "siteText.shareButtons": "Compartir esta entrada",
+  "siteText.shareEmail": "Correo electrónico",
 } as const satisfies SiteTextCatalogue;

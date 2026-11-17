@@ -41,6 +41,8 @@ export const RENDER_CONTEXT_SOURCES = {
   // The post shown, on a Blog's post (6.10a): set again when the page shown or its fields change.
   item: "setItem",
   emptyItem: "setItem",
+  // The post's address on the web, for Share buttons (6.17b): set with its fields.
+  pageAddress: "setItem",
   // The site's posts, for Latest posts (6.10b): set again when they change.
   posts: "setPosts",
   setting: "setSettings",

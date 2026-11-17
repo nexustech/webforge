@@ -169,6 +169,8 @@ export const site = {
     "Add a blog (Site panel › Add Page › Blog) to list its posts here",
   "site.binding.elementHint.paymentLink":
     "Add the payment link (https://…) from Stripe, PayPal or your shop, in the Edit panel",
+  "site.binding.elementHint.webAddress":
+    "Share buttons show once your site has its web address: add it in Site Settings › Web address",
   "site.settings.title": "Site Settings",
   "site.settings.description": "Details that apply to the whole site, wherever they appear.",
   "site.settings.sections": "Site Settings sections",
