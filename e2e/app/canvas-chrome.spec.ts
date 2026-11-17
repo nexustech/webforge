@@ -391,4 +391,50 @@ test.describe("keyboard and floating add", () => {
     await expect(steps().first()).toHaveText("Added Section");
     await expect(canvas().locator(".site-section")).toHaveCount(2);
   });
+
+  test("a hovered section's + stays under the pointer, says what it does and adds there (#1129)", async () => {
+    // The real pointer, moved as a hand moves it. A locator's hover or click first scrolls its
+    // target into view and checks it; driven that way, the + was sometimes gone before the
+    // pointer got there, with the Section no longer hovered.
+    const section = canvas().locator(".site-section");
+    const box = await section.boundingBox();
+    if (box === null) throw new Error("Section not visible");
+    // Hovered, not selected: the Section's bottom padding, under the pointer.
+    await page.mouse.move(box.x + 10, box.y + box.height - 4);
+    await expect(canvas().locator('.wf-outline[data-state="selected"]')).toHaveCount(0);
+    const plus = canvas()
+      .locator('.wf-outline[data-state="hover"]')
+      .getByRole("button", { name: "Add a section here" });
+    await expect(plus).toBeVisible();
+    const at = await plus.boundingBox();
+    if (at === null) throw new Error("+ not visible");
+    const x = at.x + at.width / 2;
+
+    // Up into the Section's padding, then onto the + as a hand aims at it: into its top half,
+    // still over the Section, and on to its centre, on the Section's bottom edge. The + is in
+    // Puck's overlay, out of the Section's wrapper, so Puck's hover alone would end on it.
+    await page.mouse.move(x - 60, at.y - 8, { steps: 5 });
+    await page.mouse.move(x, at.y + at.height / 2, { steps: 10 });
+    await expect(canvas().locator(".wf-tip")).toHaveText("Add a section here");
+    // Its bottom half, over the Footer, then its top half, over the Section: still there.
+    await page.mouse.move(x, at.y + at.height - 4, { steps: 3 });
+    await page.mouse.move(x, at.y + 4, { steps: 3 });
+    await expect(plus).toBeVisible();
+    await expect(canvas().locator(".wf-tip")).toHaveText("Add a section here");
+    await page.mouse.down();
+    await page.mouse.up();
+    await page
+      .getByRole("region", { name: "Left panels" })
+      .getByRole("button", { name: "Section", exact: true })
+      .click();
+    await page
+      .getByRole("region", { name: "Left panels" })
+      .getByRole("tab", { name: "Undo History" })
+      .click();
+
+    await expect(steps().first()).toHaveText("Added Section");
+    await expect(canvas().locator(".site-section")).toHaveCount(2);
+    // After the hovered Section, not before it.
+    await expect(canvas().locator(".site-section").first().locator("h1")).toHaveCount(1);
+  });
 });
