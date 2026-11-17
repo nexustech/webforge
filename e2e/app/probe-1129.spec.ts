@@ -22,7 +22,7 @@ test.afterEach(async () => {
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
 
-test("probe: hovered +", async () => {
+test("probe 1129: hovered +", async () => {
   const section = canvas().locator(".site-section");
   const box = await section.boundingBox();
   if (box === null) throw new Error("no box");

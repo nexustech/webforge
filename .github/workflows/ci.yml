@@ -466,7 +466,7 @@ jobs:
 
       - name: Electron E2E tests
         if: runner.os != 'Linux'
-        run: pnpm e2e --project=app app/canvas-chrome.spec.ts app/probe-1129.spec.ts -g "1129|probe" --repeat-each=20 --shard=${{ matrix.shard }}/${{ matrix.shards }}
+        run: pnpm e2e --project=app app/canvas-chrome.spec.ts app/probe-1129.spec.ts -g 1129 --repeat-each=20 --shard=${{ matrix.shard }}/${{ matrix.shards }}
 
       - name: Save Electron
         # The first app start downloads Electron's binary, so this runs after the tests.
