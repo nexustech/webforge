@@ -1,3 +1,4 @@
+import { siteTextFor } from "@webforge/i18n";
 import type { NodeDoc } from "@webforge/model";
 import { Window } from "happy-dom";
 import { afterEach, describe, expect, it } from "vitest";
@@ -55,7 +56,9 @@ function page(ids = ["a", "b", "c"], nodes: readonly NodeDoc[] = [galleryOf(ids)
   const html = renderNodesToHtml(nodes, siteLibrary, context);
   // As the export does: the single-picture lightbox once, for a page with an Image that opens
   // larger (#646).
-  const shared = html.includes(`${ENLARGE_ATTRIBUTE}=`) ? singleLightboxHtml() : "";
+  const shared = html.includes(`${ENLARGE_ATTRIBUTE}=`)
+    ? singleLightboxHtml(siteTextFor("en"))
+    : "";
   document.body.innerHTML = `<button id="before">Before</button>${html}${shared}`;
   new Function(
     "document",

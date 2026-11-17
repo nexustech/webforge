@@ -1,5 +1,5 @@
 import type { CanvasEngine } from "@webforge/engine";
-import { t } from "@webforge/i18n";
+import { siteTextFor, t } from "@webforge/i18n";
 import { type BindableSetting, type SiteDoc, settingValues } from "@webforge/model";
 
 type Unsubscribe = () => void;
@@ -46,6 +46,7 @@ export function connectCanvasSettings(
       socialProfiles: shown.social.profiles,
       socialHint: () => hint(t("site.binding.socialHint")),
       language: shown.general.language,
+      siteText: siteTextFor(shown.general.language),
       ...(shown.forms.service === undefined ? {} : { formService: shown.forms.service }),
       formHint: (reason) => hint(t(`site.binding.formHint.${reason}`)),
       elementHint: (missing) => hint(t(`site.binding.elementHint.${missing}`)),

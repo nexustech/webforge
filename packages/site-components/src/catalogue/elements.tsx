@@ -279,8 +279,8 @@ const image = defineComponent({
             className="block"
             aria-label={
               name === ""
-                ? t("siteText.openLargerPicture")
-                : t("siteText.openLargerPictureOf", { name })
+                ? context.siteText("siteText.openLargerPicture")
+                : context.siteText("siteText.openLargerPictureOf", { name })
             }
             data-wf-lightbox-item=""
           >

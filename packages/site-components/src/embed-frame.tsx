@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n";
 import type { Embed } from "./embed.js";
 import { StrokeIcon } from "./stroke-icon.js";
 import { BUTTON_CLASSES } from "./typography.js";
@@ -27,13 +27,16 @@ export function EmbedFrame({
   embed,
   kind,
   title,
+  siteText,
 }: {
   readonly embed: Embed;
   readonly kind: EmbedKind;
   /** What the loaded `<iframe>` is called for screen readers: the video's or the place's name. */
   readonly title: string;
+  /** The site's labels, in its language. */
+  readonly siteText: SiteText;
 }) {
-  const provider = t(`siteText.embed.provider.${embed.provider}`);
+  const provider = siteText(`siteText.embed.provider.${embed.provider}`);
   return (
     <div
       className={`site-embed relative w-full overflow-hidden rounded-box bg-base-300 text-base-content ${FRAME_CLASSES[kind]}`}
@@ -50,15 +53,15 @@ export function EmbedFrame({
           <button type="button" className={BUTTON_CLASSES.primary} data-wf-embed-load="">
             <StrokeIcon path={kind === "video" ? PLAY_ICON : MAP_ICON} />
             {kind === "video"
-              ? t("siteText.embed.playVideo", { provider })
-              : t("siteText.embed.showMap", { provider })}
+              ? siteText("siteText.embed.playVideo", { provider })
+              : siteText("siteText.embed.showMap", { provider })}
           </button>
-          <p className="max-w-sm text-sm">{t("siteText.embed.notice", { provider })}</p>
+          <p className="max-w-sm text-sm">{siteText("siteText.embed.notice", { provider })}</p>
         </div>
         <a className="link text-sm" href={embed.link} target="_blank" rel="noopener noreferrer">
           {kind === "video"
-            ? t("siteText.embed.watchOn", { provider })
-            : t("siteText.embed.openIn", { provider })}
+            ? siteText("siteText.embed.watchOn", { provider })
+            : siteText("siteText.embed.openIn", { provider })}
         </a>
       </div>
     </div>

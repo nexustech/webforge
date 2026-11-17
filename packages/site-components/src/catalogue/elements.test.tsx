@@ -1,3 +1,4 @@
+import { siteTextFor } from "@webforge/i18n";
 import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { fieldsHiddenBy, holdsOverfullSlot, overfillsSlots } from "../library.js";
@@ -18,6 +19,7 @@ const shop: ResolvedImage = {
 
 /** The export's context: the image `shop`, and links to pages' files. */
 const context: RenderContext = {
+  siteText: siteTextFor("en"),
   navigation: [],
   link: (target) => `${target}.html`,
   href: () => "#",

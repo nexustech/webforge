@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n";
 import { type FormService, formServiceUnset, httpsAddress, THANKS_FIELD } from "@webforge/model";
 import type { ReactNode } from "react";
 import type { FormUnset } from "./schema.js";
@@ -41,6 +41,8 @@ export type FormFieldProps = {
   readonly autoComplete?: string;
   /** A select's choices, in order. */
   readonly options?: readonly string[];
+  /** The site's labels, in its language: a select's "Choose…". */
+  readonly siteText: SiteText;
 };
 
 /** The label's text, with a mark a screen reader skips when the field is required. */
@@ -72,6 +74,7 @@ export function FormField({
   required = false,
   autoComplete,
   options = [],
+  siteText,
 }: FormFieldProps) {
   if (kind === "checkbox") {
     return (
@@ -113,7 +116,7 @@ export function FormField({
         {...requiredAttributes(required)}
       >
         <option value="" disabled>
-          {t("siteText.form.choose")}
+          {siteText("siteText.form.choose")}
         </option>
         {options.map((option) => (
           <option key={option} value={option}>
@@ -169,11 +172,17 @@ const HONEYPOTS = {
  * The honeypot (B6): a field hidden from visitors, screen readers and the keyboard, which robots
  * that fill in every field fill in too.
  */
-function HoneypotField({ honeypot }: { readonly honeypot: Honeypot }) {
+function HoneypotField({
+  honeypot,
+  siteText,
+}: {
+  readonly honeypot: Honeypot;
+  readonly siteText: SiteText;
+}) {
   return (
     <div hidden>
       <label>
-        {t("siteText.form.leaveEmpty")}
+        {siteText("siteText.form.leaveEmpty")}
         <input
           type={honeypot.checkbox === true ? "checkbox" : "text"}
           name={honeypot.name}
@@ -292,6 +301,7 @@ export function SiteForm({
   hint,
   children,
   className,
+  siteText,
 }: {
   readonly target: FormTarget | FormUnset;
   /** What the form is for, for screen readers ("Contact form"). */
@@ -301,6 +311,8 @@ export function SiteForm({
   readonly hint?: ((reason: FormUnset) => ReactNode) | undefined;
   readonly children: ReactNode;
   readonly className?: string;
+  /** The site's labels, in its language. */
+  readonly siteText: SiteText;
 }) {
   const unset = typeof target === "string" ? target : undefined;
   const hidden = typeof target === "string" ? {} : target.hidden;
@@ -318,7 +330,7 @@ export function SiteForm({
         : {
             // Netlify Forms with no thank-you page post to the page itself, as Netlify expects.
             ...(target.action === "" ? {} : { action: target.action }),
-            "data-sending": t("siteText.form.sending"),
+            "data-sending": siteText("siteText.form.sending"),
           })}
       {...(typeof target !== "string" && target.netlify !== undefined
         ? {
@@ -333,7 +345,10 @@ export function SiteForm({
         <input key={name} type="hidden" name={name} value={value} />
       ))}
       {children}
-      <HoneypotField honeypot={typeof target === "string" ? GOTCHA : target.honeypot} />
+      <HoneypotField
+        honeypot={typeof target === "string" ? GOTCHA : target.honeypot}
+        siteText={siteText}
+      />
       {/* Without a target the form would post to the page itself and lose the message: no send. */}
       <button
         type="submit"

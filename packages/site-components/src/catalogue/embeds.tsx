@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { type SiteText, t } from "@webforge/i18n";
 import { bindingOf } from "@webforge/model";
 import type { ReactNode } from "react";
 import { defineComponent } from "../define.js";
@@ -45,6 +45,7 @@ function EmbedSection({
   embed,
   kind,
   frameTitle,
+  siteText,
 }: {
   readonly layout: (typeof EMBED_LAYOUTS)[number];
   readonly width: ContentWidth;
@@ -53,8 +54,12 @@ function EmbedSection({
   readonly embed: Embed | null;
   readonly kind: EmbedKind;
   readonly frameTitle: string;
+  readonly siteText: SiteText;
 }) {
-  const frame = embed === null ? null : <EmbedFrame embed={embed} kind={kind} title={frameTitle} />;
+  const frame =
+    embed === null ? null : (
+      <EmbedFrame embed={embed} kind={kind} title={frameTitle} siteText={siteText} />
+    );
   if (layout === "split" && frame !== null) {
     return (
       <div
@@ -109,7 +114,7 @@ const video = defineSection({
   },
   frame: () => "bg-base-100",
   behaviours: ["embed"],
-  render: ({ values }) => (
+  render: ({ values, context }) => (
     <EmbedSection
       layout={values.variant}
       width={values.contentWidth}
@@ -117,7 +122,8 @@ const video = defineSection({
       text={values.text}
       embed={videoEmbed(plainText(values.address) ?? "")}
       kind="video"
-      frameTitle={plainText(values.title) ?? t("siteText.embed.videoTitle")}
+      siteText={context.siteText}
+      frameTitle={plainText(values.title) ?? context.siteText("siteText.embed.videoTitle")}
     />
   ),
 });
@@ -166,7 +172,8 @@ const map = defineSection({
       text={values.text}
       embed={mapEmbed(mapAddress(values, context))}
       kind="map"
-      frameTitle={plainText(values.title) ?? t("siteText.embed.mapTitle")}
+      siteText={context.siteText}
+      frameTitle={plainText(values.title) ?? context.siteText("siteText.embed.mapTitle")}
     />
   ),
 });
@@ -231,9 +238,12 @@ function embedElement({
         <EmbedFrame
           embed={embed}
           kind={kind}
+          siteText={context.siteText}
           title={
             plainText(values.name) ??
-            t(kind === "video" ? "siteText.embed.videoTitle" : "siteText.embed.mapTitle")
+            context.siteText(
+              kind === "video" ? "siteText.embed.videoTitle" : "siteText.embed.mapTitle",
+            )
           }
         />
       )}

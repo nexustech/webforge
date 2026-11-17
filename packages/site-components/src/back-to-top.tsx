@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import type { SiteText } from "@webforge/i18n";
 import { renderToStaticMarkup } from "react-dom/server";
 import { LucideIcon } from "./icons.js";
 
@@ -8,7 +8,7 @@ import { LucideIcon } from "./icons.js";
  * `back-to-top` behaviour shows it once the visitor has scrolled down; without it the link is
  * always there.
  */
-function BackToTop() {
+function BackToTop({ siteText }: { readonly siteText: SiteText }) {
   return (
     <a
       // Always the page's top, even with a section anchored "top" (which "#top" would go to).
@@ -16,8 +16,8 @@ function BackToTop() {
       href="#"
       // Not on paper: a printed page has nowhere to go back to.
       className="site-back-to-top btn btn-circle btn-primary fixed right-4 bottom-4 z-40 shadow-md print:hidden"
-      aria-label={t("siteText.backToTop")}
-      title={t("siteText.backToTop")}
+      aria-label={siteText("siteText.backToTop")}
+      title={siteText("siteText.backToTop")}
       data-wf-back-to-top=""
     >
       <LucideIcon name="arrow-up" className="size-5" />
@@ -25,5 +25,6 @@ function BackToTop() {
   );
 }
 
-/** {@link BackToTop} as the export writes it. */
-export const backToTopHtml = (): string => renderToStaticMarkup(<BackToTop />);
+/** {@link BackToTop} as the export writes it, in the site's language. */
+export const backToTopHtml = (siteText: SiteText): string =>
+  renderToStaticMarkup(<BackToTop siteText={siteText} />);

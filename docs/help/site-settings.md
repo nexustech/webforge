@@ -17,7 +17,7 @@ They're in the same **Settings** window as {appName}'s own preferences, under **
 
 - **Site name:** shown in the Header, in browser tabs and in search results.
 - **Description:** a sentence or two about your business. Search engines show it for any page without a description of its own.
-- **Language:** the language your site is written in, as a code such as `en`, `en-GB` or `de`. Spelling checks use it too.
+- **Language:** the language your site is written in, as a code such as `en`, `en-GB` or `de`. Spelling checks use it too. The words your site writes itself, such as _Menu_, _Back to top_, _Accept all_ and the days of the week, are in this language when it's French, German or Spanish, and in English for any other.
 - **Site icon:** the small picture in browser tabs and bookmarks. Choose a square picture from Media.
 - **Show a back-to-top button:** a button that appears once visitors scroll down. It isn't shown in the editor.
 - **Business type** and **More precisely:** what kind of business this is, such as _Restaurant_, _Plumber_ or _Vehicle repair_. Search engines use it.

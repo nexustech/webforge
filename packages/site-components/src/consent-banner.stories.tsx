@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { siteTextFor } from "@webforge/i18n";
 import type { SiteAnalytics } from "@webforge/model";
 import { consentBannerHtml } from "./consent-banner.js";
 
@@ -11,7 +12,9 @@ function ConsentBannerStory({ analytics }: { readonly analytics: SiteAnalytics }
     <div
       className="min-h-64 bg-base-100 text-base-content"
       // biome-ignore lint/security/noDangerouslySetInnerHtml: the export's own HTML, made from React.
-      dangerouslySetInnerHTML={{ __html: consentBannerHtml(analytics).replace(' hidden=""', "") }}
+      dangerouslySetInnerHTML={{
+        __html: consentBannerHtml(analytics, siteTextFor("en")).replace(' hidden=""', ""),
+      }}
     />
   );
 }

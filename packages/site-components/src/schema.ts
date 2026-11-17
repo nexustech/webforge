@@ -1,3 +1,4 @@
+import type { SiteText } from "@webforge/i18n";
 // The site components' schema (R7): what a component's fields are, what they store and what its
 // render receives, and what rendering is given. Types only, so it loads without React or Vite, in
 // plain Node too (`@webforge/site-components/schema`): a tool can read a component's fields
@@ -303,6 +304,11 @@ export type SiteBindings = {
   readonly socialHint?: () => ReactNode;
   /** The site's language (`en-GB`), for times and dates in its own format (2.8). */
   readonly language?: string;
+  /**
+   * The site's own labels in its language (6.12, CC-1): "Menu", "Accept all", "Monday". Every
+   * label an element writes goes through it, so the canvas and the export say the same.
+   */
+  readonly siteText: SiteText;
   /** Where Site Settings send form submissions (F-CM-1, 2.8), if a service is chosen. */
   readonly formService?: FormService;
   /** What a form that can't send shows, by why: a hint on the canvas; nothing in the export. */

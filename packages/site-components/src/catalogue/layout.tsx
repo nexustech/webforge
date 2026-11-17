@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { type SiteText, t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
 import { boundText, type ComponentDef } from "../library.js";
@@ -104,6 +104,7 @@ function HeaderNavigation({
   menuItems,
   menuOpen,
   className,
+  siteText,
 }: {
   /** The items in the row on wide screens. */
   readonly items: readonly NavItem[];
@@ -112,9 +113,10 @@ function HeaderNavigation({
   /** Shows the small screens' menu open: the canvas's *Show mobile menu* preview (UX-26). */
   readonly menuOpen: boolean;
   readonly className?: string;
+  readonly siteText: SiteText;
 }) {
   return (
-    <nav aria-label={t("siteText.navigation")} className={className}>
+    <nav aria-label={siteText("siteText.navigation")} className={className}>
       <ul className="menu menu-horizontal hidden p-0 md:flex">
         <NavItems items={items} />
       </ul>
@@ -125,7 +127,7 @@ function HeaderNavigation({
       >
         <summary className={`${BUTTON_CLASSES.menu} list-none [&::-webkit-details-marker]:hidden`}>
           <MenuIcon />
-          <span className="sr-only">{t("siteText.menu")}</span>
+          <span className="sr-only">{siteText("siteText.menu")}</span>
         </summary>
         <ul className="menu absolute inset-x-0 top-full z-10 w-full bg-base-100 p-2 shadow">
           <NavItems items={menuItems} />
@@ -239,6 +241,7 @@ const header = defineComponent({
           items={row}
           menuItems={items}
           menuOpen={context.previews?.mobileMenu === true}
+          siteText={context.siteText}
           {...(layout === "left" ? {} : { className: "md:flex md:flex-1 md:justify-center" })}
         />
         {button === null ? null : (
@@ -261,10 +264,10 @@ const linksOf = (items: readonly NavItem[]): NavLink[] =>
  * their choice as easily as they made it. Hidden as written: without the script there is no banner
  * to reopen, and nothing is counted.
  */
-function CookieSettings() {
+function CookieSettings({ siteText }: { readonly siteText: SiteText }) {
   return (
     <button type="button" className="link link-hover" data-wf-consent-open="" hidden>
-      {t("siteText.consent.settings")}
+      {siteText("siteText.consent.settings")}
     </button>
   );
 }
@@ -295,7 +298,8 @@ const footer = defineComponent({
   render: ({ values, context }) => {
     const content = boundText(values, "text", context);
     const text = content === null ? null : <p>{content}</p>;
-    const cookies = context.cookieSettings === true ? <CookieSettings /> : null;
+    const cookies =
+      context.cookieSettings === true ? <CookieSettings siteText={context.siteText} /> : null;
     if (values.variant === "centred") {
       return (
         <footer className="site-footer footer footer-center bg-base-200 p-8 text-base-content">
@@ -312,7 +316,10 @@ const footer = defineComponent({
           {cookies}
         </aside>
         {links.length === 0 ? null : (
-          <nav aria-label={t("siteText.footerNavigation")} className="flex flex-col gap-2">
+          <nav
+            aria-label={context.siteText("siteText.footerNavigation")}
+            className="flex flex-col gap-2"
+          >
             {links.map((link, index) => (
               <NavAnchor
                 key={link.id ?? `${index}:${link.href}`}

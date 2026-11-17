@@ -26,7 +26,7 @@ const postTags = defineComponent({
     }
     return (
       <ul
-        aria-label={t("siteText.postTags")}
+        aria-label={context.siteText("siteText.postTags")}
         className={`site-post-tags flex flex-wrap gap-2${marginClasses(values.margin)}`}
       >
         {value.tags.map((tag) => (

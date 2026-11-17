@@ -1,3 +1,4 @@
+import { siteTextFor } from "@webforge/i18n";
 import {
   expandSharedCopies,
   MIGRATIONS,
@@ -33,6 +34,7 @@ const heroImage: ResolvedImage = {
 };
 
 const context: RenderContext = {
+  siteText: siteTextFor("en"),
   navigation: [
     { label: "Home", href: "index.html", current: true },
     { label: "About", href: "about.html", current: false },
