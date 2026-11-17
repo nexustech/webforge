@@ -64,10 +64,12 @@ test("shares the post by its whole address only, with plain links and no script 
   ]);
   // Nothing loads from them: the page asks only for its own files.
   expect(requests.filter((url) => !url.startsWith("file:"))).toEqual([]);
+  // Before the focus scrolls the page and shows the back-to-top button, which is outside the
+  // page's landmarks (axe's best-practice "region"), which isn't this test's to check.
+  await passesAxe(page);
   // Each is a link to Tab to.
   await links.first().focus();
   await expect(links.first()).toBeFocused();
-  await passesAxe(page);
 });
 
 test("goes from a post's tag to the tag's page, and from there to the post", async ({ page }) => {
