@@ -298,6 +298,17 @@ describe("placeholders", () => {
     ).toEqual(["item/text"]);
   });
 
+  it("reads a Table row's cells only for its Table's columns, as the export draws them (6.16c)", () => {
+    const table = (columns: string) =>
+      element("Table", "prices", {
+        columns,
+        rows: [element("TableRow", "row", { cell1: "Bread", cell2: "£3", cell3: "Lorem ipsum" })],
+      });
+
+    expect(keys([table("2")])).toEqual([]);
+    expect(keys([table("3")])).toEqual(["row/cell3"]);
+  });
+
   it("finds them in a list field's items: a form field's choices", () => {
     expect(
       keys([

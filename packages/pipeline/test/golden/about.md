@@ -16,6 +16,13 @@ Sourdough, rye and cakes to order.
 
 ![Hills where our wheat grows](https://rosas.example/assets/img/hero-1600.jpg)
 
+## Bread prices
+
+| Loaf | Weight | Price |
+| --- | --- | --- |
+| Sourdough | 800 g | £4.20 |
+| Rye | 600 g | £3.60 |
+
 ## Our work
 
 [![Hills at sunrise](https://rosas.example/assets/img/hero-1600.jpg)](https://rosas.example/assets/img/hero-1600.jpg)

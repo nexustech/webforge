@@ -1187,6 +1187,73 @@ describe("EditPanelHost with a layout that leaves fields out (#311)", () => {
   });
 });
 
+describe("a Table row's cells follow its Table's Columns (6.16c)", () => {
+  /** The starter site with a Table of two columns and two rows in its first section. */
+  function setupTable(nodeId: string) {
+    const site = starterSite();
+    const section = site.pages[site.homePageId]?.doc.content[0];
+    const content = section?.props.content as PageDoc["content"] | undefined;
+    content?.push({
+      type: "Table",
+      props: {
+        id: "prices",
+        columns: "2",
+        heading1: "Cake",
+        heading2: "Price",
+        rows: ["lemon", "chocolate"].map((id) => ({
+          type: "TableRow",
+          props: { id, cell1: id, cell2: "£20", cell3: "Serves 8" },
+        })),
+      },
+    });
+    const session = sessionWith(site);
+    session.select(nodeId);
+    render(<EditPanelHost session={session} flush={vi.fn()} />);
+    const setColumns = (columns: string) =>
+      act(() =>
+        session.edit("props", "Changed Table columns", (draft) => {
+          const held = draft.pages[draft.homePageId]?.doc.content[0]?.props.content;
+          const table = (held as PageDoc["content"]).find((node) => node.props.id === "prices");
+          if (table !== undefined) table.props.columns = columns;
+        }),
+      );
+    return { session, setColumns };
+  }
+  const cell = (n: number) => screen.queryByRole("textbox", { name: `Column ${n}` });
+
+  it("shows a selected row only its Table's columns, and the next one at once when one is added", () => {
+    const { setColumns } = setupTable("lemon");
+
+    expect(cell(1)).not.toBeNull();
+    expect(cell(2)).not.toBeNull();
+    expect(cell(3)).toBeNull();
+
+    setColumns("3");
+    expect((cell(3) as HTMLInputElement | null)?.value).toBe("Serves 8");
+
+    setColumns("2");
+    expect(cell(3)).toBeNull();
+  });
+
+  it("shows the Table's headings for its columns only", () => {
+    const { setColumns } = setupTable("prices");
+    const heading = (n: number) => screen.queryByRole("textbox", { name: `Heading ${n}` });
+
+    expect(heading(2)).not.toBeNull();
+    expect(heading(3)).toBeNull();
+    setColumns("3");
+    expect(heading(3)).not.toBeNull();
+  });
+
+  it("hides nothing of an element no other element holds: a section", () => {
+    const { session } = setupTable("prices");
+    const sectionId = currentPage(session)?.doc.content[0]?.props.id ?? null;
+    act(() => session.select(sectionId));
+
+    expect(screen.getByRole("heading", { name: "Section" })).toBeDefined();
+  });
+});
+
 describe("the Header's Highlight the section in view (5.10b, GA10-1)", () => {
   it("is offered once the menu links to a section, on by default, and turned off as one step", async () => {
     const { session, labels, user } = setup("header");

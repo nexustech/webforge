@@ -104,6 +104,7 @@ export type {
   DefaultsOf,
   FieldDef,
   FieldOption,
+  FieldParent,
   FieldSite,
   FieldValue,
   ImageSource,

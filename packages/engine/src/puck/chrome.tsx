@@ -22,11 +22,13 @@ import {
   ACTIONS,
   ACTIONS_OVERLAY,
   componentSelector,
+  EMPTY_TABLE_BODY,
   elementOf,
   HOVERED_COMPONENT,
   NOTE_ATTRIBUTE,
   OVERLAY,
   SELECTED_COMPONENT,
+  TABLE_ROW_WRAPPER,
 } from "./puck-dom.js";
 import { canPerform, performOnSelected } from "./selected-actions.js";
 import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spacing-handles.js";
@@ -86,6 +88,38 @@ const CHROME_CSS = `
 [${PREVIEW_ATTRIBUTE}="column-outline"] {
   outline: calc(1px / var(--wf-zoom, 1)) dashed color-mix(in srgb, var(--wf-grid-color) 55%, transparent);
   outline-offset: calc(-1px / var(--wf-zoom, 1));
+}
+/*
+ * A table's rows (6.16c): a table's body is a slot's drop zone (as "tbody"), and Puck wraps each
+ * row in it in a div of its own, which a table can't lay out. The wrapper is drawn as the row, the
+ * row's own element letting its cells through to it, so Puck's outline, its drag and its drop
+ * line have the row's box. A browser finds a pointer on a table's cells, never on its rows, and
+ * Puck takes it from everything in a wrapper: the cells take it again, for the row's wrapper, so
+ * a click or a drag on a row is the row's, not its table's. At a phone's width (the themes'
+ * 48rem, which the Table's own classes reach as Tailwind's max-md: in site-components'
+ * catalogue/table.tsx) the wrapper stacks its cells, as the export's rows do.
+ *
+ * A body with no rows keeps the room Puck gives an empty slot, to drop a row in: a table's body
+ * takes no minimum height, so a cell of that height holds it open.
+ */
+${TABLE_ROW_WRAPPER} {
+  display: table-row;
+}
+${TABLE_ROW_WRAPPER} > tr {
+  display: contents;
+}
+${TABLE_ROW_WRAPPER} > tr > * {
+  pointer-events: auto;
+}
+${EMPTY_TABLE_BODY}::after {
+  content: "";
+  display: table-cell;
+  height: var(--puck-slot-min-empty-height, 128px);
+}
+@media (width < 48rem) {
+  ${TABLE_ROW_WRAPPER} {
+    display: block;
+  }
 }
 /* A hidden element (Layers' Hide): dimmed, still there to select and show again. */
 [${HIDDEN_ATTRIBUTE}] {
