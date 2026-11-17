@@ -90,7 +90,12 @@ const settings: fc.Arbitrary<SiteSettings> = fc.record({
     { requiredKeys: ["openingHours"] },
   ),
   search: fc.record(
-    { allowIndexing: fc.boolean(), includeSitemap: fc.boolean(), readableByAi: fc.boolean() },
+    {
+      allowIndexing: fc.boolean(),
+      includeSitemap: fc.boolean(),
+      readableByAi: fc.boolean(),
+      askNoAiTraining: fc.boolean(),
+    },
     { requiredKeys: ["allowIndexing", "includeSitemap"] },
   ),
   analytics: fc.record(
