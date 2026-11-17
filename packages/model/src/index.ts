@@ -291,7 +291,6 @@ export {
   KEPT_ADDRESSES_MAX,
   keptAddressFileSchema,
   keptAddressSchema,
-  LANGUAGE_TAG_MAX,
   languageTagSchema,
   MEASUREMENT_ID_MAX,
   OPENING_HOURS_NOTE_MAX,

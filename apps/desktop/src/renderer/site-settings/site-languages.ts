@@ -94,11 +94,15 @@ function languageName(code: string): string {
 export function languageOptions(
   current: string,
 ): readonly { readonly label: string; readonly value: string }[] {
-  const listed: readonly string[] = SITE_LANGUAGES;
-  const options = SITE_LANGUAGES.map((code) => ({ label: languageName(code), value: code })).sort(
+  // Named and sorted once: the dialog asks again on every change to its values.
+  listedOptions ??= SITE_LANGUAGES.map((code) => ({ label: languageName(code), value: code })).sort(
     (a, b) => a.label.localeCompare(b.label, "en"),
   );
+  const listed: readonly string[] = SITE_LANGUAGES;
   return current === "" || listed.includes(current)
-    ? options
-    : [{ label: current, value: current }, ...options];
+    ? listedOptions
+    : [{ label: current, value: current }, ...listedOptions];
 }
+
+/** {@link SITE_LANGUAGES} by name, alphabetically, once first asked for. */
+let listedOptions: readonly { readonly label: string; readonly value: string }[] | undefined;
