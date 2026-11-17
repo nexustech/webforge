@@ -39,32 +39,35 @@ describe("the Food and drink menu (6.17a, #1137)", () => {
   it("starts with a café's breakfast and drinks, each group under its heading", () => {
     const doc = page(renderMenu());
 
-    expect(doc.querySelector(".site-menu h2")?.textContent).toBe(t("starter.menuTitle"));
-    expect([...doc.querySelectorAll(".site-menu h3")].map((each) => each.textContent)).toEqual([
-      t("starter.menuGroupFood"),
-      t("starter.menuGroupDrinks"),
-    ]);
-    const names = [...doc.querySelectorAll(".site-menu-name")].map((each) => each.textContent);
+    expect(doc.querySelector(".site-food-menu h2")?.textContent).toBe(t("starter.menuTitle"));
+    expect([...doc.querySelectorAll(".site-food-menu h3")].map((each) => each.textContent)).toEqual(
+      [t("starter.menuGroupFood"), t("starter.menuGroupDrinks")],
+    );
+    const names = [...doc.querySelectorAll(".site-food-menu-name")].map((each) => each.textContent);
     expect(names).toEqual([
       t("starter.menuEggs"),
       t("starter.menuPorridge"),
       t("starter.menuCoffee"),
       t("starter.menuTea"),
     ]);
-    expect(doc.querySelector(".site-menu-price")?.textContent).toBe(t("starter.menuEggsPrice"));
-    expect(doc.querySelector(".site-menu-item")?.textContent).toContain(t("starter.menuEggsText"));
+    expect(doc.querySelector(".site-food-menu-price")?.textContent).toBe(
+      t("starter.menuEggsPrice"),
+    );
+    expect(doc.querySelector(".site-food-menu-item")?.textContent).toContain(
+      t("starter.menuEggsText"),
+    );
   });
 
   it("joins each name to its price with dots, hidden from screen readers", () => {
     const doc = page(renderMenu({ items: [dish("Scone")] }));
-    const row = doc.querySelector(".site-menu-item > div");
-    const leader = row?.querySelector(".site-menu-leader");
+    const row = doc.querySelector(".site-food-menu-item > div");
+    const leader = row?.querySelector(".site-food-menu-leader");
 
     // In order: the name, the dots that fill the space between, then the price.
     expect([...(row?.children ?? [])].map((each) => each.className.split(" ")[0])).toEqual([
-      "site-menu-name",
-      "site-menu-leader",
-      "site-menu-price",
+      "site-food-menu-name",
+      "site-food-menu-leader",
+      "site-food-menu-price",
     ]);
     // On a long name's last line, at the text's size.
     expect(row?.className).toContain("items-baseline-last");
@@ -86,7 +89,7 @@ describe("the Food and drink menu (6.17a, #1137)", () => {
         ],
       }),
     );
-    const items = [...doc.querySelectorAll(".site-menu-item")];
+    const items = [...doc.querySelectorAll(".site-food-menu-item")];
 
     expect(items.map((each) => each.querySelector("h3")?.textContent ?? null)).toEqual([
       "Lunch",
@@ -94,27 +97,34 @@ describe("the Food and drink menu (6.17a, #1137)", () => {
       "Cold drinks",
     ]);
     // The heading comes before its first dish.
-    expect(items[0]?.firstElementChild?.className).toContain("site-menu-heading");
+    expect(items[0]?.firstElementChild?.className).toContain("site-food-menu-heading");
   });
 
   it("leaves the dots out on the site when a dish has no price", () => {
     const doc = page(renderMenu({ items: [dish("Specials", { price: " " })] }));
 
-    expect(doc.querySelector(".site-menu-leader")).toBeNull();
-    expect(doc.querySelector(".site-menu-price")).toBeNull();
-    expect(doc.querySelector(".site-menu-name")?.textContent).toBe("Specials");
+    expect(doc.querySelector(".site-food-menu-leader")).toBeNull();
+    expect(doc.querySelector(".site-food-menu-price")).toBeNull();
+    expect(doc.querySelector(".site-food-menu-name")?.textContent).toBe("Specials");
   });
 
   it("has no button or period, unlike Pricing's plans", () => {
     const doc = page(renderMenu());
 
-    expect(doc.querySelector(".site-menu a")).toBeNull();
+    expect(doc.querySelector(".site-food-menu a")).toBeNull();
     expect(Object.keys(siteLibrary.components.MenuItem?.fields ?? {})).toEqual([
       "heading",
       "name",
       "price",
       "description",
     ]);
+  });
+
+  it("has a class of its own, apart from the Header's menu on a phone", () => {
+    const doc = page(renderMenu());
+
+    expect(doc.querySelector("section")?.classList.contains("site-food-menu")).toBe(true);
+    expect(doc.querySelector(".site-menu")).toBeNull();
   });
 
   it("takes only dishes and drinks in its list, so the Edit panel edits them as one", () => {

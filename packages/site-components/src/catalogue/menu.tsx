@@ -5,25 +5,33 @@ import { contentWidthClass, defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { BodyText, LEAD_TEXT_CLASSES, SectionIntro, SectionTitle } from "../typography.js";
 
-/** The starter menu: two groups of a café's dishes and drinks. */
+/** The starter menu: two groups of a café's dishes and drinks, each a key for its words. */
 const STARTER_ITEMS = [
-  { heading: "starter.menuGroupFood", name: "starter.menuEggs", price: "starter.menuEggsPrice" },
-  { heading: undefined, name: "starter.menuPorridge", price: "starter.menuPorridgePrice" },
+  {
+    heading: "starter.menuGroupFood",
+    name: "starter.menuEggs",
+    price: "starter.menuEggsPrice",
+    description: "starter.menuEggsText",
+  },
+  {
+    heading: undefined,
+    name: "starter.menuPorridge",
+    price: "starter.menuPorridgePrice",
+    description: "starter.menuPorridgeText",
+  },
   {
     heading: "starter.menuGroupDrinks",
     name: "starter.menuCoffee",
     price: "starter.menuCoffeePrice",
+    description: "starter.menuCoffeeText",
   },
-  { heading: undefined, name: "starter.menuTea", price: "starter.menuTeaPrice" },
+  {
+    heading: undefined,
+    name: "starter.menuTea",
+    price: "starter.menuTeaPrice",
+    description: "starter.menuTeaText",
+  },
 ] as const;
-
-/** Each starter item's description, by its name's key. */
-const STARTER_DESCRIPTIONS = {
-  "starter.menuEggs": "starter.menuEggsText",
-  "starter.menuPorridge": "starter.menuPorridgeText",
-  "starter.menuCoffee": "starter.menuCoffeeText",
-  "starter.menuTea": "starter.menuTeaText",
-} as const;
 
 /**
  * A menu or price list (6.17a, CC-11): a title, an introduction and items, each a name and a price
@@ -34,7 +42,8 @@ const STARTER_DESCRIPTIONS = {
  */
 const menu = defineSection({
   label: t("section.menu"),
-  name: "menu",
+  // Not "menu": the Header's menu on a phone is already `site-menu`.
+  name: "food-menu",
   category: t("category.pricing"),
   fields: {
     title: { kind: "text", label: t("field.title"), inline: true },
@@ -54,7 +63,7 @@ const menu = defineSection({
         heading: item.heading === undefined ? "" : t(item.heading),
         name: t(item.name),
         price: t(item.price),
-        description: `<p>${t(STARTER_DESCRIPTIONS[item.name])}</p>`,
+        description: `<p>${t(item.description)}</p>`,
       },
     })),
   },
@@ -89,11 +98,11 @@ function MenuItemView({
   // An empty price draws no dots on the site. On the canvas a price is always there to type in.
   const hasPrice = !(typeof price === "string" && price.trim() === "");
   return (
-    <div className="site-menu-item">
+    <div className="site-food-menu-item">
       {heading !== "" && (
         // A group's heading, under the section's title: the start of the menu's next part. A rule
         // under it in the text's own colour, faint, as it only shows where the group starts.
-        <div className="site-menu-heading mb-4 border-b border-current/20 pt-4 pb-2">
+        <div className="site-food-menu-heading mb-4 border-b border-current/20 pt-4 pb-2">
           <SectionTitle size="small">{heading}</SectionTitle>
         </div>
       )}
@@ -101,14 +110,14 @@ function MenuItemView({
           space between them. A long name wraps, and the dots and the price line up with its last
           line. The dots are decoration: a screen reader reads the name, then the price. */}
       <div className={`flex items-baseline-last gap-2 font-semibold ${LEAD_TEXT_CLASSES}`}>
-        <span className="site-menu-name">{name}</span>{" "}
+        <span className="site-food-menu-name">{name}</span>{" "}
         {hasPrice && (
           <>
             <span
               aria-hidden="true"
-              className="site-menu-leader min-w-6 flex-1 border-b-2 border-dotted border-current/40"
+              className="site-food-menu-leader min-w-6 flex-1 border-b-2 border-dotted border-current/40"
             />{" "}
-            <span className="site-menu-price shrink-0 text-end">{price}</span>
+            <span className="site-food-menu-price shrink-0 text-end">{price}</span>
           </>
         )}
       </div>
