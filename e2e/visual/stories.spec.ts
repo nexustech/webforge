@@ -68,6 +68,13 @@ const BUILDS: readonly Build[] = [
   },
 ];
 
+/**
+ * Tablet's narrowest width (`TABLET_FROM` in @webforge/model), where a layout first leaves its
+ * one-column Mobile form. A site component's story tagged `tablet` is checked there too: one whose
+ * layout changes at that width (a Steps section's row, #1134).
+ */
+const TABLET: Device = { name: "tablet", width: 768, height: 1024 };
+
 /** The stories of `build`, from its index. */
 function storiesOf(build: Build) {
   const index = resolve(
@@ -97,7 +104,11 @@ for (const build of BUILDS) {
     // A story that shows its own theme (the themes' pages, 2.13) looks the same in every one.
     const themes = story.tags.includes("own-theme") ? build.themes.slice(0, 1) : build.themes;
     for (const theme of themes) {
-      for (const device of build.devices.length === 0 ? [undefined] : build.devices) {
+      const devices =
+        build.devices.length > 0 && story.tags.includes("tablet")
+          ? [...build.devices, TABLET]
+          : build.devices;
+      for (const device of devices.length === 0 ? [undefined] : devices) {
         const shown = device === undefined ? theme : `${theme}, ${device.name}`;
         test(`${story.title} › ${story.name} (${shown})`, async ({ page }) => {
           const errors: string[] = [];
