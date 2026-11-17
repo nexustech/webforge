@@ -106,7 +106,7 @@ function LogoView({
   const alt =
     own !== "" || linked === undefined || attributes === undefined
       ? own
-      : destinationOf(linked, attributes.href, context) || t("siteText.logo");
+      : destinationOf(linked, attributes.href, context) || context.siteText("siteText.logo");
   const picture =
     image === null ? (
       <span className="block h-12 w-32 rounded-box bg-base-200">

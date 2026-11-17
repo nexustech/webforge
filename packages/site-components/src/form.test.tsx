@@ -1,3 +1,4 @@
+import { siteTextFor } from "@webforge/i18n/site-text";
 import { httpsAddress } from "@webforge/model";
 import { Window } from "happy-dom";
 import type { ReactElement } from "react";
@@ -5,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, describe, expect, it } from "vitest";
 import { FormField, formAction, netlifyFormName, SiteForm } from "./form.js";
 
+const siteText = siteTextFor("en");
 const happy = new Window();
 afterAll(() => happy.happyDOM.close());
 
@@ -26,7 +28,14 @@ const attributes = (
 describe("form fields (2.8, shared with 2.11)", () => {
   it("labels each field, and asks the browser for the right kind of value", () => {
     const email = drawn(
-      <FormField kind="email" name="email" label="Email" id="f-email" required />,
+      <FormField
+        siteText={siteText}
+        kind="email"
+        name="email"
+        label="Email"
+        id="f-email"
+        required
+      />,
     );
 
     expect(email.querySelector("label")?.getAttribute("for")).toBe("f-email");
@@ -44,11 +53,13 @@ describe("form fields (2.8, shared with 2.11)", () => {
       autocomplete: "email",
     });
     expect(
-      drawn(<FormField kind="phone" name="phone" label="Phone" id="f-p" />)
+      drawn(<FormField siteText={siteText} kind="phone" name="phone" label="Phone" id="f-p" />)
         .querySelector("input")
         ?.getAttribute("type"),
     ).toBe("tel");
-    const message = drawn(<FormField kind="message" name="message" label="Message" id="f-m" />);
+    const message = drawn(
+      <FormField siteText={siteText} kind="message" name="message" label="Message" id="f-m" />,
+    );
     expect(attributes(message.querySelector("textarea"))).toMatchObject({
       id: "f-m",
       name: "message",
@@ -56,12 +67,28 @@ describe("form fields (2.8, shared with 2.11)", () => {
   });
 
   it("puts a tick box inside its label, and offers a select's choices after a prompt", () => {
-    const box = drawn(<FormField kind="checkbox" name="agree" label="I agree" id="f-a" required />);
+    const box = drawn(
+      <FormField
+        siteText={siteText}
+        kind="checkbox"
+        name="agree"
+        label="I agree"
+        id="f-a"
+        required
+      />,
+    );
     expect(box.querySelector("label > input")?.getAttribute("type")).toBe("checkbox");
     expect(box.querySelector("label")?.textContent).toBe("I agree *");
 
     const select = drawn(
-      <FormField kind="select" name="topic" label="Topic" id="f-t" options={["Cakes", "Bread"]} />,
+      <FormField
+        siteText={siteText}
+        kind="select"
+        name="topic"
+        label="Topic"
+        id="f-t"
+        options={["Cakes", "Bread"]}
+      />,
     );
     const options = [...select.querySelectorAll("option")];
     expect(options.map((option) => option.textContent)).toEqual(["Choose…", "Cakes", "Bread"]);
@@ -74,6 +101,7 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
   it("posts plainly to its service, with the honeypot hidden from people", () => {
     const host = drawn(
       <SiteForm
+        siteText={siteText}
         target={{
           action: "https://formspree.io/f/abcd",
           hidden: {},
@@ -82,7 +110,7 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
         label="Contact form"
         submitLabel="Send"
       >
-        <FormField kind="text" name="name" label="Name" id="n" />
+        <FormField siteText={siteText} kind="text" name="name" label="Name" id="n" />
       </SiteForm>,
     );
     const form = host.querySelector("form");
@@ -106,6 +134,7 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
   it("draws Netlify Forms for Netlify to find, on a site Netlify serves (4.2)", () => {
     const form = drawn(
       <SiteForm
+        siteText={siteText}
         target={formAction({ kind: "netlify" }, "/thank-you.html", "Booking request")}
         label="Booking request"
         submitLabel="Send"
@@ -131,6 +160,7 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
     // With no thank-you page, it posts to the page itself, which Netlify takes.
     const own = drawn(
       <SiteForm
+        siteText={siteText}
         target={formAction({ kind: "netlify" }, undefined, "Contact form")}
         label="Contact form"
         submitLabel="Send"
@@ -145,6 +175,7 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
   it("adds the hidden fields a service needs", () => {
     const form = drawn(
       <SiteForm
+        siteText={siteText}
         target={{
           action: "https://api.web3forms.com/submit",
           hidden: { access_key: "k" },
@@ -171,6 +202,7 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
   it("with nowhere to send, posts nowhere, is marked for Site Check, and shows the hint", () => {
     const form = drawn(
       <SiteForm
+        siteText={siteText}
         target="noService"
         label="Form"
         submitLabel="Send"
@@ -188,7 +220,7 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
     expect(form?.querySelector("em")?.textContent).toBe("Choose one (noService)");
     // The export has no hint.
     const exported = drawn(
-      <SiteForm target="noService" label="Form" submitLabel="Send">
+      <SiteForm siteText={siteText} target="noService" label="Form" submitLabel="Send">
         {null}
       </SiteForm>,
     ).querySelector("form");

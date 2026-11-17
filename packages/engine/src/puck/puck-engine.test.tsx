@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import { siteTextFor } from "@webforge/i18n/site-text";
 import {
   copiedNodeId,
   DEFAULT_THEME,
@@ -15,6 +16,9 @@ import type { CanvasEngine, CanvasSize, EngineEdit, Unsubscribe } from "../canva
 import { pageActions } from "./page-actions.js";
 import { createPuckEngine } from "./puck-engine.js";
 import { RENDER_CONTEXT_SOURCES } from "./render-context-sources.js";
+
+/** The site's labels in English, as Site Settings give them for an English site. */
+const english = siteTextFor("en");
 
 vi.mock("./page-actions.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./page-actions.js")>();
@@ -606,7 +610,11 @@ describe("createPuckEngine", () => {
       content: [{ type: "Bound", props: { id: "b", text: "Own", ...(bindings && { bindings }) } }],
     });
     await act(async () => {
-      engine.setSettings({ setting: () => undefined, emptySetting: (key) => `Add ${key}` });
+      engine.setSettings({
+        siteText: english,
+        setting: () => undefined,
+        emptySetting: (key) => `Add ${key}`,
+      });
       engine.applyChange({ page: bound() });
     });
     await settle();
@@ -618,7 +626,10 @@ describe("createPuckEngine", () => {
     expect(headings()).toEqual(["Add contact.phone"]);
 
     await act(async () =>
-      engine.setSettings({ setting: (key) => (key === "contact.phone" ? "0123" : undefined) }),
+      engine.setSettings({
+        siteText: english,
+        setting: (key) => (key === "contact.phone" ? "0123" : undefined),
+      }),
     );
     await settle();
     expect(headings()).toEqual(["0123"]);
@@ -652,6 +663,7 @@ describe("createPuckEngine", () => {
 
     await act(async () =>
       engine.setSettings({
+        siteText: english,
         setting: () => undefined,
         openingHours: [{ days: ["sat", "sun"], opens: "08:00", closes: "13:00" }],
       }),
@@ -660,7 +672,7 @@ describe("createPuckEngine", () => {
     expect(hours()).toEqual(["sat sun 08:00"]);
 
     // Settings without hours leave none from before.
-    await act(async () => engine.setSettings({ setting: () => undefined }));
+    await act(async () => engine.setSettings({ siteText: english, setting: () => undefined }));
     await settle();
     expect(hours()).toEqual([]);
   });
@@ -701,7 +713,9 @@ describe("createPuckEngine", () => {
     // A new config would draw every element again: one that reads nothing never draws again.
     await act(async () => engine.setLooks({ Heading: { lookItalic: true } }));
     await act(async () => engine.setPreviews({ mobileMenu: true }));
-    await act(async () => engine.setSettings({ setting: () => "Rosa's Bakery" }));
+    await act(async () =>
+      engine.setSettings({ siteText: english, setting: () => "Rosa's Bakery" }),
+    );
     await settle();
     expect([drawn.counted, drawn.photo]).toEqual([counted, photo]);
 
@@ -738,7 +752,9 @@ describe("createPuckEngine", () => {
     await settle();
 
     // As when the editor opens, and on every change of Site Settings.
-    await act(async () => engine.setSettings({ setting: () => "Rosa's Bakery" }));
+    await act(async () =>
+      engine.setSettings({ siteText: english, setting: () => "Rosa's Bakery" }),
+    );
     await settle();
 
     expect(pic()).toBe("Choose one");
@@ -768,6 +784,7 @@ describe("createPuckEngine", () => {
 
     await act(async () =>
       engine.setSettings({
+        siteText: english,
         setting: () => undefined,
         emptySetting: () => "Add it",
         openingHours: [],
@@ -776,13 +793,13 @@ describe("createPuckEngine", () => {
     );
     await settle();
     expect(keys().sort()).toEqual(
-      [...notSettings, "setting", "emptySetting", "openingHours", "language"].sort(),
+      [...notSettings, "siteText", "setting", "emptySetting", "openingHours", "language"].sort(),
     );
 
     // Settings without some bindings leave none of them from before, and nothing else goes.
-    await act(async () => engine.setSettings({ setting: () => undefined }));
+    await act(async () => engine.setSettings({ siteText: english, setting: () => undefined }));
     await settle();
-    expect(keys().sort()).toEqual([...notSettings, "setting"].sort());
+    expect(keys().sort()).toEqual([...notSettings, "siteText", "setting"].sort());
   });
 
   it("shows the site's navigation, drawing the page again when it changes (1.21)", async () => {
@@ -1072,7 +1089,10 @@ describe("createPuckEngine with a shared Header and Footer (F-ED-7)", () => {
       props: { id: "hb", text: "Own", bindings: { text: "contact.phone" } },
     };
     await act(async () => {
-      engine.setSettings({ setting: (key) => (key === "contact.phone" ? "0123" : undefined) });
+      engine.setSettings({
+        siteText: english,
+        setting: (key) => (key === "contact.phone" ? "0123" : undefined),
+      });
       engine.loadPage(page, { ...layout, header: [bound] });
     });
     await settle();

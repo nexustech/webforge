@@ -1,3 +1,4 @@
+import { siteTextFor } from "@webforge/i18n/site-text";
 // Security review S3 (docs/reviews/2026-10-30-security-review.md), restored by #650.
 import type { NodeDoc } from "@webforge/model";
 import { Window } from "happy-dom";
@@ -24,7 +25,7 @@ it("an element's Advanced data attributes cannot stand in for the consent banner
   };
   const html =
     renderNodesToHtml([heading], siteLibrary, EDITOR_RENDER_CONTEXT) +
-    consentBannerHtml({ measurementId: "G-OWNER12345", consentBanner: true });
+    consentBannerHtml({ measurementId: "G-OWNER12345", consentBanner: true }, siteTextFor("en"));
   const happy = new Window({ url: "https://rosas-bakery.example/" });
   windows.push(happy);
   happy.document.body.innerHTML = html;

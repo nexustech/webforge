@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import { type SiteText, siteTextFor } from "@webforge/i18n/site-text";
 import { httpsAddress, type NodeDoc, newsletterUnset } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
@@ -37,6 +38,13 @@ const layoutVariants = FORM_LAYOUTS.map((value) => ({
   ...(value === "stacked" ? { hides: ["contentWidth"] as const } : {}),
 }));
 
+/**
+ * The labels that stay in English whatever the site's language (6.12): the name Netlify Forms keep a
+ * form's messages under, so a change of language keeps its inbox, and a new Form's starter fields,
+ * written into the page once as any starter text is.
+ */
+const english = siteTextFor("en");
+
 /** `value` as text, if it is some: what a plain text field holds in the export. */
 const plainText = (value: unknown) =>
   typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
@@ -50,7 +58,7 @@ export function serviceFormLabel(node: {
   readonly type: string;
   readonly props: Readonly<Record<string, unknown>>;
 }): string | undefined {
-  if (node.type === "ContactForm") return t("siteText.form.contact");
+  if (node.type === "ContactForm") return english("siteText.form.contact");
   if (node.type === "Form") return plainText(node.props.label) ?? t("starter.formLabel");
   return undefined;
 }
@@ -141,14 +149,16 @@ const contactForm = defineSection({
       form={
         <SiteForm
           target={formAction(context.formService, context.thanksPage, netlifyFormName(context, id))}
-          label={t("siteText.form.contact")}
+          label={context.siteText("siteText.form.contact")}
           submitLabel={plainText(values.buttonLabel) ?? t("starter.contactFormButton")}
           hint={context.formHint}
+          siteText={context.siteText}
         >
           <FormField
             kind="text"
             name="name"
-            label={t("siteText.form.name")}
+            siteText={context.siteText}
+            label={context.siteText("siteText.form.name")}
             id={`${id}-name`}
             autoComplete="name"
             required
@@ -156,7 +166,8 @@ const contactForm = defineSection({
           <FormField
             kind="email"
             name="email"
-            label={t("siteText.form.email")}
+            siteText={context.siteText}
+            label={context.siteText("siteText.form.email")}
             id={`${id}-email`}
             required
           />
@@ -164,14 +175,16 @@ const contactForm = defineSection({
             <FormField
               kind="phone"
               name="phone"
-              label={t("siteText.form.phone")}
+              siteText={context.siteText}
+              label={context.siteText("siteText.form.phone")}
               id={`${id}-phone`}
             />
           )}
           <FormField
             kind="message"
             name="message"
-            label={t("siteText.form.message")}
+            siteText={context.siteText}
+            label={context.siteText("siteText.form.message")}
             id={`${id}-message`}
             required
           />
@@ -229,14 +242,16 @@ const newsletter = defineSection({
         <SiteForm
           target={newsletterTarget(values.action)}
           hint={context.formHint}
-          label={t("siteText.form.newsletter")}
+          siteText={context.siteText}
+          label={context.siteText("siteText.form.newsletter")}
           submitLabel={plainText(values.buttonLabel) ?? t("starter.newsletterButton")}
         >
           {values.askName && (
             <FormField
               kind="text"
               name="name"
-              label={t("siteText.form.name")}
+              siteText={context.siteText}
+              label={context.siteText("siteText.form.name")}
               id={`${id}-name`}
               autoComplete="name"
             />
@@ -244,7 +259,8 @@ const newsletter = defineSection({
           <FormField
             kind="email"
             name={emailFieldName(values.emailName)}
-            label={t("siteText.form.email")}
+            siteText={context.siteText}
+            label={context.siteText("siteText.form.email")}
             id={`${id}-email`}
             required
           />
@@ -309,12 +325,14 @@ function FormFieldElement({
   label,
   required,
   options,
+  siteText,
 }: {
   readonly nodeId: string;
   readonly kind: FormFieldKind;
   readonly label: string;
   readonly required: boolean;
   readonly options: readonly string[];
+  readonly siteText: SiteText;
 }) {
   const { name, id } = useContext(FieldNames).claim(nodeId, kind, label);
   return (
@@ -322,7 +340,8 @@ function FormFieldElement({
       kind={kind}
       name={name}
       id={id}
-      label={label === "" ? t("siteText.form.untitled") : label}
+      label={label === "" ? siteText("siteText.form.untitled") : label}
+      siteText={siteText}
       required={required}
       options={options}
     />
@@ -357,9 +376,10 @@ const formField = defineComponent({
     },
   },
   defaults: { kind: "text", label: t("starter.formFieldLabel"), required: false, options: [] },
-  render: ({ id, values }) => (
+  render: ({ id, values, context }) => (
     <FormFieldElement
       nodeId={id}
+      siteText={context.siteText}
       kind={values.kind}
       label={values.label.trim()}
       required={values.required}
@@ -395,9 +415,9 @@ const form = defineComponent({
   },
   defaults: {
     fields: [
-      starterField("form-name", "text", t("siteText.form.name")),
-      starterField("form-email", "email", t("siteText.form.email")),
-      starterField("form-message", "message", t("siteText.form.message")),
+      starterField("form-name", "text", english("siteText.form.name")),
+      starterField("form-email", "email", english("siteText.form.email")),
+      starterField("form-message", "message", english("siteText.form.message")),
     ],
     label: t("starter.formLabel"),
     buttonLabel: t("starter.formButton"),
@@ -420,6 +440,7 @@ const form = defineComponent({
             label={serviceFormLabel({ type: "Form", props: values }) ?? t("starter.formLabel")}
             submitLabel={plainText(values.buttonLabel) ?? t("starter.formButton")}
             hint={context.formHint}
+            siteText={context.siteText}
           >
             <Fields className="space-y-4" />
           </SiteForm>
