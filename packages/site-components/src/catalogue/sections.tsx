@@ -2,17 +2,11 @@ import { t } from "@webforge/i18n";
 import { createContext, type ReactNode, useContext } from "react";
 import { gradientLayerClasses } from "../appearance.js";
 import { defineComponent } from "../define.js";
+import { Disclosure } from "../disclosure.js";
 import { CONTENT_WIDTH_PX, contentWidthClass, defineSection, narrowerWidth } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
-import {
-  BodyText,
-  ButtonLink,
-  RICH_TEXT_LIST_CLASSES,
-  SectionIntro,
-  SectionLead,
-  SectionTitle,
-} from "../typography.js";
+import { BodyText, ButtonLink, SectionIntro, SectionLead, SectionTitle } from "../typography.js";
 
 const ALIGNMENTS = ["centre", "left"] as const;
 const HERO_LAYOUTS = ["split", "centred", "background", "minimal"] as const;
@@ -356,10 +350,9 @@ function FaqItemView({
     );
   }
   return (
-    <details className="site-faq-item collapse-arrow collapse border border-base-300 bg-base-100">
-      <summary className="collapse-title font-semibold">{question}</summary>
-      <div className={`collapse-content [&_p+p]:mt-2 ${RICH_TEXT_LIST_CLASSES}`}>{answer}</div>
-    </details>
+    <Disclosure className="site-faq-item" title={question}>
+      {answer}
+    </Disclosure>
   );
 }
 
