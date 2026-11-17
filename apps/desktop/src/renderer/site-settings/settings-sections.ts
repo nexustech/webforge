@@ -250,13 +250,25 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
         },
         // Its schema.org type, beside it (3.15, SEO-1).
         ...businessKindField(values.businessType),
-        // For AI tools, not search engines, so not with them (3.15, SEO-12): off unless turned on.
+        // For AI tools, not search engines, so not with them (3.15, SEO-12): off unless turned on,
+        // and off while AI companies are asked not to train on the site (6.15), which says the
+        // opposite.
         {
           kind: "toggle",
           name: "readableByAi",
           path: "search.readableByAi",
           label: t("site.settings.readableByAi"),
-          help: t("site.settings.readableByAiHint"),
+          ...(values.askNoAiTraining
+            ? { help: t("site.settings.readableByAiOffHint"), disabled: true }
+            : { help: t("site.settings.readableByAiHint") }),
+        },
+        // A request in robots.txt (6.15, CC-9): off unless turned on.
+        {
+          kind: "toggle",
+          name: "askNoAiTraining",
+          path: "search.askNoAiTraining",
+          label: t("site.settings.askNoAiTraining"),
+          help: t("site.settings.askNoAiTrainingHint"),
         },
       ],
     },
@@ -489,8 +501,13 @@ export function siteSettingsSpec(
     schema: settingsSchema,
     toModel: (values) => fromSettingsForm(values, previous),
     check: (values) => keptAddressClashes(values, media.pages ?? []),
-    // A new service's value is another kind of value: it starts empty.
-    adjust: (next, before) =>
-      next.formService === before.formService ? next : { ...next, formValue: "" },
+    adjust: (next, before) => {
+      // A new service's value is another kind of value: it starts empty.
+      const service = next.formService === before.formService ? next : { ...next, formValue: "" };
+      // Asking AI companies not to train on the site turns AI tools' copies off (6.15).
+      return service.askNoAiTraining && !before.askNoAiTraining
+        ? { ...service, readableByAi: false }
+        : service;
+    },
   };
 }

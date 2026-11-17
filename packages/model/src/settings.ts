@@ -269,6 +269,13 @@ export const siteSettingsSchema = z.strictObject({
      */
     readableByAi: z.boolean().optional(),
     /**
+     * *Ask AI companies not to train on this site* (6.15, CC-9): the export's `robots.txt` asks the
+     * known AI training crawlers to stay away. A request, not a block. It turns *Help AI tools read
+     * your site* off, which would say the opposite; the export ignores that while this is on. Off
+     * when absent (ADR 0012).
+     */
+    askNoAiTraining: z.boolean().optional(),
+    /**
      * The codes Google Search Console and Bing Webmaster Tools give to prove the site is the
      * owner's (3.15, SEO-8), written as their `<meta>` tags: no account or network here. None when
      * absent (ADR 0012).
