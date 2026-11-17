@@ -406,6 +406,11 @@ test.describe("keyboard and floating add", () => {
     // Its centre, on the Section's bottom edge: off the Section, so Puck's hover alone would end.
     await plus.hover();
     await expect(canvas().locator(".wf-tip")).toHaveText("Add a section here");
+    // Its bottom half, over the Footer, then its top half, over the Section: still there.
+    await plus.hover({ position: { x: 12, y: 20 } });
+    await plus.hover({ position: { x: 12, y: 4 } });
+    await expect(plus).toBeVisible();
+    await expect(canvas().locator(".wf-tip")).toHaveText("Add a section here");
     await plus.click();
     await page
       .getByRole("region", { name: "Left panels" })
