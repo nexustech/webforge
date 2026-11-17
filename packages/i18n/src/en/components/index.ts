@@ -1,3 +1,4 @@
+import { accordion } from "./accordion.js";
 import { announcementBar } from "./announcementBar.js";
 import { basic } from "./basic.js";
 import { carousel } from "./carousel.js";
@@ -51,6 +52,7 @@ export const componentFamilies = {
   latestPosts,
   postTags,
   contactButtons,
+  accordion,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -78,4 +80,5 @@ export const components = {
   ...latestPosts,
   ...postTags,
   ...contactButtons,
+  ...accordion,
 } as const;
