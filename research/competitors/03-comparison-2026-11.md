@@ -1,6 +1,6 @@
 # Where Webforge stands against its competitors, November 2026
 
-**Status:** ✅ Decided 2026-11-14 ([§11](#11-decisions)): two small search-engine items before v1.0, dark mode for visitors and sites in several languages in v1.1 with six new building blocks, and the rest held or not adopted.
+**Status:** ✅ Decided 2026-11-14, amended 2026-11-17 ([§11](#11-decisions)): two small search-engine items before v1.0, dark mode for visitors and sites in several languages in v1.1 with six new building blocks, and the rest held or not adopted.
 **Date:** 2026-11-14
 **Question:** Six weeks of building after the gap analysis, how does Webforge compare with the tools a small-business owner would otherwise choose, and what should come next? Four topics were asked for by name: sites in more than one language, a light/dark switch for visitors, search engines, and missing sections and elements.
 
@@ -227,6 +227,8 @@ All five were answered on 14 Nov 2026 ([§11](#11-decisions)). They are kept as 
 ## 11. Decisions
 
 Product owner, 2026-11-14, one proposal at a time. Sizes are still rough; the plan items and their days follow in `spec/04`.
+
+**Amended 2026-11-17 (PH6-7, product owner):** CC-1, CC-9, CC-10 and CC-11 are pulled forward into Phase 5 and ship in the beta and v1.0 (plan items 6.12, 6.15, 6.16a–d and 6.17a–b). For CC-1, the French, German and Spanish catalogues merge as drafts and a native speaker checks each before v1.0, not before merging. CC-2, CC-3 and CC-5 stay in v1.1.
 
 | #     | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

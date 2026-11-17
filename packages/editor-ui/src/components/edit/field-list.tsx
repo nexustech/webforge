@@ -221,7 +221,7 @@ export function FieldList({
                     aria-expanded={open}
                     aria-controls={open ? bodyId : undefined}
                     className={cn(
-                      "flex h-7 min-w-0 flex-1 items-center gap-1 px-2 text-left text-xs font-semibold",
+                      "flex h-7 min-w-0 flex-1 items-center gap-1 px-2 text-left text-base font-semibold",
                       "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                       changed.length > 0 ? "text-ring" : "text-foreground",
                     )}

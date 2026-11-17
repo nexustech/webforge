@@ -23,7 +23,7 @@ export function ContextMenuContent({
     <ContextMenuPrimitive.Portal>
       <ContextMenuPrimitive.Content
         data-slot="context-menu-content"
-        className={cn(menuStyles.content, className)}
+        className={cn(menuStyles.content, menuStyles.height.contextMenu, className)}
         {...props}
       />
     </ContextMenuPrimitive.Portal>
@@ -143,7 +143,7 @@ export function ContextMenuSubContent({
     <ContextMenuPrimitive.Portal>
       <ContextMenuPrimitive.SubContent
         data-slot="context-menu-sub-content"
-        className={cn(menuStyles.content, className)}
+        className={cn(menuStyles.content, menuStyles.height.contextMenu, className)}
         {...props}
       />
     </ContextMenuPrimitive.Portal>

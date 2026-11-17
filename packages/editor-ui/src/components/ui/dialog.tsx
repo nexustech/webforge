@@ -57,7 +57,7 @@ export function DialogContent({
         {children}
         {showClose && (
           <DialogPrimitive.Close
-            className="absolute top-3 right-3 rounded-sm p-0.5 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-4"
+            className="absolute top-2 right-2 inline-flex size-7 items-center justify-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-4"
             aria-label={t("ui.close")}
           >
             <XIcon />

@@ -216,7 +216,7 @@ export function PagesPanel({ site, shownPageId, published = false, actions }: Pa
           {notFound && <span className="sr-only">({t("pages.notFound")})</span>}
           {isDraft && (
             // A draft (G37, #864): kept in the site, not on the website.
-            <span className="ml-auto shrink-0 rounded-sm border border-border px-1 text-[10px] leading-4 text-muted-foreground">
+            <span className="ml-auto shrink-0 rounded-sm border border-border px-1 text-2xs text-muted-foreground">
               {t("pages.draftBadge")}
             </span>
           )}
