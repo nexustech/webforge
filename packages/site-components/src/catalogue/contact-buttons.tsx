@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { contentWidthClass, defineSection } from "../frame.js";
+import { contentWidthClass, defineSection, PADDED_COLUMN_CLASS, sectionPadding } from "../frame.js";
 import { LucideIcon } from "../icons.js";
 import type { ComponentDef } from "../library.js";
 import type { RenderContext } from "../schema.js";
@@ -93,6 +93,9 @@ const contactButtons = defineSection({
   // Buttons only: no title, no background image.
   titled: false,
   background: false,
+  // Its padding is the canvas's column's, which only the canvas draws: on the site the band holds
+  // the pinned buttons alone and takes no room after the Footer, whatever its padding.
+  paddedColumn: () => true,
   fields: {
     call: { kind: "toggle", label: t("field.contactButtons.call") },
     phone: {
@@ -175,17 +178,20 @@ const contactButtons = defineSection({
         ? context.elementHint?.("contactButtons")
         : undefined;
     if (buttons.length === 0 && (hint === undefined || hint === null)) return null;
-    // At the content width, which only the canvas has: on the site they keep to their corner.
+    // At the content width and in the padding, which only the canvas has: on the site they keep
+    // to their corner.
     return (
-      <div
-        className={`mx-auto ${contentWidthClass(values.contentWidth)} flex flex-col items-start gap-2 px-4 py-4`}
-      >
-        {buttons.length === 0 ? null : (
-          <nav aria-label={label} className="flex gap-2">
-            {buttons}
-          </nav>
-        )}
-        {hint}
+      <div className={`${PADDED_COLUMN_CLASS} ${sectionPadding(values.padding)}`}>
+        <div
+          className={`mx-auto ${contentWidthClass(values.contentWidth)} flex flex-col items-start gap-2 py-4`}
+        >
+          {buttons.length === 0 ? null : (
+            <nav aria-label={label} className="flex gap-2">
+              {buttons}
+            </nav>
+          )}
+          {hint}
+        </div>
       </div>
     );
   },

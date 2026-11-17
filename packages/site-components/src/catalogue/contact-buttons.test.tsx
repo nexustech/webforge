@@ -12,8 +12,8 @@ const SETTINGS: Partial<Record<BindableSetting, string>> = {
   "contact.email": "hello@example.com",
 };
 
-/** The Contact buttons' HTML with `props` over their defaults, as the export draws them. */
-function renderButtons(
+/** The Contact buttons' HTML with `props` over their defaults, on the canvas. */
+function renderOnCanvas(
   props: Readonly<Record<string, unknown>> = {},
   context: Partial<RenderContext> = {},
 ): string {
@@ -21,9 +21,15 @@ function renderButtons(
   return renderNodesToHtml(
     [{ type: "ContactButtons", props: { id: "contact-buttons", ...defaults, ...props } }],
     siteLibrary,
-    { ...EDITOR_RENDER_CONTEXT, setting: (key) => SETTINGS[key], pinned: true, ...context },
+    { ...EDITOR_RENDER_CONTEXT, setting: (key) => SETTINGS[key], ...context },
   );
 }
+
+/** The same, as the export draws them: pinned to the screen. */
+const renderButtons = (
+  props: Readonly<Record<string, unknown>> = {},
+  context: Partial<RenderContext> = {},
+) => renderOnCanvas(props, { pinned: true, ...context });
 
 /** The links the buttons go to, in order. */
 const hrefs = (html: string) => [...html.matchAll(/<a href="([^"]*)"/g)].map((match) => match[1]);
@@ -78,13 +84,18 @@ describe("the Contact buttons (#1136)", () => {
   it("stays at the bottom left on the site, clear of back-to-top, and under the cookie banner", () => {
     const pinned = renderButtons();
     expect(pinned).toMatch(/class="fixed bottom-4 left-4 z-40 [^"]*print:hidden"/);
+    // A band with no room of its own after the Footer, even with a padding set.
+    expect(pinned).toContain('<section class="site-contact-buttons">');
+    expect(renderButtons({ padding: { top: "16", bottom: "16" } })).toContain(
+      '<section class="site-contact-buttons">',
+    );
 
     // On the canvas, where they are on the page, to be selected; with a hint while they show none.
-    const canvas = { pinned: undefined, elementHint: (missing: string) => `[${missing}]` };
-    expect(renderButtons({}, canvas)).not.toContain("fixed");
-    expect(renderButtons({}, { ...canvas, setting: () => undefined })).toContain(
+    const canvas = { elementHint: (missing: string) => `[${missing}]` };
+    expect(renderOnCanvas({}, canvas)).not.toContain("fixed");
+    expect(renderOnCanvas({}, { ...canvas, setting: () => undefined })).toContain(
       "[contactButtons]",
     );
-    expect(renderButtons({ whatsapp: true }, canvas)).toContain("[whatsappNumber]");
+    expect(renderOnCanvas({ whatsapp: true }, canvas)).toContain("[whatsappNumber]");
   });
 });
