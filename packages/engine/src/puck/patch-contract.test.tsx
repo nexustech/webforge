@@ -19,6 +19,8 @@ import { puckPrivateApi } from "./puck-dom.js";
 //      own so that no other test has loaded the editor first.
 //   8. Whether a zone accepts what's dragged, read by the drag library as it asks: below.
 //   9. An element's active zones, read by the drag library as it asks: below.
+//  10. The zone under the pointer found through the elements a hit test skips: below; a Table
+//      row dragged on the canvas in e2e/app/table.spec.ts (#1144).
 
 /** How many elements the page has: the walk reads each one's config, the patched check none. */
 const ELEMENTS = 30;
@@ -175,7 +177,13 @@ async function mountedWithSlot() {
             { type: "Heading", props: { id: "h0", text: "Fresh bread" } },
             {
               type: "Card",
-              props: { id: "c0", items: [{ type: "Text", props: { id: "t0", text: "Daily" } }] },
+              props: {
+                id: "c0",
+                items: [
+                  { type: "Text", props: { id: "t0", text: "Daily" } },
+                  { type: "Text", props: { id: "t1", text: "Weekly" } },
+                ],
+              },
             },
           ],
         }}
@@ -266,5 +274,40 @@ describe("our Puck patch (ADR 0007, A9)", () => {
     await settle();
     expect(puck.data("c0")?.containsActiveZone).toBe(false);
     await puck.unmount();
+  });
+
+  it("10. finds the zone under the pointer when the browser's hit test skips it (#1144)", async () => {
+    const puck = await mountedWithSlot();
+    const weekly = [...document.querySelectorAll("p")].find((p) => p.textContent === "Weekly");
+    const card = document.querySelector('[data-puck-dnd="c0"]');
+    const editor = document.querySelector(".Puck");
+    if (weekly === undefined || card === null || editor === null) throw new Error("not drawn");
+    // As Chromium hit-tests a table (#1144): the cell, then the element holding the table,
+    // skipping the row's wrapper and the table's body, which is the slot's zone. Every box holds
+    // the point, as on a real page.
+    const hits = [weekly, card, editor];
+    const elementsFromPoint = document.elementsFromPoint;
+    const box = Element.prototype.getBoundingClientRect;
+    document.elementsFromPoint = () => hits;
+    Element.prototype.getBoundingClientRect = () => new DOMRect(0, 0, 1000, 1000);
+    try {
+      puck.manager()?.actions.start({ source: "t0", coordinates: { x: 500, y: 500 } });
+      await settle();
+      weekly.dispatchEvent(
+        new PointerEvent("pointermove", { bubbles: true, clientX: 500, clientY: 500 }),
+      );
+      // Past the plugin's throttle and Puck's debounce of a zone change while dragging.
+      await settle(400);
+
+      // The slot's zone is where the text would drop: its elements take part in the drag, and
+      // the heading outside it doesn't.
+      const droppables = puck.manager()?.registry.droppables;
+      expect(droppables?.get("t1")?.disabled).toBe(false);
+      expect(droppables?.get("h0")?.disabled).toBe(true);
+    } finally {
+      document.elementsFromPoint = elementsFromPoint;
+      Element.prototype.getBoundingClientRect = box;
+      await puck.unmount();
+    }
   });
 });
