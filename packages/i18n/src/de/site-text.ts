@@ -88,4 +88,6 @@ export const de = {
   "siteText.footerNavigation": "Fußzeilennavigation",
   "siteText.logo": "Logo",
   "siteText.postTags": "Schlagwörter",
+  "siteText.shareButtons": "Diesen Beitrag teilen",
+  "siteText.shareEmail": "E-Mail",
 } as const satisfies SiteTextCatalogue;

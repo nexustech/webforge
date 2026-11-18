@@ -44,6 +44,34 @@ test("links back to the Home page, one folder up, and isn't in the menu", async 
   await expect(page).toHaveURL(/\/index\.html$/);
 });
 
+test("shares the post by its whole address only, with plain links and no script (6.17b)", async ({
+  page,
+}) => {
+  const requests: string[] = [];
+  page.on("request", (request) => requests.push(request.url()));
+  await page.goto(post);
+
+  const address = encodeURIComponent("https://rosas.example/blog/spring-opening.html");
+  await expect(page.getByText("Share this post")).toBeVisible();
+  const links = page.locator(".site-share-buttons a");
+  await expect(links).toHaveText(["Email", "WhatsApp", "Facebook", "X", "LinkedIn"]);
+  expect(await links.evaluateAll((each) => each.map((link) => link.getAttribute("href")))).toEqual([
+    `mailto:?body=${address}`,
+    `https://wa.me/?text=${address}`,
+    `https://www.facebook.com/sharer/sharer.php?u=${address}`,
+    `https://x.com/intent/post?url=${address}`,
+    `https://www.linkedin.com/sharing/share-offsite/?url=${address}`,
+  ]);
+  // Nothing loads from them: the page asks only for its own files.
+  expect(requests.filter((url) => !url.startsWith("file:"))).toEqual([]);
+  // Before the focus scrolls the page and shows the back-to-top button, which is outside the
+  // page's landmarks (axe's best-practice "region"), which isn't this test's to check.
+  await passesAxe(page);
+  // Each is a link to Tab to.
+  await links.first().focus();
+  await expect(links.first()).toBeFocused();
+});
+
 test("goes from a post's tag to the tag's page, and from there to the post", async ({ page }) => {
   await page.goto(post);
 

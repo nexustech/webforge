@@ -41,4 +41,28 @@ describe("connectCanvasItem (6.10a)", () => {
     session.showPage(home);
     expect(engine.setItem).toHaveBeenLastCalledWith({});
   });
+
+  it("gives the post's address on the web once the site has its web address (6.17b)", () => {
+    const session = sessionWith();
+    const engine = createFakeEngine();
+    connectCanvasItem(engine, session);
+    const postId = addBlog(session);
+    const last = () => vi.mocked(engine.setItem).mock.lastCall?.[0];
+    // No web address, so none to share.
+    expect(last()?.pageAddress).toBeUndefined();
+
+    session.edit("props", "Web address", (draft) => {
+      draft.settings.address.url = "https://rosasbakery.co.uk/";
+    });
+    const slug = session.history.document.getState().pages[postId]?.slug;
+    expect(last()?.pageAddress).toBe(`https://rosasbakery.co.uk/blog/${slug}.html`);
+    expect(last()?.item?.("title")).toEqual({ kind: "text", text: "Our first post" });
+
+    // Its address follows its name.
+    session.edit("props", "Moved", (draft) => {
+      const post = draft.pages[postId];
+      if (post !== undefined) post.slug = "spring";
+    });
+    expect(last()?.pageAddress).toBe("https://rosasbakery.co.uk/blog/spring.html");
+  });
 });

@@ -21,6 +21,7 @@ import { logosComponents } from "./logos.js";
 import { postTagsComponents } from "./post-tags.js";
 import { pricingComponents } from "./pricing.js";
 import { sectionsComponents } from "./sections.js";
+import { shareButtonsComponents } from "./share-buttons.js";
 import { statsComponents } from "./stats.js";
 import { stepsComponents } from "./steps.js";
 import { tableComponents } from "./table.js";
@@ -60,6 +61,7 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   stepsComponents,
   accordionComponents,
   tableComponents,
+  shareButtonsComponents,
 );
 
 /** The page a new site starts with. */

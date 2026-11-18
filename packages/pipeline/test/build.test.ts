@@ -2055,6 +2055,43 @@ describe("buildSite: a Blog's own pages and feed (6.10b)", () => {
   );
 
   it(
+    "shares each post by its own whole address, and has no share buttons without a web address (6.17b)",
+    async () => {
+      /** The Blog's posts with Share buttons, as a new Blog's design has them. */
+      const sharing = (site: SiteSnapshot): SiteSnapshot => ({
+        ...site,
+        pages: site.pages.map((page) =>
+          page.item === undefined
+            ? page
+            : {
+                ...page,
+                doc: {
+                  root: { props: {} },
+                  content: [{ type: "ShareButtons", props: { id: `${page.id}-share` } }],
+                },
+              },
+        ),
+      });
+      const withAddress = await buildSite(
+        sharing(withBlog(2, "https://rosas.example")),
+        siteLibrary,
+        resources,
+      );
+      const without = await buildSite(sharing(withBlog(2)), siteLibrary, resources);
+
+      expect(text(withAddress, "blog/post-1.html")).toContain(
+        `href="https://wa.me/?text=${encodeURIComponent("https://rosas.example/blog/post-1.html")}"`,
+      );
+      expect(text(withAddress, "blog/post-2.html")).toContain(
+        `href="mailto:?body=${encodeURIComponent("https://rosas.example/blog/post-2.html")}"`,
+      );
+      expect(text(without, "blog/post-1.html")).not.toContain("site-share-buttons");
+      expect(text(without, "blog/post-1.html")).not.toContain("wa.me");
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
     "exports each post's picture for Latest posts' cards, though no design shows it (#939 review)",
     async () => {
       const base = withBlog(2);

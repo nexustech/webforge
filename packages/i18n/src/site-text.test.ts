@@ -11,8 +11,8 @@ const placeholders = (message: string) =>
   [...message.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
 
 describe("siteText (6.12, CC-1)", () => {
-  it("lists the 81 labels of the site, each a key of the English catalogue", () => {
-    expect(SITE_TEXT_KEYS).toHaveLength(81);
+  it("lists the 83 labels of the site, each a key of the English catalogue", () => {
+    expect(SITE_TEXT_KEYS).toHaveLength(83);
     expect(SITE_TEXT_KEYS.every((key) => key.startsWith("siteText.") && key in en)).toBe(true);
   });
 
