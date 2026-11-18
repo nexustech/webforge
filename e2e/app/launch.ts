@@ -92,8 +92,46 @@ export async function launchSecondInstance(options: {
     [desktopDir, `--user-data-dir=${options.userDataDir}`, ...options.args],
     { cwd: desktopDir, env, stdio: "ignore" },
   );
-  const [code] = (await once(child, "exit")) as [number | null];
-  return code;
+  return exitCodeWithin(child, HAND_OVER_TIMEOUT_MS);
+}
+
+/**
+ * How long a second launch may take to hand its command line to the running app and exit (#1161).
+ * It takes about a second; one that hasn't exited by then is stuck.
+ */
+const HAND_OVER_TIMEOUT_MS = 30_000;
+
+/**
+ * `child`'s exit code once it exits, within `timeoutMs`. One that hasn't is ended as a close ends
+ * an app (told to, then killed outright `killTimeoutMs` later), and the wait fails, so the test
+ * fails at once: a wait for its exit with no limit held a CI job until GitHub cancelled it, with
+ * no report of which test it was (#1161).
+ */
+export async function exitCodeWithin(
+  child: ChildProcess,
+  timeoutMs: number,
+  killTimeoutMs = KILL_TIMEOUT_MS,
+): Promise<number | null> {
+  if (child.exitCode !== null || child.signalCode !== null) return child.exitCode;
+  const exited = once(child, "exit").then(([code]) => code as number | null);
+  const timers: ReturnType<typeof setTimeout>[] = [];
+  /** Resolves with "late" after `ms`. */
+  const after = (ms: number) =>
+    new Promise<"late">((resolve) => {
+      timers.push(setTimeout(() => resolve("late"), ms));
+    });
+  try {
+    const code = await Promise.race([exited, after(timeoutMs)]);
+    if (code !== "late") return code;
+    if (
+      (await Promise.race([endProcess(child).then(() => exited), after(killTimeoutMs)])) === "late"
+    ) {
+      await Promise.race([endProcess(child, true).then(() => exited), after(killTimeoutMs)]);
+    }
+  } finally {
+    for (const timer of timers) clearTimeout(timer);
+  }
+  throw new Error(`The process didn't exit within ${timeoutMs} ms, so it was ended (#1161)`);
 }
 
 /**

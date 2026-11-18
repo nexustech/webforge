@@ -298,7 +298,7 @@ jobs:
         shard: [1, 2]
         shards: [2]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 35
     env: &e2e-env
       # Firefox and WebKit only when the exported site can have changed (see `changes`). On Linux
       # they run in `export-browsers` instead; Windows and macOS need no system packages, so they
@@ -509,7 +509,7 @@ jobs:
         shard: [1, 2]
         shards: [2]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 35
     env: *e2e-env
     steps: *e2e-steps
 

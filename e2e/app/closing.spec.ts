@@ -5,7 +5,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
-import { closingWithin, removeWhenFree } from "./launch.js";
+import { closingWithin, exitCodeWithin, removeWhenFree } from "./launch.js";
 
 // Closing the app in a test's teardown never outlasts the test (#393): Electron's process teardown
 // after quitting took up to a minute on a busy machine. Once Webforge says it has closed, the tests
@@ -75,6 +75,25 @@ test("gives up on a process that never exits, so a close can't outlast the test 
 
   // Its time limit and two waits for the kills, and no more.
   expect(Date.now() - start).toBeLessThan(5_000);
+});
+
+test("ends a process that doesn't exit in time, and fails the wait for it (#1161)", async () => {
+  // A second launch stuck before handing its command line over: its exit never comes by itself.
+  const child = endless();
+
+  const start = Date.now();
+  await expect(exitCodeWithin(child, 300, 500)).rejects.toThrow(/didn't exit within 300 ms/);
+
+  expect(Date.now() - start).toBeLessThan(5_000);
+  await expect.poll(() => ended(child)).toBe(true);
+});
+
+test("gives a process's exit code once it exits in time (#1161)", async () => {
+  const child = spawn(process.execPath, ["-e", "process.exit(3)"], { stdio: "ignore" });
+
+  expect(await exitCodeWithin(child, 30_000)).toBe(3);
+  // Asked again once it has exited: the code at once, not a wait for an exit already past.
+  expect(await exitCodeWithin(child, 300)).toBe(3);
 });
 
 test("closes once, however often it's asked: a test, then its afterEach", async () => {
