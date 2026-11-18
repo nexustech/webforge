@@ -443,6 +443,25 @@ describe("a table's rows on the canvas (6.16c)", () => {
     expect(elementOf(document, "table")?.tagName).toBe("TABLE");
   });
 
+  it("holds a dragged row's places between a cell and the table's wrapper (#1144)", () => {
+    const td = element.querySelector(`${componentSelector("r1")} > tr > td`);
+    const table = element.querySelector(componentSelector("table"));
+    if (td === null || table === null) throw new Error("no cell");
+    // Chromium's hit test lists a cell and then the table's wrapper, nothing between. Our Puck
+    // patch (ADR 0007, item 10; patch-contract.test.tsx) walks up from the cell to find what's
+    // between: the row's wrapper, which the drag library knows as the row (`data-puck-dnd`), and
+    // the table's body, the rows' zone. Both must still be there, and below the table's wrapper.
+    const between: Element[] = [];
+    for (let at = td.parentElement; at !== null && at !== table; at = at.parentElement) {
+      between.push(at);
+    }
+
+    expect(
+      between.find((each) => each.hasAttribute("data-puck-dnd"))?.getAttribute("data-puck-dnd"),
+    ).toBe("r1");
+    expect(between.find((each) => each.matches(COMPONENT_DROP_ZONE))?.tagName).toBe("TBODY");
+  });
+
   it("edits a cell where it is, and outlines a selected row with Puck's overlay", async () => {
     expect(
       element.querySelector(`${componentSelector("r1")} > tr td ${INLINE_TEXT}`),

@@ -5,7 +5,7 @@ title: Elements
 summary: Every element you can put inside a section, what it's for and what you can change.
 components: [Heading, Text, List, ListItem, Image, Carousel, CarouselSlide, EmbedVideo, Button, Spacer, Divider, Icon, SocialLinks, Columns, Column, Tabs, Tab, EmbedMap, Form, FormField, BuyButton, Accordion, AccordionItem, Table, TableRow]
 related: [sections, add-panel, edit-panel, media, links, forms, custom-code]
-updated: 2026-11-17
+updated: 2026-11-18
 ---
 
 # Elements
@@ -112,7 +112,7 @@ It needs no scripts, so it works for every visitor, and with the keyboard: Tab t
 Prices, sizes or a timetable, in rows under column headings. Click a cell to change its text, or select the Table to edit its rows as a list.
 
 - **Columns:** 2 to 6. Type each column's heading in **Heading 1**, **Heading 2** and so on.
-- **Rows:** add, move or delete them in the Table's **Rows**, or select a **Table row** to change its cells. To move a row on the page, select it and use **Move up** or **Move down** on its bar, or move it in Layers.
+- **Rows:** add, move or delete them in the Table's **Rows**, or select a **Table row** to change its cells. To move a row on the page, drag it by its edge to where it goes, use **Move up** or **Move down** on its bar, or move it in Layers. Dragging from its text selects the text instead.
 - **Dropping the last column:** choose one fewer in **Columns**. Its heading and cells are hidden, not deleted: choose more columns again to get them back. To drop a column in the middle, move its text into the columns after it, then drop the last one.
 
 On a phone, each row is shown as a list of headings and values, so visitors never scroll sideways. Screen readers read it as a table.
