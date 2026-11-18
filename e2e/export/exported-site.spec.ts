@@ -751,6 +751,13 @@ test.describe("exported site from disk", () => {
       await expect(backToTop(page)).toBeVisible();
       const results = await new AxeBuilder({ page }).include("[data-wf-back-to-top]").analyze();
       expect(results.violations).toEqual([]);
+      // The button is in a landmark, its own nav, like the rest of the page: axe's best-practice
+      // landmark rules pass on the whole page (#1153), which `include` above leaves out.
+      await expect(page.getByRole("navigation", { name: "Back to top" })).toBeVisible();
+      const landmarks = await new AxeBuilder({ page })
+        .withRules(["region", "landmark-unique"])
+        .analyze();
+      expect(landmarks.violations).toEqual([]);
     });
 
     test("takes a keyboard user back to the top, and the focus with them", async ({
