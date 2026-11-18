@@ -1,6 +1,7 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { ACTION_BAR_ACTION, ACTION_BAR_LABEL, COMPONENT, OVERLAY } from "@webforge/engine/puck-dom";
 import { clickOnCanvas, editOnCanvas, stillBox } from "./canvas-click.js";
+import { drag } from "./drag.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The Table (6.16c): placed from the Add panel, its rows laid out on the canvas as the export lays
@@ -274,13 +275,12 @@ test("keeps a Table with no rows open on the canvas, and lays a row added again 
     .toBe(true);
 });
 
-test("leaves the page as it was when a row is dragged and dropped on another (#1144)", async () => {
+test("moves a row dragged over another, as one undoable step (#1144)", async () => {
   await placeTable();
-  // Its cells told apart, to see any order change.
+  // Its cells told apart, to see the order change.
   for (const [n, text] of ["One", "Two", "Three"].entries()) {
     const cell = row(n).locator("td").first().locator("[contenteditable]");
-    await clickOnCanvas(cell);
-    await expect(cell).toBeFocused();
+    await editOnCanvas(cell);
     await page.keyboard.press("ControlOrMeta+a");
     await page.keyboard.type(text);
   }
@@ -289,21 +289,22 @@ test("leaves the page as it was when a row is dragged and dropped on another (#1
   await expect(firsts()).toHaveText(["One", "Two", "Three"]);
   await left().getByRole("tab", { name: "Undo History" }).click();
   const steps = page.locator(".undo-history__step");
-  const before = await steps.count();
 
-  // Pressed on the third row's edge, moved over the first and let go there.
-  const from = await edgeOf(2);
-  const to = await boxOf(wrapperOf(0));
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  await page.mouse.move(from.x + 10, from.y + 10, { steps: 5 });
-  for (let y = from.y; y >= to.y + 4; y -= 6) {
-    await page.mouse.move(from.x + 12, y, { steps: 2 });
-  }
-  await page.mouse.up();
+  // The third row, pressed on its edge (its first cell's padding, not its text, which edits),
+  // dragged above the first: the drop preview shows there before it is let go.
+  const third = await stillBox(wrapperOf(2));
+  const first = await stillBox(wrapperOf(0));
+  await drag(
+    page,
+    wrapperOf(2),
+    { x: first.x + first.width / 2, y: first.y + first.height * 0.25 },
+    4 / third.width,
+  );
 
-  // Nothing moved, nothing went, and no step was made.
-  await expect(firsts()).toHaveText(["One", "Two", "Three"]);
+  await expect(firsts()).toHaveText(["Three", "One", "Two"]);
   await expect(canvas().locator(".site-table > table")).toHaveCount(1);
-  await expect(steps).toHaveCount(before);
+  await expect(steps.first()).toHaveText("Moved Table row");
+
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(firsts()).toHaveText(["One", "Two", "Three"]);
 });

@@ -95,6 +95,7 @@ What item 1.27 changed:
   7. The inline rich-text editor is imported with the canvas instead of lazily. Puck drew each rich text as a fallback `contenteditable` until its Tiptap chunk loaded, in the first moments after the canvas showed, then replaced it, losing what was typed meanwhile (ADR 0004, 1.23). The chunk (about 0.6 MB) is now part of the renderer's main bundle.
   8. Each drop zone answers whether it accepts the element being dragged when the drag library asks (a getter on the element's collision data, `inDroppableZone`), instead of passing the answer to every element in it as a prop. The prop flipped at the start and the drop of every drag, on every element in a zone that doesn't take the dragged kind, and each drew again (#786).
   9. Each element keeps which of the zones inside it are active in a ref, read through a getter (`containsActiveZone`) when the drag library asks, instead of in React state. Setting it drew every element holding a zone again at the start and the drop of every drag (#786).
+  10. The drop zone under the pointer is found from every element the point is in, not only those the browser's hit test lists (`getPointerCollisions`, `withSkippedAncestors`). Chromium's `elementsFromPoint` lists a table's cell and then the element holding the table, leaving out the rows' wrappers (`display: table-row`) and the table's body, which is a Table's rows' zone (6.16c). So Puck never made that zone the active one, and a row dragged over the others never moved (#1144).
 
 ### Before and after
 
