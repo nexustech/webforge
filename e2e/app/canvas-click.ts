@@ -37,7 +37,7 @@ export async function stillBox(
   return box;
 }
 
-/** What a canvas click takes:Playwright's click options, but never `force`, which this decides. */
+/** What a canvas click takes: Playwright's click options, but never `force`, which this decides. */
 type CanvasClickOptions = Omit<NonNullable<Parameters<Locator["click"]>[0]>, "force" | "trial">;
 
 /**
