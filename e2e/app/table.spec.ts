@@ -24,12 +24,30 @@ const canvas = () => page.frameLocator(".editor__canvas iframe");
 const left = () => page.getByRole("region", { name: "Left panels" });
 const right = () => page.getByRole("region", { name: "Right panels" });
 
+/** What {@link boxOf} throws for something not drawn: in a poll, not yet drawn (#1147). */
+class NotShown extends Error {}
+
 /** The box `locator` is drawn in, which must be shown. */
 async function boxOf(locator: Locator) {
   const box = await locator.boundingBox();
-  if (box === null) throw new Error("not shown");
+  if (box === null) throw new NotShown("not shown");
   return box;
 }
+
+/**
+ * `check` for `expect.poll`, false while something it measures isn't drawn yet. A poll fails at
+ * once on a throw: Puck's outline, drawn after a selection, wasn't there yet under load (#1147).
+ */
+const whenShown =
+  (check: () => Promise<boolean>): (() => Promise<boolean>) =>
+  async () => {
+    try {
+      return await check();
+    } catch (error) {
+      if (error instanceof NotShown) return false;
+      throw error;
+    }
+  };
 
 /** The first two rows' first two cells, as boxes: `a1` and `a2` in the first row, then `b1`, `b2`. */
 async function cellBoxes() {
@@ -46,10 +64,12 @@ async function placeTable() {
   await expect(canvas().locator("tr.site-table-row")).toHaveCount(3);
   // Laid out once the canvas has its styles, which it compiles a moment after the change.
   await expect
-    .poll(async () => {
-      const { a1, b1 } = await cellBoxes();
-      return b1.y >= a1.y + a1.height - 1;
-    })
+    .poll(
+      whenShown(async () => {
+        const { a1, b1 } = await cellBoxes();
+        return b1.y >= a1.y + a1.height - 1;
+      }),
+    )
     .toBe(true);
 }
 
@@ -83,30 +103,34 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
 
   // In columns: a row's cells side by side, under the headings, the second row under the first.
   await expect
-    .poll(async () => {
-      const { a1, a2, b1, b2 } = await cellBoxes();
-      const second = await boxOf(canvas().locator("th").nth(1));
-      return (
-        Math.abs(a2.y - a1.y) < 1 &&
-        a2.x >= a1.x + a1.width - 1 &&
-        Math.abs(b1.x - a1.x) < 1 &&
-        Math.abs(b2.x - second.x) < 1 &&
-        b1.y >= a1.y + a1.height - 1
-      );
-    })
+    .poll(
+      whenShown(async () => {
+        const { a1, a2, b1, b2 } = await cellBoxes();
+        const second = await boxOf(canvas().locator("th").nth(1));
+        return (
+          Math.abs(a2.y - a1.y) < 1 &&
+          a2.x >= a1.x + a1.width - 1 &&
+          Math.abs(b1.x - a1.x) < 1 &&
+          Math.abs(b2.x - second.x) < 1 &&
+          b1.y >= a1.y + a1.height - 1
+        );
+      }),
+    )
     .toBe(true);
 
   // A row's wrapper is drawn as the row: around its cells, from the first to the last. Polled, as
   // the canvas's fonts can still re-wrap a cell.
   await expect
-    .poll(async () => {
-      const [{ a1, a2 }, wrapperBox] = await Promise.all([cellBoxes(), boxOf(wrapperOf(0))]);
-      return (
-        Math.abs(wrapperBox.x - a1.x) < 1 &&
-        Math.abs(wrapperBox.x + wrapperBox.width - (a2.x + a2.width)) < 1 &&
-        Math.abs(wrapperBox.height - a1.height) < 1
-      );
-    })
+    .poll(
+      whenShown(async () => {
+        const [{ a1, a2 }, wrapperBox] = await Promise.all([cellBoxes(), boxOf(wrapperOf(0))]);
+        return (
+          Math.abs(wrapperBox.x - a1.x) < 1 &&
+          Math.abs(wrapperBox.x + wrapperBox.width - (a2.x + a2.width)) < 1 &&
+          Math.abs(wrapperBox.height - a1.height) < 1
+        );
+      }),
+    )
     .toBe(true);
 
   await clickOnCanvas(row(0).locator("td").first());
@@ -120,10 +144,12 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
     .getByRole("radio", { name: "Mobile" })
     .click();
   await expect
-    .poll(async () => {
-      const { a1, a2, b1 } = await cellBoxes();
-      return a2.y >= a1.y + a1.height - 1 && b1.y >= a2.y + a2.height - 1;
-    })
+    .poll(
+      whenShown(async () => {
+        const { a1, a2, b1 } = await cellBoxes();
+        return a2.y >= a1.y + a1.height - 1 && b1.y >= a2.y + a2.height - 1;
+      }),
+    )
     .toBe(true);
 });
 
@@ -136,14 +162,16 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible();
   const overlay = canvas().locator(OVERLAY).first();
   await expect
-    .poll(async () => {
-      const [rowBox, outline] = await Promise.all([boxOf(wrapperOf(0)), boxOf(overlay)]);
-      return (
-        Math.abs(rowBox.y - outline.y) < 2 &&
-        Math.abs(rowBox.height - outline.height) < 2 &&
-        Math.abs(rowBox.width - outline.width) < 2
-      );
-    })
+    .poll(
+      whenShown(async () => {
+        const [rowBox, outline] = await Promise.all([boxOf(wrapperOf(0)), boxOf(overlay)]);
+        return (
+          Math.abs(rowBox.y - outline.y) < 2 &&
+          Math.abs(rowBox.height - outline.height) < 2 &&
+          Math.abs(rowBox.width - outline.width) < 2
+        );
+      }),
+    )
     .toBe(true);
 
   // A cell is edited where it is: the third row's first. Before any menu opens, which can take
@@ -224,20 +252,22 @@ test("keeps a Table with no rows open on the canvas, and lays a row added again 
   await expect(canvas().locator("tr.site-table-row")).toHaveCount(1);
   // A row again, its cells under the headings, and the room gone.
   await expect
-    .poll(async () => {
-      const cells = canvas().locator("tr.site-table-row td");
-      const [first, second, heading] = await Promise.all([
-        boxOf(cells.nth(0)),
-        boxOf(cells.nth(1)),
-        boxOf(canvas().locator("th").nth(1)),
-      ]);
-      const room = await boxOf(body);
-      return (
-        Math.abs(second.x - heading.x) < 1 &&
-        Math.abs(second.y - first.y) < 1 &&
-        Math.abs(room.height - first.height) < 1
-      );
-    })
+    .poll(
+      whenShown(async () => {
+        const cells = canvas().locator("tr.site-table-row td");
+        const [first, second, heading] = await Promise.all([
+          boxOf(cells.nth(0)),
+          boxOf(cells.nth(1)),
+          boxOf(canvas().locator("th").nth(1)),
+        ]);
+        const room = await boxOf(body);
+        return (
+          Math.abs(second.x - heading.x) < 1 &&
+          Math.abs(second.y - first.y) < 1 &&
+          Math.abs(room.height - first.height) < 1
+        );
+      }),
+    )
     .toBe(true);
 });
 
