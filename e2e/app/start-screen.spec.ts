@@ -238,6 +238,9 @@ test("tries the example: a pre-filled site named after it, within its opening bu
 });
 
 test("pins a site to the top of the Recent list, which it keeps after a restart (2.14b)", async () => {
+  // Four launches, as in Open Recent's test below: two to make the sites, then the start screen
+  // twice. It ran out of the one-launch time under load (#1147).
+  test.slow();
   // Two sites on the list, the newer first.
   for (const name of ["Older", "Newer"]) {
     app = await launchDesktopApp({ userDataDir: userData, site: false });

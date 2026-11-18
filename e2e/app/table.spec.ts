@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { ACTION_BAR_ACTION, ACTION_BAR_LABEL, COMPONENT, OVERLAY } from "@webforge/engine/puck-dom";
-import { clickOnCanvas } from "./canvas-click.js";
+import { clickOnCanvas, editOnCanvas } from "./canvas-click.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The Table (6.16c): placed from the Add panel, its rows laid out on the canvas as the export lays
@@ -149,8 +149,7 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   // A cell is edited where it is: the third row's first. Before any menu opens, which can take
   // the focus back as it closes.
   const third = row(2).locator("td").first().locator("[contenteditable]");
-  await clickOnCanvas(third);
-  await expect(third).toBeFocused();
+  await editOnCanvas(third);
   await page.keyboard.press("ControlOrMeta+a");
   await page.keyboard.type("Third");
   await expect(row(2).locator("td").first()).toHaveText("Third");

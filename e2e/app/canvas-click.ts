@@ -69,3 +69,25 @@ export async function clickOnCanvas(
   expect(over, `the canvas is covered by ${over}`).toBeNull();
   await target.click({ ...options, position, force: true });
 }
+
+/**
+ * Starts editing `field`, Puck's inline text on the canvas, as a user does: points at it, which
+ * makes it editable, clicks into it and waits for the caret. Puck makes the field editable only
+ * while it is hovered or focused (`contenteditable` is "false" otherwise), and it knows the hover
+ * only from a pointer moving onto it: a field drawn afresh under a still pointer, as a busy
+ * computer can leave it, takes the click without taking the caret (#1147). So the pointer comes
+ * off and back on until it is editable, and the click until it has the focus.
+ */
+export async function editOnCanvas(field: Locator): Promise<void> {
+  const page = field.page();
+  await expect(async () => {
+    // Off the canvas, onto the editor's left panels, and back onto the field.
+    const left = page.getByRole("region", { name: "Left panels" });
+    await left.hover({ position: { x: 20, y: 40 } });
+    // Forced as the click is: Puck's wrapper takes the pointer for everything in it (#465).
+    await field.hover({ force: true });
+    await expect(field).toHaveAttribute("contenteditable", "plaintext-only", { timeout: 5_000 });
+    await clickOnCanvas(field);
+    await expect(field).toBeFocused({ timeout: 5_000 });
+  }).toPass({ timeout: 45_000 });
+}

@@ -10,6 +10,8 @@ import {
 } from "@playwright/test";
 import * as jsqr from "jsqr";
 import { expectMedianWithin, hotSwapBudgetMs } from "./budget.js";
+import { editOnCanvas } from "./canvas-click.js";
+import { selectText } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { openPreview } from "./sites.js";
@@ -71,10 +73,13 @@ test("opens the site in the browser, and every edit reaches it", async () => {
   const { origin } = new URL(url ?? "");
   expect((await openPreview(await browser.newPage(), `${origin}/index.html`))?.status()).toBe(404);
 
-  // A word changed on the canvas: the page reloads with it.
-  await canvas().locator("h1").dblclick();
-  await page.keyboard.press("ControlOrMeta+a");
+  // A word changed on the canvas: the page reloads with it. Every letter on the canvas before the
+  // click that ends the edit: one typed as the click came was lost once under load (#1147).
+  const heading = canvas().locator("h1 [contenteditable]");
+  await editOnCanvas(heading);
+  await selectText(heading);
   await page.keyboard.type("Fresh bread daily");
+  await expect(canvas().locator("h1")).toHaveText("Fresh bread daily");
   await canvas()
     .locator("body")
     .click({ position: { x: 5, y: 5 } });
