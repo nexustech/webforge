@@ -18,6 +18,7 @@ import { menu } from "./menu.js";
 import { postTags } from "./postTags.js";
 import { pricing } from "./pricing.js";
 import { sections } from "./sections.js";
+import { shareButtons } from "./shareButtons.js";
 import { shared } from "./shared.js";
 import { stats } from "./stats.js";
 import { steps } from "./steps.js";
@@ -59,6 +60,7 @@ export const componentFamilies = {
   accordion,
   menu,
   table,
+  shareButtons,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -90,4 +92,5 @@ export const components = {
   ...accordion,
   ...menu,
   ...table,
+  ...shareButtons,
 } as const;

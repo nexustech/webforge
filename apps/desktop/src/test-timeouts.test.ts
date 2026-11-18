@@ -23,36 +23,37 @@ function skip(source: string, at: number): number {
   return index + 1;
 }
 
-/** The call whose `(` is at `open`: the text of each top-level argument, and where it ends. */
+/**
+ * The call whose `(` is at `open`: the text of each top-level argument, and where it ends. It
+ * goes from one bracket, comma, quote or comment to the next with a regular expression, not a
+ * character at a time: the files are 2.6 MB, and coverage counts every step of a loop, which made
+ * this test run out of time in full runs (#1147).
+ */
 function callAt(source: string, open: number): { readonly args: string[]; readonly end: number } {
+  const tokens = /["'`([{)\]},]|\/\/|\/\*/g;
   const parts: string[] = [];
   let depth = 0;
   let from = open + 1;
-  let index = open;
-  while (index < source.length) {
-    const char = source[index] ?? "";
-    if (char === '"' || char === "'" || char === "`" || source.startsWith("//", index)) {
-      index = skip(source, index);
-      continue;
-    }
-    if (source.startsWith("/*", index)) {
-      index = skip(source, index);
-      continue;
-    }
-    if ("([{".includes(char)) depth += 1;
-    if (")]}".includes(char)) {
+  tokens.lastIndex = open;
+  for (let token = tokens.exec(source); token !== null; token = tokens.exec(source)) {
+    const index = token.index;
+    const [char] = token;
+    if (char.length === 2 || char === '"' || char === "'" || char === "`") {
+      tokens.lastIndex = skip(source, index);
+    } else if ("([{".includes(char)) {
+      depth += 1;
+    } else if (")]}".includes(char)) {
       depth -= 1;
       if (depth === 0) {
         parts.push(source.slice(from, index));
         const args = parts.map((part) => part.trim()).filter((part) => part !== "");
         return { args, end: index + 1 };
       }
-    }
-    if (char === "," && depth === 1) {
+    } else if (depth === 1) {
+      // A comma between the call's own arguments.
       parts.push(source.slice(from, index));
       from = index + 1;
     }
-    index += 1;
   }
   return { args: parts, end: source.length };
 }

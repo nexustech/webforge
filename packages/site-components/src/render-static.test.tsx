@@ -892,7 +892,9 @@ describe("renderNodesToHtml", () => {
       expect(html).toMatch(
         /class="[^"]*snap-x snap-mandatory[^"]*overflow-x-auto[^"]*" data-wf-carousel-track="" role="group" aria-label="Slides" tabindex="0"/,
       );
-      expect(html.match(/<figure class="site-carousel-slide/g)).toHaveLength(2);
+      // Each slide a <div>, which the script names "slide, 2 of 5", round its figure: a figure
+      // with a caption may not take that role (#1156).
+      expect(html.match(/<div class="site-carousel-slide[^"]*"><figure /g)).toHaveLength(2);
       expect(html).toContain("<figcaption");
       expect(html).toContain("The best sourdough in town.");
       // The slide's photo, with its own alt text.

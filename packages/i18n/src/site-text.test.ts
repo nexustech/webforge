@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { de } from "./de/site-text.js";
-import { en } from "./en.js";
+import { components as en } from "./en/components/index.js";
 import { es } from "./es/site-text.js";
 import { fr } from "./fr/site-text.js";
 import { SITE_TEXT_KEYS, siteText, siteTextFor, siteTextFrom } from "./site-text.js";
@@ -11,8 +11,8 @@ const placeholders = (message: string) =>
   [...message.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
 
 describe("siteText (6.12, CC-1)", () => {
-  it("lists the 81 labels of the site, each a key of the English catalogue", () => {
-    expect(SITE_TEXT_KEYS).toHaveLength(81);
+  it("lists the 83 labels of the site, each a key of the English catalogue", () => {
+    expect(SITE_TEXT_KEYS).toHaveLength(83);
     expect(SITE_TEXT_KEYS.every((key) => key.startsWith("siteText.") && key in en)).toBe(true);
   });
 

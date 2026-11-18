@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import type { LayoutDoc, PageDoc } from "@webforge/model";
 import { createLibrary } from "../define.js";
 import type { ComponentLibrary } from "../library.js";
@@ -22,6 +22,7 @@ import { menuComponents } from "./menu.js";
 import { postTagsComponents } from "./post-tags.js";
 import { pricingComponents } from "./pricing.js";
 import { sectionsComponents } from "./sections.js";
+import { shareButtonsComponents } from "./share-buttons.js";
 import { statsComponents } from "./stats.js";
 import { stepsComponents } from "./steps.js";
 import { tableComponents } from "./table.js";
@@ -62,6 +63,7 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   accordionComponents,
   menuComponents,
   tableComponents,
+  shareButtonsComponents,
 );
 
 /** The page a new site starts with. */

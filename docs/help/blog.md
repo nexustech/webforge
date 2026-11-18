@@ -3,14 +3,14 @@
 id: blog
 title: Your blog
 summary: Add a blog, write posts on the page, tag them, list them anywhere, import them, and change the design every post shares.
-components: [LatestPosts, PostTags]
+components: [LatestPosts, PostTags, ShareButtons]
 related: [pages, header-and-footer, edit-panel, export, site-settings]
-updated: 2026-11-15
+updated: 2026-11-17
 ---
 
 # Your blog
 
-A **blog** holds your news, offers and stories. Each **post** is a page of your site that you write on the page, like any other. The blog's **design** is drawn above and below every post: its title, date and picture at the top, and its tags and a button back to your Home page at the bottom.
+A **blog** holds your news, offers and stories. Each **post** is a page of your site that you write on the page, like any other. The blog's **design** is drawn above and below every post: its title, date and picture at the top, and its tags, share buttons and a button back to your Home page at the bottom.
 
 ## Adding a blog
 
@@ -59,6 +59,14 @@ On the page you're editing, Latest posts shows your posts as they are, drafts to
 ## Post tags
 
 **Post tags** (under _Blog_ in the **Add** panel) shows a post's tags, each a link to the page listing the posts with that tag. It belongs in the blog's design, where it shows each post's own tags; a new blog's design has it below the post. On a page that isn't a post it shows nothing.
+
+## Share buttons
+
+**Share buttons** (under _Blog_ in the **Add** panel) lets visitors share a post: under _Share this post_, links to share it by **Email**, **WhatsApp**, **Facebook**, **X** or **LinkedIn**. Like Post tags, it belongs in the blog's design. A blog you add now has it below each post, under the tags; a blog you added before doesn't, so add it to the design if you'd like it, or delete it from the design if you wouldn't.
+
+- Each link carries the post's address and nothing else. They're plain links: nothing loads from those sites, and nothing tracks your visitors, until someone clicks one.
+- **It needs your site's web address** ([Site Settings › Web address](site-settings.md#web-address)), as a share needs a whole address. Until you add it, your website shows no share buttons, and the page you're editing shows a hint saying so.
+- The words _Share this post_ and _Email_ are in your site's language. The sites keep their own names.
 
 ## Importing posts
 

@@ -1398,7 +1398,8 @@
             "CustomCode",
             "PostTags",
             "Accordion",
-            "Table"
+            "Table",
+            "ShareButtons"
           ]
         },
         "contentWidth": {
@@ -2555,7 +2556,8 @@
             "CustomCode",
             "PostTags",
             "Accordion",
-            "Table"
+            "Table",
+            "ShareButtons"
           ]
         }
       },
@@ -7914,7 +7916,8 @@
             "CustomCode",
             "PostTags",
             "Accordion",
-            "Table"
+            "Table",
+            "ShareButtons"
           ]
         }
       },
@@ -10085,6 +10088,26 @@
           "of": "parent"
         }
       }
+    },
+    "ShareButtons": {
+      "label": "Share buttons",
+      "place": "element",
+      "category": "Blog",
+      "appearance": "all",
+      "deeper": "element",
+      "fields": {
+        "margin": {
+          "kind": "box",
+          "label": "Margin",
+          "property": "margin",
+          "responsive": true,
+          "sides": [
+            "top",
+            "bottom"
+          ]
+        }
+      },
+      "defaults": {}
     }
   }
 }

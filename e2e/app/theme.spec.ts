@@ -5,6 +5,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
 import { themePreset } from "@webforge/themes";
+import { OPEN_WAIT } from "./budget.js";
 import { launchDesktopApp, removeWhenFree, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import type { RendererWindow } from "./sites.js";
@@ -177,7 +178,11 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
     .getByRole("button", { name: "Save Theme" })
     .click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Use Colours" }).click();
-  await expect.poll(async () => (await themeOf(page)).colors.primary).not.toEqual(before);
+  // The change waits for a version of the site saved before it (`beforeSiteWide`), written to
+  // disk: longer than the poll's 5 s on a busy runner (#1147).
+  await expect
+    .poll(async () => (await themeOf(page)).colors.primary, { timeout: OPEN_WAIT })
+    .not.toEqual(before);
 
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: "Undo History" }).click();

@@ -41,7 +41,8 @@ function item(type: string, own: Readonly<Record<string, unknown>> = {}): NodeDo
 /**
  * The context with `type`'s look in the theme, a large shadow, where a picture resolves, the site
  * has a social profile (Social links draw nothing without one) and the page is a post with tags
- * (Post tags draw nothing on another page, 6.10b).
+ * (Post tags draw nothing on another page, 6.10b) and an address on the web (Share buttons draw
+ * nothing without one, 6.17b).
  */
 const lookFor = (type: string): RenderContext => ({
   ...EDITOR_RENDER_CONTEXT,
@@ -58,6 +59,7 @@ const lookFor = (type: string): RenderContext => ({
     field === "tags"
       ? { kind: "tags", tags: [{ name: "News", path: "blog/tag/news" }] }
       : undefined,
+  pageAddress: "https://rosasbakery.co.uk/blog/news.html",
   looks: { [type]: { lookShadow: "large" } },
 });
 

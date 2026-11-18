@@ -1,10 +1,16 @@
 import { en } from "./en.js";
 
-/** A key of the English message catalogue. */
+/**
+ * A key of the English message catalogue: the app's own words. The site components' words are in
+ * `@webforge/i18n/components`, which main never loads (#1150).
+ */
 export type MessageKey = keyof typeof en;
 
 /** Values substituted into `{placeholder}`s of a message. */
 export type MessageParams = Readonly<Record<string, string | number>>;
+
+/** A catalogue of messages by key. */
+type Catalogue = Readonly<Record<string, string>>;
 
 /** The `{placeholder}` names in message text `S`: `"{n} of {total}"` gives `"n" | "total"`. */
 type Placeholders<S extends string> = S extends `${string}{${infer Name}}${infer Rest}`
@@ -12,21 +18,50 @@ type Placeholders<S extends string> = S extends `${string}{${infer Name}}${infer
   : never;
 
 /**
- * The placeholders of message `K` (of every message, for a union of keys) that its caller fills:
- * `{appName}`, the app's name, is filled in by {@link t} itself.
+ * The placeholders of message `K` of catalogue `C` (of every message, for a union of keys) that
+ * its caller fills: `{appName}`, the app's name, is filled in by {@link t} itself.
  */
-export type ParamsOf<K extends MessageKey> = Exclude<Placeholders<(typeof en)[K]>, "appName">;
+export type ParamsIn<C extends Catalogue, K extends keyof C> = Exclude<
+  Placeholders<C[K] & string>,
+  "appName"
+>;
 
 /**
- * What `t(key, …)` takes after the key (B10, E11): the message's placeholders, every one of them,
- * as params; nothing for a message without any. A key typed only as `MessageKey` (chosen at run
- * time from the whole catalogue) can't be checked, so it takes any params.
+ * What `t(key, …)` takes after the key (B10, E11), for a key of catalogue `C`: the message's
+ * placeholders, every one of them, as params; nothing for a message without any. A key typed only
+ * as any key of `C` (chosen at run time from the whole catalogue) can't be checked, so it takes any
+ * params.
  */
-export type ParamsArg<K extends MessageKey> = MessageKey extends K
+export type ParamsArgIn<C extends Catalogue, K extends keyof C> = keyof C extends K
   ? [params?: MessageParams]
-  : [ParamsOf<K>] extends [never]
+  : [ParamsIn<C, K>] extends [never]
     ? []
-    : [params: Readonly<Record<ParamsOf<K>, string | number>>];
+    : [params: Readonly<Record<ParamsIn<C, K>, string | number>>];
+
+/** Keys of catalogue `C` with a message per plural category: `base.one` and `base.other`. */
+export type PluralKeyIn<C extends Catalogue> = {
+  [K in keyof C & string]: K extends `${infer Base}.other`
+    ? `${Base}.one` extends keyof C
+      ? Base
+      : never
+    : never;
+}[keyof C & string];
+
+/** What `plural(base, count, …)` takes after the count: the params besides `{count}`. */
+export type PluralParamsIn<C extends Catalogue, B extends string> = `${B}.other` extends keyof C
+  ? [ParamsIn<C, `${B}.other`>] extends ["count" | never]
+    ? [params?: MessageParams]
+    : [params: Readonly<Record<Exclude<ParamsIn<C, `${B}.other`>, "count">, string | number>>]
+  : never;
+
+/** {@link ParamsIn} for the app's own catalogue. */
+export type ParamsOf<K extends MessageKey> = ParamsIn<typeof en, K>;
+
+/** {@link ParamsArgIn} for the app's own catalogue. */
+export type ParamsArg<K extends MessageKey> = ParamsArgIn<typeof en, K>;
+
+/** {@link PluralKeyIn} for the app's own catalogue. */
+export type PluralKey = PluralKeyIn<typeof en>;
 
 const PLACEHOLDER = /\{(\w+)\}/g;
 
@@ -36,18 +71,6 @@ const PLACEHOLDER = /\{(\w+)\}/g;
  * else. `pnpm ui-strings` refuses a message that spells the name out.
  */
 const withAppName = (message: string) => message.replaceAll("{appName}", en["app.name"]);
-
-/**
- * Returns the UI string for `key`, with `{placeholder}`s replaced by `params`. The params are
- * checked against the message's placeholders as the code compiles (B10): a missing one is a type
- * error. At run time a placeholder without a matching param is left as is, so a missing value is
- * visible in the UI instead of silently disappearing.
- *
- * @example t("app.version", { version: "1.2.0" }) // "Version 1.2.0"
- */
-export function t<K extends MessageKey>(key: K, ...[params]: ParamsArg<K>): string {
-  return filled(withAppName(en[key]), params);
-}
 
 /**
  * `message` with its `{placeholder}`s replaced by `params`; one without a matching param is left
@@ -63,13 +86,56 @@ export function filled(message: string, params: MessageParams | undefined): stri
   });
 }
 
+/** The plural categories a count can fall in, as `Intl.PluralRules` names them. */
+const CATEGORIES = ["zero", "one", "two", "few", "many", "other"] as const;
+
+/** English's plural rules: "1 page", "2 pages". The catalogue is English (Q8). */
+const RULES = new Intl.PluralRules("en");
+
+/**
+ * The lookups over `catalogue`, untyped: each entry point (this one, and
+ * `@webforge/i18n/components`) declares them with its own catalogue's keys.
+ */
+export function lookups(catalogue: Catalogue) {
+  // A key the types allow is always there; the key itself, should one not be, shows where.
+  const message = (key: string) => withAppName(catalogue[key] ?? key);
+  const t = (key: string, params?: MessageParams) => filled(message(key), params);
+  return {
+    t,
+    template: message,
+    has: (key: string) => Object.hasOwn(catalogue, key),
+    plural: (base: string, count: number, params?: MessageParams) => {
+      const category = RULES.select(count);
+      const key =
+        CATEGORIES.includes(category) && Object.hasOwn(catalogue, `${base}.${category}`)
+          ? `${base}.${category}`
+          : `${base}.other`;
+      return t(key, { ...(params ?? {}), count });
+    },
+  };
+}
+
+const app = lookups(en);
+
+/**
+ * Returns the UI string for `key`, with `{placeholder}`s replaced by `params`. The params are
+ * checked against the message's placeholders as the code compiles (B10): a missing one is a type
+ * error. At run time a placeholder without a matching param is left as is, so a missing value is
+ * visible in the UI instead of silently disappearing.
+ *
+ * @example t("app.version", { version: "1.2.0" }) // "Version 1.2.0"
+ */
+export function t<K extends MessageKey>(key: K, ...[params]: ParamsArg<K>): string {
+  return app.t(key, params);
+}
+
 /**
  * The message for `key` with its `{placeholder}`s left in, for code that fills them in itself: a
  * site's script (the Carousel's "{n} of {total}"), or Puck's own dictionary. The app's name is
  * filled in, as {@link t} fills it.
  */
 export function template(key: MessageKey): string {
-  return withAppName(en[key]);
+  return app.template(key);
 }
 
 /**
@@ -77,23 +143,8 @@ export function template(key: MessageKey): string {
  * (`theme.preset.<name>`), which the compiler can't check.
  */
 export function isMessageKey(key: string): key is MessageKey {
-  return Object.hasOwn(en, key);
+  return app.has(key);
 }
-
-/** Keys with a message per plural category: `base.one` and `base.other` (and any of `zero`…). */
-export type PluralKey = {
-  [K in MessageKey]: K extends `${infer Base}.other`
-    ? `${Base}.one` extends MessageKey
-      ? Base
-      : never
-    : never;
-}[MessageKey];
-
-/** The plural categories a count can fall in, as `Intl.PluralRules` names them. */
-const CATEGORIES = ["zero", "one", "two", "few", "many", "other"] as const;
-
-/** English's plural rules: "1 page", "2 pages". The catalogue is English (Q8). */
-const RULES = new Intl.PluralRules("en");
 
 /**
  * The message for `count` of something (B10): `base.one` for 1, `base.other` otherwise, as the
@@ -105,15 +156,7 @@ const RULES = new Intl.PluralRules("en");
 export function plural<B extends PluralKey>(
   base: B,
   count: number,
-  ...[params]: [ParamsOf<`${B}.other`>] extends ["count" | never]
-    ? [params?: MessageParams]
-    : [params: Readonly<Record<Exclude<ParamsOf<`${B}.other`>, "count">, string | number>>]
+  ...[params]: PluralParamsIn<typeof en, B>
 ): string {
-  const category = RULES.select(count);
-  const key = (
-    CATEGORIES.includes(category) && `${base}.${category}` in en
-      ? `${base}.${category}`
-      : `${base}.other`
-  ) as MessageKey;
-  return t(key, { ...(params ?? {}), count });
+  return app.plural(base, count, params);
 }

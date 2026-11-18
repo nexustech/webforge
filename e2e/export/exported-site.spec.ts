@@ -751,6 +751,13 @@ test.describe("exported site from disk", () => {
       await expect(backToTop(page)).toBeVisible();
       const results = await new AxeBuilder({ page }).include("[data-wf-back-to-top]").analyze();
       expect(results.violations).toEqual([]);
+      // The button is in a landmark, its own nav, like the rest of the page: axe's best-practice
+      // landmark rules pass on the whole page (#1153), which `include` above leaves out.
+      await expect(page.getByRole("navigation", { name: "Back to top" })).toBeVisible();
+      const landmarks = await new AxeBuilder({ page })
+        .withRules(["region", "landmark-unique"])
+        .analyze();
+      expect(landmarks.violations).toEqual([]);
     });
 
     test("takes a keyboard user back to the top, and the focus with them", async ({
@@ -977,6 +984,12 @@ test.describe("exported site from disk", () => {
       const slides = carousel.getByRole("group", { name: /^\d of 3$/ });
       await expect(slides).toHaveCount(3);
       await expect(slides.first()).toHaveAccessibleName("1 of 3");
+      // Each slide's role on an element that may take it, not on its figure (#1156).
+      const roles = await new AxeBuilder({ page })
+        .include("[data-wf-carousel]")
+        .withRules(["aria-allowed-role"])
+        .analyze();
+      expect(roles.violations).toEqual([]);
       await button("Next slide").click();
       await expect(carousel.locator("[data-wf-carousel-status]")).toHaveText("2 of 3");
       await expect.poll(scrollLeft).toBeGreaterThan(0);

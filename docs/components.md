@@ -26,9 +26,10 @@ What it writes passes `pnpm check` and renders in Storybook as it is; then make 
 
 ## Where it goes
 
-- **One module per family:** components live in `src/catalogue/`, one file per family: `basic.tsx` (Section, Heading, Text), `elements.tsx` (Image, Button, Spacer, Divider, Columns, List, Icon, Social links; Columns' layouts in `column-layouts.ts`), `layout.tsx` (Header, Footer), `sections.tsx` (Hero, Text, Text + Image, Call to action, FAQ), `carousel.tsx` (Carousel), `embeds.tsx` (Video, Map), `gallery.tsx` (Gallery), `contact-details.tsx` (Opening hours and contact), `forms.tsx` (Contact form, Newsletter signup, Form), `features.tsx` (Features), `testimonials.tsx` (Testimonials), `team.tsx` (Team), `pricing.tsx` (Pricing), `menu.tsx` (Food and drink menu), `commerce.tsx` (Buy button), `tabs.tsx` (Tabs), `logos.tsx` (Logos), `stats.tsx` (Stats), `steps.tsx` (Steps), `custom-code.tsx` (Custom code), `announcement-bar.tsx` (Announcement bar), `latest-posts.tsx` (Latest posts), `post-tags.tsx` (Post tags), `accordion.tsx` (Accordion), `contact-buttons.tsx` (Contact buttons) and `table.tsx` (Table). `createLibrary` in `index.ts` lists them all.
+- **One module per family:** components live in `src/catalogue/`, one file per family: `basic.tsx` (Section, Heading, Text), `elements.tsx` (Image, Button, Spacer, Divider, Columns, List, Icon, Social links; Columns' layouts in `column-layouts.ts`), `layout.tsx` (Header, Footer), `sections.tsx` (Hero, Text, Text + Image, Call to action, FAQ), `carousel.tsx` (Carousel), `embeds.tsx` (Video, Map), `gallery.tsx` (Gallery), `contact-details.tsx` (Opening hours and contact), `forms.tsx` (Contact form, Newsletter signup, Form), `features.tsx` (Features), `testimonials.tsx` (Testimonials), `team.tsx` (Team), `pricing.tsx` (Pricing), `menu.tsx` (Food and drink menu), `commerce.tsx` (Buy button), `tabs.tsx` (Tabs), `logos.tsx` (Logos), `stats.tsx` (Stats), `steps.tsx` (Steps), `custom-code.tsx` (Custom code), `announcement-bar.tsx` (Announcement bar), `latest-posts.tsx` (Latest posts), `post-tags.tsx` (Post tags), `share-buttons.tsx` (Share buttons), `accordion.tsx` (Accordion), `contact-buttons.tsx` (Contact buttons) and `table.tsx` (Table). `createLibrary` in `index.ts` lists them all.
 - **A new family:** add a module and list it in `createLibrary` in `src/catalogue/index.ts` (`pnpm new-component` does both). Streams adding components in parallel then never edit the same file.
 - **Its strings:** in a file of its own, `packages/i18n/src/en/components/<family>.ts`, listed in that folder's `index.ts` (2.19). Strings several families use (`field.title`, the spacing and colour choices, the starter page) are in `shared.ts`. A test fails on a key in two files.
+- **Its `t()` is `@webforge/i18n/components`'s:** the components' strings are a catalogue apart from the app's, which main loads at start-up without them (#1150). `@webforge/i18n`'s `t()` doesn't take their keys, so a component file imports `t`, `template` and `plural` from `@webforge/i18n/components`, as `pnpm new-component` writes it.
 - **Each module ends with its family:** a record from component type to definition, e.g. `export const basicComponents = { Section: section, Heading: heading, Text: text }`.
 - **Component types** (`Hero`, `Faq`) are stored in every site file, so never rename one; add a migration if one must change.
 
@@ -46,7 +47,7 @@ Wrap an element's definition in `defineComponent`, and a section's in `defineSec
 - **Checked as the module loads:** `defineComponent` checks the conventions as the module loads, so a mistake fails every test that uses the library instead of reaching a site.
 
 ```tsx
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import { contentWidthClass, defineSection } from "../frame.js";
 import { SectionTitle } from "../typography.js";
 

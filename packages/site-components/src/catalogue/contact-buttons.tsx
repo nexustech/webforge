@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import { contentWidthClass, defineSection, PADDED_COLUMN_CLASS, sectionPadding } from "../frame.js";
 import { LucideIcon } from "../icons.js";
 import type { ComponentDef } from "../library.js";

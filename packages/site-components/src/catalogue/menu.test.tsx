@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import type { NodeDoc } from "@webforge/model";
 import { Window } from "happy-dom";
 import { afterEach, describe, expect, it } from "vitest";

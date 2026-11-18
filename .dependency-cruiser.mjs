@@ -177,6 +177,9 @@ export default {
           // Declared subpath export: @webforge/i18n/site-text (a site's labels in its language,
           // 6.12), so main's start-up, which needs `t` alone, loads no other language's catalogue.
           "^packages/i18n/src/site-text\\.ts$",
+          // Declared subpath export: @webforge/i18n/components (the whole catalogue, the site
+          // components' words included), so main's start-up loads only the app's own (#1150).
+          "^packages/i18n/src/components\\.ts$",
         ],
       },
     },

@@ -2,6 +2,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { ACTION_BAR_ACTION } from "@webforge/engine/puck-dom";
 import { OPEN_WAIT } from "./budget.js";
 import { clickOnCanvas } from "./canvas-click.js";
+import { hoverUntilShown } from "./hover.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The editor's tooltips (#1011): on pointing at a control and on the keyboard's focus, with its
@@ -32,13 +33,13 @@ const tooltip = () => page.getByRole("tooltip");
 const frameTip = () => canvas().locator(".wf-tip");
 
 test("shows a toolbar's tooltips with their shortcuts, on hover and on the keyboard's focus", async () => {
-  await toolbar().getByRole("radio", { name: "Tablet" }).hover();
+  const left = page.getByRole("region", { name: "Left panels" });
+  await hoverUntilShown(toolbar().getByRole("radio", { name: "Tablet" }), tooltip(), left);
   // Ctrl+2, or ⌘2 on a Mac.
   await expect(tooltip()).toHaveText(/^Tablet \(.+2\)$/);
   // Off it, onto the left panels: not the title bar's empty part, the window's drag area, which
   // passes the page no pointer events, nor the canvas, whose frame takes them from the editor's.
   // Twice, as a hand moves: the tooltip closes on a move after the pointer has left it.
-  const left = page.getByRole("region", { name: "Left panels" });
   await left.hover({ position: { x: 20, y: 40 } });
   await left.hover({ position: { x: 30, y: 50 } });
   await expect(tooltip()).toHaveCount(0);
@@ -53,7 +54,11 @@ test("says why a greyed-out Layers button is off", async () => {
   const moveUp = layersTools().getByRole("button", { name: "Move up" });
   await expect(moveUp).toBeDisabled();
   // A disabled button takes no pointer: its wrapper shows the tooltip.
-  await moveUp.locator("..").hover();
+  await hoverUntilShown(
+    moveUp.locator(".."),
+    tooltip(),
+    page.getByRole("region", { name: "Right panels" }),
+  );
   await expect(tooltip()).toContainText("Move up");
   await expect(tooltip()).toContainText("Select an element first.");
 });

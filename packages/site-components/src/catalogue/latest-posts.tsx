@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import { listPath, type SiteCollectionItem } from "@webforge/model";
 import { contentWidthClass, defineSection } from "../frame.js";
 import { type ComponentDef, dateText, stringValue } from "../library.js";

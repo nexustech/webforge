@@ -430,12 +430,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     },
 
     setItem(next) {
-      const { item: _item, emptyItem: _emptyItem, ...rest } = parts;
+      const { item: _item, emptyItem: _emptyItem, pageAddress: _pageAddress, ...rest } = parts;
       changeContext({
         parts: {
           ...rest,
           ...(next.item === undefined ? {} : { item: next.item }),
           ...(next.emptyItem === undefined ? {} : { emptyItem: next.emptyItem }),
+          ...(next.pageAddress === undefined ? {} : { pageAddress: next.pageAddress }),
         },
       });
     },

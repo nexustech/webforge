@@ -775,7 +775,11 @@ describe("createPuckEngine", () => {
       engine.setPreviews({ mobileMenu: true });
       engine.setNavigation([{ label: "Home", href: "#", current: true }]);
       engine.setLooks({ Button: { lookCorners: "full" } });
-      engine.setItem({ item: () => undefined, emptyItem: () => "Add it" });
+      engine.setItem({
+        item: () => undefined,
+        emptyItem: () => "Add it",
+        pageAddress: "https://rosasbakery.co.uk/blog/spring.html",
+      });
       engine.setPosts(() => undefined);
       engine.applyChange({ page: { ...page, content: [{ type: "Keys", props: { id: "k" } }] } });
     });

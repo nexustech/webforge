@@ -22,7 +22,7 @@ const PLACES: readonly (readonly [RegExp, LabelPlace])[] = [
   [/^siteText\.announcement\./, "announcement"],
   [/^siteText\.backToTop$/, "backToTop"],
   [
-    /^siteText\.(noPosts|allPosts|newerPosts|olderPosts|postPages|postsTagged|blogPage|postTags)$/,
+    /^siteText\.(noPosts|allPosts|newerPosts|olderPosts|postPages|postsTagged|blogPage|postTags|shareButtons|shareEmail)$/,
     "blog",
   ],
   [

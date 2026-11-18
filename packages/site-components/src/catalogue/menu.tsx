@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import type { ReactNode } from "react";
 import { defineComponent } from "../define.js";
 import { contentWidthClass, defineSection } from "../frame.js";

@@ -1,5 +1,5 @@
 import { Button, Picker } from "@webforge/editor-ui";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import { type ImageMeta, isImageMeta, type SiteDoc, type ThemeTokens } from "@webforge/model";
 import {
   type BrandProposal,

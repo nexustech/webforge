@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { english } from "./components.js";
 import { componentFamilies, components } from "./en/components/index.js";
 import { areas, en } from "./en.js";
 
@@ -17,7 +18,14 @@ describe("en", () => {
     expect(Object.keys(components).toSorted()).toEqual(keys.toSorted());
   });
 
+  it("keeps the site components' strings apart from the app's, each key in one (#1150)", () => {
+    expect(Object.keys(components).filter((key) => Object.hasOwn(en, key))).toEqual([]);
+    expect(Object.keys(english).toSorted()).toEqual(
+      [...Object.keys(en), ...Object.keys(components)].toSorted(),
+    );
+  });
+
   it("has no empty messages", () => {
-    expect(Object.entries(en).filter(([, message]) => message.trim() === "")).toEqual([]);
+    expect(Object.entries(english).filter(([, message]) => message.trim() === "")).toEqual([]);
   });
 });

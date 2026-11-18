@@ -101,7 +101,7 @@ describe("addBlog (6.10a)", () => {
     expect(site().pages[postId]).toBeUndefined();
   });
 
-  it("binds the design's title, date and picture to each post's, with its tags and a button back Home", () => {
+  it("binds the design's title, date and picture to each post's, with its tags, share buttons and a button back Home", () => {
     let n = 0;
     const design = blogDesign("home" as PageId, () => `n${++n}`);
     const [top] = design.before;
@@ -114,9 +114,11 @@ describe("addBlog (6.10a)", () => {
     ]);
     expect(design.after[0]?.props.content).toEqual([
       { type: "PostTags", props: { id: "n6" } },
+      // A new Blog's only (6.17b): an existing Blog's design keeps what it has.
+      { type: "ShareButtons", props: { id: "n7" } },
       {
         type: "Button",
-        props: { id: "n7", label: "Back to Home", link: { kind: "page", pageId: "home" } },
+        props: { id: "n8", label: "Back to Home", link: { kind: "page", pageId: "home" } },
       },
     ]);
   });
@@ -457,7 +459,7 @@ describe("removing from a post's design or Header (6.10a, D7)", () => {
     );
     expect(
       ((design()?.after[0]?.props.content ?? []) as NodeDoc[]).map((node) => node.type),
-    ).toEqual(["PostTags"]);
+    ).toEqual(["PostTags", "ShareButtons"]);
   });
 
   it("keeps the design when an element leaves the Footer on a post, or a removal is cancelled", async () => {

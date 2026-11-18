@@ -83,6 +83,9 @@ describe("the carousel behaviour (2.10)", () => {
     ]);
     expect(slides[0]?.getAttribute("role")).toBe("group");
     expect(slides[0]?.getAttribute("aria-roledescription")).toBe("slide");
+    // On an element that may take the role, not the figure inside it (#1156).
+    expect(slides.map((each) => each.tagName)).toEqual(["DIV", "DIV", "DIV"]);
+    expect(document.querySelector("figure[role]")).toBeNull();
     expect(root.querySelector<HTMLElement>("[data-wf-carousel-controls]")?.hidden).toBe(false);
   });
 
