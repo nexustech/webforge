@@ -23,7 +23,9 @@ describe("Share buttons (6.17b)", () => {
   it("links to each network's share page with the post's whole address, encoded, and nothing else", () => {
     const html = render({ pageAddress: ADDRESS });
 
-    expect(html).toContain("Share this post");
+    // The links are named in their nav, so "Facebook" reads as a share, not the business's own
+    // profile (WCAG 2.4.4).
+    expect(html).toMatch(/^<nav aria-label="Share this post"[^>]*>(?:(?!<\/nav>).)*<a /s);
     expect(hrefs(html)).toEqual([
       `mailto:?body=${ENCODED}`,
       `https://wa.me/?text=${ENCODED}`,
@@ -47,6 +49,7 @@ describe("Share buttons (6.17b)", () => {
     const html = render({ pageAddress: ADDRESS, siteText: siteTextFor("de") });
 
     expect(html).toContain("Diesen Beitrag teilen");
+    expect(html).toContain('<nav aria-label="Diesen Beitrag teilen"');
     expect([...html.matchAll(/>([^<>]+)<\/a>/g)].map((match) => match[1])).toEqual([
       "E-Mail",
       "WhatsApp",

@@ -45,9 +45,12 @@ const shareButtons = defineComponent({
       );
     }
     const encoded = encodeURIComponent(address);
+    const label = context.siteText("siteText.shareButtons");
+    // Named by its label, so a link reached on its own reads "Facebook" in "Share this post", not
+    // as the business's own profile, as Social links' "Facebook" is (WCAG 2.4.4).
     return (
-      <div className={`site-share-buttons${marginClasses(values.margin)}`}>
-        <p className="mb-2 font-semibold text-body">{context.siteText("siteText.shareButtons")}</p>
+      <nav aria-label={label} className={`site-share-buttons${marginClasses(values.margin)}`}>
+        <p className="mb-2 font-semibold text-body">{label}</p>
         <ul className="flex flex-wrap gap-2">
           {NETWORKS.map((network) => (
             <li key={network.share}>
@@ -57,7 +60,7 @@ const shareButtons = defineComponent({
             </li>
           ))}
         </ul>
-      </div>
+      </nav>
     );
   },
 });
