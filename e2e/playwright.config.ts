@@ -14,6 +14,10 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
   timeout: 60_000,
+  // On CI, the whole run stops after 26 minutes, inside the E2E job's 30 (ci.yml), with Playwright's
+  // report of the test it was in and the ones it didn't reach: a run held up past the job's limit
+  // was cancelled with no report at all (#1161). The longest shard (macOS 1/2) takes 15–23 minutes.
+  globalTimeout: process.env.CI ? 26 * 60_000 : 0,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
     trace: "retain-on-failure",
