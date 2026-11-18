@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
 import { whereOwnColour } from "../appearance.js";

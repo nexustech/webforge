@@ -88,7 +88,7 @@ export function moduleFile(names: Names, place: Place, category = ""): string {
   ];
   if (place === "section") {
     return [
-      'import { t } from "@webforge/i18n";',
+      'import { t } from "@webforge/i18n/components";',
       'import { contentWidthClass, defineSection } from "../frame.js";',
       'import type { ComponentDef } from "../library.js";',
       'import { BodyText, SectionTitle } from "../typography.js";',
@@ -120,7 +120,7 @@ export function moduleFile(names: Names, place: Place, category = ""): string {
   }
   if (place === "element") {
     return [
-      'import { t } from "@webforge/i18n";',
+      'import { t } from "@webforge/i18n/components";',
       'import { defineComponent } from "../define.js";',
       'import { MARGIN_FIELD, marginClasses } from "../frame.js";',
       'import type { ComponentDef } from "../library.js";',
@@ -145,7 +145,7 @@ export function moduleFile(names: Names, place: Place, category = ""): string {
     ].join("\n");
   }
   return [
-    'import { t } from "@webforge/i18n";',
+    'import { t } from "@webforge/i18n/components";',
     'import { defineComponent } from "../define.js";',
     'import type { ComponentDef } from "../library.js";',
     "",
@@ -195,7 +195,7 @@ export function storyFile(names: Names): string {
 /** The family's test: it renders, with its starter text. Test what its render works out. */
 export function testFile(names: Names): string {
   return [
-    'import { t } from "@webforge/i18n";',
+    'import { t } from "@webforge/i18n/components";',
     'import { describe, expect, it } from "vitest";',
     'import { EDITOR_RENDER_CONTEXT } from "../library.js";',
     'import { renderNodesToHtml } from "../render-static.js";',

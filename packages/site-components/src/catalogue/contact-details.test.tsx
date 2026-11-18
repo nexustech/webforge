@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import type { BindableSetting, NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";

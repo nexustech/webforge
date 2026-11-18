@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import type { LayoutDoc, PageDoc } from "@webforge/model";
 import { createLibrary } from "../define.js";
 import type { ComponentLibrary } from "../library.js";

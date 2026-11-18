@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./components": "./src/components.ts",
     "./site-text": "./src/site-text.ts"
   },
   "devDependencies": {

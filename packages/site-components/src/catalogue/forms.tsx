@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import { type SiteText, siteTextFor } from "@webforge/i18n/site-text";
 import { httpsAddress, type NodeDoc, newsletterUnset } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";

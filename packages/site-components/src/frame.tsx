@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import { INVERSE_THEME } from "@webforge/model";
 import { createContext, type ReactNode } from "react";
 import {

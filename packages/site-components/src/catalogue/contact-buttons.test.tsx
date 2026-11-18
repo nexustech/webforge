@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import { siteTextFor } from "@webforge/i18n/site-text";
 import type { BindableSetting } from "@webforge/model";
 import { describe, expect, it } from "vitest";

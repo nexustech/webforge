@@ -6,7 +6,7 @@ import {
   type OptionGroup,
   toast,
 } from "@webforge/editor-ui";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import {
   type ColorRole,
   fontRefSchema,
