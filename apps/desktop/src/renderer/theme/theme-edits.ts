@@ -1,4 +1,9 @@
-import { isMessageKey, type MessageKey, plural, t } from "@webforge/i18n";
+import {
+  type ComponentMessageKey,
+  isComponentMessageKey,
+  plural,
+  t,
+} from "@webforge/i18n/components";
 import {
   type ColorRole,
   copyTheme,
@@ -86,7 +91,7 @@ function setPageColor(tokens: ThemeTokens, role: ColorRole, color: Oklch): void 
 
 /** Each colour's name (glossary) and its undo step's. */
 export const COLOR_WORDS: Readonly<
-  Record<QuickColor, { readonly name: MessageKey; readonly history: MessageKey }>
+  Record<QuickColor, { readonly name: ComponentMessageKey; readonly history: ComponentMessageKey }>
 > = {
   primary: { name: "colour.role.brand", history: "theme.history.color.brand" },
   secondary: { name: "colour.role.accent", history: "theme.history.color.accent" },
@@ -99,7 +104,7 @@ export const COLOR_WORDS: Readonly<
  * Every colour role's name, as Theme Studio's palette rows show it: the glossary's Brand, Accent,
  * Second accent, Surface and Text, the surfaces after them, and each colour's text.
  */
-export const ROLE_NAMES: Readonly<Record<ColorRole, MessageKey>> = {
+export const ROLE_NAMES: Readonly<Record<ColorRole, ComponentMessageKey>> = {
   "base-100": "colour.role.surface",
   "base-200": "theme.role.surface2",
   "base-300": "theme.role.surface3",
@@ -125,7 +130,7 @@ export const ROLE_NAMES: Readonly<Record<ColorRole, MessageKey>> = {
 /** A preset's name (`theme.preset.<name>`); its own name for one the catalogue hasn't named yet. */
 export function presetName(preset: string): string {
   const key = `theme.preset.${preset}`;
-  return isMessageKey(key) ? t(key) : preset;
+  return isComponentMessageKey(key) ? t(key) : preset;
 }
 
 /** A theme's name: the person's own name for it (2.23), or its preset's. */
@@ -215,7 +220,7 @@ export function setToken(
   return changeTheme(
     session,
     asks,
-    t(`theme.history.${control.group}` as MessageKey),
+    t(`theme.history.${control.group}` as ComponentMessageKey),
     undefined,
     (tokens) => setTokenValue(tokens, control, value),
   );

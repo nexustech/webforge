@@ -14,6 +14,7 @@ import { gallery } from "./gallery.js";
 import { latestPosts } from "./latestPosts.js";
 import { layout } from "./layout.js";
 import { logos } from "./logos.js";
+import { menu } from "./menu.js";
 import { postTags } from "./postTags.js";
 import { pricing } from "./pricing.js";
 import { sections } from "./sections.js";
@@ -57,6 +58,7 @@ export const componentFamilies = {
   contactButtons,
   steps,
   accordion,
+  menu,
   table,
   shareButtons,
 } as const;
@@ -88,6 +90,7 @@ export const components = {
   ...contactButtons,
   ...steps,
   ...accordion,
+  ...menu,
   ...table,
   ...shareButtons,
 } as const;

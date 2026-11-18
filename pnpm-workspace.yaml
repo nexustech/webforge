@@ -75,3 +75,12 @@ overrides:
   happy-dom: 21.0.4
   js-beautify>glob: 14.0.3
   editorconfig>minimatch: 11.0.3
+
+# picomatch ≤4.0.7 has a high ReDoS advisory (GHSA-fc5q-39xc-vjpf) with no patched version, which
+# CI's dependency audit fails on. It is reached only through @webforge/test-utils > vitest > vite
+# (and vite's tinyglobby and fdir), which match the test files' globs: nothing the app or a site
+# ships loads it. Approved by the product owner (18 Nov). Remove this once picomatch is patched
+# (#1154).
+auditConfig:
+  ignoreGhsas:
+    - GHSA-fc5q-39xc-vjpf

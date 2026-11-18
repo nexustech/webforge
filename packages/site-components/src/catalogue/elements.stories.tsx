@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import type { NodeDoc } from "@webforge/model";
 import { SiteNodes } from "../stories/site-nodes.js";
 

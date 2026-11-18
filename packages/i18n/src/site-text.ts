@@ -1,17 +1,19 @@
 // The site's own labels in its language (6.12, CC-1): `@webforge/i18n/site-text`, an entry of its
 // own, so the app's start-up, which needs `t` alone, doesn't load the other languages' catalogues.
+
+import type { ComponentParamsArg } from "./components.js";
 import { de } from "./de/site-text.js";
-import { en } from "./en.js";
+import { components } from "./en/components/index.js";
 import { es } from "./es/site-text.js";
 import { fr } from "./fr/site-text.js";
 import type { SiteText, SiteTextCatalogue, SiteTextKey } from "./site-text-key.js";
 
-import { filled, type MessageParams, type ParamsArg } from "./translate.js";
+import { filled, type MessageParams } from "./translate.js";
 
 export type { SiteText, SiteTextCatalogue, SiteTextKey } from "./site-text-key.js";
 
 /** Every label of the exported site, in the English catalogue's order (6.12). */
-export const SITE_TEXT_KEYS: readonly SiteTextKey[] = Object.keys(en).filter(
+export const SITE_TEXT_KEYS: readonly SiteTextKey[] = Object.keys(components).filter(
   (key): key is SiteTextKey => key.startsWith("siteText."),
 );
 
@@ -33,7 +35,7 @@ function siteTextCatalogue(language: string | undefined): SiteTextCatalogue {
  */
 export function siteTextFrom(catalogue: SiteTextCatalogue): SiteText {
   return (key, ...[params]) =>
-    filled(catalogue[key] ?? en[key], params as MessageParams | undefined);
+    filled(catalogue[key] ?? components[key], params as MessageParams | undefined);
 }
 
 /**
@@ -59,7 +61,7 @@ export function siteTextFor(
 export function siteText<K extends SiteTextKey>(
   language: string | undefined,
   key: K,
-  ...params: ParamsArg<K>
+  ...params: ComponentParamsArg<K>
 ): string {
   return siteTextFor(language)(key, ...params);
 }

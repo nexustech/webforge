@@ -4,7 +4,6 @@ import { app } from "./en/app.js";
 import { assistant } from "./en/assistant.js";
 import { blog } from "./en/blog.js";
 import { canvas } from "./en/canvas.js";
-import { components } from "./en/components/index.js";
 import { exportSite } from "./en/export.js";
 import { find } from "./en/find.js";
 import { fonts } from "./en/fonts.js";
@@ -39,7 +38,6 @@ export const areas = {
   storage,
   canvas,
   history,
-  components,
   export: exportSite,
   fonts,
   puck,
@@ -72,7 +70,6 @@ export const en = {
   ...storage,
   ...canvas,
   ...history,
-  ...components,
   ...exportSite,
   ...fonts,
   ...puck,

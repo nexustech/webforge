@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/components";
 import { contentWidthClass, defineSection } from "../frame.js";
 import { type ComponentDef, linkAttributes, linkValue } from "../library.js";
 import { StrokeIcon } from "../stroke-icon.js";
