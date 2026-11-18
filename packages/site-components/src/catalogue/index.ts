@@ -18,6 +18,7 @@ import { galleryComponents } from "./gallery.js";
 import { latestPostsComponents } from "./latest-posts.js";
 import { layoutComponents } from "./layout.js";
 import { logosComponents } from "./logos.js";
+import { menuComponents } from "./menu.js";
 import { postTagsComponents } from "./post-tags.js";
 import { pricingComponents } from "./pricing.js";
 import { sectionsComponents } from "./sections.js";
@@ -60,6 +61,7 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   contactButtonsComponents,
   stepsComponents,
   accordionComponents,
+  menuComponents,
   tableComponents,
   shareButtonsComponents,
 );

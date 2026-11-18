@@ -9545,6 +9545,287 @@
         "text": "<p>What visitors see when they open this item.</p>"
       }
     },
+    "Menu": {
+      "label": "Food and drink menu",
+      "place": "section",
+      "category": "Prices",
+      "framed": true,
+      "appearance": "all",
+      "deeper": "titled",
+      "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
+        "title": {
+          "kind": "text",
+          "label": "Title",
+          "inline": true
+        },
+        "text": {
+          "kind": "richtext",
+          "label": "Text",
+          "inline": true
+        },
+        "items": {
+          "kind": "slot",
+          "label": "Dishes and drinks",
+          "allow": [
+            "MenuItem"
+          ]
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
+        "colors": {
+          "kind": "select",
+          "label": "Colours",
+          "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+          "options": [
+            {
+              "label": "Page colours",
+              "value": "page"
+            },
+            {
+              "label": "Reversed",
+              "value": "inverse"
+            }
+          ]
+        },
+        "padding": {
+          "kind": "box",
+          "label": "Padding",
+          "property": "padding",
+          "responsive": true
+        },
+        "margin": {
+          "kind": "box",
+          "label": "Margin",
+          "property": "margin",
+          "responsive": true,
+          "sides": [
+            "top",
+            "bottom"
+          ]
+        },
+        "entrance": {
+          "kind": "select",
+          "label": "Entrance animation",
+          "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+          "group": "style",
+          "options": [
+            {
+              "label": "None",
+              "value": "none"
+            },
+            {
+              "label": "Fade in",
+              "value": "fade"
+            },
+            {
+              "label": "Slide up",
+              "value": "slideUp"
+            },
+            {
+              "label": "Slide in from the left",
+              "value": "slideLeft"
+            },
+            {
+              "label": "Slide in from the right",
+              "value": "slideRight"
+            },
+            {
+              "label": "Zoom in",
+              "value": "zoom"
+            }
+          ]
+        },
+        "entranceDelay": {
+          "kind": "slider",
+          "label": "Delay",
+          "group": "style",
+          "steps": [
+            {
+              "label": "None",
+              "value": "none"
+            },
+            {
+              "label": "Short",
+              "value": "short"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Long",
+              "value": "long"
+            }
+          ]
+        }
+      },
+      "defaults": {
+        "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
+        "contentWidth": "narrow",
+        "title": "Our menu",
+        "text": "<p>Everything is made here, fresh each day.</p>",
+        "items": [
+          {
+            "type": "MenuItem",
+            "props": {
+              "id": "menu-item-0",
+              "heading": "Breakfast",
+              "name": "Eggs on toast",
+              "price": "£6.50",
+              "description": "<p>Poached, fried or scrambled, on sourdough toast.</p>"
+            }
+          },
+          {
+            "type": "MenuItem",
+            "props": {
+              "id": "menu-item-1",
+              "heading": "",
+              "name": "Porridge",
+              "price": "£5.00",
+              "description": "<p>With berries and honey.</p>"
+            }
+          },
+          {
+            "type": "MenuItem",
+            "props": {
+              "id": "menu-item-2",
+              "heading": "Drinks",
+              "name": "Coffee",
+              "price": "£2.80",
+              "description": "<p>Espresso, americano, flat white or latte.</p>"
+            }
+          },
+          {
+            "type": "MenuItem",
+            "props": {
+              "id": "menu-item-3",
+              "heading": "",
+              "name": "Tea",
+              "price": "£2.50",
+              "description": "<p>A pot of breakfast tea, Earl Grey or peppermint.</p>"
+            }
+          }
+        ]
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
+    },
+    "MenuItem": {
+      "label": "Dish or drink",
+      "place": "child",
+      "fields": {
+        "heading": {
+          "kind": "text",
+          "label": "Group heading",
+          "help": "Starts a group with this heading above it, such as \"Starters\" or \"Drinks\". Leave it empty to carry on the group above."
+        },
+        "name": {
+          "kind": "text",
+          "label": "Name",
+          "inline": true
+        },
+        "price": {
+          "kind": "text",
+          "label": "Price",
+          "inline": true
+        },
+        "description": {
+          "kind": "richtext",
+          "label": "Description",
+          "inline": true
+        }
+      },
+      "defaults": {
+        "heading": "",
+        "name": "New item",
+        "price": "£5.00",
+        "description": "<p>Say what's in it.</p>"
+      }
+    },
     "Table": {
       "label": "Table",
       "place": "element",

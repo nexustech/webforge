@@ -569,39 +569,175 @@
           },
           "content": [
             {
-              "type": "TextSection",
+              "type": "Menu",
               "props": {
-                "id": "breakfast",
+                "id": "menu",
                 "colors": "page",
-                "title": "Breakfast, until 11:30",
-                "text": "<p><strong>Full breakfast</strong> · £10.50<br>Two eggs, bacon or mushrooms, sausage, beans, tomato and sourdough toast.</p><p><strong>Eggs on toast</strong> · £6.50<br>Poached, fried or scrambled, on sourdough or seeded toast.</p><p><strong>Porridge</strong> · £5.00<br>With berries and honey, or brown sugar and cream.</p><p><strong>Bacon roll</strong> · £4.50<br>Smoked bacon in a soft white roll. Add an egg for £1.</p>"
-              }
-            },
-            {
-              "type": "TextSection",
-              "props": {
-                "id": "lunch",
-                "colors": "inverse",
-                "title": "Lunch, from 11:30",
-                "text": "<p><strong>Soup of the day</strong> · £6.50<br>Made fresh each morning, with bread and butter.</p><p><strong>Toasted sandwiches</strong> · £7.50<br>Cheese and onion, ham and mustard, or mushroom and spinach.</p><p><strong>Jacket potato</strong> · £7.00<br>With cheese and beans, tuna mayonnaise or chilli.</p><p><strong>Ploughman's</strong> · £9.50<br>Local cheese, ham, pickle, apple and a crusty roll.</p>"
-              }
-            },
-            {
-              "type": "TextSection",
-              "props": {
-                "id": "cakes",
-                "colors": "page",
-                "title": "Cakes and bakes",
-                "text": "<p><strong>Scone with jam and cream</strong> · £4.00<br>Plain or fruit, still warm in the morning.</p><p><strong>Lemon drizzle</strong> · £3.50<br>Our most asked-for cake.</p><p><strong>Chocolate brownie</strong> · £3.50<br>Gluten-free, and nobody can tell.</p><p><strong>Cake of the day</strong> · £3.75<br>Ask at the counter, or look at the board.</p>"
-              }
-            },
-            {
-              "type": "TextSection",
-              "props": {
-                "id": "drinks",
-                "colors": "page",
-                "title": "Drinks",
-                "text": "<p><strong>Coffee</strong> · from £2.80<br>Espresso, americano, flat white, latte and cappuccino. Oat milk at no extra cost.</p><p><strong>Tea</strong> · £2.50<br>A pot of breakfast tea, Earl Grey, green or peppermint.</p><p><strong>Hot chocolate</strong> · £3.50<br>With cream and marshmallows if you like.</p><p><strong>Cold drinks</strong> · from £2.20<br>Fresh orange juice, local apple juice and sparkling water.</p>"
+                "contentWidth": "narrow",
+                "title": "What we serve",
+                "text": "<p>Everything is made here each morning, from breakfast to the last slice of cake.</p>",
+                "items": [
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "breakfast-0",
+                      "heading": "Breakfast, until 11:30",
+                      "name": "Full breakfast",
+                      "price": "£10.50",
+                      "description": "<p>Two eggs, bacon or mushrooms, sausage, beans, tomato and sourdough toast.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "breakfast-1",
+                      "heading": "",
+                      "name": "Eggs on toast",
+                      "price": "£6.50",
+                      "description": "<p>Poached, fried or scrambled, on sourdough or seeded toast.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "breakfast-2",
+                      "heading": "",
+                      "name": "Porridge",
+                      "price": "£5.00",
+                      "description": "<p>With berries and honey, or brown sugar and cream.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "breakfast-3",
+                      "heading": "",
+                      "name": "Bacon roll",
+                      "price": "£4.50",
+                      "description": "<p>Smoked bacon in a soft white roll. Add an egg for £1.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "lunch-0",
+                      "heading": "Lunch, from 11:30",
+                      "name": "Soup of the day",
+                      "price": "£6.50",
+                      "description": "<p>Made fresh each morning, with bread and butter.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "lunch-1",
+                      "heading": "",
+                      "name": "Toasted sandwiches",
+                      "price": "£7.50",
+                      "description": "<p>Cheese and onion, ham and mustard, or mushroom and spinach.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "lunch-2",
+                      "heading": "",
+                      "name": "Jacket potato",
+                      "price": "£7.00",
+                      "description": "<p>With cheese and beans, tuna mayonnaise or chilli.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "lunch-3",
+                      "heading": "",
+                      "name": "Ploughman's",
+                      "price": "£9.50",
+                      "description": "<p>Local cheese, ham, pickle, apple and a crusty roll.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "cakes-0",
+                      "heading": "Cakes and bakes",
+                      "name": "Scone with jam and cream",
+                      "price": "£4.00",
+                      "description": "<p>Plain or fruit, still warm in the morning.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "cakes-1",
+                      "heading": "",
+                      "name": "Lemon drizzle",
+                      "price": "£3.50",
+                      "description": "<p>Our most asked-for cake.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "cakes-2",
+                      "heading": "",
+                      "name": "Chocolate brownie",
+                      "price": "£3.50",
+                      "description": "<p>Gluten-free, and nobody can tell.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "cakes-3",
+                      "heading": "",
+                      "name": "Cake of the day",
+                      "price": "£3.75",
+                      "description": "<p>Ask at the counter, or look at the board.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "drinks-0",
+                      "heading": "Drinks",
+                      "name": "Coffee",
+                      "price": "from £2.80",
+                      "description": "<p>Espresso, americano, flat white, latte and cappuccino. Oat milk at no extra cost.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "drinks-1",
+                      "heading": "",
+                      "name": "Tea",
+                      "price": "£2.50",
+                      "description": "<p>A pot of breakfast tea, Earl Grey, green or peppermint.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "drinks-2",
+                      "heading": "",
+                      "name": "Hot chocolate",
+                      "price": "£3.50",
+                      "description": "<p>With cream and marshmallows if you like.</p>"
+                    }
+                  },
+                  {
+                    "type": "MenuItem",
+                    "props": {
+                      "id": "drinks-3",
+                      "heading": "",
+                      "name": "Cold drinks",
+                      "price": "from £2.20",
+                      "description": "<p>Fresh orange juice, local apple juice and sparkling water.</p>"
+                    }
+                  }
+                ]
               }
             },
             {
