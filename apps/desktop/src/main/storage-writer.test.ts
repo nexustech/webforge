@@ -307,8 +307,10 @@ describe("the storage writer thread (R13b)", () => {
       await session.close();
       const { user, system } = process.threadCpuUsage(cpu);
 
-      // As for an import: this thread's CPU time, which an IPC call would wait behind.
-      expect((user + system) / 1000).toBeLessThan(MAIN_THREAD_BUDGET_MS);
+      // As for an import: this thread's CPU time, which an IPC call would wait behind. Scaled to the
+      // run's load as a timeout is (ADR 0014): a busy machine's switching costs this thread CPU time
+      // too, and a full local run read 109 ms once (#1147). A VACUUM here would still take seconds.
+      expect((user + system) / 1000).toBeLessThan(scaledTestTimeout(MAIN_THREAD_BUDGET_MS));
       expect(statSync(sitePath).size).toBeLessThan(before / 10);
       ProjectStore.open(sitePath).close();
     },

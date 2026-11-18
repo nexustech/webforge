@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { DRAWER_ITEM, RICH_TEXT } from "@webforge/engine/puck-dom";
-import { clickOnCanvas } from "./canvas-click.js";
+import { clickOnCanvas, editOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { below, boxOf, drag, lowerHalf } from "./drag.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
@@ -147,11 +147,7 @@ test.describe("Puck canvas with Webforge history", () => {
 
   test("a text-editing session is one step, undoable word by word while it lasts", async () => {
     const field = canvas().locator("h1 [contenteditable]");
-    // Puck makes the field editable only while it is hovered or focused.
-    await field.hover();
-    await expect(field).toHaveAttribute("contenteditable", "plaintext-only");
-    await field.click();
-    await expect(field).toBeFocused();
+    await editOnCanvas(field);
     await placeCaret(field, "end");
     await page.keyboard.type(" today", { delay: 20 });
     // Pause longer than the coalescing window: the next words become a separate chunk.
