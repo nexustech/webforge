@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { ACTION_BAR_ACTION, ACTION_BAR_LABEL, COMPONENT, OVERLAY } from "@webforge/engine/puck-dom";
-import { clickOnCanvas, editOnCanvas } from "./canvas-click.js";
+import { clickOnCanvas, editOnCanvas, stillBox } from "./canvas-click.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The Table (6.16c): placed from the Add panel, its rows laid out on the canvas as the export lays
@@ -81,9 +81,12 @@ const row = (n: number) => canvas().locator("tr.site-table-row").nth(n);
 const wrapperOf = (n: number) =>
   canvas().locator(`.site-table > table > tbody > ${COMPONENT}`).nth(n);
 
-/** A point on row `n`'s left edge, in its first cell's padding: not on text, which edits. */
+/**
+ * A point on row `n`'s left edge, in its first cell's padding: not on text, which edits. Once the
+ * row keeps still, so the point is still on it when the pointer gets there (#1147).
+ */
 async function edgeOf(n: number) {
-  const box = await boxOf(wrapperOf(n));
+  const box = await stillBox(wrapperOf(n));
   return { x: box.x + 4, y: box.y + box.height / 2 };
 }
 
