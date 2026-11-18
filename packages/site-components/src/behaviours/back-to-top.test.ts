@@ -28,28 +28,32 @@ function page({ still = false } = {}) {
     window,
     window.HTMLElement,
   );
-  const button = document.querySelector<HTMLElement>("[data-wf-back-to-top]");
-  if (button === null) throw new Error("No back-to-top button");
+  const nav = document.querySelector<HTMLElement>("[data-wf-back-to-top]");
+  const button = nav?.querySelector<HTMLElement>("a");
+  if (nav == null || button == null) throw new Error("No back-to-top button");
   const scrollTo = (y: number) => {
     Object.defineProperty(window, "scrollY", { value: y, configurable: true });
     window.dispatchEvent(new window.Event("scroll"));
   };
-  return { document, button, scrollTo, scrolls };
+  return { document, nav, button, scrollTo, scrolls };
 }
 
 describe("the back-to-top behaviour (F-CM-9)", () => {
   it("is a link to the top named for screen readers, shown once the page has scrolled a screen", () => {
-    const { button, scrollTo } = page();
+    const { nav, button, scrollTo } = page();
 
     expect(button.getAttribute("href")).toBe("#");
     expect(button.getAttribute("aria-label")).toBe("Back to top");
-    expect(button.hidden).toBe(true);
+    // In a landmark of its own name, which shows and hides with it (#1153).
+    expect(nav.tagName).toBe("NAV");
+    expect(nav.getAttribute("aria-label")).toBe("Back to top");
+    expect(nav.hidden).toBe(true);
     scrollTo(767);
-    expect(button.hidden).toBe(true);
+    expect(nav.hidden).toBe(true);
     scrollTo(768);
-    expect(button.hidden).toBe(false);
+    expect(nav.hidden).toBe(false);
     scrollTo(0);
-    expect(button.hidden).toBe(true);
+    expect(nav.hidden).toBe(true);
   });
 
   it("scrolls back smoothly and gives the page the focus, so the next Tab starts at the top", () => {

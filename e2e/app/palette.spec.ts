@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { hoverUntilShown } from "./hover.js";
 import { launchDesktopApp, newUserDataDir, removeWhenFree, waitForCanvas } from "./launch.js";
 
 // Command palette and Add panel favourites (1.34, F-ED-26, UX-10, UX-11): Ctrl/Cmd+P finds
@@ -58,9 +59,13 @@ test.describe("section previews", () => {
   test.afterEach(() => app.close());
 
   test("show a section in the site's theme colours and font (UX-10)", async () => {
-    await left().getByRole("button", { name: "Hero", exact: true }).hover();
     const preview = page.locator('[data-slot="hover-card-content"] > div');
-    await expect(preview).toBeVisible();
+    // Off onto the right panels, which have no section previews.
+    await hoverUntilShown(
+      left().getByRole("button", { name: "Hero", exact: true }),
+      preview,
+      page.getByRole("region", { name: "Right panels" }),
+    );
     // The canvas shows the page in the site's theme: the preview has the same colours.
     const pageColours = await canvas()
       .locator("body")

@@ -139,25 +139,29 @@ const carouselSlide = defineComponent({
   render: ({ values, context }) => {
     const placed = values.image;
     const image = placed === undefined ? null : context.image(placed.mediaId);
+    // The slide's place in the strip, which the script names "slide, 2 of 5" (role="group"); the
+    // figure inside it fills it. A <figure> with a caption may not take that role (#1156).
     return (
-      <figure className="site-carousel-slide flex shrink-0 basis-full snap-start flex-col items-center gap-4 text-center group-data-[layout=logos]/carousel:basis-1/2 group-data-[layout=logos]/carousel:justify-center md:group-data-[layout=logos]/carousel:basis-1/4">
-        {image !== null && (
-          <Picture
-            image={image}
-            alt={placed?.alt ?? image.alt}
-            sizes="(min-width: 768px) 50vw, 100vw"
-            className="h-auto w-full rounded-box object-cover group-data-[layout=images]/carousel:aspect-video group-data-[layout=logos]/carousel:max-h-16 group-data-[layout=logos]/carousel:w-auto group-data-[layout=logos]/carousel:rounded-none group-data-[layout=logos]/carousel:object-contain group-data-[layout=testimonials]/carousel:size-16 group-data-[layout=testimonials]/carousel:rounded-full"
-          />
-        )}
-        <p
-          className={`max-w-2xl ${LEAD_TEXT_CLASSES} group-data-[layout=images]/carousel:text-base group-data-[layout=logos]/carousel:hidden group-data-[layout=testimonials]/carousel:text-xl group-data-[layout=testimonials]/carousel:italic`}
-        >
-          {values.text}
-        </p>
-        <figcaption className="font-semibold group-data-[layout=images]/carousel:hidden group-data-[layout=logos]/carousel:sr-only">
-          {values.name}
-        </figcaption>
-      </figure>
+      <div className="site-carousel-slide flex shrink-0 basis-full snap-start group-data-[layout=logos]/carousel:basis-1/2 md:group-data-[layout=logos]/carousel:basis-1/4">
+        <figure className="flex w-full flex-col items-center gap-4 text-center group-data-[layout=logos]/carousel:justify-center">
+          {image !== null && (
+            <Picture
+              image={image}
+              alt={placed?.alt ?? image.alt}
+              sizes="(min-width: 768px) 50vw, 100vw"
+              className="h-auto w-full rounded-box object-cover group-data-[layout=images]/carousel:aspect-video group-data-[layout=logos]/carousel:max-h-16 group-data-[layout=logos]/carousel:w-auto group-data-[layout=logos]/carousel:rounded-none group-data-[layout=logos]/carousel:object-contain group-data-[layout=testimonials]/carousel:size-16 group-data-[layout=testimonials]/carousel:rounded-full"
+            />
+          )}
+          <p
+            className={`max-w-2xl ${LEAD_TEXT_CLASSES} group-data-[layout=images]/carousel:text-base group-data-[layout=logos]/carousel:hidden group-data-[layout=testimonials]/carousel:text-xl group-data-[layout=testimonials]/carousel:italic`}
+          >
+            {values.text}
+          </p>
+          <figcaption className="font-semibold group-data-[layout=images]/carousel:hidden group-data-[layout=logos]/carousel:sr-only">
+            {values.name}
+          </figcaption>
+        </figure>
+      </div>
     );
   },
 });

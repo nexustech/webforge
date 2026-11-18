@@ -1,10 +1,11 @@
-import type {
-  BundledFile,
-  ItemValue,
-  NodeDoc,
-  SiteCollection,
-  SitePage,
-  SiteSnapshot,
+import {
+  type BundledFile,
+  exportedAddress,
+  type ItemValue,
+  type NodeDoc,
+  type SiteCollection,
+  type SitePage,
+  type SiteSnapshot,
 } from "@webforge/model";
 import {
   hrefFor,
@@ -15,7 +16,7 @@ import {
 } from "@webforge/site-components";
 import { imageAt } from "./images.js";
 import { toBundled, withCustomCode } from "./site-code.js";
-import { NOT_FOUND_PATH } from "./site-files.js";
+import { NOT_FOUND_PATH, siteAddress } from "./site-files.js";
 import { siteTextOf } from "./site-text.js";
 
 /**
@@ -112,6 +113,7 @@ export function pageRender(
   const { images, missing, documentPaths, bundled, thanksPage, cookieSettings, netlifyForms } =
     files;
   const warnings: BuildWarning[] = [];
+  const address = siteAddress(site);
   const paths = new Set(site.pages.map((each) => each.path));
   const pathById = new Map(site.pages.map((each) => [each.id as string, each.path]));
   const navigation = navigationFor(
@@ -168,6 +170,10 @@ export function pageRender(
     setting: (key) => site.settings?.[key],
     // A post's fields, which its Blog's design shows (6.10a); an empty one shows nothing.
     ...(page.item === undefined ? {} : { item: itemOf(page.item) }),
+    // The page's whole address, which Share buttons share (6.17b): none without a web address.
+    ...(address === undefined || page.path === NOT_FOUND_PATH
+      ? {}
+      : { pageAddress: exportedAddress(address, page.path) }),
     // The site's posts for Latest posts and the Blog's own pages (6.10b): the published ones.
     ...(site.collections === undefined || site.collections.length === 0
       ? {}

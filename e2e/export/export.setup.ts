@@ -531,6 +531,7 @@ setup("export a site with a Blog's post, its own pages and its feed (6.10a, 6.10
               ]),
               section("post-end", [
                 element("PostTags", "post-tags", {}),
+                element("ShareButtons", "post-share", {}),
                 element("Button", "post-home", {
                   label: "Back to Home",
                   link: { kind: "page", pageId: sample.pages[0]?.id ?? "" },

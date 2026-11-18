@@ -400,10 +400,11 @@ export interface CanvasEngine {
   setLooks(looks: RenderContext["looks"]): void;
   /**
    * Shows the fields of the post shown (6.10a, ADR 0025) in its Blog's design's bound elements,
-   * and what an empty one shows instead (a hint). Called with none on a page that isn't an item,
-   * and again when the page shown or its fields change; what reads them draws again (#727).
+   * and what an empty one shows instead (a hint), with its address on the web when the site has
+   * one (Share buttons', 6.17b). Called with none on a page that isn't an item, and again when the
+   * page shown, its fields or its address change; what reads them draws again (#727).
    */
-  setItem(item: Pick<RenderContext, "item" | "emptyItem">): void;
+  setItem(item: Pick<RenderContext, "item" | "emptyItem" | "pageAddress">): void;
   /**
    * Shows the site's posts in Latest posts sections (6.10b), as they are on the site, drafts too.
    * Called with none while the site has no Blog, and again when its posts change.
