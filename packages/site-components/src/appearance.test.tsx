@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   APPEARANCE_FIELDS,
   APPEARANCE_FIELDS_WITHOUT_TEXT,
+  APPEARANCE_TEXT_FIELD_NAMES,
   appearanceBoxClasses,
   appearanceClassGroups,
   appearanceSubtitleClasses,
@@ -28,7 +29,7 @@ const placed = (place: "section" | "element") =>
     .map(([type]) => type);
 
 describe("the Appearance group (2.22, ST-1)", () => {
-  it("is on every section and element, first in the Style tab, and on no child", () => {
+  it("is on every section and element, first in an element's Style tab, and on no child", () => {
     for (const [type, def] of Object.entries(siteLibrary.components)) {
       const names = Object.keys(def.fields);
       // The Header and Footer are the page's layout, not sections placed on it.
@@ -46,7 +47,20 @@ describe("the Appearance group (2.22, ST-1)", () => {
           ? APPEARANCE_FIELDS_WITHOUT_TEXT
           : APPEARANCE_FIELDS,
       );
-      expect(names.slice(0, group.length), type).toEqual(group);
+      if (def.place !== "section") {
+        expect(names.slice(0, group.length), type).toEqual(group);
+        continue;
+      }
+      // A section's own options first, then the group, its background and box before its text
+      // (F23, #1180).
+      const text: readonly string[] = APPEARANCE_TEXT_FIELD_NAMES;
+      const boxFirst = [
+        ...group.filter((name) => !text.includes(name)),
+        ...group.filter((name) => text.includes(name)),
+      ];
+      const start = names.indexOf(boxFirst[0] ?? "");
+      expect(names.slice(start, start + boxFirst.length), type).toEqual(boxFirst);
+      expect(names.indexOf("contentWidth"), type).toBeLessThan(start);
     }
   });
 

@@ -54,6 +54,11 @@ export type EditPanelField = FieldSpec & {
    * that is a part of a page (glossary).
    */
   readonly optionGroup?: OptionGroup;
+  /**
+   * Another name the search finds it by, not translated: its CSS property, for people who know CSS
+   * ("padding" for *Space inside*, F23).
+   */
+  readonly alsoCalled?: string;
 };
 
 /** Where a field's value comes from (CT-3); see {@link EditPanelField.source}. */

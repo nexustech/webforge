@@ -39,7 +39,7 @@ export const panels = {
     "Links and search results that use {path} go on to the page's new address. You can remove it in Site Settings › Search engines.",
   "pages.home": "Home page",
   "pages.notFound": "Shown when a page doesn't exist",
-  "pages.hiddenFromNavigation": "Hidden from navigation",
+  "pages.hiddenFromNavigation": "Hidden in the menu",
   // A draft page (G37, #864): its badge in the Pages panel, and the switch in its menu.
   "pages.draftBadge": "Draft",
   "pages.draft": "Draft",
@@ -52,7 +52,7 @@ export const panels = {
   "pages.noFolder": "No Folder",
   "pages.newFolder": "New Folder…",
   "pages.setHome": "Set as Home Page",
-  "pages.hideFromNavigation": "Hide from Navigation",
+  "pages.hideFromNavigation": "Hide in Menu",
   "pages.delete": "Delete…",
   "pages.newPageName": "New page",
   "pages.copyName": "{name} (copy)",
@@ -121,8 +121,11 @@ export const panels = {
   "layers.show": "Show {item}",
   // The toolbar's button with nothing selected.
   "layers.hideSelected": "Don't publish",
-  // A row's eye (UX-23): how the layer shows now, and a menu of the three ways.
-  "layers.shownMenu": "Show or hide {item} (now: {shown})",
+  // A row's eye (UX-23): how the layer shows now, and what a click does: a menu of the three ways.
+  "layers.shownMenu": "{shown}. Choose whether {item} shows…",
+  "layers.shownNow.shown": "Shown",
+  "layers.shownNow.editorHidden": "Hidden while editing",
+  "layers.shownNow.hidden": "Not published",
   "layers.shown.shown": "Show",
   "layers.shown.editorHidden": "Hide While Editing",
   "layers.shown.hidden": "Don't Publish",
@@ -263,13 +266,13 @@ export const panels = {
   "pageSettings.noImages": "Add images to Media to choose one here.",
   "pageSettings.hideHeader": "Hide the Header on this page",
   "pageSettings.hideFooter": "Hide the Footer on this page",
-  "pageSettings.hideFromNavigation": "Hide from navigation",
+  "pageSettings.hideFromNavigation": "Hide in menu",
   "pageSettings.draft": "Draft: don't publish this page yet",
   "pageSettings.draftHint":
     "A draft stays in your site to work on, but isn't on your website: it's left out when you export or publish, with its menu item and pictures only it uses. Preview shows it, out of the menu. Site Check lists links to it.",
   "pageSettings.hideFromSearch": "Hide this page from search engines",
   "pageSettings.hideFromSearchHint":
-    "Search engines won't show it, but it stays on your site: anyone with its address can open it, and its links still work. When you publish by FTP or SFTP, {appName} also lists it in a file it keeps with your site, so it sends only what changed. Hide from navigation is for your menu; this is for search.",
+    "Search engines won't show it, but it stays on your site: anyone with its address can open it, and its links still work. When you publish by FTP or SFTP, {appName} also lists it in a file it keeps with your site, so it sends only what changed. Hide in menu is for your menu; this is for search.",
   "pageSettings.hideBackToTop": "Hide the back-to-top button on this page",
   "pageSettings.privacy": "This is the site's privacy page",
   "pageSettings.privacyHint":
@@ -296,8 +299,8 @@ export const panels = {
   "pages.item": "page '{name}'",
   "pages.history.renamed": "Renamed page '{name}'",
   "pages.history.setHome": "Set '{name}' as Home page",
-  "pages.history.hidden": "Hid '{name}' from navigation",
-  "pages.history.shown": "Showed '{name}' in navigation",
+  "pages.history.hidden": "Hid '{name}' in the menu",
+  "pages.history.shown": "Showed '{name}' in the menu",
   "pages.history.drafted": "Made '{name}' a draft",
   "pages.history.undrafted": "Took '{name}' out of drafts",
 } as const;

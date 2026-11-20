@@ -1,7 +1,11 @@
 import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { APPEARANCE_FIELDS, DIALOG_FIELDS, DIALOG_TITLE_FIELDS } from "./appearance.js";
-import { BACKGROUND_FIELDS } from "./background.js";
+import {
+  APPEARANCE_FIELDS_WITHOUT_TEXT,
+  APPEARANCE_TEXT_FIELD_NAMES,
+  DIALOG_FIELDS,
+  DIALOG_TITLE_FIELDS,
+} from "./appearance.js";
 import { siteLibrary } from "./catalogue/index.js";
 import { defineComponent } from "./define.js";
 import { COLORS_FIELD, defineSection, PADDING_FIELD } from "./frame.js";
@@ -150,13 +154,18 @@ describe("the section frame (2.19)", () => {
       EDITOR_RENDER_CONTEXT,
     );
 
+    // Its background image, its options, then the Appearance group with its background and box
+    // before its text (F23, #1180), then Spacing.
     expect(Object.keys(band.fields)).toEqual([
-      ...Object.keys(APPEARANCE_FIELDS),
-      ...Object.keys(DIALOG_FIELDS),
-      ...Object.keys(DIALOG_TITLE_FIELDS),
-      ...Object.keys(BACKGROUND_FIELDS),
+      "backgroundImage",
       "contentWidth",
       "colors",
+      "overlay",
+      "overlayColor",
+      ...Object.keys(APPEARANCE_FIELDS_WITHOUT_TEXT),
+      ...APPEARANCE_TEXT_FIELD_NAMES,
+      ...Object.keys(DIALOG_FIELDS),
+      ...Object.keys(DIALOG_TITLE_FIELDS),
       "padding",
       "margin",
       "entrance",

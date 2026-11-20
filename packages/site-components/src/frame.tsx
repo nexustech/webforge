@@ -44,21 +44,29 @@ export function sectionPadding(value: unknown): string {
  */
 export const PADDED_COLUMN_CLASS = "site-section-column";
 
-/** A section's padding, per side and device (1.32). */
+/**
+ * A section's padding, per side and device (1.32): *Space inside*, its CSS name in its help and
+ * for the search (F23, #1180).
+ */
 export const PADDING_FIELD = {
   kind: "box",
   label: t("field.padding"),
+  help: t("field.padding.help"),
+  alsoCalled: "padding",
   property: "padding",
   responsive: true,
 } as const satisfies FieldDef;
 
 /**
- * A margin above and below, per device (1.32). A section's left and right stay `auto`, centring
- * it, and an element's are its section's padding.
+ * A margin above and below, per device (1.32): *Space outside*, its CSS name in its help and for
+ * the search (F23, #1180). A section's left and right stay `auto`, centring it, and an element's
+ * are its section's padding.
  */
 export const MARGIN_FIELD = {
   kind: "box",
   label: t("field.margin"),
+  help: t("field.margin.help"),
+  alsoCalled: "margin",
   property: "margin",
   responsive: true,
   sides: ["top", "bottom"],
@@ -259,6 +267,14 @@ export function defineSection<const F extends Fields, const Variant extends stri
     ...rest
   } = spec;
   const appearance = titled === false ? APPEARANCE_FIELDS_WITHOUT_TEXT : APPEARANCE_FIELDS;
+  // The Appearance group's background and box before its text (F23, #1180): a section is mostly
+  // its background, and its text has elements of its own. Spread after them, the text fields keep
+  // their own places at the end; the box fields theirs at the start.
+  const boxFirst = {
+    ...APPEARANCE_FIELDS_WITHOUT_TEXT,
+    ...(appearance as typeof APPEARANCE_FIELDS),
+  };
+  const { backgroundImage, ...overlayFields } = BACKGROUND_FIELDS;
   for (const own of FRAME_FIELDS) {
     if (Object.hasOwn(fields, own)) {
       throw new Error(`'${spec.label}' declares its own "${own}": defineSection adds it`);
@@ -275,18 +291,22 @@ export function defineSection<const F extends Fields, const Variant extends stri
     place: "section",
     // Its corners, left to the theme, are a box's (product/11, 3.12 note 7).
     themeCorners: "box",
-    // The Appearance group first, so the Style tab shows it before the section's own options.
+    // The Style tab shows its groups in the order of their first fields (F23, #1180): the section's
+    // own options (its layout among them), then Appearance with its background first, then its
+    // text, then Spacing.
     fields: {
-      ...(appearance as typeof APPEARANCE_FIELDS),
+      // A background image (2.26) first on the Content tab, as before.
+      ...(background === false ? {} : { backgroundImage }),
+      ...fields,
+      contentWidth: CONTENT_WIDTH_FIELD,
+      colors: COLORS_FIELD,
+      // Its overlay (2.26), in the Appearance group, before the rest of it.
+      ...(background === false ? {} : overlayFields),
+      ...boxFirst,
       // Style this ‹component›…'s deeper groups (3.13b), which only the dialog shows, the Title
       // group's for a section with a title of its own.
       ...DIALOG_FIELDS,
       ...(titled === false ? {} : DIALOG_TITLE_FIELDS),
-      // A background image and its overlay (2.26), in the Appearance group too.
-      ...(background === false ? {} : BACKGROUND_FIELDS),
-      ...fields,
-      contentWidth: CONTENT_WIDTH_FIELD,
-      colors: COLORS_FIELD,
       padding: PADDING_FIELD,
       margin: MARGIN_FIELD,
       ...ENTRANCE_FIELDS,

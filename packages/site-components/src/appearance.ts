@@ -333,6 +333,8 @@ export const DIALOG_ELEMENT_FIELDS = {
   lookPadding: {
     kind: "select",
     label: t("field.look.padding"),
+    help: t("field.look.padding.help"),
+    alsoCalled: "padding",
     ...IN_GROUP,
     options: SPACING_OPTIONS,
   },

@@ -5,17 +5,28 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
+  WithTooltip,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { EyeClosedIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { type MouseEvent, useState } from "react";
 import { type Layer, type LayerShown, layerItem, layerShown } from "../editor/layers.js";
 
-/** Each way a layer can show (UX-23), in the menu's order, with its icon. */
+/** Each way a layer can show (UX-23), in the menu's order: its choice, how it is then, its icon. */
 const SHOWN_CHOICES = [
-  { shown: "shown", label: "layers.shown.shown", Icon: EyeIcon },
-  { shown: "editorHidden", label: "layers.shown.editorHidden", Icon: EyeClosedIcon },
-  { shown: "hidden", label: "layers.shown.hidden", Icon: EyeOffIcon },
+  { shown: "shown", label: "layers.shown.shown", now: "layers.shownNow.shown", Icon: EyeIcon },
+  {
+    shown: "editorHidden",
+    label: "layers.shown.editorHidden",
+    now: "layers.shownNow.editorHidden",
+    Icon: EyeClosedIcon,
+  },
+  {
+    shown: "hidden",
+    label: "layers.shown.hidden",
+    now: "layers.shownNow.hidden",
+    Icon: EyeOffIcon,
+  },
 ] as const;
 
 /**
@@ -42,7 +53,7 @@ export function ShownMenu({
   const current = SHOWN_CHOICES.find((choice) => choice.shown === shown) ?? SHOWN_CHOICES[0];
   const label = t("layers.shownMenu", {
     item: layerItem(layer),
-    shown: t(current.label),
+    shown: t(current.now),
   });
   const eye = {
     type: "button" as const,
@@ -50,7 +61,6 @@ export function ShownMenu({
     disabled,
     "aria-label": label,
     "aria-haspopup": "menu" as const,
-    title: label,
     className: cn(
       "flex size-5 shrink-0 items-center justify-center rounded-sm hover:bg-hover [&_svg]:size-3.5",
       shown === "shown" && "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
@@ -59,18 +69,21 @@ export function ShownMenu({
     onDoubleClick: (event: MouseEvent) => event.stopPropagation(),
   };
   // A plain button until it's opened: a long page's every row holding a menu costs its opening
-  // (the start screen's CPU budget for a new site, #923's CI).
+  // (the start screen's CPU budget for a new site, #923's CI). Its tooltip says how the layer shows
+  // and what a click does, in place of the browser's `title` (F24, #1180).
   if (!open) {
     return (
-      <button
-        {...eye}
-        onClick={(event) => {
-          event.stopPropagation();
-          setOpen(true);
-        }}
-      >
-        <current.Icon />
-      </button>
+      <WithTooltip tooltip={label} disableable>
+        <button
+          {...eye}
+          onClick={(event) => {
+            event.stopPropagation();
+            setOpen(true);
+          }}
+        >
+          <current.Icon />
+        </button>
+      </WithTooltip>
     );
   }
   return (

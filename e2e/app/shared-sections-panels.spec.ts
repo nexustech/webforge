@@ -96,7 +96,7 @@ test("places a copy from the Add panel, asks before deleting inside one, marks c
     "Delete Heading from the Shared Section 'Welcome'?",
   );
   await expect(confirmation()).toContainText(
-    "All 2 copies of the section show the change. This changes 1 page.",
+    "All 2 copies of the section show the change. 1 page of your site will change.",
   );
   await confirmation().getByRole("button", { name: "Cancel" }).click();
   // Gone, not fading out: until then the canvas takes no clicks.

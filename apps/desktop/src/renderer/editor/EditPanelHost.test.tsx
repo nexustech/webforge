@@ -384,14 +384,14 @@ describe("EditPanelHost", () => {
   });
 
   describe("style fields (1.14 part 2)", () => {
-    /** The choices for one side of a box field: "Padding Top". */
+    /** The choices for one side of a box field: "Space inside Top". */
     const side = (name: string) => within(screen.getByRole("radiogroup", { name }));
 
     it("sets a value for the device being viewed, marks it and drops it again", async () => {
       const { session, labels, section, user } = setup("section-1");
       act(() => session.setViewport("mobile"));
 
-      await user.click(side("Padding Top").getByRole("radio", { name: "S" }));
+      await user.click(side("Space inside Top").getByRole("radio", { name: "S" }));
 
       expect(section()?.padding).toEqual({
         $responsive: { desktop: { top: "m", bottom: "m" }, mobile: { top: "s", bottom: "m" } },
@@ -401,7 +401,7 @@ describe("EditPanelHost", () => {
       act(() => session.setViewport("desktop"));
       expect(document.querySelectorAll("[data-device-dot]")).toHaveLength(0);
       expect(
-        side("Padding Top").getByRole("radio", { name: "M" }).getAttribute("aria-checked"),
+        side("Space inside Top").getByRole("radio", { name: "M" }).getAttribute("aria-checked"),
       ).toBe("true");
 
       act(() => session.setViewport("mobile"));
@@ -409,8 +409,8 @@ describe("EditPanelHost", () => {
 
       expect(section()?.padding).toEqual({ top: "m", bottom: "m" });
       expect(labels()).toEqual([
-        "Changed Section padding on Mobile",
-        "Reset Section padding on Mobile",
+        "Changed Section space inside on Mobile",
+        "Reset Section space inside on Mobile",
       ]);
       // Back to Desktop's value: the dot is grey again.
       expect(
@@ -464,8 +464,10 @@ describe("EditPanelHost", () => {
       // Reset where the Heading look sets it: back to the look, which it then follows.
       fireEvent.contextMenu(screen.getByText("Shadow", { selector: "label" }));
       await user.click(await screen.findByRole("menuitem", { name: "Reset to Theme's Look" }));
-      expect(sourceOf("lookShadow")).toBe("Theme's look for Heading");
-      await user.click(screen.getByRole("button", { name: "Theme's look for Heading" }));
+      expect(sourceOf("lookShadow")).toBe("Same as the theme's look for Heading");
+      await user.click(
+        screen.getByRole("button", { name: "Same as the theme's look for Heading" }),
+      );
       expect(revealSource).toHaveBeenCalledWith("look:Heading");
 
       // On Mobile, Reset makes the device follow Desktop: not the look's (#567).
@@ -477,7 +479,7 @@ describe("EditPanelHost", () => {
 
     it("sets another device's value from its row, and dots the device in effect (SP-5)", async () => {
       const { session, labels, section, user } = setup("section-1");
-      await user.click(screen.getByRole("button", { name: "Padding on each device" }));
+      await user.click(screen.getByRole("button", { name: "Space inside on each device" }));
       const row = (device: string) =>
         within(document.querySelector(`[data-device="${device}"]`) as HTMLElement);
       const inEffect = () =>
@@ -488,7 +490,7 @@ describe("EditPanelHost", () => {
 
       // From Desktop, Mobile's own value: one step, named for Mobile.
       await user.click(row("mobile").getAllByRole("radio", { name: "S" })[0] as HTMLElement);
-      expect(labels()).toEqual(["Changed Section padding on Mobile"]);
+      expect(labels()).toEqual(["Changed Section space inside on Mobile"]);
       expect(section()?.padding).toMatchObject({ $responsive: { mobile: { top: "s" } } });
 
       // Shown on Mobile, Mobile's value is the one in effect; Tablet still takes Desktop's.
@@ -500,14 +502,14 @@ describe("EditPanelHost", () => {
 
     it("resets a changed group to its defaults as one step, named by the group (UX-13)", async () => {
       const { labels, section, user } = setup("section-1");
-      await user.click(side("Padding Top").getByRole("radio", { name: "S" }));
+      await user.click(side("Space inside Top").getByRole("radio", { name: "S" }));
       const spacing = screen.getByRole("button", { name: "Spacing" });
       expect(spacing.hasAttribute("data-changed")).toBe(true);
 
       fireEvent.contextMenu(spacing);
       await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
 
-      expect(labels()).toEqual(["Changed Section padding", "Reset Spacing on Section"]);
+      expect(labels()).toEqual(["Changed Section space inside", "Reset Spacing on Section"]);
       expect(section()?.padding).toEqual(siteLibrary.components.Section?.defaults.padding);
       expect(screen.getByRole("button", { name: "Spacing" }).hasAttribute("data-changed")).toBe(
         false,
@@ -516,7 +518,7 @@ describe("EditPanelHost", () => {
 
     it("pastes a copied group's values back as one step, named by the group (SP-7)", async () => {
       const { labels, section, user } = setup("section-1");
-      await user.click(side("Padding Top").getByRole("radio", { name: "S" }));
+      await user.click(side("Space inside Top").getByRole("radio", { name: "S" }));
       const changed = section()?.padding;
       await user.click(screen.getByRole("button", { name: "Copy Spacing" }));
       await user.click(screen.getByRole("button", { name: "Reset Spacing" }));
@@ -525,7 +527,7 @@ describe("EditPanelHost", () => {
 
       expect(section()?.padding).toEqual(changed);
       expect(labels()).toEqual([
-        "Changed Section padding",
+        "Changed Section space inside",
         "Reset Spacing on Section",
         "Pasted Spacing on Section",
       ]);
@@ -534,13 +536,13 @@ describe("EditPanelHost", () => {
     it("on Mobile, resets only the group's Mobile values, and says so (F-ED-4)", async () => {
       const { session, labels, section, user } = setup("section-1");
       act(() => session.setViewport("mobile"));
-      await user.click(side("Padding Top").getByRole("radio", { name: "S" }));
+      await user.click(side("Space inside Top").getByRole("radio", { name: "S" }));
 
       fireEvent.contextMenu(screen.getByRole("button", { name: "Spacing" }));
       await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
 
       expect(labels()).toEqual([
-        "Changed Section padding on Mobile",
+        "Changed Section space inside on Mobile",
         "Reset Section spacing on Mobile",
       ]);
       expect(section()?.padding).toEqual({ top: "m", bottom: "m" });
@@ -606,10 +608,10 @@ describe("EditPanelHost", () => {
     it("sets Desktop's value as the plain value, keeping other devices' own", async () => {
       const { session, labels, section, user } = setup("section-1");
       act(() => session.setViewport("tablet"));
-      await user.click(side("Padding Bottom").getByRole("radio", { name: "L" }));
+      await user.click(side("Space inside Bottom").getByRole("radio", { name: "L" }));
       act(() => session.setViewport("desktop"));
 
-      await user.click(side("Padding Left").getByRole("radio", { name: "None" }));
+      await user.click(side("Space inside Left").getByRole("radio", { name: "None" }));
 
       expect(section()?.padding).toEqual({
         $responsive: {
@@ -617,7 +619,10 @@ describe("EditPanelHost", () => {
           tablet: { top: "m", bottom: "l" },
         },
       });
-      expect(labels()).toEqual(["Changed Section padding on Tablet", "Changed Section padding"]);
+      expect(labels()).toEqual([
+        "Changed Section space inside on Tablet",
+        "Changed Section space inside",
+      ]);
     });
 
     it("sets every side at once of a padding set on some sides only (1.32)", async () => {
@@ -637,11 +642,11 @@ describe("EditPanelHost", () => {
       );
       // Top and bottom are Large, left and right the section's own: not the same on every side.
       expect(
-        side("Padding Top").getByRole("radio", { name: "L" }).getAttribute("aria-checked"),
+        side("Space inside Top").getByRole("radio", { name: "L" }).getAttribute("aria-checked"),
       ).toBe("true");
 
-      await user.click(screen.getByRole("switch", { name: "Padding Same on every side" }));
-      await user.click(side("Padding").getByRole("radio", { name: "XL" }));
+      await user.click(screen.getByRole("switch", { name: "Space inside Same on every side" }));
+      await user.click(side("Space inside").getByRole("radio", { name: "XL" }));
 
       expect(section()?.padding).toEqual({
         $responsive: {
@@ -649,9 +654,9 @@ describe("EditPanelHost", () => {
           mobile: { top: "s", bottom: "s" },
         },
       });
-      expect(labels().at(-1)).toBe("Changed Section padding");
+      expect(labels().at(-1)).toBe("Changed Section space inside");
 
-      await user.click(side("Padding").getByRole("radio", { name: "Default" }));
+      await user.click(side("Space inside").getByRole("radio", { name: "Default" }));
       expect(section()?.padding).toEqual({
         $responsive: { desktop: {}, mobile: { top: "s", bottom: "s" } },
       });
@@ -669,23 +674,23 @@ describe("EditPanelHost", () => {
         }),
       );
       expect(
-        side("Padding Top").getByRole("radio", { name: "M" }).getAttribute("aria-checked"),
+        side("Space inside Top").getByRole("radio", { name: "M" }).getAttribute("aria-checked"),
       ).toBe("true");
 
       // Every side the same on Mobile: one row for all of them.
       act(() => session.setViewport("mobile"));
-      expect(screen.queryByRole("radiogroup", { name: "Padding Top" })).toBeNull();
+      expect(screen.queryByRole("radiogroup", { name: "Space inside Top" })).toBeNull();
       act(() => session.setViewport("desktop"));
-      expect(side("Padding Top")).toBeDefined();
+      expect(side("Space inside Top")).toBeDefined();
 
       act(() => session.select("section-2"));
-      expect(screen.queryByRole("radiogroup", { name: "Padding Top" })).toBeNull();
-      await user.click(screen.getByRole("switch", { name: "Padding Same on every side" }));
+      expect(screen.queryByRole("radiogroup", { name: "Space inside Top" })).toBeNull();
+      await user.click(screen.getByRole("switch", { name: "Space inside Same on every side" }));
       act(() => session.select("section-1"));
-      expect(side("Padding Top")).toBeDefined();
+      expect(side("Space inside Top")).toBeDefined();
       act(() => session.select("section-2"));
       expect(
-        side("Padding").getByRole("radio", { name: "Default" }).getAttribute("aria-checked"),
+        side("Space inside").getByRole("radio", { name: "Default" }).getAttribute("aria-checked"),
       ).toBe("true");
     });
 
@@ -693,12 +698,12 @@ describe("EditPanelHost", () => {
       const { labels, heading, user } = setup("heading-1");
       await user.click(screen.getByRole("tab", { name: "Style" }));
 
-      expect(screen.queryByRole("radiogroup", { name: "Margin Left" })).toBeNull();
-      await user.click(screen.getByRole("switch", { name: "Margin Same on every side" }));
-      await user.click(side("Margin Bottom").getByRole("radio", { name: "L" }));
+      expect(screen.queryByRole("radiogroup", { name: "Space outside Left" })).toBeNull();
+      await user.click(screen.getByRole("switch", { name: "Space outside Same on every side" }));
+      await user.click(side("Space outside Bottom").getByRole("radio", { name: "L" }));
 
       expect(heading()?.margin).toEqual({ bottom: "l" });
-      expect(labels()).toEqual(["Changed Heading margin"]);
+      expect(labels()).toEqual(["Changed Heading space outside"]);
     });
 
     it("makes one step of a slider drag, from the default of a value never set", () => {

@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { APPEARANCE_FIELDS, DIALOG_FIELDS, DIALOG_TITLE_FIELDS } from "./appearance.js";
+import { APPEARANCE_FIELDS } from "./appearance.js";
 import {
   BACKGROUND_FIELD_NAMES,
   BACKGROUND_FIELDS,
@@ -165,7 +165,7 @@ describe("the section frame's background (2.26)", () => {
   /** The Hero, which draws its own, and the Contact buttons (6.16d), which have no band to fill. */
   const withoutBackground = new Set(["Hero", "ContactButtons"]);
 
-  it("is on every section, after the Appearance group, but those without one", () => {
+  it("is on every section but those without one: its image first, its overlay before the look", () => {
     for (const [type, def] of sections) {
       const names = Object.keys(def.fields);
       if (withoutBackground.has(type)) {
@@ -175,17 +175,13 @@ describe("the section frame's background (2.26)", () => {
         ).toBe(false);
         continue;
       }
-      const at = names.indexOf("backgroundImage");
-      expect(names.slice(at, at + 3), type).toEqual([...BACKGROUND_FIELD_NAMES]);
-      // Straight after the Appearance group's own fields (fewer for a section without a title)
-      // and the dialog's deeper ones (3.13b), its Title group's for a titled section.
-      const styling = names.filter(
-        (name) =>
-          Object.hasOwn(APPEARANCE_FIELDS, name) ||
-          Object.hasOwn(DIALOG_FIELDS, name) ||
-          Object.hasOwn(DIALOG_TITLE_FIELDS, name),
-      );
-      expect(names.slice(0, at), type).toEqual(styling);
+      // Its image first, as the Content tab shows it; its overlay straight before the rest of the
+      // Appearance group, so the Style tab shows a section's background before its text (F23).
+      expect(names[0], type).toBe("backgroundImage");
+      const at = names.indexOf("overlay");
+      const look = names.findIndex((name) => Object.hasOwn(APPEARANCE_FIELDS, name));
+      expect(names.slice(at, at + 2), type).toEqual(["overlay", "overlayColor"]);
+      expect(look, type).toBe(at + 2);
     }
   });
 

@@ -108,7 +108,9 @@ describe("every Appearance control says where its value comes from (3.12, #622)"
 
     it("says each comes from the kind's look when only the look sets it", () => {
       const shown = sources(type, { look: values(type, plain) });
-      expect(plain.filter((name) => shown.get(name) !== `Theme's look for ${label}`)).toEqual([]);
+      expect(
+        plain.filter((name) => shown.get(name) !== `Same as the theme's look for ${label}`),
+      ).toEqual([]);
     });
 
     it("says a gradient's fields are set here, and the background is drawn as one (CT-4)", () => {
@@ -116,7 +118,9 @@ describe("every Appearance control says where its value comes from (3.12, #622)"
       expect(GRADIENT.map((name) => own.get(name))).toEqual(["Set here", "Set here", "Set here"]);
       expect(own.get("lookBackground")).toBe("Gradient (set under Background)");
       const look = sources(type, { look: values(type, GRADIENT) });
-      expect(GRADIENT.filter((name) => look.get(name) !== `Theme's look for ${label}`)).toEqual([]);
+      expect(
+        GRADIENT.filter((name) => look.get(name) !== `Same as the theme's look for ${label}`),
+      ).toEqual([]);
     });
 
     if (type === "Hero") {
@@ -136,11 +140,11 @@ describe("every Appearance control says where its value comes from (3.12, #622)"
       expect(
         fields.filter((name) => {
           const said = shown.get(name);
-          return said !== undefined && !said.startsWith("Theme's (");
+          return said !== undefined && !said.startsWith("Same as theme (");
         }),
       ).toEqual([]);
-      expect(shown.get("lookShadow")).toMatch(/^Theme's \(Shadow: /);
-      expect(shown.get("lookBorder")).toMatch(/^Theme's \(Border: /);
+      expect(shown.get("lookShadow")).toMatch(/^Same as theme \(Shadow: /);
+      expect(shown.get("lookBorder")).toMatch(/^Same as theme \(Border: /);
     });
   });
 });
