@@ -1,3 +1,5 @@
+import { COMPONENT } from "./puck-dom.js";
+
 /** A box in the canvas's view, as `getBoundingClientRect` gives it. */
 export type Box = {
   readonly left: number;
@@ -35,7 +37,9 @@ function covered(bar: Box, boxes: readonly Box[]): number {
 
 /**
  * Where the selected element's bar goes, its top-left corner in the view (#1177, the UX/UI
- * review's F5): never over the element's own text, and inside the view.
+ * review's F5): off the element's own text where it can be, and inside the view. `null` for an
+ * element wholly out of the view: its bar stays with it, where Puck puts it, rather than docking
+ * over a section someone can see and acting on one they can't.
  *
  * - **Above the element** when there's room, as it has always been, **otherwise below it**. Both
  *   start at the element's left edge.
@@ -49,7 +53,8 @@ function covered(bar: Box, boxes: readonly Box[]): number {
 export function placeBar({ element, bar, view, gap, ownText, parentText }: BarPlacement): {
   readonly left: number;
   readonly top: number;
-} {
+} | null {
+  if (element.bottom <= 0 || element.top >= view.height) return null;
   const clampX = (x: number) => Math.max(0, Math.min(x, view.width - bar.width));
   const atLeft = clampX(element.left);
   const atRight = clampX(element.right - bar.width);
@@ -106,21 +111,171 @@ export function placeBar({ element, bar, view, gap, ownText, parentText }: BarPl
   return clearOfOwn ?? best;
 }
 
+/** The part of `box` inside `clip`, or none. */
+function clipped(box: Box, clip: Box): Box | undefined {
+  const left = Math.max(box.left, clip.left);
+  const top = Math.max(box.top, clip.top);
+  const right = Math.min(box.right, clip.right);
+  const bottom = Math.min(box.bottom, clip.bottom);
+  return right > left && bottom > top ? { left, top, right, bottom } : undefined;
+}
+
 /**
  * The lines of text in `root` as the canvas shows them, leaving out what's in `skip` (the selected
- * element, inside its parent): one box per line of each text, none for blank ones.
+ * element, inside its parent): one box per line of each text, cut to `root`'s box. None for blank
+ * text, nor for text no one sees: hidden, see-through (a Carousel's other slides), or outside
+ * `root`'s box.
  */
 export function textLines(root: Element, skip?: Element): Box[] {
   const doc = root.ownerDocument;
+  const clip = root.getBoundingClientRect();
   const lines: Box[] = [];
   const walker = doc.createTreeWalker(root, 4 /* NodeFilter.SHOW_TEXT */);
   const range = doc.createRange();
   for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
     if ((node.textContent ?? "").trim() === "" || skip?.contains(node) === true) continue;
+    const parent = node.parentElement;
+    const seen =
+      parent === null ||
+      typeof parent.checkVisibility !== "function" ||
+      parent.checkVisibility({ visibilityProperty: true, opacityProperty: true });
+    if (!seen) continue;
     range.selectNodeContents(node);
     for (const line of range.getClientRects()) {
-      if (line.width > 0 && line.height > 0) lines.push(line);
+      const part = clipped(line, clip);
+      if (part !== undefined) lines.push(part);
     }
   }
   return lines;
+}
+
+/** `lines` moved by (`x`, `y`). */
+function moved(lines: readonly Box[], x: number, y: number): Box[] {
+  return lines.map((line) => ({
+    left: line.left + x,
+    top: line.top + y,
+    right: line.right + x,
+    bottom: line.bottom + y,
+  }));
+}
+
+/** Space between the selected element's bar and the element, or the canvas's edge, on screen. */
+const BAR_GAP = 4;
+
+/**
+ * Places the selected element's `bar` with {@link placeBar} and keeps it there: as the canvas
+ * scrolls or changes size, as Puck measures the element again (its `overlay`'s style), as the
+ * element's text changes (`wrapper`, Puck's wrapper around it) and as the bar changes size (the
+ * format menu, while text is edited). Puck draws the bar above its element and keeps it in view by
+ * sticking it inside the element, over its text; this moves it from there by a transform. Returns
+ * what stops it, putting the bar back.
+ *
+ * Cheap on every scroll: it measures without first taking its move away, places once for whatever
+ * happened in a task (in a microtask, not at the next frame, which a window behind others doesn't
+ * get), and keeps the texts' lines, in the page's coordinates, until the page changes.
+ */
+export function followPlacement(
+  bar: HTMLElement,
+  overlay: Element,
+  wrapper: Element | null,
+): () => void {
+  const doc = bar.ownerDocument;
+  const view = doc.defaultView;
+  bar.style.transform = "";
+  if (view === null) return () => undefined;
+  /** How far the bar is moved from where Puck puts it, in its own pixels. */
+  let shift = { x: 0, y: 0 };
+  /** The texts' lines in the page's coordinates, until the page changes. */
+  let own: readonly Box[] | undefined;
+  let parent: readonly Box[] | undefined;
+  let pending = false;
+  let stopped = false;
+
+  /** `read`'s lines in the page's coordinates, from those in the view. */
+  const inPage = (read: () => readonly Box[]) => moved(read(), view.scrollX, view.scrollY);
+  const inView = (lines: readonly Box[]) => moved(lines, -view.scrollX, -view.scrollY);
+
+  const place = () => {
+    pending = false;
+    if (stopped) return;
+    const now = bar.getBoundingClientRect();
+    if (now.height === 0 || bar.offsetHeight === 0) return;
+    // The bar is scaled to stay the same size on screen: `scale` turns its pixels into the frame's.
+    const scale = now.height / bar.offsetHeight;
+    const natural = { left: now.left - shift.x * scale, top: now.top - shift.y * scale };
+    const root = doc.documentElement;
+    const target = placeBar({
+      element: overlay.getBoundingClientRect(),
+      bar: { width: now.width, height: now.height },
+      // Inside the scrollbars.
+      view: { width: root.clientWidth, height: root.clientHeight },
+      gap: BAR_GAP * scale,
+      ownText: () => {
+        own ??= wrapper === null ? [] : inPage(() => textLines(wrapper));
+        return inView(own);
+      },
+      parentText: () => {
+        const around = wrapper?.parentElement?.closest(COMPONENT);
+        parent ??=
+          around === null || around === undefined || wrapper === null
+            ? []
+            : inPage(() => textLines(around, wrapper));
+        return inView(parent);
+      },
+    });
+    const next =
+      target === null
+        ? { x: 0, y: 0 }
+        : { x: (target.left - natural.left) / scale, y: (target.top - natural.top) / scale };
+    if (Math.abs(next.x - shift.x) <= 0.5 && Math.abs(next.y - shift.y) <= 0.5) return;
+    const still = Math.abs(next.x) <= 0.5 && Math.abs(next.y) <= 0.5;
+    shift = still ? { x: 0, y: 0 } : next;
+    bar.style.transform = still ? "" : `translate(${next.x}px, ${next.y}px)`;
+  };
+  const schedule = () => {
+    if (pending) return;
+    pending = true;
+    queueMicrotask(place);
+  };
+  /** The page changed: its texts' lines are read again when next needed. */
+  const changed = () => {
+    own = undefined;
+    parent = undefined;
+    schedule();
+  };
+  const ownChanged = () => {
+    own = undefined;
+    schedule();
+  };
+
+  schedule();
+  view.addEventListener("scroll", schedule, { passive: true });
+  view.addEventListener("resize", changed);
+  const observers: { disconnect(): void }[] = [];
+  // Puck moves and sizes the element's overlay through its style as the page changes.
+  const restyled = new view.MutationObserver(changed);
+  restyled.observe(overlay, { attributes: true, attributeFilter: ["style"] });
+  observers.push(restyled);
+  if (wrapper !== null) {
+    const retyped = new view.MutationObserver(ownChanged);
+    retyped.observe(wrapper, { characterData: true, childList: true, subtree: true });
+    observers.push(retyped);
+  }
+  if (typeof view.ResizeObserver === "function") {
+    // Its first call says only the size the bar has now.
+    let first = true;
+    const resized = new view.ResizeObserver(() => {
+      if (first) first = false;
+      else schedule();
+    });
+    resized.observe(bar);
+    observers.push(resized);
+  }
+  return () => {
+    stopped = true;
+    view.removeEventListener("scroll", schedule);
+    view.removeEventListener("resize", changed);
+    for (const observer of observers) observer.disconnect();
+    bar.style.transform = "";
+  };
 }

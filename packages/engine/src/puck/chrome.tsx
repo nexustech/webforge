@@ -17,13 +17,12 @@ import type { FieldDrag, InsertPoint } from "../canvas-engine.js";
 /** Marks the element outlined from outside the canvas (`CanvasEngine.outline`). */
 export const OUTLINED_ATTRIBUTE = "data-wf-outlined";
 
-import { placeBar, textLines } from "./bar-placement.js";
+import { followPlacement } from "./bar-placement.js";
 import { FRAME_TOOLTIP_CSS } from "./frame-tooltips.js";
 import {
   ACTION_BAR,
   ACTIONS,
   ACTIONS_OVERLAY,
-  COMPONENT,
   componentSelector,
   EMPTY_TABLE_BODY,
   elementOf,
@@ -516,69 +515,6 @@ export function hoveredSize(document: Document, id: string): string | undefined 
   return `${Math.round(width)} × ${Math.round(height)}`;
 }
 
-/** Space between the selected element's bar and the element, or the canvas's edge, on screen. */
-const BAR_GAP = 4;
-
-/**
- * Places the selected element's bar where it covers none of the element's text and stays inside
- * the canvas (#1177, `placeBar`), and keeps it there as the canvas scrolls or changes size, the
- * element changes (Puck measures it again) or the bar does (the format menu, while text is edited).
- * Puck draws the bar above its element and keeps it in view by sticking it inside the element, over
- * its text; this moves it from there. A hovered element's chip stays put. Returns what stops it.
- */
-function followPlacement(bar: HTMLElement, selected: boolean): (() => void) | undefined {
-  const frame = bar.ownerDocument.defaultView;
-  bar.style.transform = "";
-  const overlay = bar.closest(OVERLAY);
-  if (!selected || frame === null || overlay === null) {
-    return undefined;
-  }
-  const place = () => {
-    bar.style.transform = "";
-    const now = bar.getBoundingClientRect();
-    if (now.height === 0 || bar.offsetHeight === 0) {
-      return;
-    }
-    // The bar is scaled to stay the same size on screen: `scale` turns screen into frame pixels.
-    const scale = now.height / bar.offsetHeight;
-    const id = barElementId(bar);
-    const wrapper = id === null ? null : bar.ownerDocument.querySelector(componentSelector(id));
-    const root = bar.ownerDocument.documentElement;
-    const target = placeBar({
-      element: overlay.getBoundingClientRect(),
-      bar: { width: now.width, height: now.height },
-      // Inside the scrollbars.
-      view: { width: root.clientWidth, height: root.clientHeight },
-      gap: BAR_GAP * scale,
-      ownText: () => (wrapper === null ? [] : textLines(wrapper)),
-      parentText: () => {
-        const parent = wrapper?.parentElement?.closest(COMPONENT);
-        return parent === null || parent === undefined || wrapper === null
-          ? []
-          : textLines(parent, wrapper);
-      },
-    });
-    const x = (target.left - now.left) / scale;
-    const y = (target.top - now.top) / scale;
-    if (Math.abs(x) > 0.5 || Math.abs(y) > 0.5) bar.style.transform = `translate(${x}px, ${y}px)`;
-  };
-  place();
-  const options = { passive: true } as const;
-  frame.addEventListener("scroll", place, options);
-  frame.addEventListener("resize", place);
-  // Puck moves and sizes the element's overlay through its style as the page changes.
-  const moved = new frame.MutationObserver(place);
-  moved.observe(overlay, { attributes: true, attributeFilter: ["style"] });
-  const resized = new frame.ResizeObserver(place);
-  resized.observe(bar);
-  return () => {
-    frame.removeEventListener("scroll", place);
-    frame.removeEventListener("resize", place);
-    moved.disconnect();
-    resized.disconnect();
-  };
-}
-
 /**
  * The selected element's bar (UI1 §3, F-ED-25): its label chip, select-parent, move up and down,
  * *Edit* and *Hide*, and Puck's own duplicate and delete (and the rich-text format menu while text
@@ -617,17 +553,33 @@ export function QuickActionBar({
     bar.addEventListener("mousedown", keepFocus);
     return () => bar.removeEventListener("mousedown", keepFocus);
   });
-  // After every draw, with no dependencies on purpose (R2): where the bar sits and the hovered
-  // element's size are read from the canvas's layout, which changes without any of this component's
-  // values changing. It sets the size only when it differs, so it settles after one more draw.
+  // After every draw, with no dependencies on purpose (R2): the hovered element's size is read from
+  // the canvas's layout, which changes without any of this component's values changing. It sets
+  // the size only when it differs, so it settles after one more draw.
   useLayoutEffect(() => {
     const bar = kept.current;
     // With *Show spacing on hover* on, a hovered element's chip says its size (SP-2).
     const next =
       bar === null || selected || id === null ? undefined : hoveredSize(bar.ownerDocument, id);
     if (next !== size) setSize(next);
-    return bar === null ? undefined : followPlacement(bar, selected);
   });
+  // The selected element's bar keeps off its text (#1177), following the canvas's layout itself, so
+  // only a new selection starts it again. A hovered element's chip stays where Puck puts it.
+  useLayoutEffect(() => {
+    const bar = kept.current;
+    const overlay = bar?.closest(OVERLAY);
+    if (
+      !selected ||
+      id === null ||
+      bar === null ||
+      bar === undefined ||
+      overlay === null ||
+      overlay === undefined
+    ) {
+      return undefined;
+    }
+    return followPlacement(bar, overlay, bar.ownerDocument.querySelector(componentSelector(id)));
+  }, [selected, id]);
   const locked = id !== null && isLocked?.(id) === true;
   if (!selected) {
     return (

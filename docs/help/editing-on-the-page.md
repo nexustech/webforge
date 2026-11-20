@@ -21,7 +21,7 @@ updated: 2026-11-20
 
 ## The bar on the selected item
 
-The bar sits just above the item, or below it when there's no room above. For an item taller than the page you can see, it sits at the top or bottom edge of the page. It stays clear of the item's own text, as you scroll and as you type.
+The bar sits just above the item, or below it when there's no room above. For an item taller than the page you can see, it sits at the top or bottom edge of the page. It stays clear of the item's own text where it can, as you scroll and as you type. When the item is scrolled out of sight, its bar goes with it.
 
 Hover over a button on the bar, the + beside a section, a handle or a button on the text toolbar to see what it does.
 

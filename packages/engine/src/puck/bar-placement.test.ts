@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from "vitest";
-import { type Box, placeBar, textLines } from "./bar-placement.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { type Box, followPlacement, placeBar, textLines } from "./bar-placement.js";
 
 const box = (left: number, top: number, right: number, bottom: number): Box => ({
   left,
@@ -65,6 +65,13 @@ describe("placeBar (#1177)", () => {
     expect(place(text, { own: lines })).toEqual({ left: 600, top: 566 });
   });
 
+  it("leaves the bar of an element wholly out of view where Puck puts it", () => {
+    // Above the view (the Header, scrolled to the Footer), and below it.
+    expect(place(box(0, -2000, 800, -1940))).toBeNull();
+    expect(place(box(0, 600, 800, 700))).toBeNull();
+    expect(place(box(0, -60, 800, 1))).not.toBeNull();
+  });
+
   it("keeps the bar inside the view's sides", () => {
     expect(place(box(700, 200, 790, 300))).toEqual({ left: 600, top: 166 });
     expect(place(box(-50, 200, 100, 300))).toEqual({ left: 0, top: 166 });
@@ -99,27 +106,164 @@ describe("placeBar (#1177)", () => {
 });
 
 describe("textLines (#1177)", () => {
+  /** Each text's lines, as the canvas would draw them. */
+  let drawn: Record<string, DOMRect[]> = {};
+
+  beforeEach(() => {
+    vi.spyOn(Range.prototype, "getClientRects").mockImplementation(function (this: Range) {
+      return (drawn[this.startContainer.textContent ?? ""] ?? []) as unknown as DOMRectList;
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    drawn = {};
+    document.body.replaceChildren();
+  });
+
+  /** `selector`'s element, drawn over `rect`. */
+  const at = (selector: string, rect: DOMRect) => {
+    const element = document.querySelector(selector);
+    if (element === null) throw new Error(`no ${selector}`);
+    element.getBoundingClientRect = () => rect;
+    return element;
+  };
+
   it("gives each line of the texts in an element, leaving out blank ones and the selected element's", () => {
     document.body.innerHTML =
       "<section><h2>Our menu</h2> <div data-own><p>Eggs</p></div><p>Tea</p></section>";
-    const lines: Record<string, DOMRect[]> = {
+    drawn = {
       "Our menu": [new DOMRect(0, 0, 200, 30), new DOMRect(0, 30, 0, 0)],
       Eggs: [new DOMRect(0, 40, 50, 20)],
       Tea: [new DOMRect(0, 70, 40, 20), new DOMRect(0, 90, 30, 20)],
     };
-    const spy = vi.spyOn(Range.prototype, "getClientRects").mockImplementation(function (
-      this: Range,
-    ) {
-      const rects = lines[this.startContainer.textContent ?? ""] ?? [];
-      return rects as unknown as DOMRectList;
-    });
-    const section = document.querySelector("section");
-    const own = document.querySelector("[data-own]");
-    if (section === null || own === null) throw new Error("no section");
+    const section = at("section", new DOMRect(0, 0, 800, 600));
+    const own = at("[data-own]", new DOMRect(0, 40, 800, 20));
 
     expect(textLines(section, own).map((line) => line.top)).toEqual([0, 70, 90]);
     expect(textLines(own).map((line) => line.top)).toEqual([40]);
-    spy.mockRestore();
+  });
+
+  it("leaves out text no one sees: hidden, see-through, or outside the element's box", () => {
+    document.body.innerHTML =
+      "<section><p>Shown</p><p class='other-slide'>Next slide</p><p>Cut off</p></section>";
+    drawn = {
+      Shown: [new DOMRect(10, 10, 100, 20)],
+      "Next slide": [new DOMRect(10, 40, 100, 20)],
+      // Half outside the section, which clips it.
+      "Cut off": [new DOMRect(10, 190, 100, 20), new DOMRect(10, 260, 100, 20)],
+    };
+    const section = at("section", new DOMRect(0, 0, 800, 200));
+    const slide = document.querySelector<HTMLElement>(".other-slide");
+    if (slide === null) throw new Error("no slide");
+    slide.checkVisibility = () => false;
+
+    expect(textLines(section)).toEqual([
+      { left: 10, top: 10, right: 110, bottom: 30 },
+      { left: 10, top: 190, right: 110, bottom: 200 },
+    ]);
+  });
+});
+
+describe("followPlacement (#1177)", () => {
+  /** The canvas's view, 800 × 600, and its element, under a 200 × 30 bar Puck puts above it. */
+  function canvas(element: DOMRect, text: DOMRect[] = []) {
+    document.body.innerHTML =
+      "<div data-puck-overlay><div class='bar'>Bar</div></div><div data-puck-component='a'><p>A</p></div>";
+    const overlay = document.querySelector("[data-puck-overlay]");
+    const bar = document.querySelector<HTMLElement>(".bar");
+    const wrapper = document.querySelector("[data-puck-component]");
+    if (overlay === null || bar === null || wrapper === null) throw new Error("no canvas");
+    const placed = { element };
+    overlay.getBoundingClientRect = () => placed.element;
+    wrapper.getBoundingClientRect = () => placed.element;
+    Object.defineProperty(document.documentElement, "clientWidth", {
+      value: 800,
+      configurable: true,
+    });
+    Object.defineProperty(document.documentElement, "clientHeight", {
+      value: 600,
+      configurable: true,
+    });
+    Object.defineProperty(bar, "offsetHeight", { value: 30, configurable: true });
+    // Where Puck puts the bar, moved by its transform, as a browser measures it.
+    const measured = vi.fn(() => {
+      const [, x = "0", y = "0"] =
+        /translate\(([-\d.]+)px, ([-\d.]+)px\)/.exec(bar.style.transform) ?? [];
+      const top = placed.element.top - 34;
+      return new DOMRect(placed.element.left + Number(x), top + Number(y), 200, 30);
+    });
+    bar.getBoundingClientRect = measured;
+    vi.spyOn(Range.prototype, "getClientRects").mockImplementation(
+      () => text as unknown as DOMRectList,
+    );
+    return { overlay, bar, wrapper, placed, measured };
+  }
+  const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  afterEach(() => {
+    vi.restoreAllMocks();
     document.body.replaceChildren();
+  });
+
+  it("moves a bar that would sit on its element's text, and keeps it there without taking the move away", async () => {
+    // A Header at the view's top: no room above, so below it.
+    const { overlay, bar, wrapper, measured } = canvas(new DOMRect(0, 0, 800, 60));
+    const stop = followPlacement(bar, overlay, wrapper);
+    await settled();
+    expect(bar.style.transform).toBe("translate(0px, 98px)");
+
+    // Placed again: measured with its move, which stays.
+    window.dispatchEvent(new Event("scroll"));
+    await settled();
+    expect(bar.style.transform).toBe("translate(0px, 98px)");
+    expect(measured).toHaveBeenCalledTimes(2);
+
+    stop();
+    expect(bar.style.transform).toBe("");
+  });
+
+  it("places once for several scrolls in a task", async () => {
+    const { overlay, bar, wrapper, measured } = canvas(new DOMRect(0, 200, 800, 100));
+    followPlacement(bar, overlay, wrapper);
+    await settled();
+    measured.mockClear();
+
+    for (let scroll = 0; scroll < 5; scroll += 1) window.dispatchEvent(new Event("scroll"));
+    await settled();
+    expect(measured).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the bar of an element out of view where Puck puts it, taking its move away", async () => {
+    const { overlay, bar, wrapper, placed } = canvas(new DOMRect(0, 0, 800, 60));
+    followPlacement(bar, overlay, wrapper);
+    await settled();
+    expect(bar.style.transform).not.toBe("");
+
+    // Scrolled down to the Footer: the Header is above the view.
+    placed.element = new DOMRect(0, -2000, 800, 60);
+    window.dispatchEvent(new Event("scroll"));
+    await settled();
+    expect(bar.style.transform).toBe("");
+  });
+
+  it("reads the element's text once, until it changes", async () => {
+    // Taller than the view: docked, over its text, so its text is read.
+    const { overlay, bar, wrapper } = canvas(new DOMRect(0, -100, 800, 1000), [
+      new DOMRect(0, 0, 300, 40),
+    ]);
+    followPlacement(bar, overlay, wrapper);
+    await settled();
+    const reads = vi.mocked(Range.prototype.getClientRects).mock.calls.length;
+    expect(reads).toBeGreaterThan(0);
+
+    window.dispatchEvent(new Event("scroll"));
+    await settled();
+    expect(vi.mocked(Range.prototype.getClientRects).mock.calls.length).toBe(reads);
+
+    wrapper.querySelector("p")?.append("B");
+    await settled();
+    await settled();
+    expect(vi.mocked(Range.prototype.getClientRects).mock.calls.length).toBeGreaterThan(reads);
   });
 });

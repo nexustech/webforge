@@ -80,7 +80,10 @@ const scrollSelected = (where: Scroll) =>
 
 /**
  * What's wrong with the selected element's bar: nothing when it's inside the view and off the
- * element's text, or the element's whole box is out of view (an element hidden at this width, say).
+ * text of the element and of its parent, all as someone sees them, or on text only where no place
+ * the bar may take was clear of it (a tall section with text everywhere on a phone's short view).
+ * For an element wholly out of view (scrolled away, or hidden at this width), nothing unless its
+ * bar was moved: it stays with its element.
  */
 const barProblem = () =>
   canvas()
@@ -99,11 +102,14 @@ const barProblem = () =>
             ? null
             : doc.querySelector(`[data-puck-component="${CSS.escape(id)}"]`);
         if (view === null || wrapper === null) return "nothing selected";
-        const box = () => (shown ?? wrapper).getBoundingClientRect();
         const height = view.innerHeight;
-        const element = box();
-        if (element.bottom <= 0 || element.top >= height || element.width === 0) return "";
-        const barBox = shown?.querySelector(bar)?.getBoundingClientRect();
+        const element = (shown ?? wrapper).getBoundingClientRect();
+        const barElement = shown?.querySelector<HTMLElement>(bar);
+        if (element.bottom <= 0 || element.top >= height || element.width === 0) {
+          const moved = barElement?.parentElement?.style.transform ?? "";
+          return moved === "" ? "" : `moved (${moved}) though its element is out of view`;
+        }
+        const barBox = barElement?.getBoundingClientRect();
         if (barBox === undefined) return "no bar";
         const where_ = `bar at ${Math.round(barBox.left)},${Math.round(barBox.top)}–${Math.round(barBox.bottom)}, element ${Math.round(element.top)}–${Math.round(element.bottom)} of ${height}`;
         if (
@@ -114,28 +120,127 @@ const barProblem = () =>
         ) {
           return `outside the canvas: ${where_}`;
         }
-        // The element's own text, line by line.
-        const walker = doc.createTreeWalker(wrapper, NodeFilter.SHOW_TEXT);
-        for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
-          if ((node.textContent ?? "").trim() === "") continue;
-          const range = doc.createRange();
-          range.selectNodeContents(node);
-          for (const line of range.getClientRects()) {
-            const overlaps =
-              line.width > 0 &&
-              line.left < barBox.right - 0.5 &&
-              line.right > barBox.left + 0.5 &&
-              line.top < barBox.bottom - 0.5 &&
-              line.bottom > barBox.top + 0.5;
-            if (overlaps) {
-              return `over "${(node.textContent ?? "").trim().slice(0, 30)}": ${where_}`;
+        type Box = { left: number; top: number; right: number; bottom: number };
+        /**
+         * The first text in `root` (but not in `skip`) that `box` covers by more than `slack`
+         * pixels each way, line by line.
+         */
+        const covers = (root: Element, skip: Element | undefined, box: Box, slack: number) => {
+          const clip = root.getBoundingClientRect();
+          const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+          for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+            if ((node.textContent ?? "").trim() === "" || skip?.contains(node) === true) continue;
+            const seen = node.parentElement?.checkVisibility({
+              visibilityProperty: true,
+              opacityProperty: true,
+            });
+            if (seen === false) continue;
+            const range = doc.createRange();
+            range.selectNodeContents(node);
+            for (const line of range.getClientRects()) {
+              const left = Math.max(line.left, clip.left, box.left);
+              const right = Math.min(line.right, clip.right, box.right);
+              const top = Math.max(line.top, clip.top, box.top);
+              const bottom = Math.min(line.bottom, clip.bottom, box.bottom);
+              if (right - left > slack && bottom - top > slack) {
+                return (node.textContent ?? "").trim().slice(0, 30);
+              }
             }
           }
+          return undefined;
+        };
+        const parent = wrapper.parentElement?.closest("[data-puck-component]") ?? undefined;
+        /** What `box` covers: the element's text, else its parent's, else nothing. */
+        const textUnder = (box: Box, slack: number) => {
+          const own = covers(wrapper, undefined, box, slack);
+          if (own !== undefined) return { own };
+          const theirs = parent === undefined ? undefined : covers(parent, wrapper, box, slack);
+          return theirs === undefined ? {} : { theirs };
+        };
+        // The places the bar may take (above, below, docked at either edge, left or right), as
+        // the rule tries them: the bar may cover text only where none of them is clear of it.
+        const page = doc.documentElement;
+        const scale = barBox.height / (barElement?.offsetHeight || barBox.height);
+        const gap = 4 * scale;
+        const width = barBox.width;
+        const tall = barBox.height;
+        const across = (x: number) => Math.max(0, Math.min(x, page.clientWidth - width));
+        const tops = [
+          element.top - gap - tall,
+          element.bottom + gap,
+          Math.min(gap, Math.max(0, page.clientHeight - tall)),
+          Math.max(0, page.clientHeight - gap - tall),
+        ];
+        const places = tops
+          .flatMap((top, index) =>
+            index < 2
+              ? [{ left: across(element.left), top }]
+              : [
+                  { left: across(element.left), top },
+                  { left: across(element.right - width), top },
+                ],
+          )
+          .filter((place) => place.top >= 0 && place.top + tall <= page.clientHeight)
+          .map((place) => ({ ...place, right: place.left + width, bottom: place.top + tall }));
+        // A place counts as clear only with half a pixel to spare, the bar's own as covering only
+        // by more than that: rounding never makes a problem.
+        const clear = places.map((place) => textUnder(place, -0.5));
+        const under = textUnder(barBox, 0.5);
+        if (under.own !== undefined && clear.some((text) => text.own === undefined)) {
+          return `over "${under.own}", though a place was clear of it: ${where_}`;
+        }
+        const clearOfAll = clear.some(
+          (text) => text.own === undefined && text.theirs === undefined,
+        );
+        if (under.own === undefined && under.theirs !== undefined && clearOfAll) {
+          return `over its parent's "${under.theirs}", though a place was clear of it: ${where_}`;
         }
         return "";
       },
       { selected: SELECTED_COMPONENT, bar: ACTION_BAR, overlay: OVERLAY },
     );
+
+/** The Layers panel's rows, every element's, opened. */
+async function layers() {
+  const left = page.getByRole("region", { name: "Left panels" });
+  await left.getByRole("tab", { name: "Layers" }).click();
+  await left.getByRole("button", { name: "Expand all" }).click();
+  const rows = left.getByRole("tree", { name: "Layers" }).getByRole("treeitem");
+  await expect.poll(() => rows.count()).toBeGreaterThanOrEqual(15);
+  return rows;
+}
+
+test("leaves the bar of an element scrolled out of view with it", async () => {
+  const rows = await layers();
+  // The Header, then the page scrolled down to the Footer.
+  await rows.first().click();
+  await canvas()
+    .locator("body")
+    .evaluate((body) => body.ownerDocument.defaultView?.scrollTo(0, body.scrollHeight));
+  await expect
+    .poll(() =>
+      canvas()
+        .locator(`${SELECTED_COMPONENT} ${ACTION_BAR}`)
+        .evaluate((element) => element.getBoundingClientRect().bottom),
+    )
+    .toBeLessThanOrEqual(0);
+  await expect.poll(barProblem).toBe("");
+});
+
+test("acts on the element from its bar where it has moved", async () => {
+  const rows = await layers();
+  const heroes = rows.filter({ hasText: /^Hero/ });
+  await expect(heroes).toHaveCount(1);
+  await heroes.first().click();
+  await scrollSelected("top above the view");
+  // Moved from where Puck puts it, below the Hero.
+  const moved = canvas().locator(SELECTED_COMPONENT).locator(ACTION_BAR).locator("xpath=..");
+  await expect(moved).toHaveAttribute("style", /translate/);
+  await expect.poll(barProblem).toBe("");
+
+  await canvas().locator(SELECTED_COMPONENT).getByRole("button", { name: "Duplicate" }).click();
+  await expect(heroes).toHaveCount(2);
+});
 
 for (const device of ["Desktop", "Mobile"] as const) {
   test(`keeps the selected element's bar off its text, at ${device}`, async () => {
@@ -145,11 +250,7 @@ for (const device of ["Desktop", "Mobile"] as const) {
       .getByRole("toolbar", { name: "Canvas" })
       .getByRole("radio", { name: device })
       .click();
-    const left = page.getByRole("region", { name: "Left panels" });
-    await left.getByRole("tab", { name: "Layers" }).click();
-    await left.getByRole("button", { name: "Expand all" }).click();
-    const rows = left.getByRole("tree", { name: "Layers" }).getByRole("treeitem");
-    await expect.poll(() => rows.count()).toBeGreaterThanOrEqual(15);
+    const rows = await layers();
 
     const problems: string[] = [];
     for (let row = 0; row < (await rows.count()); row += 1) {
