@@ -4,7 +4,7 @@ id: keyboard-shortcuts
 title: Keyboard shortcuts
 summary: Every keyboard shortcut in {appName}, by what it does.
 related: [the-editor, editing-on-the-page, layers, edit-panel]
-updated: 2026-11-16
+updated: 2026-11-20
 ---
 
 # Keyboard shortcuts
@@ -42,6 +42,7 @@ On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt
 | F2                        | Rename…                                                                  |
 | Ctrl+F                    | Find and Replace…                                                        |
 | Enter                     | Edit Text                                                                |
+| A letter, digit or sign   | Edit the text, starting with what you typed                              |
 | Backspace                 | Clear the text and edit it (deletes an item with no text of its own)     |
 | Esc                       | Cancel a drag                                                            |
 
@@ -70,7 +71,7 @@ On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt
 | Ctrl+Alt+B               | Show or hide the left panels                                                                                     |
 | Ctrl+J                   | Show or hide the bottom panel (Site Check, Find and Replace)                                                     |
 | F6 · Shift+F6            | Next · previous part of the window: the title bar, the left panels, the page, the bottom panel, the right panels |
-| ?                        | Keyboard shortcuts                                                                                               |
+| ?                        | Keyboard shortcuts (with a text item selected on the page, it types a question mark there)                       |
 | F1                       | {appName} Help                                                                                                   |
 
 ## While typing text
