@@ -4,7 +4,7 @@ id: find-and-replace
 title: Find and Replace
 summary: Find text anywhere on your site and change it everywhere at once, or one place at a time.
 related: [editing-on-the-page, header-and-footer, pages, blog, site-settings, undo-and-history]
-updated: 2026-11-11
+updated: 2026-11-20
 ---
 
 # Find and Replace
@@ -34,7 +34,7 @@ Type what you're looking for in **Find**. The list shows every match, grouped by
 - **Match case** finds only text with the same capital letters: "Smith" but not "smith".
 - **Whole words** finds only whole words: "Smith" but not "Smithson".
 
-Click a match to go to it: {appName} shows its page and selects the element. For a page's title or description, it opens that page's **Page Settings**; for a name in the menu or a menu item, the Pages panel; for a business detail, **Site Settings**.
+Click a match to go to it: {appName} shows its page and selects the element, scrolled into view. For a page's title or description, it opens that page's **Page Settings**; for a name in the menu or a menu item, the Pages panel; for a business detail, **Site Settings**.
 
 The list follows your changes as you work.
 

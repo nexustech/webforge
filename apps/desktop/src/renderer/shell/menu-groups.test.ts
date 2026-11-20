@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { COMMAND_IDS } from "./command-ids.js";
 import type { MenuEntry } from "./commands.js";
 import { inGroups, MENU_GROUPS } from "./menu-groups.js";
 
@@ -97,8 +98,8 @@ describe("inGroups (#1016)", () => {
   });
 
   it("leaves a menu without groups as it was registered, with no separators", () => {
-    const grouped = inGroups("view", entries("view.zoomOut", "view.zoomIn"));
-    expect(drawn(grouped)).toEqual(["view.zoomOut", "view.zoomIn"]);
+    const grouped = inGroups("help", entries("help.shortcuts", "help.open"));
+    expect(drawn(grouped)).toEqual(["help.shortcuts", "help.open"]);
     expect(drawn(inGroups("app", entries("app.settings")))).toEqual(["app.settings"]);
   });
 });
@@ -129,5 +130,18 @@ describe("MENU_GROUPS (#1016)", () => {
     expect(ids.length).toBeGreaterThan(20);
     const unregistered = ids.filter((id) => !sources.some(([, text]) => text.includes(`"${id}"`)));
     expect(unregistered).toEqual([]);
+  });
+
+  it("groups File, View and Site, seven items at most before a separator (#1165)", () => {
+    for (const menu of ["file", "view", "site"] as const) {
+      const groups = MENU_GROUPS[menu] ?? [];
+      expect(groups.length, menu).toBeGreaterThan(1);
+      for (const group of groups) expect(group.length, menu).toBeLessThanOrEqual(7);
+    }
+    // Version History and Site Check under Site, Undo History under View, each from a menu.
+    expect(MENU_GROUPS.site?.flat()).toEqual(
+      expect.arrayContaining([COMMAND_IDS.siteCheck, COMMAND_IDS.versionHistory]),
+    );
+    expect(MENU_GROUPS.view?.flat()).toContain(COMMAND_IDS.undoHistory);
   });
 });

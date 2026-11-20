@@ -81,6 +81,81 @@ test("closes an open menu from its title, or a press outside it", async () => {
   await expect(view).toBeHidden();
 });
 
+test("groups File and View to fit a 600 px window, and opens the history panels and Site Check from the menus (#1165)", async () => {
+  await app.evaluate(({ BrowserWindow }) => {
+    const main = BrowserWindow.getAllWindows()[0];
+    main?.unmaximize();
+    main?.setSize(960, 600);
+  });
+  await expect.poll(() => page.evaluate(() => window.innerHeight)).toBeLessThanOrEqual(600);
+  const windowHeight = await page.evaluate(() => window.innerHeight);
+
+  for (const name of ["File", "View"]) {
+    await title(name).click();
+    const menu = page.getByRole("menu", { name });
+    await expect(menu).toBeVisible();
+    // All of it in the window, with no scrolling, and no run of more than seven items.
+    await expect.poll(() => bottomOf(menu)).toBeLessThanOrEqual(windowHeight);
+    const fits = await menu.evaluate((root) => root.scrollHeight <= root.clientHeight + 1);
+    expect(fits, name).toBe(true);
+    const runs = await menu.evaluate((root) => {
+      const lengths = [0];
+      for (const each of root.children) {
+        if (each.getAttribute("role") === "separator") lengths.push(0);
+        else lengths[lengths.length - 1] = (lengths.at(-1) ?? 0) + 1;
+      }
+      return lengths;
+    });
+    expect(runs.length, name).toBeGreaterThan(1);
+    expect(Math.max(...runs), name).toBeLessThanOrEqual(7);
+    await page.keyboard.press("Escape");
+    await closingDone();
+  }
+
+  // Each from its menu: the panels were only icons in a tab strip.
+  const left = page.getByRole("region", { name: "Left panels" });
+  await title("Site").click();
+  await page
+    .getByRole("menu", { name: "Site" })
+    .getByRole("menuitem", { name: /^Version History/ })
+    .click();
+  await expect(left.getByRole("tab", { name: "Version History" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await closingDone();
+  await title("View").click();
+  await page
+    .getByRole("menu", { name: "View" })
+    .getByRole("menuitem", { name: "Undo History" })
+    .click();
+  await expect(left.getByRole("tab", { name: "Undo History" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await closingDone();
+  await title("Site").click();
+  await page
+    .getByRole("menu", { name: "Site" })
+    .getByRole("menuitem", { name: /^Site Check/ })
+    .click();
+  await expect(
+    page
+      .getByRole("region", { name: "Bottom panel" })
+      .getByRole("tab", { name: "Site Check", selected: true }),
+  ).toBeVisible();
+
+  // And from Search Commands, by name.
+  for (const name of ["Version History", "Undo History", "Site Check"]) {
+    await page.getByRole("button", { name: /^Search commands/ }).click();
+    const box = page.getByRole("dialog", { name: "Commands" });
+    await box.getByRole("combobox").fill(name);
+    await expect(box.getByRole("option", { name: new RegExp(`^${name}`) }).first()).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(box).toBeHidden();
+  }
+});
+
 test("lists Edit in its groups, and the site's settings, theme and stylesheet under Site (#1016)", async () => {
   // The smallest window there is (MIN_WINDOW_SIZE), where Edit is taller than the room below it.
   await app.evaluate(({ BrowserWindow }) => {
@@ -156,6 +231,8 @@ test("lists Edit in its groups, and the site's settings, theme and stylesheet un
     "Site Settings…",
     "Theme…",
     "Theme Studio…",
+    /^Site Check/,
+    /^Version History/,
   ]);
   await page.keyboard.press("Escape");
   await closingDone();

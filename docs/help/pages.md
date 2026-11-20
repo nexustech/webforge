@@ -4,7 +4,7 @@ id: pages
 title: Pages and the menu
 summary: Add, rename, reorder and delete pages, set what the menu shows, and change each page's settings.
 related: [header-and-footer, links, site-settings, site-check, blog]
-updated: 2026-11-15
+updated: 2026-11-20
 ---
 
 # Pages and the menu
@@ -20,7 +20,7 @@ Pages are listed in order. Click one to show it. Icons mark:
 - pages **hidden from navigation**;
 - **Draft** pages, which aren't on your website yet. See [Draft pages](#draft-pages).
 
-To jump to a page from anywhere, press Ctrl+P (Cmd+P on a Mac) and type its name.
+Click a page to show it, from its top. To jump to a page from anywhere, press Ctrl+P (Cmd+P on a Mac) and type its name.
 
 ### Adding a page
 

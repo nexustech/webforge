@@ -35,6 +35,21 @@ function setUp() {
 }
 
 describe("undoHistoryArea (#668)", () => {
+  it("opens Undo History from View › Undo History and the command box (#1165)", () => {
+    const { ctx, registries } = setUp();
+    undoHistoryArea.register(ctx);
+    const shown = vi.fn();
+    registries.panels.onShow(shown);
+
+    expect(registries.commands.get(COMMAND_IDS.undoHistory)).toMatchObject({
+      label: "Undo History",
+      menu: "view",
+    });
+    registries.commands.run(COMMAND_IDS.undoHistory);
+
+    expect(shown).toHaveBeenCalledWith("undoHistory");
+  });
+
   it("registers Undo and Redo on as the history allows, following it as steps are made and undone", () => {
     const { ctx, enabled, edit, session, registries } = setUp();
     undoHistoryArea.register(ctx);
