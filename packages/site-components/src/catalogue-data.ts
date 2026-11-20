@@ -236,9 +236,13 @@ export function expandCatalogue(file: CatalogueFile): Catalogue {
         appearance === undefined
           ? []
           : section
-            ? [
-                ...shared.filter(([name, field]) => !text.includes(name) && !field.inDialog),
-                ...shared.filter(([name]) => text.includes(name)),
+            ? // Its background and box, then its text, its colour last (SECTION_APPEARANCE_ORDER).
+              [
+                ...shared.filter(
+                  ([name, field]) =>
+                    !text.includes(name) && name !== "lookColor" && !field.inDialog,
+                ),
+                ...shared.filter(([name]) => text.includes(name) || name === "lookColor"),
                 // The dialog's deeper fields (3.13b) after the group, as before.
                 ...shared.filter(([, field]) => field.inDialog === true),
               ]

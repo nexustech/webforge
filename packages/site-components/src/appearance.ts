@@ -193,6 +193,21 @@ export const APPEARANCE_TEXT_FIELD_NAMES = [
   "lookAlign",
 ] as const satisfies readonly (keyof typeof APPEARANCE_FIELDS)[];
 
+/**
+ * A section's Appearance group in the order its Style tab shows it (F23, #1180): its background
+ * and box, then its text, its colour last. An element's keeps {@link APPEARANCE_FIELDS}' order.
+ */
+export const SECTION_APPEARANCE_ORDER = [
+  "lookBackground",
+  "lookCorners",
+  "lookBorder",
+  "lookBorderColor",
+  "lookShadow",
+  "lookOpacity",
+  ...APPEARANCE_TEXT_FIELD_NAMES,
+  "lookColor",
+] as const satisfies readonly (keyof typeof APPEARANCE_FIELDS)[];
+
 /** The names of {@link APPEARANCE_FIELDS}, which a component can't give a field of its own. */
 export const APPEARANCE_FIELD_NAMES = Object.keys(
   APPEARANCE_FIELDS,

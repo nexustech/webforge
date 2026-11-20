@@ -267,13 +267,11 @@ export function defineSection<const F extends Fields, const Variant extends stri
     ...rest
   } = spec;
   const appearance = titled === false ? APPEARANCE_FIELDS_WITHOUT_TEXT : APPEARANCE_FIELDS;
-  // The Appearance group's background and box before its text (F23, #1180): a section is mostly
-  // its background, and its text has elements of its own. Spread after them, the text fields keep
-  // their own places at the end; the box fields theirs at the start.
-  const boxFirst = {
-    ...APPEARANCE_FIELDS_WITHOUT_TEXT,
-    ...(appearance as typeof APPEARANCE_FIELDS),
-  };
+  // The Appearance group's background and box before its text and text colour (F23, #1180): a
+  // section is mostly its background, and its text has elements of its own. Spread after them,
+  // the text fields and the colour keep their own order at the end; the box fields are first.
+  const { lookColor: _textColour, ...box } = APPEARANCE_FIELDS_WITHOUT_TEXT;
+  const boxFirst = { ...box, ...(appearance as typeof APPEARANCE_FIELDS) };
   const { backgroundImage, ...overlayFields } = BACKGROUND_FIELDS;
   for (const own of FRAME_FIELDS) {
     if (Object.hasOwn(fields, own)) {

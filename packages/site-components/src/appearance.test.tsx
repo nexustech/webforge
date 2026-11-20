@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   APPEARANCE_FIELDS,
   APPEARANCE_FIELDS_WITHOUT_TEXT,
-  APPEARANCE_TEXT_FIELD_NAMES,
   appearanceBoxClasses,
   appearanceClassGroups,
   appearanceSubtitleClasses,
@@ -13,6 +12,7 @@ import {
   DIALOG_ELEMENT_FIELDS,
   DIALOG_FIELDS,
   DIALOG_TITLE_FIELDS,
+  SECTION_APPEARANCE_ORDER,
   whereOwnColour,
 } from "./appearance.js";
 import { siteLibrary } from "./catalogue/index.js";
@@ -53,11 +53,7 @@ describe("the Appearance group (2.22, ST-1)", () => {
       }
       // A section's own options first, then the group, its background and box before its text
       // (F23, #1180).
-      const text: readonly string[] = APPEARANCE_TEXT_FIELD_NAMES;
-      const boxFirst = [
-        ...group.filter((name) => !text.includes(name)),
-        ...group.filter((name) => text.includes(name)),
-      ];
+      const boxFirst = SECTION_APPEARANCE_ORDER.filter((name) => group.includes(name));
       const start = names.indexOf(boxFirst[0] ?? "");
       expect(names.slice(start, start + boxFirst.length), type).toEqual(boxFirst);
       expect(names.indexOf("contentWidth"), type).toBeLessThan(start);
