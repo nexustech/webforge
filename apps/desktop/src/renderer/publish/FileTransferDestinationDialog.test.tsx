@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { FileTransferDestination, FileTransferTrust } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -25,6 +25,15 @@ function fakePublish(overrides: Partial<PublishApi> = {}) {
   };
 }
 
+/** A field by its label, opening More Options first when it's folded there (#1172). */
+function field(name: string): HTMLElement {
+  const shown = screen.queryByLabelText(name, { exact: true });
+  if (shown !== null) return shown;
+  const more = screen.getByRole("button", { name: "More Options" });
+  if (more.getAttribute("aria-expanded") === "false") fireEvent.click(more);
+  return screen.getByLabelText(name, { exact: true });
+}
+
 function setUp(
   destination?: FileTransferDestination,
   publish = fakePublish(),
@@ -44,7 +53,6 @@ function setUp(
     />,
   );
   const user = userEvent.setup({ delay: null });
-  const field = (name: string) => screen.getByLabelText(name, { exact: true });
   const fill = async (name: string, text: string) => {
     await user.clear(field(name));
     await user.type(field(name), text);
@@ -55,6 +63,54 @@ function setUp(
 }
 
 describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
+  it("asks for the host, user name and password, then Test Connection, the rest folded (#1172)", async () => {
+    const { user } = setUp();
+    // The form's controls in order, by their labels or their text.
+    const asked = () =>
+      [...(document.querySelector("form")?.querySelectorAll("input, select, button") ?? [])].map(
+        (control) =>
+          control.tagName === "BUTTON"
+            ? control.textContent
+            : (control as HTMLInputElement).labels?.[0]?.textContent,
+      );
+    expect(asked()).toEqual([
+      "Host",
+      "User name",
+      "Password",
+      "Test Connection",
+      "More Options",
+      "Cancel",
+      "Save",
+    ]);
+
+    await user.click(screen.getByRole("button", { name: "More Options" }));
+    expect(asked().slice(5, -2)).toEqual([
+      "Control panel",
+      "Connection",
+      "Port",
+      "Folder",
+      "Web address",
+      "Name",
+      "Redirect old addresses on Apache hosts (.htaccess)",
+    ]);
+  });
+
+  it("opens More Options to show a problem folded there (#1172)", async () => {
+    const { user, fill, save, onSave } = setUp();
+    await fill("Host", "ftp.rosasbakery.co.uk");
+    await fill("User name", "rosa");
+    await fill("Password", "test-only-password");
+    await user.clear(field("Folder"));
+    await user.click(screen.getByRole("button", { name: "More Options" }));
+    expect(screen.queryByLabelText("Folder", { exact: true })).toBeNull();
+    await save();
+
+    expect(onSave).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByLabelText("Folder", { exact: true })),
+    );
+  });
+
   it("starts with cPanel's folder over FTPS, and saves the settings and the password apart", async () => {
     const { fill, save, onSave, field } = setUp();
     expect((field("Folder") as HTMLInputElement).value).toBe("/public_html");
@@ -83,9 +139,7 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
   it("leaves redirects for Apache hosts off until turned on, and keeps them on (5.15)", async () => {
     const { user, fill, save, onSave } = setUp();
     const redirects = () =>
-      screen.getByRole("checkbox", {
-        name: "Redirect old addresses on Apache hosts (.htaccess)",
-      }) as HTMLInputElement;
+      field("Redirect old addresses on Apache hosts (.htaccess)") as HTMLInputElement;
     expect(redirects().checked).toBe(false);
 
     await fill("Host", "ftp.rosasbakery.co.uk");
@@ -424,7 +478,6 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
       />,
     );
     const user = userEvent.setup({ delay: null });
-    const field = (name: string) => screen.getByLabelText(name, { exact: true });
     expect(screen.getByText(/Leave it empty to keep it/)).toBeTruthy();
 
     // Tested with the saved password, which the renderer never has.

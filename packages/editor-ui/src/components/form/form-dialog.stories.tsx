@@ -93,7 +93,7 @@ export const InvalidOnSave: Story = {
   },
 };
 
-/** More fields than the window is high: the dialog scrolls, its buttons with it. */
+/** More fields than the window is high: the fields scroll, and the buttons stay in view (#1172). */
 export const LongContent: Story = {
   args: {
     title: "Site Settings",
@@ -110,5 +110,35 @@ export const LongContent: Story = {
       schema: z.unknown(),
     },
     initial: {},
+  },
+};
+
+/** A web host's details: what most people leave as it is, folded under More Options (#1172). */
+const host: FormSpec<FormValues, unknown> = {
+  fields: [
+    { kind: "text", name: "host", label: "Host" },
+    { kind: "text", name: "user", label: "User name" },
+    { kind: "text", name: "folder", label: "Folder", more: true },
+    { kind: "toggle", name: "redirects", label: "Redirect old addresses", more: true },
+  ],
+  schema: z.object({ folder: z.string().min(1, "Fill this in.") }),
+  toModel: (values) => values,
+};
+
+/** Folded: only the fields most people fill in, then More Options. */
+export const MoreOptions: Story = {
+  args: {
+    title: "Publish to Your Web Host",
+    confirm: "Save",
+    spec: host,
+    initial: { host: "", user: "", folder: "/public_html", redirects: false },
+  },
+};
+
+/** A problem in a folded field opens More Options when Save is pressed, to show it. */
+export const MoreOptionsInvalid: Story = {
+  args: { ...MoreOptions.args, initial: { host: "", user: "", folder: "", redirects: false } },
+  play: ({ canvasElement }) => {
+    canvasElement.ownerDocument.querySelector<HTMLButtonElement>("button[type=submit]")?.click();
   },
 };

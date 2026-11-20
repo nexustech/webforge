@@ -17,6 +17,11 @@ export type FormField = FieldSpec & {
   readonly group?: string;
   /** How wide its control is: a few characters, half the form, or the form's width (the default). */
   readonly width?: "sm" | "md" | "full";
+  /**
+   * Under the form's **More Options**, folded until the person opens it, or a check finds a problem
+   * in it: what most people can leave as it is (#1172).
+   */
+  readonly more?: boolean;
   readonly disabled?: boolean;
   /** A list's new item's values, when the person adds one (an id is added). */
   readonly newItem?: () => FormValues;
@@ -69,6 +74,11 @@ export type FormSpec<V extends FormValues, Out> = {
   readonly check?: (values: V) => readonly FormIssue[];
   /** The values after a change, made consistent (a new form service clears the old one's value). */
   readonly adjust?: (next: V, previous: V) => V;
+  /**
+   * Whether **More Options** starts open, from the values the form starts from: when something
+   * folded there needs a look at once (plain FTP's warning, #1172). Folded when left out.
+   */
+  readonly moreOpen?: (values: V) => boolean;
   /**
    * When problems show: as the person types, or once they try to save (the default), and then as
    * they fix them.

@@ -202,6 +202,38 @@ describe("Form (2.21)", () => {
     expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Phone" }));
   });
 
+  it("folds fields marked more under More Options, which a problem in one opens (#1172)", async () => {
+    const plain: FormSpec<Values, z.infer<typeof schema>> = {
+      ...spec,
+      groups: [],
+      fields: [
+        { kind: "text", name: "name", label: "Site name" },
+        { kind: "text", name: "phone", label: "Phone", more: true },
+        { kind: "text", name: "value", label: "Form ID", more: true },
+      ],
+    };
+    const { user, saved } = setUp(plain);
+    const more = screen.getByRole("button", { name: "More Options" });
+    expect(more.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("textbox", { name: "Phone" })).toBeNull();
+
+    await user.click(more);
+    expect(more.getAttribute("aria-expanded")).toBe("true");
+    const region = document.getElementById(more.getAttribute("aria-controls") ?? "");
+    expect(region?.contains(screen.getByRole("textbox", { name: "Phone" }))).toBe(true);
+    await user.clear(screen.getByRole("textbox", { name: "Form ID" }));
+    await user.click(more);
+    expect(screen.queryByRole("textbox", { name: "Form ID" })).toBeNull();
+
+    // Folded values are kept, and a problem in one opens the fold with the focus on it.
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(saved).toHaveBeenLastCalledWith(expect.objectContaining({ ok: false }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Form ID" })),
+    );
+    expect(more.getAttribute("aria-expanded")).toBe("true");
+  });
+
   it("checks the form for its own content, showing only the problems it counts (#1014)", async () => {
     const found = vi.fn();
     const { user } = setUp({
