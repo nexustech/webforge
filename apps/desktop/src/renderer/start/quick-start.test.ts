@@ -14,11 +14,16 @@ import {
 } from "./quick-start.js";
 
 const answers = (change: Partial<QuickStartAnswers> = {}): QuickStartAnswers => ({
-  ...emptyAnswers("My site"),
+  ...emptyAnswers(),
   ...change,
 });
 
 describe("the quick start's request (QS-1, 3.11b)", () => {
+  it("starts with no name, and gives an empty one the untitled name (#1167)", () => {
+    expect(emptyAnswers().name).toBe("");
+    expect(quickStartRequest(answers(), "My site").name).toBe("My site");
+  });
+
   it("makes the untitled Blank site when every step is skipped", () => {
     expect(quickStartRequest(answers({ name: "  " }), "My site")).toEqual({
       name: "My site",
@@ -69,7 +74,7 @@ describe("the quick start's request (QS-1, 3.11b)", () => {
   });
 
   it("asks for one page only when it was chosen (GA10, 5.9)", () => {
-    const answers = emptyAnswers("My site");
+    const answers = emptyAnswers();
 
     expect(quickStartRequest(answers, "My site").pages).toEqual({ leaveOut: [], recipes: [] });
     expect(quickStartRequest({ ...answers, onePage: true }, "My site").pages).toEqual({
@@ -196,7 +201,6 @@ describe("answers from an AI app's brief (4.12a, AIB-5)", () => {
         openingHours: [{ days: ["mon"], opens: "08:00", closes: "17:30" }],
       },
       templates,
-      "My site",
     );
 
     expect(answers).toMatchObject({
@@ -220,7 +224,6 @@ describe("answers from an AI app's brief (4.12a, AIB-5)", () => {
     const answers = answersFromBrief(
       { businessType: "food", name: "Rosa's", theme: "light", colours: { palette: "bistro" } },
       templates,
-      "My site",
     );
     expect(answers).toMatchObject({
       template: "cafe",

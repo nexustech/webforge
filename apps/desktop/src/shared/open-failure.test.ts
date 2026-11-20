@@ -4,7 +4,7 @@ import { openFailureMessage } from "./open-failure.js";
 
 describe("openFailureMessage", () => {
   it.each<[ProjectFailureReason, string]>([
-    ["not-a-project", "This file isn't a Webforge site."],
+    ["not-a-project", "This file isn't a Webforge site. Choose a file ending in .wforge."],
     ["corrupt", "This site file is damaged and can't be opened."],
     ["unexpected-schema", "This site file is damaged and can't be opened."],
     [

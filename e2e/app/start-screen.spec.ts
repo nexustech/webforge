@@ -223,7 +223,7 @@ test("tries the example: a pre-filled site named after it, within its opening bu
   const opened = await measureWork(running());
   // Straight from the start screen: no New Site dialog, the example's own name and theme.
   // Exactly: the first start's welcome has a Try an example card too.
-  await page.getByRole("button", { name: "Try an Example", exact: true }).click();
+  await page.getByRole("button", { name: /^Try an Example/ }).click();
   // The first example the app ships: Café / Restaurant (Trades is the second).
   const hero = canvas(page).locator("h1", { hasText: "Good coffee and proper breakfasts" });
   await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
@@ -362,9 +362,14 @@ test("says when a site can't be opened, and removes sites from the list", async 
   const notes = join(dir, "notes.wforge");
   writeFileSync(notes, "just text");
   await stubFileDialogs(running(), notes);
-  // Exactly: the welcome has an Open a site card too.
-  await page.getByRole("button", { name: "Open a Site…", exact: true }).click();
-  await expect(page.getByRole("alert")).toHaveText("This file isn't a Webforge site.");
+  // The welcome's card: its actions show once, as cards, until there are recent sites (#1167).
+  await page.getByRole("button", { name: /^Open a Site…/ }).click();
+  // Where the person is looking, saying what to choose, and offering another (#1167).
+  const alert = page.getByRole("main").getByRole("alert");
+  await expect(alert).toContainText(
+    "This file isn't a Webforge site. Choose a file ending in .wforge.",
+  );
+  await expect(alert.getByRole("button", { name: "Choose Another File…" })).toBeVisible();
 
   // With nothing to save, the window closes. That it doesn't sit out the save request's 5 s
   // timeout is the unit tests': the start screen answers the request (StartScreen.test.tsx), and

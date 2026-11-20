@@ -2,7 +2,7 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CANVAS_COVER_TIMEOUT_MS, CanvasCover } from "./CanvasCover.js";
+import { CANVAS_COVER_MESSAGE_MS, CANVAS_COVER_TIMEOUT_MS, CanvasCover } from "./CanvasCover.js";
 
 const failures = vi.hoisted(() => vi.fn());
 vi.mock("../log.js", () => ({ reportFailure: failures }));
@@ -14,9 +14,13 @@ afterEach(() => {
 });
 
 describe("the canvas's cover (#1013)", () => {
-  it("says the site is opening until the canvas shows it styled", () => {
+  it("says the site is opening once 500 ms have passed, until the canvas shows it styled (#1167)", () => {
+    vi.useFakeTimers();
     const engine = createFakeEngine({ unstyled: true });
     render(<CanvasCover engine={engine} />);
+    // Covered at once, but plain: a site that draws sooner shows no message flashing past.
+    expect(screen.getByRole("status").textContent).toBe("");
+    act(() => vi.advanceTimersByTime(CANVAS_COVER_MESSAGE_MS));
     expect(screen.getByRole("status").textContent).toBe("Opening your site…");
 
     act(() => engine.showStyled());
