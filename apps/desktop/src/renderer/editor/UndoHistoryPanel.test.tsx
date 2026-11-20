@@ -26,7 +26,8 @@ const state = (cursor: number): HistoryState<string | null> => ({
 });
 
 async function render(cursor: number) {
-  const container = document.createElement("div");
+  document.body.replaceChildren();
+  const container = document.body.appendChild(document.createElement("div"));
   const history = { jumpTo: vi.fn(() => true) };
   await act(async () =>
     createRoot(container).render(<UndoHistoryPanel history={history} state={state(cursor)} />),
@@ -62,5 +63,32 @@ describe("UndoHistoryPanel", () => {
     steps[1]?.click();
 
     expect(history.jumpTo.mock.calls).toEqual([[null], ["h1"]]);
+  });
+
+  it("is one Tab stop, the current step, with arrows, Home and End between steps (#1179)", async () => {
+    const { steps } = await render(1);
+    expect(steps.map((step) => step.tabIndex)).toEqual([-1, 0, -1]);
+
+    const press = async (key: string) =>
+      act(async () => {
+        document.activeElement?.dispatchEvent(
+          new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }),
+        );
+      });
+    await act(async () => steps[1]?.focus());
+    await press("ArrowDown");
+    expect(document.activeElement).toBe(steps[2]);
+    // The step last focused is now the Tab stop.
+    expect(steps.map((step) => step.tabIndex)).toEqual([-1, -1, 0]);
+    await press("ArrowDown");
+    expect(document.activeElement).toBe(steps[2]);
+    await press("Home");
+    expect(document.activeElement).toBe(steps[0]);
+    await press("ArrowUp");
+    expect(document.activeElement).toBe(steps[0]);
+    await press("End");
+    expect(document.activeElement).toBe(steps[2]);
+    await press("ArrowUp");
+    expect(document.activeElement).toBe(steps[1]);
   });
 });
