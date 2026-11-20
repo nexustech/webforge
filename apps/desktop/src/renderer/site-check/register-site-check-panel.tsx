@@ -13,7 +13,7 @@ import type { PanelRegistry } from "../shell/panels.js";
 import { fixFor, jumpTo } from "./actions.js";
 import { type SiteCheckAssistant, useAssistantWrites } from "./assistant-writes.js";
 import type { BundleActions } from "./bundle.js";
-import { countsByLevel } from "./counts.js";
+import { toFixCount } from "./counts.js";
 import { describeDetail, describePlace } from "./describe.js";
 import { SiteCheckPanel } from "./SiteCheckPanel.js";
 import { registerSiteCheckCommand } from "./site-check-command.js";
@@ -58,12 +58,6 @@ type SiteCheckPanelOptions = {
   readonly toFix?: StoreApi<number>;
 };
 
-/** What `report` lists to fix: *Must fix* and *Should fix*, as the title bar counts them (#1009). */
-const toFixIn = (report: Parameters<typeof countsByLevel>[0]) => {
-  const counts = countsByLevel(report);
-  return counts.must + counts.should;
-};
-
 /**
  * Puts Site Check in the bottom drawer (F-CHK-1, UI1), in Simple and Advanced mode (T2). It checks
  * the site in the background as it changes; a finding jumps to where it is, and some have a *Fix*.
@@ -96,9 +90,9 @@ export function registerSiteCheckPanel(
     ...(onNetlify === undefined ? {} : { onNetlify }),
     usedSelectors: (site) => siteSelectors(site, session),
   });
-  toFix?.setState(toFixIn(siteCheck.state.getState().report), true);
+  toFix?.setState(toFixCount(siteCheck.state.getState().report), true);
   const stopToFix = siteCheck.state.subscribe(({ report }, before) => {
-    if (report !== before.report) toFix?.setState(toFixIn(report), true);
+    if (report !== before.report) toFix?.setState(toFixCount(report), true);
   });
   const actions = {
     session,

@@ -12,3 +12,12 @@ export function countsByLevel(report: CheckReport): Readonly<Record<CheckLevel, 
   for (const result of report.results) counts[result.level] += result.findings.length;
   return counts;
 }
+
+/**
+ * How many things `report` lists to fix: *Must fix* and *Should fix* together, as the title bar's
+ * button (#1009) and the export's and Publish's reports (#1171) count them.
+ */
+export function toFixCount(report: CheckReport): number {
+  const counts = countsByLevel(report);
+  return counts.must + counts.should;
+}
