@@ -22,6 +22,8 @@ export const shell = {
   // A form dialog's button that closes it without saving (2.21).
   "ui.form.cancel": "Cancel",
   "ui.form.fixErrors": "Some values need fixing before they can be saved.",
+  // A form's fields most people can leave as they are, folded under a button (#1172).
+  "ui.form.moreOptions": "More Options",
   // What a form says is wrong with a value, unless its schema says it its own way (2.21).
   "form.error.empty": "Fill this in.",
   "form.error.tooShort": "Use at least {min} characters.",

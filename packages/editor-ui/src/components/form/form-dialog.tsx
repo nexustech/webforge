@@ -47,7 +47,8 @@ export type FormDialogProps<V extends FormValues, Out> = {
  * A dialog of one form (2.21, B4): its title, the form's fields (`Form`), and Cancel and the
  * confirm button. Enter saves. A form that checks as the person types (`validateOn: "change"`)
  * keeps Save off until its values pass; others show what to fix when Save is pressed. Dialogs
- * declare a {@link FormSpec} instead of drawing their own fields.
+ * declare a {@link FormSpec} instead of drawing their own fields. In a window too short for the
+ * whole form, the fields scroll between the title and the buttons, which stay in view (#1172).
  */
 export function FormDialog<V extends FormValues, Out>({
   open,
@@ -69,7 +70,8 @@ export function FormDialog<V extends FormValues, Out>({
       */}
       <DialogContent
         className={cn(
-          "max-h-[calc(100dvh-2rem)] overflow-y-auto",
+          // A column, so the form can shrink to the window and scroll its fields (#1172).
+          "flex max-h-[calc(100dvh-2rem)] flex-col",
           size === "lg" && "sm:max-w-2xl",
           // A form with a side nav (LF-12's Settings).
           size === "xl" && "sm:max-w-3xl",
@@ -100,7 +102,7 @@ function FormDialogBody<V extends FormValues, Out>({
   const [saveTried, setSaveTried] = useState(false);
   return (
     <form
-      className="grid gap-3"
+      className="flex min-h-0 flex-col gap-3"
       // What to fix shows in the editor's own words, never the browser's bubble.
       noValidate
       onSubmit={(event) => {
@@ -114,12 +116,18 @@ function FormDialogBody<V extends FormValues, Out>({
         <DialogTitle>{title}</DialogTitle>
         {description === undefined ? null : <DialogDescription>{description}</DialogDescription>}
       </DialogHeader>
-      <Form
-        form={form}
-        {...(groupsLabel === undefined ? {} : { groupsLabel })}
-        {...(initialGroup === undefined ? {} : { initialGroup })}
-        {...(groupHelp === undefined ? {} : { groupHelp })}
-      />
+      {/*
+        The fields scroll; the title and the buttons don't (#1172). It reaches the dialog's edges,
+        so its scroll bar is at the edge and a field's focus ring isn't cut off.
+      */}
+      <div className="-mx-4 -my-1 min-h-0 overflow-y-auto px-4 py-1">
+        <Form
+          form={form}
+          {...(groupsLabel === undefined ? {} : { groupsLabel })}
+          {...(initialGroup === undefined ? {} : { initialGroup })}
+          {...(groupHelp === undefined ? {} : { groupHelp })}
+        />
+      </div>
       {/* After a Save that couldn't: why nothing happened, read out at once. */}
       {saveTried && form.issues.length > 0 ? (
         <p role="alert" className="m-0 text-xs text-destructive-text">

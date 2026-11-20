@@ -202,6 +202,97 @@ describe("Form (2.21)", () => {
     expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Phone" }));
   });
 
+  it("folds fields marked more under More Options, which a problem in one opens (#1172)", async () => {
+    const plain: FormSpec<Values, z.infer<typeof schema>> = {
+      ...spec,
+      groups: [],
+      fields: [
+        { kind: "text", name: "name", label: "Site name" },
+        { kind: "text", name: "phone", label: "Phone", more: true },
+        { kind: "text", name: "value", label: "Form ID", more: true },
+      ],
+    };
+    const { user, saved } = setUp(plain);
+    const more = screen.getByRole("button", { name: "More Options" });
+    expect(more.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("textbox", { name: "Phone" })).toBeNull();
+
+    await user.click(more);
+    expect(more.getAttribute("aria-expanded")).toBe("true");
+    const region = document.getElementById(more.getAttribute("aria-controls") ?? "");
+    expect(region?.contains(screen.getByRole("textbox", { name: "Phone" }))).toBe(true);
+    await user.clear(screen.getByRole("textbox", { name: "Form ID" }));
+    await user.click(more);
+    expect(screen.queryByRole("textbox", { name: "Form ID" })).toBeNull();
+
+    // Folded values are kept, and a problem in one opens the fold with the focus on it.
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(saved).toHaveBeenLastCalledWith(expect.objectContaining({ ok: false }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Form ID" })),
+    );
+    expect(more.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("folds each tab on its own, and opens only the tab with a folded problem (#1172)", async () => {
+    const { user } = setUp({
+      ...spec,
+      fields: [
+        { kind: "text", name: "name", label: "Site name", group: "general" },
+        { kind: "toggle", name: "open", label: "Show a button", group: "general", more: true },
+        { kind: "text", name: "phone", label: "Phone", group: "contact" },
+        { kind: "text", name: "value", label: "Form ID", group: "contact", more: true },
+      ],
+    });
+    const more = () => screen.getByRole("button", { name: "More Options" });
+    await user.click(screen.getByRole("tab", { name: "Contact" }));
+    await user.click(more());
+    await user.clear(screen.getByRole("textbox", { name: "Form ID" }));
+    await user.click(more());
+    await user.click(screen.getByRole("tab", { name: "General" }));
+    await user.click(more());
+    expect(screen.getByRole("checkbox", { name: "Show a button" })).toBeTruthy();
+    await user.click(more());
+
+    // Save: Contact, its fold opened and Form ID focused; General's left as it was.
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Form ID" })),
+    );
+    await user.click(screen.getByRole("tab", { name: "General" }));
+    expect(more().getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("shows a field the form's own content names, and sums up a fold while it's closed (#1172)", async () => {
+    const { user } = setUp({
+      ...spec,
+      fields: [
+        { kind: "text", name: "name", label: "Site name", group: "general" },
+        { kind: "text", name: "phone", label: "Phone", group: "contact" },
+        { kind: "text", name: "value", label: "Form ID", group: "contact", more: true },
+      ],
+      moreSummary: (values, group) => (group === "contact" ? `Form ${values.value}` : undefined),
+      after: (_values, form) => ({
+        name: (
+          <button type="button" onClick={() => form.show("value")}>
+            Check
+          </button>
+        ),
+      }),
+    });
+
+    await user.click(screen.getByRole("button", { name: "Check" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Form ID" })),
+    );
+    const more = screen.getByRole("button", { name: "More Options" });
+    expect(more.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.queryByText("Form x1")).toBeNull();
+
+    await user.click(more);
+    expect(screen.getByText("Form x1").id).toBe(more.getAttribute("aria-describedby"));
+  });
+
   it("checks the form for its own content, showing only the problems it counts (#1014)", async () => {
     const found = vi.fn();
     const { user } = setUp({

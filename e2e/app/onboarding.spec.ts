@@ -131,7 +131,7 @@ test("shows each first-time tip once: the first selection, Content mode, and aft
   // The first selection: beside what's selected, closed with Got it.
   await clickOnCanvas(heading);
   const selection = tourCard(page, "Change what you've selected");
-  await expect(selection).toContainText("Press Enter, or Edit on its bar");
+  await expect(selection).toContainText("Type to change its text, or press Enter");
   await expect(selection).not.toHaveAttribute("data-side", "centre");
   await selection.getByRole("button", { name: "Got it" }).click();
   await expect(selection).toHaveCount(0);

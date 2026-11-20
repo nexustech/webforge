@@ -22,6 +22,8 @@ export type LayersPanelActions = {
   readonly moveDown: (() => void) | undefined;
   readonly duplicate: (() => void) | undefined;
   readonly remove: (() => void) | undefined;
+  /** Starts editing the selected element's text on the canvas (LF-17); undefined while off. */
+  readonly editText?: (() => void) | undefined;
   /** Why each of those is off, from its command (#1010): the toolbar's tooltips say it. */
   readonly reasons?: {
     readonly [action in "moveUp" | "moveDown" | "duplicate" | "remove"]?: string | undefined;

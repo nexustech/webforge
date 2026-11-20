@@ -25,6 +25,23 @@ type Story = StoryObj<typeof meta>;
 /** A new destination: cPanel's usual folder, over FTPS. */
 export const New: Story = {};
 
+/**
+ * In the app's smallest window, 960 × 600 (#1172): Test Connection, Cancel and Save are in view,
+ * the rest folded under More Options.
+ */
+export const ShortWindow: Story = { tags: ["short-window"] };
+
+/** More Options open in that window: the fields scroll, and Cancel and Save stay in view. */
+export const ShortWindowMoreOptions: Story = {
+  tags: ["short-window"],
+  play: ({ canvasElement }) => {
+    const more = [...canvasElement.ownerDocument.querySelectorAll("button")].find(
+      (button) => button.textContent === "More Options",
+    );
+    more?.click();
+  },
+};
+
 /** An SFTP destination signing in with a private key, its host key trusted. */
 export const SftpWithKey: Story = {
   args: {

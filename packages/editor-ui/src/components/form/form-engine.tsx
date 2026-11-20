@@ -1,3 +1,5 @@
+import { t } from "@webforge/i18n";
+import { ChevronRightIcon } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { BoxField } from "../edit/box-field.js";
@@ -6,6 +8,7 @@ import { drawField, useFieldRenderers } from "../edit/field-context.js";
 import type { FieldKind, FieldRendererProps, FieldRenderers } from "../edit/field-spec.js";
 import { ListField } from "../edit/list-field.js";
 import { PLAIN_RENDERERS } from "../edit/plain-renderers.js";
+import { Button } from "../ui/button.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs.js";
 import { ErrorText, Field } from "./form.js";
 import {
@@ -49,6 +52,12 @@ const FORM_OWN: FieldRenderers = {
   action: ActionField,
 };
 
+/** The fold of a form with no tabs, in place of a tab's group. */
+const UNGROUPED = "form";
+
+/** The **More Options** a folded field is under: its tab's, or the form's. */
+const foldOf = (field: FormField) => field.group ?? UNGROUPED;
+
 /** Classes of a control `width` wide. */
 const WIDTH = { sm: "w-32", md: "w-64 max-w-full", full: "" } as const;
 
@@ -68,6 +77,8 @@ export type FormProps<V extends FormValues, Out> = {
  * A form's fields (2.21, B3), drawn by the field renderers as the Edit panel draws its own, each
  * with its label, help and problem (R10's `Field`); on tabs if the form has groups. Problems no
  * field shows are listed above the fields. After a failed Save it shows the first tab with one.
+ * Fields marked `more` are folded under **More Options** after the others, which a problem in one
+ * of them opens (#1172).
  */
 export function Form<V extends FormValues, Out>({
   form,
@@ -81,13 +92,38 @@ export function Form<V extends FormValues, Out>({
   const groups = form.spec.groups ?? [];
   const [tab, setTab] = useState(initialGroup ?? groups[0]?.id ?? "");
   const [seen, setSeen] = useState(form.attempts);
+  // Each tab's **More Options** opens on its own: the tabs open, by their groups ("form" untabbed).
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() =>
+    form.spec.moreOpen?.(form.values) === true
+      ? new Set(fields.filter((field) => field.more === true).map(foldOf))
+      : new Set(),
+  );
+  const open = (keys: readonly string[]) =>
+    setOpened((previous) => new Set([...previous, ...keys]));
+  // A field `show` asked for, to focus once it is drawn.
+  const [showing, setShowing] = useState<string | undefined>();
+  const moreId = useId();
   const hasIssue = (group: string) =>
     fields.some((field) => field.group === group && issues.some((issue) => concerns(field, issue)));
   if (seen !== form.attempts) {
     setSeen(form.attempts);
     const first = groups.find((group) => hasIssue(group.id));
     if (first !== undefined && !hasIssue(tab)) setTab(first.id);
+    // A problem in a folded field: open its tab's **More Options**, so it shows and takes the focus.
+    const folded = fields.filter(
+      (field) => field.more === true && issues.some((issue) => concerns(field, issue)),
+    );
+    if (folded.length > 0) open(folded.map(foldOf));
   }
+
+  /** Shows field `name`: its tab, its **More Options** opened, and the focus on it (#1172). */
+  const show = (name: string) => {
+    const field = fields.find((each) => each.name === name);
+    if (field === undefined) return;
+    if (field.group !== undefined) setTab(field.group);
+    if (field.more === true) open([foldOf(field)]);
+    setShowing(name);
+  };
 
   /** A group's **?**, at its tab's top end, if it has one. */
   const helpOf = (group: string) => {
@@ -108,27 +144,88 @@ export function Form<V extends FormValues, Out>({
     });
     return () => cancelAnimationFrame(frame);
   }, [attempts]);
+  useEffect(() => {
+    if (showing === undefined) return undefined;
+    // A frame later, as above: the fold or the tab just opened draws the field after this render.
+    const frame = requestAnimationFrame(() => {
+      root.current
+        ?.querySelector(`[data-field="${showing}"]`)
+        ?.querySelector<HTMLElement>("input, select, textarea, button")
+        ?.focus();
+      setShowing(undefined);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [showing]);
 
-  const after = form.spec.after?.(form.values, { validate: form.validate }) ?? {};
-  const draw = (shown: readonly FormField[]) => (
-    <div className="grid gap-3">
-      {shown.map((field) => (
-        <Fragment key={field.name}>
-          <FormFieldRow
-            field={field}
-            value={form.values[field.name]}
-            error={issueOf(field, issues)}
-            {...(field.kind === "list"
-              ? { itemErrors: itemIssuesOf(field, itemsOf(form.values[field.name]), issues) }
-              : {})}
-            renderers={renderers}
-            onChange={(value) => form.change(field.name, value)}
-          />
-          {after[field.name]}
-        </Fragment>
-      ))}
-    </div>
+  const after = form.spec.after?.(form.values, { validate: form.validate, show }) ?? {};
+  const row = (field: FormField) => (
+    <Fragment key={field.name}>
+      <FormFieldRow
+        field={field}
+        value={form.values[field.name]}
+        error={issueOf(field, issues)}
+        {...(field.kind === "list"
+          ? { itemErrors: itemIssuesOf(field, itemsOf(form.values[field.name]), issues) }
+          : {})}
+        renderers={renderers}
+        onChange={(value) => form.change(field.name, value)}
+      />
+      {after[field.name]}
+    </Fragment>
   );
+  /** The fields `shown` (a tab's, `key`): those marked `more` folded under **More Options**. */
+  const draw = (shown: readonly FormField[], key = UNGROUPED) => {
+    const more = shown.filter((field) => field.more === true);
+    const regionId = `${moreId}-${key}-fields`;
+    const summaryId = `${moreId}-${key}-summary`;
+    const isOpen = opened.has(key);
+    // While folded, what the folded fields hold, in a few words, so nothing set there is hidden.
+    const summary = isOpen
+      ? undefined
+      : form.spec.moreSummary?.(form.values, key === UNGROUPED ? undefined : key);
+    return (
+      <div className="grid gap-3">
+        {shown.filter((field) => field.more !== true).map(row)}
+        {more.length === 0 ? null : (
+          <>
+            <div className="flex flex-wrap items-center gap-x-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-expanded={isOpen}
+                aria-controls={isOpen ? regionId : undefined}
+                aria-describedby={summary === undefined ? undefined : summaryId}
+                onClick={() =>
+                  setOpened((previous) => {
+                    const next = new Set(previous);
+                    if (!next.delete(key)) next.add(key);
+                    return next;
+                  })
+                }
+              >
+                <ChevronRightIcon
+                  aria-hidden
+                  className={cn("transition-transform", isOpen && "rotate-90")}
+                />
+                {t("ui.form.moreOptions")}
+              </Button>
+              {summary === undefined ? null : (
+                <span id={summaryId} className="text-xs text-muted-foreground">
+                  {summary}
+                </span>
+              )}
+            </div>
+            {isOpen ? (
+              <div id={regionId} className="grid gap-3">
+                {more.map(row)}
+              </div>
+            ) : null}
+          </>
+        )}
+      </div>
+    );
+  };
   const unplaced = unplacedIssues(fields, issues);
   const general =
     unplaced.length === 0 ? null : (
@@ -201,7 +298,10 @@ export function Form<V extends FormValues, Out>({
             {groups.map((group) => (
               <TabsContent key={group.id} value={group.id} className="bg-transparent">
                 {helpOf(group.id)}
-                {draw(fields.filter((field) => field.group === group.id))}
+                {draw(
+                  fields.filter((field) => field.group === group.id),
+                  group.id,
+                )}
               </TabsContent>
             ))}
           </div>
@@ -228,7 +328,10 @@ export function Form<V extends FormValues, Out>({
         {groups.map((group) => (
           <TabsContent key={group.id} value={group.id} className="pt-3">
             {helpOf(group.id)}
-            {draw(fields.filter((field) => field.group === group.id))}
+            {draw(
+              fields.filter((field) => field.group === group.id),
+              group.id,
+            )}
           </TabsContent>
         ))}
       </Tabs>
@@ -286,6 +389,7 @@ function FormFieldRow({
   const wide = (node: ReactNode) => <div className={cn(WIDTH[field.width ?? "full"])}>{node}</div>;
   return (
     <Field
+      name={field.name}
       // An on/off field's label is beside its checkbox, which draws it.
       label={field.kind === "toggle" ? undefined : field.label}
       hint={field.help}

@@ -18,7 +18,7 @@ import {
 import { t } from "@webforge/i18n";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand/vanilla";
-import { SiteCheckToFix } from "../site-check/index.js";
+import { SiteCheckToFixNote } from "../site-check/index.js";
 import type { LivePublish } from "./publish-flow.js";
 
 /** The dialog a publish has open: *Your site is live*, or whether to replace another site. */
@@ -147,7 +147,7 @@ export function PublishOutcomeDialogs({
                 <p className="text-muted-foreground">{t("publish.live.versionNotSaved")}</p>
               )}
               {shown?.kind === "live" && (
-                <SiteCheckToFix
+                <SiteCheckToFixNote
                   count={shown.toFix}
                   onShow={() => {
                     close();
