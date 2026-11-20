@@ -24,15 +24,8 @@ test.beforeEach(async () => {
       .click();
   }
   await expect.poll(scrollRoom).toBeGreaterThan(1200);
-  // Settled: each Hero's picture loaded and the page's height steady, so nothing moves an element
-  // after it is shown (on a slow machine the pictures arrive after the page has scrolled).
-  await canvas()
-    .locator("body")
-    .evaluate((body) =>
-      Promise.all(
-        [...body.ownerDocument.images].map((image) => image.decode().catch(() => undefined)),
-      ),
-    );
+  // Settled: the page's height steady, and so the Add panel's own showing of the last Hero done,
+  // before a test scrolls (a macOS run once scrolled 30 ms after the last Hero was added).
   let last = -1;
   await expect
     .poll(async () => {
