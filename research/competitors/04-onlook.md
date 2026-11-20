@@ -1,6 +1,6 @@
 # Onlook: Competitor Review
 
-**Status:** ✅ Decided 2026-11-20 ([§7.6](#76-decisions)): nine proposals become Phase 5 items before v1.0 (the assistant asks, suggests, checks and holds a message; example requests; a page as an image or PDF; Report a Problem; a Gitleaks check before a push), four are adopted as notes or rules, and four are declined for now. 🟡 An addendum on the colour picker, theming and styling ([§8](#8-addendum-colour-picker-theming-and-styling)) adds three proposals for decision, OL-18 to OL-20.
+**Status:** ✅ Decided 2026-11-20 ([§7.6](#76-decisions)): nine proposals become Phase 5 items before v1.0 (the assistant asks, suggests, checks and holds a message; example requests; a page as an image or PDF; Report a Problem; a Gitleaks check before a push), four are adopted as notes or rules, and four are declined for now. An addendum on the colour picker, theming and styling ([§8](#8-addendum-colour-picker-theming-and-styling)) added OL-18 to OL-20, decided 2026-11-20 with [product/18](../product/18-theme-colours-and-code-editing.md#7-decisions) ([§8.5](#85-proposals-and-decisions)): OL-18 and OL-19 are Phase 5 items before v1.0 (5.30, 5.26) and OL-20 is a v1.1 item (6.20), planned as PH5-4.
 **Date:** 2026-11-20
 **Question:** Onlook is not in Webforge's niche. What does it do, how is it built, and which of its ideas (product, editor, AI, engineering) are worth borrowing?
 
@@ -273,9 +273,15 @@ We are behind in three places:
 
 Onlook's free gradients and raw values are not a gap. Style choices map to design tokens, never free values ([standards §4](../../spec/03-engineering-standards.md#4-code-style--conventions), ADR 0009), and that rule is why a theme change and a contrast check can reach every colour.
 
-### 8.5 Proposals for decision
+### 8.5 Proposals and decisions
 
-Not decided. Sizes are rough ideal days; none is in the plan.
+**Decided 2026-11-20** (product owner, option B of [product/18 §6](../product/18-theme-colours-and-code-editing.md#6-draft-plan), recorded in its [§7](../product/18-theme-colours-and-code-editing.md#7-decisions) and planned as PH5-4 in [`spec/04` §3](../../spec/04-implementation-plan.md#3-timeline)). The three were re-estimated there and planned with the theme colours (TC-1a…TC-6):
+
+- **OL-19** ✅ **before v1.0:** plan item 5.26, 2.5 days, stream C, the first of the colour items, [#1216](https://github.com/nexustech/webforge/issues/1216). "Custom colours stay Advanced only" below is superseded: TC-2 (5.29) offers any colour in Simple mode too.
+- **OL-18** ✅ **before v1.0:** plan item 5.30, 1.5 days, stream A, after LF-15 (merged) and OL-19, [#1220](https://github.com/nexustech/webforge/issues/1220).
+- **OL-20** ✅ **v1.1:** plan item 6.20, 1 day, [#1225](https://github.com/nexustech/webforge/issues/1225).
+
+The proposals as they were put:
 
 | #         | Proposal                                                                                                                                                                                                                                                                                                                                                                         | Why                                                                                                            | Size |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---- |
