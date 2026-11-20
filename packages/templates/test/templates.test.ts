@@ -225,10 +225,10 @@ describe("the templates' styling (2.29, ST-8)", () => {
   });
 });
 
-describe("every template's main headings (#982)", () => {
-  it("are counted as they were when Site Check named the components that write one", () => {
-    // Each template with every recipe of its type, so every section a template can add is counted.
-    // One snapshot each: a new template's is written the first time `pnpm check` runs (#983).
+describe("every template's main headings (#982, #1173)", () => {
+  it("are one per page, with every recipe of its type, as Site Check counts them", () => {
+    // Each template with every recipe of its type, so every page a new site can start with is
+    // counted: a page without a Hero has its first section title as its main heading (#1173).
     for (const { template, images } of templates) {
       const site = siteFromTemplate(template, images, {
         name: template.site.settings.general.name,
@@ -239,7 +239,7 @@ describe("every template's main headings (#982)", () => {
       }
       const report = checkSite({ site, catalogue: CATALOGUE }, "export");
       const result = report.results.find((each) => each.rule === "mainHeading");
-      expect(result?.findings ?? []).toMatchSnapshot(template.id);
+      expect(result?.findings ?? [], template.id).toEqual([]);
     }
   });
 });

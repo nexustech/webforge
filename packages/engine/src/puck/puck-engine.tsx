@@ -5,6 +5,7 @@ import { t } from "@webforge/i18n";
 import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
+  pageHeadings,
   type RenderContext,
   type SiteBindings,
   samePreviews,
@@ -192,7 +193,32 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     dragKeys,
     editorRevisions,
     frameDocument: frame.document,
+    onDocs: () => followPageHeading(),
   });
+
+  /** Whether the page's main heading is to be found again (see {@link followPageHeading}). */
+  let headingDue = false;
+  /**
+   * Finds again the section whose title is the page's main heading (#1173), as `renderPage` does
+   * for the export, once the docs have stopped changing for this turn, never while Puck reports an
+   * action. Every section reads it, so all draw again when it changes: only when a page's own main
+   * heading or its first title comes or goes, never while its text is typed.
+   */
+  const followPageHeading = () => {
+    if (headingDue) return;
+    headingDue = true;
+    queueMicrotask(() => {
+      headingDue = false;
+      const components = library?.components;
+      const { promoted } =
+        components === undefined
+          ? { promoted: undefined }
+          : pageHeadings([page.composed().content], (type) => components[type]);
+      if (parts.pageHeading === promoted) return;
+      const { pageHeading: _was, ...rest } = parts;
+      changeContext({ parts: promoted === undefined ? rest : { ...rest, pageHeading: promoted } });
+    });
+  };
 
   /** The canvas's width, zoom and size (see `canvas-view.ts`). */
   const view = createCanvasView(puck, dispatch);
@@ -304,6 +330,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       );
       slotsOf = (type) => slots.get(type);
       config = configFor(opts.library);
+      // A page given before the library was has its heading found now.
+      followPageHeading();
       const editorWindow = el.ownerDocument.defaultView;
       stopEditorListeners =
         editorWindow === null

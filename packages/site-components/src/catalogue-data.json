@@ -3441,7 +3441,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "TextImage": {
       "label": "Text + Image",
@@ -3661,7 +3662,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "CallToAction": {
       "label": "Call to action",
@@ -3886,7 +3888,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "Faq": {
       "label": "FAQ",
@@ -4133,7 +4136,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "FaqItem": {
       "label": "Question",
@@ -4375,7 +4379,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "GalleryImage": {
       "label": "Image",
@@ -4726,7 +4731,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "Map": {
       "label": "Map",
@@ -4951,7 +4957,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "EmbedVideo": {
       "label": "Embed video",
@@ -5358,7 +5365,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "ContactForm": {
       "label": "Contact form",
@@ -5589,7 +5597,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "Newsletter": {
       "label": "Newsletter signup",
@@ -5833,7 +5842,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "Form": {
       "label": "Form",
@@ -6371,7 +6381,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "Feature": {
       "label": "Feature",
@@ -6737,7 +6748,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "Testimonial": {
       "label": "Testimonial",
@@ -7115,7 +7127,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "TeamMember": {
       "label": "Team member",
@@ -7501,7 +7514,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "PricingPlan": {
       "label": "Plan",
@@ -8167,7 +8181,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "Logo": {
       "label": "Logo",
@@ -8441,7 +8456,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "Stat": {
       "label": "Stat",
@@ -8953,7 +8969,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "PostTags": {
       "label": "Post tags",
@@ -9382,7 +9399,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "Step": {
       "label": "Step",
@@ -9792,7 +9810,8 @@
         {
           "field": "backgroundImage"
         }
-      ]
+      ],
+      "titleField": "title"
     },
     "MenuItem": {
       "label": "Dish or drink",
