@@ -38,61 +38,42 @@ function element(id: string, top: number, bottom: number) {
 }
 
 describe("the canvas's scrolling (#1176)", () => {
-  /** The frames asked for, run with {@link nextFrame}. */
-  let frames: FrameRequestCallback[] = [];
-  const nextFrame = () => {
-    const due = frames;
-    frames = [];
-    for (const frame of due) frame(0);
-  };
   let scrollBy: ReturnType<typeof vi.spyOn>;
   let scrollTo: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((frame) => {
-      frames.push(frame);
-      return frames.length;
-    });
-    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {
-      frames = [];
-    });
+    vi.useFakeTimers();
     scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
     scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
-    frames = [];
     document.body.replaceChildren();
   });
 
-  it("scrolls an element below the view up into it, at the next frame", () => {
+  it("scrolls an element below the view up into it at once, without waiting for a frame", () => {
     document.body.append(element("text-1", 2000, 2100));
     const scroll = createCanvasScroll(() => document);
 
     scroll.reveal("text-1");
-    expect(scrollBy).not.toHaveBeenCalled();
-    nextFrame();
 
     expect(scrollBy).toHaveBeenCalledWith(0, 2100 - (window.innerHeight - ROOM_BELOW));
   });
 
   it("keeps the selection bar's room above an element under the view's top", () => {
     document.body.append(element("hero-1", 10, 300));
-    const scroll = createCanvasScroll(() => document);
 
-    scroll.reveal("hero-1");
-    nextFrame();
+    createCanvasScroll(() => document).reveal("hero-1");
 
     expect(scrollBy).toHaveBeenCalledWith(0, 10 - ROOM_ABOVE);
   });
 
   it("leaves an element that shows already where it is", () => {
     document.body.append(element("text-1", 200, 300));
-    const scroll = createCanvasScroll(() => document);
 
-    scroll.reveal("text-1");
-    nextFrame();
+    createCanvasScroll(() => document).reveal("text-1");
 
     expect(scrollBy).not.toHaveBeenCalled();
   });
@@ -102,63 +83,55 @@ describe("the canvas's scrolling (#1176)", () => {
 
     scroll.toTop();
     scroll.reveal("text-9");
-    nextFrame();
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
     expect(scrollBy).not.toHaveBeenCalled();
 
-    // The new page draws it a frame later.
+    // The new page draws it a moment later.
     document.body.append(element("text-9", 1500, 1600));
-    nextFrame();
+    vi.advanceTimersByTime(16);
     expect(scrollBy).toHaveBeenCalledTimes(1);
-    expect(frames).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
   });
 
-  it("stops waiting for an element that never comes, and forgets the page before's", () => {
+  it("stops looking for an element that never comes, and forgets the page before's", () => {
     const scroll = createCanvasScroll(() => document);
 
     scroll.reveal("gone");
-    for (let frame = 0; frame < 100 && frames.length > 0; frame += 1) nextFrame();
-    expect(frames).toEqual([]);
+    vi.advanceTimersByTime(2000);
+    expect(vi.getTimerCount()).toBe(0);
 
     // Another page shown drops an element still to show from the one before.
     scroll.reveal("old");
     scroll.toTop();
     document.body.append(element("old", 2000, 2100));
-    nextFrame();
+    vi.advanceTimersByTime(100);
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
     expect(scrollBy).not.toHaveBeenCalled();
   });
 
-  it("waits for the canvas's new window, when it has one, not the old one's frame", () => {
-    const old = {
-      requestAnimationFrame: vi.fn(() => 7),
-      cancelAnimationFrame: vi.fn(),
-    };
-    let doc = { defaultView: old } as unknown as Document;
-    const scroll = createCanvasScroll(() => doc);
+  it("shows only the latest element selected while one is still to come", () => {
+    const scroll = createCanvasScroll(() => document);
 
-    scroll.reveal("text-1");
-    expect(old.requestAnimationFrame).toHaveBeenCalledTimes(1);
-    scroll.reveal("text-1");
-    expect(old.requestAnimationFrame).toHaveBeenCalledTimes(1);
-
-    doc = document;
+    scroll.reveal("new-section");
     document.body.append(element("text-1", 2000, 2100));
     scroll.reveal("text-1");
-    expect(old.cancelAnimationFrame).toHaveBeenCalledWith(7);
-    nextFrame();
+    expect(scrollBy).toHaveBeenCalledTimes(1);
+
+    document.body.append(element("new-section", 3000, 3100));
+    vi.advanceTimersByTime(100);
     expect(scrollBy).toHaveBeenCalledTimes(1);
   });
 
   it("does nothing without a canvas, or once cancelled", () => {
     createCanvasScroll(() => undefined).reveal("text-1");
-    expect(frames).toEqual([]);
+    createCanvasScroll(() => undefined).toTop();
+    expect(vi.getTimerCount()).toBe(0);
 
-    document.body.append(element("text-1", 2000, 2100));
     const scroll = createCanvasScroll(() => document);
     scroll.reveal("text-1");
     scroll.cancel();
-    nextFrame();
+    document.body.append(element("text-1", 2000, 2100));
+    vi.advanceTimersByTime(100);
     expect(scrollBy).not.toHaveBeenCalled();
   });
 });

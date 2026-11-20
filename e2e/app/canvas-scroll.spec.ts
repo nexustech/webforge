@@ -24,17 +24,7 @@ test.beforeEach(async () => {
       .click();
   }
   await expect.poll(scrollRoom).toBeGreaterThan(1200);
-  // Settled: the page's height steady, and so the Add panel's own showing of the last Hero done,
-  // before a test scrolls (a macOS run once scrolled 30 ms after the last Hero was added).
-  let last = -1;
-  await expect
-    .poll(async () => {
-      const room = await scrollRoom();
-      const steady = room === last;
-      last = room;
-      return steady;
-    })
-    .toBe(true);
+  await settle();
 });
 
 test.afterEach(async () => {
@@ -61,8 +51,33 @@ const scrolled = () =>
     .locator("body")
     .evaluate((body) => body.ownerDocument.defaultView?.scrollY ?? 0);
 
+/**
+ * Waits for the canvas to settle: its size and its page's height the same twice running. A panel
+ * opened beside it, or the last section added, changes them a moment later (the canvas is zoomed to
+ * fit on a small screen), and a scroll made before that is left where the new layout puts it.
+ */
+async function settle(): Promise<void> {
+  const layout = () =>
+    canvas()
+      .locator("body")
+      .evaluate((body) => {
+        const root = body.ownerDocument.documentElement;
+        return `${root.clientWidth}×${root.clientHeight}, ${root.scrollHeight}`;
+      });
+  let last = "";
+  await expect
+    .poll(async () => {
+      const now = await layout();
+      const steady = now === last;
+      last = now;
+      return steady;
+    })
+    .toBe(true);
+}
+
 /** Scrolls the canvas's page to its top or its bottom, as the owner might have left it. */
 async function scrollTo(where: "top" | "bottom"): Promise<void> {
+  await settle();
   await canvas()
     .locator("body")
     .evaluate((body, end) => {
@@ -97,8 +112,8 @@ const selectedInView = () =>
     );
 
 test("shows the element a Site Check finding selects, from the bottom of a long page", async () => {
-  await scrollTo("bottom");
   await page.getByRole("button", { name: "Show or Hide Bottom Panel" }).click();
+  await scrollTo("bottom");
   await drawer()
     .locator('[data-rule="placeholders"]')
     .getByRole("button", { name: /^Show Text on / })
@@ -110,8 +125,8 @@ test("shows the element a Site Check finding selects, from the bottom of a long 
 });
 
 test("shows the element a Layers row selects, from the top of a long page", async () => {
-  await scrollTo("top");
   await left().getByRole("tab", { name: "Layers" }).click();
+  await scrollTo("top");
   await left()
     .getByRole("tree", { name: "Layers" })
     .getByRole("treeitem", { name: /^Hero/ })
@@ -124,8 +139,9 @@ test("shows the element a Layers row selects, from the top of a long page", asyn
 });
 
 test("shows the text Find selects, from the bottom of a long page", async () => {
-  await scrollTo("bottom");
   await page.keyboard.press("ControlOrMeta+F");
+  await expect(drawer().getByRole("searchbox", { name: "Find" })).toBeVisible();
+  await scrollTo("bottom");
   await drawer().getByRole("searchbox", { name: "Find" }).fill("visitors");
   await drawer()
     .getByRole("button", { name: /^Text · Text: Tell visitors/ })
