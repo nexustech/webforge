@@ -26,6 +26,12 @@ export type CommandButtonProps = {
    * by it (#1009): windows 1280 px wide and up always show it, and at 960 px nothing is cut off.
    */
   readonly text?: string;
+  /**
+   * Whether its text shows at every width, not only on a wide title bar: Publish and Site Check's
+   * count, which at 960 px were coloured icons no one could name (#1166). The others keep their
+   * tooltips there.
+   */
+  readonly alwaysText?: boolean;
   /** Ghost unless given: Publish is the title bar's one filled button (#1009). */
   readonly variant?: ButtonProps["variant"];
 };
@@ -36,7 +42,13 @@ export type CommandButtonProps = {
  * contributed yet, as Undo and Publish aren't on the start screen, #1009). Commands that name it
  * as theirs to go with (`more`) make it a split button, with a caret that lists them.
  */
-export function CommandButton({ commandId, icon, text, variant = "ghost" }: CommandButtonProps) {
+export function CommandButton({
+  commandId,
+  icon,
+  text,
+  alwaysText = false,
+  variant = "ghost",
+}: CommandButtonProps) {
   const registry = useCommandRegistry();
   const commands = useCommands();
   const command = commands.find((each) => each.id === commandId);
@@ -60,7 +72,10 @@ export function CommandButton({ commandId, icon, text, variant = "ghost" }: Comm
       className={cn(
         "[&_svg]:transition-colors",
         // Written out in full: Tailwind finds its classes in the source as they are.
-        shown !== undefined && "@min-[1180px]/title-bar:w-auto @min-[1180px]/title-bar:px-2.5",
+        shown !== undefined &&
+          (alwaysText
+            ? "w-auto px-2.5"
+            : "@min-[1180px]/title-bar:w-auto @min-[1180px]/title-bar:px-2.5"),
       )}
       disabled={command.enabled === false}
       tooltip={tipWithReason(tip, reasonOf(command))}
@@ -72,7 +87,9 @@ export function CommandButton({ commandId, icon, text, variant = "ghost" }: Comm
     >
       {icon}
       {shown === undefined ? null : (
-        <span className="hidden @min-[1180px]/title-bar:inline">{shown}</span>
+        <span className={alwaysText ? undefined : "hidden @min-[1180px]/title-bar:inline"}>
+          {shown}
+        </span>
       )}
     </Button>
   );

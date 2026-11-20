@@ -4,7 +4,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-17
+updated: 2026-11-20
 ---
 
 # The editor
@@ -20,7 +20,7 @@ When a site is open, the editor fills the window, and the window's title names t
   - the **Design | Content** switch;
   - buttons to show or hide the side panels;
   - [Site Check](site-check.md)'s button, showing what it found, such as _5 to fix · 13 tips_ or _No problems_. Click it to open Site Check;
-  - **Preview**, **Export** and **Publish**, with **Publish** filled in colour. In a window narrower than about 1200 px these four show only their icons: a list with ticks, an eye, a down arrow and a cloud. Hover over one to see its name, and Site Check's count.
+  - **Preview**, **Export** and **Publish**, with **Publish** filled in colour. In a window narrower than about 1200 px, **Preview** and **Export** show only their icons, an eye and a down arrow; hover over one to see its name. **Publish** and Site Check's count keep their words at every width.
 - **Left column:** the [Add](add-panel.md) panel, [Undo History](undo-and-history.md), [Version History](version-history.md) and the [Assistant](assistant.md) as tabs, with [Layers](layers.md) underneath. These four tabs show icons: a square with a plus for Add, a clock with an arrow for Undo History, a box with an arrow for Version History and sparkles for the Assistant. Hover over one, or move to it with the keyboard, to see its name and what it's for.
 - **Middle:** your page, as visitors will see it. Above it are the canvas toolbar and a line showing where the selected item sits on the page.
 - **Right column:** the [Edit panel](edit-panel.md) for whatever you've selected, with tabs beside it for **Site** ([Pages](pages.md) and the menu), [Media](media.md) and [Theme](themes.md).
@@ -35,6 +35,7 @@ A button or menu item you can't use at the moment is greyed out, and most say wh
 - Drag the edges between columns to make a column wider or narrower. The side columns start at 300 px, wide enough for every field in the Edit panel; a width you've chosen stays.
 - Collapse a side column with its button in the title bar. It leaves a strip of panel icons; click one to open the column again on that panel.
 - **View › Reset Panels** puts everything back as it was.
+- **In a small window** (narrower than about 1100 px), the side columns take turns, so your page stays big enough to read. A site you open there for the first time starts with the left column as its strip, and opening one side column folds the other. Dragging a column wider still works; the layout you leave is kept.
 
 ## Using the keyboard
 

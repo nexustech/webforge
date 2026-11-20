@@ -87,14 +87,15 @@ describe("TitleBar", () => {
     for (const name of ["Preview", "Export", "Publish"]) {
       const button = screen.getByRole("button", { name });
       expect(button.textContent).toBe(name);
+      // Publish's at every width; Preview's and Export's while it's wide (#1166).
       expect(within(button).getByText(name).className).toBe(
-        "hidden @min-[1180px]/title-bar:inline",
+        name === "Publish" ? "" : "hidden @min-[1180px]/title-bar:inline",
       );
       expect(button.className.includes("bg-primary")).toBe(name === "Publish");
     }
   });
 
-  it("shows what Site Check found while it's wide, and opens it (#1009)", async () => {
+  it("shows what Site Check found at every width, and opens it (#1009, #1166)", async () => {
     const registry = createCommandRegistry();
     const run = vi.fn();
     registry.register({
@@ -107,9 +108,7 @@ describe("TitleBar", () => {
 
     // Named by its label too, as its tooltip is: the count alone doesn't say what it counts.
     const button = screen.getByRole("button", { name: "Site Check: 5 to fix · 13 tips" });
-    expect(within(button).getByText("5 to fix · 13 tips").className).toBe(
-      "hidden @min-[1180px]/title-bar:inline",
-    );
+    expect(within(button).getByText("5 to fix · 13 tips").className).toBe("");
     await userEvent.click(button);
     expect(run).toHaveBeenCalledOnce();
 

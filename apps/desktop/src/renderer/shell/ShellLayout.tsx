@@ -23,6 +23,7 @@ import type { Preferences } from "../../shared/ipc-contract.js";
 import { CanvasErrorBoundary } from "./CanvasErrorBoundary.js";
 import { useCommandRegistry } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
+import { type Side, sideToClose, startsLeftCollapsed } from "./narrow-window.js";
 import { PanelErrorBoundary } from "./PanelErrorBoundary.js";
 import { usePanelRegistry, usePanels } from "./panel-context.js";
 import { type Panel, type PanelSlot, panelsInSlot } from "./panels.js";
@@ -308,6 +309,27 @@ function toggle(panel: ResizablePanelHandle | null, size: string): void {
   }
 }
 
+/** The side columns' handles, by side. */
+type SideColumns = Readonly<Record<Side, { readonly current: ResizablePanelHandle | null }>>;
+
+/**
+ * Once side column `side` is open, in a narrow window, folds the other to its strip if it's open
+ * (`sideToClose`, #1166): the page stays at half its size or more.
+ */
+function foldOther(columns: SideColumns, side: Side): void {
+  const opened = columns[side].current;
+  if (opened === null || opened.isCollapsed()) return;
+  const other = columns[side === "left" ? "right" : "left"].current;
+  const close = sideToClose(window.innerWidth, side, other !== null && !other.isCollapsed());
+  if (close !== undefined) columns[close].current?.collapse();
+}
+
+/** Shows side column `side`, or hides it, as {@link toggle} does, folding the other as above. */
+function toggleSide(columns: SideColumns, side: Side): void {
+  toggle(columns[side].current, DEFAULTS.sideWidth);
+  foldOther(columns, side);
+}
+
 /**
  * The fewest pixels the drawer opens at (#1164): its tabs, a summary and at least three of Site
  * Check's findings, at 960 × 600 too.
@@ -362,8 +384,12 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
   const showLower = hasPanels(SLOTS.leftLower);
   // Which side columns are collapsed to their strip, from the sizes the library reports: at first
   // the remembered ones, so a column left collapsed starts as its strip.
+  // A first open in a narrow window starts with the left column as its strip (#1166).
+  const [leftStartsCollapsed] = useState(() =>
+    startsLeftCollapsed(window.innerWidth, layout[PANEL_GROUPS.columns] !== undefined),
+  );
   const [collapsed, setCollapsed] = useState(() => ({
-    left: savedCollapsed(layout[PANEL_GROUPS.columns]?.left),
+    left: leftStartsCollapsed || savedCollapsed(layout[PANEL_GROUPS.columns]?.left),
     right: savedCollapsed(layout[PANEL_GROUPS.columns]?.right),
   }));
   const followCollapsed = (side: "left" | "right") => (size: { readonly inPixels: number }) => {
@@ -383,13 +409,13 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
         id: COMMAND_IDS.toggleLeftPanels,
         label: t("command.toggleLeftPanels"),
         menu: "view",
-        run: byCommand(() => toggle(left.current, DEFAULTS.sideWidth)),
+        run: byCommand(() => toggleSide({ left, right }, "left")),
       }),
       registry.register({
         id: COMMAND_IDS.toggleRightPanels,
         label: t("command.toggleRightPanels"),
         menu: "view",
-        run: byCommand(() => toggle(right.current, DEFAULTS.sideWidth)),
+        run: byCommand(() => toggleSide({ left, right }, "right")),
       }),
       registry.register({
         id: COMMAND_IDS.toggleDrawer,
@@ -430,6 +456,8 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
           );
           if (holds && column?.isCollapsed() === true) {
             toggle(column, side === "drawer" ? DEFAULTS.drawer : DEFAULTS.sideWidth);
+            // A side column shown in a narrow window folds the other (#1166).
+            if (side !== "drawer") foldOther({ left, right }, side);
           }
           // The drawer at a height to read at, however small it was left (#1164).
           if (holds && side === "drawer") readable(column);
@@ -497,7 +525,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
           <ResizablePanel
             id="left"
             panelRef={left}
-            defaultSize={DEFAULTS.sideWidth}
+            defaultSize={leftStartsCollapsed ? `${STRIP_PX}px` : DEFAULTS.sideWidth}
             minSize={DEFAULTS.sideMin}
             maxSize={DEFAULTS.sideMax}
             collapsible
