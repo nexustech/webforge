@@ -28,7 +28,11 @@ export function ScrollArea({
   );
 }
 
-/** A scroll area's scrollbar; {@link ScrollArea} adds the vertical one. */
+/**
+ * A scroll area's scrollbar; {@link ScrollArea} adds the vertical one. Above the panels' dividers
+ * (`z-20`, a divider is `z-10`): a divider's 8 px grab area reaches 4 px over a panel's edge, and
+ * took a press on the right of the scrollbar beside it as a resize (#1164).
+ */
 export function ScrollBar({
   className,
   orientation = "vertical",
@@ -39,7 +43,7 @@ export function ScrollBar({
       data-slot="scroll-area-scrollbar"
       orientation={orientation}
       className={cn(
-        "flex touch-none select-none p-px",
+        "z-20 flex touch-none select-none p-px",
         orientation === "vertical" ? "h-full w-[7px]" : "h-[7px] flex-col",
         className,
       )}

@@ -106,7 +106,9 @@ export function registerSiteCheckPanel(
   function SiteCheck() {
     const report = useStore(siteCheck.state, (state) => state.report);
     const writes = useAssistantWrites(session, assistant);
-    const site = session.history.document.getState();
+    // The site the report was found in, never the document read here: a read from `session`
+    // would be the first render's site, which elements added since aren't in (#1170).
+    const site = useStore(siteCheck.state, (state) => state.site);
     const mustFix = report.results.some(
       (result) => result.level === "must" && result.findings.length > 0,
     );

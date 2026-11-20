@@ -40,6 +40,11 @@ function whenIdle(work: (deadline?: IdleDeadline) => void): void {
 /** What Site Check shows: the latest check, and what the person ignored. */
 type SiteCheckState = {
   readonly report: CheckReport;
+  /**
+   * The site the report's findings were found in, which names their places: elements added since,
+   * or removed, are in this one as the findings have them (#1170).
+   */
+  readonly site: SiteDoc;
   /** {@link ignoreKey}s of the findings the person ignored. */
   readonly ignored: ReadonlySet<string>;
 };
@@ -131,7 +136,8 @@ export function createSiteCheck(
   const runAll = (site: SiteDoc) =>
     new Map(SITE_CHECK_RULES.map((rule) => [rule, runRule(rule, inputOf(site))]));
   /** What each rule found in the latest check, before anything ignored is left out. */
-  let found: ReadonlyMap<CheckRule, readonly Finding[]> = runAll(document.getState());
+  let checked = document.getState();
+  let found: ReadonlyMap<CheckRule, readonly Finding[]> = runAll(checked);
   const report = (ignored: ReadonlySet<string>) =>
     reportOf((rule) => found.get(rule) ?? [], "export", ignored);
   const firstIgnored = new Set(initial);
@@ -143,9 +149,10 @@ export function createSiteCheck(
   const state = createStore<SiteCheckState>()(() => ({
     report: report(firstIgnored),
     ignored: firstIgnored,
+    site: checked,
   }));
   const show = (ignored = state.getState().ignored) =>
-    state.setState({ report: report(ignored), ignored });
+    state.setState({ report: report(ignored), ignored, site: checked });
 
   /** Counts rechecks: one that a change or `dispose` has overtaken stops. */
   let pass = 0;
@@ -166,6 +173,7 @@ export function createSiteCheck(
         whenIdle(step);
       } else {
         found = next;
+        checked = site;
         show();
       }
     };

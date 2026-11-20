@@ -36,7 +36,12 @@ export type { EditorSelection } from "./selection.js";
 export type EditKind = EngineEditKind;
 
 /** Called for each new history entry (not for edits that merge into the current one). */
-type EntryListener = (entry: HistoryEntry<EditorSelection>, kind: EditKind) => void;
+type EntryListener = (
+  entry: HistoryEntry<EditorSelection>,
+  kind: EditKind,
+  /** Whether the edit asked for its Undo toast, whatever its kind (`EditOptions.announce`). */
+  announced: boolean,
+) => void;
 
 /** Called with a piece of the site's code as it was, and as the owner wrote it (#649). */
 type CodeListener = (before: string, after: string) => void;
@@ -56,7 +61,14 @@ export type Gesture = {
  * Options of {@link EditorSession.edit}: the history's, and `apply` to show `selectionAfter` now
  * (the element the change made or moved), as undo and redo will show it again.
  */
-type EditOptions = RunOptions<EditorSelection> & { readonly apply?: boolean };
+type EditOptions = RunOptions<EditorSelection> & {
+  readonly apply?: boolean;
+  /**
+   * Shows the step's Undo toast, as a delete does (1.11): a change made for the person by a button
+   * that doesn't say beforehand what it will do, such as Site Check's *Fix* (#1164).
+   */
+  readonly announce?: boolean;
+};
 
 /**
  * Everything one open site needs: its history (which owns the document) and the UI store. The UI
@@ -169,12 +181,12 @@ export function createEditorSession(
     return entries[cursor - 1];
   };
   /** Runs `change` and reports the entry it added, if any. */
-  const reporting = (kind: EditKind, change: () => void) => {
+  const reporting = (kind: EditKind, change: () => void, announced = false) => {
     const before = currentEntry();
     change();
     const entry = currentEntry();
     if (entry !== undefined && entry.id !== before?.id) {
-      for (const listener of listeners) listener(entry, kind);
+      for (const listener of listeners) listener(entry, kind, announced);
     }
   };
   /**
@@ -206,8 +218,8 @@ export function createEditorSession(
     library,
     edit(kind, label, recipe, options) {
       commitGesture();
-      const { apply, ...runOptions } = options ?? {};
-      reporting(kind, () => history.run(label, recipe, runOptions));
+      const { apply, announce, ...runOptions } = options ?? {};
+      reporting(kind, () => history.run(label, recipe, runOptions), announce === true);
       if (apply === true && runOptions.selectionAfter !== undefined) {
         setSelection(runOptions.selectionAfter);
       }

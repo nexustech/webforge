@@ -102,6 +102,7 @@ describe("commandHost (4.8)", () => {
     expect(added).toHaveBeenCalledWith(
       expect.objectContaining({ label: "AI (Claude): Deleted Hero" }),
       "remove",
+      false,
     );
   });
 
