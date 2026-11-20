@@ -50,7 +50,13 @@ export function CanvasCover({ engine }: { readonly engine: CanvasEngine | null }
 
   if (engine !== null && shown === engine) return null;
   return (
-    <div className="editor__canvas-cover" role="status">
+    // Over the canvas until the site's styles arrive (#1013): the editor's own background, so
+    // nothing of the page shows unstyled, and words large enough to see at a glance (#1167). Its
+    // styles here, not in the editor's CSS, so its story shows it as the editor does.
+    <div
+      className="editor__canvas-cover absolute inset-0 z-20 flex items-center justify-center gap-[8px] bg-background text-[15px] text-muted-foreground"
+      role="status"
+    >
       {slow ? (
         <>
           <LoaderCircle aria-hidden="true" className="size-5 motion-safe:animate-spin" />
