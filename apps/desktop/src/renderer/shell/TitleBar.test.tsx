@@ -54,6 +54,40 @@ describe("TitleBar", () => {
     );
   });
 
+  it("folds its menus' titles into one Menu button while narrow, the menus in order (#1166)", async () => {
+    const registry = createCommandRegistry();
+    registry.register({ id: "help.topics", label: "Help Topics", menu: "help", run: vi.fn() });
+    const settings = vi.fn();
+    registry.register({
+      id: "site.settings",
+      label: "Site Settings…",
+      menu: "file",
+      run: settings,
+    });
+    renderTitleBar(registry);
+
+    // Two menu bars, one shown at a time by the title bar's width: the titles from 1280 px.
+    const [wide, narrow] = screen.getAllByRole("menubar", { name: "App menu" });
+    expect(wide?.className).toContain("hidden @min-[1280px]/title-bar:flex");
+    expect(narrow?.className).toContain("@min-[1280px]/title-bar:hidden");
+    expect(
+      within(wide as HTMLElement)
+        .getAllByRole("menuitem")
+        .map((title) => title.textContent),
+    ).toEqual(["File", "View", "Help"]);
+
+    await userEvent.click(within(narrow as HTMLElement).getByRole("menuitem", { name: "Menu" }));
+    const menu = screen.getByRole("menu");
+    expect(
+      within(menu)
+        .getAllByRole("menuitem")
+        .map((title) => title.textContent),
+    ).toEqual(["File", "View", "Help"]);
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "File" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Site Settings…" }));
+    expect(settings).toHaveBeenCalledOnce();
+  });
+
   it("is the window's banner, with the app name as its heading and the save status", () => {
     renderTitleBar();
 

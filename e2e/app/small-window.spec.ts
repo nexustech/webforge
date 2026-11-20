@@ -68,41 +68,108 @@ test("opens a site at a size to read, the left column a strip, Publish and Site 
   await expect(banner.getByRole("button", { name: /^Site Check: / })).toHaveText(
     /\d+ to fix|tips?|No problems/,
   );
-  // All of it in sight: left of the window's own buttons (Windows, Linux), and nothing cut off.
-  const room = await page.evaluate(() => {
+  // A narrow title bar: the menus' titles folded into one Menu button, which opens them.
+  await expect(banner.getByRole("menuitem", { name: "File", exact: true })).toBeHidden();
+  await banner.getByRole("menuitem", { name: "Menu", exact: true }).click();
+  await page.getByRole("menuitem", { name: "File", exact: true }).click();
+  await expect(page.getByRole("menu", { name: "File" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  if ((await page.locator('[role="menu"][data-state="open"]').count()) > 0) {
+    await page.keyboard.press("Escape");
+  }
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
+  // The search box at its least, 140 px, the site's name in it whole.
+  const search = banner.getByRole("button", { name: /^Search commands/ });
+  expect((await search.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(139);
+  expect(
+    await search
+      .getByText("Bakery", { exact: true })
+      .evaluate((name) => name.scrollWidth <= name.clientWidth),
+  ).toBe(true);
+
+  // With each count Site Check can show there at its widest, all of it in sight, with room to
+  // spare.
+  for (const count of ["99 to fix", "99 tips", "No problems"]) {
+    await expectTitleBarFits(count, 960);
+  }
+});
+
+test("shows the menus' titles again in a wide window, all of it fitting (#1166)", async () => {
+  await app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()[0]?.setContentSize(1280, 900),
+  );
+  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(1280);
+  const menuBar = page.getByRole("banner").getByRole("menubar", { name: "App menu" });
+  await expect(menuBar.getByRole("menuitem")).toHaveText(["File", "Edit", "View", "Site", "Help"]);
+  // The narrowest with them, Site Check's whole count at its widest beside them.
+  await expectTitleBarFits("99 to fix · 99 tips", 1280);
+});
+
+/**
+ * The title bar with Site Check showing `count`: whether any two of its controls are over each
+ * other or anything is cut off, where Publish ends against the window's own buttons (Windows,
+ * Linux), and how wide the search box is, which takes what's left (#1166).
+ */
+async function titleBarWith(count: string) {
+  return page.getByRole("banner").evaluate((header, shown) => {
+    const check = [...header.querySelectorAll("button")].find((button) =>
+      (button.getAttribute("aria-label") ?? "").startsWith("Site Check:"),
+    );
+    const text = [...(check?.querySelectorAll("span") ?? [])].find(
+      (span) => getComputedStyle(span).display !== "none",
+    );
+    if (text !== undefined) text.textContent = shown;
     const overlay = (
       navigator as Navigator & {
         windowControlsOverlay?: { visible: boolean; getTitlebarAreaRect(): DOMRect };
       }
     ).windowControlsOverlay;
-    return overlay?.visible === true
-      ? overlay.getTitlebarAreaRect().right
-      : document.documentElement.clientWidth;
-  });
-  const box = await publish.boundingBox();
-  const right = (box?.x ?? Number.POSITIVE_INFINITY) + (box?.width ?? 0);
-  // The search box gives way, down to 7 rem (98 px), with the site's name still in it whole, and
-  // clear of the buttons either side of it: its least is room it keeps, not room it takes.
-  const search = banner.getByRole("button", { name: /^Search commands/ });
-  const searchBox = await search.boundingBox();
-  const searchLeft = searchBox?.x ?? 0;
-  const searchRight = searchLeft + (searchBox?.width ?? 0);
-  const redoBox = await banner.getByRole("button", { name: /^Redo/ }).boundingBox();
-  const actionsBox = await banner.getByRole("group", { name: "Site actions" }).boundingBox();
-  const nameFits = await search
-    .getByText("Bakery", { exact: true })
-    .evaluate((name) => name.scrollWidth <= name.clientWidth);
+    const room =
+      overlay?.visible === true
+        ? overlay.getTitlebarAreaRect().right
+        : document.documentElement.clientWidth;
+    // Each control: a button, a menu's title or a choice, not one holding another.
+    const controls = [
+      ...header.querySelectorAll<HTMLElement>("button, [role='menuitem'], [role='radio']"),
+    ]
+      .filter((each) => each.getBoundingClientRect().width > 0)
+      .filter((each) => each.querySelector("button, [role='menuitem'], [role='radio']") === null);
+    const overlaps: string[] = [];
+    controls.forEach((a, index) => {
+      for (const b of controls.slice(index + 1)) {
+        const [ra, rb] = [a.getBoundingClientRect(), b.getBoundingClientRect()];
+        if (ra.left < rb.right - 0.5 && rb.left < ra.right - 0.5) {
+          overlaps.push(
+            `${a.getAttribute("aria-label") ?? a.textContent} × ${b.getAttribute("aria-label") ?? b.textContent}`,
+          );
+        }
+      }
+    });
+    const publish = controls.find((each) => each.textContent === "Publish");
+    const searchBox = header.querySelector("button[aria-haspopup='dialog']");
+    return {
+      searchWidth: searchBox?.getBoundingClientRect().width ?? 0,
+      room,
+      publishRight: publish?.getBoundingClientRect().right ?? Number.POSITIVE_INFINITY,
+      overlaps,
+      cutOff: header.scrollWidth > header.clientWidth,
+    };
+  }, count);
+}
+
+/** Checks {@link titleBarWith} `count`: nothing over or cut off, and 4 px or more to spare. */
+async function expectTitleBarFits(count: string, width: number): Promise<void> {
+  const layout = await titleBarWith(count);
   console.log(
-    `[work] 960 px title bar: Publish ends at ${right.toFixed(1)} of ${room} px; search box ${searchLeft.toFixed(1)}–${searchRight.toFixed(1)} px`,
+    `[work] ${width} px title bar, "${count}": Publish ends at ${layout.publishRight.toFixed(1)} of ${layout.room} px, ${(layout.searchWidth - 140).toFixed(1)} px to spare`,
   );
-  // At least 4 px to spare before the window's own buttons, for a wider count than this site's.
-  expect(right).toBeLessThanOrEqual(room - 4);
-  expect(await banner.evaluate((header) => header.scrollWidth <= header.clientWidth)).toBe(true);
-  expect(searchBox?.width ?? 0).toBeGreaterThanOrEqual(97);
-  expect(searchLeft).toBeGreaterThanOrEqual((redoBox?.x ?? 0) + (redoBox?.width ?? 0));
-  expect(searchRight).toBeLessThanOrEqual(actionsBox?.x ?? 0);
-  expect(nameFits).toBe(true);
-});
+  expect(layout.overlaps, count).toEqual([]);
+  expect(layout.cutOff, count).toBe(false);
+  expect(layout.publishRight, count).toBeLessThanOrEqual(layout.room);
+  // The spare is what the search box has over its least, 140 px.
+  expect(layout.searchWidth - 140, count).toBeGreaterThanOrEqual(4);
+}
 
 /** The left column, open: at its 300 px default, not the 200 px a first opening gave (#1166). */
 async function expectLeftOpen(): Promise<void> {

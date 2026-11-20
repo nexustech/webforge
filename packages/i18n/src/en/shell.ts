@@ -60,6 +60,9 @@ export const shell = {
   // The site's settings, theme and stylesheet (#1016).
   "shell.menu.site": "Site",
   "shell.menu.help": "Help",
+  // The menus' titles folded into one button, while the title bar is narrow (#1166).
+  "shell.menu.folded": "Menu",
+  "shell.menu.folded.tooltip": "File, Edit, View, Site and Help",
 
   // Title-bar buttons: short labels; the command's full label is in its tooltip.
   "shell.preview": "Preview",

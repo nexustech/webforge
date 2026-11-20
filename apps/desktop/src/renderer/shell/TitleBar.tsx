@@ -43,7 +43,8 @@ export type TitleBarProps = {
 const NO_DRAG = "[-webkit-app-region:no-drag]";
 
 /**
- * The 40 px custom title bar (UI1, LF-13, {@link TITLE_BAR_HEIGHT}): app menu, New and Open, save
+ * The 40 px custom title bar (UI1, LF-13, {@link TITLE_BAR_HEIGHT}): app menu (one Menu button
+ * below 1280 px, #1166), New and Open, save
  * status, Undo (with its latest steps) and Redo, the command box with the site name, then panel
  * tools, Site Check, and Preview, Export and Publish, which get a caret once there is more to
  * choose. Its buttons are icons, each named by its command and with a tooltip that gives the
@@ -98,7 +99,9 @@ export function TitleBar({
           {undoSteps}
           <CommandButton commandId={COMMAND_IDS.redo} icon={<Redo2Icon />} />
         </div>
-        <div className="flex min-w-0 flex-1 justify-center">
+        {/* No narrower than the search box's least, which would otherwise spill over the buttons
+            either side of it (#1166). */}
+        <div className="flex min-w-40 flex-1 justify-center">
           <div className={`flex w-full max-w-md justify-center ${NO_DRAG}`}>
             <CommandBox siteName={siteName} />
           </div>

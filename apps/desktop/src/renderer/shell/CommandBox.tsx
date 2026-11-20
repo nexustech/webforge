@@ -99,12 +99,11 @@ export function CommandBox({ siteName }: CommandBoxProps) {
 
   return (
     <>
-      {/* Down to 7 rem (98 px), not 10 rem (140 px): at 960 px the title bar's words overran
-          Linux's window buttons by 5 px (#1166). Room there still for the icon, a short site name
-          and the shortcut. */}
+      {/* At least 10 rem (140 px), room for the icon, a short site name and the shortcut: at 960
+          px it fits beside the folded menu, Site Check's count and Publish (#1166). */}
       <button
         type="button"
-        className="flex h-7 w-full max-w-md min-w-28 items-center gap-2 rounded-md bg-input px-2 text-sm outline-none hover:bg-input/80 focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex h-7 w-full max-w-md min-w-40 items-center gap-2 rounded-md bg-input px-2 text-sm outline-none hover:bg-input/80 focus-visible:ring-2 focus-visible:ring-ring"
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
       >
