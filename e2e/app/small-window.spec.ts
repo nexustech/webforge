@@ -80,8 +80,20 @@ test("opens a site at a size to read, the left column a strip, Publish and Site 
       : document.documentElement.clientWidth;
   });
   const box = await publish.boundingBox();
-  expect((box?.x ?? Number.POSITIVE_INFINITY) + (box?.width ?? 0)).toBeLessThanOrEqual(room);
+  const right = (box?.x ?? Number.POSITIVE_INFINITY) + (box?.width ?? 0);
+  // The search box gives way, down to 7 rem (98 px), with the site's name still in it whole.
+  const search = banner.getByRole("button", { name: /^Search commands/ });
+  const searchWidth = (await search.boundingBox())?.width ?? 0;
+  const nameFits = await search
+    .getByText("Bakery", { exact: true })
+    .evaluate((name) => name.scrollWidth <= name.clientWidth);
+  console.log(
+    `[work] 960 px title bar: Publish ends at ${right.toFixed(1)} of ${room} px; search box ${searchWidth.toFixed(1)} px`,
+  );
+  expect(right).toBeLessThanOrEqual(room);
   expect(await banner.evaluate((header) => header.scrollWidth <= header.clientWidth)).toBe(true);
+  expect(searchWidth).toBeGreaterThanOrEqual(97);
+  expect(nameFits).toBe(true);
 });
 
 /** The left column, open: at its 300 px default, not the 200 px a first opening gave (#1166). */
