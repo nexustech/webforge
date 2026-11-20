@@ -1,6 +1,6 @@
 # Onlook: Competitor Review
 
-**Status:** 🟡 Proposals for decision ([§7](#7-proposals-for-decision)). Nothing here changes the spec or the plan until the product owner decides.
+**Status:** ✅ Decided 2026-11-20 ([§7.6](#76-decisions)): nine proposals become Phase 5 items before v1.0 (the assistant asks, suggests, checks and holds a message; example requests; a page as an image or PDF; Report a Problem; a Gitleaks check before a push), four are adopted as notes or rules, and four are declined for now.
 **Date:** 2026-11-20
 **Question:** Onlook is not in Webforge's niche. What does it do, how is it built, and which of its ideas (product, editor, AI, engineering) are worth borrowing?
 
@@ -148,9 +148,9 @@ Onlook's agent can do anything because it edits files with a shell, and that is 
 
 Webforge's assistant can only call the tool layer of plan item 4.9, and every call is a `HistoryManager` step. That is a smaller thing, and it is why AIA-5 could promise one undo step, a safety version and a review card with no sandbox. The lesson is to keep it that way: nothing in this review argues for giving the assistant a wider reach. What Onlook does better is the **manner** of the conversation: asking well, saying what it is doing, checking its work and suggesting the next step. Those are prompt and interface changes, not architecture, and they are the first four proposals below.
 
-## 7. Proposals for decision
+## 7. Proposals and decisions
 
-Sizes are rough ideal days, to be estimated properly if adopted. None is in the plan.
+The proposals as they were put to the product owner, with rough sizes in ideal days. The decisions and the plan items' estimates are in [§7.6](#76-decisions).
 
 ### 7.1 Assistant (builds on 6.9)
 
@@ -198,7 +198,33 @@ Sizes are rough ideal days, to be estimated properly if adopted. None is in the 
 
 ### 7.5 Suggested order
 
-If only three are taken: **OL-12** (a day, the one real gap in the security of a public repository's CI), **OL-1** (the largest change to how the assistant feels) and **OL-2** (its natural pair). OL-13's setting costs nothing and can be switched on whenever it is decided; its hook is optional. OL-3 and OL-8 are the next group, and OL-9 and OL-10 are the two that add something a business owner would notice outside the assistant.
+As suggested before the decision. If only three are taken: **OL-12** (a day, the one real gap in the security of a public repository's CI), **OL-1** (the largest change to how the assistant feels) and **OL-2** (its natural pair). OL-13's setting costs nothing and can be switched on whenever it is decided; its hook is optional. OL-3 and OL-8 are the next group, and OL-9 and OL-10 are the two that add something a business owner would notice outside the assistant.
+
+### 7.6 Decisions
+
+Product owner, 2026-11-20, asked by group: the assistant, the editor, engineering, and when. The work is planned as PH5-3 ([`spec/04` §3](../../spec/04-implementation-plan.md#3-timeline)): the adopted items join Phase 5 after each stream's UX/UI review issues and ship in the beta and v1.0, 13.5 days in all. The estimates and streams are the coordinator's.
+
+| #     | Decision                                                                                                                                                                                                                                                                                                                                      |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OL-1  | ✅ **Before v1.0:** the assistant may ask before it acts. Plan item 5.16, 2.5 days, stream B, which also builds the question card in the panel. [#1197](https://github.com/nexustech/webforge/issues/1197)                                                                                                                                    |
+| OL-2  | ✅ **Before v1.0:** "what next" cards. Plan item 5.17, 1.5 days, stream A, after 5.16. [#1198](https://github.com/nexustech/webforge/issues/1198)                                                                                                                                                                                             |
+| OL-3  | ✅ **Before v1.0:** the assistant checks its work before it says it's done. Plan item 5.18, 1 day, stream B. [#1199](https://github.com/nexustech/webforge/issues/1199)                                                                                                                                                                       |
+| OL-4  | ✅ **Before v1.0:** one held message. Plan item 5.19, 1 day, stream A. [#1200](https://github.com/nexustech/webforge/issues/1200)                                                                                                                                                                                                             |
+| OL-5  | ✅ **Adopted as recommended:** check the assistant's error types against Onlook's list and fill the gaps. Plan item 5.20, 0.5 days, stream B. [#1201](https://github.com/nexustech/webforge/issues/1201)                                                                                                                                      |
+| OL-6  | ✅ **Adopted as a note** for the spike on all devices side by side (WF-1/PG-1). That work has no plan item or issue yet, so the note is kept beside it in [`spec/04`'s Phase 6](../../spec/04-implementation-plan.md#phase-6-v11-after-v10) list of v1.1 features that are not yet items                                                      |
+| OL-7  | ❌ **Declined for now:** a tip budget on top of OB-4                                                                                                                                                                                                                                                                                          |
+| OL-8  | ✅ **Before v1.0:** "Things you can ask". Plan item 5.21, 2 days, stream C. [#1202](https://github.com/nexustech/webforge/issues/1202)                                                                                                                                                                                                        |
+| OL-9  | ✅ **Before v1.0:** a page as an image or a PDF, from Preview. Plan item 5.22, 2 days, stream C. [#1203](https://github.com/nexustech/webforge/issues/1203)                                                                                                                                                                                   |
+| OL-10 | ✅ **Before v1.0:** Report a Problem in Help. Plan item 5.23, 2 days, stream A. [#1204](https://github.com/nexustech/webforge/issues/1204)                                                                                                                                                                                                    |
+| OL-11 | ✅ **Adopted as a rule:** no silent refusal. [Standards §4](../../spec/03-engineering-standards.md#4-code-style--conventions), _Refusals_                                                                                                                                                                                                     |
+| OL-12 | ❌ **Declined for now:** pinning GitHub Actions to commit SHAs                                                                                                                                                                                                                                                                                |
+| OL-13 | ✅ **Before v1.0, as the hook:** Gitleaks, pinned and checksum-verified, in lefthook's pre-push. The setting was tried first: GitHub left non-provider patterns "disabled" (2026-11-20), most likely because they need paid Secret Protection. Plan item 5.24, 0.5 days, stream B. [#1205](https://github.com/nexustech/webforge/issues/1205) |
+| OL-14 | ❌ **Declined for now:** a pseudo-locale for the editor                                                                                                                                                                                                                                                                                       |
+| OL-15 | ✅ **Adopted as a note** on CC-4's issue, [#1035](https://github.com/nexustech/webforge/issues/1035), which stays held until there is demand                                                                                                                                                                                                  |
+| OL-16 | ❌ **Declined for now:** replay of recorded assistant conversations in tests                                                                                                                                                                                                                                                                  |
+| OL-17 | ✅ **Adopted:** [`docs/anti-patterns.md`](../../docs/anti-patterns.md), seeded from `docs/reviews/`. Plan item 5.25, 0.5 days, written with this record                                                                                                                                                                                       |
+
+OL-5, OL-6, OL-11, OL-15 and OL-17 were put as "taken as recommended unless you say otherwise", and the product owner said nothing otherwise. OL-7, OL-12, OL-14 and OL-16 were not chosen; a declined proposal can be put again.
 
 ## Sources
 

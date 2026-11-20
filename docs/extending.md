@@ -4,6 +4,8 @@ The editor is put together from **areas**: folders under `apps/desktop/src/rende
 
 A site component (a Hero, a Heading) is a different thing: it's what people place on their pages, and [docs/components.md](components.md) is its guide.
 
+Before writing either, read [docs/anti-patterns.md](anti-patterns.md): the mistakes reviews keep finding here that no check catches.
+
 ## Starting one: `pnpm scaffold`
 
 ```bash
