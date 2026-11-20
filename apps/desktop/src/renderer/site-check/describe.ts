@@ -41,6 +41,19 @@ function findNode(site: SiteDoc, on: ElementPlace, nodeId: string): NodeDoc | un
   return search(roots);
 }
 
+/** The component type a Puck id starts with: `FaqItem` of `FaqItem-1777…`. */
+const PUCK_ID = /^([A-Z][A-Za-z0-9]*)-/;
+
+/**
+ * An element `site` doesn't have, as Site Check names it: what it is, when its id says so, else
+ * "An element"; never its id (#1170).
+ */
+function missingElement(nodeId: string, library: ComponentLibrary): string {
+  const type = PUCK_ID.exec(nodeId)?.[1];
+  const label = type === undefined ? undefined : library.components[type]?.label;
+  return label ?? t("siteCheck.place.someElement");
+}
+
 /** A page as Site Check names it: its title, or its file while it has none. */
 function pageName(site: SiteDoc, pageId: string): string {
   const page = pageEntryOf(site.pages, pageId);
@@ -81,7 +94,9 @@ export function describePlace(
     case "element": {
       const node = findNode(site, place.on, place.nodeId);
       const element =
-        node === undefined ? place.nodeId : elementName(node, library, site.sharedSections);
+        node === undefined
+          ? missingElement(place.nodeId, library)
+          : elementName(node, library, site.sharedSections);
       const region = layoutRegion(place.on);
       if (region !== undefined) return t(`siteCheck.place.${region}`, { element });
       if (isPageIn(site.pages, place.on)) {
@@ -95,8 +110,11 @@ export function describePlace(
           name: t("history.namedItem", { name: design.name }),
         });
       }
-      const shared = sharedSectionOf(site.sharedSections, place.on);
-      return t("siteCheck.place.shared", { element, name: shared?.name ?? place.on });
+      // A shared section without a name, or not in `site`, by what it is, never its id (#1170).
+      const name = sharedSectionOf(site.sharedSections, place.on)?.name.trim() ?? "";
+      return name === ""
+        ? t("siteCheck.place.sharedUnnamed", { element })
+        : t("siteCheck.place.shared", { element, name });
     }
     case "menu": {
       const item = menuItem(site, place.itemId);
