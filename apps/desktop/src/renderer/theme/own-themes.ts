@@ -42,7 +42,7 @@ export type OwnThemesState = {
  * The names My themes asks and keeps (2.23): a name for one of the person's themes, and those they
  * have, which a theme saved without asking mustn't repeat (LF-15).
  */
-export type OwnThemeNames = {
+type OwnThemeNames = {
   /** Asks for a name; `undefined` if the person cancels. */
   askName(question: NameQuestion): Promise<string | undefined>;
   /** The names of the person's own themes on this computer. */
