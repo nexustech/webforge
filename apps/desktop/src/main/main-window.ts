@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import type { BrowserWindow } from "electron";
+import { shownTheme } from "../shared/editor-theme.js";
 import type { Preferences } from "../shared/ipc/prefs.js";
 import type { HelpWindows } from "./help-window.js";
 import { applyInterfaceZoom, fitWindowToZoom } from "./interface-zoom.js";
@@ -31,6 +32,10 @@ export type MainWindowDeps = {
   readonly installFlush: (window: BrowserWindow) => void;
   /** The window came to the front: something copied elsewhere may have replaced the copy (R13d). */
   readonly onFocus: () => void;
+  /** Whether the computer is set to dark (Electron's `nativeTheme.shouldUseDarkColors`). */
+  readonly computerDark: () => boolean;
+  /** Calls `listener` when the computer's light or dark setting changes (`nativeTheme`). */
+  readonly onComputerThemeChange: (listener: () => void) => void;
 };
 
 /** The editor's window: opened, and following the theme and zoom the person chooses. */
@@ -39,7 +44,8 @@ export type MainWindows = {
   open(preferences: PreferencesStore): void;
   /**
    * Starts following `preferences` as they change: every window zooms with the interface zoom, and
-   * the editor's window controls take the theme's colours. Returns what to call on each change.
+   * the editor's window controls take the theme's colours, the computer's too while the person
+   * follows it (#1169). Returns what to call on each change.
    */
   follow(preferences: Pick<Preferences, "theme" | "interfaceZoom">): (next: Preferences) => void;
 };
@@ -50,9 +56,12 @@ export function createMainWindows(deps: MainWindowDeps): MainWindows {
   const { BrowserWindow, screen } = electron;
   const workAreaOf = (window: BrowserWindow) =>
     screen.getDisplayMatching(window.getBounds()).workArea;
+  /** The editor's look as shown for the person's `choice` (#1169). */
+  const shown = (choice: Preferences["theme"]) => shownTheme(choice, deps.computerDark());
   return {
     open(preferences) {
-      const { theme, window: saved, interfaceZoom } = preferences.get();
+      const { window: saved, interfaceZoom } = preferences.get();
+      const theme = shown(preferences.get().theme);
       const placement = mainWindowPlacement(
         saved,
         screen.getAllDisplays().map((display) => display.workArea),
@@ -98,9 +107,14 @@ export function createMainWindows(deps: MainWindowDeps): MainWindows {
       });
     },
     follow(initial) {
-      let windowTheme = initial.theme;
+      let windowTheme = shown(initial.theme);
       let windowZoom = initial.interfaceZoom;
-      return ({ theme, interfaceZoom }) => {
+      let current: Pick<Preferences, "theme" | "interfaceZoom"> = initial;
+      const apply = ({
+        theme: choice,
+        interfaceZoom,
+      }: Pick<Preferences, "theme" | "interfaceZoom">) => {
+        const theme = shown(choice);
         if (interfaceZoom !== windowZoom) {
           windowZoom = interfaceZoom;
           // Every window of the app zooms (View › Zoom In Interface): Help's page only, as it has
@@ -127,6 +141,12 @@ export function createMainWindows(deps: MainWindowDeps): MainWindows {
             window.setTitleBarOverlay(titleBarOverlay(theme, interfaceZoom));
         }
         helpWindows.setTheme(theme);
+      };
+      // Following the computer, the windows change with it, while the app is open (#1169).
+      deps.onComputerThemeChange(() => apply(current));
+      return (next) => {
+        current = next;
+        apply(next);
       };
     },
   };

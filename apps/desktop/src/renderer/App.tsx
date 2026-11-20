@@ -2,7 +2,8 @@ import { type ResizableLayout, Toaster, TooltipProvider } from "@webforge/editor
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { shownTheme } from "../shared/editor-theme.js";
 import type { AppInfo, Preferences, SiteUiState } from "../shared/ipc-contract.js";
 import { starterSite } from "../shared/starter-site.js";
 import type { WebforgeApi } from "../shared/webforge-api.js";
@@ -42,7 +43,7 @@ import { TitleBar } from "./shell/TitleBar.js";
 import { UndoStepsMenu } from "./shell/UndoStepsMenu.js";
 import { createWindowDialogs, WindowDialogs } from "./shell/window-dialogs.js";
 import { SiteCommands } from "./start/SiteCommands.js";
-import { applyTheme } from "./startup.js";
+import { applyTheme, computerDark, onComputerThemeChange } from "./startup.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
 import type { LoadedSite } from "./storage/load-site.js";
 import { siteSession } from "./storage/site-session.js";
@@ -102,7 +103,13 @@ export function App({
     ),
   );
   const mode = usePreferences(preferences, (state) => state.mode);
-  const theme = usePreferences(preferences, (state) => state.preferences.theme);
+  const choice = usePreferences(preferences, (state) => state.preferences.theme);
+  // The computer's light or dark setting, followed as it changes for "Same as my computer" (#1169).
+  const dark = useSyncExternalStore(
+    (listener) => onComputerThemeChange(window, listener),
+    () => computerDark(window),
+  );
+  const theme = shownTheme(choice, dark);
   const editorLevel = usePreferences(preferences, (state) => state.preferences.editorLevel);
   const panelLayout = usePreferences(preferences, (state) => state.preferences.panelLayout);
   const siteName = useDocument(session, (site) => site.settings.general.name);
@@ -155,8 +162,9 @@ export function App({
         id: COMMAND_IDS.theme,
         label: theme === "dark" ? t("command.lightAppearance") : t("command.darkAppearance"),
         menu: "view",
+        // The other of the two shown, chosen: a person following the computer leaves it (#1169).
         run: () => {
-          const shown = preferences.getState().preferences.theme;
+          const shown = shownTheme(preferences.getState().preferences.theme, computerDark(window));
           preferences.change({ theme: shown === "dark" ? "light" : "dark" });
         },
       }),

@@ -64,11 +64,14 @@ export type QuickStartAnswers = {
   readonly webAddress: string;
 };
 
-/** The answers before any is given: no type, the untitled name, the default theme. */
-export function emptyAnswers(untitled: string): QuickStartAnswers {
+/**
+ * The answers before any is given: no type, no name (the field shows the untitled one, which an
+ * empty name gets, #1167), the default theme.
+ */
+export function emptyAnswers(): QuickStartAnswers {
   return {
     category: null,
-    name: untitled,
+    name: "",
     whatYouDo: "",
     about: "",
     template: null,
@@ -222,9 +225,8 @@ export function quickStartRequest(answers: QuickStartAnswers, untitled: string):
 export function answersFromBrief(
   brief: SiteBrief,
   templates: readonly TemplateSummary[],
-  untitled: string,
 ): QuickStartAnswers {
-  let answers = withCategory(emptyAnswers(untitled), brief.businessType, templates);
+  let answers = withCategory(emptyAnswers(), brief.businessType, templates);
   const chosen = templates.find((template) => template.id === brief.template);
   if (chosen !== undefined) answers = withTemplate(answers, chosen);
   const colours: QuickStartColours | undefined =

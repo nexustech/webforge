@@ -20,7 +20,7 @@ Site Check is also a panel that is live: it updates as the person edits, and a f
   - It never reads the components, the canvas engine or the editor.
 - **It runs in the renderer:**
   - the panel checks the site at once, then again once it has been unchanged for 400 ms;
-  - **a recheck runs in the renderer's idle time** (`requestIdleCallback`), as many rules as an idle period has room for and at least one, so no rule runs while the person types or a frame is due. A change while it runs starts it again. _Ignore_ filters the latest findings again without running the rules;
+  - **a recheck runs in the renderer's idle time** (`requestIdleCallback`), as many rules as an idle period has room for and at least one, so no rule runs while the person types or a frame is due. A window with no idle period for a second runs the rules left at once, so a busy one shows the report in about a second rather than a rule a second (#1207). A change while it runs starts it again. _Ignore_ filters the latest findings again without running the rules;
   - File → Export runs `checkSite(…, "export")` before anything else, and stops on a _Must fix_.
 - **Words live in the app.** Findings carry a rule id, a stable key, a place (an element, a menu item, a page, Media, the theme or the web address) and values, never text. The panel words them from `siteCheck.*`.
 - **What the person ignored is UI state**, like the editor mode. It is kept in the site file's `meta` table, through the editor-state channel, never versioned or undone.

@@ -75,7 +75,7 @@ describe("installUndoToasts", () => {
   function setUp() {
     const { history, idOf, items } = historyWith("Added Hero", "Deleted Heading");
     let listener:
-      | ((entry: HistoryEntry<null>, kind: EditKind, announced: boolean) => void)
+      | ((entry: HistoryEntry<null>, kind: EditKind, announced: boolean | string) => void)
       | undefined;
     const stop = vi.fn();
     const session = {
@@ -125,6 +125,21 @@ describe("installUndoToasts", () => {
 
     expect(show).toHaveBeenCalledWith(
       "Added page 'Privacy'",
+      expect.objectContaining({ action: { label: "Undo", onClick: expect.any(Function) } }),
+    );
+  });
+
+  it("says an edit's own words when it gives them: a theme colour's reach (LF-15)", () => {
+    const { entry, listener, show } = setUp();
+
+    listener()?.(
+      { ...entry, label: "Changed brand colour" },
+      "props",
+      "Brand colour changed on 6 pages",
+    );
+
+    expect(show).toHaveBeenCalledWith(
+      "Brand colour changed on 6 pages",
       expect.objectContaining({ action: { label: "Undo", onClick: expect.any(Function) } }),
     );
   });

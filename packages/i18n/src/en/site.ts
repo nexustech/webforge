@@ -427,6 +427,8 @@ export const site = {
   "site.start.quickStart": "Start a Site…",
   "site.start.new": "Choose a Template Yourself…",
   "site.start.open": "Open a Site…",
+  // After a file that couldn't be opened, beside why (#1167).
+  "site.start.openAnother": "Choose Another File…",
   "site.start.recent": "Recent sites",
   "site.start.noRecent": "Sites you open or create appear here.",
   "site.start.edited": "Edited {when}",
@@ -463,7 +465,7 @@ export const site = {
   "site.start.help.shortcutsPage": "Each keyboard shortcut explained, in {appName} Help.",
   "site.start.help.shortcuts": "Every keyboard shortcut, by what it does.",
   "site.start.help.example": "Open a finished example site to look around and change.",
-  "site.openFailed.notASite": "This file isn't a {appName} site.",
+  "site.openFailed.notASite": "This file isn't a {appName} site. Choose a file ending in .wforge.",
   "site.openFailed.damaged": "This site file is damaged and can't be opened.",
   "site.openFailed.newer":
     "This site was saved by a newer version of {appName}. Update {appName} to open it.",

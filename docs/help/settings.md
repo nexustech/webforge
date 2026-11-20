@@ -4,7 +4,7 @@ id: settings
 title: Settings
 summary: {appName}'s own preferences, such as its appearance, Simple or Advanced mode, your devices and where updates come from.
 related: [site-settings, the-editor, ai-apps, assistant]
-updated: 2026-11-17
+updated: 2026-11-20
 ---
 
 # Settings
@@ -20,7 +20,7 @@ Click **Save** to keep your changes.
 
 ## Interface
 
-- **Appearance:** _Dark_ or _Light_. This is how {appName} itself looks; it never changes your website. **View › Use Light Appearance** switches it too.
+- **{appName}'s appearance:** _Same as my computer_, _Dark_ or _Light_. This is how {appName} itself looks; it never changes your website. _Same as my computer_, the first choice, follows your computer's light or dark setting, and changes with it while {appName} is open. **View › Use Light Appearance** (or **Use Dark Appearance**) switches to the other one too.
 - **Editing:** _Simple mode_ or _Advanced mode_. Advanced mode adds the Edit panel's Advanced tab and Custom Code. See [The editor](the-editor.md#simple-and-advanced-mode).
 - **Text size:** makes all of {appName} bigger or smaller, from 80% to 150%: its text, buttons and panels. Your website stays as it is. **View › Zoom In Interface** and **Zoom Out Interface** (Ctrl+Alt+= and Ctrl+Alt+−) change it too.
 - **Show tips:** a short tip the first time you reach some parts of {appName}, such as the first time you select something or switch to Content mode. Each tip shows once. Turn it off to see no more tips.

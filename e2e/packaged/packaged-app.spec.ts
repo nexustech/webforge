@@ -399,8 +399,11 @@ test("loads the editor from webforge-app://, from which no file of the computer'
   const dir = resourcesDir();
   test.skip(dir === undefined, "Linux is not a release target");
   if (dir === undefined) return;
-  // With the person's theme, for the start-up screen (#887).
-  expect(page.url()).toBe("webforge-app://editor/index.html?theme=dark");
+  // With the person's theme, for the start-up screen (#887): the computer's for a new install,
+  // which follows it (#1169), as the editor shows it.
+  const shown = await page.evaluate(() => document.documentElement.dataset.theme);
+  expect(["dark", "light"]).toContain(shown);
+  expect(page.url()).toBe(`webforge-app://editor/index.html?theme=${shown}`);
   // A file that is there: the notices beside app.asar.
   const file = pathToFileURL(join(dir, "notices", "notices.json")).href;
   const read = await page.evaluate(async (url) => {

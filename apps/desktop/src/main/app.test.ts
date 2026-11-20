@@ -1,3 +1,4 @@
+import { EventEmitter } from "node:events";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -153,6 +154,8 @@ function fakeElectron(options: { primary?: boolean } = {}) {
       buildFromTemplate: vi.fn((template: unknown) => template),
       setApplicationMenu: vi.fn(),
     },
+    // The computer set to dark: what the editor shows by default, following it (#1169).
+    nativeTheme: Object.assign(new EventEmitter(), { shouldUseDarkColors: true }),
     net: { fetch: vi.fn() },
     protocol: { registerSchemesAsPrivileged: vi.fn() },
     screen: {
@@ -366,6 +369,27 @@ describe("startApp", () => {
     await fake.invoke("prefs:set", { theme: "light" });
 
     expect(window?.setBackgroundColor).toHaveBeenCalledTimes(1);
+  });
+
+  it("follows the computer's light or dark setting by default, as it changes (#1169)", async () => {
+    const fake = fakeElectron();
+    const nativeTheme = fake.electron.nativeTheme as unknown as EventEmitter & {
+      shouldUseDarkColors: boolean;
+    };
+    await fake.start();
+    const [window] = fake.windows;
+    // The computer is dark: the window opens in the dark theme's colour.
+    expect(window?.options).toMatchObject({ backgroundColor: "#2c3134" });
+
+    nativeTheme.shouldUseDarkColors = false;
+    nativeTheme.emit("updated");
+    expect(window?.setBackgroundColor).toHaveBeenLastCalledWith("#edf0f4");
+
+    // A person who chose Dark keeps it, whatever the computer does.
+    await fake.invoke("prefs:set", { theme: "dark" });
+    expect(window?.setBackgroundColor).toHaveBeenLastCalledWith("#2c3134");
+    nativeTheme.emit("updated");
+    expect(window?.setBackgroundColor).toHaveBeenCalledTimes(2);
   });
 
   it("opens the editor at the interface zoom the person left, and zooms every window as it changes", async () => {

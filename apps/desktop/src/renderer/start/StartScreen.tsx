@@ -8,8 +8,15 @@ import {
   TooltipProvider,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { FilePlusIcon, FolderOpenIcon, SparklesIcon, WandSparklesIcon } from "lucide-react";
+import {
+  CircleAlertIcon,
+  FilePlusIcon,
+  FolderOpenIcon,
+  SparklesIcon,
+  WandSparklesIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
+import { shownTheme } from "../../shared/editor-theme.js";
 import type { AiApi } from "../../shared/ipc/ai.js";
 import type { AppApi } from "../../shared/ipc/app.js";
 import type { HelpApi } from "../../shared/ipc/help.js";
@@ -35,7 +42,7 @@ import { createCommandRegistry, installCommandShortcuts, isMac } from "../shell/
 import { createPreferencesStore } from "../shell/preferences-store.js";
 import { ShortcutSheet } from "../shell/ShortcutSheet.js";
 import { TitleBar } from "../shell/TitleBar.js";
-import { applyTheme } from "../startup.js";
+import { applyTheme, computerDark, onComputerThemeChange } from "../startup.js";
 import { watchUpdates } from "../updates/index.js";
 import { openSiteWith } from "./open-site.js";
 import { RecentSites } from "./RecentSites.js";
@@ -99,7 +106,8 @@ export function StartScreen({
   // Unknown until main first answers: neither the welcome nor the list shows before then, so a
   // returning user never sees the first start's welcome flash past (#456 review).
   const [recent, setRecent] = useState<readonly RecentSite[]>();
-  const [message, setMessage] = useState<string>();
+  // Why something couldn't be done, and whether it was opening a file, which a button offers again.
+  const [message, setMessage] = useState<{ readonly text: string; readonly open: boolean }>();
   // Read once: the effects below must not run again just because this component re-renders.
   const [api] = useState(() => project ?? window.webforge.project);
 
@@ -118,15 +126,22 @@ export function StartScreen({
     () => registerAppSettings(settings, preferenceStore, undefined, info.version),
     [settings, preferenceStore, info.version],
   );
-  useEffect(
-    () =>
-      preferenceStore.subscribe((state, before) => {
-        if (state.preferences.theme !== before.preferences.theme) {
-          applyTheme(state.preferences.theme, window);
-        }
-      }),
-    [preferenceStore],
-  );
+  // The theme chosen in Settings, and the computer's while the person follows it (#1169).
+  useEffect(() => {
+    const show = () =>
+      applyTheme(
+        shownTheme(preferenceStore.getState().preferences.theme, computerDark(window)),
+        window,
+      );
+    const stopFollowing = onComputerThemeChange(window, show);
+    const stopChoosing = preferenceStore.subscribe((state, before) => {
+      if (state.preferences.theme !== before.preferences.theme) show();
+    });
+    return () => {
+      stopFollowing();
+      stopChoosing();
+    };
+  }, [preferenceStore]);
 
   // Nothing to save here: answer at once, so closing the window never waits for a timeout.
   useEffect(() => (app ?? window.webforge.app).onFlushRequest(async () => undefined), [app]);
@@ -156,7 +171,8 @@ export function StartScreen({
   };
 
   const run = async (request: () => ReturnType<ProjectApi["open"]>) => {
-    setMessage(await openSiteWith(request, restart));
+    const text = await openSiteWith(request, restart);
+    setMessage(text === undefined ? undefined : { text, open: true });
     // A site that turned out to be missing has left the list.
     setRecent(await api.listRecent().catch(() => recent ?? []));
   };
@@ -168,7 +184,7 @@ export function StartScreen({
       setMessage(undefined);
     } catch (error) {
       reportFailure("site.recent", error);
-      setMessage(t("site.start.listFailed"));
+      setMessage({ text: t("site.start.listFailed"), open: false });
     }
     // Main orders the list: pinned sites first.
     setRecent(await api.listRecent().catch(() => recent ?? []));
@@ -185,8 +201,19 @@ export function StartScreen({
           />
           {/* Not an editing surface: a reading size, larger than the editor's panels (SC-1). */}
           <main className="flex min-h-0 flex-1 text-base">
-            <StartActions info={info} message={message} onOpen={() => void run(() => api.open())} />
+            <StartActions
+              info={info}
+              // The welcome's cards are the actions until there are recent sites: never both (#1167).
+              actions={recent !== undefined && recent.length > 0}
+              onOpen={() => void run(() => api.open())}
+            />
             <section className="flex min-w-0 flex-1 flex-col overflow-y-auto px-10 py-10">
+              {message === undefined ? null : (
+                <StartMessage
+                  message={message.text}
+                  {...(message.open ? { onOpen: () => void run(() => api.open()) } : {})}
+                />
+              )}
               <Tabs defaultValue="recent" className="flex w-full max-w-5xl flex-col gap-6">
                 <TabsList aria-label={t("site.start.title")} className="h-10 self-start">
                   <TabsTrigger value="recent" className="px-4 text-sm">
@@ -239,21 +266,26 @@ export function StartScreen({
   );
 }
 
-/** The start screen's actions: larger than the editor's buttons (SC-1). */
-const ACTION = "h-10 justify-start px-4 text-base [&_svg:not([class*='size-'])]:size-5";
+/**
+ * The start screen's actions: larger than the editor's buttons (SC-1). A long name wraps inside its
+ * button with room at its ends, as *Choose a Template Yourself…* touched both (#1167).
+ */
+const ACTION =
+  "h-auto min-h-10 justify-start whitespace-normal px-4 py-2 text-left text-base [&_svg:not([class*='size-'])]:size-5";
 
 /**
  * The start screen's left column (LF-10, SC-2): Webforge's mark, name and version, then Start a
- * site (the quick start, QS-4), New Site, Open and, when the app ships an example, Try an Example;
- * and why something couldn't be done.
+ * site (the quick start, QS-4), New Site, Open and, when the app ships an example, Try an Example,
+ * once there are recent sites: until then the welcome's cards are those actions (#1167).
  */
 function StartActions({
   info,
-  message,
+  actions,
   onOpen,
 }: {
   readonly info: AppInfo;
-  readonly message: string | undefined;
+  /** Whether the actions show here: not while the welcome's cards do. */
+  readonly actions: boolean;
   readonly onOpen: () => void;
 }) {
   const registry = useCommandRegistry();
@@ -270,40 +302,73 @@ function StartActions({
         </div>
       </div>
       <h2 className="m-0 text-base font-medium text-muted-foreground">{t("site.start.title")}</h2>
-      <Button type="button" className={ACTION} onClick={() => registry.run(COMMAND_IDS.quickStart)}>
-        <WandSparklesIcon />
-        {t("site.start.quickStart")}
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        className={ACTION}
-        onClick={() => registry.run(COMMAND_IDS.newSite)}
-      >
-        <FilePlusIcon />
-        {t("site.start.new")}
-      </Button>
-      <Button type="button" variant="outline" className={ACTION} onClick={onOpen}>
-        <FolderOpenIcon className="text-warning" />
-        {t("site.start.open")}
-      </Button>
-      {example === undefined ? null : (
-        <Button
-          type="button"
-          variant="outline"
-          className={ACTION}
-          onClick={() => registry.run(example.id)}
-        >
-          <SparklesIcon />
-          {t("site.start.tryExample")}
+      {actions ? (
+        <>
+          <Button
+            type="button"
+            className={ACTION}
+            onClick={() => registry.run(COMMAND_IDS.quickStart)}
+          >
+            <WandSparklesIcon />
+            {t("site.start.quickStart")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className={ACTION}
+            onClick={() => registry.run(COMMAND_IDS.newSite)}
+          >
+            <FilePlusIcon />
+            {t("site.start.new")}
+          </Button>
+          <Button type="button" variant="outline" className={ACTION} onClick={onOpen}>
+            <FolderOpenIcon className="text-warning" />
+            {t("site.start.open")}
+          </Button>
+          {example === undefined ? null : (
+            <Button
+              type="button"
+              variant="outline"
+              className={ACTION}
+              onClick={() => registry.run(example.id)}
+            >
+              <SparklesIcon />
+              {t("site.start.tryExample")}
+            </Button>
+          )}
+        </>
+      ) : null}
+    </aside>
+  );
+}
+
+/**
+ * Why something couldn't be done, where the person is looking (#1167): above the recent sites, not
+ * small under the buttons. A file that couldn't be opened says what to choose, and offers to choose
+ * another.
+ */
+function StartMessage({
+  message,
+  onOpen,
+}: {
+  readonly message: string;
+  /** Opens the file dialog again, after a file that couldn't be opened. */
+  readonly onOpen?: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className="mb-6 flex max-w-5xl flex-wrap items-center gap-3 rounded-lg border border-destructive bg-destructive/10 px-4 py-3"
+    >
+      <CircleAlertIcon aria-hidden className="size-5 shrink-0 text-destructive-text" />
+      <p className="m-0 flex-1">{message}</p>
+      {onOpen === undefined ? null : (
+        <Button type="button" variant="outline" onClick={onOpen}>
+          <FolderOpenIcon className="text-warning" />
+          {t("site.start.openAnother")}
         </Button>
       )}
-      {message === undefined ? null : (
-        <p role="alert" className="m-0 text-sm text-destructive-text">
-          {message}
-        </p>
-      )}
-    </aside>
+    </div>
   );
 }
 

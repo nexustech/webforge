@@ -113,7 +113,9 @@ export const shell = {
   "settings.heading.site": "This site",
   "settings.interface": "Interface",
   // The editor's own look, never the site's Theme (#452, glossary: Appearance).
-  "settings.interface.appearance": "Appearance",
+  // The editor's own look, not a site's theme (#1169): its name says so.
+  "settings.interface.appearance": "{appName}'s appearance",
+  "settings.interface.system": "Same as my computer",
   "settings.interface.dark": "Dark",
   "settings.interface.light": "Light",
   "settings.interface.level": "Editing",

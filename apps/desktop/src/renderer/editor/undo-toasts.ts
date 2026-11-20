@@ -33,14 +33,15 @@ type ToastSession = {
     listener: (
       entry: Pick<HistoryEntry<unknown>, "id" | "label">,
       kind: EditKind,
-      announced: boolean,
+      announced: boolean | string,
     ) => void,
   ): () => void;
 };
 
 /**
  * Shows "Deleted Heading · Undo" after each delete (D4), and after an edit that asks for it, such as
- * Site Check's *Fix* ("Added page 'Privacy' · Undo", #1164). `flush` ends a text edit in progress
+ * Site Check's *Fix* ("Added page 'Privacy' · Undo", #1164), in its own words if it gives them
+ * ("Brand colour changed on 6 pages · Undo", LF-15). `flush` ends a text edit in progress
  * first, so Undo acts on what the person sees. A toast closes as soon as its step is undone some
  * other way (Ctrl/Cmd+Z, Undo History), so it never offers an Undo that would do nothing.
  * Returns a function that stops the toasts.
@@ -52,7 +53,7 @@ export function installUndoToasts(
 ): () => void {
   const watchers = new Set<() => void>();
   const stopAdded = session.onEntryAdded((entry, kind, announced) => {
-    if (!announced && !ANNOUNCED.has(kind)) {
+    if (announced === false && !ANNOUNCED.has(kind)) {
       return;
     }
     let stopWatching: () => void = () => undefined;
@@ -60,7 +61,7 @@ export function installUndoToasts(
       stopWatching();
       watchers.delete(forget);
     };
-    const id = toasts.show(entry.label, {
+    const id = toasts.show(typeof announced === "string" ? announced : entry.label, {
       duration: UNDO_TOAST_DURATION_MS,
       action: {
         label: t("editor.undo"),
