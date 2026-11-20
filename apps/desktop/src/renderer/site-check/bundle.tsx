@@ -73,10 +73,16 @@ export async function downloadAndBundle(
     return;
   }
   const addresses = new Set(result.files.map((file) => file.url));
-  session.edit("props", t("siteCheck.history.bundled", { host: hostOf(url) }), (draft) => {
-    const kept = (draft.code.bundled ?? []).filter((file) => !addresses.has(file.url));
-    draft.code.bundled = [...kept, ...result.files];
-  });
+  // Site Check's *Fix*: what it kept, with an Undo toast (#1164).
+  session.edit(
+    "props",
+    t("siteCheck.history.bundled", { host: hostOf(url) }),
+    (draft) => {
+      const kept = (draft.code.bundled ?? []).filter((file) => !addresses.has(file.url));
+      draft.code.bundled = [...kept, ...result.files];
+    },
+    { announce: true },
+  );
 }
 
 /** The question the dialog asks, while it's open. */

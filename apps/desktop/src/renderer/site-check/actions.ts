@@ -38,6 +38,12 @@ export type SiteCheckActions = {
   readonly bundle?: BundleActions;
 };
 
+/**
+ * A fix's edit, which shows what it did with an Undo toast (#1164): *Fix* doesn't say beforehand
+ * what it will change.
+ */
+const ANNOUNCED = { announce: true } as const;
+
 /** Settings' Custom Code: its part's id and its one section's, as site-settings registers it. */
 const CODE_SETTINGS = "code";
 
@@ -171,36 +177,49 @@ function siblingFolders(pages: readonly PageEntry[], parent: readonly string[]):
 function renameDeviceNames({ session }: SiteCheckActions, pageId: PageId): void {
   const page = session.history.document.getState().pages[pageId];
   if (page === undefined) return;
-  session.edit("props", t("siteCheck.history.renamed", { item: pageItem(page.title) }), (draft) => {
-    const target = draft.pages[pageId];
-    if (target === undefined) return;
-    const pages = Object.values(draft.pages);
-    const segments = target.folder?.split("/") ?? [];
-    segments.forEach((segment, index) => {
-      if (!isDeviceName(segment)) return;
-      const parent = segments.slice(0, index);
-      const name = uniqueSlug(segment, siblingFolders(pages, parent));
-      for (const each of pages) {
-        const parts = each.folder?.split("/") ?? [];
-        if (parts.length > index && segments.slice(0, index + 1).every((s, i) => parts[i] === s)) {
-          parts[index] = name;
-          each.folder = parts.join("/");
+  session.edit(
+    "props",
+    t("siteCheck.history.renamed", { item: pageItem(page.title) }),
+    (draft) => {
+      const target = draft.pages[pageId];
+      if (target === undefined) return;
+      const pages = Object.values(draft.pages);
+      const segments = target.folder?.split("/") ?? [];
+      segments.forEach((segment, index) => {
+        if (!isDeviceName(segment)) return;
+        const parent = segments.slice(0, index);
+        const name = uniqueSlug(segment, siblingFolders(pages, parent));
+        for (const each of pages) {
+          const parts = each.folder?.split("/") ?? [];
+          if (
+            parts.length > index &&
+            segments.slice(0, index + 1).every((s, i) => parts[i] === s)
+          ) {
+            parts[index] = name;
+            each.folder = parts.join("/");
+          }
         }
+        segments[index] = name;
+      });
+      if (isDeviceName(target.slug)) {
+        target.slug = uniqueSlug(target.slug, slugsInFolder(draft, target.folder, pageId));
       }
-      segments[index] = name;
-    });
-    if (isDeviceName(target.slug)) {
-      target.slug = uniqueSlug(target.slug, slugsInFolder(draft, target.folder, pageId));
-    }
-  });
+    },
+    ANNOUNCED,
+  );
 }
 
 /** Gives page `pageId` the title `title`. One undo step. */
 function giveTitle({ session }: SiteCheckActions, pageId: PageId, title: string): void {
-  session.edit("props", t("siteCheck.history.titled", { item: pageItem(title) }), (draft) => {
-    const target = draft.pages[pageId];
-    if (target !== undefined) target.title = title;
-  });
+  session.edit(
+    "props",
+    t("siteCheck.history.titled", { item: pageItem(title) }),
+    (draft) => {
+      const target = draft.pages[pageId];
+      if (target !== undefined) target.title = title;
+    },
+    ANNOUNCED,
+  );
 }
 
 /**
@@ -250,7 +269,7 @@ export function fixFor(
   // Settings, and show it (#855).
   if (rule === "privacyPage") {
     return () => {
-      addPolicyPage(actions.session, "privacy");
+      addPolicyPage(actions.session, "privacy", ANNOUNCED);
       actions.panels.show(SITE_PANEL_ID);
     };
   }

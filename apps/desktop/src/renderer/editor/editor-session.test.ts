@@ -656,6 +656,7 @@ describe("gestures (U2)", () => {
     expect(added).toHaveBeenCalledWith(
       expect.objectContaining({ label: "Changed Section padding" }),
       "props",
+      false,
     );
     session.history.undo();
     expect(title(session)).toBeUndefined();

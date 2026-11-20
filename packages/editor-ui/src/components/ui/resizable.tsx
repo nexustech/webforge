@@ -20,18 +20,24 @@ export function ResizablePanel(props: ComponentProps<typeof Panel>) {
   return <Panel data-slot="resizable-panel" {...props} />;
 }
 
-/** The draggable splitter between two panels; also resizable with the arrow keys. */
+/**
+ * The draggable splitter between two panels; also resizable with the arrow keys. Drawn as a 1 px
+ * line, it takes the pointer 8 px wide, centred on the line, with a resize cursor: a 4 px area with
+ * the arrow cursor missed a press on the line's middle (#1164).
+ */
 export function ResizableHandle({ className, ...props }: ComponentProps<typeof Separator>) {
   return (
     <Separator
       data-slot="resizable-handle"
       className={cn(
-        "relative flex w-px items-center justify-center bg-border-strong outline-none",
-        "after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2",
+        "relative z-10 flex w-px cursor-col-resize items-center justify-center bg-border-strong outline-none",
+        "after:absolute after:inset-y-0 after:left-1/2 after:w-2 after:-translate-x-1/2",
         "hover:bg-ring focus-visible:bg-ring data-[separator=active]:bg-ring",
         "aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full",
-        "aria-[orientation=horizontal]:after:left-0 aria-[orientation=horizontal]:after:h-1",
-        "aria-[orientation=horizontal]:after:w-full aria-[orientation=horizontal]:after:translate-x-0",
+        "aria-[orientation=horizontal]:cursor-row-resize",
+        "aria-[orientation=horizontal]:after:top-1/2 aria-[orientation=horizontal]:after:left-0",
+        "aria-[orientation=horizontal]:after:h-2 aria-[orientation=horizontal]:after:w-full",
+        "aria-[orientation=horizontal]:after:translate-x-0",
         "aria-[orientation=horizontal]:after:-translate-y-1/2",
         className,
       )}
