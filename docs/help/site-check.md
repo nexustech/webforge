@@ -19,7 +19,7 @@ Findings come in three kinds:
 - **Should fix:** visitors or search engines will notice.
 - **Tips:** worth doing when you have a moment.
 
-What needs doing comes first, each check with an amber or red dot; every check that passed is listed after them, under **Passed**, with a green dot. Click a finding to go to the page and item it's about. Something in your [blog](blog.md)'s design is listed once, as _in the design of 'Blog'_, and clicking it opens a post with the item selected. The design is checked while the blog has a post that isn't a draft. Some findings have a **Fix** button that does it for you, or opens the setting that does. When a Fix changes your site, a message says what it did, with **Undo** to take it back. You can **Ignore** anything except a Must fix; **Show ignored items again** brings ignored ones back.
+What needs doing comes first, each check with an amber or red dot; every check that passed is folded away after them, under **Passed (n)**; click it to see them, each with a green dot. Click a finding to go to the page and item it's about. Something in your [blog](blog.md)'s design is listed once, as _in the design of 'Blog'_, and clicking it opens a post with the item selected. The design is checked while the blog has a post that isn't a draft. Some findings have a **Fix** button that does it for you, or opens the setting that does. When a Fix changes your site, a message says what it did, with **Undo** to take it back. You can **Ignore** anything except a Must fix; **Show ignored items again** brings ignored ones back.
 
 ## Must fix
 

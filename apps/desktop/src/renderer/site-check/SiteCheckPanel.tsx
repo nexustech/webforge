@@ -1,6 +1,6 @@
 import { Button, cn, ScrollArea } from "@webforge/editor-ui";
 import { isMessageKey, plural, t } from "@webforge/i18n";
-import type { CheckLevel, CheckReport, Finding, RuleResult } from "@webforge/site-check";
+import type { CheckReport, Finding, RuleResult } from "@webforge/site-check";
 import { ExternalLinkIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { HelpButton, type HelpTopic } from "../help/index.js";
@@ -269,18 +269,12 @@ function RuleSection({
 }
 
 /**
- * Whether *Passed* starts open. The owner decides whether passed rules are folded away (#1164's
- * decision, recommended yes); until then they show, after every problem.
- */
-const PASSED_OPEN = true;
-
-/**
  * The Site Check panel (F-CHK-1, SP-13): a summary, then what it found, under *Must fix*, *Should
  * fix* and *Tips*, each rule with an amber or red dot, its verdict and its findings, then *Being
  * found*'s (3.17), each with its level; then every rule that passed, in one *Passed* group at the
- * end, so no passed rule sits among the problems (#1164). A finding jumps to where it is; some have
- * a *Fix*; all but a *Must fix* can be ignored. A one-time tip is listed only while it has something
- * to say.
+ * end, folded until opened, so no passed rule sits among the problems (#1164). A finding jumps to
+ * where it is; some have a *Fix*; all but a *Must fix* can be ignored. A one-time tip is listed only
+ * while it has something to say.
  */
 export function SiteCheckPanel(props: SiteCheckPanelProps) {
   const { report, ignored, onRestore } = props;
@@ -333,8 +327,9 @@ export function SiteCheckPanel(props: SiteCheckPanelProps) {
           </RuleSection>
         )}
         {passed.length === 0 ? null : (
-          <details open={PASSED_OPEN}>
-            <summary className="mb-1 cursor-default text-xs font-semibold uppercase text-muted-foreground">
+          // Folded until opened: #1164's recommended default, which the plan takes.
+          <details>
+            <summary className="mb-1 cursor-pointer text-xs font-semibold uppercase text-muted-foreground">
               {t("siteCheck.passed", { count: passed.length })}
             </summary>
             <ul className="flex flex-col gap-1">
