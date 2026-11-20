@@ -1,11 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
-import {
-  ACTION_BAR_ACTION,
-  ACTION_BAR_LABEL,
-  COMPONENT,
-  OVERLAY,
-  SELECTED_COMPONENT,
-} from "@webforge/engine/puck-dom";
+import { ACTION_BAR_ACTION, ACTION_BAR_LABEL, COMPONENT, OVERLAY } from "@webforge/engine/puck-dom";
 import { clickOnCanvas, editOnCanvas, stillBox } from "./canvas-click.js";
 import { drag } from "./drag.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
@@ -170,12 +164,7 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   const start = await edgeOf(0);
   await page.mouse.click(start.x, start.y);
   await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible();
-  // The selected row's overlay, not the first: the pointer is still over the row, and a hovered
-  // element's overlay can come first (Windows CI). The last of those around the selected element is
-  // the closest to it, as the overlays of what holds it come before it.
-  const overlay = canvas()
-    .locator(OVERLAY, { has: canvas().locator(SELECTED_COMPONENT) })
-    .last();
+  const overlay = canvas().locator(OVERLAY).first();
   await expect
     .poll(
       whenShown(async () => {
