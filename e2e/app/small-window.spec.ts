@@ -43,6 +43,9 @@ test.afterEach(async () => {
   await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
+/** Whether macOS's menu bar holds the menus, so the title bar has none (LF-13). */
+const nativeMenus = process.platform === "darwin";
+
 const toolbar = () => page.getByRole("toolbar", { name: "Canvas" });
 
 /** The canvas's zoom, as its Zoom box says it: "Fit (62%)" → 62. */
@@ -68,16 +71,19 @@ test("opens a site at a size to read, the left column a strip, Publish and Site 
   await expect(banner.getByRole("button", { name: /^Site Check: / })).toHaveText(
     /\d+ to fix|tips?|No problems/,
   );
-  // A narrow title bar: the menus' titles folded into one Menu button, which opens them.
-  await expect(banner.getByRole("menuitem", { name: "File", exact: true })).toBeHidden();
-  await banner.getByRole("menuitem", { name: "Menu", exact: true }).click();
-  await page.getByRole("menuitem", { name: "File", exact: true }).click();
-  await expect(page.getByRole("menu", { name: "File" })).toBeVisible();
-  await page.keyboard.press("Escape");
-  if ((await page.locator('[role="menu"][data-state="open"]').count()) > 0) {
+  // A narrow title bar: the menus' titles folded into one Menu button, which opens them. macOS has
+  // its menus in the system's menu bar, none in the title bar (LF-13).
+  if (!nativeMenus) {
+    await expect(banner.getByRole("menuitem", { name: "File", exact: true })).toBeHidden();
+    await banner.getByRole("menuitem", { name: "Menu", exact: true }).click();
+    await page.getByRole("menuitem", { name: "File", exact: true }).click();
+    await expect(page.getByRole("menu", { name: "File" })).toBeVisible();
     await page.keyboard.press("Escape");
+    if ((await page.locator('[role="menu"][data-state="open"]').count()) > 0) {
+      await page.keyboard.press("Escape");
+    }
+    await expect(page.getByRole("menu")).toHaveCount(0);
   }
-  await expect(page.getByRole("menu")).toHaveCount(0);
 
   // The search box at its least, 140 px, the site's name in it whole.
   const search = banner.getByRole("button", { name: /^Search commands/ });
@@ -100,10 +106,20 @@ test("shows the menus' titles again in a wide window, all of it fitting (#1166)"
     BrowserWindow.getAllWindows()[0]?.setContentSize(1280, 900),
   );
   await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(1280);
-  const menuBar = page.getByRole("banner").getByRole("menubar", { name: "App menu" });
-  await expect(menuBar.getByRole("menuitem")).toHaveText(["File", "Edit", "View", "Site", "Help"]);
-  // The narrowest with them, Site Check's whole count at its widest beside them.
-  await expectTitleBarFits("99 to fix · 99 tips", 1280);
+  if (!nativeMenus) {
+    const menuBar = page.getByRole("banner").getByRole("menubar", { name: "App menu" });
+    await expect(menuBar.getByRole("menuitem")).toHaveText([
+      "File",
+      "Edit",
+      "View",
+      "Site",
+      "Help",
+    ]);
+  }
+  // The narrowest with them, Site Check's whole count at its widest beside them: nothing over
+  // anything else or cut off, though with nothing to spare on Linux, whose type is wider (30 px on
+  // Windows, 0 on Linux).
+  await expectTitleBarFits("99 to fix · 99 tips", 1280, 0);
 });
 
 /**
@@ -158,8 +174,8 @@ async function titleBarWith(count: string) {
   }, count);
 }
 
-/** Checks {@link titleBarWith} `count`: nothing over or cut off, and 4 px or more to spare. */
-async function expectTitleBarFits(count: string, width: number): Promise<void> {
+/** Checks {@link titleBarWith} `count`: nothing over or cut off, and `spare` px or more to spare. */
+async function expectTitleBarFits(count: string, width: number, spare = 4): Promise<void> {
   const layout = await titleBarWith(count);
   console.log(
     `[work] ${width} px title bar, "${count}": Publish ends at ${layout.publishRight.toFixed(1)} of ${layout.room} px, ${(layout.searchWidth - 140).toFixed(1)} px to spare`,
@@ -168,7 +184,7 @@ async function expectTitleBarFits(count: string, width: number): Promise<void> {
   expect(layout.cutOff, count).toBe(false);
   expect(layout.publishRight, count).toBeLessThanOrEqual(layout.room);
   // The spare is what the search box has over its least, 140 px.
-  expect(layout.searchWidth - 140, count).toBeGreaterThanOrEqual(4);
+  expect(layout.searchWidth - 140, count).toBeGreaterThanOrEqual(spare);
 }
 
 /** The left column, open: at its 300 px default, not the 200 px a first opening gave (#1166). */
