@@ -24,6 +24,7 @@ import { installHistoryKeys } from "../history-keys.js";
 import { createCanvasFrame } from "./canvas-frame.js";
 import { listenInEditor } from "./canvas-listeners.js";
 import { createCanvasPage } from "./canvas-page.js";
+import { createCanvasScroll } from "./canvas-scroll.js";
 import { createCanvasSelection } from "./canvas-selection.js";
 import { createCanvasSync } from "./canvas-sync.js";
 import { createCanvasView } from "./canvas-view.js";
@@ -277,6 +278,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /** The canvas's document: the iframe's, or the editor's without one. */
   const canvasDocument = () => frame.document() ?? host?.ownerDocument;
+  /** The canvas's scrolling: only its own frame's, never the editor's window. */
+  const scroll = createCanvasScroll(() => frame.document() ?? undefined);
   /** The canvas's scale, which the marks drawn on it keep the same size on screen through. */
   const zoomOf = (doc: Document | undefined) =>
     doc === undefined ? 1 : canvasZoom(doc.documentElement);
@@ -322,8 +325,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       sync.shown();
     },
 
-    loadPage: (nextPage, nextLayout, nextShared = {}) =>
-      page.load({ page: nextPage, layout: nextLayout, shared: nextShared }),
+    loadPage(nextPage, nextLayout, nextShared = {}) {
+      page.load({ page: nextPage, layout: nextLayout, shared: nextShared });
+      // Another page opens at its top, not where the page before was scrolled to (#1176).
+      scroll.toTop();
+    },
 
     applyChange({ page: nextPage, layout, shared }) {
       const docs = page.docs();
@@ -352,7 +358,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       showDropMark(doc, mark, zoomOf(doc));
     },
 
-    select: selection.select,
+    select(id) {
+      // The app selects an element the canvas didn't (Site Check, Layers, Find, an undo): it
+      // shows, clear of its selection bar (#1176). One clicked on the canvas is selected already,
+      // and one left selected by a Ctrl-click that takes another away was selected with it.
+      const fromOutside = id !== null && !selection.has(id);
+      selection.select(id);
+      if (fromOutside) scroll.reveal(id);
+    },
 
     setViewport: view.setViewport,
     onViewportChange: view.onViewport,
@@ -462,6 +475,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       getPuck = null;
       stopEditorListeners?.();
       stopEditorListeners = null;
+      scroll.cancel();
       frame.forget();
       // Unmount after the current render: the app destroys the engine from an effect cleanup.
       queueMicrotask(() => {
