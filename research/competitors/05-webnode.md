@@ -1,6 +1,6 @@
 # Webnode: Competitor Review
 
-**Status:** ✅ Decided 2026-11-20 ([§7.1](#71-decisions)): WN-3 is adopted and, the same day, widened: an invented detail in generated content is always marked as an example for the owner to replace ([§7.2](#72-wn-3-as-decided-examples-are-marked), about 3 days); WN-1, WN-2, WN-4 and WN-5 are not taken for now.
+**Status:** ✅ Decided 2026-11-20 ([§7.1](#71-decisions)): WN-3 is adopted and, the same day, widened: an invented detail in generated content is always marked as an example for the owner to replace ([§7.2](#72-wn-3-as-decided-examples-are-marked), plan item 5.33, 3 days, PH5-4); WN-1, WN-2, WN-4 and WN-5 are not taken for now.
 **Date:** 2026-11-20
 **Question:** Webnode is a hosted builder for the same person Webforge is for. What does it offer, where is it ahead and behind, and what should Webforge take from it?
 
@@ -130,13 +130,13 @@ Sizes are rough ideal days, to be estimated properly if adopted. None is in the 
 
 Product owner, 2026-11-20: "Let's take WN-3 only".
 
-| #    | Decision                                                                                                                                                                 |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| WN-1 | ❌ **Not taken for now:** "bring your current site". Importing existing websites stays out of scope (C3)                                                                 |
-| WN-2 | ❌ **Not taken for now:** the notes for language versions. 6.13's own design decides                                                                                     |
-| WN-3 | ✅ **Adopted, in the form of §7.2:** an invented detail in generated content is always marked as an example. Its plan item, stream and issue follow from the coordinator |
-| WN-4 | ❌ **Not taken for now:** the help page on moving from a hosted builder                                                                                                  |
-| WN-5 | ❌ **Not taken for now:** the note on CC-4's issue                                                                                                                       |
+| #    | Decision                                                                                                                                                                                                                                                                                       |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WN-1 | ❌ **Not taken for now:** "bring your current site". Importing existing websites stays out of scope (C3)                                                                                                                                                                                       |
+| WN-2 | ❌ **Not taken for now:** the notes for language versions. 6.13's own design decides                                                                                                                                                                                                           |
+| WN-3 | ✅ **Adopted, in the form of §7.2:** an invented detail in generated content is always marked as an example. Plan item 5.33, 3 days, stream A, planned as PH5-4 in [`spec/04` §3](../../spec/04-implementation-plan.md#3-timeline). [#1228](https://github.com/nexustech/webforge/issues/1228) |
+| WN-4 | ❌ **Not taken for now:** the help page on moving from a hosted builder                                                                                                                                                                                                                        |
+| WN-5 | ❌ **Not taken for now:** the note on CC-4's issue                                                                                                                                                                                                                                             |
 
 **What WN-3 has to change,** from the code on 2026-11-20:
 
