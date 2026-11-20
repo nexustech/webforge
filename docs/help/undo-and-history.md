@@ -21,6 +21,8 @@ After you delete something, an **Undo** button also appears for a few seconds.
 
 **Undo History**, the tab beside the Add panel (a clock with an arrow), opens from **View › Undo History** too. It lists your recent steps since you opened the site, up to the last 200, newest at the top. The step you're at is ticked; steps you've undone are greyed out. Click any step to go back, or forward, to that moment. {appName} also shows the page you were on and selects what you were working on.
 
+From the keyboard, **Tab** goes to the list at the step you're at, and the next **Tab** leaves it. **↑** and **↓** move between steps, **Home** and **End** go to the newest and the oldest, and **Enter** goes to the step.
+
 Undo History lasts until you close the site. To go back further, use [Version History](version-history.md).
 
 ## Changes that reach other pages
