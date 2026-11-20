@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { startEditingOnType, typedCharacter } from "./type-to-edit.js";
+import { startEditingOnType, startsTyping } from "./type-to-edit.js";
 
 /** A key press with `key`, no modifiers unless given. */
 const press = (key: string, extra: Partial<KeyboardEventInit> & { altGr?: boolean } = {}) => {
@@ -17,31 +17,34 @@ const press = (key: string, extra: Partial<KeyboardEventInit> & { altGr?: boolea
   };
 };
 
-describe("typedCharacter (LF-17)", () => {
-  it("is the character a key types: a letter, a digit, a sign, with Shift too", () => {
-    expect(["a", "Z", "7", "?", "é", "😀"].map((key) => typedCharacter(press(key)))).toEqual([
-      "a",
-      "Z",
-      "7",
-      "?",
-      "é",
-      "😀",
-    ]);
+describe("startsTyping (LF-17)", () => {
+  it("is a key that types a character: a letter, a digit, a sign, with Shift too", () => {
+    expect(["a", "Z", "7", "?", "é", "😀"].every((key) => startsTyping(press(key)))).toBe(true);
   });
 
-  it("is none for keys that type nothing, Space, a shortcut, a held key or an input method", () => {
-    expect(typedCharacter(press("Enter"))).toBeUndefined();
-    expect(typedCharacter(press("ArrowDown"))).toBeUndefined();
-    expect(typedCharacter(press(" "))).toBeUndefined();
-    expect(typedCharacter(press("d", { ctrlKey: true }))).toBeUndefined();
-    expect(typedCharacter(press("d", { metaKey: true }))).toBeUndefined();
-    expect(typedCharacter(press("d", { altKey: true }))).toBeUndefined();
-    expect(typedCharacter(press("a", { repeat: true }))).toBeUndefined();
-    expect(typedCharacter(press("あ", { isComposing: true }))).toBeUndefined();
+  it("is the first key an input method composes with, not those that follow it", () => {
+    expect(startsTyping(press("Process"))).toBe(true);
+    expect(startsTyping(press("Process", { isComposing: true }))).toBe(false);
   });
 
-  it("is the character AltGr types, which Windows reports as Ctrl+Alt", () => {
-    expect(typedCharacter(press("@", { ctrlKey: true, altKey: true, altGr: true }))).toBe("@");
+  it("is not a key that types nothing, Space, a shortcut, a held key or an input method's next", () => {
+    for (const event of [
+      press("Enter"),
+      press("ArrowDown"),
+      press("Shift"),
+      press(" "),
+      press("d", { ctrlKey: true }),
+      press("d", { metaKey: true }),
+      press("d", { altKey: true }),
+      press("a", { repeat: true }),
+      press("あ", { isComposing: true }),
+    ]) {
+      expect(startsTyping(event), event.key).toBe(false);
+    }
+  });
+
+  it("is a key AltGr types, which Windows reports as Ctrl+Alt", () => {
+    expect(startsTyping(press("@", { ctrlKey: true, altKey: true, altGr: true }))).toBe(true);
   });
 });
 
@@ -94,6 +97,12 @@ describe("startEditingOnType (LF-17)", () => {
     expect(caret?.isCollapsed).toBe(true);
     expect(caret?.anchorOffset).toBe(field?.childNodes.length);
     // The key types there itself; no shortcut sees it.
+    expect(shortcuts).toEqual([]);
+  });
+
+  it("starts editing for an input method's first key, for its composition to go on there", () => {
+    type("Process");
+    expect(document.activeElement).toBe(document.querySelector("span"));
     expect(shortcuts).toEqual([]);
   });
 
