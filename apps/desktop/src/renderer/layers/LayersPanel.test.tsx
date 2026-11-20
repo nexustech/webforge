@@ -83,6 +83,7 @@ function setUp(
     moveDown: command(),
     duplicate: command(),
     remove: command(),
+    editText: command(),
   } satisfies LayersPanelActions;
   const menu = vi.fn((_: ComponentProps<NonNullable<LayersPanelProps["menu"]>>) => null);
   render(
@@ -195,6 +196,25 @@ describe("LayersPanel (F-ED-12)", () => {
       ["b", 0],
       ["c", 1],
     ]);
+  });
+
+  it("edits the selected layer's text on the page with Enter, as on the canvas (LF-17)", () => {
+    const { actions } = setUp("a");
+    const rows = screen.getAllByRole("treeitem");
+
+    // Only the selected layer's, with Enter alone.
+    fireEvent.keyDown(rows[2] as HTMLElement, { key: "Enter" });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "Enter", shiftKey: true });
+    expect(actions.editText).not.toHaveBeenCalled();
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "Enter" });
+    expect(actions.editText).toHaveBeenCalledOnce();
+  });
+
+  it("leaves Enter alone while several layers are selected: text is one element's", () => {
+    const { actions } = setUp("a", true, false, ["b"]);
+
+    fireEvent.keyDown(screen.getAllByRole("treeitem")[1] as HTMLElement, { key: "Enter" });
+    expect(actions.editText).not.toHaveBeenCalled();
   });
 
   it("walks the tree with Mod+arrows, as on the canvas (F-ED-27)", () => {

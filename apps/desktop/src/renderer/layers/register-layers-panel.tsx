@@ -37,6 +37,9 @@ const TOOLBAR_COMMANDS = {
   remove: "edit.delete",
 } as const;
 
+/** The canvas command that Enter on the selected layer runs: editing its text (LF-17). */
+const EDIT_TEXT = "edit.editText";
+
 /** A command as a toolbar action: undefined while it is missing or disabled. */
 function useCommandAction(id: string): (() => void) | undefined {
   const registry = useCommandRegistry();
@@ -167,6 +170,7 @@ export function registerLayersPanel(
           moveDown: useCommandAction(TOOLBAR_COMMANDS.moveDown),
           duplicate: useCommandAction(TOOLBAR_COMMANDS.duplicate),
           remove: useCommandAction(TOOLBAR_COMMANDS.remove),
+          editText: useCommandAction(EDIT_TEXT),
           reasons: {
             moveUp: useCommandReason(TOOLBAR_COMMANDS.moveUp),
             moveDown: useCommandReason(TOOLBAR_COMMANDS.moveDown),

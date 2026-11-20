@@ -12,8 +12,7 @@ export const onboarding = {
   "tour.region": "Tour: {title}",
   "tour.step": "Step {step} of {count}",
   "tour.words.title": "Change your words",
-  "tour.words.text":
-    "Click any text on your page, then press Enter or Edit on its bar, and type. Its options are in the Edit panel.",
+  "tour.words.text": "Click any text on your page and type. Its options are in the Edit panel.",
   "tour.preview.title": "See it as visitors will",
   "tour.preview.text": "Preview shows your site in your browser, and on your phone.",
   "tour.publish.title": "Put it online",
@@ -32,7 +31,7 @@ export const onboarding = {
   "tip.gotIt": "Got It",
   "tip.selection.title": "Change what you've selected",
   "tip.selection.text":
-    "Press Enter, or Edit on its bar, to change its text. The bar also moves, hides, copies and deletes it.",
+    "Type to change its text, or press Enter or Edit on its bar. The bar also moves, hides, copies and deletes it.",
   "tip.contentMode.title": "Content mode",
   "tip.contentMode.text":
     "Content mode locks the layout, so you can change the words and pictures without moving anything.",
