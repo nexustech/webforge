@@ -67,6 +67,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     devServerUrl,
     join(parts.dir, "../preload/help.cjs"),
     () => lifecycle.preferences,
+    () => electron.nativeTheme.shouldUseDarkColors,
   );
   // The editor's page only: on the dev server the Help page has the same origin, and it may make
   // only its own calls (`help-ipc.ts`).
@@ -164,6 +165,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     installFlush: (window) => lifecycle.flushOnClose?.install(window),
     // Something copied in another app replaces the copied elements: their images go (R13d).
     onFocus: () => void elementClipboard.forgetIfReplaced(),
+    // The computer's light or dark setting, for a person who follows it (#1169).
+    computerDark: () => electron.nativeTheme.shouldUseDarkColors,
+    onComputerThemeChange: (listener) => electron.nativeTheme.on("updated", listener),
   });
   // An AI app's key, copied out of clipboard history and cleared in a minute (4.9).
   const secretClipboard = createSecretClipboard(

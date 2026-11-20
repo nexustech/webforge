@@ -29,7 +29,7 @@ type InterfaceValues = {
 };
 
 const interfaceSchema = z.strictObject({
-  theme: z.enum(["dark", "light"]),
+  theme: z.enum(["system", "dark", "light"]),
   editorLevel: z.enum(["simple", "advanced"]),
   textSize: z
     .string()
@@ -53,7 +53,7 @@ const textSizeOptions = () =>
   });
 
 /**
- * Interface (LF-12): the editor's theme and its level, which the View menu switches too; its text
+ * Interface (LF-12): the editor's theme (the computer's by default, #1169) and its level, which the View menu switches too; its text
  * size, the interface zoom of View › Zoom In Interface (#1015); and the first-time tips, with the
  * tour and tips shown again from the start (OB-5).
  */
@@ -63,7 +63,9 @@ const INTERFACE: FormSpec<InterfaceValues, z.infer<typeof interfaceSchema>> = {
       kind: "select",
       name: "theme",
       label: t("settings.interface.appearance"),
+      // Following the computer's light or dark setting first: the default (#1169).
       options: [
+        { label: t("settings.interface.system"), value: "system" },
         { label: t("settings.interface.dark"), value: "dark" },
         { label: t("settings.interface.light"), value: "light" },
       ],

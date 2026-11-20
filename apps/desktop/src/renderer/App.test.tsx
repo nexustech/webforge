@@ -6,7 +6,7 @@ import {
   type FakeEngine,
   scaledTestTimeout,
 } from "@webforge/test-utils/renderer";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { AiApi, AiRequest, AiResponse } from "../shared/ipc/ai.js";
 import { applyPreferencesChange, DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import type { ExportRequest } from "../shared/ipc/site.js";
@@ -223,6 +223,7 @@ describe("App's window layout", () => {
   });
 
   it("switches the theme from the View menu, and saves it", async () => {
+    computerSetTo(true);
     renderApp();
     expect(document.documentElement.dataset.theme).toBe("dark");
 
@@ -231,6 +232,15 @@ describe("App's window layout", () => {
 
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(savePreferences).toHaveBeenCalledWith({ theme: "light" });
+  });
+
+  it("follows the computer's light or dark setting by default, as it changes (#1169)", () => {
+    const computer = computerSetTo(false);
+    renderApp();
+    expect(document.documentElement.dataset.theme).toBe("light");
+
+    act(() => computer.change(true));
+    expect(document.documentElement.dataset.theme).toBe("dark");
   });
 
   it("has title-bar buttons for the panels", () => {
@@ -245,6 +255,36 @@ describe("App's window layout", () => {
     }
   });
 });
+
+/**
+ * The computer's light or dark setting as the window sees it (`prefers-color-scheme`), set to dark
+ * when `dark`, for this test; `change` sets it again, as the computer does while the app is open.
+ */
+function computerSetTo(dark: boolean) {
+  const listeners = new Set<() => void>();
+  const query = {
+    get matches() {
+      return dark;
+    },
+    addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+    removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
+  };
+  const spy = vi
+    .spyOn(window, "matchMedia")
+    .mockImplementation(
+      (media) =>
+        (media === "(prefers-color-scheme: dark)"
+          ? query
+          : { matches: false, addEventListener: () => {}, removeEventListener: () => {} }) as never,
+    );
+  onTestFinished(() => spy.mockRestore());
+  return {
+    change(next: boolean) {
+      dark = next;
+      for (const listener of listeners) listener();
+    },
+  };
+}
 
 describe("App's modes (1.10)", () => {
   it("switches between Design and Content without a reload, and remembers it with the site", async () => {

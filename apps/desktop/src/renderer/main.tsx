@@ -6,7 +6,14 @@ import { createErrorReporter, installErrorReporting, rootErrorOptions } from "./
 import { StartScreen } from "./start/StartScreen.js";
 // Schemas word their problems in the editor's words (2.21).
 import "./shell/form-messages.js";
-import { applyTheme, markFirstRender, preloadEditorWhenIdle, StartFailed } from "./startup.js";
+import { shownTheme } from "../shared/editor-theme.js";
+import {
+  applyTheme,
+  computerDark,
+  markFirstRender,
+  preloadEditorWhenIdle,
+  StartFailed,
+} from "./startup.js";
 import "./styles.css";
 import { setFailureLog, showInDevConsole } from "./log.js";
 
@@ -52,8 +59,9 @@ try {
     window.webforge.prefs.get(),
     editor,
   ]);
-  // The theme before the first paint, so the window never flashes the other one.
-  applyTheme(preferences.theme, window);
+  // The theme before the first paint, so the window never flashes the other one: the computer's,
+  // for a person who follows it (#1169).
+  applyTheme(shownTheme(preferences.theme, computerDark(window)), window);
 
   // With a site open, the editor; otherwise, or when its site couldn't be read, the start screen
   // (1.8), which reloads the window once it has created or opened one.
