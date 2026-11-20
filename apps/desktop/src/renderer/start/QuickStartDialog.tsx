@@ -115,7 +115,7 @@ function QuickStartBody({
   askAbout = false,
 }: Omit<QuickStartDialogProps, "open">) {
   const untitled = t("site.untitledName");
-  const [answers, setAnswers] = useState(() => initialAnswers ?? emptyAnswers(untitled));
+  const [answers, setAnswers] = useState(() => initialAnswers ?? emptyAnswers());
   const [step, setStep] = useState(QUICK_START_STEPS.indexOf(initialStep));
   const [spec] = useState(detailsSpec);
   const details = useForm(
@@ -294,6 +294,8 @@ function BusinessStep({
         <TextInput
           label={t("quickStart.name")}
           value={answers.name}
+          // Empty, not filled in with a name to delete: an empty one is this (#1167).
+          placeholder={t("site.untitledName")}
           onChange={(name) => onChange({ name })}
           maxLength={SITE_NAME_MAX}
         />

@@ -33,7 +33,7 @@ describe("openSiteWith", () => {
 
     await expect(
       openSiteWith(async () => ({ status: "failed", reason: "not-a-project" }), restart),
-    ).resolves.toBe("This file isn't a Webforge site.");
+    ).resolves.toBe("This file isn't a Webforge site. Choose a file ending in .wforge.");
     await expect(
       openSiteWith(async () => {
         throw new Error("IPC gone");
