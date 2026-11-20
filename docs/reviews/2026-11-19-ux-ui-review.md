@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-19 · **Build:** production build of `apps/desktop` at commit `4185eb6c` (version 0.2.0, Electron 45.2.3, Chromium 156), run unpackaged · **OS:** Windows 11 Pro 10.0.26300 · **Status:** findings only; no source was changed and no issues were filed.
 
-Commissioned by `docs/testing/ux-ui-review-prompt.md`. Evidence labels: **Observed** (exercised or measured in the running app), **Source** (read in the code only), **Hypothesis** (plausible, not verified). Screenshots are in `2026-11-19-ux-ui-review-screenshots/`.
+Commissioned by the product owner's review brief: eight tasks, from starting a site to exporting it, assessed as a senior UX/UI designer would, with findings only. Evidence labels: **Observed** (exercised or measured in the running app), **Source** (read in the code only), **Hypothesis** (plausible, not verified). Screenshots are in `2026-11-19-ux-ui-review-screenshots/`.
 
 ## 1. Executive summary
 
@@ -199,7 +199,7 @@ Effort is a rough estimate. No fix has been made.
 - Every visible control on those screens has an accessible name.
 - F6 moves between canvas, bottom panel, right panel, title bar and left panel; Tab order follows the screen; focus rings were visible on every stop checked except the slider and the 1 px dividers.
 - Text size 125% at 1366 × 768: no clipping or horizontal scrolling (layout 1093 px wide; right panel 793–1093 px).
-- Generated site at 390 px: no overflow, no control under 24 px, menu button 40 × 40 px with the name "Menu".
+- Generated site at 390 px: no overflow, no control under 24 px, menu button 40 × 40 px with the name "Menu" (`preview-phone-menu.png`, the preview's site with its menu open).
 
 **Needs manual assistive-technology testing**
 
@@ -233,7 +233,7 @@ Effort is a rough estimate. No fix has been made.
 
 ### 6.3 The 14 November audit, re-checked
 
-Verified in this build, by number in that audit's top ten. Issue numbers are the ones that audit recorded; their current state on GitHub was not checked.
+Verified in this build, by number in that audit's top ten. Issue numbers are the ones that audit recorded. All ten (#1007–#1016) were closed on GitHub when checked on 2026-11-20, so what remains in the rows marked mostly or partly resolved, and in row 10, is tracked by no open issue: the native titles (#1011, F24), the controls under 24 px (#1015, F7) and the ungrouped File and View menus (#1016, F22).
 
 | #                                        | Then                                                           | Now                                                                                                                                             |
 | ---------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
