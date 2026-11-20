@@ -95,12 +95,8 @@ test("opens the site in the browser, and every edit reaches it", async () => {
   const hex = page.getByRole("textbox", { name: "Brand hex code" });
   await hex.selectText();
   await page.keyboard.type("b0306a");
+  // At once, nothing asked (LF-15).
   await page.keyboard.press("Enter");
-  await page
-    .getByRole("dialog", { name: "Save your own version of 'Light'?" })
-    .getByRole("button", { name: "Save Theme" })
-    .click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Change Colour" }).click();
   await expect.poll(() => brand(site), { timeout: 15_000 }).not.toBe(before);
   expect(await site.evaluate(() => (window as unknown as { stillHere?: boolean }).stillHere)).toBe(
     true,
@@ -187,19 +183,15 @@ test("swaps the stylesheet in place in under 100 ms, the median of five (#622)",
   for (const style of ["Outline", "Filled", "Outline", "Filled", "Outline"]) {
     const done = await swaps();
     await page.getByRole("combobox", { name: "Button style" }).selectOption({ label: style });
-    // A change of a built-in theme first names the person's own copy of it (2.23): the only
-    // question a token change asks (`setToken` asks no D7 question). Any other fails the test,
-    // named, rather than being answered.
-    const save = page.getByRole("dialog", { name: /^Save Your Own Version of/ });
+    // A token change asks nothing (`setToken` asks no D7 question, and the person's own copy of a
+    // built-in theme is saved unasked, LF-15). A question fails the test, named, rather than being
+    // answered.
     const ask = page.getByRole("alertdialog");
     await expect
       .poll(
         async () => {
           if (await ask.isVisible()) {
             throw new Error(`An unexpected question: ${await ask.textContent()}`);
-          }
-          if (await save.isVisible()) {
-            await save.getByRole("button", { name: "Save Theme" }).click();
           }
           return swaps();
         },

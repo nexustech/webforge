@@ -31,10 +31,12 @@ export const theme = {
   "theme.preset.confirmButton": "Switch Theme",
 
   // Colours (the glossary's names are `colour.role.*`) and what their contrast lacks (WCAG AA).
-  "theme.color.confirm": "Change the {name} Colour?",
-  "theme.color.confirmReversed": "Change the {name} Colour in Reversed Sections?",
-  "theme.color.confirmDescription": "Everything in this colour changes, on every page.",
-  "theme.color.confirmButton": "Change Colour",
+  // A change applies at once, its toast saying how far it reached, with Undo (LF-15).
+  "theme.changed.color.one": "{name} colour changed on 1 page",
+  "theme.changed.color.other": "{name} colour changed on {count} pages",
+  "theme.changed.colorReversed.one": "{name} colour changed in reversed sections on 1 page",
+  "theme.changed.colorReversed.other":
+    "{name} colour changed in reversed sections on {count} pages",
   "theme.role.surface2": "Second surface",
   "theme.role.surface3": "Third surface",
   "theme.role.onBrand": "Text on Brand",
@@ -60,11 +62,11 @@ export const theme = {
   // The third font (3.22, PF-5): only what an element's or a title's Font sets to Accent uses it.
   "theme.fonts.accent": "Accent",
   "theme.fonts.accentHelp": "For text whose Font is set to Accent in its Style tab.",
-  "theme.fonts.confirm": "Change the Fonts?",
-  "theme.fonts.confirmDescription": "The text on every page changes to the new fonts.",
-  "theme.fonts.confirmAccentDescription":
-    "Text whose Font is set to Accent changes to the new font, on every page.",
-  "theme.fonts.confirmButton": "Change Fonts",
+  // A change applies at once, with Undo (LF-15); the accent alone changes only what is set in it.
+  "theme.changed.fonts.one": "Fonts changed on 1 page",
+  "theme.changed.fonts.other": "Fonts changed on {count} pages",
+  "theme.changed.accentFont.one": "Accent font changed on 1 page",
+  "theme.changed.accentFont.other": "Accent font changed on {count} pages",
 
   // The type scale.
   "theme.textStyle.h1": "Heading 1",
@@ -231,10 +233,8 @@ export const theme = {
   "theme.image.unreadable": "That image couldn't be read. Try another.",
   "theme.image.use": "Use These Colours",
   "theme.image.dismiss": "Not Now",
-  "theme.image.confirm": "Use the Colours from '{name}'?",
-  "theme.image.confirmDescription":
-    "Brand, Accent and Second accent change, with their text, on every page.",
-  "theme.image.confirmButton": "Use Colours",
+  "theme.changed.image.one": "Colours from '{name}' used on 1 page",
+  "theme.changed.image.other": "Colours from '{name}' used on {count} pages",
 
   // Undo steps (D2): one per change, named for what changed.
   "theme.history.preset": "Changed theme to '{name}'",
@@ -262,18 +262,15 @@ export const theme = {
   "theme.history.effects": "Changed effects",
   "theme.history.look": "Changed the theme's look for {item}",
   "theme.history.lookReset": "Reset the theme's look for {item}",
-  "theme.history.saved": "Saved theme '{name}'",
   "theme.history.created": "Created theme '{name}'",
   "theme.history.renamed": "Renamed theme to '{name}'",
 
   // Your own themes (2.23, PH2-17): built-in themes are read-only, so the first change to one
-  // saves the person's own version, by a name they choose.
-  "theme.own.title": "Save Your Own Version of '{name}'?",
-  "theme.own.description":
-    "Built-in themes stay as they are. Your change is saved in a theme of your own, which your other sites on this computer can use too.",
+  // saves the person's own version, without asking, under a name they can change in Theme Studio
+  // (LF-15); numbered when they have one by that name already.
   "theme.own.name": "Theme name",
-  "theme.own.defaultName": "{name} (my version)",
-  "theme.own.save": "Save Theme",
+  "theme.own.defaultName": "{name} (yours)",
+  "theme.own.defaultNameNumbered": "{name} (yours, {number})",
   "theme.own.mine": "My themes",
   "theme.own.builtIn": "Built-in themes",
   "theme.own.none": "Themes you save or create are listed here.",

@@ -88,15 +88,16 @@ const brand = () =>
     getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim(),
   );
 
-/** Sets the theme's brand colour to `hex` in the Theme tab, up to its last click. */
-async function brandColour(hex: string, last: () => Promise<void>) {
+/**
+ * Sets the theme's brand colour to `hex` in the Theme tab: at once on Enter, nothing asked (LF-15).
+ * `starting` runs just before Enter.
+ */
+async function brandColour(hex: string, starting: () => void = () => undefined) {
   const field = page.getByRole("textbox", { name: "Brand hex code" });
   await field.selectText();
   await page.keyboard.type(hex);
+  starting();
   await page.keyboard.press("Enter");
-  const save = page.getByRole("dialog", { name: "Save your own version of 'Light'?" });
-  if (await save.isVisible()) await save.getByRole("button", { name: "Save Theme" }).click();
-  await last();
 }
 
 test("a colour of the theme reaches the browser in under 100 ms", async () => {
@@ -107,9 +108,7 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
   // The first change saves the person's own theme; the one timed is the second, once the first
   // has reached the browser.
   const initial = await brand();
-  await brandColour("b0306a", () =>
-    page.getByRole("alertdialog").getByRole("button", { name: "Change Colour" }).click(),
-  );
+  await brandColour("b0306a");
   await expect.poll(brand, { timeout: OPEN_WAIT }).not.toBe(initial);
   const before = await brand();
 
@@ -136,10 +135,8 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
   }, before);
   let started = 0;
   const swapped = await serverEvents(site.url(), "values");
-  await brandColour("2a6fb0", async () => {
-    const confirm = page.getByRole("alertdialog").getByRole("button", { name: "Change Colour" });
+  await brandColour("2a6fb0", () => {
     started = Date.now();
-    await confirm.click();
   });
   // Every 10 ms, not on animation frames, which a headless page needn't draw.
   await site.waitForFunction(
