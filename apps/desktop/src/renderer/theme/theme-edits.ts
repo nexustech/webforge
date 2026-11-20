@@ -185,12 +185,35 @@ function sayNotChanged(asks: ThemeAsks): void {
   asks?.notify?.(t("theme.notChanged"));
 }
 
+/** The person's own versions saved unasked in each opening of a site, by its history: see below. */
+const unaskedCopies = new WeakMap<object, Map<string, NonNullable<ThemeTokens["own"]>>>();
+
+/**
+ * The person's own version of built-in theme `preset`, saved unasked at its first change (LF-15):
+ * the same one, id and name, each time the site is back on `preset` in this opening, so trying a
+ * colour, undoing it and trying another keeps one theme in My themes, not one a try.
+ */
+function unaskedCopy(
+  session: ThemeSession,
+  preset: string,
+  names: { taken(): readonly string[] },
+): NonNullable<ThemeTokens["own"]> {
+  const made = unaskedCopies.get(session.history) ?? new Map();
+  unaskedCopies.set(session.history, made);
+  const before = made.get(preset);
+  if (before !== undefined) return before;
+  const own = { id: newId("theme"), name: ownCopyName(presetName(preset), names.taken()) };
+  made.set(preset, own);
+  return own;
+}
+
 /**
  * Changes the theme by `recipe`: one step, `label`. A change to every page asks `reach.question`
  * first (D7), and cancelling it changes nothing, and says so (#614); a colour or font change applies
  * at once, saying `reach.toast` with Undo (LF-15). A built-in theme is read-only (2.23, PH2-17):
  * with `asks.names`, the first change to one makes it the person's own in the same step, under
- * {@link ownCopyName}, without asking. False if nothing changed.
+ * {@link ownCopyName}, without asking, and the same one again after an undo ({@link unaskedCopy}).
+ * False if nothing changed.
  */
 async function changeTheme(
   session: ThemeSession,
@@ -212,9 +235,9 @@ async function changeTheme(
   }
   // Read after any wait: the theme as it is when the change is made.
   const now = theme(session);
-  const own: ThemeTokens["own"] =
+  const own =
     asks?.names !== undefined && now.own === undefined
-      ? { id: newId("theme"), name: ownCopyName(presetName(now.preset), asks.names.taken()) }
+      ? unaskedCopy(session, now.preset, asks.names)
       : undefined;
   session.edit(
     "props",

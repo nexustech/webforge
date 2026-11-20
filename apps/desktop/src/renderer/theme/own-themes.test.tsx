@@ -184,6 +184,29 @@ describe("My themes (2.23)", () => {
     expect(api.keep).toHaveBeenCalledTimes(2);
   });
 
+  it("keeps one theme for a colour tried, undone and tried again (LF-15)", async () => {
+    const api = fakeApi();
+    const themes = createOwnThemes(() => api, { delayMs: 0 });
+    const session = sessionWith();
+    const remove = registerOwnThemes(createWindowDialogs(), session, themes, new EventTarget());
+
+    await setColor(session, { names: themes }, "primary", { l: 0.5, c: 0.2, h: 30 });
+    await waitFor(() => expect(api.keep).toHaveBeenCalledTimes(1));
+    act(() => {
+      session.history.undo();
+    });
+    await setColor(session, { names: themes }, "primary", { l: 0.6, c: 0.1, h: 200 });
+    await waitFor(() => expect(api.keep).toHaveBeenCalledTimes(2));
+
+    // The same theme kept twice, in place: one in My themes, not "Light (yours, 2)".
+    const ids = api.keep.mock.calls.map(([theme]) => theme.own.id);
+    expect(new Set(ids).size).toBe(1);
+    expect(themes.store.getState().themes.map((theme) => theme.own.name)).toEqual([
+      "Light (yours)",
+    ]);
+    remove();
+  });
+
   it("sends what's waiting as the window closes", async () => {
     const api = fakeApi();
     const themes = createOwnThemes(() => api, { delayMs: 60_000 });

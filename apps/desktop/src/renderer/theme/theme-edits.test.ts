@@ -360,6 +360,29 @@ describe("your own themes (2.23, PH2-17)", () => {
     expect(theme().colors.primary).not.toEqual(BRAND);
   });
 
+  it("saves the same version again after an undo, so trying colours keeps one theme (LF-15)", async () => {
+    const { session, theme } = setUp();
+    const kept: string[] = [];
+    // My themes as the window keeps them: each saved name is taken from then on.
+    const asks = { names: { taken: () => kept } };
+
+    await setColor(session, asks, "primary", BRAND);
+    const first = theme().own;
+    if (first !== undefined) kept.push(first.name);
+    session.history.undo();
+    expect(theme().own).toBeUndefined();
+    await setColor(session, asks, "primary", { l: 0.6, c: 0.1, h: 200 });
+
+    // The same id and name, which My themes keeps in place: not "Light (yours, 2)".
+    expect(theme().own).toEqual(first);
+    expect(first?.name).toBe("Light (yours)");
+    // Another opening of a site saves one of its own.
+    const other = setUp();
+    await setColor(other.session, asks, "primary", BRAND);
+    expect(other.theme().own?.id).not.toBe(first?.id);
+    expect(other.theme().own?.name).toBe("Light (yours, 2)");
+  });
+
   it("names the saved version after the theme, numbered when the person has that name (LF-15)", () => {
     expect(ownCopyName("Bistro", [])).toBe("Bistro (yours)");
     expect(ownCopyName("Bistro", ["Bistro (yours)", "Light (yours)"])).toBe("Bistro (yours, 2)");
