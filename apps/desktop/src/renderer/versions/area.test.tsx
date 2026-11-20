@@ -86,6 +86,20 @@ describe("versionHistoryArea (4.6)", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("opens Version History from Site › Version History and the command box (#1165)", () => {
+    const { registries } = setUp();
+    const shown = vi.fn();
+    registries.panels.onShow(shown);
+
+    expect(registries.commands.get(COMMAND_IDS.versionHistory)).toMatchObject({
+      label: t("versionHistory.panelTitle"),
+      menu: "site",
+    });
+    registries.commands.run(COMMAND_IDS.versionHistory);
+
+    expect(shown).toHaveBeenCalledWith("versionHistory");
+  });
+
   it("adds the panel beside Undo History, and saves a version before a confirmed change to every page", async () => {
     const { registries, siteWide, api } = setUp();
     expect(registries.panels.list()).toEqual([
