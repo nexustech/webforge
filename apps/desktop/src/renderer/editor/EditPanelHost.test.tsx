@@ -397,7 +397,9 @@ describe("EditPanelHost", () => {
         $responsive: { desktop: { top: "m", bottom: "m" }, mobile: { top: "s", bottom: "m" } },
       });
       // Its dot is the accent colour on Mobile; Desktop shows no dots (UX-19).
-      expect(screen.getByRole("button", { name: /^Padding: set for Mobile only/ })).toBeDefined();
+      expect(
+        screen.getByRole("button", { name: /^Space inside: set for Mobile only/ }),
+      ).toBeDefined();
       act(() => session.setViewport("desktop"));
       expect(document.querySelectorAll("[data-device-dot]")).toHaveLength(0);
       expect(
@@ -405,7 +407,7 @@ describe("EditPanelHost", () => {
       ).toBe("true");
 
       act(() => session.setViewport("mobile"));
-      await user.click(screen.getByRole("button", { name: /^Padding: set for Mobile only/ }));
+      await user.click(screen.getByRole("button", { name: /^Space inside: set for Mobile only/ }));
 
       expect(section()?.padding).toEqual({ top: "m", bottom: "m" });
       expect(labels()).toEqual([
@@ -414,7 +416,7 @@ describe("EditPanelHost", () => {
       ]);
       // Back to Desktop's value: the dot is grey again.
       expect(
-        screen.getByRole("img", { name: /^Padding: same as Desktop on Mobile/ }),
+        screen.getByRole("img", { name: /^Space inside: same as Desktop on Mobile/ }),
       ).toBeDefined();
     });
 
