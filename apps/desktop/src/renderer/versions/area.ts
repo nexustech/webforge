@@ -9,7 +9,10 @@ import { Publishing } from "../editor/window-services.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { NameDialog } from "../shell/NameDialog.js";
 import { siteSession } from "../storage/index.js";
-import { registerVersionHistoryPanel } from "./register-version-history-panel.js";
+import {
+  registerVersionHistoryPanel,
+  VERSION_HISTORY_PANEL_ID,
+} from "./register-version-history-panel.js";
 import { createVersionActions } from "./version-actions.js";
 import { createVersionList } from "./version-list.js";
 import { registerVersionSettings } from "./versions-settings.js";
@@ -85,6 +88,13 @@ export const versionHistoryArea: Area<WindowContext> = {
         run: askName,
       }),
       registerVersionHistoryPanel(panels, list, actions, askName),
+      // Site › Version History, and the command box (#1165): its panel was only a tab's icon.
+      commands.register({
+        id: COMMAND_IDS.versionHistory,
+        label: t("versionHistory.panelTitle"),
+        menu: "site",
+        run: () => panels.show(VERSION_HISTORY_PANEL_ID),
+      }),
       siteWide.setBeforeSiteWideAction((action, options) =>
         actions.beforeSiteWide(action, options),
       ),
