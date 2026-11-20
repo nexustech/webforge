@@ -29,11 +29,13 @@ async function render(cursor: number) {
   document.body.replaceChildren();
   const container = document.body.appendChild(document.createElement("div"));
   const history = { jumpTo: vi.fn(() => true) };
-  await act(async () =>
-    createRoot(container).render(<UndoHistoryPanel history={history} state={state(cursor)} />),
-  );
+  const root = createRoot(container);
+  /** Draws the panel at `at`, as an undo, a redo or a jump does. */
+  const at = async (to: number) =>
+    act(async () => root.render(<UndoHistoryPanel history={history} state={state(to)} />));
+  await at(cursor);
   const steps = [...container.querySelectorAll<HTMLButtonElement>(".undo-history__step")];
-  return { history, steps, container };
+  return { history, steps, container, at };
 }
 
 describe("UndoHistoryPanel", () => {
@@ -90,5 +92,16 @@ describe("UndoHistoryPanel", () => {
     expect(document.activeElement).toBe(steps[2]);
     await press("ArrowUp");
     expect(document.activeElement).toBe(steps[1]);
+  });
+
+  it("goes back to the step you're at once it changes, not the one focused before (#1179)", async () => {
+    const { steps, at } = await render(1);
+    await act(async () => steps[2]?.focus());
+    expect(steps.map((step) => step.tabIndex)).toEqual([-1, -1, 0]);
+
+    // Focus left the list, then a redo: Tab comes back to the ticked step.
+    await act(async () => steps[2]?.blur());
+    await at(2);
+    expect(steps.map((step) => step.tabIndex)).toEqual([0, -1, -1]);
   });
 });

@@ -22,7 +22,8 @@ type StepState = "done" | "current" | "undone";
  * also brings back the page and selection of that moment (U3). Lives in the left column's bottom
  * tabs in Simple and Advanced mode.
  *
- * The list is one Tab stop (F27, #1179): the step last focused, else the current one. Up and Down
+ * The list is one Tab stop (F27, #1179): the step you're at, or the one focused since it last
+ * changed. Up and Down
  * move between steps, Home and End to the newest and the oldest, Enter or Space goes to one.
  *
  * Each step keeps the `undo-history__step` class: tests and the perf check find steps by it.
@@ -38,12 +39,18 @@ export function UndoHistoryPanel({ history, state }: UndoHistoryPanelProps) {
   ].toReversed();
   const stateOf = (position: number): StepState =>
     position === state.cursor ? "current" : position > state.cursor ? "undone" : "done";
-  /** The step last focused, by its key: the list's Tab stop while it's still listed. */
-  const [focused, setFocused] = useState<string | undefined>(undefined);
+  /**
+   * The step last focused, by its key, and the step you were at then: the list's Tab stop until
+   * the step you're at changes, when Tab goes back to it, as the help says.
+   */
+  const [focused, setFocused] = useState<{ readonly key: string; readonly cursor: number }>();
   const keyOf = (id: string | null) => id ?? START;
-  const tabStop = steps.some((step) => keyOf(step.id) === focused)
-    ? focused
-    : keyOf(steps.find((step) => step.position === state.cursor)?.id ?? null);
+  const tabStop =
+    focused !== undefined &&
+    focused.cursor === state.cursor &&
+    steps.some((step) => keyOf(step.id) === focused.key)
+      ? focused.key
+      : keyOf(steps.find((step) => step.position === state.cursor)?.id ?? null);
 
   /** Up and Down to the next step, Home and End to the newest and the oldest. */
   const onKeyDown = (event: KeyboardEvent<HTMLOListElement>) => {
@@ -83,7 +90,7 @@ export function UndoHistoryPanel({ history, state }: UndoHistoryPanelProps) {
                 data-state={stepState}
                 aria-current={stepState === "current" ? "step" : undefined}
                 tabIndex={keyOf(step.id) === tabStop ? 0 : -1}
-                onFocus={() => setFocused(keyOf(step.id))}
+                onFocus={() => setFocused({ key: keyOf(step.id), cursor: state.cursor })}
                 onClick={() => history.jumpTo(step.id)}
               >
                 <CheckIcon

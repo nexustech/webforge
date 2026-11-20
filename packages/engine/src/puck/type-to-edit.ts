@@ -4,8 +4,9 @@ import { startTextEditing } from "./text-editing.js";
 /**
  * Typing starts editing (LF-17, #1178): with an element selected whose own content is text, a key
  * that types a character (or starts an input method's composition) starts editing its text with
- * that character, the caret at the end, as Enter starts it. A key that types nothing, or a selection with no text of its own (a Section, an
- * image), is left to the shortcuts: `?` still opens the shortcut sheet there.
+ * that character, the caret at the end, as Enter starts it. A key that types nothing, or a
+ * selection with no text of its own (a Section, an image), is left to the shortcuts: `?` still
+ * opens the shortcut sheet there.
  */
 
 /** What {@link startEditingOnType} asks about the canvas's selection. */
