@@ -1,6 +1,6 @@
 # Theme Studio next: your own colours, any colour, and code editing
 
-**Status:** 🟡 Proposals for decision (TC-1…TC-6, [§5](#5-proposals-for-decision)), with a draft plan for them and for OL-18…OL-20 ([§6](#6-draft-plan)). Nothing here changes the spec or the plan until the product owner decides.
+**Status:** 🟡 Proposals for decision (TC-1a, TC-1b and TC-2…TC-6, [§5](#5-proposals-for-decision)), with a draft plan for them and for OL-18…OL-20 ([§6](#6-draft-plan)). Nothing here changes the spec or the plan until the product owner decides.
 
 **Date:** 2026-11-20
 
@@ -81,16 +81,17 @@ Per-element CSS stays out (CT-9): it breaks theme switching and dark mode.
 
 ## 5. Proposals for decision
 
-Estimates are ideal days, from the code as it stands.
+Estimates are ideal days, from the code as it stands. TC-1 is two items: at first it was one of 3 days, which the coordinator's review found low for a format change, since recent items ran at 1.0 to 1.4 of their estimates and format changes ran over.
 
-| #        | Proposal                                                                                                                                                                                                                                                                                                                                                                                                  | Why                                                            | Days |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ---- |
-| **TC-1** | **Your colours.** Named colours added to the theme in Theme Studio › Colours, without a limit, each behaving like Brand: shades, opacity, contrast, reversed sections, in the picker for every colour field and as gradient ends. Rename, and delete with "replace or keep as one-offs". The model of §4.4, with its migration and ADR 0009's amendment; the catalogue data for AI apps and the Assistant | The owner's first request. Resolves the cost ADR 0009 accepted | 3    |
-| **TC-2** | **Any colour in Simple mode.** _Another colour…_ in every colour field, with the contrast warning beside it and the colours already used on the site offered. Amends UX-25, F-ED-4 and ADR 0009 §2                                                                                                                                                                                                        | Colour is not artificially restricted                          | 1    |
-| **TC-3** | **"Add to your colours",** offered on a one-off's second use and from the picker: every use becomes a reference, as one undo step                                                                                                                                                                                                                                                                         | The path from a one-off to a colour the business owns          | 1    |
-| **TC-4** | **"Colours outside your theme"** in Theme Studio: every one-off, where it is used, with _Add to your colours_ and _Use the nearest of your colours_                                                                                                                                                                                                                                                       | Makes one-offs visible; how existing sites move over           | 1.5  |
-| **TC-5** | **Custom HTML and the site's code fields in the code editor,** as §4.5                                                                                                                                                                                                                                                                                                                                    | The owner's second request; today it is a plain text box       | 1.5  |
-| **TC-6** | **Theme colours in the stylesheet editor:** a swatch beside each colour that writes the theme's variable                                                                                                                                                                                                                                                                                                  | Keeps hand-written CSS following the theme                     | 1    |
+| #         | Proposal                                                                                                                                                                                                                                                                                                                                         | Why                                                            | Days |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | ---- |
+| **TC-1a** | **Your colours, in the theme.** The model of §4.4: the theme's list of the person's colours, a third base for a colour reference wherever references are read, each colour's variables and shades in the theme's CSS with its value for reversed sections, contrast and Site Check for them, the site format migration, and ADR 0009's amendment | The owner's first request. Resolves the cost ADR 0009 accepted | 2.5  |
+| **TC-1b** | **Your colours, in the editor.** Theme Studio › Colours gains the list: add, name, rename, and delete with "replace or keep as one-offs". The colours appear in the picker for every colour field and as gradient ends, and in the catalogue data for AI apps and the Assistant's tools                                                          | Where the owner adds and uses them                             | 2    |
+| **TC-2**  | **Any colour in Simple mode.** _Another colour…_ in every colour field, with the contrast warning beside it and the colours already used on the site offered. Amends UX-25, F-ED-4 and ADR 0009 §2                                                                                                                                               | Colour is not artificially restricted                          | 1    |
+| **TC-3**  | **"Add to your colours",** offered on a one-off's second use and from the picker: every use becomes a reference, as one undo step                                                                                                                                                                                                                | The path from a one-off to a colour the business owns          | 1    |
+| **TC-4**  | **"Colours outside your theme"** in Theme Studio: every one-off, where it is used, with _Add to your colours_ and _Use the nearest of your colours_                                                                                                                                                                                              | Makes one-offs visible; how existing sites move over           | 1.5  |
+| **TC-5**  | **Custom HTML and the site's code fields in the code editor,** as §4.5                                                                                                                                                                                                                                                                           | The owner's second request; today it is a plain text box       | 1.5  |
+| **TC-6**  | **Theme colours in the stylesheet editor:** a swatch beside each colour that writes the theme's variable                                                                                                                                                                                                                                         | Keeps hand-written CSS following the theme                     | 1    |
 
 From the Onlook addendum, to be planned with them (re-estimated here):
 
@@ -100,7 +101,7 @@ From the Onlook addendum, to be planned with them (re-estimated here):
 | **OL-19** | Webforge's own colour picker (a saturation area, a hue slider, a hex box, an eyedropper), the same on Windows and macOS. It is where _Your colours_ and _Another colour…_ live, so it comes first. Whether Chromium's `EyeDropper` works in the sandboxed window is its first task; without it the picker ships with no eyedropper | 2.5  |
 | **OL-20** | A class shows on the canvas while it is highlighted in the Advanced classes suggestions and Browse Classes                                                                                                                                                                                                                         | 1    |
 
-**14 days in all:** 9 for TC-1…TC-6 and 5 for OL-18…OL-20.
+**15.5 days in all:** 10.5 for TC-1a…TC-6 and 5 for OL-18…OL-20.
 
 Parked, not proposed: a brand sheet as a PDF (colours, fonts and logo on one page); "show me three variations" of the current theme; a theme check in one place; hovering a CSS rule to highlight what it matches on the canvas.
 
@@ -110,9 +111,9 @@ For the product owner's approval; the coordinator assigns the streams.
 
 **Order and dependencies:**
 
-1. **OL-19** (the picker) first: TC-1 and TC-2 put their lists in it, so it is built once.
-2. **TC-1** (the model and Theme Studio › Colours), which can start beside OL-19: it meets the picker only at the end.
-3. **TC-2**, after OL-19. **TC-3** and **TC-4**, after TC-1 and TC-2.
+1. **OL-19** (the picker) first: TC-1b and TC-2 put their lists in it, so it is built once.
+2. **TC-1a** (the model), which can start beside OL-19 and touches no screen. **TC-1b** (Theme Studio's list and the picker's) follows both.
+3. **TC-2**, after OL-19. **TC-3** and **TC-4**, after TC-1b and TC-2.
 4. **OL-18**, after LF-15 ([#1168](https://github.com/nexustech/webforge/issues/1168)) has merged, since both change how a theme colour is applied. It also follows OL-19, which replaces the input it listens to.
 5. **TC-5**, **TC-6** and **OL-20** depend on nothing above and on each other only through the stylesheet editor's files (TC-5 before TC-6).
 
@@ -120,11 +121,11 @@ LF-16 ([#1174](https://github.com/nexustech/webforge/issues/1174), open) takes h
 
 **When.** Three choices:
 
-|                                                             | Before v1.0 (Phase 5)               | v1.1 (Phase 6)              |
-| ----------------------------------------------------------- | ----------------------------------- | --------------------------- |
-| **A. All before v1.0**                                      | all nine, +14 days                  | –                           |
-| **B. Colour before v1.0, code editing after** (recommended) | OL-18, OL-19, TC-1…TC-4, +10.5 days | TC-5, TC-6, OL-20, 3.5 days |
-| **C. All in v1.1**                                          | –                                   | all nine, 14 days           |
+|                                                             | Before v1.0 (Phase 5)              | v1.1 (Phase 6)              |
+| ----------------------------------------------------------- | ---------------------------------- | --------------------------- |
+| **A. All before v1.0**                                      | all ten, +15.5 days                | –                           |
+| **B. Colour before v1.0, code editing after** (recommended) | OL-18, OL-19, TC-1a…TC-4, +12 days | TC-5, TC-6, OL-20, 3.5 days |
+| **C. All in v1.1**                                          | –                                  | all ten, 15.5 days          |
 
 B is recommended: the colour work reaches every owner and changes the site format, which is cheaper to do before v1.0's files exist in numbers; the code editing is Advanced mode only. Under PH5-2 the dates don't move in any of the three.
 
