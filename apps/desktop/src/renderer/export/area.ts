@@ -4,7 +4,7 @@ import { siteLibrary } from "@webforge/site-components";
 import type { SiteApi } from "../../shared/ipc/site.js";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { whenClosed } from "../editor/first-tips.js";
-import { TipPlaces, TrustedCode } from "../editor/window-services.js";
+import { SiteCheckToFix, TipPlaces, TrustedCode } from "../editor/window-services.js";
 import { reportFailure } from "../log.js";
 import { SITE_CHECK_PANEL_ID } from "../site-check/index.js";
 import { siteSession } from "../storage/index.js";
@@ -37,11 +37,12 @@ const exportThrough =
  */
 export const exportCommandArea: Area<WindowContext> = {
   id: "exportCommand",
-  uses: [TrustedCode, TipPlaces],
+  uses: [TrustedCode, TipPlaces, SiteCheckToFix],
   register: (context) => {
     const { api, commands, session, settings, preferences, windowDialogs, panels, use } = context;
     const codeTrust = use(TrustedCode);
     const tips = use(TipPlaces);
+    const toFix = use(SiteCheckToFix);
     const dialogs = createExportDialogs();
     // The first export's tip (OB-4), once its report has closed.
     const stopTip = whenClosed(
@@ -49,20 +50,26 @@ export const exportCommandArea: Area<WindowContext> = {
       () => dialogs.shown()?.kind === "report",
       () => tips.reached("export"),
     );
-    // Preview from disk: main opens what it exported itself, or says it isn't there any more.
-    const openExport = () => {
-      api.site
-        .openExport(siteSession())
-        .then((opened) => {
-          if (opened === "missing") toast.error(t("export.report.missing"));
-        })
-        .catch((error: unknown) => {
-          reportFailure("export.open", error);
-        });
-    };
+    // Preview from disk, and Show the Folder (#1171): main opens or shows what it exported
+    // itself, or says it isn't there any more.
+    const fromDisk =
+      (open: (sessionId: string) => Promise<"opened" | "none" | "missing">) => () => {
+        open(siteSession())
+          .then((opened) => {
+            if (opened === "missing") toast.error(t("export.report.missing"));
+          })
+          .catch((error: unknown) => {
+            reportFailure("export.open", error);
+          });
+      };
+    const showSiteCheck = () => panels.show(SITE_CHECK_PANEL_ID);
     const removeDialogs = windowDialogs.register({
       id: "export",
-      component: exportDialogsFor(dialogs, openExport),
+      component: exportDialogsFor(dialogs, {
+        onOpen: fromDisk((sessionId) => api.site.openExport(sessionId)),
+        onShowFolder: fromDisk((sessionId) => api.site.showExport(sessionId)),
+        onSiteCheck: showSiteCheck,
+      }),
     });
     const removeCommand = registerExportCommand(commands, {
       site: () => session.history.document.getState(),
@@ -74,7 +81,8 @@ export const exportCommandArea: Area<WindowContext> = {
       saveChoices: (choices) => api.site.setExportChoices(siteSession(), choices),
       dialogs,
       showSettings: (part, group) => settings.show(part, group),
-      showSiteCheck: () => panels.show(SITE_CHECK_PANEL_ID),
+      showSiteCheck,
+      toFix: () => toFix.getState(),
       confirmCode: (site) => codeTrust.confirm(site),
     });
     return () => {

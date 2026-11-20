@@ -35,6 +35,13 @@ export const TrustedCode = defineService<CodeTrust>("trustedCode");
 export const TipPlaces = defineService<FirstTips>("tipPlaces");
 
 /**
+ * How many things Site Check lists to fix in the open site: *Must fix* and *Should fix*, ignored
+ * ones left out, as its title-bar button counts them (#1009). The export's and Publish's reports
+ * say it (#1171). Site Check provides it.
+ */
+export const SiteCheckToFix = defineService<StoreApi<number>>("siteCheckToFix");
+
+/**
  * What the person ignored in Site Check for the open site (3.6), as the window opened with it, and
  * how to remember a change. Site Check provides it.
  */

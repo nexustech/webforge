@@ -3,7 +3,7 @@ import { DEFAULT_THEME, type SiteSnapshot } from "@webforge/model";
 import type { IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import { ipcContract } from "../shared/ipc-contract.js";
-import { createExportFeature, openExport } from "./export-feature.js";
+import { createExportFeature, openExport, showExport } from "./export-feature.js";
 import type { WorkerProcess } from "./worker-process.js";
 
 const shell = () => ({
@@ -33,6 +33,37 @@ describe("openExport (3.1)", () => {
 
     files.openPath.mockResolvedValueOnce("Failed to open path");
     expect(await openExport(files)({ destination: folder, format: "folder" })).toBe("missing");
+  });
+});
+
+describe("showExport (#1171)", () => {
+  it("opens a folder in the file manager, or says it's missing", async () => {
+    const files = shell();
+    const folder = join("C:", "Sites", "Bakery");
+
+    expect(await showExport(files, () => true)({ destination: folder, format: "folder" })).toBe(
+      "opened",
+    );
+    expect(files.openPath).toHaveBeenCalledWith(folder);
+    expect(await showExport(files, () => false)({ destination: folder, format: "folder" })).toBe(
+      "missing",
+    );
+    files.openPath.mockResolvedValueOnce("Failed to open path");
+    expect(await showExport(files, () => true)({ destination: folder, format: "folder" })).toBe(
+      "missing",
+    );
+  });
+
+  it("shows a ZIP file in its folder, or says it's missing", async () => {
+    const files = shell();
+    const zip = join("C:", "Sites", "Bakery.zip");
+
+    expect(await showExport(files, () => true)({ destination: zip, format: "zip" })).toBe("opened");
+    expect(files.showItemInFolder).toHaveBeenCalledWith(zip);
+    expect(await showExport(files, () => false)({ destination: zip, format: "zip" })).toBe(
+      "missing",
+    );
+    expect(files.openPath).not.toHaveBeenCalled();
   });
 });
 

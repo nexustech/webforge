@@ -60,6 +60,13 @@ export type ExportDeps = {
   readonly open: (
     target: Pick<ExportTarget, "destination" | "format">,
   ) => Promise<"opened" | "missing">;
+  /**
+   * Shows an export in the file manager (#1171): a folder opened, a ZIP in its folder; `missing`
+   * when it isn't there any more.
+   */
+  readonly show: (
+    target: Pick<ExportTarget, "destination" | "format">,
+  ) => Promise<"opened" | "missing">;
 };
 
 /**
@@ -87,6 +94,8 @@ export function toExportResult(
     status: "exported",
     format: target.format,
     name: basename(target.destination),
+    // Shown in the report (#1171); never logged.
+    location: target.destination,
     pages: outcome.pages,
     files: outcome.files,
     bytes: outcome.bytes,
@@ -201,13 +210,20 @@ export function registerExportHandlers(
     return null;
   });
   // Only this opening's export: after File → Open of another site, it has none yet.
-  registerIpcHandler(ipc, "openExport", isTrustedSender, async (sessionId) =>
+  const lastOf = (sessionId: string) =>
     last === undefined ||
     last.sessionId !== sessionId ||
     deps.site(sessionId).staleReason() !== undefined
-      ? "none"
-      : deps.open(last.target),
-  );
+      ? undefined
+      : last.target;
+  registerIpcHandler(ipc, "openExport", isTrustedSender, async (sessionId) => {
+    const target = lastOf(sessionId);
+    return target === undefined ? "none" : deps.open(target);
+  });
+  registerIpcHandler(ipc, "showExport", isTrustedSender, async (sessionId) => {
+    const target = lastOf(sessionId);
+    return target === undefined ? "none" : deps.show(target);
+  });
   registerIpcHandler(ipc, "cancelExport", isTrustedSender, (operationId) => {
     underWay.get(operationId)?.abort();
     return null;

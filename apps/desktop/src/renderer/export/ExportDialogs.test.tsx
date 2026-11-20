@@ -17,9 +17,9 @@ const LAST: ExportChoices = {
 
 function setUp() {
   const dialogs = createExportDialogs();
-  const onOpen = vi.fn();
-  render(<ExportDialogs dialogs={dialogs} onOpen={onOpen} />);
-  return { dialogs, onOpen, user: userEvent.setup({ delay: null }) };
+  const actions = { onOpen: vi.fn(), onShowFolder: vi.fn(), onSiteCheck: vi.fn() };
+  render(<ExportDialogs dialogs={dialogs} actions={actions} />);
+  return { dialogs, ...actions, user: userEvent.setup({ delay: null }) };
 }
 
 describe("ExportDialogs (3.3)", () => {
@@ -88,16 +88,22 @@ describe("ExportDialogs (3.3)", () => {
     const report: ExportReport = {
       format: "zip",
       name: "bakery.zip",
+      location: "C:Sites\bakery.zip",
       summary: "Pages: 3 · Files: 16 · Size: 2.4 MB",
       issues: ["On “Home”, a link goes to a page or file that isn't there."],
       more: 2,
       noWebAddress: true,
+      toFix: 0,
     };
 
     act(() => dialogs.showReport(report));
     const shown = await screen.findByRole("dialog", { name: "Site Exported" });
 
     expect(shown.textContent).toContain("Saved as “bakery.zip”.");
+    expect(shown.textContent).toContain("C:Sites\bakery.zip");
+    // Site Check lists nothing to fix: nothing said of it, and no folder to show for a ZIP.
+    expect(shown.textContent).not.toContain("Site Check");
+    expect(screen.queryByRole("button", { name: "Show the Folder" })).toBeNull();
     expect(shown.textContent).toContain("Pages: 3 · Files: 16 · Size: 2.4 MB");
     expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
       expect.stringContaining("Your site has no web address"),
@@ -122,5 +128,30 @@ describe("ExportDialogs (3.3)", () => {
       "Every link and image is in place.",
     );
     expect(screen.getByRole("button", { name: "Open in Browser" })).toBeDefined();
+  });
+
+  it("shows the folder, and says what Site Check lists to fix, opening it from there (#1171)", async () => {
+    const { dialogs, onShowFolder, onSiteCheck, user } = setUp();
+    act(() =>
+      dialogs.showReport({
+        format: "folder",
+        name: "export",
+        location: "C:UsersRosaDocumentsexport",
+        summary: "Pages: 3 · Files: 16 · Size: 2.4 MB",
+        issues: [],
+        more: 0,
+        noWebAddress: false,
+        toFix: 15,
+      }),
+    );
+    const shown = await screen.findByRole("dialog", { name: "Site Exported" });
+
+    expect(shown.textContent).toContain("C:UsersRosaDocumentsexport");
+    expect(shown.textContent).toContain("Site Check lists 15 things to fix.");
+    await user.click(screen.getByRole("button", { name: "Show the Folder" }));
+    expect(onShowFolder).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole("button", { name: "Show in Site Check" }));
+    expect(onSiteCheck).toHaveBeenCalledOnce();
+    expect(dialogs.shown()).toBeNull();
   });
 });
