@@ -43,6 +43,9 @@ function undoHistoryPanel(
   };
 }
 
+/** Undo History's panel id: View › Undo History shows it (#1165). */
+const UNDO_HISTORY_PANEL_ID = "undoHistory";
+
 /**
  * Undo and Redo in the title bar, the Edit menu and the command box (1.2), on and off as there is
  * a step to undo or redo (saying so while there's none), and the Undo History panel in the left column's bottom (UI1) (#668,
@@ -78,7 +81,7 @@ export const undoHistoryArea: Area<EditorContext> = {
       commands.update(COMMAND_IDS.redo, next.redo);
     });
     const removePanel = panels.register({
-      id: "undoHistory",
+      id: UNDO_HISTORY_PANEL_ID,
       slot: "left.bottom",
       title: t("editor.undoHistory"),
       description: t("editor.undoHistory.description"),
@@ -88,7 +91,15 @@ export const undoHistoryArea: Area<EditorContext> = {
         return history.jumpTo(entryId);
       }),
     });
+    // View › Undo History, and the command box (#1165): its panel was only a tab's icon.
+    const removeShow = commands.register({
+      id: COMMAND_IDS.undoHistory,
+      label: t("editor.undoHistory"),
+      menu: "view",
+      run: () => panels.show(UNDO_HISTORY_PANEL_ID),
+    });
     return () => {
+      removeShow();
       removePanel();
       stopFollowing();
       removeRedo();

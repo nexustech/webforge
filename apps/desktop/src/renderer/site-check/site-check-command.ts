@@ -23,7 +23,7 @@ export function siteCheckStatus(report: CheckReport): string {
 
 /**
  * Site Check's command (#1009), which opens its panel: the title bar's button, showing what the
- * latest check found as it changes. Returns a function that removes it.
+ * latest check found as it changes, and Site › Site Check (#1165). Returns a function that removes it.
  */
 export function registerSiteCheckCommand(
   commands: Pick<CommandRegistry, "register" | "update">,
@@ -34,6 +34,8 @@ export function registerSiteCheckCommand(
   const remove = commands.register({
     id: COMMAND_IDS.siteCheck,
     label: t("siteCheck.title"),
+    // Site › Site Check too (#1165), beside Version History.
+    menu: "site",
     status: siteCheckStatus(state.getState().report),
     run: () => panels.show(panelId),
   });

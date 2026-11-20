@@ -24,6 +24,9 @@ export const COMMAND_IDS = {
   exportSite: "site.export",
   // The title bar's Site Check button (#1009): its panel, with what it found.
   siteCheck: "site.check",
+  // Site › Version History and View › Undo History (#1165): their panels, from a menu.
+  versionHistory: "site.versionHistory",
+  undoHistory: "view.undoHistory",
   siteSettings: "site.settings",
   pageSettings: "page.settings",
   customCode: "site.customCode",
