@@ -72,7 +72,8 @@ export function SliderField({
         disabled={disabled}
         aria-invalid={errorId !== undefined}
         aria-describedby={describedBy(errorId, helpId)}
-        className={cn("h-7 min-w-0 flex-1 accent-primary", "focus-visible:outline-none")}
+        // The ring the other controls show on keyboard focus (F12, #1179).
+        className="h-7 min-w-0 flex-1 rounded-sm accent-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onChange={(event) => {
           const step = steps[Number(event.target.value)];
           if (step !== undefined) onChange(step.value);
