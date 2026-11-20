@@ -71,15 +71,12 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   const drawnAt = await accent.boundingBox();
   expect(Math.abs((drawnAt?.x ?? 0) - (shownAt?.x ?? Number.NaN))).toBeLessThanOrEqual(2);
   expect(Math.abs((drawnAt?.y ?? 0) - (shownAt?.y ?? Number.NaN))).toBeLessThanOrEqual(2);
-  // One click: a draft (4.10). Applied, a built-in theme asks for a name for the person's own
-  // version first (2.23).
+  // One click: a draft (4.10). Applied, it restyles every Features, so it asks (D7); the person's
+  // own version of the built-in theme would be saved without asking (2.23, LF-15).
   await accent.click();
   // Apply Changes and Discard are in the bar at the bottom, always in view (CT-11).
   const apply = studio().getByRole("button", { name: "Apply Changes" });
   await apply.click();
-  const naming = page.getByRole("dialog", { name: "Save your own version of 'Light'?" });
-  await expect(naming).toBeVisible();
-  await naming.getByRole("button", { name: "Save Theme" }).click();
   const question = page.getByRole("alertdialog", { name: "Change how every Features looks?" });
   await expect(question).toBeVisible();
 
@@ -97,19 +94,6 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   await expect(accent).toHaveAttribute("aria-checked", "true");
   await studio().getByRole("button", { name: "Discard" }).click();
   await expect(accent).toHaveAttribute("aria-checked", "false");
-
-  // Cancelled at the name it asks for first, too. The first note goes on its own after a few
-  // seconds: gone, the second is then the one shown.
-  await expect(notChanged).toHaveCount(0, { timeout: 15_000 });
-  const corners = studio().getByRole("combobox", { name: "Corners" }).first();
-  const theirs = await corners.inputValue();
-  await corners.selectOption({ label: "Round" });
-  await apply.click();
-  await naming.getByRole("button", { name: "Cancel" }).click();
-  await expect(naming).toBeHidden();
-  await expect(notChanged).toHaveCount(1);
-  await studio().getByRole("button", { name: "Discard" }).click();
-  await expect(corners).toHaveValue(theirs);
   await ownsEscape(studio());
   await page.keyboard.press("Escape");
   await expect(studio()).toBeHidden();

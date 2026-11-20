@@ -23,13 +23,15 @@ const asking = (ask: (themes: OwnThemes) => void): Story =>
     );
   });
 
-/** The first change to a built-in theme asks for a name for the person's own version. */
-export const SaveYourOwn: Story = asking((themes) => {
+/**
+ * Theme Studio's Rename: the person's own version of a built-in theme, saved without asking under
+ * its default name at its first change (LF-15), renamed here.
+ */
+export const Rename: Story = asking((themes) => {
   void themes.askName({
-    title: t("theme.own.title", { name: "Light" }),
-    description: t("theme.own.description"),
+    title: t("theme.own.renameTitle"),
     initial: t("theme.own.defaultName", { name: "Light" }),
-    confirm: t("theme.own.save"),
+    confirm: t("theme.own.renameButton"),
   });
 });
 
