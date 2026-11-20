@@ -116,6 +116,6 @@ The product owner's reference, 2026-11-20: [pixelcrew.ai](https://pixelcrew.ai),
 | 12  | Footer: logo and line, three labelled columns of links, a bottom line             | ❌ one text and the menu's links                                                                                                                                       | HF-4 (adopted); HF-5 (not taken) is the bottom line              |
 | 13  | One page, the menu jumping to its sections                                        | ✅ one-page sites, with the section in view highlighted                                                                                                                | none; but §1 plans five pages: choose one                        |
 
-**Three gaps that no adopted proposal covers:** the label above a title (4), the Tag element (5) and Steps with its text staying in view (9). Each is small, and each is what makes that kind of page read as designed. They need a decision before they are work.
+**Three gaps that no adopted proposal covers:** the label above a title (4), the Tag element (5) and Steps with its text staying in view (9). They are proposals DP-1 to DP-3 in [Three small parts of a designed page](../../research/product/21-designed-page-parts.md), deferred to v1.1 or later, so the trial does without them.
 
 **For the trial:** ask Claude Code for this look in step 4 ("black Surface, off-white text, one bright Brand colour, thin borders, no shadows, a monospaced Accent font"), and record rows 2, 8 and 11 in the log.

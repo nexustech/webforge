@@ -1,6 +1,6 @@
 # The Header and Footer: what they can hold
 
-**Status:** ✅ Decided 2026-11-20 ([§5](#5-decisions)): HF-1, HF-2 and HF-4 are adopted (6 days); the other four are not taken for now. Not yet planned.
+**Status:** ✅ Decided 2026-11-20 ([§5](#5-decisions)): HF-1, HF-2 and HF-4 are adopted (6 days); the other four are not taken for now. Planned as PH5-5, before v1.0: 5.37–5.39 ([#1236](https://github.com/nexustech/webforge/issues/1236)–[#1238](https://github.com/nexustech/webforge/issues/1238)).
 
 **Date:** 2026-11-20
 
@@ -90,7 +90,7 @@ Product owner, 2026-11-20, asked which proposals to adopt: "The recommended ones
 | HF-6 | ❌ **Not taken for now:** a see-through Header                                 |
 | HF-7 | ❌ **Not taken for now:** two more Header layouts                              |
 
-6 days in all, in the order HF-1, HF-2, HF-4. Not yet planned: the plan items, their issues and the release they join (before v1.0 or v1.1) follow in `spec/04`.
+6 days in all, in the order HF-1, HF-2, HF-4. **Planned as PH5-5** (20 Nov 2026; [the plan's §3](../../spec/04-implementation-plan.md#3-timeline), MVP §7 item 59): asked when they ship, the product owner answered "Both before v1.0", so all three join Phase 5. Stream A, after 5.30: 5.37 [#1236](https://github.com/nexustech/webforge/issues/1236) (HF-1, 1.5) → 5.38 [#1237](https://github.com/nexustech/webforge/issues/1237) (HF-2, 1), which share one site format migration if they land together; stream C, after 5.32: 5.39 [#1238](https://github.com/nexustech/webforge/issues/1238) (HF-4, 3.5). Each updates the catalogue data for AI apps, the templates where it fits and the help page.
 
 ## Sources
 
