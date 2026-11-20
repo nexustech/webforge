@@ -7,7 +7,13 @@ import { createStore } from "zustand/vanilla";
 import type { PublishResult } from "../../shared/ipc/publish.js";
 import type { WindowContext } from "../editor/areas.js";
 import { createPublishRequests } from "../editor/publish-requests.js";
-import { OnNetlify, PublishedYear, Publishing, TrustedCode } from "../editor/window-services.js";
+import {
+  OnNetlify,
+  PublishedYear,
+  Publishing,
+  SiteCheckToFix,
+  TrustedCode,
+} from "../editor/window-services.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createWindowDialogs, WindowDialogs } from "../shell/window-dialogs.js";
 import { registriesForTest, sessionWith } from "../testing/fixtures.js";
@@ -110,6 +116,7 @@ function setUp({
       [OnNetlify, onNetlify],
       [Publishing, publishing],
       [TrustedCode, codeTrust],
+      [SiteCheckToFix, createStore<number>(() => 0)],
     ),
   } as unknown as WindowContext;
   const remove = publishArea.register(context);

@@ -513,4 +513,40 @@ describe("Site Check's title-bar button (#1009)", () => {
     remove();
     expect(titleBar.get(COMMAND_IDS.siteCheck)).toBeUndefined();
   });
+
+  it("keeps the reports' count of what to fix as the title bar counts it, until removed (#1171)", () => {
+    const { recheck } = driveRecheck();
+    const session = sessionWith(siteWith());
+    const titleBar = createCommandRegistry();
+    const toFix = createStore<number>(() => -1);
+    const remove = registerSiteCheckPanel(createPanelRegistry(), {
+      session,
+      settings: createSettingsRegistry(),
+      commands: { run: vi.fn(() => true) },
+      titleBar,
+      openGuide: vi.fn(),
+      ignored: [],
+      saveIgnored: vi.fn(),
+      toFix,
+    });
+    const counted = () => titleBar.get(COMMAND_IDS.siteCheck)?.status?.match(/^(\d+) to fix/)?.[1];
+    const before = toFix.getState();
+    expect(String(before)).toBe(counted() ?? "0");
+
+    session.edit("props", "Renamed", (draft) => {
+      const about = draft.pages[ABOUT];
+      if (about !== undefined) about.slug = "nul";
+    });
+    recheck();
+    expect(toFix.getState()).toBe(before + 1);
+    expect(String(toFix.getState())).toBe(counted());
+
+    remove();
+    session.edit("props", "Renamed back", (draft) => {
+      const about = draft.pages[ABOUT];
+      if (about !== undefined) about.slug = "about";
+    });
+    recheck();
+    expect(toFix.getState()).toBe(before + 1);
+  });
 });

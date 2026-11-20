@@ -48,6 +48,7 @@ const exported: Extract<ExportResult, { status: "exported" }> = {
   status: "exported",
   format: "folder",
   name: "my-site",
+  location: "/sites/my-site",
   pages: 2,
   files: 9,
   bytes: 2_400_000,
@@ -135,6 +136,8 @@ describe("exportReport", () => {
     expect(report).toEqual({
       format: "folder",
       name: "my-site",
+      location: "/sites/my-site",
+      toFix: 0,
       summary: expect.stringMatching(/^Pages: 2 · Files: 9 · Size: 2\.4\s?MB$/),
       issues: [
         "On “Home”, a link goes to a page or file that isn't there.",
@@ -227,6 +230,14 @@ describe("exportReport", () => {
   it("says when the site has no web address (X3)", () => {
     expect(exportReport(exported, bakery()).noWebAddress).toBe(true);
   });
+
+  it("has the export's full path, and what Site Check lists to fix (#1171)", () => {
+    expect(exportReport(exported, bakery(), 15)).toMatchObject({
+      location: "/sites/my-site",
+      toFix: 15,
+    });
+    expect(exportReport(exported, bakery()).toFix).toBe(0);
+  });
 });
 
 describe("registerExportCommand", () => {
@@ -245,6 +256,7 @@ describe("registerExportCommand", () => {
       showSettings: vi.fn(async () => true),
       saveChoices: vi.fn(async () => null),
       showSiteCheck: vi.fn(),
+      toFix: () => 0,
       confirmCode: vi.fn(async (): Promise<CodeDecision> => GO),
       ...overrides,
     } satisfies ExportFlow;

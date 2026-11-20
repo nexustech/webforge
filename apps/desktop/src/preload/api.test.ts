@@ -98,6 +98,7 @@ describe("createWebforgeApi site export", () => {
     status: "exported",
     format: "folder",
     name: "site",
+    location: "/sites/site",
     pages: 1,
     files: 5,
     bytes: 1200,

@@ -12,10 +12,10 @@ const LIVE: LivePublish = {
   versionSaved: true,
 };
 
-/** The publish's dialogs with *Your site is live* open for `live`. */
-const liveState = (live: LivePublish) => {
+/** The publish's dialogs with *Your site is live* open for `live`, Site Check listing `toFix`. */
+const liveState = (live: LivePublish, toFix = 0) => {
   const outcomes = createPublishOutcomes();
-  outcomes.showLive(live);
+  outcomes.showLive(live, toFix);
   return outcomes.state;
 };
 
@@ -35,6 +35,11 @@ type Story = StoryObj<typeof meta>;
 
 /** Your site is live: its address, Open Site and Copy Link. */
 export const Live: Story = {};
+
+/** Live, with how many things Site Check still lists to fix, and a button to them (#1171). */
+export const LiveWithThingsToFix: Story = {
+  args: { state: liveState(LIVE, 15) },
+};
 
 /**
  * Live, but its address shows another page for now, and its version couldn't be kept: said

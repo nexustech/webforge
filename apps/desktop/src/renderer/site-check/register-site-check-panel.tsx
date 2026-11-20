@@ -4,6 +4,7 @@ import type { SearchGuide } from "@webforge/site-check";
 import { ListChecksIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useStore } from "zustand";
+import type { StoreApi } from "zustand/vanilla";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
 import { siteSelectors } from "../editor/site-css.js";
@@ -12,6 +13,7 @@ import type { PanelRegistry } from "../shell/panels.js";
 import { fixFor, jumpTo } from "./actions.js";
 import { type SiteCheckAssistant, useAssistantWrites } from "./assistant-writes.js";
 import type { BundleActions } from "./bundle.js";
+import { countsByLevel } from "./counts.js";
 import { describeDetail, describePlace } from "./describe.js";
 import { SiteCheckPanel } from "./SiteCheckPanel.js";
 import { registerSiteCheckCommand } from "./site-check-command.js";
@@ -49,6 +51,17 @@ type SiteCheckPanelOptions = {
   readonly onMustFixSeen?: () => void;
   /** The assistant, for *Write One…* where a description or alt text is missing (#873). */
   readonly assistant?: SiteCheckAssistant;
+  /**
+   * Kept at how many things the latest check lists to fix, as the title bar counts them: for the
+   * export's and Publish's reports (#1171). Left out, nothing is.
+   */
+  readonly toFix?: StoreApi<number>;
+};
+
+/** What `report` lists to fix: *Must fix* and *Should fix*, as the title bar counts them (#1009). */
+const toFixIn = (report: Parameters<typeof countsByLevel>[0]) => {
+  const counts = countsByLevel(report);
+  return counts.must + counts.should;
 };
 
 /**
@@ -72,6 +85,7 @@ export function registerSiteCheckPanel(
     onNetlify,
     onMustFixSeen,
     assistant,
+    toFix,
   }: SiteCheckPanelOptions,
 ): () => void {
   const siteCheck = createSiteCheck(session.history.document, {
@@ -81,6 +95,10 @@ export function registerSiteCheckPanel(
     ...(publishedYear === undefined ? {} : { publishedYear }),
     ...(onNetlify === undefined ? {} : { onNetlify }),
     usedSelectors: (site) => siteSelectors(site, session),
+  });
+  toFix?.setState(toFixIn(siteCheck.state.getState().report), true);
+  const stopToFix = siteCheck.state.subscribe(({ report }, before) => {
+    if (report !== before.report) toFix?.setState(toFixIn(report), true);
   });
   const actions = {
     session,
@@ -149,6 +167,7 @@ export function registerSiteCheckPanel(
       ? undefined
       : registerSiteCheckCommand(titleBar, panels, SITE_CHECK_PANEL_ID, siteCheck.state);
   return () => {
+    stopToFix();
     removeCommand?.();
     remove();
     siteCheck.dispose();

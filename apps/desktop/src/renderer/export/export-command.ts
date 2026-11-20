@@ -96,6 +96,7 @@ const WARNING_TEXTS = {
 export function exportReport(
   result: Extract<ExportResult, { status: "exported" }>,
   site: SiteDoc,
+  toFix = 0,
 ): ExportReport {
   const titles = new Map(
     siteToSnapshot(site, new Map()).pages.map((page) => [page.path, page.title]),
@@ -103,6 +104,8 @@ export function exportReport(
   return {
     format: result.format,
     name: result.name,
+    location: result.location,
+    toFix,
     summary: t("export.report.summary", {
       pages: result.pages,
       files: result.files,
@@ -148,6 +151,8 @@ export type ExportFlow = {
   readonly showSettings: (part: string, group: string) => Promise<boolean>;
   /** Shows the Site Check panel (3.6). */
   readonly showSiteCheck: () => void;
+  /** How many things Site Check lists to fix now, for the report (#1171). */
+  readonly toFix: () => number;
   /** Asks about the site's code its owner hasn't written here or confirmed (#649). */
   readonly confirmCode: (site: SiteDoc) => Promise<CodeDecision>;
 };
@@ -234,7 +239,7 @@ export function registerExportCommand(registry: CommandRegistry, flow: ExportFlo
       const { result, progress } = await exportWithProgress(flow, site, chosen);
       if (result.status === "exported") {
         toast.dismiss(progress);
-        flow.dialogs.showReport(exportReport(result, site));
+        flow.dialogs.showReport(exportReport(result, site, flow.toFix()));
         return;
       }
       const failure = exportFailure(result, site);

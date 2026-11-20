@@ -120,8 +120,13 @@ const exportResultSchema = z.discriminatedUnion("status", [
   z.strictObject({
     status: z.literal("exported"),
     format: z.enum(["folder", "zip"]),
-    /** The chosen folder's or ZIP file's name; never the full path. */
+    /** The chosen folder's or ZIP file's name. */
     name: z.string().min(1),
+    /**
+     * Its full path, for the report to show (#1171). Shown only: the renderer never sends a path,
+     * and *Show the Folder* asks main to show what it wrote itself (architecture §File paths).
+     */
+    location: z.string().min(1),
     pages: z.int().nonnegative(),
     files: z.int().nonnegative(),
     /** The site's size, before a ZIP compresses it. */
@@ -237,6 +242,15 @@ export const siteChannels = {
     response: z.enum(["opened", "none", "missing"]),
   },
   /**
+   * *Show the Folder* (#1171): shows the open site's last export in the file manager, a folder
+   * opened, a ZIP file in its folder. `none` and `missing` as for `openExport`.
+   */
+  showExport: {
+    channel: "site:show-export",
+    request: z.tuple([sessionIdSchema]),
+    response: z.enum(["opened", "none", "missing"]),
+  },
+  /**
    * Cancels export `operationId`, if it is under way (3.1): it stops before its next image or page
    * and answers `canceled`, changing nothing on disk. No other export or operation stops.
    */
@@ -279,6 +293,8 @@ export interface SiteApi {
   setExportChoices(sessionId: string, choices: ExportChoices): Promise<null>;
   /** Opens the last export of the site opened as `sessionId` from disk. */
   openExport(sessionId: string): Promise<"opened" | "none" | "missing">;
+  /** Shows the last export of the site opened as `sessionId` in the file manager. */
+  showExport(sessionId: string): Promise<"opened" | "none" | "missing">;
   /** Cancels export `operationId`, if it is under way. */
   cancelExport(operationId: string): Promise<null>;
   /** Downloads the file at `url` to keep with the site opened as `sessionId`. */
