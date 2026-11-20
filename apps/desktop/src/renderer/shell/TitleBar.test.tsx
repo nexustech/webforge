@@ -54,6 +54,40 @@ describe("TitleBar", () => {
     );
   });
 
+  it("folds its menus' titles into one Menu button while narrow, the menus in order (#1166)", async () => {
+    const registry = createCommandRegistry();
+    registry.register({ id: "help.topics", label: "Help Topics", menu: "help", run: vi.fn() });
+    const settings = vi.fn();
+    registry.register({
+      id: "site.settings",
+      label: "Site Settings…",
+      menu: "file",
+      run: settings,
+    });
+    renderTitleBar(registry);
+
+    // Two menu bars, one shown at a time by the title bar's width: the titles from 1280 px.
+    const [wide, narrow] = screen.getAllByRole("menubar", { name: "App menu" });
+    expect(wide?.className).toContain("hidden @min-[1280px]/title-bar:flex");
+    expect(narrow?.className).toContain("@min-[1280px]/title-bar:hidden");
+    expect(
+      within(wide as HTMLElement)
+        .getAllByRole("menuitem")
+        .map((title) => title.textContent),
+    ).toEqual(["File", "View", "Help"]);
+
+    await userEvent.click(within(narrow as HTMLElement).getByRole("menuitem", { name: "Menu" }));
+    const menu = screen.getByRole("menu");
+    expect(
+      within(menu)
+        .getAllByRole("menuitem")
+        .map((title) => title.textContent),
+    ).toEqual(["File", "View", "Help"]);
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "File" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Site Settings…" }));
+    expect(settings).toHaveBeenCalledOnce();
+  });
+
   it("is the window's banner, with the app name as its heading and the save status", () => {
     renderTitleBar();
 
@@ -87,14 +121,15 @@ describe("TitleBar", () => {
     for (const name of ["Preview", "Export", "Publish"]) {
       const button = screen.getByRole("button", { name });
       expect(button.textContent).toBe(name);
+      // Publish's at every width; Preview's and Export's while it's wide (#1166).
       expect(within(button).getByText(name).className).toBe(
-        "hidden @min-[1180px]/title-bar:inline",
+        name === "Publish" ? "" : "hidden @min-[1180px]/title-bar:inline",
       );
       expect(button.className.includes("bg-primary")).toBe(name === "Publish");
     }
   });
 
-  it("shows what Site Check found while it's wide, and opens it (#1009)", async () => {
+  it("shows what Site Check found at every width, and opens it (#1009, #1166)", async () => {
     const registry = createCommandRegistry();
     const run = vi.fn();
     registry.register({
@@ -107,9 +142,7 @@ describe("TitleBar", () => {
 
     // Named by its label too, as its tooltip is: the count alone doesn't say what it counts.
     const button = screen.getByRole("button", { name: "Site Check: 5 to fix · 13 tips" });
-    expect(within(button).getByText("5 to fix · 13 tips").className).toBe(
-      "hidden @min-[1180px]/title-bar:inline",
-    );
+    expect(within(button).getByText("5 to fix · 13 tips").className).toBe("");
     await userEvent.click(button);
     expect(run).toHaveBeenCalledOnce();
 
@@ -117,6 +150,30 @@ describe("TitleBar", () => {
     expect(screen.getByRole("button", { name: "Site Check: No problems" }).textContent).toBe(
       "No problems",
     );
+  });
+
+  it("shows only what most needs doing while narrow, named by the whole count (#1166)", () => {
+    const registry = createCommandRegistry();
+    registry.register({
+      id: COMMAND_IDS.siteCheck,
+      label: "Site Check",
+      status: "12 to fix · 23 tips",
+      shortStatus: "12 to fix",
+      run: vi.fn(),
+    });
+    renderTitleBar(registry);
+
+    const button = screen.getByRole("button", { name: "Site Check: 12 to fix · 23 tips" });
+    expect(within(button).getByText("12 to fix").className).toBe("@min-[1180px]/title-bar:hidden");
+    expect(within(button).getByText("12 to fix · 23 tips").className).toBe(
+      "hidden @min-[1180px]/title-bar:inline",
+    );
+
+    // Nothing shorter to say: the one count, at every width.
+    act(() =>
+      registry.update(COMMAND_IDS.siteCheck, { status: "No problems", shortStatus: "No problems" }),
+    );
+    expect(within(button).getByText("No problems").className).toBe("");
   });
 
   it("gives a button a caret once commands go with it, and none before (LF-13)", async () => {

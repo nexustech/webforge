@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { TooltipProvider } from "@webforge/editor-ui";
 import { ArchiveRestoreIcon, HistoryIcon, SquarePlusIcon } from "lucide-react";
 import { useState } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { type CommandRegistry, createCommandRegistry } from "./commands.js";
@@ -12,6 +12,13 @@ import { PanelRegistryProvider } from "./panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "./panels.js";
 import { PANEL_GROUPS, ShellLayout } from "./ShellLayout.js";
 
+/** The window's width, as the layout reads it (`window.innerWidth`). */
+function windowWidth(width: number): void {
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+}
+
+// A wide window, unless a test says otherwise: below 1100 px the side columns take turns (#1166).
+beforeEach(() => windowWidth(1440));
 afterEach(() => cleanup());
 
 /** A panel in each column, as once 1.13 (Add) and 1.14 (Edit) have contributed theirs. */

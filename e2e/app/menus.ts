@@ -38,8 +38,27 @@ function inMenuBar(
   );
 }
 
-/** Chooses `item` (the start of its label, or a pattern) in the editor's menu `menu` ("File"…). */
-export async function chooseFromMenu(
+/**
+ * Opens the editor's menu `menu` ("File"…) in the title bar: from its title, or, while the title
+ * bar is too narrow for the titles (#1166), from the Menu button they fold into.
+ */
+async function openTitleBarMenu(page: Page, menu: string): Promise<void> {
+  const folded = page
+    .getByRole("menubar", { name: "App menu" })
+    .getByRole("menuitem", { name: "Menu", exact: true });
+  if (await folded.isVisible()) await folded.click();
+  await page.getByRole("menuitem", { name: menu, exact: true }).click();
+}
+
+/** Closes the title bar's menus, the Menu button's included, once they've faded out. */
+async function closeTitleBarMenus(page: Page): Promise<void> {
+  const open = page.locator('[role="menu"][data-state="open"]');
+  await page.keyboard.press("Escape");
+  if ((await open.count()) > 0) await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+}
+
+/** Chooses `item` (the start of its label, or a pattern) in the editor's menu `menu` ("File"…). */ export async function chooseFromMenu(
   app: ElectronApplication,
   page: Page,
   menu: string,
@@ -50,7 +69,7 @@ export async function chooseFromMenu(
     await expect.poll(() => inMenuBar(app, menu, item, true)).toBe(true);
     return;
   }
-  await page.getByRole("menuitem", { name: menu, exact: true }).click();
+  await openTitleBarMenu(page, menu);
   await page.getByRole("menuitem", { name: patternOf(item) }).click();
 }
 
@@ -62,9 +81,9 @@ export async function hasMenuItem(
   item: string,
 ): Promise<boolean> {
   if (nativeMenus) return inMenuBar(app, menu, item, false);
-  await page.getByRole("menuitem", { name: menu, exact: true }).click();
+  await openTitleBarMenu(page, menu);
   const found = (await page.getByRole("menuitem", { name: patternOf(item) }).count()) > 0;
-  await page.keyboard.press("Escape");
+  await closeTitleBarMenus(page);
   return found;
 }
 
@@ -97,7 +116,7 @@ export async function submenuItems(
   submenu: string,
 ): Promise<{ readonly label: string; readonly enabled: boolean }[]> {
   if (nativeMenus) return submenuInMenuBar(app, menu, submenu);
-  await page.getByRole("menuitem", { name: menu, exact: true }).click();
+  await openTitleBarMenu(page, menu);
   await page.getByRole("menuitem", { name: submenu, exact: true }).click();
   const items = page.getByRole("menu", { name: submenu }).getByRole("menuitem");
   await expect(items.first()).toBeVisible();
@@ -107,8 +126,7 @@ export async function submenuItems(
       enabled: element.getAttribute("aria-disabled") !== "true",
     })),
   );
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("menu")).toHaveCount(0);
+  await closeTitleBarMenus(page);
   return found;
 }
 
@@ -144,7 +162,7 @@ export async function chooseFromSubmenu(
       .toBe(true);
     return;
   }
-  await page.getByRole("menuitem", { name: menu, exact: true }).click();
+  await openTitleBarMenu(page, menu);
   await page.getByRole("menuitem", { name: submenu, exact: true }).click();
   await page
     .getByRole("menu", { name: submenu })
