@@ -105,6 +105,14 @@ export function withBusiness(site: SiteDoc, name: string, business: BusinessDeta
   replaceStrings(site.layout, inText);
   replaceStrings(site.sharedSections, inText);
   replaceStrings(site.menu, inText);
+
+  // *What you do* as the home page's first Hero's line, in place of the template's sample business
+  // ("A small café by the river in Kendal…", #1167). After the replacements, which are for the
+  // template's words, not the person's.
+  const hero = site.pages[site.homePageId]?.doc.content.find((node) => node.type === "Hero");
+  if (description !== undefined && hero !== undefined && typeof hero.props.text === "string") {
+    hero.props.text = description;
+  }
 }
 
 /** `text` without its ends' spaces, or `undefined` when nothing is left. */

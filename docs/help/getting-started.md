@@ -4,7 +4,7 @@ id: getting-started
 title: Getting started
 summary: Make your first site, with the quick start, a template or an example.
 related: [the-editor, templates, pages, themes, preview, publish, export]
-updated: 2026-11-17
+updated: 2026-11-20
 ---
 
 # Getting started
@@ -21,7 +21,7 @@ While {appName} starts, its window says **Starting {appName}…**. Then you see 
 
 ## The start screen
 
-When no site is open, you see the start screen. On the left are {appName}'s icon and name, and the version you have.
+When no site is open, you see the start screen. On the left are {appName}'s icon and name, and the version you have. The ways to begin are cards in the middle the first time, and buttons on the left once you have recent sites:
 
 - **Start a Site…** asks a few questions about your business and makes a site that's already yours. This is the quickest way to begin.
 - **Choose a Template Yourself…** lets you pick a starting design from the full list.
@@ -34,6 +34,8 @@ On the right, **Recent sites** lists the sites you've opened, newest first.
 - The pin keeps a site at the top of the list.
 - The **×** takes a site off the list. It doesn't delete the site's file.
 
+If a file can't be opened, such as one that isn't a site, a message above the list says why and what to choose instead, with **Choose Another File…**.
+
 The **Help** tab lists the help pages to start with (this one, _The editor_ and _Keyboard shortcuts_), then the keyboard shortcuts and the example site.
 
 **File › Settings…** (Ctrl+,; on a Mac, **{appName} › Settings…** or Cmd+,) works here too, so you can choose {appName}'s appearance before you open a site. See [Settings](settings.md).
@@ -44,7 +46,7 @@ To come back here from a site, choose **File › Close Site**. {appName} saves t
 
 Four short steps. Every question is optional, you can go back to any step, and **Create Site** works from any step. You can change every answer later.
 
-1. **Your business:** what kind of business it is (Food and drink, Beauty, Trades, Services, Creative, Shop or Personal), its name, and one line on what you do. Search engines show that line under your site's name. While [the assistant](assistant.md) is on, it also asks you to **Tell us about your business** in a few sentences: see [Writing your pages' words](assistant.md#writing-your-pages-words).
+1. **Your business:** what kind of business it is (Food and drink, Beauty, Trades, Services, Creative, Shop or Personal), its name, and one line on what you do. The name starts empty: leave it and your site is called _My site_ until you rename it. The line on what you do goes in the big welcome at the top of your home page, in place of the template's sample business, and search engines show it under your site's name. While [the assistant](assistant.md) is on, it also asks you to **Tell us about your business** in a few sentences: see [Writing your pages' words](assistant.md#writing-your-pages-words).
 2. **A look:** a theme, and a template suited to your kind of business. For Food and drink or Trades, you can open a finished example site instead.
 3. **Pages:** choose **Separate pages** or **One page**, which puts everything on your home page with a menu that scrolls to each section (see [One-page sites](one-page-sites.md)). Untick a template page to leave it out. **More pages for** your business type suggests extra pages, such as _Reviews_ or _Areas we cover_.
 4. **Colours and details:** keep the theme's colours, pick your own brand colour, or choose **From My Logo…** to take colours from your logo. {appName} reads the logo on this computer and doesn't add it to your site. Then add your email, phone number, address, opening hours and web address, if you have them.

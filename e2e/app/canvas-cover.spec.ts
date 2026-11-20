@@ -89,12 +89,14 @@ test("never shows a site's page unstyled, as it's created or opened again", asyn
   await holdCanvasCss(app, 2_000);
 
   // The Café template: a photo at full size, and a menu as a bulleted list, unstyled.
-  await page.getByRole("button", { name: "Start a Site…", exact: true }).click();
+  await page.getByRole("button", { name: /^Start a Site…/ }).click();
   const quickStart = page.getByRole("dialog", { name: "Start a site" });
   await quickStart.getByRole("radio", { name: "Food and drink" }).click();
   await quickStart.getByRole("textbox", { name: "Business or site name" }).fill("Rosa's Bakery");
   await quickStart.getByRole("button", { name: "Create site" }).click();
 
+  // Held over 500 ms, the cover says why the canvas is empty (#1167).
+  await expect(page.locator(".editor__canvas-cover")).toHaveText("Opening your site…");
   await waitForCanvas(page);
   await expect(page.locator(".editor__canvas-cover")).toHaveCount(0);
   const created = await watched(page);

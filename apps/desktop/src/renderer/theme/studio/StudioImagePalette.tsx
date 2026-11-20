@@ -53,7 +53,7 @@ async function coloursOf(
 export type StudioImagePaletteProps = {
   readonly media: SiteDoc["media"];
   readonly theme: ThemeTokens;
-  /** Uses the proposal (asked first, D7); resolves whether it was used. */
+  /** Uses the proposal, at once (LF-15); resolves whether it was used. */
   readonly onUse: (proposal: BrandProposal, image: ImageMeta) => Promise<boolean>;
   /** An image's URL; Media's thumbnails by default. */
   readonly imageUrl?: (item: ImageMeta) => string;

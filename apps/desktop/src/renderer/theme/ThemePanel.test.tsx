@@ -110,7 +110,7 @@ describe("the Theme tab (2.3a)", () => {
     expect(colourPicker("Accent").closest("[data-field]")?.textContent).not.toMatch(/Hard to read/);
   });
 
-  it("changes a colour from its hex code, once asked", async () => {
+  it("changes a colour from its hex code at once, asking nothing (LF-15)", async () => {
     const session = sessionWith();
     const siteWide = { confirmSiteWide: vi.fn(() => Promise.resolve(true)) };
     render(<ThemePanel session={session} siteWide={siteWide} />);
@@ -120,14 +120,12 @@ describe("the Theme tab (2.3a)", () => {
     await userEvent.type(hex, "#b45309{Enter}");
 
     await vi.waitFor(() => expect(labels(session)).toEqual(["Changed accent colour"]));
-    expect(siteWide.confirmSiteWide).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "Change the Accent Colour?" }),
-    );
+    expect(siteWide.confirmSiteWide).not.toHaveBeenCalled();
   });
 });
 
 describe("the Theme tab's own themes (2.23, PH2-17)", () => {
-  it("lists the person's own themes first, and asks for a name before changing a built-in one", async () => {
+  it("lists the person's own themes first, and saves one without asking at a built-in one's first change (LF-15)", async () => {
     const session = sessionWith();
     const night = {
       ...structuredClone(DEFAULT_THEME),
@@ -138,7 +136,7 @@ describe("the Theme tab's own themes (2.23, PH2-17)", () => {
       keep: () => Promise.resolve("kept" as const),
       remove: () => Promise.resolve(null),
     }));
-    const askName = vi.spyOn(ownThemes, "askName").mockResolvedValue("Light, roomier");
+    const askName = vi.spyOn(ownThemes, "askName");
     render(<ThemePanel session={session} ownThemes={ownThemes} />);
 
     const preset = screen.getByRole("combobox", { name: "Theme" }) as HTMLSelectElement;
@@ -146,9 +144,10 @@ describe("the Theme tab's own themes (2.23, PH2-17)", () => {
     expect(preset.options[1]?.textContent).toBe("Light");
 
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "Card style" }), "raised");
-    await vi.waitFor(() => expect(labels(session)).toEqual(["Saved theme 'Light, roomier'"]));
-    expect(askName).toHaveBeenCalledOnce();
-    expect(screen.getByRole("heading", { name: /Light, roomier/ })).toBeDefined();
+    await vi.waitFor(() => expect(labels(session)).toEqual(["Changed card style"]));
+    expect(askName).not.toHaveBeenCalled();
+    expect(session.history.document.getState().theme.own?.name).toBe("Light (yours)");
+    expect(screen.getByRole("heading", { name: /Light \(yours\)/ })).toBeDefined();
   });
 });
 

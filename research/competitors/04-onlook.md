@@ -1,6 +1,6 @@
 # Onlook: Competitor Review
 
-**Status:** 🟡 Proposals for decision ([§7](#7-proposals-for-decision)). Nothing here changes the spec or the plan until the product owner decides.
+**Status:** ✅ Decided 2026-11-20 ([§7.6](#76-decisions)): nine proposals become Phase 5 items before v1.0 (the assistant asks, suggests, checks and holds a message; example requests; a page as an image or PDF; Report a Problem; a Gitleaks check before a push), four are adopted as notes or rules, and four are declined for now. 🟡 An addendum on the colour picker, theming and styling ([§8](#8-addendum-colour-picker-theming-and-styling)) adds three proposals for decision, OL-18 to OL-20.
 **Date:** 2026-11-20
 **Question:** Onlook is not in Webforge's niche. What does it do, how is it built, and which of its ideas (product, editor, AI, engineering) are worth borrowing?
 
@@ -148,9 +148,9 @@ Onlook's agent can do anything because it edits files with a shell, and that is 
 
 Webforge's assistant can only call the tool layer of plan item 4.9, and every call is a `HistoryManager` step. That is a smaller thing, and it is why AIA-5 could promise one undo step, a safety version and a review card with no sandbox. The lesson is to keep it that way: nothing in this review argues for giving the assistant a wider reach. What Onlook does better is the **manner** of the conversation: asking well, saying what it is doing, checking its work and suggesting the next step. Those are prompt and interface changes, not architecture, and they are the first four proposals below.
 
-## 7. Proposals for decision
+## 7. Proposals and decisions
 
-Sizes are rough ideal days, to be estimated properly if adopted. None is in the plan.
+The proposals as they were put to the product owner, with rough sizes in ideal days. The decisions and the plan items' estimates are in [§7.6](#76-decisions).
 
 ### 7.1 Assistant (builds on 6.9)
 
@@ -198,7 +198,94 @@ Sizes are rough ideal days, to be estimated properly if adopted. None is in the 
 
 ### 7.5 Suggested order
 
-If only three are taken: **OL-12** (a day, the one real gap in the security of a public repository's CI), **OL-1** (the largest change to how the assistant feels) and **OL-2** (its natural pair). OL-13's setting costs nothing and can be switched on whenever it is decided; its hook is optional. OL-3 and OL-8 are the next group, and OL-9 and OL-10 are the two that add something a business owner would notice outside the assistant.
+As suggested before the decision. If only three are taken: **OL-12** (a day, the one real gap in the security of a public repository's CI), **OL-1** (the largest change to how the assistant feels) and **OL-2** (its natural pair). OL-13's setting costs nothing and can be switched on whenever it is decided; its hook is optional. OL-3 and OL-8 are the next group, and OL-9 and OL-10 are the two that add something a business owner would notice outside the assistant.
+
+### 7.6 Decisions
+
+Product owner, 2026-11-20, asked by group: the assistant, the editor, engineering, and when. The work is planned as PH5-3 ([`spec/04` §3](../../spec/04-implementation-plan.md#3-timeline)): the adopted items join Phase 5 after each stream's UX/UI review issues and ship in the beta and v1.0, 13.5 days in all. The estimates and streams are the coordinator's.
+
+| #     | Decision                                                                                                                                                                                                                                                                                                                                      |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OL-1  | ✅ **Before v1.0:** the assistant may ask before it acts. Plan item 5.16, 2.5 days, stream B, which also builds the question card in the panel. [#1197](https://github.com/nexustech/webforge/issues/1197)                                                                                                                                    |
+| OL-2  | ✅ **Before v1.0:** "what next" cards. Plan item 5.17, 1.5 days, stream A, after 5.16. [#1198](https://github.com/nexustech/webforge/issues/1198)                                                                                                                                                                                             |
+| OL-3  | ✅ **Before v1.0:** the assistant checks its work before it says it's done. Plan item 5.18, 1 day, stream B. [#1199](https://github.com/nexustech/webforge/issues/1199)                                                                                                                                                                       |
+| OL-4  | ✅ **Before v1.0:** one held message. Plan item 5.19, 1 day, stream A. [#1200](https://github.com/nexustech/webforge/issues/1200)                                                                                                                                                                                                             |
+| OL-5  | ✅ **Adopted as recommended:** check the assistant's error types against Onlook's list and fill the gaps. Plan item 5.20, 0.5 days, stream B. [#1201](https://github.com/nexustech/webforge/issues/1201)                                                                                                                                      |
+| OL-6  | ✅ **Adopted as a note** for the spike on all devices side by side (WF-1/PG-1). That work has no plan item or issue yet, so the note is kept beside it in [`spec/04`'s Phase 6](../../spec/04-implementation-plan.md#phase-6-v11-after-v10) list of v1.1 features that are not yet items                                                      |
+| OL-7  | ❌ **Declined for now:** a tip budget on top of OB-4                                                                                                                                                                                                                                                                                          |
+| OL-8  | ✅ **Before v1.0:** "Things you can ask". Plan item 5.21, 2 days, stream C. [#1202](https://github.com/nexustech/webforge/issues/1202)                                                                                                                                                                                                        |
+| OL-9  | ✅ **Before v1.0:** a page as an image or a PDF, from Preview. Plan item 5.22, 2 days, stream C. [#1203](https://github.com/nexustech/webforge/issues/1203)                                                                                                                                                                                   |
+| OL-10 | ✅ **Before v1.0:** Report a Problem in Help. Plan item 5.23, 2 days, stream A. [#1204](https://github.com/nexustech/webforge/issues/1204)                                                                                                                                                                                                    |
+| OL-11 | ✅ **Adopted as a rule:** no silent refusal. [Standards §4](../../spec/03-engineering-standards.md#4-code-style--conventions), _Refusals_                                                                                                                                                                                                     |
+| OL-12 | ❌ **Declined for now:** pinning GitHub Actions to commit SHAs                                                                                                                                                                                                                                                                                |
+| OL-13 | ✅ **Before v1.0, as the hook:** Gitleaks, pinned and checksum-verified, in lefthook's pre-push. The setting was tried first: GitHub left non-provider patterns "disabled" (2026-11-20), most likely because they need paid Secret Protection. Plan item 5.24, 0.5 days, stream B. [#1205](https://github.com/nexustech/webforge/issues/1205) |
+| OL-14 | ❌ **Declined for now:** a pseudo-locale for the editor                                                                                                                                                                                                                                                                                       |
+| OL-15 | ✅ **Adopted as a note** on CC-4's issue, [#1035](https://github.com/nexustech/webforge/issues/1035), which stays held until there is demand                                                                                                                                                                                                  |
+| OL-16 | ❌ **Declined for now:** replay of recorded assistant conversations in tests                                                                                                                                                                                                                                                                  |
+| OL-17 | ✅ **Adopted:** [`docs/anti-patterns.md`](../../docs/anti-patterns.md), seeded from `docs/reviews/`. Plan item 5.25, 0.5 days, written with this record                                                                                                                                                                                       |
+
+OL-5, OL-6, OL-11, OL-15 and OL-17 were put as "taken as recommended unless you say otherwise", and the product owner said nothing otherwise. OL-7, OL-12, OL-14 and OL-16 were not chosen; a declined proposal can be put again.
+
+## 8. Addendum: colour picker, theming and styling
+
+Added 2026-11-20, after the decisions in §7.6, at the product owner's request: Onlook advertises "auto-completion" and "real-time styling previews", so how do its colour picker and styling tools compare with ours?
+
+### 8.1 Which Onlook
+
+The desktop app reviewed above (`main`) has **no style panel**: no colour picker, no brand colours, no font controls. Every style change goes through the agent. The tools Onlook advertises are in **v1**, the retired browser editor, on the repository's `v1` branch under `apps/web/client/src/app/project/[id]/_components/editor-bar/` and `left-panel/design-panel/brand-tab/`, with the picker itself in `packages/ui/src/components/color-picker/`. This section describes v1, read from that branch through GitHub's API; it was not run.
+
+### 8.2 The two advertised features
+
+- **Auto-completion.** v1 has no completion of classes, colour names or fonts. What exists is the code tab's general completion (CodeMirror's `autocompletion()`), AI-suggested follow-up requests in the chat, and plain search filters for colours and fonts.
+- **Real-time styling previews.** The canvas updates when a change is committed (mouse-up, a swatch click, an eyedropper pick), by rewriting a stylesheet injected into the page. While the picker is dragged, only the swatch in the toolbar changes (`editor-bar/hooks/use-color-update.ts`). Dragging a gradient stop is the exception: it updates on every mouse move.
+
+Webforge already does more on both. The Advanced classes field suggests Tailwind and daisyUI classes as you type, and the stylesheet editor completes the theme's variables, classes and anchors and checks the CSS (6.8). An element's colour change shows on the canvas during the drag, about 300 ms behind while the styles are rebuilt, and is one undo step.
+
+### 8.3 Side by side
+
+|                                  | Onlook v1                                                                                              | Webforge today                                                                                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The picker                       | Its own: a saturation area, hue and alpha sliders, one input that cycles HEX, HSL, HSV and RGB         | The theme's colours by name, 11 shades of each, opacity in fixed steps. A custom colour only in Advanced mode, through the operating system's colour input |
+| Eyedropper                       | ✅ the browser's `EyeDropper`                                                                          | ❌                                                                                                                                                         |
+| Recent colours                   | ❌                                                                                                     | ❌                                                                                                                                                         |
+| Finding a colour                 | A search over brand colours and Tailwind's palette by name; a 50–950 ramp made from the current colour | No search; the list is short by design                                                                                                                     |
+| Gradients                        | Linear, radial, conic and two variants, with free stops, an angle, opacity per stop and 19 presets     | Linear in four directions between two theme colours, with an opacity over a picture (CT-10, CT-14)                                                         |
+| How a colour is stored           | A brand or Tailwind class, or a raw hex class, written into the app's code                             | A reference to a theme role, or a raw hex in Advanced mode ([ADR 0009](../../docs/adr/0009-colour-refs.md))                                                |
+| A theme change restyles the site | Only where a brand colour was used                                                                     | Everywhere a role is used                                                                                                                                  |
+| Light and dark                   | Each brand colour has a light and a dark value, and the frame has a Light/Dark/System switch           | A scheme per theme; dark mode for visitors is v1.1 (6.11)                                                                                                  |
+| Contrast                         | ❌ nothing                                                                                             | ✅ 4.5:1 for text and 3:1 for large text and graphics, in the Theme tab, Theme Studio, the colour field and Site Check, with a suggested colour            |
+| Themes to start from             | ❌ none                                                                                                | ✅ 15 (Light, Dark, High contrast and 12 curated), and a palette from an image (PG-2)                                                                      |
+| Beyond colour                    | Controls per element for spacing, corners, borders and type                                            | Corners, shadows, spacing, and button and card styles as theme tokens, and a look per kind of component (CT-1)                                             |
+| Fonts                            | A search of Google's fonts, your own font files, written into the app's code                           | 50 bundled, more on request, 15 pairings, all carried by the exported site; no font files of your own yet                                                  |
+| Undo                             | A history stack; the opacity slider appears to bypass it                                               | Every change is one labelled step                                                                                                                          |
+
+Two things in v1's code look fragile: deleting a brand colour removes its classes from the pages that used it, and renaming a colour group passes its arguments in the wrong order.
+
+### 8.4 What this means for Webforge
+
+Our theming is the stronger system for our audience: colours are roles, so a change reaches the whole site; contrast is checked where the colour is chosen; and there are themes to start from. Onlook v1 has none of that, because its colours are an app's Tailwind configuration.
+
+We are behind in three places:
+
+1. **A theme colour isn't live.** In the Theme tab and Theme Studio a colour applies only when the operating system's picker closes, and today it then asks twice. LF-15 ([#1168](https://github.com/nexustech/webforge/issues/1168)) removes the dialogs; it doesn't make the drag live.
+2. **No picker of our own.** We rely on the operating system's colour input, which differs between Windows and macOS and has no eyedropper on Windows. Taking the brand colour from a logo is the obvious use for a business owner; the palette from an image covers part of it.
+3. **A class is previewed as CSS text, not on the canvas.** Advanced mode only, so worth less.
+
+Onlook's free gradients and raw values are not a gap. Style choices map to design tokens, never free values ([standards §4](../../spec/03-engineering-standards.md#4-code-style--conventions), ADR 0009), and that rule is why a theme change and a contrast check can reach every colour.
+
+### 8.5 Proposals for decision
+
+Not decided. Sizes are rough ideal days; none is in the plan.
+
+| #         | Proposal                                                                                                                                                                                                                                                                                                                                                                         | Why                                                                                                            | Size |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---- |
+| **OL-18** | **A theme colour changes on the canvas while it is dragged,** in the Theme tab and Theme Studio, as one undo step when the drag ends. Builds on LF-15                                                                                                                                                                                                                            | The person sees the colour on their own site before settling on it, as they already do for an element's colour | 1–2  |
+| **OL-19** | **Webforge's own colour picker** wherever a colour is typed in today (theme colours; the Advanced custom colour): a saturation area, a hue slider, a hex box and an eyedropper, the same on Windows and macOS. Custom colours stay Advanced only, and the contrast warning stays beside it. Whether Chromium's `EyeDropper` works in our sandboxed window is to be checked first | One control on both systems, and "pick it from my logo" for the brand colour                                   | 2–3  |
+| **OL-20** | **A class shows on the canvas while it is highlighted** in the Advanced classes suggestions and in Browse Classes, and is removed again unless chosen                                                                                                                                                                                                                            | The CSS text means little to the people this field is for; the element changing does                           | 1    |
+
+Not proposed: radial and conic gradients, free gradient stops and presets (tokens, CT-10); a light and a dark value per colour (6.11 decides dark mode for visitors); raw values in Simple mode (ADR 0009); controls per element for spacing and corners (theme tokens and _Style This…_ cover them, CT-9). Font files of your own are a real difference, already marked "not yet" in `docs/help/themes.md`, and are left for when an owner asks.
+
+If only one is taken: **OL-18**, since it is the smallest and it finishes what LF-15 starts.
 
 ## Sources
 
@@ -212,4 +299,5 @@ If only three are taken: **OL-12** (a day, the one real gap in the security of a
   - IPC and security: `packages/events/src/channels.ts`, `apps/studio/src/main/ipc/`, `main/frames/`, `main/artifacts/`, `apps/studio/build/harden-electron.mjs`
   - checks: `scripts/check-imports.ts`, `scripts/workflow-security.ts`, `scripts/secrets.ts`, `scripts/third-party.ts`, `scripts/translate-strings.ts`, `packages/i18n/src/`
   - tests: `tests/apparatus/`, `tests/e2e/`, `tests/live/`, `scripts/scenario.ts`, `scripts/showroom.ts`
+- Source for §8: the same repository's `v1` branch at `423e2e9` (read 20 Nov 2026): `packages/ui/src/components/color-picker/`, `packages/utility/src/color.ts`, `apps/web/client/src/app/project/[id]/_components/editor-bar/` (`inputs/color-picker.tsx`, `hooks/use-color-update.ts`, `hooks/use-gradient-update.ts`), `left-panel/design-panel/brand-tab/`, `apps/web/client/src/components/store/editor/` (`theme/`, `font/`, `action/`), `apps/web/preload/script/api/style/css-manager.ts`
 - Webforge: [assistant](../product/14-in-app-ai-assistant.md) (AIA-1…14) · [site from a brief](../product/16-ai-site-from-a-brief.md) · [onboarding and tour](../product/17-onboarding-and-tour.md) (OB-1…7) · [Webflow review](01-webflow.md) (WF-1, WF-2) · [Pinegrow review](02-pinegrow.md) (PG-1) · [canvas engine](../stack/04-canvas-engine.md)

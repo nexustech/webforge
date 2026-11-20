@@ -210,7 +210,7 @@ function themeFields(theme: ThemeTokens, own: readonly OwnTheme[]): EditPanelFie
 /** Props of {@link ThemePanel}. */
 export type ThemePanelProps = {
   readonly session: EditorSession;
-  /** Asks before a change to every page (D7): a preset, a colour, the fonts. */
+  /** Asks before another theme replaces this one on every page (D7). */
   readonly siteWide?: ThemeSiteWide | undefined;
   /** Theme Studio's state (2.3b): the tab's button opens it; the window draws it. */
   readonly studio?: StoreApi<StudioState> | undefined;
@@ -234,10 +234,10 @@ const NO_REVEAL = createStore<{ readonly field?: string | undefined }>()(() => (
 /**
  * The Theme tab (2.3a, F-DS-2): the site's theme as the Edit panel's rows. Its preset; its colours
  * by the glossary's names, each with what its contrast lacks; its fonts, as a pairing or one by one
- * in the font picker; its text sizes; then each token the theme has, by group. A preset, a colour or
- * the fonts change every page, so they're asked first (D7); each change is one labelled step. The
- * person's own themes are listed first; the first change to a built-in one saves their own version
- * of it, by a name they choose (2.23, PH2-17).
+ * in the font picker; its text sizes; then each token the theme has, by group. Another theme is
+ * asked about first (D7); a colour or the fonts apply at once, with a toast that offers Undo
+ * (LF-15); each change is one labelled step. The person's own themes are listed first; the first
+ * change to a built-in one saves their own version of it, without asking (2.23, PH2-17, LF-15).
  */
 export function ThemePanel({
   session,
