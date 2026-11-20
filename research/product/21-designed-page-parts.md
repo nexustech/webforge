@@ -1,6 +1,6 @@
 # Three small parts of a designed page
 
-**Status:** ✅ Decided 2026-11-20 ([§4](#4-decisions)): DP-1, DP-2 and DP-3 are wanted, deferred to v1.1 or later. Not yet planned.
+**Status:** ✅ Decided 2026-11-20 ([§4](#4-decisions)): DP-1, DP-2 and DP-3 are wanted, deferred to v1.1 or later. Recorded in [`spec/04`](../../spec/04-implementation-plan.md)'s list of v1.1 work that isn't yet items, and in [MVP spec §7](../../spec/02-mvp-spec.md#7-open-items-to-confirm) item 60.
 
 **Date:** 2026-11-20
 
