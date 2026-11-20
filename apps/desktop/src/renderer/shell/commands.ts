@@ -65,6 +65,11 @@ export type Command = {
    */
   readonly status?: string | undefined;
   /**
+   * The part of {@link status} that most needs doing, for a narrow title bar to show in its place
+   * (#1166): Site Check's "5 to fix". Its tooltip and name keep the whole status.
+   */
+  readonly shortStatus?: string | undefined;
+  /**
    * The title-bar button whose caret menu lists it, by that button's command id (LF-13): Export's
    * caret for a ZIP export, say. A button shows its caret only while some command names it.
    */
@@ -137,7 +142,7 @@ export type CommandSpec = Omit<
 
 /** What a registered command's owner may change later, such as Undo becoming available. */
 type CommandChanges = Partial<
-  Pick<Command, "label" | "enabled" | "disabledReason" | "tooltip" | "status">
+  Pick<Command, "label" | "enabled" | "disabledReason" | "tooltip" | "status" | "shortStatus">
 >;
 
 /**
@@ -271,7 +276,8 @@ export function createCommandRegistry({
         next.enabled === command.enabled &&
         next.disabledReason === command.disabledReason &&
         next.tooltip === command.tooltip &&
-        next.status === command.status
+        next.status === command.status &&
+        next.shortStatus === command.shortStatus
       ) {
         return;
       }

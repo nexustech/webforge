@@ -43,13 +43,14 @@ export type TitleBarProps = {
 const NO_DRAG = "[-webkit-app-region:no-drag]";
 
 /**
- * The 40 px custom title bar (UI1, LF-13, {@link TITLE_BAR_HEIGHT}): app menu, New and Open, save
+ * The 40 px custom title bar (UI1, LF-13, {@link TITLE_BAR_HEIGHT}): app menu (one Menu button
+ * below 1280 px, #1166), New and Open, save
  * status, Undo (with its latest steps) and Redo, the command box with the site name, then panel
  * tools, Site Check, and Preview, Export and Publish, which get a caret once there is more to
  * choose. Its buttons are icons, each named by its command and with a tooltip that gives the
- * shortcut. While the title bar is wide, Site Check shows what it found and Preview, Export and
- * Publish their names, Publish filled (#1009). A button shows once its command is registered: the
- * start screen has no Undo, Site Check or Publish (#1009).
+ * shortcut. Site Check shows what it found and Publish its name at every width (#1166); while the
+ * title bar is wide, Preview and Export show theirs too, Publish filled (#1009). A button shows
+ * once its command is registered: the start screen has no Undo, Site Check or Publish (#1009).
  * The empty parts drag the window. The native window controls (Windows, Linux) or traffic lights
  * (macOS) are drawn over it by Electron; the padding keeps them clear, using the Window Controls
  * Overlay area the window reports. Its container is the whole window's width, padding and all.
@@ -98,7 +99,9 @@ export function TitleBar({
           {undoSteps}
           <CommandButton commandId={COMMAND_IDS.redo} icon={<Redo2Icon />} />
         </div>
-        <div className="flex min-w-0 flex-1 justify-center">
+        {/* No narrower than the search box's least, which would otherwise spill over the buttons
+            either side of it (#1166). */}
+        <div className="flex min-w-40 flex-1 justify-center">
           <div className={`flex w-full max-w-md justify-center ${NO_DRAG}`}>
             <CommandBox siteName={siteName} />
           </div>
@@ -112,7 +115,8 @@ export function TitleBar({
           {tools}
           <PhonePreviewCue />
           {/* What Site Check found, "5 to fix · 13 tips": it opens the panel (#1009). */}
-          <CommandButton commandId={COMMAND_IDS.siteCheck} icon={<ListChecksIcon />} />
+          {/* Its count shows at every width, as Publish's name does (#1166). */}
+          <CommandButton commandId={COMMAND_IDS.siteCheck} icon={<ListChecksIcon />} alwaysText />
           <CommandButton
             commandId={COMMAND_IDS.preview}
             icon={<EyeIcon className="text-info" />}
@@ -127,6 +131,7 @@ export function TitleBar({
             commandId={COMMAND_IDS.publish}
             icon={<CloudUploadIcon />}
             text={t("shell.publish")}
+            alwaysText
             variant="default"
           />
         </div>

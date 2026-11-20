@@ -21,6 +21,8 @@ export type FieldIds = {
 
 /** Props of {@link Field}. */
 export type FieldProps = {
+  /** The form field it draws, by its name (`data-field`): what a form's `show` finds it by. */
+  readonly name?: string | undefined;
   /** Already translated; none for a control that labels itself (a form's checkbox). */
   readonly label?: string | undefined;
   /** A line under the control that says what to type; already translated. */
@@ -44,7 +46,7 @@ export type FieldProps = {
  * A labelled form field (dialogs: Page Settings, Site Settings, links): the label, the control the
  * field draws, its error and its hint. The form engine of plan item 2.21 draws its fields with it.
  */
-export function Field({ label, hint, error, layout = "stacked", children }: FieldProps) {
+export function Field({ name, label, hint, error, layout = "stacked", children }: FieldProps) {
   const id = useId();
   const labelId = useId();
   const hintId = useId();
@@ -58,6 +60,7 @@ export function Field({ label, hint, error, layout = "stacked", children }: Fiel
   const right = row ? "col-start-2" : undefined;
   return (
     <div
+      data-field={name}
       className={cn(
         "grid gap-1",
         row && "min-h-6 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-center gap-x-3",

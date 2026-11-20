@@ -122,6 +122,10 @@ for (const build of BUILDS) {
           if (story.tags.includes("wide-window")) {
             await page.setViewportSize({ width: 1920, height: 1080 });
           }
+          // A dialog in the app's smallest window (#1172): its buttons stay in view.
+          if (story.tags.includes("short-window")) {
+            await page.setViewportSize({ width: 960, height: 600 });
+          }
           if (device !== undefined) {
             await page.setViewportSize({ width: device.width, height: device.height });
           }

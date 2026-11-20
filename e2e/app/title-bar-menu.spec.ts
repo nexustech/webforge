@@ -13,7 +13,22 @@ test.beforeEach(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
   await waitForCanvas(page);
+  // Wide enough for the menus' titles, which fold into one Menu button below 1280 px (#1166).
+  await sizeWindow(1440, 900);
 });
+
+/** Makes the window's content width × height. */
+async function sizeWindow(width: number, height: number): Promise<void> {
+  await app.evaluate(
+    ({ BrowserWindow }, [w, h]) => {
+      const main = BrowserWindow.getAllWindows()[0];
+      main?.unmaximize();
+      main?.setContentSize(w, h);
+    },
+    [width, height] as const,
+  );
+  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(width);
+}
 
 test.afterEach(async () => {
   await app.close();
@@ -82,11 +97,8 @@ test("closes an open menu from its title, or a press outside it", async () => {
 });
 
 test("groups File and View to fit a 600 px window, and opens the history panels and Site Check from the menus (#1165)", async () => {
-  await app.evaluate(({ BrowserWindow }) => {
-    const main = BrowserWindow.getAllWindows()[0];
-    main?.unmaximize();
-    main?.setSize(960, 600);
-  });
+  // As short as the smallest window (MIN_WINDOW_SIZE), wide enough for the menus' titles.
+  await sizeWindow(1280, 600);
   await expect.poll(() => page.evaluate(() => window.innerHeight)).toBeLessThanOrEqual(600);
   const windowHeight = await page.evaluate(() => window.innerHeight);
 
@@ -157,12 +169,9 @@ test("groups File and View to fit a 600 px window, and opens the history panels 
 });
 
 test("lists Edit in its groups, and the site's settings, theme and stylesheet under Site (#1016)", async () => {
-  // The smallest window there is (MIN_WINDOW_SIZE), where Edit is taller than the room below it.
-  await app.evaluate(({ BrowserWindow }) => {
-    const main = BrowserWindow.getAllWindows()[0];
-    main?.unmaximize();
-    main?.setSize(960, 600);
-  });
+  // As short as the smallest window (MIN_WINDOW_SIZE), where Edit is taller than the room below
+  // it, and wide enough for the menus' titles.
+  await sizeWindow(1280, 600);
   await expect.poll(() => page.evaluate(() => window.innerHeight)).toBeLessThanOrEqual(600);
   const windowHeight = await page.evaluate(() => window.innerHeight);
 

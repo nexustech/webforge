@@ -99,6 +99,8 @@ export function CommandBox({ siteName }: CommandBoxProps) {
 
   return (
     <>
+      {/* At least 10 rem (140 px), room for the icon, a short site name and the shortcut: at 960
+          px it fits beside the folded menu, Site Check's count and Publish (#1166). */}
       <button
         type="button"
         className="flex h-7 w-full max-w-md min-w-40 items-center gap-2 rounded-md bg-input px-2 text-sm outline-none hover:bg-input/80 focus-visible:ring-2 focus-visible:ring-ring"

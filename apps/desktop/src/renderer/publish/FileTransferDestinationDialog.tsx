@@ -1,5 +1,6 @@
 import {
   Button,
+  type FormActions,
   FormDialog,
   type FormField,
   type FormSchema,
@@ -67,6 +68,9 @@ export type FileTransferSaved = {
   readonly signIn: SavedSignInRef;
   readonly trust: FileTransferTrust;
 };
+
+/** Why a test of the connection failed. */
+type ConnectionFailure = Extract<ConnectionResult, { ok: false }>["code"];
 
 /** A key file the person chose. */
 type KeyFile = Extract<KeyFileResult, { status: "chosen" }>;
@@ -270,34 +274,9 @@ function fieldsFor(
           path: "signIn.password",
         },
       ];
+  // Host, user name and sign-in first: the rest has usual values, folded under More Options
+  // (#1172).
   return [
-    {
-      kind: "text",
-      name: "name",
-      label: t("publish.fileTransfer.name"),
-      help: t("publish.fileTransfer.name.help"),
-      maxLength: DESTINATION_NAME_MAX,
-    },
-    {
-      kind: "select",
-      name: "preset",
-      label: t("publish.fileTransfer.preset"),
-      help: t("publish.fileTransfer.preset.help"),
-      options: PRESETS.map((value) => ({
-        value,
-        label: t(`publish.fileTransfer.preset.${value}`),
-      })),
-    },
-    {
-      kind: "select",
-      name: "protocol",
-      label: t("publish.fileTransfer.protocol"),
-      path: "destination.protocol",
-      options: (["ftps", "sftp", "ftp"] as const).map((value) => ({
-        value,
-        label: t(`publish.fileTransfer.protocol.${value}`),
-      })),
-    },
     {
       kind: "text",
       name: "host",
@@ -305,16 +284,6 @@ function fieldsFor(
       placeholder: t("publish.fileTransfer.host.placeholder"),
       path: "destination.host",
       maxLength: HOST_MAX,
-    },
-    {
-      kind: "number",
-      name: "port",
-      label: t("publish.fileTransfer.port"),
-      help: t("publish.fileTransfer.port.help", { port: DEFAULT_PORTS[values.protocol] }),
-      path: "destination.port",
-      min: 1,
-      max: 65_535,
-      width: "sm",
     },
     {
       kind: "text",
@@ -339,12 +308,46 @@ function fieldsFor(
       : []),
     ...signInFields,
     {
+      kind: "select",
+      name: "preset",
+      label: t("publish.fileTransfer.preset"),
+      help: t("publish.fileTransfer.preset.help"),
+      options: PRESETS.map((value) => ({
+        value,
+        label: t(`publish.fileTransfer.preset.${value}`),
+      })),
+      more: true,
+    },
+    {
+      kind: "select",
+      name: "protocol",
+      label: t("publish.fileTransfer.protocol"),
+      path: "destination.protocol",
+      options: (["ftps", "sftp", "ftp"] as const).map((value) => ({
+        value,
+        label: t(`publish.fileTransfer.protocol.${value}`),
+      })),
+      more: true,
+    },
+    {
+      kind: "number",
+      name: "port",
+      label: t("publish.fileTransfer.port"),
+      help: t("publish.fileTransfer.port.help", { port: DEFAULT_PORTS[values.protocol] }),
+      path: "destination.port",
+      min: 1,
+      max: 65_535,
+      width: "sm",
+      more: true,
+    },
+    {
       kind: "text",
       name: "folder",
       label: t("publish.fileTransfer.folder"),
       help: t("publish.fileTransfer.folder.help"),
       path: "destination.folder",
       maxLength: FOLDER_MAX,
+      more: true,
     },
     {
       kind: "text",
@@ -353,6 +356,15 @@ function fieldsFor(
       help: t("publish.fileTransfer.url.help"),
       inputType: "url",
       path: "destination.url",
+      more: true,
+    },
+    {
+      kind: "text",
+      name: "name",
+      label: t("publish.fileTransfer.name"),
+      help: t("publish.fileTransfer.name.help"),
+      maxLength: DESTINATION_NAME_MAX,
+      more: true,
     },
     {
       kind: "toggle",
@@ -360,6 +372,7 @@ function fieldsFor(
       label: t("publish.fileTransfer.redirectRules"),
       help: t("publish.fileTransfer.redirectRules.help"),
       path: "destination.redirectRules",
+      more: true,
     },
   ];
 }
@@ -427,6 +440,39 @@ export type FileTransferDestinationDialogProps = {
   readonly onCancel: () => void;
 };
 
+/**
+ * The setting a failed test's message asks the person to check, by its field (#1172): one folded
+ * under More Options would otherwise be out of sight. The host and the sign-in are always shown.
+ */
+const CHECK_FIELD: Partial<Record<ConnectionFailure, keyof FileTransferValues>> = {
+  "no-encryption": "protocol",
+  network: "port",
+  timeout: "port",
+  "not-found": "folder",
+  rejected: "folder",
+  "other-site": "folder",
+};
+
+/** After a test: the setting its message names shown, with the focus on it. */
+function showFor(result: ConnectionResult | undefined, form: FormActions) {
+  const field = result === undefined || result.ok ? undefined : CHECK_FIELD[result.code];
+  if (field !== undefined) form.show(field);
+}
+
+/** What More Options holds while it's folded, in a few words: "SFTP · port 2222 · /site". */
+function settingsSummary(values: FileTransferValues): string {
+  return [
+    t(`publish.fileTransfer.summary.${values.protocol}`),
+    values.port.trim() === ""
+      ? undefined
+      : t("publish.fileTransfer.summary.port", { port: values.port.trim() }),
+    values.folder.trim() === "" ? undefined : values.folder.trim(),
+    values.redirectRules ? t("publish.fileTransfer.summary.redirects") : undefined,
+  ]
+    .filter((part) => part !== undefined)
+    .join(" · ");
+}
+
 /** What Test connection found, in the person's words: for the list of destinations too. */
 export function connectionMessage(result: ConnectionResult): string {
   return result.ok ? t("publish.test.ok") : t(`publish.test.${result.code}`);
@@ -486,9 +532,19 @@ export function FileTransferDestinationDialog({
     return { keyFile, plainFtpWarned, hostKey, keepable: keepableFor(values, hostKey) };
   };
 
-  /** Test connection with `values`, and the SFTP host key trusted for it, if any. */
-  const runTest = async (values: FileTransferValues, hostKey: string | undefined) => {
+  /**
+   * Test connection with `values`, and the SFTP host key trusted for it, if any: what it found, or
+   * nothing while a host key waits to be trusted.
+   */
+  const runTest = async (
+    values: FileTransferValues,
+    hostKey: string | undefined,
+  ): Promise<ConnectionResult | undefined> => {
     const at = connectionOf(values);
+    const done = (result: ConnectionResult) => {
+      setTest({ status: "done", at, result });
+      return result;
+    };
     const output = toOutput(values, {
       ...extraFor(values),
       hostKey,
@@ -496,19 +552,13 @@ export function FileTransferDestinationDialog({
     });
     setTest({ status: "testing", at });
     const parsed = fileTransferDestinationSchema.safeParse(output.destination);
-    if (!parsed.success) {
-      setTest({ status: "done", at, result: { ok: false, code: "failed" } });
-      return;
-    }
+    if (!parsed.success) return done({ ok: false, code: "failed" });
     const tested = parsed.data;
     if (tested.protocol === "sftp" && hostKey === undefined) {
       const read = await publish.readHostKey(tested.host, tested.port);
-      setTest(
-        read.status === "read"
-          ? { status: "host-key", at, hostKey: read.hostKey, changed: false }
-          : { status: "done", at, result: { ok: false, code: read.code } },
-      );
-      return;
+      if (read.status !== "read") return done({ ok: false, code: read.code });
+      setTest({ status: "host-key", at, hostKey: read.hostKey, changed: false });
+      return undefined;
     }
     const result =
       "keep" in output.signIn
@@ -519,10 +569,10 @@ export function FileTransferDestinationDialog({
       const read = await publish.readHostKey(tested.host, tested.port);
       if (read.status === "read" && read.hostKey !== hostKey) {
         setTest({ status: "host-key", at, hostKey: read.hostKey, changed: true });
-        return;
+        return undefined;
       }
     }
-    setTest({ status: "done", at, result });
+    return done(result);
   };
 
   const chooseKey = async () => {
@@ -551,6 +601,10 @@ export function FileTransferDestinationDialog({
     schema: outputSchema(keyFile),
     toModel: (values) => toOutput(values, extraFor(values)),
     adjust,
+    // Plain FTP's warning, which is beside the connection, shows as the form opens.
+    moreOpen: (values) => values.protocol === "ftp" && !plainFtpWarned,
+    // An existing destination's own connection, port and folder, folded but not hidden.
+    moreSummary: settingsSummary,
     check: (values) => [
       ...(values.protocol === "ftp" && !plainFtpWarned
         ? [{ path: ["destination", "protocol"], message: t("publish.fileTransfer.error.plainFtp") }]
@@ -559,22 +613,17 @@ export function FileTransferDestinationDialog({
         ? [{ path: ["destination", "host"], message: t("publish.fileTransfer.error.hostKey") }]
         : []),
     ],
-    after: (values, form) => ({
-      protocol:
-        values.protocol === "ftp" && !plainFtpWarned ? (
-          <PlainFtpWarning onAccept={() => setPlainFtpWarned(true)} />
-        ) : undefined,
-      signIn:
-        values.protocol === "sftp" && values.signIn === "key" ? (
-          <KeyFileRow
-            keyFile={keyFile}
-            saved={extraFor(values).keepable}
-            problem={keyProblem}
-            onChoose={() => void chooseKey()}
-          />
-        ) : undefined,
-      // After the last field, the redirects option (5.15): the connection's fields all above it.
-      redirectRules: (
+    after: (values, form) => {
+      const withKey = values.protocol === "sftp" && values.signIn === "key";
+      const keyRow = withKey ? (
+        <KeyFileRow
+          keyFile={keyFile}
+          saved={extraFor(values).keepable}
+          problem={keyProblem}
+          onChoose={() => void chooseKey()}
+        />
+      ) : undefined;
+      const testRow = (
         <TestConnection
           // Only a test of the connection as it is now.
           state={test?.at === connectionOf(values) ? test : undefined}
@@ -583,15 +632,35 @@ export function FileTransferDestinationDialog({
             // connects. An SFTP host's key the test is to read doesn't stop it.
             const hostKey = t("publish.fileTransfer.error.hostKey");
             if (form.validate((issue) => issue.message !== hostKey).length > 0) return;
-            void runTest(values, extraFor(values).hostKey);
+            void runTest(values, extraFor(values).hostKey).then((result) => showFor(result, form));
           }}
           onTrust={(hostKey) => {
             setTrusted({ at: connectionOf(values), hostKey });
-            void runTest(values, hostKey);
+            void runTest(values, hostKey).then((result) => showFor(result, form));
           }}
         />
-      ),
-    }),
+      );
+      // Test Connection after the sign-in, above More Options: in view as the form opens, with
+      // Save and Cancel, in a short window too (#1172). A key file with no passphrase ends the
+      // sign-in with its own row.
+      const lastSignIn = !withKey ? "password" : keyFile?.encrypted === true ? "passphrase" : "";
+      return {
+        protocol:
+          values.protocol === "ftp" && !plainFtpWarned ? (
+            <PlainFtpWarning onAccept={() => setPlainFtpWarned(true)} />
+          ) : undefined,
+        signIn:
+          lastSignIn === "" ? (
+            <>
+              {keyRow}
+              {testRow}
+            </>
+          ) : (
+            keyRow
+          ),
+        ...(lastSignIn === "" ? {} : { [lastSignIn]: testRow }),
+      };
+    },
   };
 
   return (
