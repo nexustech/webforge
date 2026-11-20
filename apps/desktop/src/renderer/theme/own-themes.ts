@@ -47,6 +47,8 @@ type OwnThemeNames = {
   askName(question: NameQuestion): Promise<string | undefined>;
   /** The names of the person's own themes on this computer. */
   taken(): readonly string[];
+  /** The name the person's theme `id` is listed under now; `undefined` if it isn't listed. */
+  nameOf(id: string): string | undefined;
 };
 
 /** My themes (2.23, PH2-17): see {@link createOwnThemes}. */
@@ -182,6 +184,7 @@ export function createOwnThemes(
       if (kept.length !== deleted.length) store.setState({ deleted: kept });
     },
     taken: () => store.getState().themes.map((theme) => theme.own.name),
+    nameOf: (id) => store.getState().themes.find((theme) => theme.own.id === id)?.own.name,
     askName(question) {
       return ask({ kind: "name", ...question }, (answer) =>
         typeof answer === "string" ? answer : undefined,

@@ -320,8 +320,21 @@ function collectKeys(value: unknown): string[] {
   return Object.entries(value).flatMap(([key, inner]) => [key, ...collectKeys(inner)]);
 }
 
-/** The person's own themes' names, `taken`, for a theme saved without asking (LF-15). */
-const naming = (...taken: string[]) => ({ names: { taken: () => taken } });
+/**
+ * My themes for a theme saved without asking (LF-15), listing themes named `taken`; `list` is what
+ * it lists, as `{ id, name }`, for a test to add to, rename or delete from.
+ */
+function naming(...taken: string[]) {
+  const list: { id: string; name: string }[] = taken.map((name, index) => ({
+    id: `listed${index}`,
+    name,
+  }));
+  const names = {
+    taken: () => list.map((each) => each.name),
+    nameOf: (id: string) => list.find((each) => each.id === id)?.name,
+  };
+  return { names, list };
+}
 
 /** The Undo toasts `session`'s steps ask for, in their own words (LF-15). */
 function toastsOf(session: ReturnType<typeof setUp>["session"]): (string | boolean)[] {
@@ -362,13 +375,12 @@ describe("your own themes (2.23, PH2-17)", () => {
 
   it("saves the same version again after an undo, so trying colours keeps one theme (LF-15)", async () => {
     const { session, theme } = setUp();
-    const kept: string[] = [];
-    // My themes as the window keeps them: each saved name is taken from then on.
-    const asks = { names: { taken: () => kept } };
+    // My themes as the window keeps them: each saved theme is listed from then on.
+    const asks = naming();
 
     await setColor(session, asks, "primary", BRAND);
     const first = theme().own;
-    if (first !== undefined) kept.push(first.name);
+    if (first !== undefined) asks.list.push({ ...first });
     session.history.undo();
     expect(theme().own).toBeUndefined();
     await setColor(session, asks, "primary", { l: 0.6, c: 0.1, h: 200 });
@@ -381,6 +393,33 @@ describe("your own themes (2.23, PH2-17)", () => {
     await setColor(other.session, asks, "primary", BRAND);
     expect(other.theme().own?.id).not.toBe(first?.id);
     expect(other.theme().own?.name).toBe("Light (yours, 2)");
+  });
+
+  it("saves a new version once the person deletes theirs, and keeps a name they gave it (LF-15)", async () => {
+    const { session, theme } = setUp();
+    const asks = naming();
+    const tryColour = async (h: number) => {
+      await setColor(session, asks, "primary", { l: 0.5, c: 0.2, h });
+      const own = theme().own;
+      if (own !== undefined && asks.list.every((each) => each.id !== own.id)) {
+        asks.list.push({ ...own });
+      }
+      return own;
+    };
+
+    // Renamed in My themes meanwhile: the same one, by their name.
+    const first = await tryColour(30);
+    session.history.undo();
+    const listed = asks.list.find((each) => each.id === first?.id);
+    if (listed !== undefined) listed.name = "Cafe colours";
+    expect(await tryColour(60)).toEqual({ id: first?.id, name: "Cafe colours" });
+
+    // Deleted from My themes meanwhile: a new one, which My themes can list.
+    session.history.undo();
+    asks.list.splice(0);
+    const fresh = await tryColour(90);
+    expect(fresh?.id).not.toBe(first?.id);
+    expect(fresh?.name).toBe("Light (yours)");
   });
 
   it("names the saved version after the theme, numbered when the person has that name (LF-15)", () => {

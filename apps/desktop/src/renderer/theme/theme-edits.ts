@@ -48,8 +48,8 @@ export type ThemeAsks =
        * `beforeUnaskedChange` first, where Version History saves a version (4.6).
        */
       readonly siteWide?: ThemeSiteWide | undefined;
-      /** The names of the person's own themes, which a new one's mustn't repeat (My themes). */
-      readonly names?: { taken(): readonly string[] } | undefined;
+      /** The person's own themes' names (My themes): see {@link ThemeNames}. */
+      readonly names?: ThemeNames | undefined;
       /**
        * Says that a change was cancelled at one of its questions ("Not changed", #614): an Escape
        * meant for the dialog behind can answer one, and the control goes back as it was.
@@ -57,6 +57,14 @@ export type ThemeAsks =
       readonly notify?: ((message: string) => void) | undefined;
     }
   | undefined;
+
+/** What a theme saved unasked needs of My themes (LF-15). */
+type ThemeNames = {
+  /** The names of the person's own themes, which a new one's mustn't repeat. */
+  taken(): readonly string[];
+  /** The name My themes lists the theme `id` under now, if it lists it. */
+  nameOf(id: string): string | undefined;
+};
 
 /** A question before a change to every page (D7): its title, what it does and its button. */
 type SiteWideQuestion = {
@@ -190,18 +198,21 @@ const unaskedCopies = new WeakMap<object, Map<string, NonNullable<ThemeTokens["o
 
 /**
  * The person's own version of built-in theme `preset`, saved unasked at its first change (LF-15):
- * the same one, id and name, each time the site is back on `preset` in this opening, so trying a
- * colour, undoing it and trying another keeps one theme in My themes, not one a try.
+ * the same one each time the site is back on `preset` in this opening, so trying a colour, undoing
+ * it and trying another keeps one theme in My themes, not one a try. Only while My themes lists it,
+ * under the name it has there now: one the person deleted meanwhile gives way to a new one, and one
+ * they renamed keeps their name.
  */
 function unaskedCopy(
   session: ThemeSession,
   preset: string,
-  names: { taken(): readonly string[] },
+  names: ThemeNames,
 ): NonNullable<ThemeTokens["own"]> {
   const made = unaskedCopies.get(session.history) ?? new Map();
   unaskedCopies.set(session.history, made);
   const before = made.get(preset);
-  if (before !== undefined) return before;
+  const listed = before === undefined ? undefined : names.nameOf(before.id);
+  if (before !== undefined && listed !== undefined) return { id: before.id, name: listed };
   const own = { id: newId("theme"), name: ownCopyName(presetName(preset), names.taken()) };
   made.set(preset, own);
   return own;
