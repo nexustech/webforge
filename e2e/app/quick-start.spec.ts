@@ -37,13 +37,17 @@ test("starts a site from the quick start's answers: the business, a look, pages,
   });
   await stubFileDialogs(app, join(dir, "Rosa's Bakery.wforge"));
 
-  // Exactly: the welcome's card says what it does as well.
-  await page.getByRole("button", { name: "Start a Site…", exact: true }).click();
+  // The welcome's card, its name the start of what it says (#1167: the actions show once).
+  await page.getByRole("button", { name: /^Start a Site…/ }).click();
   const quickStart = page.getByRole("dialog", { name: "Start a site" });
 
   // Your business.
   await quickStart.getByRole("radio", { name: "Food and drink" }).click();
-  await quickStart.getByRole("textbox", { name: "Business or site name" }).fill("Rosa's Bakery");
+  // Empty, not filled in with a name to delete; an empty one makes "My site" (#1167).
+  const name = quickStart.getByRole("textbox", { name: "Business or site name" });
+  await expect(name).toHaveValue("");
+  await expect(name).toHaveAttribute("placeholder", "My site");
+  await name.fill("Rosa's Bakery");
   await quickStart.getByRole("textbox", { name: "What you do" }).fill("Bread and cakes");
   await quickStart.getByRole("button", { name: "Next" }).click();
 
@@ -72,6 +76,10 @@ test("starts a site from the quick start's answers: the business, a look, pages,
       hasText: "Good coffee and proper breakfasts",
     }),
   ).toBeVisible({ timeout: OPEN_WAIT });
+  // What they do, in the Hero, not the sample café's line (#1167).
+  const hero = page.frameLocator(".editor__canvas iframe");
+  await expect(hero.getByText("Bread and cakes", { exact: true })).toBeVisible();
+  await expect(hero.getByText(/A small café by the river/)).toHaveCount(0);
   const { site } = (await page.evaluate(() =>
     (window as unknown as RendererWindow).webforge.project.readSite(),
   )) as {
@@ -146,7 +154,7 @@ test("starts a one-page site: every page a section of the home page, the menu sc
   });
   await stubFileDialogs(app, join(dir, "Brightside.wforge"));
 
-  await page.getByRole("button", { name: "Start a Site…", exact: true }).click();
+  await page.getByRole("button", { name: /^Start a Site…/ }).click();
   const quickStart = page.getByRole("dialog", { name: "Start a site" });
   await quickStart.getByRole("radio", { name: "Trades" }).click();
   await quickStart.getByRole("textbox", { name: "Business or site name" }).fill("Brightside");

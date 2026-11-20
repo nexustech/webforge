@@ -199,7 +199,7 @@ export function SiteCommands({
           void answer("busy");
           return;
         }
-        const answers = answersFromBrief(brief, list, t("site.untitledName"));
+        const answers = answersFromBrief(brief, list);
         setOpen({ dialog: "quickStart", templates: list, brief: { answers, answer } });
       });
     });

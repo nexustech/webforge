@@ -50,7 +50,7 @@ test("offers the tour after the quick start, and shows the three steps beside th
     timeout: APP_START_TIMEOUT_MS,
   });
   await stubFileDialogs(app, join(dir, "Rosa's Bakery.wforge"));
-  await page.getByRole("button", { name: "Start a Site…", exact: true }).click();
+  await page.getByRole("button", { name: /^Start a Site…/ }).click();
   const quickStart = page.getByRole("dialog", { name: "Start a site" });
   await quickStart.getByRole("radio", { name: "Food and drink" }).click();
   await quickStart.getByRole("button", { name: "Create site" }).click();
