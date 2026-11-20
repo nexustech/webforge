@@ -144,7 +144,9 @@ test("places the caret with a second click on the selected element's text", asyn
   await selectHeroAwayFromText();
   await heroHeading().click();
   await expect.poll(editingHeading).toBe(true);
-  await page.keyboard.press("End");
+  // To the end of the whole text: End alone goes to the end of its line, and the heading wraps
+  // onto two lines with Windows' fonts.
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowDown" : "Control+End");
   await page.keyboard.type("!", { delay: 20 });
   await expect(heroHeading()).toHaveText("Fresh ideas, made by hand!");
 });
