@@ -61,7 +61,8 @@ const DEFAULTS = {
   sideMin: "200px",
   sideMax: "360px",
   centerMin: "40%",
-  drawer: "25%",
+  // A third of the space under the canvas toolbar, and never less than READABLE_DRAWER_PX (#1164).
+  drawer: "33%",
   // The left column's lower pane (Layers) keeps between 15% and 85% of its height (ADR 0011).
   lowerMin: "15%",
   lowerMax: "85%",
@@ -308,6 +309,30 @@ function toggle(panel: ResizablePanelHandle | null, size: string): void {
 }
 
 /**
+ * The fewest pixels the drawer opens at (#1164): its tabs, a summary and at least three of Site
+ * Check's findings, at 960 × 600 too.
+ */
+const READABLE_DRAWER_PX = 240;
+
+/**
+ * An open drawer at a height it can be read at (#1164). Opened for the first time, the library gave
+ * it its smallest size, 10%: 73 px at 1366 × 768, its tabs and one line. Under
+ * {@link READABLE_DRAWER_PX} it grows to a third of the space, or to that, if more.
+ */
+function readable(drawer: ResizablePanelHandle | null): void {
+  if (drawer === null || drawer.isCollapsed()) return;
+  if (drawer.getSize().inPixels >= READABLE_DRAWER_PX) return;
+  drawer.resize(DEFAULTS.drawer);
+  if (drawer.getSize().inPixels < READABLE_DRAWER_PX) drawer.resize(READABLE_DRAWER_PX);
+}
+
+/** Shows the drawer, or hides it, as {@link toggle} does: shown, at a height to read at. */
+function toggleDrawer(drawer: ResizablePanelHandle | null): void {
+  toggle(drawer, DEFAULTS.drawer);
+  readable(drawer);
+}
+
+/**
  * The window below the title bar (UI1): left and right columns of tabbed panels around the
  * canvas, a bottom drawer under it, resizable splitters (also with the arrow keys) and
  * collapsible columns. Each column shows one panel at a time, as tabs (ADR 0008). Sizes are
@@ -370,7 +395,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
         id: COMMAND_IDS.toggleDrawer,
         label: t("command.toggleDrawer"),
         menu: "view",
-        run: byCommand(() => toggle(drawer.current, DEFAULTS.drawer)),
+        run: byCommand(() => toggleDrawer(drawer.current)),
       }),
       registry.register({
         id: COMMAND_IDS.resetPanels,
@@ -406,6 +431,8 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
           if (holds && column?.isCollapsed() === true) {
             toggle(column, side === "drawer" ? DEFAULTS.drawer : DEFAULTS.sideWidth);
           }
+          // The drawer at a height to read at, however small it was left (#1164).
+          if (holds && side === "drawer") readable(column);
         }
       }),
     [panelRegistry, editorLevel],

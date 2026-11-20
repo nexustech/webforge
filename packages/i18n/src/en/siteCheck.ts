@@ -16,6 +16,10 @@ export const siteCheck = {
   "siteCheck.button.toFix.other": "{count} to fix",
   "siteCheck.button.clear": "No problems",
   "siteCheck.fix": "Fix",
+  "siteCheck.fix.label": "Fix: {item}",
+  // A finding its buttons tell apart from another in the same place (#1164).
+  "siteCheck.item.inRule": "{item}, {rule}",
+  "siteCheck.item.nth": "{item} ({n})",
   // The assistant drafts what's missing, for the person to review (#873).
   "siteCheck.write": "Write One…",
   "siteCheck.write.label": "Write one with the assistant: {item}",
@@ -25,8 +29,7 @@ export const siteCheck = {
   "siteCheck.restore.one": "Show 1 ignored item again",
   "siteCheck.restore.other": "Show {count} ignored items again",
   "siteCheck.status.pass": "Passed",
-  "siteCheck.status.warn": "Worth a look",
-  "siteCheck.status.fail": "Must be fixed",
+  "siteCheck.passed": "Passed ({count})",
 
   // Each rule: its name, the verdict when it passes, and when it doesn't.
   "siteCheck.rule.deviceNames": "Page names",
