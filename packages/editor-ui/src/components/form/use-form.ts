@@ -9,7 +9,7 @@ export type FormSubmit<Out> =
   | { readonly ok: false };
 
 /** A form being edited: its spec, values, fields and problems, and what changes and saves it. */
-export type FormState<V extends FormValues, Out> = FormActions & {
+export type FormState<V extends FormValues, Out> = Pick<FormActions, "validate"> & {
   readonly spec: FormSpec<V, Out>;
   readonly values: V;
   readonly fields: readonly FormField[];

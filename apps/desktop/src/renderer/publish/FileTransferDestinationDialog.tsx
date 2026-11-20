@@ -1,5 +1,6 @@
 import {
   Button,
+  type FormActions,
   FormDialog,
   type FormField,
   type FormSchema,
@@ -67,6 +68,9 @@ export type FileTransferSaved = {
   readonly signIn: SavedSignInRef;
   readonly trust: FileTransferTrust;
 };
+
+/** Why a test of the connection failed. */
+type ConnectionFailure = Extract<ConnectionResult, { ok: false }>["code"];
 
 /** A key file the person chose. */
 type KeyFile = Extract<KeyFileResult, { status: "chosen" }>;
@@ -436,6 +440,39 @@ export type FileTransferDestinationDialogProps = {
   readonly onCancel: () => void;
 };
 
+/**
+ * The setting a failed test's message asks the person to check, by its field (#1172): one folded
+ * under More Options would otherwise be out of sight. The host and the sign-in are always shown.
+ */
+const CHECK_FIELD: Partial<Record<ConnectionFailure, keyof FileTransferValues>> = {
+  "no-encryption": "protocol",
+  network: "port",
+  timeout: "port",
+  "not-found": "folder",
+  rejected: "folder",
+  "other-site": "folder",
+};
+
+/** After a test: the setting its message names shown, with the focus on it. */
+function showFor(result: ConnectionResult | undefined, form: FormActions) {
+  const field = result === undefined || result.ok ? undefined : CHECK_FIELD[result.code];
+  if (field !== undefined) form.show(field);
+}
+
+/** What More Options holds while it's folded, in a few words: "SFTP · port 2222 · /site". */
+function settingsSummary(values: FileTransferValues): string {
+  return [
+    t(`publish.fileTransfer.summary.${values.protocol}`),
+    values.port.trim() === ""
+      ? undefined
+      : t("publish.fileTransfer.summary.port", { port: values.port.trim() }),
+    values.folder.trim() === "" ? undefined : values.folder.trim(),
+    values.redirectRules ? t("publish.fileTransfer.summary.redirects") : undefined,
+  ]
+    .filter((part) => part !== undefined)
+    .join(" · ");
+}
+
 /** What Test connection found, in the person's words: for the list of destinations too. */
 export function connectionMessage(result: ConnectionResult): string {
   return result.ok ? t("publish.test.ok") : t(`publish.test.${result.code}`);
@@ -495,9 +532,19 @@ export function FileTransferDestinationDialog({
     return { keyFile, plainFtpWarned, hostKey, keepable: keepableFor(values, hostKey) };
   };
 
-  /** Test connection with `values`, and the SFTP host key trusted for it, if any. */
-  const runTest = async (values: FileTransferValues, hostKey: string | undefined) => {
+  /**
+   * Test connection with `values`, and the SFTP host key trusted for it, if any: what it found, or
+   * nothing while a host key waits to be trusted.
+   */
+  const runTest = async (
+    values: FileTransferValues,
+    hostKey: string | undefined,
+  ): Promise<ConnectionResult | undefined> => {
     const at = connectionOf(values);
+    const done = (result: ConnectionResult) => {
+      setTest({ status: "done", at, result });
+      return result;
+    };
     const output = toOutput(values, {
       ...extraFor(values),
       hostKey,
@@ -505,19 +552,13 @@ export function FileTransferDestinationDialog({
     });
     setTest({ status: "testing", at });
     const parsed = fileTransferDestinationSchema.safeParse(output.destination);
-    if (!parsed.success) {
-      setTest({ status: "done", at, result: { ok: false, code: "failed" } });
-      return;
-    }
+    if (!parsed.success) return done({ ok: false, code: "failed" });
     const tested = parsed.data;
     if (tested.protocol === "sftp" && hostKey === undefined) {
       const read = await publish.readHostKey(tested.host, tested.port);
-      setTest(
-        read.status === "read"
-          ? { status: "host-key", at, hostKey: read.hostKey, changed: false }
-          : { status: "done", at, result: { ok: false, code: read.code } },
-      );
-      return;
+      if (read.status !== "read") return done({ ok: false, code: read.code });
+      setTest({ status: "host-key", at, hostKey: read.hostKey, changed: false });
+      return undefined;
     }
     const result =
       "keep" in output.signIn
@@ -528,10 +569,10 @@ export function FileTransferDestinationDialog({
       const read = await publish.readHostKey(tested.host, tested.port);
       if (read.status === "read" && read.hostKey !== hostKey) {
         setTest({ status: "host-key", at, hostKey: read.hostKey, changed: true });
-        return;
+        return undefined;
       }
     }
-    setTest({ status: "done", at, result });
+    return done(result);
   };
 
   const chooseKey = async () => {
@@ -562,6 +603,8 @@ export function FileTransferDestinationDialog({
     adjust,
     // Plain FTP's warning, which is beside the connection, shows as the form opens.
     moreOpen: (values) => values.protocol === "ftp" && !plainFtpWarned,
+    // An existing destination's own connection, port and folder, folded but not hidden.
+    moreSummary: settingsSummary,
     check: (values) => [
       ...(values.protocol === "ftp" && !plainFtpWarned
         ? [{ path: ["destination", "protocol"], message: t("publish.fileTransfer.error.plainFtp") }]
@@ -589,11 +632,11 @@ export function FileTransferDestinationDialog({
             // connects. An SFTP host's key the test is to read doesn't stop it.
             const hostKey = t("publish.fileTransfer.error.hostKey");
             if (form.validate((issue) => issue.message !== hostKey).length > 0) return;
-            void runTest(values, extraFor(values).hostKey);
+            void runTest(values, extraFor(values).hostKey).then((result) => showFor(result, form));
           }}
           onTrust={(hostKey) => {
             setTrusted({ at: connectionOf(values), hostKey });
-            void runTest(values, hostKey);
+            void runTest(values, hostKey).then((result) => showFor(result, form));
           }}
         />
       );

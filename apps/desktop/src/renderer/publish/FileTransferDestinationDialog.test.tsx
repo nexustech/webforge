@@ -95,6 +95,38 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     ]);
   });
 
+  it("shows the folded setting a failed test names, with the focus on it (#1172)", async () => {
+    const publish = fakePublish({
+      testConnection: vi.fn(async () => ({ ok: false as const, code: "no-encryption" as const })),
+    });
+    const { fill, testConnection } = setUp(undefined, publish);
+    await fill("Host", "sftp-only.example.com");
+    await fill("User name", "rosa");
+    await fill("Password", "test-only-password");
+    expect(screen.queryByLabelText("Connection", { exact: true })).toBeNull();
+
+    await testConnection();
+    expect(await screen.findByText(/doesn't offer FTPS/)).toBeTruthy();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByLabelText("Connection", { exact: true })),
+    );
+  });
+
+  it("sums up an existing destination's folded settings beside More Options (#1172)", () => {
+    setUp({
+      protocol: "sftp",
+      host: "sftp.rosasbakery.co.uk",
+      port: 2222,
+      user: "rosa",
+      folder: "/site",
+      signIn: "password",
+      redirectRules: true,
+    });
+    const more = screen.getByRole("button", { name: "More Options" });
+    const summary = document.getElementById(more.getAttribute("aria-describedby") ?? "");
+    expect(summary?.textContent).toBe("SFTP · port 2222 · /site · Apache redirects on");
+  });
+
   it("opens More Options to show a problem folded there (#1172)", async () => {
     const { user, fill, save, onSave } = setUp();
     await fill("Host", "ftp.rosasbakery.co.uk");

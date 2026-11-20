@@ -31,7 +31,7 @@ The first time you publish, {appName} asks **Where is your website hosted?** Cho
 
 **Test Connection**, just below them, checks the details first: anything missing is marked, and nothing connects until it's filled in. The first time you test or save an SFTP destination, {appName} shows the host's key and asks you to confirm it's your host.
 
-**More Options** has the rest. Most people can leave it as it is: it starts with cPanel's usual settings, over an encrypted connection. If something there needs fixing, **Save** and **Test Connection** open it for you. In a small window the details scroll, and **Save** and **Cancel** stay at the bottom.
+**More Options** has the rest. Most people can leave it as it is: it starts with cPanel's usual settings, over an encrypted connection. Beside it, a short line says what's set there, such as _SFTP · port 2222 · /site_. If **Save** finds something there to fix, or **Test Connection** says to check the connection, the port or the folder, it opens and takes you to that setting. In a small window the details scroll, and **Save** and **Cancel** stay at the bottom.
 
 - **Control panel:** _cPanel_ or _Plesk_ fills in the usual settings for you. If you're not sure, choose _Another, or I don't know_.
 - **Connection:**
