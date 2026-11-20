@@ -48,8 +48,8 @@ const NO_DRAG = "[-webkit-app-region:no-drag]";
  * tools, Site Check, and Preview, Export and Publish, which get a caret once there is more to
  * choose. Its buttons are icons, each named by its command and with a tooltip that gives the
  * shortcut. Site Check shows what it found and Publish its name at every width (#1166); while the
- * title bar is wide, Preview and Export show theirs too, Publish filled (#1009). A button shows once its command is registered: the
- * start screen has no Undo, Site Check or Publish (#1009).
+ * title bar is wide, Preview and Export show theirs too, Publish filled (#1009). A button shows
+ * once its command is registered: the start screen has no Undo, Site Check or Publish (#1009).
  * The empty parts drag the window. The native window controls (Windows, Linux) or traffic lights
  * (macOS) are drawn over it by Electron; the padding keeps them clear, using the Window Controls
  * Overlay area the window reports. Its container is the whole window's width, padding and all.

@@ -35,7 +35,7 @@ A button or menu item you can't use at the moment is greyed out, and most say wh
 - Drag the edges between columns to make a column wider or narrower. The side columns start at 300 px, wide enough for every field in the Edit panel; a width you've chosen stays.
 - Collapse a side column with its button in the title bar. It leaves a strip of panel icons; click one to open the column again on that panel.
 - **View › Reset Panels** puts everything back as it was.
-- **In a small window** (narrower than about 1100 px), the side columns take turns, so your page stays big enough to read. A site you open there for the first time starts with the left column as its strip, and opening one side column folds the other. Dragging a column wider still works; the layout you leave is kept.
+- **In a small window** (narrower than about 1100 px), the side columns take turns, so your page stays big enough to read. Until you change the panels yourself, the editor opens in a small window with the left column as its strip, and opening one side column folds the other. Dragging a column wider still works, and once you've changed the panels, your layout is kept.
 
 ## Using the keyboard
 

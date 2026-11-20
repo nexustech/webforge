@@ -313,21 +313,34 @@ function toggle(panel: ResizablePanelHandle | null, size: string): void {
 type SideColumns = Readonly<Record<Side, { readonly current: ResizablePanelHandle | null }>>;
 
 /**
- * Once side column `side` is open, in a narrow window, folds the other to its strip if it's open
- * (`sideToClose`, #1166): the page stays at half its size or more.
+ * The side columns that have never been open since the window started: the left one when it
+ * started as its strip (#1166). The library opens a column it never collapsed at its smallest
+ * width (200 px, its `expandToSize` unset), so its first opening is sized to the default.
  */
-function foldOther(columns: SideColumns, side: Side): void {
-  const opened = columns[side].current;
-  if (opened === null || opened.isCollapsed()) return;
+type NeverOpened = Record<Side, boolean>;
+
+/**
+ * Opens collapsed side column `side` (#1166). In a narrow window the other folds to its strip
+ * first (`sideToClose`), so the column opens into the room it frees, and the page stays at half its
+ * size or more. A column opening for the first time takes the default width, 300 px.
+ */
+function openSide(columns: SideColumns, side: Side, neverOpened: NeverOpened): void {
+  const column = columns[side].current;
+  if (column === null || !column.isCollapsed()) return;
   const other = columns[side === "left" ? "right" : "left"].current;
   const close = sideToClose(window.innerWidth, side, other !== null && !other.isCollapsed());
   if (close !== undefined) columns[close].current?.collapse();
+  const first = neverOpened[side];
+  column.expand();
+  if (column.isCollapsed() || first) column.resize(DEFAULTS.sideWidth);
+  neverOpened[side] = false;
 }
 
-/** Shows side column `side`, or hides it, as {@link toggle} does, folding the other as above. */
-function toggleSide(columns: SideColumns, side: Side): void {
-  toggle(columns[side].current, DEFAULTS.sideWidth);
-  foldOther(columns, side);
+/** Shows side column `side`, or hides it, as {@link toggle} does, opening it as {@link openSide}. */
+function toggleSide(columns: SideColumns, side: Side, neverOpened: NeverOpened): void {
+  const column = columns[side].current;
+  if (column !== null && !column.isCollapsed()) column.collapse();
+  else openSide(columns, side, neverOpened);
 }
 
 /**
@@ -392,8 +405,12 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
     left: leftStartsCollapsed || savedCollapsed(layout[PANEL_GROUPS.columns]?.left),
     right: savedCollapsed(layout[PANEL_GROUPS.columns]?.right),
   }));
+  // The columns not yet opened since the window started ({@link NeverOpened}).
+  const neverOpened = useRef<NeverOpened>({ left: leftStartsCollapsed, right: false });
   const followCollapsed = (side: "left" | "right") => (size: { readonly inPixels: number }) => {
     const next = size.inPixels <= STRIP_PX + 1;
+    // Opened, however: dragged open too. Its later openings keep the width it's given.
+    if (!next) neverOpened.current[side] = false;
     setCollapsed((current) => (current[side] === next ? current : { ...current, [side]: next }));
   };
 
@@ -409,13 +426,13 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
         id: COMMAND_IDS.toggleLeftPanels,
         label: t("command.toggleLeftPanels"),
         menu: "view",
-        run: byCommand(() => toggleSide({ left, right }, "left")),
+        run: byCommand(() => toggleSide({ left, right }, "left", neverOpened.current)),
       }),
       registry.register({
         id: COMMAND_IDS.toggleRightPanels,
         label: t("command.toggleRightPanels"),
         menu: "view",
-        run: byCommand(() => toggleSide({ left, right }, "right")),
+        run: byCommand(() => toggleSide({ left, right }, "right", neverOpened.current)),
       }),
       registry.register({
         id: COMMAND_IDS.toggleDrawer,
@@ -455,9 +472,9 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             panelsInSlot(panelRegistry.list(), slot, editorLevel).some((panel) => panel.id === id),
           );
           if (holds && column?.isCollapsed() === true) {
-            toggle(column, side === "drawer" ? DEFAULTS.drawer : DEFAULTS.sideWidth);
-            // A side column shown in a narrow window folds the other (#1166).
-            if (side !== "drawer") foldOther({ left, right }, side);
+            // A side column shown in a narrow window folds the other first (#1166).
+            if (side === "drawer") toggle(column, DEFAULTS.drawer);
+            else openSide({ left, right }, side, neverOpened.current);
           }
           // The drawer at a height to read at, however small it was left (#1164).
           if (holds && side === "drawer") readable(column);

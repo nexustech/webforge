@@ -63,15 +63,46 @@ test("opens a site at a size to read, the left column a strip, Publish and Site 
 
   // Their words, not only coloured icons: Publish, and what Site Check found.
   const banner = page.getByRole("banner");
-  await expect(banner.getByRole("button", { name: "Publish" })).toHaveText("Publish");
+  const publish = banner.getByRole("button", { name: "Publish" });
+  await expect(publish).toHaveText("Publish");
   await expect(banner.getByRole("button", { name: /^Site Check: / })).toHaveText(
     /\d+ to fix|tips?|No problems/,
   );
+  // All of it in sight: left of the window's own buttons (Windows, Linux), and nothing cut off.
+  const room = await page.evaluate(() => {
+    const overlay = (
+      navigator as Navigator & {
+        windowControlsOverlay?: { visible: boolean; getTitlebarAreaRect(): DOMRect };
+      }
+    ).windowControlsOverlay;
+    return overlay?.visible === true
+      ? overlay.getTitlebarAreaRect().right
+      : document.documentElement.clientWidth;
+  });
+  const box = await publish.boundingBox();
+  expect((box?.x ?? Number.POSITIVE_INFINITY) + (box?.width ?? 0)).toBeLessThanOrEqual(room);
+  expect(await banner.evaluate((header) => header.scrollWidth <= header.clientWidth)).toBe(true);
 });
+
+/** The left column, open: at its 300 px default, not the 200 px a first opening gave (#1166). */
+async function expectLeftOpen(): Promise<void> {
+  const left = page.getByRole("region", { name: "Left panels" });
+  await expect(left).toBeVisible();
+  await expect.poll(async () => (await left.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(299);
+  await expect(page.getByRole("region", { name: "Right panels" })).toBeHidden();
+  await expect.poll(zoomPercent).toBeGreaterThanOrEqual(50);
+}
 
 test("folds the right column when the left one opens there, the page at half or more (#1166)", async () => {
   await chooseFromMenu(app, page, "View", "Show or Hide Left Panels");
-  await expect(page.getByRole("region", { name: "Left panels" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Right panels" })).toBeHidden();
-  await expect.poll(zoomPercent).toBeGreaterThanOrEqual(50);
+  await expectLeftOpen();
+});
+
+test("opens the left column from its strip at its full width, folding the right (#1166)", async () => {
+  await page
+    .getByRole("navigation", { name: "Left panels, collapsed" })
+    .getByRole("button")
+    .first()
+    .click();
+  await expectLeftOpen();
 });
