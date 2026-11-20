@@ -90,6 +90,15 @@ describe("CanvasSelection (R8)", () => {
     ]);
   });
 
+  it("knows the elements selected already, the others with it too (#1176)", () => {
+    const { selection } = selectionWithPuck();
+
+    selection.select("a");
+    selection.showOthers(["b"], undefined);
+
+    expect(["a", "b", "c"].map((id) => selection.has(id))).toEqual([true, true, false]);
+  });
+
   it("outlines the other selected elements and says several are selected", () => {
     document.body.innerHTML = '<p data-puck-component="b">B</p>';
     const { selection } = selectionWithPuck();

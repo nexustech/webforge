@@ -13,6 +13,8 @@ import { findNode } from "./tree.js";
 export type CanvasSelection = {
   /** The element selected, as the app last heard. */
   current(): string | null;
+  /** Whether `id` is selected already: the element selected, or one of the others with it. */
+  has(id: string): boolean;
   /** Puck selected `id`: reported to the app if it changed, as adding if a Ctrl/Cmd/Shift-click did it. */
   report(id: string | null): void;
   /** Selects `id` in Puck, as the app asks. */
@@ -59,6 +61,7 @@ export function createCanvasSelection(
 
   return {
     current: () => selection,
+    has: (id) => id === selection || others.includes(id),
     report(id) {
       if (id !== selection) {
         selection = id;

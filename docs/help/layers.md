@@ -4,12 +4,12 @@ id: layers
 title: Layers
 summary: See everything on the page as a list, and select, reorder, hide, leave off your website and rename it.
 related: [editing-on-the-page, header-and-footer, blog, keyboard-shortcuts]
-updated: 2026-11-16
+updated: 2026-11-20
 ---
 
 # Layers
 
-**Layers**, under the Add panel, lists everything on the page in order: the Header, each section and the elements inside it, and the Footer. Selecting in Layers selects on the page, and the other way round. Pointing at a row outlines that item on the page.
+**Layers**, under the Add panel, lists everything on the page in order: the Header, each section and the elements inside it, and the Footer. Selecting in Layers selects on the page, scrolling it into view, and the other way round. Pointing at a row outlines that item on the page.
 
 On a [blog post](blog.md), Layers also lists the blog's design: its sections above the post's own, after the Header, and those below, before the Footer. Renaming, hiding or adding a note to one of them changes the design, so every post shows it. Each change is one step you can undo, such as _Renamed Heading to 'Date' in the design of 'Blog'_.
 
