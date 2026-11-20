@@ -1,6 +1,6 @@
 # The Header and Footer: what they can hold
 
-**Status:** 🟡 For decision (HF-1…HF-7). Nothing here is in the plan.
+**Status:** ✅ Decided 2026-11-20 ([§5](#5-decisions)): HF-1, HF-2 and HF-4 are adopted (6 days); the other four are not taken for now. Not yet planned.
 
 **Date:** 2026-11-20
 
@@ -75,6 +75,22 @@ Sizes are rough ideal days.
 **Not proposed:** any element in the Header (see §3); a different Header for one page (hiding covers the need; a landing page can hide both); a search box (no site search yet); a language switcher (comes with sites in several languages, CC-2, v1.1); a light/dark switch (comes with dark mode for visitors, 6.11).
 
 **What changes if adopted:** the Header's and Footer's fields, with a format migration each (HF-2, HF-4); the templates, which would use the new parts; the catalogue data for AI apps; and the help page.
+
+## 5. Decisions
+
+Product owner, 2026-11-20, asked which proposals to adopt: "The recommended ones".
+
+| #    | Decision                                                                       |
+| ---- | ------------------------------------------------------------------------------ |
+| HF-1 | ✅ **Adopted:** a logo in the Header                                           |
+| HF-2 | ✅ **Adopted:** the Header's button is its own                                 |
+| HF-3 | ❌ **Not taken for now:** a phone number and social icons in the Header        |
+| HF-4 | ✅ **Adopted:** the Footer takes elements, in up to four columns               |
+| HF-5 | ❌ **Not taken for now:** a bottom line in the Footer. Next in line after HF-4 |
+| HF-6 | ❌ **Not taken for now:** a see-through Header                                 |
+| HF-7 | ❌ **Not taken for now:** two more Header layouts                              |
+
+6 days in all, in the order HF-1, HF-2, HF-4. Not yet planned: the plan items, their issues and the release they join (before v1.0 or v1.1) follow in `spec/04`.
 
 ## Sources
 
