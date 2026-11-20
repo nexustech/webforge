@@ -17,8 +17,10 @@ import type { FieldDrag, InsertPoint } from "../canvas-engine.js";
 /** Marks the element outlined from outside the canvas (`CanvasEngine.outline`). */
 export const OUTLINED_ATTRIBUTE = "data-wf-outlined";
 
+import { followPlacement } from "./bar-placement.js";
 import { FRAME_TOOLTIP_CSS } from "./frame-tooltips.js";
 import {
+  ACTION_BAR,
   ACTIONS,
   ACTIONS_OVERLAY,
   componentSelector,
@@ -173,6 +175,16 @@ ${ACTIONS} {
   padding-left: 0 !important;
   transform-origin: left top !important;
   margin-top: calc(7px / var(--wf-zoom, 1));
+}
+/*
+ * The selected element's bar is moved off its text (#1177): Puck's box for it stays where it was,
+ * so only the bar itself takes clicks, not that empty box over the page.
+ */
+${SELECTED_COMPONENT} ${ACTIONS} {
+  pointer-events: none !important;
+}
+${SELECTED_COMPONENT} ${ACTIONS} ${ACTION_BAR} {
+  pointer-events: auto;
 }
 /*
  * A hovered element shows its name chip there too (SP-1): only the chip, which takes no clicks, so
@@ -503,42 +515,6 @@ export function hoveredSize(document: Document, id: string): string | undefined 
   return `${Math.round(width)} × ${Math.round(height)}`;
 }
 
-/** Space between the element and its bar when the bar goes below it, in screen pixels. */
-const BELOW_GAP = 4;
-
-/**
- * Keeps the selected element's bar inside the canvas: Puck draws it above its element at a fixed
- * size on screen, so on a zoomed-out canvas the bar of an element near the top of the page would
- * sit above the frame, where it can't be clicked. It then goes just below the element instead, so
- * it covers neither the element nor the frame's edge. A hovered element's bar stays put. Returns
- * a function that stops following the frame's size.
- */
-function keepInFrame(bar: HTMLElement, selected: boolean): (() => void) | undefined {
-  const frame = bar.ownerDocument.defaultView;
-  if (!frame) {
-    return undefined;
-  }
-  const place = () => {
-    bar.style.transform = "";
-    const element = bar.closest(OVERLAY);
-    if (element === null || !selected) {
-      return;
-    }
-    const { top, height } = bar.getBoundingClientRect();
-    if (top >= 0 || height === 0) {
-      return;
-    }
-    // The bar is scaled to stay the same size on screen: `scale` turns screen into frame pixels.
-    const scale = height / bar.offsetHeight;
-    const below = element.getBoundingClientRect().bottom + BELOW_GAP * scale;
-    const target = Math.max(0, Math.min(below, frame.innerHeight - height));
-    bar.style.transform = `translateY(${(target - top) / scale}px)`;
-  };
-  place();
-  frame.addEventListener("resize", place);
-  return () => frame.removeEventListener("resize", place);
-}
-
 /**
  * The selected element's bar (UI1 §3, F-ED-25): its label chip, select-parent, move up and down,
  * *Edit* and *Hide*, and Puck's own duplicate and delete (and the rich-text format menu while text
@@ -577,17 +553,33 @@ export function QuickActionBar({
     bar.addEventListener("mousedown", keepFocus);
     return () => bar.removeEventListener("mousedown", keepFocus);
   });
-  // After every draw, with no dependencies on purpose (R2): where the bar sits and the hovered
-  // element's size are read from the canvas's layout, which changes without any of this component's
-  // values changing. It sets the size only when it differs, so it settles after one more draw.
+  // After every draw, with no dependencies on purpose (R2): the hovered element's size is read from
+  // the canvas's layout, which changes without any of this component's values changing. It sets
+  // the size only when it differs, so it settles after one more draw.
   useLayoutEffect(() => {
     const bar = kept.current;
     // With *Show spacing on hover* on, a hovered element's chip says its size (SP-2).
     const next =
       bar === null || selected || id === null ? undefined : hoveredSize(bar.ownerDocument, id);
     if (next !== size) setSize(next);
-    return bar === null ? undefined : keepInFrame(bar, selected);
   });
+  // The selected element's bar keeps off its text (#1177), following the canvas's layout itself, so
+  // only a new selection starts it again. A hovered element's chip stays where Puck puts it.
+  useLayoutEffect(() => {
+    const bar = kept.current;
+    const overlay = bar?.closest(OVERLAY);
+    if (
+      !selected ||
+      id === null ||
+      bar === null ||
+      bar === undefined ||
+      overlay === null ||
+      overlay === undefined
+    ) {
+      return undefined;
+    }
+    return followPlacement(bar, overlay, bar.ownerDocument.querySelector(componentSelector(id)));
+  }, [selected, id]);
   const locked = id !== null && isLocked?.(id) === true;
   if (!selected) {
     return (
