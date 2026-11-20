@@ -4,7 +4,7 @@ id: editing-on-the-page
 title: Editing on the page
 summary: Select, type, move, copy and delete sections and elements right on the page.
 related: [the-editor, edit-panel, layers, styling, links, keyboard-shortcuts]
-updated: 2026-11-16
+updated: 2026-11-20
 ---
 
 # Editing on the page
@@ -36,7 +36,7 @@ Hover over a button on the bar, the + beside a section, a handle or a button on 
 
 ## Changing text
 
-Select a text item and press **Enter** (or click **Edit** on its bar), then type. **Backspace** on a selected item empties its text and starts typing; on an item with no text of its own, such as an image, Backspace deletes it.
+Click a text item where you want to type, and type. Or select an item and start typing to add to the end of the text; **Backspace** clears it first. **Enter**, or **Edit** on its bar, puts the caret at the end without typing anything. On an item with no text of its own, such as an image, Backspace deletes it.
 
 While you type, a small toolbar offers:
 

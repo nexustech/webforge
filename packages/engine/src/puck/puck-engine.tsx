@@ -217,6 +217,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       contextMenu: contextMenus.emit,
       menuEnabled: () => frame.mode() === "design",
       selected: selection.current,
+      several: selection.several.get,
     },
     frameWindows,
     addRequest: addRequests.emit,
