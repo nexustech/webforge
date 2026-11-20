@@ -7,6 +7,7 @@ export const siteApi = (call: Call, subscribe: Subscribe): SiteApi => ({
   exportChoices: (sessionId) => call("exportChoices", sessionId),
   setExportChoices: (sessionId, choices) => call("setExportChoices", sessionId, choices),
   openExport: (sessionId) => call("openExport", sessionId),
+  showExport: (sessionId) => call("showExport", sessionId),
   cancelExport: (operationId) => call("cancelExport", operationId),
   bundleFile: (sessionId, url) => call("bundleFile", sessionId, url),
   onExportProgress: (listener) =>

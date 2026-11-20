@@ -5,3 +5,4 @@
 export { jumpTo } from "./actions.js";
 export { describePlace } from "./describe.js";
 export { SITE_CHECK_PANEL_ID } from "./register-site-check-panel.js";
+export { SiteCheckToFix } from "./SiteCheckToFix.js";

@@ -7,7 +7,13 @@ import { createStore } from "zustand/vanilla";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { createPublishRequests, type VersionToRepublish } from "../editor/publish-requests.js";
 import { provide } from "../editor/services.js";
-import { OnNetlify, PublishedYear, Publishing, TrustedCode } from "../editor/window-services.js";
+import {
+  OnNetlify,
+  PublishedYear,
+  Publishing,
+  SiteCheckToFix,
+  TrustedCode,
+} from "../editor/window-services.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { SITE_CHECK_PANEL_ID } from "../site-check/index.js";
@@ -45,12 +51,13 @@ export const publishArea: Area<WindowContext> = {
     ),
     provide(Publishing, () => createPublishRequests()),
   ],
-  uses: [TrustedCode],
+  uses: [TrustedCode, SiteCheckToFix],
   register: ({ api, commands, session, windowDialogs, panels, use }) => {
     const codeTrust = use(TrustedCode);
     const publishedYear = use(PublishedYear);
     const onNetlify = use(OnNetlify);
     const requests = use(Publishing);
+    const toFix = use(SiteCheckToFix);
     const opened = createStore<Opened>(() => ({ open: false }));
     // Netlify destinations (4.4b): its calls for the open site, and whether this build can sign in
     // through Netlify's page, which its OAuth client ID decides (4.2).
@@ -79,7 +86,7 @@ export const publishArea: Area<WindowContext> = {
       showLive: (live, destination) => {
         publishedYear.setState(new Date().getFullYear(), true);
         requests.published();
-        outcomes.showLive(live);
+        outcomes.showLive(live, toFix.getState());
         // A Netlify site whose visitors get its log-in page, as a new project kept private does:
         // said on Your site is live, since the API reports it live all the same (ADR 0006
         // decision 6). A check that fails says nothing.
@@ -158,6 +165,7 @@ export const publishArea: Area<WindowContext> = {
             })
             .catch((error: unknown) => reportFailure("publish.open", error));
         },
+        showSiteCheck: () => panels.show(SITE_CHECK_PANEL_ID),
         copyLink: (url) => {
           api.clipboard
             .copyText(url)
