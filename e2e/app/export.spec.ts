@@ -69,6 +69,8 @@ test.describe("Export site", () => {
     const report = page.getByRole("dialog", { name: "Site exported" });
     await expect(report).toBeVisible({ timeout: 30_000 });
     await expect(report).toContainText("Saved in the folder “my-site”.");
+    // Its full path, to find it by (#1171).
+    await expect(report).toContainText(folder);
     // The pages and their files and robots.txt; no llms.txt or Markdown copies, which a new site
     // leaves off (3.15, SEO-12).
     await expect(report).toContainText(/Pages: \d+ · Files: 9 · Size: \d+/);
@@ -79,6 +81,8 @@ test.describe("Export site", () => {
     ).toHaveCount(0);
     await report.getByRole("button", { name: "Open in Browser" }).click();
     await expect.poll(opened).toEqual([`open ${join(folder, "index.html")}`]);
+    await report.getByRole("button", { name: "Show the Folder" }).click();
+    await expect.poll(opened).toEqual([`open ${join(folder, "index.html")}`, `open ${folder}`]);
     await report.getByRole("button", { name: "Done" }).click();
     await expect(report).toBeHidden();
 
@@ -198,6 +202,69 @@ test.describe("Export site with Site Check (3.6, X5)", () => {
       expect(readdirSync(folder)).not.toContain("con.html");
     } finally {
       await checked.close();
+    }
+  });
+
+  test("lists an empty page, and the report says how many things Site Check lists, opening it (#1171)", async () => {
+    // A site with an empty Catering page, in its menu as every page is.
+    const dir = mkdtempSync(join(parent, "empty-"));
+    const site = createSite({
+      name: "Rosa's Bakery",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content.push({ type: "Section", props: { id: "intro" } });
+    const catering = newId("page") as PageId;
+    site.pages[catering] = {
+      ...structuredClone(home),
+      id: catering,
+      slug: "catering",
+      title: "Catering",
+      doc: { root: { props: {} }, content: [] },
+    };
+    site.pageOrder.splice(1, 0, catering);
+    const sitePath = join(dir, "Rosa's Bakery.wforge");
+    const store = ProjectStore.create(sitePath, { name: "Rosa's Bakery" });
+    store.saveSite(site);
+    store.close();
+    const opened = await launchDesktopApp({
+      userDataDir: join(dir, "user-data"),
+      args: [sitePath],
+    });
+    try {
+      const editor = await opened.firstWindow();
+      await waitForCanvas(editor);
+      const folder = join(dir, "exported");
+      await stubFileDialogs(opened, folder);
+
+      await editor.getByRole("banner").getByRole("button", { name: "Export", exact: true }).click();
+      await editor
+        .getByRole("alertdialog", { name: "Add your site's web address?" })
+        .getByRole("button", { name: "Export without it" })
+        .click();
+      await editor
+        .getByRole("dialog", { name: "Export Site" })
+        .getByRole("button", { name: "Export…" })
+        .click();
+      const report = editor.getByRole("dialog", { name: "Site exported" });
+      await expect(report).toBeVisible({ timeout: 30_000 });
+      await expect(report).toContainText(folder);
+      await expect(report).toContainText(/Site Check lists \d+ things to fix\./);
+      expect(existsSync(join(folder, "catering.html"))).toBe(true);
+
+      // From the report to Site Check, where the empty page is, by its name.
+      await report.getByRole("button", { name: "Show in Site Check" }).click();
+      await expect(report).toBeHidden();
+      const drawer = editor.getByRole("region", { name: "Bottom panel" });
+      await expect(drawer.getByRole("tab", { name: "Site Check", selected: true })).toBeVisible();
+      const empty = drawer.locator('[data-rule="emptyPages"]');
+      await expect(empty).toHaveAttribute("data-status", "warn");
+      await expect(empty.getByRole("button", { name: "Show Catering" })).toBeVisible();
+    } finally {
+      await opened.close();
     }
   });
 

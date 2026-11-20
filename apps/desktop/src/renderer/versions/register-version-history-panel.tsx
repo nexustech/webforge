@@ -7,6 +7,9 @@ import { VersionHistoryPanel } from "./VersionHistoryPanel.js";
 import type { VersionActions } from "./version-actions.js";
 import type { VersionList } from "./version-list.js";
 
+/** Version History's panel id: Site › Version History shows it (#1165). */
+export const VERSION_HISTORY_PANEL_ID = "versionHistory";
+
 /**
  * Adds Version History beside Undo History in the left column's bottom (A21), listing the site's
  * versions each time it's shown. Returns a function that removes it.
@@ -29,7 +32,7 @@ export function registerVersionHistoryPanel(
     return <VersionHistoryPanel state={state} actions={actions} onSave={onSave} />;
   }
   return panels.register({
-    id: "versionHistory",
+    id: VERSION_HISTORY_PANEL_ID,
     slot: "left.bottom",
     title: t("versionHistory.panelTitle"),
     description: t("versionHistory.panelDescription"),

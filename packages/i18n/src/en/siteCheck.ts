@@ -16,6 +16,10 @@ export const siteCheck = {
   "siteCheck.button.toFix.other": "{count} to fix",
   "siteCheck.button.clear": "No problems",
   "siteCheck.fix": "Fix",
+  "siteCheck.fix.label": "Fix: {item}",
+  // A finding its buttons tell apart from another in the same place (#1164).
+  "siteCheck.item.inRule": "{item}, {rule}",
+  "siteCheck.item.nth": "{item} ({n})",
   // The assistant drafts what's missing, for the person to review (#873).
   "siteCheck.write": "Write One…",
   "siteCheck.write.label": "Write one with the assistant: {item}",
@@ -25,8 +29,7 @@ export const siteCheck = {
   "siteCheck.restore.one": "Show 1 ignored item again",
   "siteCheck.restore.other": "Show {count} ignored items again",
   "siteCheck.status.pass": "Passed",
-  "siteCheck.status.warn": "Worth a look",
-  "siteCheck.status.fail": "Must be fixed",
+  "siteCheck.passed": "Passed ({count})",
 
   // Each rule: its name, the verdict when it passes, and when it doesn't.
   "siteCheck.rule.deviceNames": "Page names",
@@ -53,6 +56,12 @@ export const siteCheck = {
   "siteCheck.rule.pageTitles.pass": "Every page has a title",
   "siteCheck.rule.pageTitles.fail.one": "1 page has no title",
   "siteCheck.rule.pageTitles.fail.other": "{count} pages have no title",
+  "siteCheck.rule.emptyPages": "Empty pages",
+  "siteCheck.rule.emptyPages.pass": "Every page has something on it",
+  "siteCheck.rule.emptyPages.fail.one":
+    "1 page has no sections: visitors see only the Header and Footer",
+  "siteCheck.rule.emptyPages.fail.other":
+    "{count} pages have no sections: visitors see only the Header and Footer",
   "siteCheck.rule.webAddress": "Web address",
   "siteCheck.rule.webAddress.pass": "The site's web address is in Site Settings",
   "siteCheck.rule.webAddress.fail.one":
@@ -221,6 +230,11 @@ export const siteCheck = {
   "siteCheck.done": "Done",
   "siteCheck.done.label": "Done: {item}",
   "siteCheck.guide.failed": "Your web browser didn't open. Try again in a moment.",
+
+  // On the export's and Publish's reports (#1171).
+  "siteCheck.report.toFix.one": "Site Check lists 1 thing to fix.",
+  "siteCheck.report.toFix.other": "Site Check lists {count} things to fix.",
+  "siteCheck.report.show": "Show in Site Check",
 
   // Where each finding is.
   "siteCheck.place.page": "{element} on {page}",

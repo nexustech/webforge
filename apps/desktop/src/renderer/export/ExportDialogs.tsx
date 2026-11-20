@@ -21,6 +21,7 @@ import { useState, useSyncExternalStore } from "react";
 import { z } from "zod";
 import type { ExportChoices } from "../../shared/ipc/site.js";
 import { HelpButton } from "../help/index.js";
+import { SiteCheckToFix } from "../site-check/index.js";
 import type { ExportDialogs as Dialogs, ExportReport } from "./export-dialogs.js";
 
 type OptionValues = {
@@ -103,14 +104,27 @@ function WebAddressPrompt({
   );
 }
 
-/** The export report (07): where the site went, its size, and what's worth a look. */
+/** What the report's buttons do: they ask main, which knows where the export went. */
+export type ReportActions = {
+  /** Opens the export: a folder's home page in the browser, a ZIP in the file manager. */
+  readonly onOpen: () => void;
+  /** *Show the Folder* (#1171): the exported folder in the file manager. */
+  readonly onShowFolder: () => void;
+  /** Shows the Site Check panel (#1171). */
+  readonly onSiteCheck: () => void;
+};
+
+/**
+ * The export report (07): where the site went, its full path, its size, what's worth a look, and
+ * how many things Site Check still lists to fix (#1171).
+ */
 function Report({
   report,
-  onOpen,
+  actions,
   onClose,
 }: {
   readonly report: ExportReport;
-  readonly onOpen: () => void;
+  readonly actions: ReportActions;
   readonly onClose: () => void;
 }) {
   const where =
@@ -130,7 +144,15 @@ function Report({
           <DialogTitle>{t("export.report.title")}</DialogTitle>
           <DialogDescription>{where}</DialogDescription>
         </DialogHeader>
+        <p className="break-all text-muted-foreground text-sm">{report.location}</p>
         <p className="text-sm">{report.summary}</p>
+        <SiteCheckToFix
+          count={report.toFix}
+          onShow={() => {
+            onClose();
+            actions.onSiteCheck();
+          }}
+        />
         {noIssues ? (
           <p className="text-muted-foreground text-sm">{t("export.report.allGood")}</p>
         ) : (
@@ -153,7 +175,12 @@ function Report({
           <Button variant="outline" onClick={onClose}>
             {t("export.report.done")}
           </Button>
-          <Button onClick={onOpen}>
+          {report.format === "folder" ? (
+            <Button variant="outline" onClick={actions.onShowFolder}>
+              {t("export.report.showFolder")}
+            </Button>
+          ) : null}
+          <Button onClick={actions.onOpen}>
             {report.format === "zip" ? t("export.report.showZip") : t("export.report.openFolder")}
           </Button>
         </DialogFooter>
@@ -168,10 +195,10 @@ function Report({
  */
 export function ExportDialogs({
   dialogs,
-  onOpen,
+  actions,
 }: {
   readonly dialogs: Dialogs;
-  readonly onOpen: () => void;
+  readonly actions: ReportActions;
 }) {
   const shown = useSyncExternalStore(dialogs.subscribe, dialogs.shown, dialogs.shown);
   if (shown === null) return null;
@@ -204,13 +231,13 @@ export function ExportDialogs({
         />
       );
     case "report":
-      return <Report report={shown.report} onOpen={onOpen} onClose={dialogs.close} />;
+      return <Report report={shown.report} actions={actions} onClose={dialogs.close} />;
   }
 }
 
 /** {@link ExportDialogs} as a window dialog (2.3b): drawn once, with these dialogs. */
-export function exportDialogsFor(dialogs: Dialogs, onOpen: () => void) {
+export function exportDialogsFor(dialogs: Dialogs, actions: ReportActions) {
   return function ExportDialogsHost() {
-    return <ExportDialogs dialogs={dialogs} onOpen={onOpen} />;
+    return <ExportDialogs dialogs={dialogs} actions={actions} />;
   };
 }

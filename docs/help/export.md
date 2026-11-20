@@ -4,7 +4,7 @@ id: export
 title: Export
 summary: Save your website as files, or one ZIP file, to put on any web host.
 related: [publish, site-check, preview, site-settings, saving-and-backups]
-updated: 2026-11-16
+updated: 2026-11-20
 ---
 
 # Export
@@ -23,7 +23,7 @@ Click **Export** in the title bar (the down arrow, in a narrow window), choose *
    - **Make the files smaller:** leaves out spacing and comments, so pages load a little faster but are harder for a person to read.
 5. Choose where to save it. You can keep working while {appName} builds your site.
 
-When it's done, {appName} shows how many pages and files it made. It also lists anything **worth a look**, such as a broken link or a form with nowhere to send. For a folder, click **Open in Browser** to see it; for a ZIP file, **Show ZIP File** shows where it was saved.
+When it's done, {appName} shows where it saved your site, with the folder's full path, and how many pages and files it made. It also lists anything **worth a look**, such as a broken link or a form with nowhere to send, and says how many things [Site Check](site-check.md) still lists to fix: click **Show in Site Check** to see them. For a folder, click **Open in Browser** to see your site, or **Show the Folder** to open the folder; for a ZIP file, **Show ZIP File** shows where it was saved.
 
 ## Exporting again
 

@@ -4,7 +4,7 @@ id: publish
 title: Publish
 summary: Put your website on your web host or on Netlify, and update it with one click whenever you change something.
 related: [export, site-check, site-settings, version-history]
-updated: 2026-11-17
+updated: 2026-11-20
 ---
 
 # Publish
@@ -66,7 +66,7 @@ Click **Publish** beside a destination. {appName}:
 
 If the folder already has another site that {appName} published, it asks before replacing it.
 
-When it's done, **Your Site Is Live** says where visitors can see it, and how many files were sent, unchanged and removed. **Open in Browser** opens it and **Copy Link** copies its address. A new site can take a few minutes to appear.
+When it's done, **Your Site Is Live** says where visitors can see it, and how many files were sent, unchanged and removed. If [Site Check](site-check.md) still lists anything to fix, it says how many: click **Show in Site Check** to see them. **Open in Browser** opens it and **Copy Link** copies its address. A new site can take a few minutes to appear.
 
 Each publish is kept in [Version History](version-history.md) as _Published_. To put an earlier version back on your host, use its **Republish…** there: see [Publishing an earlier version](version-history.md#publishing-an-earlier-version).
 

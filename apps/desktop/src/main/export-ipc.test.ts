@@ -102,6 +102,7 @@ function setUp(dialogs: ExportDialogs, run: RunExport | ExportOutcome = exported
       };
     },
     open: vi.fn(async (): Promise<"opened" | "missing"> => "opened"),
+    show: vi.fn(async (): Promise<"opened" | "missing"> => "opened"),
   } satisfies ExportDeps;
   registerExportHandlers(ipc, (url) => url === APP_URL, deps);
   // Each call as the window loaded for opening A sends it.
@@ -130,6 +131,7 @@ function setUp(dialogs: ExportDialogs, run: RunExport | ExportOutcome = exported
     choicesOf: call("site:export-choices"),
     setChoices: call("site:set-export-choices"),
     openLast: call("site:open-export"),
+    showLast: call("site:show-export"),
   };
 }
 
@@ -145,6 +147,7 @@ describe("registerExportHandlers", () => {
       status: "exported",
       format: "folder",
       name: "my-site",
+      location: "/sites/my-site",
       pages: 1,
       files: 5,
       bytes: 1234,
@@ -254,6 +257,18 @@ describe("registerExportHandlers", () => {
       format: "folder",
       output: { minify: false, developerFiles: false },
     });
+  });
+
+  it("shows only the open site's last export in the file manager (#1171)", async () => {
+    const { invoke, showLast, show, open, opened } = setUp(toFolder("/sites/my-site"));
+    await expect(showLast()).resolves.toBe("none");
+    await invoke(request);
+
+    await expect(showLast()).resolves.toBe("opened");
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ destination: "/sites/my-site" }));
+    expect(open).not.toHaveBeenCalled();
+    opened.sessionId = SITE_B;
+    await expect(showLast()).resolves.toBe("none");
   });
 
   it("passes the export's progress on to the window, and cancels it when asked (3.1)", async () => {

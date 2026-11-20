@@ -19,11 +19,61 @@ type Submenu = {
 type GroupItem = string | Submenu;
 
 /**
- * The groups of the menus that have them, in order (#1016). Edit's: undo; the clipboard;
- * arranging; the Style, Select and Shared Section submenus; notes; find. A command a menu's groups
- * leave out comes after them, in a group of its own.
+ * The groups of the menus that have them, in order (#1016, #1165), none longer than seven, so a
+ * menu reads in parts and fits a 600 px window. A command a menu's groups leave out comes after
+ * them, in a group of its own.
+ * - File: opening a site; saving it and its versions; previewing, exporting and publishing;
+ *   settings; closing.
+ * - Edit: undo; the clipboard; arranging; the Style, Select and Shared Section submenus; notes;
+ *   find.
+ * - View: searching and moving about the window; the panels; the canvas's device and outlines; its
+ *   zoom; the interface's zoom; appearance and modes.
+ * - Site: its settings and its look; what it's checked for and its versions.
  */
 export const MENU_GROUPS: Partial<Record<MenuId, readonly (readonly GroupItem[])[]>> = {
+  file: [
+    [
+      COMMAND_IDS.newSite,
+      COMMAND_IDS.quickStart,
+      COMMAND_IDS.openSite,
+      COMMAND_IDS.openRecent,
+      COMMAND_IDS.openSiteZip,
+    ],
+    [COMMAND_IDS.saveVersion, COMMAND_IDS.saveSiteZip],
+    [
+      COMMAND_IDS.preview,
+      COMMAND_IDS.previewOnPhone,
+      COMMAND_IDS.stopPhonePreview,
+      COMMAND_IDS.exportSite,
+      COMMAND_IDS.publish,
+    ],
+    [COMMAND_IDS.settings, COMMAND_IDS.aiApps],
+    [COMMAND_IDS.closeSite],
+  ],
+  view: [
+    [COMMAND_IDS.commandBox, COMMAND_IDS.nextRegion, COMMAND_IDS.previousRegion],
+    [
+      COMMAND_IDS.toggleLeftPanels,
+      COMMAND_IDS.toggleRightPanels,
+      COMMAND_IDS.toggleDrawer,
+      COMMAND_IDS.undoHistory,
+      COMMAND_IDS.resetPanels,
+    ],
+    [
+      COMMAND_IDS.desktopView,
+      COMMAND_IDS.tabletView,
+      COMMAND_IDS.mobileView,
+      COMMAND_IDS.showOutlines,
+      COMMAND_IDS.elementNames,
+    ],
+    [COMMAND_IDS.zoomIn, COMMAND_IDS.zoomOut, COMMAND_IDS.zoomActual, COMMAND_IDS.zoomFit],
+    [COMMAND_IDS.interfaceZoomIn, COMMAND_IDS.interfaceZoomOut, COMMAND_IDS.interfaceZoomReset],
+    [COMMAND_IDS.theme, COMMAND_IDS.editorMode, COMMAND_IDS.editorLevel],
+  ],
+  site: [
+    [COMMAND_IDS.siteSettings, "theme.show", "theme.studio", COMMAND_IDS.stylesheet],
+    [COMMAND_IDS.siteCheck, COMMAND_IDS.versionHistory],
+  ],
   edit: [
     [COMMAND_IDS.undo, COMMAND_IDS.redo],
     ["edit.cut", "edit.copy", "edit.paste", "edit.duplicate", "edit.delete"],

@@ -24,6 +24,7 @@ test.beforeEach(async () => {
       .click();
   }
   await expect.poll(scrollRoom).toBeGreaterThan(1200);
+  await settle();
 });
 
 test.afterEach(async () => {
@@ -50,8 +51,33 @@ const scrolled = () =>
     .locator("body")
     .evaluate((body) => body.ownerDocument.defaultView?.scrollY ?? 0);
 
+/**
+ * Waits for the canvas to settle: its size and its page's height the same twice running. A panel
+ * opened beside it, or the last section added, changes them a moment later (the canvas is zoomed to
+ * fit on a small screen), and a scroll made before that is left where the new layout puts it.
+ */
+async function settle(): Promise<void> {
+  const layout = () =>
+    canvas()
+      .locator("body")
+      .evaluate((body) => {
+        const root = body.ownerDocument.documentElement;
+        return `${root.clientWidth}×${root.clientHeight}, ${root.scrollHeight}`;
+      });
+  let last = "";
+  await expect
+    .poll(async () => {
+      const now = await layout();
+      const steady = now === last;
+      last = now;
+      return steady;
+    })
+    .toBe(true);
+}
+
 /** Scrolls the canvas's page to its top or its bottom, as the owner might have left it. */
 async function scrollTo(where: "top" | "bottom"): Promise<void> {
+  await settle();
   await canvas()
     .locator("body")
     .evaluate((body, end) => {
@@ -86,8 +112,8 @@ const selectedInView = () =>
     );
 
 test("shows the element a Site Check finding selects, from the bottom of a long page", async () => {
-  await scrollTo("bottom");
   await page.getByRole("button", { name: "Show or Hide Bottom Panel" }).click();
+  await scrollTo("bottom");
   await drawer()
     .locator('[data-rule="placeholders"]')
     .getByRole("button", { name: /^Show Text on / })
@@ -99,8 +125,8 @@ test("shows the element a Site Check finding selects, from the bottom of a long 
 });
 
 test("shows the element a Layers row selects, from the top of a long page", async () => {
-  await scrollTo("top");
   await left().getByRole("tab", { name: "Layers" }).click();
+  await scrollTo("top");
   await left()
     .getByRole("tree", { name: "Layers" })
     .getByRole("treeitem", { name: /^Hero/ })
@@ -112,9 +138,32 @@ test("shows the element a Layers row selects, from the top of a long page", asyn
   await expect.poll(selectedInView).toBe("in view");
 });
 
+test("shows a section an undo moves back and selects, from the far end of the page", async () => {
+  await left().getByRole("tab", { name: "Layers" }).click();
+  await scrollTo("top");
+  const heroes = left()
+    .getByRole("tree", { name: "Layers" })
+    .getByRole("treeitem", { name: /^Hero/ });
+  // The first Hero, two places down: two steps.
+  await heroes.first().click();
+  const moveDown = canvas().locator(SELECTED_COMPONENT).getByRole("button", { name: "Move down" });
+  await moveDown.click();
+  await moveDown.click();
+  // Something else selected, far down the page, so the moved Hero is above the view.
+  await heroes.last().click();
+  await expect.poll(selectedInView).toBe("in view");
+
+  // Undo moves it back a place and selects it: shown where it's drawn after the move, not before.
+  await page.locator(".editor__canvas").focus();
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(heroes.nth(1)).toHaveAttribute("aria-selected", "true");
+  await expect.poll(selectedInView).toBe("in view");
+});
+
 test("shows the text Find selects, from the bottom of a long page", async () => {
-  await scrollTo("bottom");
   await page.keyboard.press("ControlOrMeta+F");
+  await expect(drawer().getByRole("searchbox", { name: "Find" })).toBeVisible();
+  await scrollTo("bottom");
   await drawer().getByRole("searchbox", { name: "Find" }).fill("visitors");
   await drawer()
     .getByRole("button", { name: /^Text · Text: Tell visitors/ })

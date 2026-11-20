@@ -87,13 +87,20 @@ export function fileNameInFolder(site: SiteDoc, pageId: PageId, name: string): s
 /** How many pages deleting a page changes (D7): the model's, shared with AI apps (4.11). */
 export { pagesChangedByDeleting };
 
-/** Runs `recipe` as one undo step, then shows `pageId` (the step remembers it for redo). */
+/** How an {@link editShowing} step is announced: with an Undo toast when `announce` (#1164). */
+type ShowingOptions = { readonly announce?: boolean };
+
+/**
+ * Runs `recipe` as one undo step, then shows `pageId` (the step remembers it for redo); with an
+ * Undo toast when `announce`.
+ */
 export function editShowing(
   session: PagesSession,
   kind: EditKind,
   label: string,
   pageId: PageId,
   recipe: Recipe<SiteDoc>,
+  { announce = false }: ShowingOptions = {},
 ): void {
   const current = session.ui.getState();
   const selectionAfter: EditorSelection =
@@ -103,7 +110,7 @@ export function editShowing(
     recipe(draft);
     tidyKeptAddresses(draft);
   };
-  session.edit(kind, label, tidied, { selectionAfter, apply: true });
+  session.edit(kind, label, tidied, { selectionAfter, apply: true, announce });
 }
 
 /** Adds an empty page called `name` and shows it. Returns its id, or null for an empty name. */
@@ -154,7 +161,11 @@ const POLICY_PAGES: Readonly<
  * page, marked as the one Site Check looks for; the terms; or the cookie policy. Shows it. One
  * undo step ("Added page 'Terms'"). Returns its id.
  */
-export function addPolicyPage(session: PagesSession, kind: PolicyPageKind): PageId {
+export function addPolicyPage(
+  session: PagesSession,
+  kind: PolicyPageKind,
+  options: ShowingOptions = {},
+): PageId {
   const id = newId("page");
   const page = POLICY_PAGES[kind];
   editShowing(
@@ -163,6 +174,7 @@ export function addPolicyPage(session: PagesSession, kind: PolicyPageKind): Page
     t("history.added", { item: pageItem(page.title()) }),
     id,
     (draft) => page.insert(draft, id),
+    options,
   );
   return id;
 }

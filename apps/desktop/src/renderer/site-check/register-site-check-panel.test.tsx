@@ -157,21 +157,60 @@ describe("Site Check's first-time tip (5.4a, OB-4)", () => {
 });
 
 describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
-  it("is in the bottom drawer in Simple mode, under Must fix, Should fix and Tips", () => {
-    const { panels, remove, rule } = setUp();
+  it("is in the bottom drawer in Simple mode, its problems under their levels, then what passed (#1164)", () => {
+    const { panels, remove, rule } = setUp(siteWith({ slug: "con" }));
 
     expect(panelsInSlot(panels.list(), "drawer", "simple").map((panel) => panel.id)).toEqual([
       SITE_CHECK_PANEL_ID,
     ]);
     expect(screen.getByRole("heading", { name: "Must fix" })).toBeDefined();
     expect(screen.getByRole("heading", { name: "Should fix" })).toBeDefined();
-    expect(screen.getByRole("heading", { name: "Tips" })).toBeDefined();
-    // A green dot and its verdict for a rule that passes (SP-13).
+    // A green dot and its verdict for a rule that passes (SP-13), in Passed after every problem.
     expect(rule("brokenLinks").dataset.status).toBe("pass");
     expect(rule("brokenLinks").textContent).toContain("Every link goes somewhere");
+    const rows = [...document.querySelectorAll<HTMLElement>("[data-rule]")];
+    const lastProblem = rows.findLastIndex((row) => row.dataset.status !== "pass");
+    const firstPassed = rows.findIndex((row) => row.dataset.status === "pass");
+    expect(lastProblem).toBeGreaterThan(-1);
+    expect(firstPassed).toBeGreaterThan(lastProblem);
+    const passed = screen.getByText(/^Passed \(\d+\)$/);
+    expect(passed.closest("details")?.contains(rule("brokenLinks"))).toBe(true);
+    // The level's own words for a screen reader, as the heading says them.
+    expect(rule("deviceNames").textContent).toMatch(/^Must fix: /);
 
     remove();
     expect(panels.list()).toEqual([]);
+  });
+
+  it("asks for its Undo toast with each fix that changes the site (#1164)", async () => {
+    const site = siteWith({ content: [{ type: "ContactForm", props: { id: "write" } }] });
+    const { rule, session } = setUp(site);
+    const added = vi.fn();
+    session.onEntryAdded(added);
+
+    await userEvent.click(within(rule("privacyPage")).getByRole("button", { name: /^Fix: / }));
+
+    expect(added).toHaveBeenCalledWith(
+      expect.objectContaining({ label: "Added page 'Privacy'" }),
+      "insert",
+      true,
+    );
+  });
+
+  it("names each Fix for what it fixes, as Ignore is named (#1164)", () => {
+    const site = siteWith({
+      content: [
+        { type: "ContactForm", props: { id: "write" } },
+        { type: "ContactForm", props: { id: "ask" } },
+      ],
+    });
+    setUp({ ...site, settings: { ...site.settings, address: {} } });
+
+    const names = screen
+      .getAllByRole("button", { name: /^Fix: / })
+      .map((button) => button.getAttribute("aria-label"));
+    expect(names.length).toBeGreaterThan(2);
+    expect(new Set(names).size).toBe(names.length);
   });
 
   it("fixes a page Windows can't save, as one undo step, and the dot turns green (R16)", () => {
@@ -182,7 +221,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     // Must fix can't be ignored.
     expect(within(rule("deviceNames")).queryByRole("button", { name: /Ignore/ })).toBeNull();
 
-    fireEvent.click(within(rule("deviceNames")).getByRole("button", { name: "Fix" }));
+    fireEvent.click(within(rule("deviceNames")).getByRole("button", { name: /^Fix: / }));
 
     const about = session.history.document.getState().pages[ABOUT];
     expect([about?.folder, about?.slug]).toEqual(["aux-2/shop", "con-2"]);
@@ -206,7 +245,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
       pageOrder: [...site.pageOrder, cakes.id, taken.id],
     });
 
-    const [first] = within(rule("deviceNames")).getAllByRole("button", { name: "Fix" });
+    const [first] = within(rule("deviceNames")).getAllByRole("button", { name: /^Fix: / });
     if (first === undefined) throw new Error("no Fix");
     fireEvent.click(first);
 
@@ -225,7 +264,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     const { session, rule } = setUp(siteWith({ title: "", content: [heading] }));
     expect(rule("pageTitles").textContent).toContain("Untitled page (about.html)");
 
-    await userEvent.click(within(rule("pageTitles")).getByRole("button", { name: "Fix" }));
+    await userEvent.click(within(rule("pageTitles")).getByRole("button", { name: /^Fix: / }));
 
     expect(session.history.document.getState().pages[ABOUT]?.title).toBe("Our story");
   });
@@ -241,11 +280,11 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     });
 
     await userEvent.click(
-      within(rule("brokenLinks")).getByRole("button", { name: "Show Button on About" }),
+      within(rule("brokenLinks")).getByRole("button", { name: /^Show Button on About(,|$)/ }),
     );
     expect([session.ui.getState().pageId, session.ui.getState().nodeId]).toEqual([ABOUT, "b"]);
 
-    await userEvent.click(within(rule("webAddress")).getByRole("button", { name: "Fix" }));
+    await userEvent.click(within(rule("webAddress")).getByRole("button", { name: /^Fix: / }));
     expect(showSettings).toHaveBeenCalledWith("site", "address");
   });
 
@@ -262,7 +301,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     expect(rule("outdatedYear").dataset.status).toBe("warn");
     expect(rule("outdatedYear").textContent).toContain(`Shows ${lastYear}`);
 
-    await userEvent.click(within(rule("outdatedYear")).getByRole("button", { name: "Fix" }));
+    await userEvent.click(within(rule("outdatedYear")).getByRole("button", { name: /^Fix: / }));
     expect(commands.run).toHaveBeenCalledWith(COMMAND_IDS.publish);
   });
 
@@ -277,7 +316,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     expect(rule("forms").textContent).toContain("2 forms have nowhere to send their messages");
 
     // Only the Contact form's line has a Fix: the Newsletter's is to select it.
-    const [fix, ...others] = within(rule("forms")).getAllByRole("button", { name: "Fix" });
+    const [fix, ...others] = within(rule("forms")).getAllByRole("button", { name: /^Fix: / });
     expect(others).toEqual([]);
     if (fix === undefined) throw new Error("no Fix");
     await userEvent.click(fix);
@@ -291,7 +330,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     expect(rule("privacyPage").textContent).toContain("but has no privacy page");
     expect(rule("privacyPage").textContent).toContain("Pages");
 
-    await userEvent.click(within(rule("privacyPage")).getByRole("button", { name: "Fix" }));
+    await userEvent.click(within(rule("privacyPage")).getByRole("button", { name: /^Fix: / }));
 
     const shown = session.history.document.getState().pages[session.ui.getState().pageId];
     expect(shown).toMatchObject({ title: "Privacy", settings: { privacy: true } });
@@ -309,7 +348,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     const show = () =>
       userEvent.click(
         within(rule("externalResources")).getByRole("button", {
-          name: "Show Custom Code › Stylesheet",
+          name: /^Show Custom Code › Stylesheet(,|$)/,
         }),
       );
 
@@ -347,7 +386,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
 
     await userEvent.click(
       within(rule("underlinedText")).getByRole("button", {
-        name: "Show Text in the shared section Hours",
+        name: /^Show Text in the shared section Hours(,|$)/,
       }),
     );
 
@@ -394,21 +433,21 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     expect(
       within(found).getByText("What helps people find your site with a search engine."),
     ).toBeDefined();
-    expect(found.contains(rule("webAddress"))).toBe(true);
+    expect(found.contains(rule("pageDescriptions"))).toBe(true);
     expect(within(rule("pageDescriptions")).getByText("Should fix")).toBeDefined();
     expect(within(rule("mainHeading")).getByText("Tip")).toBeDefined();
-    // Not under the levels as well.
-    const tips = screen.getByRole("region", { name: "Tips" });
-    expect(tips.contains(rule("mainHeading"))).toBe(false);
+    // Not under the levels as well: each rule once, in Being found.
+    expect(document.querySelectorAll('[data-rule="mainHeading"]')).toHaveLength(1);
+    expect(found.contains(rule("mainHeading"))).toBe(true);
   });
 
   it("opens Page Settings on a page without a description (3.17)", async () => {
     const { session, commands, rule } = setUp();
 
-    const line = within(rule("pageDescriptions")).getByRole("button", { name: "Show About" });
+    const line = within(rule("pageDescriptions")).getByRole("button", { name: /^Show About(,|$)/ });
     const finding = line.closest("li");
     if (finding === null) throw new Error("no finding");
-    await userEvent.click(within(finding).getByRole("button", { name: "Fix" }));
+    await userEvent.click(within(finding).getByRole("button", { name: /^Fix: / }));
 
     expect(session.ui.getState().pageId).toBe(ABOUT);
     expect(commands.run).toHaveBeenCalledWith("page.settings");
@@ -427,7 +466,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
 
     await userEvent.click(
       within(rule("businessDetails")).getByRole("button", {
-        name: "Show Site Settings › Phone number",
+        name: /^Show Site Settings › Phone number(,|$)/,
       }),
     );
     expect(showSettings).toHaveBeenCalledWith("site", "contact");
@@ -453,7 +492,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
 
     // Bringing back what was ignored leaves it done.
     await userEvent.click(
-      within(rule("pageDescriptions")).getByRole("button", { name: "Ignore: About" }),
+      within(rule("pageDescriptions")).getByRole("button", { name: /^Ignore: About(,|$)/ }),
     );
     await userEvent.click(screen.getByRole("button", { name: "Show 1 ignored item again" }));
     expect(saveIgnored).toHaveBeenLastCalledWith(["businessProfile:businessProfile"]);
@@ -512,5 +551,41 @@ describe("Site Check's title-bar button (#1009)", () => {
 
     remove();
     expect(titleBar.get(COMMAND_IDS.siteCheck)).toBeUndefined();
+  });
+
+  it("keeps the reports' count of what to fix as the title bar counts it, until removed (#1171)", () => {
+    const { recheck } = driveRecheck();
+    const session = sessionWith(siteWith());
+    const titleBar = createCommandRegistry();
+    const toFix = createStore<number>(() => -1);
+    const remove = registerSiteCheckPanel(createPanelRegistry(), {
+      session,
+      settings: createSettingsRegistry(),
+      commands: { run: vi.fn(() => true) },
+      titleBar,
+      openGuide: vi.fn(),
+      ignored: [],
+      saveIgnored: vi.fn(),
+      toFix,
+    });
+    const counted = () => titleBar.get(COMMAND_IDS.siteCheck)?.status?.match(/^(\d+) to fix/)?.[1];
+    const before = toFix.getState();
+    expect(String(before)).toBe(counted() ?? "0");
+
+    session.edit("props", "Renamed", (draft) => {
+      const about = draft.pages[ABOUT];
+      if (about !== undefined) about.slug = "nul";
+    });
+    recheck();
+    expect(toFix.getState()).toBe(before + 1);
+    expect(String(toFix.getState())).toBe(counted());
+
+    remove();
+    session.edit("props", "Renamed back", (draft) => {
+      const about = draft.pages[ABOUT];
+      if (about !== undefined) about.slug = "about";
+    });
+    recheck();
+    expect(toFix.getState()).toBe(before + 1);
   });
 });

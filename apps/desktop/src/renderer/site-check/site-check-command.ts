@@ -4,16 +4,15 @@ import type { CheckReport } from "@webforge/site-check";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
-import { countsByLevel } from "./counts.js";
+import { countsByLevel, toFixCount } from "./counts.js";
 
 /**
  * What the title bar's Site Check button says (#1009): "5 to fix · 13 tips", *Must fix* and
  * *Should fix* counted together, either left out at none, or "No problems" with nothing at all.
  */
 export function siteCheckStatus(report: CheckReport): string {
-  const counts = countsByLevel(report);
-  const toFix = counts.must + counts.should;
-  const tips = counts.tip;
+  const toFix = toFixCount(report);
+  const tips = countsByLevel(report).tip;
   const parts = [
     ...(toFix === 0 ? [] : [plural("siteCheck.button.toFix", toFix)]),
     ...(tips === 0 ? [] : [plural("siteCheck.count.tip", tips)]),
@@ -23,7 +22,7 @@ export function siteCheckStatus(report: CheckReport): string {
 
 /**
  * Site Check's command (#1009), which opens its panel: the title bar's button, showing what the
- * latest check found as it changes. Returns a function that removes it.
+ * latest check found as it changes, and Site › Site Check (#1165). Returns a function that removes it.
  */
 export function registerSiteCheckCommand(
   commands: Pick<CommandRegistry, "register" | "update">,
@@ -34,6 +33,8 @@ export function registerSiteCheckCommand(
   const remove = commands.register({
     id: COMMAND_IDS.siteCheck,
     label: t("siteCheck.title"),
+    // Site › Site Check too (#1165), beside Version History.
+    menu: "site",
     status: siteCheckStatus(state.getState().report),
     run: () => panels.show(panelId),
   });

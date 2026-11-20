@@ -117,7 +117,8 @@ describe("macOS's menu bar (LF-13)", () => {
     });
 
     const menus = nativeMenusOf(registry);
-    expect(menus[0]?.items[1]).toEqual({
+    // File's groups put it first, before what setUp registered there (#1165).
+    expect(menus[0]?.items.find((item) => item.id === "site.openRecent")).toEqual({
       id: "site.openRecent",
       label: "Open Recent",
       enabled: true,

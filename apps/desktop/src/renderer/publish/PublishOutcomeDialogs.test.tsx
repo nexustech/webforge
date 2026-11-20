@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { act } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createPublishOutcomes, PublishOutcomeDialogs } from "./PublishOutcomeDialogs.js";
@@ -32,6 +33,37 @@ describe("Your site is live, for a Netlify site visitors can't see (4.4b, #826 r
     act(() => outcomes.markProtected(LIVE.operationId));
     expect(screen.getByRole("alert").textContent).toContain(
       "Visitors have to log in to see this site",
+    );
+  });
+});
+
+describe("Your site is live, with what Site Check lists to fix (#1171)", () => {
+  it("says how many, and shows them in Site Check, closing itself", async () => {
+    const outcomes = createPublishOutcomes();
+    const showSiteCheck = vi.fn();
+    outcomes.showLive(LIVE, 3);
+    render(
+      <PublishOutcomeDialogs
+        state={outcomes.state}
+        openLive={vi.fn()}
+        copyLink={vi.fn()}
+        showSiteCheck={showSiteCheck}
+      />,
+    );
+    const live = screen.getByRole("dialog", { name: "Your Site Is Live" });
+    expect(live.textContent).toContain("Site Check lists 3 things to fix.");
+
+    await userEvent.click(screen.getByRole("button", { name: "Show in Site Check" }));
+    expect(showSiteCheck).toHaveBeenCalledOnce();
+    expect(outcomes.state.getState().shown).toBeNull();
+  });
+
+  it("says nothing of Site Check when it lists nothing to fix", () => {
+    const outcomes = createPublishOutcomes();
+    outcomes.showLive(LIVE);
+    render(<PublishOutcomeDialogs state={outcomes.state} openLive={vi.fn()} copyLink={vi.fn()} />);
+    expect(screen.getByRole("dialog", { name: "Your Site Is Live" }).textContent).not.toContain(
+      "Site Check",
     );
   });
 });

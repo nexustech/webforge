@@ -5,8 +5,13 @@ import { elementOf } from "./puck-dom.js";
 export const ROOM_ABOVE = 48;
 /** The room kept below it, on screen. */
 export const ROOM_BELOW = 16;
-/** How many frames to wait for an element that a page just shown hasn't drawn yet (about 1 s). */
-const FRAMES_TO_WAIT = 60;
+/**
+ * How often, and how many times, to look again for an element the canvas hasn't drawn yet (a
+ * section just added, or one on a page just shown): about a second in all. On timers, not
+ * animation frames, which a window behind others doesn't get.
+ */
+const RETRY_MS = 16;
+const TRIES = 60;
 
 /**
  * How far to scroll a view `height` tall to show a box from `top` to `bottom` (both measured from
@@ -32,7 +37,10 @@ export function revealOffset(
 export type CanvasScroll = {
   /** Shows the top of the page, which the canvas has just started showing. */
   toTop(): void;
-  /** Scrolls element `id` into view, clear of its selection bar, once the canvas has drawn it. */
+  /**
+   * Scrolls element `id` into view, clear of its selection bar, once the canvas has drawn the change
+   * that selected it.
+   */
   reveal(id: string): void;
   /** Forgets what was still to do: the canvas goes. */
   cancel(): void;
@@ -40,26 +48,32 @@ export type CanvasScroll = {
 
 /** A new {@link CanvasScroll} for the canvas's document, `document` (none before Puck is ready). */
 export function createCanvasScroll(document: () => Document | undefined): CanvasScroll {
-  let top = false;
   let shown: string | null = null;
-  /** The window and frame of the step waiting for the next frame, if one is. */
-  let waiting: { readonly view: Window; readonly frame: number } | null = null;
+  /** The window and timer of the next look for {@link shown}, while the canvas hasn't drawn it. */
+  let waiting: { readonly view: Window; readonly timer: number } | null = null;
+  /** Counts the reveals asked for, so a first look still to come knows when it's been replaced. */
+  let asked = 0;
 
-  const step = (frames: number) => {
+  const stopWaiting = () => {
+    asked += 1;
+    waiting?.view.clearTimeout(waiting.timer);
+    waiting = null;
+  };
+
+  /** Shows {@link shown} if the canvas has drawn it, or looks again in a moment. */
+  const show = (tries: number) => {
     waiting = null;
     const doc = document();
     const view = doc?.defaultView;
-    if (doc === undefined || view === null || view === undefined) return;
-    if (top) {
-      top = false;
-      view.scrollTo(0, 0);
-    }
-    if (shown === null) return;
+    if (shown === null || doc === undefined || view === null || view === undefined) return;
     const element = elementOf(doc, shown);
     if (element === undefined || element === null) {
       // A page just shown draws its elements a moment later; one that never comes is gone.
-      if (frames < FRAMES_TO_WAIT) schedule(frames + 1);
-      else shown = null;
+      if (tries < TRIES) {
+        waiting = { view, timer: view.setTimeout(() => show(tries + 1), RETRY_MS) };
+      } else {
+        shown = null;
+      }
       return;
     }
     shown = null;
@@ -76,34 +90,28 @@ export function createCanvasScroll(document: () => Document | undefined): Canvas
     if (offset !== 0) view.scrollBy(0, offset);
   };
 
-  /** Runs the next step at the next frame, after Puck has drawn what changed. */
-  const schedule = (frames = 0) => {
-    const view = document()?.defaultView;
-    if (view === null || view === undefined) return;
-    if (waiting !== null) {
-      if (waiting.view === view) return;
-      // The canvas has a new window: the old one's frame may never come.
-      waiting.view.cancelAnimationFrame(waiting.frame);
-    }
-    waiting = { view, frame: view.requestAnimationFrame(() => step(frames)) };
-  };
-
   return {
     toTop() {
-      top = true;
       // An element of the page before is no longer there to show.
+      stopWaiting();
       shown = null;
-      schedule();
+      document()?.defaultView?.scrollTo(0, 0);
     },
     reveal(id) {
+      stopWaiting();
       shown = id;
-      schedule();
+      // The first look comes once the change that selected it is drawn: the app selects straight
+      // after it changes the page (an undo that moves a section back and selects it), and React
+      // draws that in a microtask queued before this one. Not at the next frame, which a window
+      // behind others doesn't get.
+      const look = asked;
+      queueMicrotask(() => {
+        if (look === asked) show(0);
+      });
     },
     cancel() {
-      top = false;
+      stopWaiting();
       shown = null;
-      waiting?.view.cancelAnimationFrame(waiting.frame);
-      waiting = null;
     },
   };
 }
