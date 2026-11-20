@@ -1,6 +1,6 @@
 # Theme Studio next: your own colours, any colour, and code editing
 
-**Status:** 🟡 Proposals for decision (TC-1a, TC-1b and TC-2…TC-6, [§5](#5-proposals-for-decision)), with a draft plan for them and for OL-18…OL-20 ([§6](#6-draft-plan)). Nothing here changes the spec or the plan until the product owner decides.
+**Status:** ✅ Decided 2026-11-20 ([§7](#7-decisions)): option B of the draft plan. The colour work (OL-18, OL-19, TC-1a…TC-4) joins Phase 5 before v1.0 as 5.26–5.32, +12 days; the code editing (TC-5, TC-6) and OL-20 are v1.1 items 6.18–6.20, 3.5 days. Planned as PH5-4 in [`spec/04` §3](../../spec/04-implementation-plan.md#3-timeline).
 
 **Date:** 2026-11-20
 
@@ -131,7 +131,32 @@ B is recommended: the colour work reaches every owner and changes the site forma
 
 **Riskiest assumption:** that free colour in Simple mode doesn't produce sites that are hard to read. The warnings are the mitigation, and the beta (5.8) is the test; its checklist would gain a line for it.
 
-## 7. Sources
+## 7. Decisions
+
+Product owner, 2026-11-20: **option B** of §6, with the figures above (their answer: "B"). The work is planned as PH5-4 ([`spec/04` §3](../../spec/04-implementation-plan.md#3-timeline), MVP §7 item 57). The plan items, streams and order are the coordinator's; each issue holds the full scope.
+
+| #     | Decision                                                                                                                                                                                                                                             | Phase          |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| OL-19 | ✅ **Before v1.0:** Webforge's own colour picker. Plan item 5.26, 2.5 days, stream C, first of the colour items; its first task is whether `EyeDropper` works in the sandboxed window. [#1216](https://github.com/nexustech/webforge/issues/1216)    | Phase 5        |
+| TC-1a | ✅ **Before v1.0:** your colours in the theme: the model, the site format migration and ADR 0009's amendment. A one-off stays exactly six hex digits. Plan item 5.27, 2.5 days, stream B. [#1217](https://github.com/nexustech/webforge/issues/1217) | Phase 5        |
+| TC-1b | ✅ **Before v1.0:** your colours in the editor: Theme Studio's list and the picker's. Plan item 5.28, 2 days, stream A, after 5.26 and 5.27. [#1218](https://github.com/nexustech/webforge/issues/1218)                                              | Phase 5        |
+| TC-2  | ✅ **Before v1.0:** any colour in Simple mode. Plan item 5.29, 1 day, stream C, after 5.26. [#1219](https://github.com/nexustech/webforge/issues/1219)                                                                                               | Phase 5        |
+| OL-18 | ✅ **Before v1.0:** a theme colour changes on the canvas while it is dragged. Plan item 5.30, 1.5 days, stream A, after 5.28 (it needs LF-15, merged, and 5.26). [#1220](https://github.com/nexustech/webforge/issues/1220)                          | Phase 5        |
+| TC-3  | ✅ **Before v1.0:** "Add to your colours". Plan item 5.31, 1 day, stream C, after 5.28 and 5.29. [#1221](https://github.com/nexustech/webforge/issues/1221)                                                                                          | Phase 5        |
+| TC-4  | ✅ **Before v1.0:** "Colours outside your theme". Plan item 5.32, 1.5 days, stream C, after 5.31. [#1222](https://github.com/nexustech/webforge/issues/1222)                                                                                         | Phase 5        |
+| TC-5  | ✅ **v1.1:** Custom HTML and the site's code fields in the code editor. Plan item 6.18, 1.5 days. [#1223](https://github.com/nexustech/webforge/issues/1223)                                                                                         | Phase 6 (v1.1) |
+| TC-6  | ✅ **v1.1:** theme colours in the stylesheet editor. Plan item 6.19, 1 day, after 6.18. [#1224](https://github.com/nexustech/webforge/issues/1224)                                                                                                   | Phase 6 (v1.1) |
+| OL-20 | ✅ **v1.1:** a class previewed on the canvas. Plan item 6.20, 1 day. [#1225](https://github.com/nexustech/webforge/issues/1225)                                                                                                                      | Phase 6 (v1.1) |
+
+**What the decision amends:**
+
+- **TC-2 amends UX-25** ([product/06](06-editor-ui-ux-parity.md)) **and F-ED-4** ([MVP §2.2](../../spec/02-mvp-spec.md#22-editing)): a colour of your own is no longer Advanced mode only. Both carry the note "amended by TC-2 (20 Nov 2026)". Spacing, sizes and corners stay tokens in Simple mode.
+- **TC-1a amends [ADR 0009](../../docs/adr/0009-colour-refs.md) §2 when it is built** (5.27), in the same PR: the theme's own colours become a third base for a reference, and the cost the ADR accepted is resolved. Until then the ADR stands as written.
+- **The beta's checklist (5.8) gains a line** for the riskiest assumption: that free colour in Simple mode doesn't produce sites that are hard to read.
+
+Under PH5-2 the dates don't move. Parked items (§5) stay parked.
+
+## 8. Sources
 
 - [ADR 0009](../../docs/adr/0009-colour-refs.md) · [product/06](06-editor-ui-ux-parity.md) (UX-25) · [product/11](11-component-theming.md) (CT-1…CT-14) · [competitors/04 §8](../competitors/04-onlook.md#8-addendum-colour-picker-theming-and-styling) (OL-18…OL-20) · [competitors/01](../competitors/01-webflow.md)
 - Code read on 2026-11-20: `packages/model/src/color-ref.ts`, `packages/model/src/theme.ts`, `packages/themes/src/theme-css.ts`, `apps/desktop/src/renderer/fields/color/`, `fields/theme-color/`, `fields/code/`, `fields/classes/`, `apps/desktop/src/renderer/stylesheet/`, `apps/desktop/src/renderer/theme/studio/`
