@@ -1,6 +1,6 @@
 # AI apps that work while you're away
 
-**Status:** 🟡 For decision (UA-1…UA-6). Nothing here is in the plan.
+**Status:** ✅ Decided 2026-11-20 ([§5](#5-decisions)): UA-1, UA-2 and UA-3 are adopted (4 days); UA-4 and UA-5 are not taken for now; UA-6 is not adopted. Not yet planned.
 
 **Date:** 2026-11-20
 
@@ -72,6 +72,21 @@ Sizes are rough ideal days.
 **Risks of UA-2.** An app that misreads the request can restyle the whole site unasked: the version and **Undo All** answer that. Text on a page can try to instruct the model that reads it: the app still has no tool that sends anything anywhere or reaches visitors, and S18 keeps asking. Developer tools can't check who answers at Webforge's address (ADR 0021): unchanged by this, since the setting is kept in Webforge, not in the tool.
 
 **What changes if adopted:** F-AI-1's "declined after 60 s" (UA-1) and "waits for the user" (UA-2); the AIB decision that pictures come only through **Add Files…** (UA-4); the help page [AI apps](../../docs/help/ai-apps.md).
+
+## 5. Decisions
+
+Product owner, 2026-11-20, asked which proposals to adopt: "The recommended ones".
+
+| #    | Decision                                                                                                                                                                      |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UA-1 | ✅ **Adopted:** a question waits for its answer, and running out is no refusal                                                                                                |
+| UA-2 | ✅ **Adopted:** "Work without asking" for one app, for one sitting. Where visitors' money or details go still asks (S18)                                                      |
+| UA-3 | ✅ **Adopted,** with UA-2: "While you were away", with **Undo All**                                                                                                           |
+| UA-4 | ❌ **Not taken for now:** a folder of pictures the app may use. Next in line; the [trial](../../docs/testing/own-website-with-claude-code.md) will show how much it is missed |
+| UA-5 | ❌ **Not taken for now:** export for an app. The same                                                                                                                         |
+| UA-6 | ❌ **Not adopted:** questions that collect. UA-2 and UA-3 take its place                                                                                                      |
+
+4 days in all. Not yet planned: the plan items, their issues and the release they join (before v1.0 or v1.1) follow in `spec/04`. UA-1 changes F-AI-1's "declined after 60 s"; UA-2 its "wait for the user".
 
 ## Sources
 
