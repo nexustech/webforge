@@ -101,6 +101,8 @@ The zoom above changes only the page on the canvas. To make all of {appName} big
 
 On a Mac, use Cmd+Option. On some keyboards Ctrl+Alt with a key types a character instead, such as } on a German keyboard: use the View menu there. It goes from 80% to 150%, and {appName} remembers it next time you open it. It never changes your site, or how it looks to visitors.
 
+At 100%, every button, row and menu item is at least 24 pixels each way, so it's easy to click. If you'd rather see more rows at once, choose 90%.
+
 ## Finding a command
 
 **Search Commands…** (Ctrl+P, Cmd+P on a Mac, or click the box in the title bar) finds any command by name. It also finds a page to go to, a section or element to add, and a help page to read. Every command's keyboard shortcut is listed in [Keyboard shortcuts](keyboard-shortcuts.md), or press **?**.

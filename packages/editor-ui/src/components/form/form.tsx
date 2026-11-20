@@ -63,7 +63,7 @@ export function Field({ name, label, hint, error, layout = "stacked", children }
       data-field={name}
       className={cn(
         "grid gap-1",
-        row && "min-h-6 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-center gap-x-3",
+        row && "min-h-7 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-center gap-x-3",
       )}
     >
       {label === undefined ? null : (
@@ -190,7 +190,7 @@ export function Check({
 }) {
   const hintId = useId();
   const box = (
-    <label className="flex items-center gap-2 text-sm has-[:disabled]:text-disabled">
+    <label className="flex min-h-7 items-center gap-2 text-sm has-[:disabled]:text-disabled">
       <input
         type="checkbox"
         className="size-4 accent-primary"

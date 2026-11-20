@@ -1,9 +1,9 @@
 /**
- * A menu row, 21 px at the editor's 14 px rem (#1015); shared with Command items, which mark their
- * state differently.
+ * A menu row, 24.5 px at the editor's 14 px rem: WCAG 2.2's 24 px target (LF-18, #1181); shared
+ * with Command items, which mark their state differently.
  */
 const ROW =
-  "relative flex h-6 cursor-default select-none items-center gap-2 rounded-sm px-2 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0";
+  "relative flex h-7 cursor-default select-none items-center gap-2 rounded-sm px-2 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0";
 
 /**
  * Class names shared by the three menu families (DropdownMenu, ContextMenu, Menubar), so app

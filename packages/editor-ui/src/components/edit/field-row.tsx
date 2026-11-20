@@ -163,7 +163,7 @@ export function FieldRow({
       className={cn(
         wide
           ? "flex flex-col gap-1"
-          : "grid min-h-6 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-center gap-x-2 gap-y-1",
+          : "grid min-h-7 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-center gap-x-2 gap-y-1",
       )}
       data-field={field.name}
     >
@@ -195,7 +195,8 @@ export function FieldRow({
                   aria-expanded={perDevice}
                   aria-controls={perDevice ? devicesId : undefined}
                   aria-label={t("editPanel.devices.show", { field: field.label })}
-                  className="ml-auto shrink-0 rounded-sm p-0.5 text-muted-foreground hover:bg-hover focus-visible:outline-2 focus-visible:outline-ring"
+                  // A 24 px target round its small chevron (LF-18), in the room the chevron took.
+                  className="-my-1.5 ml-auto flex size-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-hover focus-visible:outline-2 focus-visible:outline-ring"
                   onClick={() => setPerDevice(!perDevice)}
                 >
                   <ChevronRightIcon
@@ -283,7 +284,8 @@ function SourceLine({ source }: { readonly source: FieldSource }) {
         <WithTooltip tooltip={t("editPanel.source.reveal")}>
           <button
             type="button"
-            className="cursor-pointer text-left text-ring underline-offset-2 hover:underline focus-visible:underline"
+            // A 24 px target (LF-18) in the line's own room.
+            className="-my-1 inline-flex min-h-7 cursor-pointer items-center text-left text-ring underline-offset-2 hover:underline focus-visible:underline"
             onClick={onReveal}
           >
             {text}
@@ -315,7 +317,7 @@ function DeviceRow({
   const labelId = `${id}-label`;
   return (
     <div
-      className="grid min-h-6 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-center gap-x-2"
+      className="grid min-h-7 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-center gap-x-2"
       data-device={device.id}
     >
       <div className="flex min-w-0 items-center gap-1">

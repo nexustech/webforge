@@ -77,7 +77,7 @@ export function HelpButton({
           variant="ghost"
           size="icon"
           aria-label={label}
-          className={cn("size-6 text-muted-foreground hover:text-foreground", className)}
+          className={cn("size-7 text-muted-foreground hover:text-foreground", className)}
           onClick={() => open(target)}
         >
           <CircleHelpIcon aria-hidden className="size-4" />

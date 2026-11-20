@@ -103,7 +103,7 @@ export function AppMenu() {
           <WithTooltip tooltip={t("shell.menu.folded.tooltip")}>
             <MenubarTrigger
               aria-label={t("shell.menu.folded")}
-              className="size-6 justify-center px-0"
+              className="size-7 justify-center px-0"
             >
               <MenuIcon aria-hidden className="size-4" />
             </MenubarTrigger>
