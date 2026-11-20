@@ -41,13 +41,15 @@ async function addTestHost(page: Page, sftp: Awaited<ReturnType<typeof startSftp
     .getByRole("button", { name: "A web host with a control panel", exact: true })
     .click();
   const form = page.getByRole("dialog", { name: "Publish to your web host" });
-  await form.getByLabel("Name", { exact: true }).fill("Test host");
-  await form.getByLabel("Connection", { exact: true }).selectOption("sftp");
   await form.getByLabel("Host", { exact: true }).fill("127.0.0.1");
-  await form.getByLabel("Port", { exact: true }).fill(String(sftp.port));
   await form.getByLabel("User name", { exact: true }).fill("baker");
   await form.getByLabel("Password", { exact: true }).fill(PASSWORD);
+  // The rest is folded (#1172).
+  await form.getByRole("button", { name: "More Options" }).click();
+  await form.getByLabel("Connection", { exact: true }).selectOption("sftp");
+  await form.getByLabel("Port", { exact: true }).fill(String(sftp.port));
   await form.getByLabel("Folder", { exact: true }).fill("/site");
+  await form.getByLabel("Name", { exact: true }).fill("Test host");
   // No web address, though the form starts with Site Settings' (#1014): the live check then
   // reaches no other website.
   await form.getByLabel("Web address", { exact: true }).fill("");
@@ -87,7 +89,9 @@ test("starts the host form at the site's web address, and tests only a filled-in
     .getByRole("button", { name: "A web host with a control panel", exact: true })
     .click();
   const form = page.getByRole("dialog", { name: "Publish to your web host" });
-  // The address from Site Settings, not asked for again.
+  // The address from Site Settings, not asked for again: folded under More Options (#1172).
+  await expect(form.getByLabel("Web address", { exact: true })).toHaveCount(0);
+  await form.getByRole("button", { name: "More Options" }).click();
   await expect(form.getByLabel("Web address", { exact: true })).toHaveValue(
     "https://www.rosas-bakery.example",
   );
@@ -102,6 +106,33 @@ test("starts the host form at the site's web address, and tests only a filled-in
   await expect(form.getByText("Enter the user name your host gave you.")).toBeVisible();
   await expect(form.getByText("Connecting…")).toHaveCount(0);
   await expect(form.getByText("The connection didn't work.")).toHaveCount(0);
+});
+
+test("keeps the host form's Test Connection, Cancel and Save in view in the smallest window (#1172)", async () => {
+  const path = join(dir, "Rosa's Bakery.wforge");
+  ProjectStore.create(path, { name: "Rosa's Bakery" }).close();
+  const page = await openPublish(path);
+  // The app's smallest window (MIN_WINDOW_SIZE).
+  await app?.evaluate(({ BrowserWindow }) => {
+    const window = BrowserWindow.getAllWindows()[0];
+    window?.unmaximize();
+    window?.setBounds({ x: 40, y: 40, width: 960, height: 600 });
+  });
+  await expect.poll(() => page.evaluate(() => window.innerHeight)).toBeLessThanOrEqual(600);
+  await page
+    .getByRole("dialog", { name: "Publish" })
+    .getByRole("button", { name: "A web host with a control panel", exact: true })
+    .click();
+  const form = page.getByRole("dialog", { name: "Publish to your web host" });
+  const buttons = ["Test Connection", "Cancel", "Save"].map((name) =>
+    form.getByRole("button", { name, exact: true }),
+  );
+  for (const button of buttons) await expect(button).toBeInViewport({ ratio: 1 });
+
+  // More Options open: the fields scroll, and Cancel and Save stay where they are.
+  await form.getByRole("button", { name: "More Options" }).click();
+  await expect(form.getByLabel("Folder", { exact: true })).toBeVisible();
+  for (const button of buttons.slice(1)) await expect(button).toBeInViewport({ ratio: 1 });
 });
 
 test("adds an SFTP destination and keeps its password in the keychain, never the site file (4.4a)", async () => {
@@ -128,13 +159,14 @@ test("adds an SFTP destination and keeps its password in the keychain, never the
     .click();
 
   const form = page.getByRole("dialog", { name: "Publish to your web host" });
-  await form.getByLabel("Name", { exact: true }).fill("Test host");
-  await form.getByLabel("Connection", { exact: true }).selectOption("sftp");
   await form.getByLabel("Host", { exact: true }).fill("127.0.0.1");
-  await form.getByLabel("Port", { exact: true }).fill(String(server.port));
   await form.getByLabel("User name", { exact: true }).fill("baker");
   await form.getByLabel("Password", { exact: true }).fill(PASSWORD);
+  await form.getByRole("button", { name: "More Options" }).click();
+  await form.getByLabel("Connection", { exact: true }).selectOption("sftp");
+  await form.getByLabel("Port", { exact: true }).fill(String(server.port));
   await form.getByLabel("Folder", { exact: true }).fill("/site");
+  await form.getByLabel("Name", { exact: true }).fill("Test host");
   await form.getByLabel("Web address", { exact: true }).fill("https://www.rosas-bakery.example");
   // The host's key is trusted the first time, then the sign-in tested.
   await form.getByRole("button", { name: "Test Connection" }).click();

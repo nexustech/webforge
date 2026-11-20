@@ -248,6 +248,8 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     );
     await user.click(await screen.findByRole("button", { name: "Add Destination" }));
     const added = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
+    // Folded under More Options (#1172).
+    await user.click(added.getByRole("button", { name: "More Options" }));
     expect((added.getByLabelText("Web address", { exact: true }) as HTMLInputElement).value).toBe(
       "https://www.rosasbakery.co.uk",
     );
@@ -255,6 +257,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
 
     await user.click(await screen.findByRole("button", { name: "Edit Old host" }));
     const edited = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
+    await user.click(edited.getByRole("button", { name: "More Options" }));
     // It has none of its own: the site's isn't put in its place.
     expect((edited.getByLabelText("Web address", { exact: true }) as HTMLInputElement).value).toBe(
       "",
@@ -268,6 +271,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     await user.click(await screen.findByRole("button", { name: "Edit Live" }));
 
     const form = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
+    await user.click(form.getByRole("button", { name: "More Options" }));
     expect((form.getByLabelText("Name", { exact: true }) as HTMLInputElement).value).toBe("Live");
     expect((form.getByLabelText("Password", { exact: true }) as HTMLInputElement).value).toBe("");
     await user.click(form.getByRole("button", { name: "Save" }));
