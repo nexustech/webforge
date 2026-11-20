@@ -73,10 +73,13 @@ function summary(report: CheckReport): string {
 function FindingRow({
   result,
   finding,
+  item,
   props,
 }: {
   readonly result: RuleResult;
   readonly finding: Finding;
+  /** What its buttons call it: its place, told apart from the panel's others' ({@link namesOf}). */
+  readonly item: string;
   readonly props: SiteCheckPanelProps;
 }) {
   const { rule, level } = result;
@@ -93,7 +96,7 @@ function FindingRow({
           "text-left [overflow-wrap:anywhere] hover:underline focus-visible:underline",
           guide && "inline-flex items-center gap-1 underline underline-offset-2",
         )}
-        aria-label={guide ? undefined : t("siteCheck.show.label", { item: place })}
+        aria-label={guide ? undefined : t("siteCheck.show.label", { item })}
         onClick={() => props.onJump(finding)}
       >
         {place}
@@ -102,7 +105,14 @@ function FindingRow({
       {detail === undefined ? null : <span className="text-muted-foreground">{detail}</span>}
       <span className="ml-auto flex gap-1">
         {fix === undefined ? null : (
-          <Button size="sm" variant="outline" onClick={fix}>
+          // Named for what it fixes, as Ignore is: seven buttons all named "Fix" told a screen
+          // reader nothing (WCAG 2.4.6, #1164).
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label={t("siteCheck.fix.label", { item })}
+            onClick={fix}
+          >
             {t("siteCheck.fix")}
           </Button>
         )}
@@ -110,7 +120,7 @@ function FindingRow({
           <Button
             size="sm"
             variant="outline"
-            aria-label={t("siteCheck.write.label", { item: place })}
+            aria-label={t("siteCheck.write.label", { item })}
             onClick={write}
           >
             {t("siteCheck.write")}
@@ -120,9 +130,7 @@ function FindingRow({
           <Button
             size="sm"
             variant="ghost"
-            aria-label={t(done ? "siteCheck.done.label" : "siteCheck.ignore.label", {
-              item: place,
-            })}
+            aria-label={t(done ? "siteCheck.done.label" : "siteCheck.ignore.label", { item })}
             onClick={() => props.onIgnore(rule, finding)}
           >
             {t(done ? "siteCheck.done" : "siteCheck.ignore")}
@@ -133,6 +141,52 @@ function FindingRow({
   );
 }
 
+/** A finding's key in the panel: its rule's and its own, which is its rule's alone. */
+const findingKey = (rule: string, finding: Finding) => `${rule}:${finding.key}`;
+
+/**
+ * What each finding in `results` is called on its buttons ("Fix: Contact form on About"), by
+ * {@link findingKey}: its place, with its rule's name where another finding has the same place, and
+ * a number after that where that isn't enough, so no two buttons share a name (WCAG 2.4.6, #1164).
+ * Two Contact forms on one page, or a page missing its title and its description, had two buttons
+ * each named "Fix: About". The finding's own text is its place alone.
+ */
+function namesOf(
+  results: readonly RuleResult[],
+  describe: SiteCheckPanelProps["describe"],
+): ReadonlyMap<string, string> {
+  const listed = results.flatMap((result) =>
+    result.findings.map((finding) => ({
+      key: findingKey(result.rule, finding),
+      place: describe(finding).place,
+      rule: ruleText(`siteCheck.rule.${result.rule}`),
+    })),
+  );
+  const counted = (names: readonly string[]) => {
+    const counts = new Map<string, number>();
+    for (const name of names) counts.set(name, (counts.get(name) ?? 0) + 1);
+    return counts;
+  };
+  const places = counted(listed.map((each) => each.place));
+  const named = listed.map((each) => ({
+    key: each.key,
+    name:
+      (places.get(each.place) ?? 0) > 1
+        ? t("siteCheck.item.inRule", { item: each.place, rule: each.rule })
+        : each.place,
+  }));
+  const repeated = counted(named.map((each) => each.name));
+  const seen = new Map<string, number>();
+  return new Map(
+    named.map(({ key, name }) => {
+      if ((repeated.get(name) ?? 0) < 2) return [key, name];
+      const n = (seen.get(name) ?? 0) + 1;
+      seen.set(name, n);
+      return [key, t("siteCheck.item.nth", { item: name, n })];
+    }),
+  );
+}
+
 /**
  * One rule: its dot, name and one-line verdict (SP-13), then what it found. With `badge`, its
  * level too, as *Being found* mixes them.
@@ -140,10 +194,13 @@ function FindingRow({
 function RuleRow({
   result,
   props,
+  names,
   badge = false,
 }: {
   readonly result: RuleResult;
   readonly props: SiteCheckPanelProps;
+  /** What each finding's buttons call it, by {@link findingKey} ({@link namesOf}). */
+  readonly names: ReadonlyMap<string, string>;
   readonly badge?: boolean;
 }) {
   const status = statusOf(result);
@@ -154,7 +211,10 @@ function RuleRow({
     <li data-rule={result.rule} data-status={status}>
       <div className="flex flex-wrap items-baseline gap-x-2">
         <span aria-hidden className={cn("size-2 shrink-0 self-center rounded-full", DOT[status])} />
-        <span className="sr-only">{t(`siteCheck.status.${status}`)}: </span>
+        {/* The level's own words, as its heading and the summary say them (#1164). */}
+        <span className="sr-only">
+          {status === "pass" ? t("siteCheck.status.pass") : t(`siteCheck.badge.${result.level}`)}:{" "}
+        </span>
         <span className="font-medium">{ruleText(name)}</span>
         {badge ? (
           <span className="rounded border px-1 text-xs text-muted-foreground">
@@ -171,7 +231,13 @@ function RuleRow({
       {count === 0 ? null : (
         <ul>
           {result.findings.map((finding) => (
-            <FindingRow key={finding.key} result={result} finding={finding} props={props} />
+            <FindingRow
+              key={finding.key}
+              result={result}
+              finding={finding}
+              item={names.get(findingKey(result.rule, finding)) ?? props.describe(finding).place}
+              props={props}
+            />
           ))}
         </ul>
       )}
@@ -203,16 +269,31 @@ function RuleSection({
 }
 
 /**
- * The Site Check panel (F-CHK-1, SP-13): a summary, then the rules under *Must fix*, *Should fix*
- * and *Tips*, each with a green, amber or red dot and its verdict, and what it found, then *Being
- * found*'s (3.17), each with its level. A finding jumps to where it is; some have a *Fix*; all but
- * a *Must fix* can be ignored. A one-time tip is listed only while it has something to say.
+ * Whether *Passed* starts open. The owner decides whether passed rules are folded away (#1164's
+ * decision, recommended yes); until then they show, after every problem.
+ */
+const PASSED_OPEN = true;
+
+/**
+ * The Site Check panel (F-CHK-1, SP-13): a summary, then what it found, under *Must fix*, *Should
+ * fix* and *Tips*, each rule with an amber or red dot, its verdict and its findings, then *Being
+ * found*'s (3.17), each with its level; then every rule that passed, in one *Passed* group at the
+ * end, so no passed rule sits among the problems (#1164). A finding jumps to where it is; some have
+ * a *Fix*; all but a *Must fix* can be ignored. A one-time tip is listed only while it has something
+ * to say.
  */
 export function SiteCheckPanel(props: SiteCheckPanelProps) {
   const { report, ignored, onRestore } = props;
-  const found = report.results.filter(
-    (result) => result.group === "found" && (result.oneTime !== true || result.findings.length > 0),
-  );
+  const problem = (result: RuleResult) => result.findings.length > 0;
+  const found = report.results.filter((result) => result.group === "found" && problem(result));
+  const passed = report.results.filter((result) => !problem(result) && result.oneTime !== true);
+  const levels = LEVELS.map((level) => ({
+    level,
+    results: report.results.filter(
+      (result) => result.group === undefined && result.level === level && problem(result),
+    ),
+  }));
+  const names = namesOf([...levels.flatMap((each) => each.results), ...found], props.describe);
   return (
     <ScrollArea className="h-full">
       <div className="flex flex-col gap-3 p-3 text-sm">
@@ -226,10 +307,7 @@ export function SiteCheckPanel(props: SiteCheckPanelProps) {
             </Button>
           )}
         </div>
-        {LEVELS.map((level) => {
-          const results = report.results.filter(
-            (result) => result.group === undefined && result.level === level,
-          );
+        {levels.map(({ level, results }) => {
           if (results.length === 0) return null;
           return (
             <RuleSection
@@ -238,7 +316,7 @@ export function SiteCheckPanel(props: SiteCheckPanelProps) {
               title={t(`siteCheck.level.${level}`)}
             >
               {results.map((result) => (
-                <RuleRow key={result.rule} result={result} props={props} />
+                <RuleRow key={result.rule} result={result} props={props} names={names} />
               ))}
             </RuleSection>
           );
@@ -250,9 +328,27 @@ export function SiteCheckPanel(props: SiteCheckPanelProps) {
             intro={t("siteCheck.group.found.intro")}
           >
             {found.map((result) => (
-              <RuleRow key={result.rule} result={result} props={props} badge />
+              <RuleRow key={result.rule} result={result} props={props} names={names} badge />
             ))}
           </RuleSection>
+        )}
+        {passed.length === 0 ? null : (
+          <details open={PASSED_OPEN}>
+            <summary className="mb-1 cursor-default text-xs font-semibold uppercase text-muted-foreground">
+              {t("siteCheck.passed", { count: passed.length })}
+            </summary>
+            <ul className="flex flex-col gap-1">
+              {passed.map((result) => (
+                <RuleRow
+                  key={result.rule}
+                  result={result}
+                  props={props}
+                  names={names}
+                  badge={result.group === "found"}
+                />
+              ))}
+            </ul>
+          </details>
         )}
       </div>
     </ScrollArea>

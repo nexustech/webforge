@@ -4,14 +4,14 @@ id: site-check
 title: Site Check
 summary: What Site Check looks for, what each finding means, and how to fix it.
 related: [export, publish, pages, media, forms, site-settings]
-updated: 2026-11-16
+updated: 2026-11-20
 ---
 
 # Site Check
 
 **Site Check** looks over your whole site as you work and lists anything to fix before your website goes live. It's in the bottom panel; show or hide it with Ctrl+J (Cmd+J on a Mac).
 
-Its button in the title bar, beside **Preview**, shows what it found: _5 to fix · 13 tips_ counts the Must fix and Should fix items together, then the tips, and _No problems_ means it found nothing. Click it to open Site Check. In a narrow window the button is a list with ticks; hover over it to see the count.
+Its button in the title bar, beside **Preview**, shows what it found: _5 to fix · 13 tips_ counts the Must fix and Should fix items together, then the tips, and _No problems_ means it found nothing. Click it to open Site Check, tall enough to show its findings; drag the line above the panel to make it taller or shorter. In a narrow window the button is a list with ticks; hover over it to see the count.
 
 Findings come in three kinds:
 
@@ -19,7 +19,7 @@ Findings come in three kinds:
 - **Should fix:** visitors or search engines will notice.
 - **Tips:** worth doing when you have a moment.
 
-Each check shows a dot: green when all is well, amber or red when something needs a look. Click a finding to go to the page and item it's about. Something in your [blog](blog.md)'s design is listed once, as _in the design of 'Blog'_, and clicking it opens a post with the item selected. The design is checked while the blog has a post that isn't a draft. Some findings have a **Fix** button that does it for you. You can **Ignore** anything except a Must fix; **Show ignored items again** brings ignored ones back.
+What needs doing comes first, each check with an amber or red dot; every check that passed is listed after them, under **Passed**, with a green dot. Click a finding to go to the page and item it's about. Something in your [blog](blog.md)'s design is listed once, as _in the design of 'Blog'_, and clicking it opens a post with the item selected. The design is checked while the blog has a post that isn't a draft. Some findings have a **Fix** button that does it for you, or opens the setting that does. When a Fix changes your site, a message says what it did, with **Undo** to take it back. You can **Ignore** anything except a Must fix; **Show ignored items again** brings ignored ones back.
 
 ## Must fix
 
