@@ -8,6 +8,7 @@ Read the specs before making changes:
 - **Implementation plan:** `spec/04-implementation-plan.md` (each work item is a GitHub issue, e.g. "1.12 Canvas: …")
 - **Reasoning behind decisions:** `research/`, with decision IDs such as C5 or X1
 - **Reviews of `main` and of the plan:** `docs/reviews/` (each review lists its findings, such as the architecture review's R1–R17, and the issues they filed)
+- **Mistakes reviews keep finding that no check catches:** `docs/anti-patterns.md`. Read it before writing code and when reviewing a PR; a review that finds one for the second time adds it there
 - **Adding to the editor:** `docs/extending.md` (areas, panels, commands, toolbars, kinds of field, IPC domains, strings, the test kit); a site component: `docs/components.md`
 - **Releases, a site's ZIP and the E2E suites:** `docs/releasing.md`, `docs/site-zip.md`, `e2e/README.md`
 
