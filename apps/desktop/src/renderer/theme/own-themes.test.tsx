@@ -1,6 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { OwnTheme, ThemesApi } from "../../shared/ipc/themes.js";
@@ -155,20 +154,18 @@ describe("My themes (2.23)", () => {
     const remove = registerOwnThemes(dialogs, session, themes, new EventTarget());
     render(<WindowDialogs registry={dialogs} />);
 
-    // The first change to the built-in theme asks for a name, in the window's dialog.
-    const changed = setColor(session, { names: themes }, "primary", { l: 0.5, c: 0.2, h: 30 });
-    const dialog = await screen.findByRole("dialog", { name: "Save Your Own Version of 'Light'?" });
-    const name = within(dialog).getByRole("textbox", { name: "Theme name" });
-    expect((name as HTMLInputElement).value).toBe("Light (my version)");
-    await userEvent.clear(name);
-    await userEvent.type(name, "Bakery");
-    await userEvent.click(within(dialog).getByRole("button", { name: "Save Theme" }));
-    expect(await changed).toBe(true);
+    // The first change to the built-in theme saves the person's own, without asking (LF-15).
+    expect(await setColor(session, { names: themes }, "primary", { l: 0.5, c: 0.2, h: 30 })).toBe(
+      true,
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
 
     await waitFor(() => expect(api.keep).toHaveBeenCalledTimes(1));
     expect(api.keep).toHaveBeenLastCalledWith(
-      expect.objectContaining({ own: { id: expect.any(String), name: "Bakery" } }),
+      expect.objectContaining({ own: { id: expect.any(String), name: "Light (yours)" } }),
     );
+    // A name the person has already is numbered, not repeated.
+    expect(themes.taken()).toContain("Light (yours)");
     // Undoing to the built-in theme keeps nothing; redoing keeps it again.
     act(() => {
       session.history.undo();

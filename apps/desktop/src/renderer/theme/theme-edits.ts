@@ -23,7 +23,6 @@ import { brandedTheme, catalogueFont, fontRefOf, inverseColors } from "@webforge
 import type { OwnTheme } from "../../shared/ipc/themes.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
-import type { OwnThemeNames } from "./own-themes.js";
 import { setTokenValue, type TokenControl, tokenValue } from "./theme-controls.js";
 
 /** What the theme's edits change the site through: its history, as labelled undo steps. */
@@ -31,15 +30,17 @@ type ThemeSession = Pick<EditorSession, "edit"> & {
   readonly history: Pick<EditorSession["history"], "document">;
 };
 
-/**
- * What a theme change asks first, if given: before a change to every page (D7), and for a name
- * before the first change to a built-in theme, which is read-only (2.23, PH2-17). Without them,
- * changes happen at once.
- */
 /** What a theme change asks of the window's site-wide confirmations. */
 export type ThemeSiteWide = Pick<SiteWideConfirm, "confirmSiteWide"> &
   Partial<Pick<SiteWideConfirm, "beforeUnaskedChange">>;
 
+/**
+ * What a theme change asks first, if given: before choosing another theme or restyling a kind of
+ * element on every page (D7). A colour or font change asks nothing: it applies at once, with an Undo
+ * toast that says how far it reached (LF-15). With `names`, the first change to a built-in theme,
+ * which is read-only (2.23, PH2-17), saves the person's own version too, without asking, under
+ * {@link ownCopyName}. Without them, changes happen at once.
+ */
 export type ThemeAsks =
   | {
       /**
@@ -47,7 +48,8 @@ export type ThemeAsks =
        * `beforeUnaskedChange` first, where Version History saves a version (4.6).
        */
       readonly siteWide?: ThemeSiteWide | undefined;
-      readonly names?: OwnThemeNames | undefined;
+      /** The names of the person's own themes, which a new one's mustn't repeat (My themes). */
+      readonly names?: { taken(): readonly string[] } | undefined;
       /**
        * Says that a change was cancelled at one of its questions ("Not changed", #614): an Escape
        * meant for the dialog behind can answer one, and the control goes back as it was.
@@ -62,6 +64,29 @@ type SiteWideQuestion = {
   readonly description: string;
   readonly confirm: string;
 };
+
+/**
+ * How a change to every page is made: after `question` (D7), or at once, saying `toast` with Undo
+ * (LF-15). Neither, for a change that only the Theme tab's controls show, such as a token's.
+ */
+type Reach =
+  | { readonly question: SiteWideQuestion; readonly toast?: undefined }
+  | { readonly question?: undefined; readonly toast: (pages: number) => string }
+  | undefined;
+
+/**
+ * The name the person's own version of the built-in theme `name` is saved under, without asking
+ * (LF-15): "Bistro (yours)", or "Bistro (yours, 2)" and on when `taken`, the names of their themes
+ * already, has it. Renaming it stays in Theme Studio.
+ */
+export function ownCopyName(name: string, taken: readonly string[]): string {
+  const names = new Set(taken);
+  let candidate = t("theme.own.defaultName", { name });
+  for (let number = 2; names.has(candidate); number++) {
+    candidate = t("theme.own.defaultNameNumbered", { name, number: String(number) });
+  }
+  return candidate;
+}
 
 /** The colours the Theme tab offers by the glossary's names (23 Oct 2026). */
 export const QUICK_COLORS = ["primary", "secondary", "accent", "base-100", "base-content"] as const;
@@ -161,50 +186,44 @@ function sayNotChanged(asks: ThemeAsks): void {
 }
 
 /**
- * Changes the theme by `recipe`: one step, `label`. A built-in theme is read-only (2.23, PH2-17):
- * with `asks.names`, the first change to one asks for a name for the person's own version, and
- * the same step makes it theirs ("Saved theme 'Light (my version)'"). A change to every page asks
- * `question` first too (D7). Cancelling either changes nothing, and says so (#614). False if nothing
- * changed.
+ * Changes the theme by `recipe`: one step, `label`. A change to every page asks `reach.question`
+ * first (D7), and cancelling it changes nothing, and says so (#614); a colour or font change applies
+ * at once, saying `reach.toast` with Undo (LF-15). A built-in theme is read-only (2.23, PH2-17):
+ * with `asks.names`, the first change to one makes it the person's own in the same step, under
+ * {@link ownCopyName}, without asking. False if nothing changed.
  */
 async function changeTheme(
   session: ThemeSession,
   asks: ThemeAsks,
   label: string,
-  question: SiteWideQuestion | undefined,
+  reach: Reach,
   recipe: (tokens: ThemeTokens) => void,
 ): Promise<boolean> {
-  const now = theme(session);
-  let own: ThemeTokens["own"];
-  if (asks?.names !== undefined && now.own === undefined) {
-    const name = presetName(now.preset);
-    const chosen = await asks.names.askName({
-      title: t("theme.own.title", { name }),
-      description: t("theme.own.description"),
-      initial: t("theme.own.defaultName", { name }),
-      confirm: t("theme.own.save"),
-    });
-    if (chosen === undefined) {
-      sayNotChanged(asks);
-      return false;
-    }
-    own = { id: newId("theme"), name: chosen };
+  if (reach?.question !== undefined && !(await confirmed(session, asks, reach.question))) {
+    return false;
   }
-  if (question !== undefined && !(await confirmed(session, asks, question))) return false;
-  if (question === undefined) {
+  const pages = pageCount(session);
+  if (reach?.question === undefined) {
     await asks?.siteWide?.beforeUnaskedChange?.({
       action: label,
       confirm: label,
-      affectedPages: pageCount(session),
+      affectedPages: pages,
     });
   }
+  // Read after any wait: the theme as it is when the change is made.
+  const now = theme(session);
+  const own: ThemeTokens["own"] =
+    asks?.names !== undefined && now.own === undefined
+      ? { id: newId("theme"), name: ownCopyName(presetName(now.preset), asks.names.taken()) }
+      : undefined;
   session.edit(
     "props",
-    own === undefined ? label : t("theme.history.saved", { name: own.name }),
+    label,
     (draft) => {
       recipe(draft.theme);
       if (own !== undefined) draft.theme.own = { ...own };
     },
+    reach?.toast === undefined ? undefined : { announce: reach.toast(pages) },
   );
   return true;
 }
@@ -281,9 +300,11 @@ export function setLook(
     reach === 0
       ? undefined
       : {
-          action: t("theme.look.confirm", { item }),
-          description: plural("theme.look.confirm", reach),
-          confirm: t("theme.look.confirmButton"),
+          question: {
+            action: t("theme.look.confirm", { item }),
+            description: plural("theme.look.confirm", reach),
+            confirm: t("theme.look.confirmButton"),
+          },
         },
     (tokens) => {
       const next: Record<string, unknown> = { ...tokens.looks?.[type] };
@@ -349,8 +370,8 @@ export function setTextStep(
 }
 
 /**
- * Sets colour `role` of the page's colours or reversed sections' (Theme Studio, F-DS-7): asked
- * first (D7), then one step, "Changed Brand colour in reversed sections". A page colour follows the
+ * Sets colour `role` of the page's colours or reversed sections' (Theme Studio, F-DS-7): at once,
+ * one step, "Changed Brand colour in reversed sections", with an Undo toast (LF-15). A page colour follows the
  * one rule for page colours ({@link setPageColor}): a brand colour's hue reaches reversed sections.
  * A reversed colour changes there alone; a theme without reversed colours of its own starts them
  * from those it shows there ({@link inverseColors}).
@@ -372,11 +393,8 @@ export async function setPaletteColor(
     asks,
     reversed ? t("theme.history.colorReversed", { name }) : t("theme.history.color", { name }),
     {
-      action: reversed
-        ? t("theme.color.confirmReversed", { name })
-        : t("theme.color.confirm", { name }),
-      description: t("theme.color.confirmDescription"),
-      confirm: t("theme.color.confirmButton"),
+      toast: (pages) =>
+        plural(reversed ? "theme.changed.colorReversed" : "theme.changed.color", pages, { name }),
     },
     (tokens) => {
       if (!reversed) {
@@ -391,8 +409,8 @@ export async function setPaletteColor(
 }
 
 /**
- * Uses the brand colours a palette from image `image` proposes (PG-2, F-DS-7): asked first (D7),
- * then one step, "Changed brand colours from 'Logo.png'": Brand, Accent and Second accent, each
+ * Uses the brand colours a palette from image `image` proposes (PG-2, F-DS-7): at once, one step,
+ * "Changed brand colours from 'Logo.png'", with an Undo toast (LF-15): Brand, Accent and Second accent, each
  * with its text. Reversed sections take each brand colour's hue and chroma at their own lightness
  * (#200), fitted to their own surface with their text as the page's are ({@link reversedBrand},
  * #462 review), so a reversed band stays readable.
@@ -407,11 +425,7 @@ export async function setBrandColours(
     session,
     asks,
     t("theme.history.image", { name: image }),
-    {
-      action: t("theme.image.confirm", { name: image }),
-      description: t("theme.image.confirmDescription"),
-      confirm: t("theme.image.confirmButton"),
-    },
+    { toast: (pages) => plural("theme.changed.image", pages, { name: image }) },
     (tokens) => {
       const branded = brandedTheme(tokens, proposal);
       tokens.colors = branded.colors;
@@ -443,7 +457,8 @@ export async function switchPreset(
 }
 
 /**
- * Sets colour `role` (D7): asked first, then one step ("Changed brand colour"). A brand colour on a
+ * Sets colour `role`: at once, one step ("Changed brand colour"), with an Undo toast that says how
+ * far it reached ("Brand colour changed on 6 pages", LF-15). A brand colour on a
  * theme with colours for reversed sections changes there too, in the same step: to its hue and
  * chroma, at the lightness reversed sections have it (#200, decided for 2.3a). Surface and Text
  * leave reversed sections as they are: those are meant to be the opposite.
@@ -461,11 +476,7 @@ export async function setColor(
     session,
     asks,
     t(COLOR_WORDS[role].history),
-    {
-      action: t("theme.color.confirm", { name }),
-      description: t("theme.color.confirmDescription"),
-      confirm: t("theme.color.confirmButton"),
-    },
+    { toast: (pages) => plural("theme.changed.color", pages, { name }) },
     (tokens) => setPageColor(tokens, role, color),
   );
 }
@@ -473,7 +484,7 @@ export async function setColor(
 /** The theme's fonts, by what each is for: headings, body text and the accent (3.22). */
 type FontRole = keyof ThemeTokens["fonts"];
 
-/** Sets the fonts (D7): asked first, then one step, "Changed fonts". */
+/** Sets the fonts: at once, one step, "Changed fonts", with an Undo toast (LF-15). */
 async function setFonts(
   session: ThemeSession,
   asks: ThemeAsks,
@@ -485,18 +496,15 @@ async function setFonts(
   if (changed.length === 0) {
     return false;
   }
-  // The accent alone changes only what is set in it, so the question says so (3.22).
+  // The accent alone changes only what is set in it, so the toast says so (3.22).
   const accentOnly = changed.every((role) => role === "accent");
   return changeTheme(
     session,
     asks,
     t("theme.history.fonts"),
     {
-      action: t("theme.fonts.confirm"),
-      description: t(
-        accentOnly ? "theme.fonts.confirmAccentDescription" : "theme.fonts.confirmDescription",
-      ),
-      confirm: t("theme.fonts.confirmButton"),
+      toast: (pages) =>
+        plural(accentOnly ? "theme.changed.accentFont" : "theme.changed.fonts", pages),
     },
     (tokens) => {
       tokens.fonts = {

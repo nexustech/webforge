@@ -7,6 +7,7 @@ import { TOKEN_CONTROLS, tokenKey } from "./theme-controls.js";
 import {
   createOwnTheme,
   lookReach,
+  ownCopyName,
   renameOwnTheme,
   setBrandColours,
   setColor,
@@ -61,8 +62,10 @@ describe("the Theme tab's edits (2.3a)", () => {
 
     await setToken(session, { siteWide }, control("cards.style"), "raised");
     await setTextSize(session, { siteWide }, "h1", "6xl");
-    // Fonts are asked about: the confirmed action's own hook runs instead.
-    await setFont(session, { siteWide }, "heading", { family: "Lora", fallback: "serif" });
+    // Another theme is asked about: the confirmed action's own hook runs instead.
+    const bistro = themePreset("bistro");
+    if (bistro === undefined) throw new Error("no Bistro");
+    await switchPreset(session, { siteWide }, bistro);
 
     expect(siteWide.beforeUnaskedChange).toHaveBeenCalledWith({
       action: "Changed card style",
@@ -148,18 +151,14 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(plain.labels()).toEqual(["Changed accent colour"]);
   });
 
-  it("asks before a colour, and changes nothing when refused or unchanged", async () => {
+  it("changes nothing for a colour it already has", async () => {
     const { session, labels, theme } = setUp();
 
-    expect(await setColor(session, answering(false), "accent", BRAND)).toBe(false);
-    const same = answering(true);
-    expect(await setColor(session, same, "accent", theme().colors.accent)).toBe(false);
-
-    expect(same.confirmSiteWide).not.toHaveBeenCalled();
+    expect(await setColor(session, undefined, "accent", theme().colors.accent)).toBe(false);
     expect(labels()).toEqual([]);
   });
 
-  it("sets the fonts one at a time or as a pairing, once asked, as one step each", async () => {
+  it("sets the fonts one at a time or as a pairing, as one step each", async () => {
     const { session, labels, theme } = setUp();
     const classic = FONT_PAIRINGS.find((pairing) => pairing.id === "classic");
     if (classic === undefined) throw new Error("no Classic pairing");
@@ -174,14 +173,10 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(await setPairing(session, answering(true), classic)).toBe(false);
 
     // The accent font (3.22) is set on its own, and a pairing keeps it.
-    const accent = answering(true);
-    await setFont(session, accent, "accent", { family: "Pacifico", fallback: "sans-serif" });
-    // The question says only what is set in it changes.
-    expect(accent.confirmSiteWide).toHaveBeenCalledWith(
-      expect.objectContaining({
-        description: "Text whose Font is set to Accent changes to the new font, on every page.",
-      }),
-    );
+    const said = toastsOf(session);
+    await setFont(session, undefined, "accent", { family: "Pacifico", fallback: "sans-serif" });
+    // Its toast says only the accent changed.
+    expect(said).toEqual([expect.stringMatching(/^Accent font changed on \d+ pages?$/)]);
     expect(theme().fonts.accent).toEqual({ family: "Pacifico", fallback: "sans-serif" });
     expect(theme().fonts.heading.family).toBe("Playfair Display");
     const simple = FONT_PAIRINGS.find((pairing) => pairing.id === "simple");
@@ -259,12 +254,8 @@ describe("the Theme tab's edits (2.3a)", () => {
     const { session, theme } = setUp(site);
     const shown = theme().colors.neutral;
 
-    const confirm = answering(true);
-    await setPaletteColor(session, confirm, "inverse", "primary", BRAND);
+    await setPaletteColor(session, undefined, "inverse", "primary", BRAND);
 
-    expect(confirm.confirmSiteWide).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "Change the Brand Colour in Reversed Sections?" }),
-    );
     expect(theme().inverse?.primary).toEqual(BRAND);
     // Its surface was the neutral colour, as such a theme shows reversed sections.
     expect(theme().inverse?.["base-100"]).toEqual(shown);
@@ -272,7 +263,7 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(theme().inverse).toBeUndefined();
   });
 
-  it("uses colours from an image once asked, as one step, reversed sections following (PG-2)", async () => {
+  it("uses colours from an image at once, as one step, reversed sections following (PG-2)", async () => {
     const { session, labels, theme } = setUp();
     const before = theme();
     const proposal = {
@@ -284,8 +275,11 @@ describe("the Theme tab's edits (2.3a)", () => {
       "accent-content": { l: 0.98, c: 0.02, h: 150 },
     };
 
-    expect(await setBrandColours(session, answering(false), proposal, "Logo.png")).toBe(false);
-    expect(await setBrandColours(session, answering(true), proposal, "Logo.png")).toBe(true);
+    const said = toastsOf(session);
+    const asks = answering(false);
+    expect(await setBrandColours(session, asks, proposal, "Logo.png")).toBe(true);
+    expect(asks.confirmSiteWide).not.toHaveBeenCalled();
+    expect(said).toEqual([expect.stringMatching(/^Colours from 'Logo.png' used on \d+ pages?$/)]);
 
     expect(theme().colors.secondary).toEqual(proposal.secondary);
     expect(theme().colors["accent-content"]).toEqual(proposal["accent-content"]);
@@ -326,38 +320,39 @@ function collectKeys(value: unknown): string[] {
   return Object.entries(value).flatMap(([key, inner]) => [key, ...collectKeys(inner)]);
 }
 
-/** Asks for names, answering `name` (or cancelling, `undefined`); `askName` is what it was asked. */
-function naming(name: string | undefined) {
-  const askName = vi.fn(() => Promise.resolve(name));
-  return { names: { askName }, askName };
+/** The person's own themes' names, `taken`, for a theme saved without asking (LF-15). */
+const naming = (...taken: string[]) => ({ names: { taken: () => taken } });
+
+/** The Undo toasts `session`'s steps ask for, in their own words (LF-15). */
+function toastsOf(session: ReturnType<typeof setUp>["session"]): (string | boolean)[] {
+  const said: (string | boolean)[] = [];
+  session.onEntryAdded((_entry, _kind, announced) => {
+    if (announced !== false) said.push(announced);
+  });
+  return said;
 }
 
 describe("your own themes (2.23, PH2-17)", () => {
-  it("asks for a name before the first change to a built-in theme, and saves the person's own", async () => {
+  it("saves the person's own version of a built-in theme at its first change, without asking (LF-15)", async () => {
     const { session, labels, theme } = setUp();
     const builtIn = JSON.stringify(THEME_PRESETS);
-    const asks = naming("Light, warmer");
+    const asks = naming("Bistro (yours)");
 
     expect(await setColor(session, asks, "primary", BRAND)).toBe(true);
 
-    expect(asks.askName).toHaveBeenCalledWith({
-      title: "Save Your Own Version of 'Light'?",
-      description: expect.stringContaining("Built-in themes stay as they are."),
-      initial: "Light (my version)",
-      confirm: "Save Theme",
-    });
     expect(theme().colors.primary).toEqual(BRAND);
-    expect(theme().own).toEqual({ id: expect.any(String), name: "Light, warmer" });
+    expect(theme().own).toEqual({ id: expect.any(String), name: "Light (yours)" });
     expect(theme().preset).toBe("light");
-    // One step: the change and the new theme together. The built-in themes are as they were.
-    expect(labels()).toEqual(["Saved theme 'Light, warmer'"]);
+    // One step, named for the change: the change and the new theme together. The built-in themes
+    // are as they were.
+    expect(labels()).toEqual(["Changed brand colour"]);
     expect(JSON.stringify(THEME_PRESETS)).toBe(builtIn);
     expect(DEFAULT_THEME.own).toBeUndefined();
 
-    // The person's own theme changes as any change does, without asking again.
+    // The person's own theme changes as any change does, keeping its name.
     await setToken(session, asks, control("cards.style"), "raised");
-    expect(asks.askName).toHaveBeenCalledTimes(1);
-    expect(labels()).toEqual(["Saved theme 'Light, warmer'", "Changed card style"]);
+    expect(theme().own?.name).toBe("Light (yours)");
+    expect(labels()).toEqual(["Changed brand colour", "Changed card style"]);
 
     session.history.undo();
     session.history.undo();
@@ -365,36 +360,60 @@ describe("your own themes (2.23, PH2-17)", () => {
     expect(theme().colors.primary).not.toEqual(BRAND);
   });
 
-  it("changes nothing when the name is cancelled, or the change to every page refused", async () => {
-    const { session, labels, theme } = setUp();
-
-    expect(await setTextSize(session, naming(undefined), "h1", "6xl")).toBe(false);
-    const refused = { ...naming("Mine"), siteWide: answering(false).siteWide };
-    expect(await setColor(session, refused, "primary", BRAND)).toBe(false);
-    // The name is asked first: a refusal after it still changes nothing.
-    expect(refused.askName).toHaveBeenCalledTimes(1);
-
-    expect(theme().own).toBeUndefined();
-    expect(labels()).toEqual([]);
+  it("names the saved version after the theme, numbered when the person has that name (LF-15)", () => {
+    expect(ownCopyName("Bistro", [])).toBe("Bistro (yours)");
+    expect(ownCopyName("Bistro", ["Bistro (yours)", "Light (yours)"])).toBe("Bistro (yours, 2)");
+    expect(ownCopyName("Bistro", ["Bistro (yours)", "Bistro (yours, 2)"])).toBe(
+      "Bistro (yours, 3)",
+    );
   });
 
-  it("says 'Not changed' when either question is cancelled, and nothing when answered (#614)", async () => {
+  it("changes a colour or the fonts at once, its toast saying how far it reached (LF-15)", async () => {
+    const { session, labels } = setUp();
+    const said = toastsOf(session);
+    const pages = Object.keys(session.history.document.getState().pages).length;
+    const asks = answering(false);
+
+    expect(await setColor(session, asks, "primary", BRAND)).toBe(true);
+    expect(await setFont(session, asks, "heading", { family: "Lora", fallback: "serif" })).toBe(
+      true,
+    );
+    expect(
+      await setFont(session, asks, "accent", { family: "Inter", fallback: "sans-serif" }),
+    ).toBe(true);
+    expect(await setPaletteColor(session, asks, "inverse", "primary", BRAND)).toBe(true);
+
+    // Nothing asked, even with a question that would refuse.
+    expect(asks.confirmSiteWide).not.toHaveBeenCalled();
+    expect(said).toEqual([
+      `Brand colour changed on ${pages} pages`,
+      `Fonts changed on ${pages} pages`,
+      `Accent font changed on ${pages} pages`,
+      `Brand colour changed in reversed sections on ${pages} pages`,
+    ]);
+    // One step each, named for what changed, which Undo reverses.
+    expect(labels()).toEqual([
+      "Changed brand colour",
+      "Changed fonts",
+      "Changed fonts",
+      "Changed Brand colour in reversed sections",
+    ]);
+  });
+
+  it("says 'Not changed' when another theme's question is cancelled, and nothing when answered (#614)", async () => {
     const { session, labels } = setUp();
     const notify = vi.fn();
+    const bistro = themePreset("bistro");
+    if (bistro === undefined) throw new Error("no Bistro");
 
-    // The name for the person's own version, cancelled.
-    expect(await setTextSize(session, { ...naming(undefined), notify }, "h1", "6xl")).toBe(false);
+    // As an Escape answers it.
+    expect(await switchPreset(session, { ...answering(false), notify }, bistro)).toBe(false);
     expect(notify).toHaveBeenLastCalledWith("Not changed");
-    // Every page's question, cancelled after the name was given: as an Escape answers it.
-    const refused = { ...naming("Mine"), siteWide: answering(false).siteWide, notify };
-    expect(await setColor(session, refused, "primary", BRAND)).toBe(false);
-    expect(notify).toHaveBeenCalledTimes(2);
     expect(labels()).toEqual([]);
 
     // Answered, it changes and says nothing.
-    const answered = { ...naming("Mine"), siteWide: answering(true).siteWide, notify };
-    expect(await setColor(session, answered, "primary", BRAND)).toBe(true);
-    expect(notify).toHaveBeenCalledTimes(2);
+    expect(await switchPreset(session, { ...answering(true), notify }, bistro)).toBe(true);
+    expect(notify).toHaveBeenCalledTimes(1);
   });
 
   it("creates one from a built-in theme, the site's or one of the person's own", async () => {
@@ -469,7 +488,7 @@ describe("your own themes (2.23, PH2-17)", () => {
       own: { id: themeIdSchema.parse("theme0000000000c"), name: "Night" },
     };
 
-    await switchPreset(session, naming("never asked"), mine);
+    await switchPreset(session, naming(), mine);
 
     expect(theme()).toEqual(mine);
     expect(labels()).toEqual(["Changed theme to 'Night'"]);
