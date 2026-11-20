@@ -1,6 +1,6 @@
 # AI apps that work while you're away
 
-**Status:** ✅ Decided 2026-11-20 ([§5](#5-decisions)): UA-1, UA-2 and UA-3 are adopted (4 days); UA-4 and UA-5 are not taken for now; UA-6 is not adopted. Not yet planned.
+**Status:** ✅ Decided 2026-11-20 ([§5](#5-decisions)): UA-1, UA-2 and UA-3 are adopted (4 days); UA-4 and UA-5 are not taken for now; UA-6 is not adopted. Planned as PH5-5, before v1.0: 5.34–5.36 ([#1233](https://github.com/nexustech/webforge/issues/1233)–[#1235](https://github.com/nexustech/webforge/issues/1235)).
 
 **Date:** 2026-11-20
 
@@ -86,7 +86,7 @@ Product owner, 2026-11-20, asked which proposals to adopt: "The recommended ones
 | UA-5 | ❌ **Not taken for now:** export for an app. The same                                                                                                                         |
 | UA-6 | ❌ **Not adopted:** questions that collect. UA-2 and UA-3 take its place                                                                                                      |
 
-4 days in all. Not yet planned: the plan items, their issues and the release they join (before v1.0 or v1.1) follow in `spec/04`. UA-1 changes F-AI-1's "declined after 60 s"; UA-2 its "wait for the user".
+4 days in all. **Planned as PH5-5** (20 Nov 2026; [the plan's §3](../../spec/04-implementation-plan.md#3-timeline), MVP §7 item 59): asked when they ship, the product owner answered "Both before v1.0", so all three join Phase 5, in stream B after 5.24: 5.34 [#1233](https://github.com/nexustech/webforge/issues/1233) (UA-1, 0.5) → 5.35 [#1234](https://github.com/nexustech/webforge/issues/1234) (UA-2, 2) → 5.36 [#1235](https://github.com/nexustech/webforge/issues/1235) (UA-3, 1.5). UA-1 and UA-2 amend F-AI-1's "declined after 60 s" and "waits for the user" in [MVP §2.7](../../spec/02-mvp-spec.md#27-ai).
 
 ## Sources
 
