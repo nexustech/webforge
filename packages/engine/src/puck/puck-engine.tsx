@@ -224,7 +224,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       if (parts.pageHeading === promoted) return;
       const doc = canvasDocument();
       const typing = doc?.activeElement as HTMLElement | null | undefined;
-      if (doc !== undefined && doc.hasFocus() && typing?.isContentEditable === true) {
+      if (doc?.hasFocus() === true && typing?.isContentEditable === true) {
         if (headingHeldBy !== doc) {
           headingHeldBy = doc;
           // After the focus has moved, which may be into other text.
