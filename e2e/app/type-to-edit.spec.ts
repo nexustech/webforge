@@ -123,6 +123,23 @@ test("types into a selected Text's rich text, chosen from the keyboard", async (
   await expect(steps().first()).toHaveText("Edited Text text");
 });
 
+test("starts editing with an input method's composition, as with a letter", async () => {
+  await selectHeroAwayFromText();
+  // As Japanese input does: the first key reports "Process", then the composition goes on in
+  // what has the focus, and is committed.
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Input.dispatchKeyEvent", {
+    type: "rawKeyDown",
+    key: "Process",
+    code: "KeyN",
+    windowsVirtualKeyCode: 229,
+  });
+  await cdp.send("Input.imeSetComposition", { text: "に", selectionStart: 1, selectionEnd: 1 });
+  await cdp.send("Input.insertText", { text: "日本" });
+  await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Process", code: "KeyN" });
+  await expect(heroHeading()).toHaveText("Fresh ideas, made by hand日本");
+});
+
 test("places the caret with a second click on the selected element's text", async () => {
   await selectHeroAwayFromText();
   await heroHeading().click();

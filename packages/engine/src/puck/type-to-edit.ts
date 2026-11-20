@@ -3,9 +3,10 @@ import { startTextEditing } from "./text-editing.js";
 
 /**
  * Typing starts editing (LF-17, #1178): with an element selected whose own content is text, a key
- * that types a character starts editing its text with that character, the caret at the end, as
- * Enter starts it. A key that types nothing, or a selection with no text of its own (a Section, an
- * image), is left to the shortcuts: `?` still opens the shortcut sheet there.
+ * that types a character (or starts an input method's composition) starts editing its text with
+ * that character, the caret at the end, as Enter starts it. A key that types nothing, or a
+ * selection with no text of its own (a Section, an image), is left to the shortcuts: `?` still
+ * opens the shortcut sheet there.
  */
 
 /** What {@link startEditingOnType} asks about the canvas's selection. */
@@ -16,7 +17,7 @@ export type TypeToEditOptions = {
   readonly several: () => boolean;
 };
 
-/** A key press, as {@link typedCharacter} reads it. */
+/** A key press, as {@link startsTyping} reads it. */
 type KeyPress = Pick<
   KeyboardEvent,
   "key" | "ctrlKey" | "metaKey" | "altKey" | "repeat" | "isComposing"
@@ -25,18 +26,22 @@ type KeyPress = Pick<
 };
 
 /**
- * The character `event` types, if it types one: a single character, not Space (which picks up an
- * element to move it from the keyboard), with neither Ctrl, Cmd nor Alt, unless AltGr typed it
- * (Windows reports AltGr as Ctrl+Alt). None while an input method is composing, or for a held key's
- * repeats.
+ * The key an input method reports for the first key of what it composes (Japanese, Chinese,
+ * Korean): the composition then goes on in whatever has the focus.
  */
-export function typedCharacter(event: KeyPress): string | undefined {
-  if (event.repeat || event.isComposing || [...event.key].length !== 1 || event.key === " ") {
-    return undefined;
-  }
+const INPUT_METHOD_KEY = "Process";
+
+/**
+ * Whether `event` starts typing: a key that types a single character, not Space (which picks up an
+ * element to move it from the keyboard), with neither Ctrl, Cmd nor Alt, unless AltGr typed it
+ * (Windows reports AltGr as Ctrl+Alt); or the first key an input method composes with. Not the
+ * keys that follow it while it composes, or a held key's repeats.
+ */
+export function startsTyping(event: KeyPress): boolean {
+  if (event.repeat || event.isComposing) return false;
   const altGr = event.getModifierState?.("AltGraph") === true;
-  if ((event.ctrlKey || event.metaKey || event.altKey) && !altGr) return undefined;
-  return event.key;
+  if ((event.ctrlKey || event.metaKey || event.altKey) && !altGr) return false;
+  return event.key === INPUT_METHOD_KEY || ([...event.key].length === 1 && event.key !== " ");
 }
 
 /** Whether a key press at `target` already goes to something that takes typing. */
@@ -58,13 +63,13 @@ function takesTyping(target: EventTarget | null): boolean {
 export function startEditingOnType(frame: Window, options: TypeToEditOptions): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.defaultPrevented || takesTyping(event.target)) return;
-    const character = typedCharacter(event);
     const id = options.selected();
-    if (character === undefined || id === null || options.several()) return;
+    if (!startsTyping(event) || id === null || options.several()) return;
     if (!startTextEditing(frame.document, id, false)) return;
-    // The key itself types the character, into the text that now has the focus and the caret: the
-    // canvas reports it as the start of the text's editing session, one undo step with what
-    // follows. No shortcut sees it (`?` types a question mark here).
+    // The key itself types the character, or starts an input method's composition, in the text
+    // that now has the focus and the caret: the canvas reports it as the start of the text's
+    // editing session, one undo step with what follows. No shortcut sees it (`?` types a question
+    // mark here).
     event.stopPropagation();
   };
   // A press on the selected element's own plain text makes it editable before the press lands, so
