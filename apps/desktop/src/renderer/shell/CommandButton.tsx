@@ -26,6 +26,13 @@ export type CommandButtonProps = {
    * by it (#1009): windows 1280 px wide and up always show it, and at 960 px nothing is cut off.
    */
   readonly text?: string;
+  /**
+   * Whether its text shows at every width, not only on a wide title bar: Publish and Site Check's
+   * count, which at 960 px were coloured icons no one could name (#1166). The others keep their
+   * tooltips there. A status with a `shortStatus` shows that below 1180 px: "12 to fix", not
+   * "12 to fix · 23 tips", which would run under the window's buttons at 960 px.
+   */
+  readonly alwaysText?: boolean;
   /** Ghost unless given: Publish is the title bar's one filled button (#1009). */
   readonly variant?: ButtonProps["variant"];
 };
@@ -36,7 +43,13 @@ export type CommandButtonProps = {
  * contributed yet, as Undo and Publish aren't on the start screen, #1009). Commands that name it
  * as theirs to go with (`more`) make it a split button, with a caret that lists them.
  */
-export function CommandButton({ commandId, icon, text, variant = "ghost" }: CommandButtonProps) {
+export function CommandButton({
+  commandId,
+  icon,
+  text,
+  alwaysText = false,
+  variant = "ghost",
+}: CommandButtonProps) {
   const registry = useCommandRegistry();
   const commands = useCommands();
   const command = commands.find((each) => each.id === commandId);
@@ -51,6 +64,8 @@ export function CommandButton({ commandId, icon, text, variant = "ghost" }: Comm
   const tip =
     command.shortcut === undefined ? name : `${name} (${formatShortcut(command.shortcut)})`;
   const shown = text ?? status;
+  // On a narrow title bar, the part of the status that most needs doing (#1166): "12 to fix".
+  const narrow = alwaysText && text === undefined ? command.shortStatus : undefined;
 
   // `disabled` is always given, so it doesn't come and go, which would remount the button.
   const button = (
@@ -60,7 +75,10 @@ export function CommandButton({ commandId, icon, text, variant = "ghost" }: Comm
       className={cn(
         "[&_svg]:transition-colors",
         // Written out in full: Tailwind finds its classes in the source as they are.
-        shown !== undefined && "@min-[1180px]/title-bar:w-auto @min-[1180px]/title-bar:px-2.5",
+        shown !== undefined &&
+          (alwaysText
+            ? "w-auto px-2.5"
+            : "@min-[1180px]/title-bar:w-auto @min-[1180px]/title-bar:px-2.5"),
       )}
       disabled={command.enabled === false}
       tooltip={tipWithReason(tip, reasonOf(command))}
@@ -71,8 +89,15 @@ export function CommandButton({ commandId, icon, text, variant = "ghost" }: Comm
       onClick={() => registry.run(commandId)}
     >
       {icon}
-      {shown === undefined ? null : (
-        <span className="hidden @min-[1180px]/title-bar:inline">{shown}</span>
+      {narrow !== undefined && narrow !== shown ? (
+        <>
+          <span className="@min-[1180px]/title-bar:hidden">{narrow}</span>
+          <span className="hidden @min-[1180px]/title-bar:inline">{shown}</span>
+        </>
+      ) : shown === undefined ? null : (
+        <span className={alwaysText ? undefined : "hidden @min-[1180px]/title-bar:inline"}>
+          {shown}
+        </span>
       )}
     </Button>
   );

@@ -9,15 +9,21 @@ import { countsByLevel, toFixCount } from "./counts.js";
 /**
  * What the title bar's Site Check button says (#1009): "5 to fix · 13 tips", *Must fix* and
  * *Should fix* counted together, either left out at none, or "No problems" with nothing at all.
+ * Below 1180 px it says only what most needs doing (#1166): "5 to fix", else "13 tips", else
+ * "No problems", its name and tooltip still the whole count.
  */
-export function siteCheckStatus(report: CheckReport): string {
+export function siteCheckStatus(report: CheckReport): {
+  readonly status: string;
+  readonly shortStatus: string;
+} {
   const toFix = toFixCount(report);
   const tips = countsByLevel(report).tip;
   const parts = [
     ...(toFix === 0 ? [] : [plural("siteCheck.button.toFix", toFix)]),
     ...(tips === 0 ? [] : [plural("siteCheck.count.tip", tips)]),
   ];
-  return parts.length === 0 ? t("siteCheck.button.clear") : parts.join(" · ");
+  const [first = t("siteCheck.button.clear")] = parts;
+  return { status: parts.length === 0 ? first : parts.join(" · "), shortStatus: first };
 }
 
 /**
@@ -35,12 +41,12 @@ export function registerSiteCheckCommand(
     label: t("siteCheck.title"),
     // Site › Site Check too (#1165), beside Version History.
     menu: "site",
-    status: siteCheckStatus(state.getState().report),
+    ...siteCheckStatus(state.getState().report),
     run: () => panels.show(panelId),
   });
   const stop = state.subscribe(({ report }, before) => {
     if (report !== before.report) {
-      commands.update(COMMAND_IDS.siteCheck, { status: siteCheckStatus(report) });
+      commands.update(COMMAND_IDS.siteCheck, siteCheckStatus(report));
     }
   });
   return () => {
