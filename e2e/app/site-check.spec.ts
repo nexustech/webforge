@@ -39,6 +39,28 @@ test("lists the new site's placeholder text, and selects it from there", async (
   await expect(panel.getByRole("heading", { name: "Text", exact: true })).toBeVisible();
 });
 
+test("names in words each element added since the site opened, never by its id (#1170)", async () => {
+  const left = page.getByRole("region", { name: "Left panels" });
+  const item = (name: string) => left.getByRole("button", { name, exact: true });
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  await item("FAQ").click();
+  await expect(canvas.locator(".site-faq")).toHaveCount(1);
+  await item("Section").click();
+  await left.getByRole("tab", { name: "Elements" }).click();
+  await item("Heading").click();
+  await item("Button").click();
+
+  // The starter's Text, the FAQ's three questions and the new Heading: each by what it is, not
+  // by an id the panel's first site didn't have.
+  await expect(rule("placeholders").getByRole("button", { name: /^Show / })).toHaveText([
+    "Text on My site",
+    "Question on My site",
+    "Question on My site",
+    "Question on My site",
+    "Heading on My site",
+  ]);
+});
+
 test("its title-bar button says what it found, and opens it (#1009)", async () => {
   const button = page.getByRole("banner").getByRole("button", { name: /^Site Check: / });
   // The starter site's placeholder text, at least, is still to fix.

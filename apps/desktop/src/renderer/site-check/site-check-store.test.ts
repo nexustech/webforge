@@ -63,6 +63,24 @@ describe("Site Check's recheck in idle time (ADR 0016)", () => {
     check.dispose();
   });
 
+  it("keeps the site its report was found in, to name the findings by (#1170)", () => {
+    const document = createStore<SiteDoc>()(() => starterSite());
+    const opened = document.getState();
+    const check = createSiteCheck(document, { ignored: [], saveIgnored: () => {} });
+    expect(check.state.getState().site).toBe(opened);
+
+    const changed = withDeviceName(opened);
+    document.setState(changed, true);
+    vi.advanceTimersByTime(400);
+    // Until the recheck is done, the report and its site are the opened one's.
+    idlePeriod(0);
+    expect(check.state.getState().site).toBe(opened);
+    while (idle.length > 0) idlePeriod(1000);
+    expect(failing(check)).toBe(1);
+    expect(check.state.getState().site).toBe(changed);
+    check.dispose();
+  });
+
   it("runs as many rules as an idle period has room for", () => {
     const document = createStore<SiteDoc>()(() => starterSite());
     const check = createSiteCheck(document, { ignored: [], saveIgnored: () => {} });

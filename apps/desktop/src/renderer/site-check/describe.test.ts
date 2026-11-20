@@ -1,4 +1,4 @@
-import type { MediaId, PageId, SiteDoc } from "@webforge/model";
+import type { MediaId, PageId, SharedSectionId, SiteDoc } from "@webforge/model";
 import type { Finding } from "@webforge/site-check";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
@@ -51,9 +51,39 @@ describe("describePlace", () => {
   it("names elements by their given name or kind, and where they are", () => {
     expect(name(at({ kind: "element", on: "header", nodeId: "logo" }))).toBe("Logo in the Header");
     expect(name(at({ kind: "element", on: "footer", nodeId: "small" }))).toBe("Text in the Footer");
-    expect(name(at({ kind: "element", on: doc.homePageId, nodeId: "gone" }))).toBe(
-      "gone on Rosa's",
+  });
+
+  it("never names an element or a shared section by its id, when it can't find it (#1170)", () => {
+    expect(name(at({ kind: "element", on: doc.homePageId, nodeId: "LD5wURuiGOJhw1YE" }))).toBe(
+      "An element on Rosa's",
     );
+    // A Puck id says what the element is.
+    const question = "FaqItem-17778910-5602-4ae7-8159-ca92d1990903";
+    expect(name(at({ kind: "element", on: doc.homePageId, nodeId: question }))).toBe(
+      "Question on Rosa's",
+    );
+    expect(name(at({ kind: "element", on: "Nope-1234" as SharedSectionId, nodeId: "gone" }))).toBe(
+      "An element in a shared section",
+    );
+  });
+
+  it("names a shared section by its name, and one without a name by what it is (#1170)", () => {
+    const section = (id: string, name: string) => ({
+      id: id as never,
+      name,
+      section: {
+        type: "Section",
+        props: { id: `${id}-section`, children: [{ type: "Heading", props: { id: `${id}-h` } }] },
+      },
+    });
+    const shared = {
+      ...doc,
+      sharedSections: { offers: section("offers", "Offers"), blank: section("blank", " ") },
+    };
+    const named = (on: string, nodeId: string) =>
+      describePlace(at({ kind: "element", on: on as never, nodeId }), shared, siteLibrary);
+    expect(named("offers", "offers-h")).toBe("Heading in the shared section Offers");
+    expect(named("blank", "blank-h")).toBe("Heading in a shared section");
   });
 
   it("names menu items by their label or their page's title, in dropdowns too", () => {
