@@ -129,6 +129,7 @@ const host: FormSpec<FormValues, unknown> = {
 export const MoreOptions: Story = {
   args: {
     title: "Publish to Your Web Host",
+    description: "The details from your web host's control panel.",
     confirm: "Save",
     spec: host,
     initial: { host: "", user: "", folder: "/public_html", redirects: false },
