@@ -1,9 +1,8 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
-import { launchDesktopApp, type WebforgeApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, removeWhenFree, type WebforgeApp, waitForCanvas } from "./launch.js";
 
 // The editor's appearance follows the computer's light or dark setting by default (#1169), as it
 // changes, without a restart; the computer's setting is Chromium's `prefers-color-scheme`, which
@@ -19,7 +18,8 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  // Once the app lets go of its files, not waited for (#1112).
+  void removeWhenFree(dir);
 });
 
 /** Launches the app for someone with `theme` as their appearance, as a new install has it. */
