@@ -40,6 +40,12 @@ export const publish = {
   "publish.fileTransfer.redirectRules": "Redirect old addresses on Apache hosts (.htaccess)",
   "publish.fileTransfer.redirectRules.help":
     "Most hosts reached by FTP run Apache. Turn this on to send a renamed page's old address on with a permanent redirect, which search engines follow. {appName} writes only its own lines in your host's .htaccess file and leaves the rest alone.",
+  // Beside More Options while it's folded (#1172): "SFTP · port 2222 · /site".
+  "publish.fileTransfer.summary.ftps": "FTPS",
+  "publish.fileTransfer.summary.sftp": "SFTP",
+  "publish.fileTransfer.summary.ftp": "Plain FTP",
+  "publish.fileTransfer.summary.port": "port {port}",
+  "publish.fileTransfer.summary.redirects": "Apache redirects on",
   // The site's publish destinations (4.4a): where the Publish button publishes to.
   "publish.destinations.title": "Publish",
   "publish.destinations.description":

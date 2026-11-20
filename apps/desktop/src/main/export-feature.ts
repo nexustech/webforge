@@ -52,6 +52,9 @@ export function showExport(
 ): ExportDeps["show"] {
   return async ({ destination, format }) => {
     if (!exists(destination)) return "missing";
+    // The report offers this for a folder only (a ZIP has Show ZIP File, `open`), but the channel
+    // shows main's last export, whichever it was, not what the renderer thinks it is. A ZIP is
+    // selected in its folder: `openPath` would start whatever program opens archives.
     if (format === "zip") {
       shell.showItemInFolder(destination);
       return "opened";

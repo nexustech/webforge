@@ -47,6 +47,7 @@ The toolbar at the bottom has **Move up**, **Move down**, **Duplicate**, **Don't
 | Ctrl+↑ · Ctrl+↓                           | What contains it · the first thing inside it |
 | Ctrl+← · Ctrl+→                           | The previous or next item beside it          |
 | Ctrl+Alt+↑ · Ctrl+Alt+↓, or Alt+↑ · Alt+↓ | Move it up or down                           |
+| Enter                                     | Change its text, on the page                 |
 | F2                                        | Rename                                       |
 | Delete or Backspace                       | Delete                                       |
 

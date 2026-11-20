@@ -6,7 +6,7 @@ import {
   type FakeEngine,
   scaledTestTimeout,
 } from "@webforge/test-utils/renderer";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AiApi, AiRequest, AiResponse } from "../shared/ipc/ai.js";
 import { applyPreferencesChange, DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import type { ExportRequest } from "../shared/ipc/site.js";
@@ -22,6 +22,11 @@ import { fakePreloadApi } from "./testing/preload.js";
 // Each test renders the whole window (title bar, panels, Radix menus); on a busy machine that can
 // take longer than Vitest's default 5 s.
 vi.setConfig({ testTimeout: scaledTestTimeout(20_000) });
+
+// A wide window: below 1100 px a first open starts with the left column as its strip (#1166).
+beforeEach(() => {
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
+});
 
 afterEach(() => {
   cleanup();

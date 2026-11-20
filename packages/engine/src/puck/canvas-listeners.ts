@@ -7,6 +7,7 @@ import { hidePuckDeleteKeys } from "./delete-keys.js";
 import { type DragKeys, trackDragKeys } from "./drag-copies.js";
 import { keepHoverOnOutline } from "./outline-hover.js";
 import { hoverElementsOverText } from "./text-hover.js";
+import { startEditingOnType } from "./type-to-edit.js";
 import { type TypingPauses, timeKeystrokes } from "./typing-pauses.js";
 
 /** What the canvas's keys, clicks and menus report to, and ask, in a window. */
@@ -27,8 +28,10 @@ export type FrameListenerOptions = CanvasListenerOptions & {
   readonly contextMenu: (menu: CanvasContextMenu) => void;
   /** Whether the element menu opens: not in Content mode, where right-clicks get the browser's. */
   readonly menuEnabled: () => boolean;
-  /** The element selected now, whose menu the keyboard asks for. */
+  /** The element selected now, whose menu the keyboard asks for and whose text typing edits. */
   readonly selected: () => string | null;
+  /** Whether several elements are selected: typing then edits none (LF-17). */
+  readonly several: () => boolean;
 };
 
 /**
@@ -52,15 +55,17 @@ export function listenInEditor(target: Window, options: CanvasListenerOptions): 
 
 /**
  * Listens in the canvas iframe's window `frame`: as in the editor window, plus Undo and Redo from
- * the keyboard (taken before Puck's own hotkeys, ADR 0004), and the element menu from a right-click
- * or the keyboard, Shift+F10 on macOS too (#287), the time of each key typed (#307), and its links
- * and forms followed nowhere. Returns what stops it.
+ * the keyboard (taken before Puck's own hotkeys, ADR 0004), the element menu from a right-click or
+ * the keyboard, Shift+F10 on macOS too (#287), the time of each key typed (#307), typing that starts
+ * editing the selected element's text (LF-17), and its links and forms followed nowhere. Returns
+ * what stops it.
  */
 export function listenInFrame(frame: Window, options: FrameListenerOptions): () => void {
   const stops = [
     listenInEditor(frame, options),
     installHistoryKeys(frame, options.runCommand),
     timeKeystrokes(frame, options.pauses),
+    startEditingOnType(frame, { selected: options.selected, several: options.several }),
     installContextMenu(frame.document, options.contextMenu, {
       enabled: options.menuEnabled,
       selected: options.selected,

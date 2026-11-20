@@ -158,6 +158,17 @@ export function useLayersTree({
         const next = rows[at + step];
         if (next !== undefined) focusRow(next.layer.id);
       }
+    } else if (
+      event.key === "Enter" &&
+      !(mod || event.altKey || event.shiftKey) &&
+      actions.editText !== undefined &&
+      row.layer.id === selectedId &&
+      alsoSelected.length === 0
+    ) {
+      // As on the canvas (LF-17): Enter on the selected layer edits its text there. An element
+      // with no text of its own (a Section) does nothing.
+      event.preventDefault();
+      actions.editText();
     } else if (event.key === "F2") {
       event.preventDefault();
       setRenaming(row.layer.id);

@@ -167,7 +167,7 @@ describe("the first-time tips (5.4a, OB-4…OB-6)", () => {
     const { session, seen } = setUp();
     act(() => session.select(firstElement(session)));
     expect(screen.getByRole("heading", { name: "Change what you've selected" })).toBeTruthy();
-    expect(card().textContent).toContain("Press Enter, or Edit on its bar");
+    expect(card().textContent).toContain("Type to change its text, or press Enter");
     expect(seen()).toEqual(["selection"]);
     await userEvent.click(screen.getByRole("button", { name: "Got It" }));
     expect(screen.queryByRole("region")).toBeNull();

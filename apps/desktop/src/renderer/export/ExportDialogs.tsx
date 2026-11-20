@@ -21,7 +21,7 @@ import { useState, useSyncExternalStore } from "react";
 import { z } from "zod";
 import type { ExportChoices } from "../../shared/ipc/site.js";
 import { HelpButton } from "../help/index.js";
-import { SiteCheckToFix } from "../site-check/index.js";
+import { SiteCheckToFixNote } from "../site-check/index.js";
 import type { ExportDialogs as Dialogs, ExportReport } from "./export-dialogs.js";
 
 type OptionValues = {
@@ -146,7 +146,7 @@ function Report({
         </DialogHeader>
         <p className="break-all text-muted-foreground text-sm">{report.location}</p>
         <p className="text-sm">{report.summary}</p>
-        <SiteCheckToFix
+        <SiteCheckToFixNote
           count={report.toFix}
           onShow={() => {
             onClose();
