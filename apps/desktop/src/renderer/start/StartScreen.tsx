@@ -16,6 +16,7 @@ import {
   WandSparklesIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { shownTheme } from "../../shared/editor-theme.js";
 import type { AiApi } from "../../shared/ipc/ai.js";
 import type { AppApi } from "../../shared/ipc/app.js";
 import type { HelpApi } from "../../shared/ipc/help.js";
@@ -41,7 +42,7 @@ import { createCommandRegistry, installCommandShortcuts, isMac } from "../shell/
 import { createPreferencesStore } from "../shell/preferences-store.js";
 import { ShortcutSheet } from "../shell/ShortcutSheet.js";
 import { TitleBar } from "../shell/TitleBar.js";
-import { applyTheme } from "../startup.js";
+import { applyTheme, computerDark, onComputerThemeChange } from "../startup.js";
 import { watchUpdates } from "../updates/index.js";
 import { openSiteWith } from "./open-site.js";
 import { RecentSites } from "./RecentSites.js";
@@ -125,15 +126,22 @@ export function StartScreen({
     () => registerAppSettings(settings, preferenceStore, undefined, info.version),
     [settings, preferenceStore, info.version],
   );
-  useEffect(
-    () =>
-      preferenceStore.subscribe((state, before) => {
-        if (state.preferences.theme !== before.preferences.theme) {
-          applyTheme(state.preferences.theme, window);
-        }
-      }),
-    [preferenceStore],
-  );
+  // The theme chosen in Settings, and the computer's while the person follows it (#1169).
+  useEffect(() => {
+    const show = () =>
+      applyTheme(
+        shownTheme(preferenceStore.getState().preferences.theme, computerDark(window)),
+        window,
+      );
+    const stopFollowing = onComputerThemeChange(window, show);
+    const stopChoosing = preferenceStore.subscribe((state, before) => {
+      if (state.preferences.theme !== before.preferences.theme) show();
+    });
+    return () => {
+      stopFollowing();
+      stopChoosing();
+    };
+  }, [preferenceStore]);
 
   // Nothing to save here: answer at once, so closing the window never waits for a timeout.
   useEffect(() => (app ?? window.webforge.app).onFlushRequest(async () => undefined), [app]);

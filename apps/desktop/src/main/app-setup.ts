@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import type { App, Menu, Protocol, Session } from "electron";
+import { shownTheme } from "../shared/editor-theme.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { applicationMenu } from "./app-menu.js";
@@ -51,6 +52,8 @@ export function helpWindowsFor(
   devServerUrl: string | undefined,
   preload: string,
   preferences: () => Pick<PreferencesStore, "get"> | undefined,
+  /** Whether the computer is set to dark, for a person who follows it (#1169). */
+  computerDark: () => boolean = () => false,
 ): HelpWindows {
   return createHelpWindows({
     create,
@@ -60,7 +63,8 @@ export function helpWindowsFor(
         : new URL("help.html", devServerUrl).href,
     preload,
     title: t("help.window.title"),
-    theme: () => preferences()?.get().theme ?? DEFAULT_PREFERENCES.theme,
+    theme: () =>
+      shownTheme(preferences()?.get().theme ?? DEFAULT_PREFERENCES.theme, computerDark()),
     background: windowBackground,
     zoom: () => preferences()?.get().interfaceZoom ?? DEFAULT_PREFERENCES.interfaceZoom,
     onLoadFailed: (error) => logFailure("Webforge could not load the Help window", error),
