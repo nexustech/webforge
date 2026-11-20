@@ -4,12 +4,14 @@ id: themes
 title: Themes, colours and fonts
 summary: Change your whole site's colours, fonts, corners and spacing at once, in the Theme panel or Theme Studio.
 related: [styling, templates, media]
-updated: 2026-11-17
+updated: 2026-11-20
 ---
 
 # Themes, colours and fonts
 
-Your site's **theme** sets its colours, fonts, text sizes, buttons, corners and spacing on every page. Change it and the whole site follows, so everything stays consistent. Changes that affect every page ask you first, and each one is a single step you can undo.
+Your site's **theme** sets its colours, fonts, text sizes, buttons, corners and spacing on every page. Change it and the whole site follows, so everything stays consistent. Each change is a single step you can undo.
+
+A new colour or font shows on your pages straight away, so you can try several. A message says how many pages it changed, such as "Brand colour changed on 6 pages", with **Undo** to take it back. Switching to another theme, or giving every item of one kind the same look, asks you first.
 
 You'll find the **Theme** panel in the right column, beside Site and Media, or under **Site › Theme…**.
 
@@ -51,7 +53,7 @@ The Theme panel lists the theme's settings:
 
 ## Built-in themes and your own
 
-Built-in themes never change. The first time you change one, {appName} asks you to name **your own version** of it, such as "Bistro (my version)". Your own themes are kept on this computer, under **My themes**, for all your sites. Each site also keeps a copy of its theme, so it looks the same even if you delete your theme or open the site on another computer.
+Built-in themes never change. The first time you change one, {appName} saves **your own version** of it, named after it, such as "Bistro (yours)". To give it a name of your own, rename it in Theme Studio's **Themes**. Your own themes are kept on this computer, under **My themes**, for all your sites. Each site also keeps a copy of its theme, so it looks the same even if you delete your theme or open the site on another computer.
 
 ## Theme Studio
 

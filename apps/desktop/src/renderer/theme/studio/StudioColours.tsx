@@ -140,7 +140,8 @@ function ColourRow({
 
 /**
  * Theme Studio's colours (F-DS-7): every colour role, the page's and reversed sections' side by side,
- * each with its shades and what its contrast lacks below AA, in both. A change asks first (D7).
+ * each with its shades and what its contrast lacks below AA, in both. A change applies at once,
+ * with a toast that offers Undo (LF-15).
  */
 export function StudioColours({
   theme,

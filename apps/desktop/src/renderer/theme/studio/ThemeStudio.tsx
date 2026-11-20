@@ -82,7 +82,7 @@ type Compared = "now" | "draft";
 export type ThemeStudioProps = {
   readonly session: EditorSession;
   readonly studio: StoreApi<StudioState>;
-  /** Asks before a change to every page (D7): a preset, a colour. */
+  /** Asks before another theme, or a kind's look, changes every page (D7). */
   readonly siteWide?: ThemeSiteWide | undefined;
   /**
    * My themes (2.23): listed first, with New theme, Rename and Delete, and asked for a name before
@@ -104,7 +104,8 @@ export type ThemeStudioProps = {
  * lacks, and brand colours proposed from an image (PG-2); the text styles and links; and the other
  * styles, the corner and shadow scales drawn as samples. Under the bar, all but Themes keep a preview
  * in view while their controls scroll: Colours, Text and Styles a sample page in the theme, and
- * Components the kind chosen beside the tabs. A theme or a colour is asked about first (D7); every
+ * Components the kind chosen beside the tabs. A theme is asked about first (D7), a colour applies
+ * at once with a toast that offers Undo (LF-15); every
  * change is one labelled step in the site's history, so Ctrl/Cmd+Z undoes it here too (P5). The
  * person's own themes come first; the first change to a built-in theme saves their own version of
  * it, by a name they choose (2.23, PH2-17). Components shows each kind's look, which every one of

@@ -93,11 +93,8 @@ test("a direction chosen for every Hero in Theme Studio draws Brand to Accent on
   await expect(look.getByText("Gradient ends with")).toBeVisible();
   // In the bar at the bottom, always in view (CT-11).
   await studio.getByRole("button", { name: "Apply Changes" }).click();
-  // A built-in theme is changed as the person's own copy of it (2.23), and every Hero asks (D7).
-  await page
-    .getByRole("dialog", { name: /^Save Your Own Version of/ })
-    .getByRole("button", { name: "Save Theme" })
-    .click();
+  // A built-in theme is changed as the person's own copy of it, saved unasked (2.23, LF-15), and
+  // every Hero asks (D7).
   await page
     .getByRole("alertdialog", { name: "Change how every Hero looks?" })
     .getByRole("button", { name: "Change Look" })

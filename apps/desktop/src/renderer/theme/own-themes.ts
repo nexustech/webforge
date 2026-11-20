@@ -38,10 +38,17 @@ export type OwnThemesState = {
   readonly deleted: readonly OwnThemeId[];
 };
 
-/** What a theme change asks of My themes (2.23): a name for the person's own version. */
-export type OwnThemeNames = {
+/**
+ * The names My themes asks and keeps (2.23): a name for one of the person's themes, and those they
+ * have, which a theme saved without asking mustn't repeat (LF-15).
+ */
+type OwnThemeNames = {
   /** Asks for a name; `undefined` if the person cancels. */
   askName(question: NameQuestion): Promise<string | undefined>;
+  /** The names of the person's own themes on this computer. */
+  taken(): readonly string[];
+  /** The name the person's theme `id` is listed under now; `undefined` if it isn't listed. */
+  nameOf(id: string): string | undefined;
 };
 
 /** My themes (2.23, PH2-17): see {@link createOwnThemes}. */
@@ -176,6 +183,8 @@ export function createOwnThemes(
       const kept = deleted.filter((each) => each === id);
       if (kept.length !== deleted.length) store.setState({ deleted: kept });
     },
+    taken: () => store.getState().themes.map((theme) => theme.own.name),
+    nameOf: (id) => store.getState().themes.find((theme) => theme.own.id === id)?.own.name,
     askName(question) {
       return ask({ kind: "name", ...question }, (answer) =>
         typeof answer === "string" ? answer : undefined,

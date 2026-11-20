@@ -39,8 +39,11 @@ export type EditKind = EngineEditKind;
 type EntryListener = (
   entry: HistoryEntry<EditorSelection>,
   kind: EditKind,
-  /** Whether the edit asked for its Undo toast, whatever its kind (`EditOptions.announce`). */
-  announced: boolean,
+  /**
+   * Whether the edit asked for its Undo toast, whatever its kind (`EditOptions.announce`): `true`,
+   * or the toast's own words.
+   */
+  announced: boolean | string,
 ) => void;
 
 /** Called with a piece of the site's code as it was, and as the owner wrote it (#649). */
@@ -65,9 +68,11 @@ type EditOptions = RunOptions<EditorSelection> & {
   readonly apply?: boolean;
   /**
    * Shows the step's Undo toast, as a delete does (1.11): a change made for the person by a button
-   * that doesn't say beforehand what it will do, such as Site Check's *Fix* (#1164).
+   * that doesn't say beforehand what it will do, such as Site Check's *Fix* (#1164), or one that
+   * changes every page without asking first, as a theme's colour does (LF-15). `true` says the
+   * step's label; a string says that instead ("Brand colour changed on 6 pages").
    */
-  readonly announce?: boolean;
+  readonly announce?: boolean | string;
 };
 
 /**
@@ -181,7 +186,7 @@ export function createEditorSession(
     return entries[cursor - 1];
   };
   /** Runs `change` and reports the entry it added, if any. */
-  const reporting = (kind: EditKind, change: () => void, announced = false) => {
+  const reporting = (kind: EditKind, change: () => void, announced: boolean | string = false) => {
     const before = currentEntry();
     change();
     const entry = currentEntry();
@@ -219,7 +224,7 @@ export function createEditorSession(
     edit(kind, label, recipe, options) {
       commitGesture();
       const { apply, announce, ...runOptions } = options ?? {};
-      reporting(kind, () => history.run(label, recipe, runOptions), announce === true);
+      reporting(kind, () => history.run(label, recipe, runOptions), announce ?? false);
       if (apply === true && runOptions.selectionAfter !== undefined) {
         setSelection(runOptions.selectionAfter);
       }
