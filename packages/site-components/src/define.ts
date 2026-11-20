@@ -272,8 +272,8 @@ const joined = (own: unknown, classes: string) =>
  * its own, on its root element (through a fragment or a context's provider around it), or, for a
  * component with `lookTarget`, on the part it marks {@link LOOK_TARGET}, wherever that is. What it
  * holds is drawn without its section's title styling, so a section's Appearance reaches no title
- * but its own, and none of its titles is the page's main heading. Output with no HTML element at its root is left as it is (a test checks every
- * element's root is one).
+ * but its own, and none of its titles is the page's main heading (#1173). Output with no HTML
+ * element at its root is left as it is (a test checks every element's root is one).
  */
 function withAppearance(output: ReactNode, classes: string, lookTarget: boolean): ReactNode {
   if (!isValidElement(output)) return output;

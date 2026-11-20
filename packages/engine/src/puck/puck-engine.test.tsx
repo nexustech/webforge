@@ -861,6 +861,41 @@ describe("createPuckEngine", () => {
     expect(levels()).toEqual(["Our story: h2"]);
   });
 
+  it("moves the page's main heading only once text on the canvas loses the focus (#1173)", async () => {
+    const levels = () =>
+      [...element.querySelectorAll(".t-titled")].map(
+        (each) => `${each.textContent ?? ""}: ${each.getAttribute("data-level") ?? ""}`,
+      );
+    const titled = (id: string, title: string) => ({ type: "Titled", props: { id, title } });
+    await act(async () =>
+      engine.applyChange({
+        page: { ...page, content: [titled("t1", "Our story"), titled("t2", "Menu")] },
+      }),
+    );
+    await settle();
+    expect(levels()).toEqual(["Our story: h1", "Menu: h2"]);
+
+    // Its title emptied while it is typed in: changing its tag would remount the text.
+    const text = document.createElement("span");
+    text.contentEditable = "true";
+    element.append(text);
+    text.focus();
+    vi.spyOn(document, "hasFocus").mockReturnValue(true);
+    await act(async () =>
+      engine.applyChange({
+        page: { ...page, content: [titled("t1", ""), titled("t2", "Menu")] },
+      }),
+    );
+    await settle();
+    expect(levels()).toEqual([": h1", "Menu: h2"]);
+
+    text.blur();
+    await settle();
+    expect(levels()).toEqual([": h2", "Menu: h1"]);
+    text.remove();
+    vi.restoreAllMocks();
+  });
+
   it("shows the site's navigation, drawing the page again when it changes (1.21)", async () => {
     const nav = () => [...element.querySelectorAll(".t-nav li")].map((item) => item.textContent);
     await act(async () =>
