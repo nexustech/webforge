@@ -188,7 +188,7 @@ export function Form<V extends FormValues, Out>({
         {shown.filter((field) => field.more !== true).map(row)}
         {more.length === 0 ? null : (
           <>
-            <div className="flex flex-wrap items-baseline gap-x-2">
+            <div className="flex flex-wrap items-center gap-x-2">
               <Button
                 type="button"
                 variant="ghost"
