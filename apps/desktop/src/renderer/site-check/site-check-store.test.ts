@@ -94,6 +94,20 @@ describe("Site Check's recheck in idle time (ADR 0016)", () => {
     check.dispose();
   });
 
+  it("runs every rule left once a window has had no idle period in a second (#1207)", () => {
+    const document = createStore<SiteDoc>()(() => starterSite());
+    const check = createSiteCheck(document, { ignored: [], saveIgnored: () => {} });
+
+    document.setState(withDeviceName(document.getState()), true);
+    vi.advanceTimersByTime(400);
+    // Its idle callback runs because its timeout passed: a busy window, with no time to spare.
+    idle.shift()?.({ didTimeout: true, timeRemaining: () => 0 });
+
+    expect(failing(check)).toBe(1);
+    expect(idle).toEqual([]);
+    check.dispose();
+  });
+
   it("stops a recheck the site changed under, and starts again once it is still", () => {
     const document = createStore<SiteDoc>()(() => starterSite());
     const check = createSiteCheck(document, { ignored: [], saveIgnored: () => {} });
