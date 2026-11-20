@@ -8,13 +8,13 @@
 
 ## 1. The three parts
 
-Seen on the reference site and on most product sites like it; all three are plain HTML and CSS, with no script.
+Seen on the reference site; all three are plain HTML and CSS, with no script.
 
-| Part                                      | What it is                                                                                                 | Where it is seen                                                                                               |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **A label above a title**                 | A short line in small capitals or a monospaced font over a section's title: "How it works", "Pricing"      | Above nearly every section title on product sites; Squarespace, Framer and Webflow templates use it throughout |
-| **A tag**                                 | A small rounded mark holding a word or two: a category ("SaaS · Web app"), a status ("Coming soon", "New") | On cards, beside names and prices, under showcase items                                                        |
-| **A title that stays while steps scroll** | The section's title and text stay in view on one side while a numbered list scrolls past on the other      | "How it works" sections with more than four steps                                                              |
+| Part                                      | What it is                                                                                                 | Where it is seen                                        |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| **A label above a title**                 | A short line in small capitals or a monospaced font over a section's title: "How it works", "Pricing"      | Above nearly every section title on the reference site  |
+| **A tag**                                 | A small rounded mark holding a word or two: a category ("SaaS · Web app"), a status ("Coming soon", "New") | On cards, beside names and prices, under showcase items |
+| **A title that stays while steps scroll** | The section's title and text stay in view on one side while a numbered list scrolls past on the other      | "How it works" sections with more than four steps       |
 
 ## 2. What we have
 
