@@ -17,6 +17,11 @@ export type FormField = FieldSpec & {
   readonly group?: string;
   /** How wide its control is: a few characters, half the form, or the form's width (the default). */
   readonly width?: "sm" | "md" | "full";
+  /**
+   * Under the form's **More Options**, folded until the person opens it, or a check finds a problem
+   * in it: what most people can leave as it is (#1172).
+   */
+  readonly more?: boolean;
   readonly disabled?: boolean;
   /** A list's new item's values, when the person adds one (an id is added). */
   readonly newItem?: () => FormValues;
@@ -70,6 +75,17 @@ export type FormSpec<V extends FormValues, Out> = {
   /** The values after a change, made consistent (a new form service clears the old one's value). */
   readonly adjust?: (next: V, previous: V) => V;
   /**
+   * Whether **More Options** starts open, from the values the form starts from: when something
+   * folded there needs a look at once (plain FTP's warning, #1172). Folded when left out.
+   */
+  readonly moreOpen?: (values: V) => boolean;
+  /**
+   * Beside **More Options** while it is folded: what its fields hold, in a few words ("SFTP · port
+   * 2222 · /site"), so nothing set there goes unseen; already translated. By the tab's group, in a
+   * form with tabs.
+   */
+  readonly moreSummary?: (values: V, group: string | undefined) => string | undefined;
+  /**
    * When problems show: as the person types, or once they try to save (the default), and then as
    * they fix them.
    */
@@ -90,4 +106,9 @@ export type FormActions = {
    * out), the first field with one focused: those problems, none when the values pass.
    */
   readonly validate: (counts?: (issue: FormIssue) => boolean) => readonly FormIssue[];
+  /**
+   * Shows field `name` and puts the focus on it: its tab chosen and its **More Options** opened.
+   * For a problem the form's own content found (a test of the connection, #1172).
+   */
+  readonly show: (name: string) => void;
 };

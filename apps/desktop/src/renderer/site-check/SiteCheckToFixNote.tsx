@@ -5,7 +5,7 @@ import { plural, t } from "@webforge/i18n";
  * What Site Check still lists to fix, on the export's and Publish's reports (#1171): how many,
  * and a button that shows them. Nothing when it lists none.
  */
-export function SiteCheckToFix({
+export function SiteCheckToFixNote({
   count,
   onShow,
 }: {
