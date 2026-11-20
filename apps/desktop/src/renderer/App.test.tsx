@@ -122,6 +122,7 @@ describe("App", () => {
           status: "exported",
           format: "folder",
           name: "my-site",
+          location: "/sites/my-site",
           pages: 1,
           files: 6,
           bytes: 24_000,

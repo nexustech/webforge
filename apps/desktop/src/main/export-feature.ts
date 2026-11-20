@@ -43,6 +43,24 @@ export function openExport(
 }
 
 /**
+ * Shows an export in the file manager (#1171): a folder opened, a ZIP file selected in its folder,
+ * or `missing` when it was moved or deleted.
+ */
+export function showExport(
+  shell: ExportFeatureDeps["shell"],
+  exists: (path: string) => boolean = existsSync,
+): ExportDeps["show"] {
+  return async ({ destination, format }) => {
+    if (!exists(destination)) return "missing";
+    if (format === "zip") {
+      shell.showItemInFolder(destination);
+      return "opened";
+    }
+    return (await shell.openPath(destination)) === "" ? "opened" : "missing";
+  };
+}
+
+/**
  * Export (3.1, A12). Each export runs in a utility process, so building never blocks the window
  * (07): one worker while the site is open, keeping the images it encoded in memory (R15), which
  * goes when the site closes. The worker resolves nothing itself: it gets the site's font files,
@@ -70,6 +88,7 @@ export function createExportFeature(
         sendProgress: deps.sendProgress,
         site: deps.site,
         open: openExport(deps.shell, deps.exists),
+        show: showExport(deps.shell, deps.exists),
       });
     },
     // The worker goes, and the images it kept in memory with it (R15).

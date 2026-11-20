@@ -18,6 +18,7 @@ import {
 import { t } from "@webforge/i18n";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand/vanilla";
+import { SiteCheckToFix } from "../site-check/index.js";
 import type { LivePublish } from "./publish-flow.js";
 
 /** The dialog a publish has open: *Your site is live*, or whether to replace another site. */
@@ -25,6 +26,8 @@ type Shown =
   | {
       readonly kind: "live";
       readonly live: LivePublish;
+      /** How many things Site Check listed to fix as it went live (#1171). */
+      readonly toFix: number;
       /** Its visitors get Netlify's log-in page, as checked once it went live (4.4b). */
       readonly protected?: true;
     }
@@ -39,7 +42,8 @@ export type PublishOutcomes = {
   readonly state: StoreApi<{ readonly shown: Shown | null }>;
   /** Whether to replace the site in `destination`'s folder; false once closed unanswered. */
   askReplace(destination: string): Promise<boolean>;
-  showLive(live: LivePublish): void;
+  /** *Your site is live*, with how many things Site Check lists to fix (#1171). */
+  showLive(live: LivePublish, toFix?: number): void;
   /**
    * Says on *Your site is live* that publish `operationId`'s Netlify site keeps visitors out, if
    * it's still the one shown (4.4b, ADR 0006 decision 6).
@@ -69,7 +73,7 @@ export function createPublishOutcomes(): PublishOutcomes {
           },
         });
       }),
-    showLive: (live) => state.setState({ shown: { kind: "live", live } }),
+    showLive: (live, toFix = 0) => state.setState({ shown: { kind: "live", live, toFix } }),
     markProtected: (operationId) => {
       const { shown } = state.getState();
       if (shown?.kind === "live" && shown.live.operationId === operationId) {
@@ -84,6 +88,8 @@ export type PublishOutcomeDialogsProps = {
   /** Opens the site where publish `operationId` went live. */
   readonly openLive: (operationId: string) => void;
   readonly copyLink: (url: string) => void;
+  /** Shows the Site Check panel (#1171). Left out, the count has no button. */
+  readonly showSiteCheck?: () => void;
 };
 
 /**
@@ -92,7 +98,12 @@ export type PublishOutcomeDialogsProps = {
  * failure. Or, before anything is replaced, whether to replace the site another publish left in
  * the folder (A8).
  */
-export function PublishOutcomeDialogs({ state, openLive, copyLink }: PublishOutcomeDialogsProps) {
+export function PublishOutcomeDialogs({
+  state,
+  openLive,
+  copyLink,
+  showSiteCheck = () => undefined,
+}: PublishOutcomeDialogsProps) {
   const { shown } = useStore(state);
   const close = () => state.setState({ shown: null });
   const live = shown?.kind === "live" ? shown.live : undefined;
@@ -134,6 +145,15 @@ export function PublishOutcomeDialogs({ state, openLive, copyLink }: PublishOutc
               </p>
               {!live.versionSaved && (
                 <p className="text-muted-foreground">{t("publish.live.versionNotSaved")}</p>
+              )}
+              {shown?.kind === "live" && (
+                <SiteCheckToFix
+                  count={shown.toFix}
+                  onShow={() => {
+                    close();
+                    showSiteCheck();
+                  }}
+                />
               )}
             </div>
           )}

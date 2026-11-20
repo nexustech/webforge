@@ -8,6 +8,8 @@ export type ExportReport = {
   readonly format: "folder" | "zip";
   /** The folder's or ZIP file's name. */
   readonly name: string;
+  /** Its full path, shown so the person can find it (#1171). */
+  readonly location: string;
   /** "Pages: 3 · Files: 16 · Size: 2.4 MB". */
   readonly summary: string;
   /** Each problem found, by its page ("On “About”, a link goes to…"). */
@@ -16,6 +18,8 @@ export type ExportReport = {
   readonly more: number;
   /** The site has no web address (X3: the prompt was skipped). */
   readonly noWebAddress: boolean;
+  /** How many things Site Check lists to fix, as its title-bar button counts them (#1171). */
+  readonly toFix: number;
 };
 
 /** The dialog the export flow has open, and how it answers. */

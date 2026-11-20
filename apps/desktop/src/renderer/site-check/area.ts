@@ -1,12 +1,14 @@
 import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { createElement } from "react";
+import { createStore } from "zustand/vanilla";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { provide } from "../editor/services.js";
 import {
   OnNetlify,
   PublishedYear,
   SiteCheckIgnored,
+  SiteCheckToFix,
   TipPlaces,
   TrustedCode,
 } from "../editor/window-services.js";
@@ -33,6 +35,8 @@ export const siteCheckArea: Area<WindowContext> = {
           });
       },
     })),
+    // What the latest check lists to fix, for the export's and Publish's reports (#1171).
+    provide(SiteCheckToFix, () => createStore<number>()(() => 0)),
   ],
   uses: [PublishedYear, OnNetlify, TrustedCode, TipPlaces],
   register: ({ api, panels, session, settings, commands, windowDialogs, use }) => {
@@ -70,6 +74,7 @@ export const siteCheckArea: Area<WindowContext> = {
       onMustFixSeen: () => tips.reached("mustFix"),
       // Write One… for a missing description or alt text, while the assistant is on (#873).
       assistant: { api: api.assistant, sessionId: siteSession() },
+      toFix: use(SiteCheckToFix),
       bundle: {
         confirm: question.confirm,
         download: (url) => api.site.bundleFile(siteSession(), url),

@@ -24,6 +24,8 @@ const SITE_CHANNELS = [
   "site:export-choices",
   "site:set-export-choices",
   "site:open-export",
+  // Show the Folder (#1171): only this opening's export, as Open in Browser.
+  "site:show-export",
   "site:bundle-file",
   "preview:open",
   "preview:update",

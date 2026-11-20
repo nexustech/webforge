@@ -61,6 +61,7 @@ export const exportSite = {
     "Your site has no web address, so search engines get no sitemap and link previews may show no image. You can add it in Site Settings.",
   "export.report.openFolder": "Open in Browser",
   "export.report.showZip": "Show ZIP File",
+  "export.report.showFolder": "Show the Folder",
   "export.report.done": "Done",
   "export.report.missing":
     "The exported site isn't there any more: it was moved or deleted. Export it again to open it.",

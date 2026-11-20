@@ -64,3 +64,22 @@ export const webAddressRule: CheckRule = {
       ? [{ key: "address", place: { kind: "address" } }]
       : [],
 };
+
+/**
+ * A page with no sections (#1171, F8 of the UX/UI review): exported, and in the menu, it shows a
+ * visitor only the Header and Footer. Sections hidden in Layers don't count, as the export leaves them out. A
+ * post of a Blog is left alone: its design draws it, whatever its own content. Draft pages aren't
+ * exported, so aren't checked (G37).
+ */
+export const emptyPagesRule: CheckRule = {
+  id: "emptyPages",
+  level: "should",
+  check: ({ site }) =>
+    site.pageOrder.flatMap((id) => {
+      const page = site.pages[id];
+      if (page === undefined || page.collection !== undefined) return [];
+      return page.doc.content.some((node) => node.props.hidden !== true)
+        ? []
+        : [{ key: id, place: { kind: "page", pageId: id } as const, values: { page: page.title } }];
+    }),
+};
