@@ -17,10 +17,13 @@ import type { FieldDrag, InsertPoint } from "../canvas-engine.js";
 /** Marks the element outlined from outside the canvas (`CanvasEngine.outline`). */
 export const OUTLINED_ATTRIBUTE = "data-wf-outlined";
 
+import { placeBar, textLines } from "./bar-placement.js";
 import { FRAME_TOOLTIP_CSS } from "./frame-tooltips.js";
 import {
+  ACTION_BAR,
   ACTIONS,
   ACTIONS_OVERLAY,
+  COMPONENT,
   componentSelector,
   EMPTY_TABLE_BODY,
   elementOf,
@@ -173,6 +176,16 @@ ${ACTIONS} {
   padding-left: 0 !important;
   transform-origin: left top !important;
   margin-top: calc(7px / var(--wf-zoom, 1));
+}
+/*
+ * The selected element's bar is moved off its text (#1177): Puck's box for it stays where it was,
+ * so only the bar itself takes clicks, not that empty box over the page.
+ */
+${SELECTED_COMPONENT} ${ACTIONS} {
+  pointer-events: none !important;
+}
+${SELECTED_COMPONENT} ${ACTIONS} ${ACTION_BAR} {
+  pointer-events: auto;
 }
 /*
  * A hovered element shows its name chip there too (SP-1): only the chip, which takes no clicks, so
@@ -503,40 +516,67 @@ export function hoveredSize(document: Document, id: string): string | undefined 
   return `${Math.round(width)} × ${Math.round(height)}`;
 }
 
-/** Space between the element and its bar when the bar goes below it, in screen pixels. */
-const BELOW_GAP = 4;
+/** Space between the selected element's bar and the element, or the canvas's edge, on screen. */
+const BAR_GAP = 4;
 
 /**
- * Keeps the selected element's bar inside the canvas: Puck draws it above its element at a fixed
- * size on screen, so on a zoomed-out canvas the bar of an element near the top of the page would
- * sit above the frame, where it can't be clicked. It then goes just below the element instead, so
- * it covers neither the element nor the frame's edge. A hovered element's bar stays put. Returns
- * a function that stops following the frame's size.
+ * Places the selected element's bar where it covers none of the element's text and stays inside
+ * the canvas (#1177, `placeBar`), and keeps it there as the canvas scrolls or changes size, the
+ * element changes (Puck measures it again) or the bar does (the format menu, while text is edited).
+ * Puck draws the bar above its element and keeps it in view by sticking it inside the element, over
+ * its text; this moves it from there. A hovered element's chip stays put. Returns what stops it.
  */
-function keepInFrame(bar: HTMLElement, selected: boolean): (() => void) | undefined {
+function followPlacement(bar: HTMLElement, selected: boolean): (() => void) | undefined {
   const frame = bar.ownerDocument.defaultView;
-  if (!frame) {
+  bar.style.transform = "";
+  const overlay = bar.closest(OVERLAY);
+  if (!selected || frame === null || overlay === null) {
     return undefined;
   }
   const place = () => {
     bar.style.transform = "";
-    const element = bar.closest(OVERLAY);
-    if (element === null || !selected) {
-      return;
-    }
-    const { top, height } = bar.getBoundingClientRect();
-    if (top >= 0 || height === 0) {
+    const now = bar.getBoundingClientRect();
+    if (now.height === 0 || bar.offsetHeight === 0) {
       return;
     }
     // The bar is scaled to stay the same size on screen: `scale` turns screen into frame pixels.
-    const scale = height / bar.offsetHeight;
-    const below = element.getBoundingClientRect().bottom + BELOW_GAP * scale;
-    const target = Math.max(0, Math.min(below, frame.innerHeight - height));
-    bar.style.transform = `translateY(${(target - top) / scale}px)`;
+    const scale = now.height / bar.offsetHeight;
+    const id = barElementId(bar);
+    const wrapper = id === null ? null : bar.ownerDocument.querySelector(componentSelector(id));
+    const root = bar.ownerDocument.documentElement;
+    const target = placeBar({
+      element: overlay.getBoundingClientRect(),
+      bar: { width: now.width, height: now.height },
+      // Inside the scrollbars.
+      view: { width: root.clientWidth, height: root.clientHeight },
+      gap: BAR_GAP * scale,
+      ownText: () => (wrapper === null ? [] : textLines(wrapper)),
+      parentText: () => {
+        const parent = wrapper?.parentElement?.closest(COMPONENT);
+        return parent === null || parent === undefined || wrapper === null
+          ? []
+          : textLines(parent, wrapper);
+      },
+    });
+    const x = (target.left - now.left) / scale;
+    const y = (target.top - now.top) / scale;
+    if (Math.abs(x) > 0.5 || Math.abs(y) > 0.5) bar.style.transform = `translate(${x}px, ${y}px)`;
   };
   place();
+  const options = { passive: true } as const;
+  frame.addEventListener("scroll", place, options);
   frame.addEventListener("resize", place);
-  return () => frame.removeEventListener("resize", place);
+  // Puck moves and sizes the element's overlay through its style as the page changes.
+  const moved = new frame.MutationObserver(place);
+  moved.observe(overlay, { attributes: true, attributeFilter: ["style"] });
+  const resized = new frame.ResizeObserver(place);
+  resized.observe(bar);
+  return () => {
+    frame.removeEventListener("scroll", place);
+    frame.removeEventListener("resize", place);
+    moved.disconnect();
+    resized.disconnect();
+  };
 }
 
 /**
@@ -586,7 +626,7 @@ export function QuickActionBar({
     const next =
       bar === null || selected || id === null ? undefined : hoveredSize(bar.ownerDocument, id);
     if (next !== size) setSize(next);
-    return bar === null ? undefined : keepInFrame(bar, selected);
+    return bar === null ? undefined : followPlacement(bar, selected);
   });
   const locked = id !== null && isLocked?.(id) === true;
   if (!selected) {

@@ -4,14 +4,14 @@ id: editing-on-the-page
 title: Editing on the page
 summary: Select, type, move, copy and delete sections and elements right on the page.
 related: [the-editor, edit-panel, layers, styling, links, keyboard-shortcuts]
-updated: 2026-11-16
+updated: 2026-11-20
 ---
 
 # Editing on the page
 
 ## Selecting
 
-- **Click** a section or element to select it. A blue outline and a small bar of buttons appear on it, and the [Edit panel](edit-panel.md) shows its options.
+- **Click** a section or element to select it. A blue outline appears around it and a small bar of buttons beside it, and the [Edit panel](edit-panel.md) shows its options.
 - **Ctrl+click** (Cmd+click on a Mac) or **Shift+click** adds an item to the selection, or takes it out. With several items selected you can delete, duplicate, move them, or keep them off your website, together.
 - The line above the page shows where the selection sits, such as _Page › Hero › Button_. Click any step to select it.
 - From the keyboard:
@@ -20,6 +20,8 @@ updated: 2026-11-16
   - **Ctrl+←** and **Ctrl+→** move between items side by side.
 
 ## The bar on the selected item
+
+The bar sits just above the item, or below it when there's no room above. For an item taller than the page you can see, it sits at the top or bottom edge of the page. It stays clear of the item's own text, as you scroll and as you type.
 
 Hover over a button on the bar, the + beside a section, a handle or a button on the text toolbar to see what it does.
 
