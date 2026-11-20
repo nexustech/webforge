@@ -25,19 +25,28 @@ function reportOf(counts: Partial<Record<CheckLevel, number>>): CheckReport {
 }
 
 describe("siteCheckStatus", () => {
+  const status = (report: CheckReport) => siteCheckStatus(report).status;
+  const short = (report: CheckReport) => siteCheckStatus(report).shortStatus;
+
   it("counts Must fix and Should fix together, then tips (#1009)", () => {
-    expect(siteCheckStatus(reportOf({ must: 2, should: 3, tip: 13 }))).toBe("5 to fix · 13 tips");
-    expect(siteCheckStatus(reportOf({ should: 1, tip: 1 }))).toBe("1 to fix · 1 tip");
+    expect(status(reportOf({ must: 2, should: 3, tip: 13 }))).toBe("5 to fix · 13 tips");
+    expect(status(reportOf({ should: 1, tip: 1 }))).toBe("1 to fix · 1 tip");
   });
 
   it("leaves out a count of none", () => {
-    expect(siteCheckStatus(reportOf({ must: 1, tip: 0 }))).toBe("1 to fix");
-    expect(siteCheckStatus(reportOf({ must: 0, should: 0, tip: 4 }))).toBe("4 tips");
+    expect(status(reportOf({ must: 1, tip: 0 }))).toBe("1 to fix");
+    expect(status(reportOf({ must: 0, should: 0, tip: 4 }))).toBe("4 tips");
   });
 
   it("says No problems when it found nothing, ignored findings left out", () => {
-    expect(siteCheckStatus(reportOf({ must: 0, should: 0, tip: 0 }))).toBe("No problems");
-    expect(siteCheckStatus({ mode: "export", results: [] })).toBe("No problems");
+    expect(status(reportOf({ must: 0, should: 0, tip: 0 }))).toBe("No problems");
+    expect(status({ mode: "export", results: [] })).toBe("No problems");
+  });
+
+  it("says for a narrow title bar only what most needs doing, in words (#1166)", () => {
+    expect(short(reportOf({ must: 2, should: 10, tip: 23 }))).toBe("12 to fix");
+    expect(short(reportOf({ must: 0, should: 0, tip: 13 }))).toBe("13 tips");
+    expect(short(reportOf({ must: 0, should: 0, tip: 0 }))).toBe("No problems");
   });
 });
 
@@ -66,12 +75,15 @@ describe("registerSiteCheckCommand", () => {
     const listener = vi.fn();
     commands.subscribe(listener);
 
-    state.setState({ report: reportOf({ tip: 2 }) });
-    expect(commands.get(COMMAND_IDS.siteCheck)?.status).toBe("2 tips");
+    state.setState({ report: reportOf({ should: 1, tip: 2 }) });
+    expect(commands.get(COMMAND_IDS.siteCheck)).toMatchObject({
+      status: "1 to fix · 2 tips",
+      shortStatus: "1 to fix",
+    });
     expect(listener).toHaveBeenCalledTimes(1);
 
     // The same counts again: nothing for the title bar to draw.
-    state.setState({ report: reportOf({ tip: 2 }) });
+    state.setState({ report: reportOf({ should: 1, tip: 2 }) });
     expect(listener).toHaveBeenCalledTimes(1);
   });
 

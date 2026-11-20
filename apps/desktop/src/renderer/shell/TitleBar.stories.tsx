@@ -35,7 +35,13 @@ const COMMANDS: readonly CommandSpec[] = [
     run: noop,
   },
   // What Site Check found (#1009).
-  { id: COMMAND_IDS.siteCheck, label: "Site Check", status: "5 to fix · 13 tips", run: noop },
+  {
+    id: COMMAND_IDS.siteCheck,
+    label: "Site Check",
+    status: "5 to fix · 13 tips",
+    shortStatus: "5 to fix",
+    run: noop,
+  },
   { id: COMMAND_IDS.preview, label: "Preview", menu: "file", run: noop },
   { id: COMMAND_IDS.exportSite, label: "Export Site…", menu: "file", run: noop },
   { id: COMMAND_IDS.publish, label: "Publish…", menu: "file", run: noop },
@@ -96,7 +102,10 @@ export const StartScreen: Story = {
   render: () => <WithCommands commands={COMMANDS.filter((command) => START.has(command.id))} />,
 };
 
-/** A 960 px window: Site Check, Preview, Export and Publish are icons, nothing cut off (#1009). */
+/**
+ * A 960 px window: the menus in one Menu button, Site Check's count only what most needs doing,
+ * Preview and Export icons, nothing cut off or over anything else (#1009, #1166).
+ */
 export const At960: Story = {
   tags: ["wide-window"],
   render: () => <WithCommands commands={COMMANDS} width={960} />,
@@ -123,7 +132,9 @@ export const NoProblems: Story = {
   render: () => (
     <WithCommands
       commands={COMMANDS.map((command) =>
-        command.id === COMMAND_IDS.siteCheck ? { ...command, status: "No problems" } : command,
+        command.id === COMMAND_IDS.siteCheck
+          ? { ...command, status: "No problems", shortStatus: "No problems" }
+          : command,
       )}
       width={1280}
     />
@@ -167,13 +178,18 @@ export const SplitButton: Story = {
   },
 };
 
-/** Opens File › Open Recent, from the keyboard as the arrow key opens a submenu. */
+/**
+ * Opens Menu › File › Open Recent, from the keyboard as the arrow key opens a submenu: the story's
+ * 800 px title bar folds the menus' titles into one Menu button (#1166).
+ */
 const openRecent = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
   const canvas = within(canvasElement);
-  await userEvent.click(canvas.getByRole("menuitem", { name: "File" }));
-  // The menus are in a portal on the body; the arrow key opens the submenu.
+  await userEvent.click(canvas.getByRole("menuitem", { name: "Menu" }));
+  // The menus are in a portal on the body; the arrow key opens a submenu.
   const page = within(canvasElement.ownerDocument.body);
-  page.getByRole("menuitem", { name: "Open Recent" }).focus();
+  (await page.findByRole("menuitem", { name: "File" })).focus();
+  await userEvent.keyboard("{ArrowRight}");
+  (await page.findByRole("menuitem", { name: "Open Recent" })).focus();
   await userEvent.keyboard("{ArrowRight}");
   await page.findByRole("menu", { name: "Open Recent" });
 };

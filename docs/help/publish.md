@@ -26,18 +26,22 @@ If your host offers none of these, for example only a page in your browser where
 
 The first time you publish, {appName} asks **Where is your website hosted?** Choose **A web host with a control panel**. After that, click **Add Destination** and choose **Web Host with a Control Panel…**. Then fill in the details from your web host's control panel:
 
-- **Name:** anything that helps you recognise it. Leave it empty to use the host's name.
+- **Host**, such as `ftp.example.com`.
+- **User name**, and your **Password**.
+
+**Test Connection**, just below them, checks the details first: anything missing is marked, and nothing connects until it's filled in. The first time you test or save an SFTP destination, {appName} shows the host's key and asks you to confirm it's your host.
+
+**More Options** has the rest. Most people can leave it as it is: it starts with cPanel's usual settings, over an encrypted connection. Beside it, a short line says what's set there, such as _SFTP · port 2222 · /site_. If **Save** finds something there to fix, or **Test Connection** says to check the connection, the port or the folder, it opens and takes you to that setting. In a small window the details scroll, and **Save** and **Cancel** stay at the bottom.
+
 - **Control panel:** _cPanel_ or _Plesk_ fills in the usual settings for you. If you're not sure, choose _Another, or I don't know_.
 - **Connection:**
-  - _FTPS (encrypted)_ or _SFTP (encrypted)_: use one of these if your host offers it.
+  - _FTPS (encrypted)_ or _SFTP (encrypted)_: use one of these if your host offers it. With SFTP you sign in with **A password** or **A private key file**.
   - _FTP (not encrypted)_: sends your password unprotected, so {appName} asks you to confirm.
-- **Host**, such as `ftp.example.com`, and the **Port**. Leave the port empty for the usual one.
-- **User name**, and sign in with **A password** or, for SFTP, **A private key file**.
+- **Port:** leave it empty for the usual one.
 - **Folder:** the folder your host serves your website from, such as `/public_html`.
 - **Web address:** your site's address. It starts as the one in Site Settings, if there is one. If Site Settings has none yet, {appName} fills it in there too.
+- **Name:** anything that helps you recognise it. Leave it empty to use the host's name.
 - **Redirect old addresses on Apache hosts (.htaccess):** off unless you turn it on. Most hosts reached by FTP run Apache. Turn it on and each publish also sends a renamed page's old address on with a permanent redirect, which search engines follow, as Netlify does (see [Keeping old addresses working](pages.md#keeping-old-addresses-working)). {appName} writes only its own block of lines in your host's `.htaccess` file, between a `# BEGIN` line and an `# END` line with its name, and leaves everything else in the file as it is. Turn it off and the next publish takes the block out again.
-
-**Test Connection** checks the details first: anything missing is marked, and nothing connects until it's filled in. The first time you test or save an SFTP destination, {appName} shows the host's key and asks you to confirm it's your host.
 
 ## Adding Netlify
 
