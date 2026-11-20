@@ -29,7 +29,8 @@ export type CommandButtonProps = {
   /**
    * Whether its text shows at every width, not only on a wide title bar: Publish and Site Check's
    * count, which at 960 px were coloured icons no one could name (#1166). The others keep their
-   * tooltips there.
+   * tooltips there. A status with a `shortStatus` shows that below 1180 px: "12 to fix", not
+   * "12 to fix · 23 tips", which would run under the window's buttons at 960 px.
    */
   readonly alwaysText?: boolean;
   /** Ghost unless given: Publish is the title bar's one filled button (#1009). */
@@ -63,6 +64,8 @@ export function CommandButton({
   const tip =
     command.shortcut === undefined ? name : `${name} (${formatShortcut(command.shortcut)})`;
   const shown = text ?? status;
+  // On a narrow title bar, the part of the status that most needs doing (#1166): "12 to fix".
+  const narrow = alwaysText && text === undefined ? command.shortStatus : undefined;
 
   // `disabled` is always given, so it doesn't come and go, which would remount the button.
   const button = (
@@ -86,7 +89,12 @@ export function CommandButton({
       onClick={() => registry.run(commandId)}
     >
       {icon}
-      {shown === undefined ? null : (
+      {narrow !== undefined && narrow !== shown ? (
+        <>
+          <span className="@min-[1180px]/title-bar:hidden">{narrow}</span>
+          <span className="hidden @min-[1180px]/title-bar:inline">{shown}</span>
+        </>
+      ) : shown === undefined ? null : (
         <span className={alwaysText ? undefined : "hidden @min-[1180px]/title-bar:inline"}>
           {shown}
         </span>

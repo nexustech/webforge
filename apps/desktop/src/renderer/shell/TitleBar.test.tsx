@@ -118,6 +118,30 @@ describe("TitleBar", () => {
     );
   });
 
+  it("shows only what most needs doing while narrow, named by the whole count (#1166)", () => {
+    const registry = createCommandRegistry();
+    registry.register({
+      id: COMMAND_IDS.siteCheck,
+      label: "Site Check",
+      status: "12 to fix · 23 tips",
+      shortStatus: "12 to fix",
+      run: vi.fn(),
+    });
+    renderTitleBar(registry);
+
+    const button = screen.getByRole("button", { name: "Site Check: 12 to fix · 23 tips" });
+    expect(within(button).getByText("12 to fix").className).toBe("@min-[1180px]/title-bar:hidden");
+    expect(within(button).getByText("12 to fix · 23 tips").className).toBe(
+      "hidden @min-[1180px]/title-bar:inline",
+    );
+
+    // Nothing shorter to say: the one count, at every width.
+    act(() =>
+      registry.update(COMMAND_IDS.siteCheck, { status: "No problems", shortStatus: "No problems" }),
+    );
+    expect(within(button).getByText("No problems").className).toBe("");
+  });
+
   it("gives a button a caret once commands go with it, and none before (LF-13)", async () => {
     const registry = renderTitleBar();
     expect(screen.queryByRole("button", { name: "More Export options" })).toBeNull();

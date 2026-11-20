@@ -81,18 +81,26 @@ test("opens a site at a size to read, the left column a strip, Publish and Site 
   });
   const box = await publish.boundingBox();
   const right = (box?.x ?? Number.POSITIVE_INFINITY) + (box?.width ?? 0);
-  // The search box gives way, down to 7 rem (98 px), with the site's name still in it whole.
+  // The search box gives way, down to 7 rem (98 px), with the site's name still in it whole, and
+  // clear of the buttons either side of it: its least is room it keeps, not room it takes.
   const search = banner.getByRole("button", { name: /^Search commands/ });
-  const searchWidth = (await search.boundingBox())?.width ?? 0;
+  const searchBox = await search.boundingBox();
+  const searchLeft = searchBox?.x ?? 0;
+  const searchRight = searchLeft + (searchBox?.width ?? 0);
+  const redoBox = await banner.getByRole("button", { name: /^Redo/ }).boundingBox();
+  const actionsBox = await banner.getByRole("group", { name: "Site actions" }).boundingBox();
   const nameFits = await search
     .getByText("Bakery", { exact: true })
     .evaluate((name) => name.scrollWidth <= name.clientWidth);
   console.log(
-    `[work] 960 px title bar: Publish ends at ${right.toFixed(1)} of ${room} px; search box ${searchWidth.toFixed(1)} px`,
+    `[work] 960 px title bar: Publish ends at ${right.toFixed(1)} of ${room} px; search box ${searchLeft.toFixed(1)}–${searchRight.toFixed(1)} px`,
   );
-  expect(right).toBeLessThanOrEqual(room);
+  // At least 4 px to spare before the window's own buttons, for a wider count than this site's.
+  expect(right).toBeLessThanOrEqual(room - 4);
   expect(await banner.evaluate((header) => header.scrollWidth <= header.clientWidth)).toBe(true);
-  expect(searchWidth).toBeGreaterThanOrEqual(97);
+  expect(searchBox?.width ?? 0).toBeGreaterThanOrEqual(97);
+  expect(searchLeft).toBeGreaterThanOrEqual((redoBox?.x ?? 0) + (redoBox?.width ?? 0));
+  expect(searchRight).toBeLessThanOrEqual(actionsBox?.x ?? 0);
   expect(nameFits).toBe(true);
 });
 
