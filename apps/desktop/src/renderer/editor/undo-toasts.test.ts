@@ -74,7 +74,9 @@ describe("undoEntry (D4)", () => {
 describe("installUndoToasts", () => {
   function setUp() {
     const { history, idOf, items } = historyWith("Added Hero", "Deleted Heading");
-    let listener: ((entry: HistoryEntry<null>, kind: EditKind) => void) | undefined;
+    let listener:
+      | ((entry: HistoryEntry<null>, kind: EditKind, announced: boolean) => void)
+      | undefined;
     const stop = vi.fn();
     const session = {
       history,
@@ -104,8 +106,8 @@ describe("installUndoToasts", () => {
   it("shows 'Deleted … · Undo' after a delete, and only then", () => {
     const { entry, listener, show } = setUp();
 
-    listener()?.({ ...entry, label: "Added Hero" }, "insert");
-    listener()?.(entry, "remove");
+    listener()?.({ ...entry, label: "Added Hero" }, "insert", false);
+    listener()?.(entry, "remove", false);
 
     expect(show).toHaveBeenCalledOnce();
     expect(show).toHaveBeenCalledWith("Deleted Heading", {
@@ -116,9 +118,20 @@ describe("installUndoToasts", () => {
     });
   });
 
+  it("shows the toast for an edit that asks for it, whatever its kind: Site Check's Fix (#1164)", () => {
+    const { entry, listener, show } = setUp();
+
+    listener()?.({ ...entry, label: "Added page 'Privacy'" }, "insert", true);
+
+    expect(show).toHaveBeenCalledWith(
+      "Added page 'Privacy'",
+      expect.objectContaining({ action: { label: "Undo", onClick: expect.any(Function) } }),
+    );
+  });
+
   it("ends a text edit in progress, then undoes the delete from the toast", () => {
     const { entry, items, listener, show, flush } = setUp();
-    listener()?.(entry, "remove");
+    listener()?.(entry, "remove", false);
 
     (
       show.mock.calls[0] as unknown as [string, { action: { onClick(): void } }]
@@ -130,7 +143,7 @@ describe("installUndoToasts", () => {
 
   it("closes the toast once its step is undone some other way", () => {
     const { entry, history, listener, dismiss } = setUp();
-    listener()?.(entry, "remove");
+    listener()?.(entry, "remove", false);
 
     history.run("Edited Text", (draft) => {
       draft.items.push("Edited Text");
@@ -147,7 +160,7 @@ describe("installUndoToasts", () => {
 
   it("stops watching a toast that closed on its own", () => {
     const { entry, history, listener, show, dismiss } = setUp();
-    listener()?.(entry, "remove");
+    listener()?.(entry, "remove", false);
 
     (show.mock.calls[0] as unknown as [string, { onAutoClose(): void }])[1].onAutoClose();
     history.undo();

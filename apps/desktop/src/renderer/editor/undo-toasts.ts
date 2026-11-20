@@ -30,12 +30,17 @@ export type Toasts = {
 type ToastSession = {
   readonly history: UndoableHistory;
   onEntryAdded(
-    listener: (entry: Pick<HistoryEntry<unknown>, "id" | "label">, kind: EditKind) => void,
+    listener: (
+      entry: Pick<HistoryEntry<unknown>, "id" | "label">,
+      kind: EditKind,
+      announced: boolean,
+    ) => void,
   ): () => void;
 };
 
 /**
- * Shows "Deleted Heading · Undo" after each delete (D4). `flush` ends a text edit in progress
+ * Shows "Deleted Heading · Undo" after each delete (D4), and after an edit that asks for it, such as
+ * Site Check's *Fix* ("Added page 'Privacy' · Undo", #1164). `flush` ends a text edit in progress
  * first, so Undo acts on what the person sees. A toast closes as soon as its step is undone some
  * other way (Ctrl/Cmd+Z, Undo History), so it never offers an Undo that would do nothing.
  * Returns a function that stops the toasts.
@@ -46,8 +51,8 @@ export function installUndoToasts(
   flush: () => void = () => undefined,
 ): () => void {
   const watchers = new Set<() => void>();
-  const stopAdded = session.onEntryAdded((entry, kind) => {
-    if (!ANNOUNCED.has(kind)) {
+  const stopAdded = session.onEntryAdded((entry, kind, announced) => {
+    if (!announced && !ANNOUNCED.has(kind)) {
       return;
     }
     let stopWatching: () => void = () => undefined;
