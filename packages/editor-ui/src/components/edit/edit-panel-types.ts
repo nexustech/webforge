@@ -33,8 +33,8 @@ export type EditPanelField = FieldSpec & {
    */
   readonly warning?: string;
   /**
-   * Where its value comes from (3.12, CT-3), in words under its control: *Set here*, *Theme's look
-   * for Buttons*, *Theme's (Corners: Medium)*. With `onReveal`, the words are a link that shows
+   * Where its value comes from (3.12, CT-3), in words under its control: *Set here*, *Same as the
+   * theme's look for Buttons*, *Same as theme (Corners: Medium)*. With `onReveal`, the words are a link that shows
    * where it comes from: the token in the Theme tab, the kind's look in Theme Studio.
    */
   readonly source?: FieldSource;
