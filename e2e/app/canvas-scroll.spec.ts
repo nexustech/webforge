@@ -138,6 +138,28 @@ test("shows the element a Layers row selects, from the top of a long page", asyn
   await expect.poll(selectedInView).toBe("in view");
 });
 
+test("shows a section an undo moves back and selects, from the far end of the page", async () => {
+  await left().getByRole("tab", { name: "Layers" }).click();
+  await scrollTo("top");
+  const heroes = left()
+    .getByRole("tree", { name: "Layers" })
+    .getByRole("treeitem", { name: /^Hero/ });
+  // The first Hero, two places down: two steps.
+  await heroes.first().click();
+  const moveDown = canvas().locator(SELECTED_COMPONENT).getByRole("button", { name: "Move down" });
+  await moveDown.click();
+  await moveDown.click();
+  // Something else selected, far down the page, so the moved Hero is above the view.
+  await heroes.last().click();
+  await expect.poll(selectedInView).toBe("in view");
+
+  // Undo moves it back a place and selects it: shown where it's drawn after the move, not before.
+  await page.locator(".editor__canvas").focus();
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(heroes.nth(1)).toHaveAttribute("aria-selected", "true");
+  await expect.poll(selectedInView).toBe("in view");
+});
+
 test("shows the text Find selects, from the bottom of a long page", async () => {
   await page.keyboard.press("ControlOrMeta+F");
   await expect(drawer().getByRole("searchbox", { name: "Find" })).toBeVisible();

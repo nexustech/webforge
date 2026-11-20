@@ -40,6 +40,8 @@ function element(id: string, top: number, bottom: number) {
 describe("the canvas's scrolling (#1176)", () => {
   let scrollBy: ReturnType<typeof vi.spyOn>;
   let scrollTo: ReturnType<typeof vi.spyOn>;
+  /** Lets the microtasks queued so far run: React's drawing of a change, then the first look. */
+  const drawn = () => Promise.resolve();
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -53,37 +55,58 @@ describe("the canvas's scrolling (#1176)", () => {
     document.body.replaceChildren();
   });
 
-  it("scrolls an element below the view up into it at once, without waiting for a frame", () => {
+  it("scrolls an element below the view up into it once the change is drawn, without a frame", async () => {
     document.body.append(element("text-1", 2000, 2100));
     const scroll = createCanvasScroll(() => document);
 
     scroll.reveal("text-1");
+    expect(scrollBy).not.toHaveBeenCalled();
+    await drawn();
 
     expect(scrollBy).toHaveBeenCalledWith(0, 2100 - (window.innerHeight - ROOM_BELOW));
   });
 
-  it("keeps the selection bar's room above an element under the view's top", () => {
+  it("measures an element where the change that selected it draws it, not where it was", async () => {
+    // An undo moves a section back two places and selects it: React draws the move after the app
+    // has asked for the reveal, in a microtask queued first.
+    const section = element("section-1", 1500, 1900);
+    document.body.append(section);
+    const scroll = createCanvasScroll(() => document);
+
+    queueMicrotask(() => {
+      section.replaceWith(element("section-1", 700, 1100));
+    });
+    scroll.reveal("section-1");
+    await drawn();
+
+    expect(scrollBy).toHaveBeenCalledWith(0, 1100 - (window.innerHeight - ROOM_BELOW));
+  });
+
+  it("keeps the selection bar's room above an element under the view's top", async () => {
     document.body.append(element("hero-1", 10, 300));
 
     createCanvasScroll(() => document).reveal("hero-1");
+    await drawn();
 
     expect(scrollBy).toHaveBeenCalledWith(0, 10 - ROOM_ABOVE);
   });
 
-  it("leaves an element that shows already where it is", () => {
+  it("leaves an element that shows already where it is", async () => {
     document.body.append(element("text-1", 200, 300));
 
     createCanvasScroll(() => document).reveal("text-1");
+    await drawn();
 
     expect(scrollBy).not.toHaveBeenCalled();
   });
 
-  it("opens a page at its top, then shows the element selected on it once it is drawn", () => {
+  it("opens a page at its top at once, then shows the element selected on it once it is drawn", async () => {
     const scroll = createCanvasScroll(() => document);
 
     scroll.toTop();
-    scroll.reveal("text-9");
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
+    scroll.reveal("text-9");
+    await drawn();
     expect(scrollBy).not.toHaveBeenCalled();
 
     // The new page draws it a moment later.
@@ -93,10 +116,11 @@ describe("the canvas's scrolling (#1176)", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it("stops looking for an element that never comes, and forgets the page before's", () => {
+  it("stops looking for an element that never comes, and forgets the page before's", async () => {
     const scroll = createCanvasScroll(() => document);
 
     scroll.reveal("gone");
+    await drawn();
     vi.advanceTimersByTime(2000);
     expect(vi.getTimerCount()).toBe(0);
 
@@ -104,17 +128,23 @@ describe("the canvas's scrolling (#1176)", () => {
     scroll.reveal("old");
     scroll.toTop();
     document.body.append(element("old", 2000, 2100));
+    await drawn();
     vi.advanceTimersByTime(100);
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
     expect(scrollBy).not.toHaveBeenCalled();
   });
 
-  it("shows only the latest element selected while one is still to come", () => {
+  it("shows only the latest element selected", async () => {
     const scroll = createCanvasScroll(() => document);
-
-    scroll.reveal("new-section");
     document.body.append(element("text-1", 2000, 2100));
+
+    // Before the first one's first look, and while an earlier one is still to come.
     scroll.reveal("text-1");
+    scroll.reveal("new-section");
+    await drawn();
+    expect(scrollBy).not.toHaveBeenCalled();
+    scroll.reveal("text-1");
+    await drawn();
     expect(scrollBy).toHaveBeenCalledTimes(1);
 
     document.body.append(element("new-section", 3000, 3100));
@@ -122,15 +152,17 @@ describe("the canvas's scrolling (#1176)", () => {
     expect(scrollBy).toHaveBeenCalledTimes(1);
   });
 
-  it("does nothing without a canvas, or once cancelled", () => {
+  it("does nothing without a canvas, or once cancelled", async () => {
     createCanvasScroll(() => undefined).reveal("text-1");
     createCanvasScroll(() => undefined).toTop();
+    await drawn();
     expect(vi.getTimerCount()).toBe(0);
 
+    document.body.append(element("text-1", 2000, 2100));
     const scroll = createCanvasScroll(() => document);
     scroll.reveal("text-1");
     scroll.cancel();
-    document.body.append(element("text-1", 2000, 2100));
+    await drawn();
     vi.advanceTimersByTime(100);
     expect(scrollBy).not.toHaveBeenCalled();
   });

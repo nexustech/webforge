@@ -37,7 +37,10 @@ export function revealOffset(
 export type CanvasScroll = {
   /** Shows the top of the page, which the canvas has just started showing. */
   toTop(): void;
-  /** Scrolls element `id` into view, clear of its selection bar, once the canvas has drawn it. */
+  /**
+   * Scrolls element `id` into view, clear of its selection bar, once the canvas has drawn the change
+   * that selected it.
+   */
   reveal(id: string): void;
   /** Forgets what was still to do: the canvas goes. */
   cancel(): void;
@@ -48,8 +51,11 @@ export function createCanvasScroll(document: () => Document | undefined): Canvas
   let shown: string | null = null;
   /** The window and timer of the next look for {@link shown}, while the canvas hasn't drawn it. */
   let waiting: { readonly view: Window; readonly timer: number } | null = null;
+  /** Counts the reveals asked for, so a first look still to come knows when it's been replaced. */
+  let asked = 0;
 
   const stopWaiting = () => {
+    asked += 1;
     waiting?.view.clearTimeout(waiting.timer);
     waiting = null;
   };
@@ -94,7 +100,14 @@ export function createCanvasScroll(document: () => Document | undefined): Canvas
     reveal(id) {
       stopWaiting();
       shown = id;
-      show(0);
+      // The first look comes once the change that selected it is drawn: the app selects straight
+      // after it changes the page (an undo that moves a section back and selects it), and React
+      // draws that in a microtask queued before this one. Not at the next frame, which a window
+      // behind others doesn't get.
+      const look = asked;
+      queueMicrotask(() => {
+        if (look === asked) show(0);
+      });
     },
     cancel() {
       stopWaiting();
