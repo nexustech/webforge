@@ -1,6 +1,6 @@
 # Webnode: Competitor Review
 
-**Status:** ✅ Decided 2026-11-20 ([§7.1](#71-decisions)): WN-3 is adopted (generated content invents no facts); WN-1, WN-2, WN-4 and WN-5 are not taken for now.
+**Status:** ✅ Decided 2026-11-20 ([§7.1](#71-decisions)): WN-3 is adopted and, the same day, widened: an invented detail in generated content is always marked as an example for the owner to replace ([§7.2](#72-wn-3-as-decided-examples-are-marked), about 3 days); WN-1, WN-2, WN-4 and WN-5 are not taken for now.
 **Date:** 2026-11-20
 **Question:** Webnode is a hosted builder for the same person Webforge is for. What does it offer, where is it ahead and behind, and what should Webforge take from it?
 
@@ -114,38 +114,69 @@ By Webnode's own help pages: the site is hosted only by Webnode, **cannot be exp
 
 Sizes are rough ideal days, to be estimated properly if adopted. None is in the plan.
 
-| #        | Proposal                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Why                                                                                                                                  | Size                    |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
-| **WN-1** | **"Bring your current site":** from the quick start, the owner gives their existing site's address, and the Assistant (or an AI app) reads its public pages and fills the new site with their own words, contact details and page list, as a site from a brief does. On the owner's own AI account, with the pages fetched only when they ask. It takes text and facts, never markup or design. Reopens C3 (importing existing websites, out of scope) in this narrow form | The owner most likely to switch already has a site on a hosted builder that won't let them leave. Webnode shipped this in March 2026 | 3–5 (v1.1)              |
-| **WN-2** | **Notes for language versions (6.13, [#1033](https://github.com/nexustech/webforge/issues/1033)):** adding a language offers to copy every page and its content, as Webnode does; and the ADR decides whether a visitor's language is ever detected, given a static site                                                                                                                                                                                                   | Webnode's version of this feature is the best reviewed in its class, and copying the content is the step reviewers praise            | 0 (a note on the issue) |
-| **WN-3** | **A rule and a test: generated content invents no facts.** The quick start, a site from a brief and the Assistant never write a made-up name, price, phone number, address or opening hour. What the owner didn't give stays a marked placeholder, which Site Check already lists. §7.1 has what today's instructions say                                                                                                                                                  | Webnode's AI builder was caught doing exactly this in October 2026                                                                   | 1                       |
-| **WN-4** | **A help page, "Moving from a hosted builder":** what to copy across, how the domain moves, what a host is and what it costs, and what changes (no monthly fee, the site is a folder)                                                                                                                                                                                                                                                                                      | The first hour is where Webnode is ahead; this is the page that owner needs                                                          | 0.5                     |
-| **WN-5** | **Evidence for CC-4** ([#1035](https://github.com/nexustech/webforge/issues/1035), the editor in other languages, held): Webnode offers its editor in 24 languages and its strength is non-English Europe                                                                                                                                                                                                                                                                  | CC-4 waits for demand; this is a data point for when it is reviewed, not a reason to start it                                        | 0 (a note on the issue) |
+| #        | Proposal                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Why                                                                                                                                  | Size                              |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| **WN-1** | **"Bring your current site":** from the quick start, the owner gives their existing site's address, and the Assistant (or an AI app) reads its public pages and fills the new site with their own words, contact details and page list, as a site from a brief does. On the owner's own AI account, with the pages fetched only when they ask. It takes text and facts, never markup or design. Reopens C3 (importing existing websites, out of scope) in this narrow form | The owner most likely to switch already has a site on a hosted builder that won't let them leave. Webnode shipped this in March 2026 | 3–5 (v1.1)                        |
+| **WN-2** | **Notes for language versions (6.13, [#1033](https://github.com/nexustech/webforge/issues/1033)):** adding a language offers to copy every page and its content, as Webnode does; and the ADR decides whether a visitor's language is ever detected, given a static site                                                                                                                                                                                                   | Webnode's version of this feature is the best reviewed in its class, and copying the content is the step reviewers praise            | 0 (a note on the issue)           |
+| **WN-3** | **Generated content never passes off an invented fact.** As first proposed: a rule and a test that the quick start, a site from a brief and the Assistant write no made-up name, price, phone number, address or opening hour, leaving a marked placeholder. As decided, examples are allowed but always marked: see §7.2                                                                                                                                                  | Webnode's AI builder was caught doing exactly this in October 2026                                                                   | 1 as proposed; about 3 as decided |
+| **WN-4** | **A help page, "Moving from a hosted builder":** what to copy across, how the domain moves, what a host is and what it costs, and what changes (no monthly fee, the site is a folder)                                                                                                                                                                                                                                                                                      | The first hour is where Webnode is ahead; this is the page that owner needs                                                          | 0.5                               |
+| **WN-5** | **Evidence for CC-4** ([#1035](https://github.com/nexustech/webforge/issues/1035), the editor in other languages, held): Webnode offers its editor in 24 languages and its strength is non-English Europe                                                                                                                                                                                                                                                                  | CC-4 waits for demand; this is a data point for when it is reviewed, not a reason to start it                                        | 0 (a note on the issue)           |
 
 **Not proposed:** more templates for their own sake (the comparison's §7 already covers sections and elements); built-in statistics; a free tier; a one-prompt start.
 
-**If only one is taken:** WN-3, since it is a day's work and protects the thing owners trust us with. WN-1 is the one with the most to gain, and the largest.
+**If only one is taken:** WN-3, since it is small and protects the thing owners trust us with. WN-1 is the one with the most to gain, and the largest.
 
 ### 7.1 Decisions
 
 Product owner, 2026-11-20: "Let's take WN-3 only".
 
-| #    | Decision                                                                                                                              |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| WN-1 | ❌ **Not taken for now:** "bring your current site". Importing existing websites stays out of scope (C3)                              |
-| WN-2 | ❌ **Not taken for now:** the notes for language versions. 6.13's own design decides                                                  |
-| WN-3 | ✅ **Adopted:** generated content invents no facts, as a rule and a test. Its plan item, stream and issue follow from the coordinator |
-| WN-4 | ❌ **Not taken for now:** the help page on moving from a hosted builder                                                               |
-| WN-5 | ❌ **Not taken for now:** the note on CC-4's issue                                                                                    |
+| #    | Decision                                                                                                                                                                 |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| WN-1 | ❌ **Not taken for now:** "bring your current site". Importing existing websites stays out of scope (C3)                                                                 |
+| WN-2 | ❌ **Not taken for now:** the notes for language versions. 6.13's own design decides                                                                                     |
+| WN-3 | ✅ **Adopted, in the form of §7.2:** an invented detail in generated content is always marked as an example. Its plan item, stream and issue follow from the coordinator |
+| WN-4 | ❌ **Not taken for now:** the help page on moving from a hosted builder                                                                                                  |
+| WN-5 | ❌ **Not taken for now:** the note on CC-4's issue                                                                                                                       |
 
 **What WN-3 has to change,** from the code on 2026-11-20:
 
 - **The quick start's drafts** (`apps/desktop/src/main/assistant/drafts.ts`) already tell the model to write "without inventing prices, awards, dates or people's names". Phone numbers, addresses, email addresses and opening hours are not named.
 - **The Assistant's conversation** (`SYSTEM_TEXT` in `apps/desktop/src/main/assistant/assistant-loop.ts`) says nothing about invented facts.
-- **A site from a brief through AI apps** (`apps/desktop/src/main/site-brief.ts` and the tools' descriptions): no such rule was found.
-- So the work is one shared rule used by all three, a marked placeholder for what the owner didn't give, and a test with a stand-in model for each path. A day still looks right.
+- **A site from a brief through AI apps** (`apps/desktop/src/main/site-brief.ts` and the tools' descriptions in `packages/commands/src/ai-tools.ts`): no such rule was found.
+- As first proposed, the work was one shared rule used by all three and a test for each path, about a day. §7.2 is what was decided in its place.
 
 A proposal not taken can be put again.
+
+### 7.2 WN-3 as decided: examples are marked
+
+Product owner, later on 2026-11-20: "If we invent opening hours or phone numbers consider a way to alert the user that this is example text for the user to update", and, to the design below, "Yes, rewrite it".
+
+A draft with gaps reads worse than a draft with examples, so generated content may hold an example for a fact the owner didn't give. What it may never do is pass one off as real.
+
+**Why today's check can't do it.** Site Check's placeholders rule (`packages/site-check/src/rules/content.ts`) matches wording: dummy Latin, the starter texts' sentences ("Add your…", "Tell visitors…") and links to `example.com`. It is English only, and "Mon–Fri 9–5" or a made-up phone number passes it.
+
+**The mark.** A text field can be marked as holding an example. The mark is stored with the site, so it works in any language and is still there the next day. It needs a site format migration of its own, so WN-3 doesn't wait for the colour work's (TC-1a).
+
+**How a text gets the mark,** in two layers, so one catches what the other misses:
+
+1. **The model says so.** The instructions change from "without inventing" to "if you need a fact you weren't given, write a plausible example and flag that text". The quick start's drafts answer with a flag for each text; the tools the Assistant and AI apps write text with take the same flag.
+2. **Webforge checks where facts came from.** After a generated text is written, details shaped like facts (phone numbers, email and web addresses, times and days, prices, postcodes) are looked for in what the owner typed, in Site Settings and in the site as it was. Any that appear in none of them mark the text, whether the model flagged it or not.
+
+Where a kind of fact has values reserved for examples (`example.com`; the UK's 01632 960… phone range), the instructions ask for those, and the check knows them outright.
+
+**What is never generated.** The business's name, phone number, email, address and opening hours live in Site Settings, and elements show them through bindings (`packages/model/src/settings.ts`). The instructions say not to write them into text. An element whose setting is empty shows a prompt to fill it in, not an invention.
+
+**Testimonials.** A generated testimonial is always marked, and so is a template's sample testimonial when a site is made from it: an invented customer review on a live site is a fake review, a legal risk for the owner and not only an embarrassment. Site Check has no rule for these today.
+
+**How the owner is told:**
+
+- **After generation,** the quick start's last step and the Assistant's review card list the examples ("5 details are examples: check them"), each leading to its place.
+- **On the canvas,** a small _Example_ chip on the text, which opens it for editing.
+- **In Site Check,** one finding for each marked text, naming the detail ("01632 960123 looks like an example"): _Should fix_, and _Must fix_ to publish, as placeholders are. A text that is both a placeholder and marked is reported once.
+
+**Clearing the mark.** Editing the text clears it, in the same undo step. _This is correct_ clears it when the example happens to be right.
+
+**Scope and size.** One shared rule for the three paths that generate content (`drafts.ts`, the Assistant's `SYSTEM_TEXT`, the brief's tools), the mark and its migration, the check, the chip, the list, the Site Check rule, a test with a stand-in model for each path, and the help pages. About **3 days**. Left for later: highlighting the exact words inside a text, since the mark is on the whole field.
 
 ## Sources
 
