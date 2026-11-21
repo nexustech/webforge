@@ -78,21 +78,21 @@ describe("This Is Correct on a text marked as an example (#1228)", () => {
       const target = draft.pages[pageId]?.doc.content[0];
       if (target !== undefined) target.props.examples = { [field]: true };
     });
-    const finding = (rule: string, named = field): Finding => ({
+    const finding = (named = field): Finding => ({
       key: `${pageId}/${nodeId}/${named}`,
       place: { kind: "element", on: pageId, nodeId },
     });
-    expect(confirmFor("placeholders", finding("sampleDetails"), actions)).toBeUndefined();
-    expect(confirmFor("sampleDetails", finding("sampleDetails", "text"), actions)).toBeUndefined();
+    expect(confirmFor("placeholders", finding(), actions)).toBeUndefined();
+    expect(confirmFor("sampleDetails", finding("text"), actions)).toBeUndefined();
 
-    const confirm = confirmFor("sampleDetails", finding("sampleDetails"), actions);
+    const confirm = confirmFor("sampleDetails", finding(), actions);
     confirm?.();
     const marked = () =>
       session.history.document.getState().pages[pageId]?.doc.content[0]?.props ?? {};
     expect(isExample(marked(), field)).toBe(false);
     expect(session.history.entries().at(-1)?.label).toMatch(/example as correct/);
     // Gone, nothing more is offered; undone, it's marked again.
-    expect(confirmFor("sampleDetails", finding("sampleDetails"), actions)).toBeUndefined();
+    expect(confirmFor("sampleDetails", finding(), actions)).toBeUndefined();
     session.history.undo();
     expect(isExample(marked(), field)).toBe(true);
   });
