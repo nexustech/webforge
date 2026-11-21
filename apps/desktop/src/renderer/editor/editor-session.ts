@@ -18,7 +18,7 @@ import {
 import { t } from "@webforge/i18n";
 import type { PageDoc, PageEntry, PageId, SiteDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
-import { applyPatch, clearMarkIn, markedPlaceOf } from "./apply-patch.js";
+import { applyPatch, clearEditedIn, markedPlaceOf } from "./apply-patch.js";
 import { labelFor } from "./labels.js";
 import { datePages, localDay } from "./page-updated.js";
 import {
@@ -406,9 +406,9 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
       if (pause !== undefined && pause > TYPING_PAUSE_MS) history.breakCoalescing();
       const { patch, sharedSection, copyOf } = edit;
       // A text marked as an example, edited, is the person's own: its mark goes in the same step
-      // (#1228, WN-3), wherever the edit is written from.
+      // (#1228, WN-3), wherever the edit is written from, a list item's as its list is edited.
       const marked =
-        key === null || edit.nodeId === null || edit.field === null
+        edit.nodeId === null || edit.field === null
           ? undefined
           : markedPlaceOf(history.document.getState(), pageId, edit.nodeId, edit.field);
       // An edit inside a copy, or another copy placed (F-ED-23): named by its shared section.
@@ -458,7 +458,7 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
           write();
           // After it's written: a whole tree copied from the canvas brings the mark back with it.
           if (marked !== undefined && edit.nodeId !== null && edit.field !== null) {
-            clearMarkIn(draft, marked, edit.nodeId, edit.field);
+            clearEditedIn(draft, marked, edit.nodeId, edit.field);
           }
         },
         {

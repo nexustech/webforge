@@ -383,8 +383,9 @@ function isSamplePhoneLink(value: unknown): boolean {
  * fix*, and *Must fix* to publish: a published site would give it as the business's own.
  *
  * And every text marked as holding an example (#1228, WN-3): a detail a generated text made up,
- * or a template's sample testimonial, until the person edits it or says it's correct. Each is
- * found once, naming the first detail in it that looks like a fact, and never as a placeholder too.
+ * or a template's sample testimonial, until the person edits it or says it's correct. Each element
+ * is found once, however many of its texts are marked, naming the first detail in them that looks
+ * like a fact, and never as a placeholder too.
  */
 export const sampleDetailsRule: CheckRule = {
   id: "sampleDetails",
@@ -399,17 +400,26 @@ export const sampleDetailsRule: CheckRule = {
     if (contact.phone !== undefined && isSamplePhone(contact.phone)) {
       found.push({ key: "contact.phone", place: { kind: "contact", field: "phone" } });
     }
+    // The finding of each element with a text marked as an example, by its place and id.
+    const markedAt = new Map<string, number>();
     eachFieldValue(input, ["text", "richtext", "link"], (placed) => {
       const { node, field, value } = placed;
       const bindings = node.props.bindings;
       if (typeof bindings === "object" && bindings !== null && field in bindings) return;
       if (typeof value === "string" && isMarked(node, field)) {
+        // One finding an element, however many of its texts are marked (a testimonial's quote,
+        // name and role), named by the first detail of any of them.
         const [detail] = factDetailsIn(plainText(value));
-        found.push({
-          key: fieldKey(placed),
-          place: elementPlace(placed),
-          ...(detail === undefined ? {} : { values: { example: detail.text } }),
-        });
+        const at = `${placed.on}/${node.props.id}`;
+        const index = markedAt.get(at);
+        const named = detail === undefined ? {} : { values: { example: detail.text } };
+        if (index === undefined) {
+          markedAt.set(at, found.length);
+          found.push({ key: fieldKey(placed), place: elementPlace(placed), ...named });
+        } else if (detail !== undefined && found[index]?.values === undefined) {
+          const first = found[index];
+          if (first !== undefined) found[index] = { ...first, ...named };
+        }
         return;
       }
       // Most text has no `@` and no digits: passed over before it's made plain (ADR 0016).
