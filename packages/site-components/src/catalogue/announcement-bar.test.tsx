@@ -37,6 +37,14 @@ describe("the Announcement bar (6.4)", () => {
     );
   });
 
+  it("is on the reversed surface when set to Reversed colours, not the dark colour (#1257)", () => {
+    const html = bar({ colors: "inverse" });
+
+    expect(html).toMatch(/^<section class="site-announcement-bar bg-base-100 /);
+    expect(html).not.toContain("bg-neutral");
+    expect(html).toContain('data-theme="wf_inverse"');
+  });
+
   it("links its text when it has a link, and gives the script its last day", () => {
     const html = bar({
       link: { kind: "url", href: "https://rosas.example/opening-hours" },
