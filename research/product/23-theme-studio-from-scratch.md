@@ -1,6 +1,6 @@
 # Theme Studio, if we built it again
 
-**Status:** 🟡 For decision (TS-1…TS-22). Nothing here is in the plan, and the product owner asked that nothing be planned yet. [§5](#5-one-way-of-styling-and-no-modes) is a second pass that would replace TS-1, TS-2 and TS-8. [§6](#6-theme-panel-v2-and-theme-studio-v2) is a third: Theme panel v2 and Theme Studio v2, with a value of your own for any setting and fonts of your own.
+**Status:** 🟡 For decision (TS-1…TS-23). Nothing here is in the plan, and the product owner asked that nothing be planned yet. [§5](#5-one-way-of-styling-and-no-modes) is a second pass that would replace TS-1, TS-2 and TS-8. [§6](#6-theme-panel-v2-and-theme-studio-v2) is a third: Theme panel v2 and Theme Studio v2, with a value of your own for any setting and fonts of your own.
 
 **Date:** 2026-11-21
 
@@ -156,14 +156,54 @@ Sizes are rough ideal days. The product owner's answer on values and code, which
 | **TS-20** | **Every theme setting, for everyone.** A colour's code and a size for each kind of text are in the panel whatever the mode, in groups that start folded; the colour rows themselves stay without codes, as LF-16 decided. With TC-2, nothing in the theme differs between Simple and Advanced mode                                                                                                                                                                                                                                                          | Changes LF-16 (Simple mode's Theme tab shows no codes) to "none on the rows"; TS-16                                       | 1    |
 | **TS-21** | **CSS only with code tools.** With **Show code tools** on, the panel adds **Open Stylesheet** at its foot, each setting's variable (`var(--color-primary)`) with a button to copy it, and **Move This Look to CSS** where it is today. With it off, the panel never mentions CSS                                                                                                                                                                                                                                                                            | The Stylesheet panel; TS-16                                                                                               | 1    |
 | **TS-22** | **Fonts of your own.** **Add Your Own Font…** in **Choose a Font** takes WOFF2, WOFF, TTF or OTF files, reads each one's family, weight and style, and lists the family under **Your fonts**, drawn in itself. The files are kept with the site, as its pictures are, and the exported site carries them like any other font. The panel and Site Check say which weights the theme uses and the font lacks, and when a file is heavy. The person is told once that the licence is theirs to check. An AI app can choose one of your fonts and can't add one | `faces.ts` and the font catalogue, which know only Fontsource's packages; the export's `assets/fonts/`                    | 5    |
+| **TS-23** | **What v1 has, v2 keeps.** The five things [§6.4](#64-parity-with-v1) finds v2 would lose: the sample page as a page to choose in the preview, **Undo Everything Since You Opened Theme Studio**, the page's colours and the reversed ones side by side, each choice drawn as a small picture in its row, and the list of kinds in the scope line                                                                                                                                                                                                           | The product owner's rule of parity; TS-18, TS-10, TS-14                                                                   | 2    |
 
-About 16.5 days. TS-18 is in place of TS-13 (1.5 days), which leaves about 39.5 days for everything in this note without TS-5.
+About 18.5 days. TS-18 is in place of TS-13 (1.5 days), which leaves about 41.5 days for everything in this note without TS-5.
+
+**A theme switch,** the product owner's rule: "added colours stay and custom values on preset rows are replaced by the new themes". So:
+
+- **The question switching already asks says both halves,** such as "Your corners and spacing will change to Bistro's. Your colours Sale and Gold stay."
+- **Colours of your own are copied into the new theme's list** at the switch. TC-1a (5.27) keeps them in the theme's list, and isn't built yet, so this is for its design.
+- **A font of your own follows the rule for preset rows:** the new theme's fonts replace it, and it stays under **Your fonts** to choose again.
+- **One case needs a rule:** the new theme is one of your own and has a colour of the same name with another value. A view: the site's is kept.
 
 **What I'd take first:** TS-17 and TS-18. They are what stops the two drifting, and they are the least reversible to do later, since every setting added to v1 is added twice. TS-22 stands alone and needs none of the others.
 
-### 6.4 What isn't known
+### 6.4 Parity with v1
 
-- **What a theme switch does to a value of your own.** A view, not a decision: colours of your own stay, since they are the business's; a value of your own on a preset row is replaced by the new theme's, and the question that switching already asks says so.
+The product owner: "We need to ensure we have feature parity with what is offered in v1 unless there is a good reason". Checked against the help pages [Themes](../../docs/help/themes.md) and [Styling](../../docs/help/styling.md) only; before anything is planned, the same check is owed against v1's tests (`ThemePanel.test.tsx`, `ThemeStudio.test.tsx`, `StyleDialog.test.tsx`), which cover what the pages don't describe.
+
+**What v2 as written would lose, and how it is kept (TS-23):**
+
+| v1 offers                                                              | Why v2 would lose it                                                            | How it is kept                                                                    |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| A sample page that shows every kind of item at once                    | v2 previews the site's own pages, which may have no form, card or pricing table | **Sample page** is one of the pages to choose in the preview                      |
+| **Discard** in Components: try several changes and throw them all away | Every change applies at once (TS-14)                                            | **Undo Everything Since You Opened Theme Studio**, one button                     |
+| The page's colours and the reversed ones, side by side                 | One column has no room for two sets                                             | Opened from the Colours row at a wider size; the preview shows a reversed section |
+| Styles drawn as examples                                               | A row in a panel shows names                                                    | Each choice is drawn as a small picture in its row                                |
+| Choosing a kind that isn't on the page in view (Components' list)      | Clicking the preview reaches only what is on that page                          | The list of kinds stays in the scope line                                         |
+
+**To be said, so none is dropped by accident:**
+
+- **Themes:** **New Theme…** from any theme; renaming and deleting your own; "your own version" saved on the first change.
+- **Colours:** **Colours from an Image…**; **Use a darker shade**; the message that says how many pages changed, with **Undo**.
+- **How far off a colour is,** such as "4.19:1, needs 4.5:1", which only Advanced mode's panel shows today: for everyone, in the warning's detail (TS-20).
+- **Where a look applies:** the four reaches (this one, every one on this page, every one on the site, the theme's look for the kind), each with its count. TS-11's **Make Every Button Like This** offers all four.
+- **Different on each device,** and **Copy Style** and **Paste Style**, as the Style tab has them.
+- **The preview's size** can be dragged, or changed with the arrow keys.
+- **The ways in:** **Site › Theme…**, **Site › Theme Studio…** and **Open Theme Studio**.
+
+**What v2 drops, and the reason:**
+
+| Dropped                                      | Reason                                                                              |
+| -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Theme Studio's five tabs                     | They become the panel's groups, so the panel and Theme Studio are one thing (TS-18) |
+| The draft bar in Components                  | One way of applying (TS-14); the undo-everything button keeps the way out           |
+| Settings spread in columns across the window | The room goes to the preview of the site's own pages                                |
+| What only Advanced mode's Theme panel shows  | Every theme setting is for everyone (TS-20); code tools only add code (TS-21)       |
+
+### 6.5 What isn't known
+
 - **How much code assumes a preset's name.** TS-19's size is the least certain here: the theme's CSS, the font plan and the tests were not read for it.
 - **What Theme Studio v2 gives up.** v1 spreads its settings in columns across the window. Beside a preview they are one column. Not tried with anyone.
 - **Which side the panel sits on** in Theme Studio v2, and whether its changes apply at once (TS-14).
@@ -180,4 +220,4 @@ About 16.5 days. TS-18 is in place of TS-13 (1.5 days), which leaves about 39.5 
 
 ## 8. Decisions
 
-None yet. Product owner, 2026-11-21: "Theme Studio write note but do not plan anything yet"; and, the same day, of §5: "Write it into the Theme Studio note as proposals"; and of §6: "Add it to the Theme Studio note with v2". The owner's answer in §6 ("Custom values for everyone, CSS only with code tools") is the direction TS-19 to TS-21 are written to; it has no decision ID, and none of them is planned.
+None yet. Product owner, 2026-11-21: "Theme Studio write note but do not plan anything yet"; and, the same day, of §5: "Write it into the Theme Studio note as proposals"; and of §6: "Add it to the Theme Studio note with v2". The owner's answer in §6 ("Custom values for everyone, CSS only with code tools") is the direction TS-19 to TS-21 are written to; it has no decision ID, and none of them is planned. The same holds for the owner's rules of the theme switch ([§6.3](#63-proposals)) and of parity with v1 ([§6.4](#64-parity-with-v1)).
