@@ -180,12 +180,13 @@ export const businessDetailsRule: CheckRule = {
   check: ({ site }) => {
     if (!listed(site) || !isBusiness(site)) return [];
     const { contact } = site.settings;
-    const missing: Readonly<Record<ContactField, boolean>> = {
+    // The ones search engines show; an email address isn't one of them.
+    const missing: Readonly<Record<Exclude<ContactField, "email">, boolean>> = {
       address: (contact.address ?? "").trim() === "",
       phone: contact.phone === undefined,
       openingHours: contact.openingHours.length === 0,
     };
-    return (Object.keys(missing) as ContactField[]).flatMap((field) =>
+    return (Object.keys(missing) as (keyof typeof missing)[]).flatMap((field) =>
       missing[field] ? [{ key: field, place: { kind: "contact", field } as const }] : [],
     );
   },

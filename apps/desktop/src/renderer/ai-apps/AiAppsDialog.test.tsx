@@ -266,6 +266,10 @@ describe("AI apps (4.9)", () => {
       // The key command for this shell, with no key in it: it waits for the key to be pasted.
       expect(within(steps[1] as HTMLElement).getByText(keyCommand)).toBeTruthy();
       expect(keyCommand).not.toContain(KEY);
+      // The key that ends the line, as this computer's keyboard names it.
+      expect(steps[1]?.textContent).toContain(
+        shell === "powershell" ? "press Enter" : "press Return",
+      );
       await user.click(dialog().getByRole("button", { name: "Copy the key command" }));
       expect(copyText).toHaveBeenLastCalledWith(keyCommand);
       // The key, as a secret, from its own button in that step.
