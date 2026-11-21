@@ -108,7 +108,13 @@ describe("MENU_GROUPS (#1016)", () => {
   /** The renderer's own code, tests and stories left out, and the files that only refer to ids. */
   const sources = Object.entries(
     import.meta.glob<string>(
-      ["../**/*.{ts,tsx}", "!../**/*.test.{ts,tsx}", "!../**/*.stories.tsx"],
+      [
+        "../**/*.{ts,tsx}",
+        // The shell's command ids, which main's usage summary lists too (5.40).
+        "../../shared/command-ids.ts",
+        "!../**/*.test.{ts,tsx}",
+        "!../**/*.stories.tsx",
+      ],
       {
         query: "?raw",
         import: "default",

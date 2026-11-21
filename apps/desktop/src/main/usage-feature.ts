@@ -1,8 +1,18 @@
+import { release, totalmem } from "node:os";
+import { type UpdateChannel, updateChannelFor } from "../shared/update-channel.js";
 import type { AppFeature } from "./app-feature.js";
+import type { AppElectron } from "./app-parts.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
+import { startupTimes } from "./startup-timing.js";
 import { recordUsage, setUsageSink } from "./usage.js";
-import type { UsageSummary } from "./usage-summary.js";
+import {
+  createUsageSummary,
+  listedOr,
+  loadUsageLists,
+  type UsageSummary,
+  versionNumbers,
+} from "./usage-summary.js";
 
 /**
  * The usage summary as a feature (5.40, BD-1): what the editor tells it (`app:record-usage`), a
@@ -43,4 +53,32 @@ export function usageFeature(
     },
     quit: () => summary.idle(),
   };
+}
+
+/**
+ * The usage summary of this Webforge, in its user data beside the crash reports, as a feature:
+ * the computer it runs on described in numbers and listed names, the update channel the person
+ * chose (`chosen`), and how many crash reports the folder holds.
+ */
+export function usageFeatureFor(
+  { app, screen }: Pick<AppElectron, "app" | "screen">,
+  crashReports: { count(): number },
+  chosen: () => UpdateChannel | undefined,
+): AppFeature {
+  const summary = createUsageSummary({
+    dir: app.getPath("userData"),
+    lists: loadUsageLists,
+    crashReports: () => crashReports.count(),
+    computer: () => ({
+      version: versionNumbers(app.getVersion()),
+      channel: updateChannelFor(chosen(), app.getVersion()),
+      platform: listedOr(["win32", "darwin", "linux"], process.platform),
+      arch: listedOr(["x64", "arm64"], process.arch),
+      osVersion: versionNumbers(release()),
+      memoryGb: Math.round(totalmem() / 1024 ** 3),
+      scale: screen.getAllDisplays()[0]?.scaleFactor ?? 1,
+      language: "en",
+    }),
+  });
+  return usageFeature(summary, () => startupTimes()["window-created"]);
 }
