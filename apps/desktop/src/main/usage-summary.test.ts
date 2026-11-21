@@ -8,6 +8,7 @@ import {
   createUsageSummary,
   listedOr,
   USAGE_FILE,
+  type UsageComputer,
   type UsageLists,
   type UsageSummaryData,
   usageSummarySchema,
@@ -22,7 +23,7 @@ const LISTS: UsageLists = {
   tools: ["addNode", "listPages"],
 };
 
-const COMPUTER = {
+const COMPUTER: UsageComputer = {
   version: [0, 3, 0],
   channel: "beta",
   platform: "win32",
@@ -31,7 +32,7 @@ const COMPUTER = {
   memoryGb: 16,
   scale: 1.5,
   language: "en",
-} as const;
+};
 
 /** A summary in `dir` whose writes wait for `flush`, with ids `install-1`, `install-2`… as UUIDs. */
 function summaryIn(dir: string, options: { readonly crashReports?: () => number } = {}) {
