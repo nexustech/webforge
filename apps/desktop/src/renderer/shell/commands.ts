@@ -70,6 +70,11 @@ export type Command = {
    */
   readonly shortStatus?: string | undefined;
   /**
+   * Whether what the command shows or hides is shown, for a menu that lists it as a checkbox: the
+   * title bar's Panels menu, its columns and bottom panel (#1195).
+   */
+  readonly checked?: boolean | undefined;
+  /**
    * The title-bar button whose caret menu lists it, by that button's command id (LF-13): Export's
    * caret for a ZIP export, say. A button shows its caret only while some command names it.
    */
@@ -142,7 +147,10 @@ export type CommandSpec = Omit<
 
 /** What a registered command's owner may change later, such as Undo becoming available. */
 type CommandChanges = Partial<
-  Pick<Command, "label" | "enabled" | "disabledReason" | "tooltip" | "status" | "shortStatus">
+  Pick<
+    Command,
+    "label" | "enabled" | "disabledReason" | "tooltip" | "status" | "shortStatus" | "checked"
+  >
 >;
 
 /**
@@ -277,7 +285,8 @@ export function createCommandRegistry({
         next.disabledReason === command.disabledReason &&
         next.tooltip === command.tooltip &&
         next.status === command.status &&
-        next.shortStatus === command.shortStatus
+        next.shortStatus === command.shortStatus &&
+        next.checked === command.checked
       ) {
         return;
       }

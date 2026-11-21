@@ -18,7 +18,7 @@ The Elements tab groups them as below. Every element but the Spacer has a **Spac
 
 ### Heading
 
-A title. **Size** is _Large_, _Medium_ or _Small_. The size also tells search engines and screen readers how important the heading is, so give each page one Large heading (or a Hero).
+A title. **Size** is _Large_, _Medium_ or _Small_. The size also tells search engines and screen readers how important the heading is, so give each page one Large heading (or a Hero). A page with neither has its first section's title as its main heading.
 
 ### Text
 

@@ -158,6 +158,19 @@ describe.each(readTemplates().map((folder) => [folder.template.id, folder] as co
     );
 
     it(
+      "gives every page exactly one main heading, its first section title where it has none (#1173)",
+      async () => {
+        const built = await build();
+        for (const [path, data] of built.files) {
+          if (!path.endsWith(".html")) continue;
+          const html = new TextDecoder().decode(data);
+          expect(html.match(/<h1[\s>]/g)?.length ?? 0, `${id}: ${path}`).toBe(1);
+        }
+      },
+      scaledTestTimeout(60_000),
+    );
+
+    it(
       "marks up its home page for search engines from its Site Settings (SEO-1, #621)",
       async () => {
         const { general, contact } = site.settings;

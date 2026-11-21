@@ -16,6 +16,7 @@ import {
   withAdvanced,
   withLook,
 } from "./library.js";
+import { pageHeadings } from "./main-heading.js";
 import { RichText } from "./rich-text.js";
 import type { BehaviourName, RenderContext, SlotComponent } from "./schema.js";
 
@@ -194,6 +195,29 @@ function StaticNode(props: { readonly node: NodeDoc; readonly rendering: Renderi
   return <>{renderNode(props.node, props.rendering)}</>;
 }
 
+/**
+ * `context` with the page's `pageHeading` (#1173): the section whose title is its main heading,
+ * where `regions`, its Header, content and Footer as they are drawn, have none of their own. The
+ * export's pages and its single elements both take it from here, as the canvas takes it from
+ * {@link pageHeadings} too.
+ */
+export function withPageHeading(
+  regions: {
+    readonly header: readonly NodeDoc[];
+    readonly content: readonly NodeDoc[];
+    readonly footer: readonly NodeDoc[];
+  },
+  library: ComponentLibrary,
+  context: RenderContext,
+): RenderContext {
+  const { pageHeading: _was, ...rest } = context;
+  const { promoted } = pageHeadings(
+    [regions.header, regions.content, regions.footer],
+    (type) => library.components[type],
+  );
+  return promoted === undefined ? rest : { ...rest, pageHeading: promoted };
+}
+
 /** A page as static HTML: the Header and Footer it shows, and its own content. */
 export type RenderedPage = {
   readonly header: string;
@@ -217,14 +241,16 @@ export function renderPage(
   context: RenderContext,
 ): RenderedPage {
   const first = regions.content.find((node) => node.props.hidden !== true)?.props.id;
+  // A page with no main heading of its own writes its first section title as one (#1173).
+  const shown = withPageHeading(regions, library, context);
   return {
-    header: renderNodesToHtml(regions.header, library, context),
+    header: renderNodesToHtml(regions.header, library, shown),
     main: renderNodesToHtml(
       regions.content,
       library,
-      typeof first === "string" ? { ...context, firstSection: first } : context,
+      typeof first === "string" ? { ...shown, firstSection: first } : shown,
     ),
-    footer: renderNodesToHtml(regions.footer, library, context),
+    footer: renderNodesToHtml(regions.footer, library, shown),
   };
 }
 

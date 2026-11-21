@@ -33,10 +33,20 @@ export const SectionTitleAppearance = createContext("");
  */
 export const SectionSubtitleAppearance = createContext("");
 
+/**
+ * Whether the section a title is in writes the page's main heading with its title (#1173): the
+ * first section with a title, on a page with none of its own. `defineSection` provides it, and
+ * every element resets it for what it holds, as it does {@link SectionTitleAppearance}.
+ */
+export const PageHeadingHere = createContext(false);
+
 /** The heading level of each title size: a page has one h1. */
 const TITLE_TAG = { page: "h1", section: "h2", small: "h3" } as const;
 
-/** A title of `size` (a section's unless said), at its heading level. */
+/**
+ * A title of `size` (a section's unless said), at its heading level. A section's title is the
+ * page's `<h1>` where {@link PageHeadingHere} says so, in a section title's look all the same.
+ */
 export function SectionTitle({
   children,
   size = "section",
@@ -44,7 +54,8 @@ export function SectionTitle({
   readonly children: ReactNode;
   readonly size?: keyof typeof TITLE_CLASSES;
 }) {
-  const Tag = TITLE_TAG[size];
+  const promoted = useContext(PageHeadingHere);
+  const Tag = size === "section" && promoted ? "h1" : TITLE_TAG[size];
   const appearance = useContext(SectionTitleAppearance);
   const own = size === "small" || appearance === "" ? "" : ` ${appearance}`;
   return <Tag className={`${TITLE_CLASSES[size]}${own}`}>{children}</Tag>;

@@ -108,11 +108,13 @@ test.describe("exported site from disk", () => {
     await expect(section.getByRole("heading", { name: "Our story" })).toBeVisible();
     expect(
       await section.evaluate((frame) => {
-        const box = frame.querySelector("h2")?.getBoundingClientRect();
+        // Its title, the page's `h1` where it has no main heading of its own (#1173).
+        const title = frame.querySelector(":is(h1, h2)");
+        const box = title?.getBoundingClientRect();
         if (box === undefined) return null;
-        return document.elementFromPoint(box.x + 4, box.y + box.height / 2)?.tagName ?? null;
+        return document.elementFromPoint(box.x + 4, box.y + box.height / 2) === title;
       }),
-    ).toBe("H2");
+    ).toBe(true);
   });
 
   test("cuts an Image to its shape around the focal point, from a file wide enough to cover it (3.19)", async ({

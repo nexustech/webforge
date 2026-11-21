@@ -5,6 +5,7 @@ import { t } from "@webforge/i18n";
 import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
+  pageHeadings,
   type RenderContext,
   type SiteBindings,
   samePreviews,
@@ -192,7 +193,53 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     dragKeys,
     editorRevisions,
     frameDocument: frame.document,
+    onDocs: () => followPageHeading(),
   });
+
+  /** Whether the page's main heading is to be found again (see {@link followPageHeading}). */
+  let headingDue = false;
+  /** The canvas document whose text being typed in holds back a new main heading, if any. */
+  let headingHeldBy: Document | null = null;
+  /**
+   * Finds again the section whose title is the page's main heading (#1173), as `renderPage` does
+   * for the export, once the docs have stopped changing for this turn, never while Puck reports an
+   * action. Every section reads it, so all draw again when it changes: only when a page's own main
+   * heading or its first title comes or goes, never while its text is typed.
+   *
+   * A title that becomes the heading, or stops being it, changes its tag (`h2`, `h1`), which
+   * remounts the text typed in it: emptying the first title, or typing the first letter of one,
+   * would leave the person typing into nothing. So a change waits while text on the canvas has the
+   * focus, until it loses it. The two tags look the same, so nothing shows the wait.
+   */
+  const followPageHeading = () => {
+    if (headingDue) return;
+    headingDue = true;
+    queueMicrotask(() => {
+      headingDue = false;
+      const components = library?.components;
+      const { promoted } =
+        components === undefined
+          ? { promoted: undefined }
+          : pageHeadings([page.composed().content], (type) => components[type]);
+      if (parts.pageHeading === promoted) return;
+      const doc = canvasDocument();
+      const typing = doc?.activeElement as HTMLElement | null | undefined;
+      if (doc?.hasFocus() === true && typing?.isContentEditable === true) {
+        if (headingHeldBy !== doc) {
+          headingHeldBy = doc;
+          // After the focus has moved, which may be into other text.
+          const release = () => {
+            headingHeldBy = null;
+            setTimeout(followPageHeading, 0);
+          };
+          doc.addEventListener("focusout", release, { once: true });
+        }
+        return;
+      }
+      const { pageHeading: _was, ...rest } = parts;
+      changeContext({ parts: promoted === undefined ? rest : { ...rest, pageHeading: promoted } });
+    });
+  };
 
   /** The canvas's width, zoom and size (see `canvas-view.ts`). */
   const view = createCanvasView(puck, dispatch);
@@ -304,6 +351,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       );
       slotsOf = (type) => slots.get(type);
       config = configFor(opts.library);
+      // A page given before the library was has its heading found now.
+      followPageHeading();
       const editorWindow = el.ownerDocument.defaultView;
       stopEditorListeners =
         editorWindow === null

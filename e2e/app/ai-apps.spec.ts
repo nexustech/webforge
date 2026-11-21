@@ -130,7 +130,7 @@ test("an AI app paired in AI apps… changes the site, as undo steps named after
   );
   expect(added).toMatchObject({ status: "done", label: "AI (Test client): Added Hero" });
   // Connected, as AI apps says; with it closed, the step and the title bar's sign show.
-  await expect(dialog().getByText("Connected")).toBeVisible();
+  await expect(dialog().getByText("Connected", { exact: true })).toBeVisible();
   await dialog().getByRole("button", { name: "Close" }).click();
   await expect(canvas().getByText("Fresh bread every morning")).toBeVisible();
   await expect(step("AI (Test client): Added Hero")).toBeVisible();
@@ -230,7 +230,7 @@ test("Claude Desktop connects through the extension AI apps… writes, with its 
         }),
       );
       expect(added).toMatchObject({ status: "done", label: "AI (Claude Desktop): Added Hero" });
-      await expect(dialog().getByText("Connected")).toBeVisible();
+      await expect(dialog().getByText("Connected", { exact: true })).toBeVisible();
     } finally {
       await client.close();
     }
@@ -298,7 +298,7 @@ test("VS Code installs through its link, which has no key: the key VS Code asks 
   expect(header).toBe(`Bearer ${key}`);
   const client = await connect(server.url, key);
   expect((await client.listTools()).tools.length).toBeGreaterThan(0);
-  await expect(dialog().getByText("Connected")).toBeVisible();
+  await expect(dialog().getByText("Connected", { exact: true })).toBeVisible();
   await client.close();
 });
 
@@ -308,9 +308,12 @@ test("Claude Code's command has no key: with the key in its variable, it connect
     "an app's key is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5, ADR 0021)",
   );
   const shown = await addFromChoice("Claude Code", "Claude Code");
-  const [command = "", key] = await shown.locator("dd code").allTextContents();
+  // Its three steps (#1245): the add command, the key command for this computer, then the key.
+  const [command = "", keyCommand = "", key] = await shown.locator("ol code").allTextContents();
   if (key === undefined) throw new Error("no key shown");
   expect(command).not.toContain(key);
+  expect(keyCommand).toContain("WEBFORGE_KEY");
+  expect(keyCommand).not.toContain(key);
   const [, url, header] =
     /^claude mcp add --transport http --scope user webforge (\S+) --header '([^']+)'$/.exec(
       command,
@@ -319,7 +322,7 @@ test("Claude Code's command has no key: with the key in its variable, it connect
   expect(header?.replace(`\${WEBFORGE_KEY}`, key)).toBe(`Authorization: Bearer ${key}`);
   const client = await connect(url ?? "", key);
   expect((await client.listTools()).tools.length).toBeGreaterThan(0);
-  await expect(dialog().getByText("Connected")).toBeVisible();
+  await expect(dialog().getByText("Connected", { exact: true })).toBeVisible();
   await client.close();
 });
 

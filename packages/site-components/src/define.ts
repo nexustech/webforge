@@ -39,7 +39,7 @@ import type {
   RenderPropsOf,
   ValuesOf,
 } from "./schema.js";
-import { SectionTitleAppearance } from "./typography.js";
+import { PageHeadingHere, SectionTitleAppearance } from "./typography.js";
 
 /**
  * Field kinds whose values are design tokens (C4): a choice from the component's own options, a
@@ -272,8 +272,8 @@ const joined = (own: unknown, classes: string) =>
  * its own, on its root element (through a fragment or a context's provider around it), or, for a
  * component with `lookTarget`, on the part it marks {@link LOOK_TARGET}, wherever that is. What it
  * holds is drawn without its section's title styling, so a section's Appearance reaches no title
- * but its own. Output with no HTML element at its root is left as it is (a test checks every
- * element's root is one).
+ * but its own, and none of its titles is the page's main heading (#1173). Output with no HTML
+ * element at its root is left as it is (a test checks every element's root is one).
  */
 function withAppearance(output: ReactNode, classes: string, lookTarget: boolean): ReactNode {
   if (!isValidElement(output)) return output;
@@ -299,11 +299,16 @@ function withAppearance(output: ReactNode, classes: string, lookTarget: boolean)
     : cloneElement(
         root,
         changed,
-        // Spread, so several children stay a list React keys by position, as they were.
+        // Spread, so several children stay a list React keys by position, as they were. Nor is a
+        // title it holds the page's main heading (#1173).
         createElement(
           SectionTitleAppearance.Provider,
           { value: "" },
-          ...(Array.isArray(children) ? children : [children]),
+          createElement(
+            PageHeadingHere.Provider,
+            { value: false },
+            ...(Array.isArray(children) ? children : [children]),
+          ),
         ),
       );
 }
