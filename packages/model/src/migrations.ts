@@ -56,6 +56,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   12: siteCollections,
   13: collectionTags,
   14: listLinks,
+  15: ownColours,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -406,6 +407,17 @@ function collectionTags(site: RawSite): RawSite {
  */
 function listLinks(site: RawSite): RawSite {
   return { ...site, formatVersion: 15 };
+}
+
+/**
+ * Format 15 → 16 (TC-1a, #1217): the theme has a list of the person's own colours, which a colour
+ * reference can name (`own-<id>`). An older site has none: an empty list. A list already there is
+ * kept, and a theme that isn't a record is left for validation.
+ */
+function ownColours(site: RawSite): RawSite {
+  const theme = site.theme;
+  if (!isRecord(theme)) return { ...site, formatVersion: 16 };
+  return { ...site, theme: { ...theme, ownColors: theme.ownColors ?? [] }, formatVersion: 16 };
 }
 
 /** The Blog preset's Tags field, as format 14 gives a Blog that has none (in English, as it was). */

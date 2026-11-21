@@ -158,6 +158,25 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(labels()).toEqual(["Changed theme to 'Bistro'"]);
   });
 
+  it("keeps the person's own colours through a switch, adding those their own theme brings (TC-1a)", async () => {
+    const sky = { id: "sky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } };
+    const moss = { id: "moss", name: "Moss", color: { l: 0.5, c: 0.1, h: 140 } };
+    const site = starterSite();
+    site.theme = { ...site.theme, ownColors: [sky] };
+    const { session, theme } = setUp(site);
+    const bistro = themePreset("bistro");
+    if (bistro === undefined) throw new Error("no Bistro");
+
+    // A built-in theme has none of its own: the site's stay.
+    await switchPreset(session, answering(true), bistro);
+    expect(theme()).toEqual({ ...bistro, ownColors: [sky] });
+
+    // One of the person's own themes brings its colours, first; one of the same id is the theme's.
+    const mine = { ...bistro, ownColors: [moss, { ...sky, name: "Sky blue" }] };
+    await switchPreset(session, answering(true), mine);
+    expect(theme().ownColors).toEqual([moss, { ...sky, name: "Sky blue" }]);
+  });
+
   it("changes a brand colour in reversed sections too, at their lightness (#200)", async () => {
     const { session, labels, theme } = setUp();
     const before = theme();
