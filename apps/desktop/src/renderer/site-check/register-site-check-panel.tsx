@@ -10,7 +10,7 @@ import type { SettingsRegistry } from "../editor/settings-registry.js";
 import { siteSelectors } from "../editor/site-css.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
-import { fixFor, jumpTo } from "./actions.js";
+import { confirmFor, fixFor, jumpTo } from "./actions.js";
 import { type SiteCheckAssistant, useAssistantWrites } from "./assistant-writes.js";
 import type { BundleActions } from "./bundle.js";
 import { toFixCount } from "./counts.js";
@@ -141,6 +141,7 @@ export function registerSiteCheckPanel(
             detail: describeDetail(finding),
           })}
           fixFor={(rule, finding) => fixFor(rule, finding, actions)}
+          confirmFor={(rule, finding) => confirmFor(rule, finding, actions)}
           writeFor={writes.writeFor}
           onJump={(finding) => jumpTo(finding.place, actions)}
           onIgnore={(rule, finding) => siteCheck.ignore(rule, finding.key)}

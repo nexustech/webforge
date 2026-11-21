@@ -154,6 +154,7 @@ Code outside the catalogue never names a component type (#982), so a new compone
 
   A section that draws its title with `SectionTitle size="page"` writes one, and needs this. A test renders every component in each of its own options and fails when the `<h1>`s it draws aren't what its `mainHeading` says.
 - **`titleField`:** set by `defineSection` for a titled section with a `title` text field and no `mainHeading`; nothing to add. On a page with no main heading of its own, the first section with a title draws it as the page's `<h1>` in a section title's look (#1173): `SectionTitle`'s default size does it, from the render context's `pageHeading`. One function, `pageHeadings`, chooses that section for the canvas, the export and Site Check. A test fails for a section whose `title` doesn't become the `<h1>` that way, so draw a section's title with `SectionTitle`.
+- **`sample`:** props drawn over its `defaults` in its Add panel preview only, where its defaults leave it empty (a Gallery's six images, #1175). Nothing from it is placed on a page. Slot nodes need ids of their own. The preview also gives every section sample contact details, opening hours and posts, so a section that shows the site's needs no sample for them.
 - **`studioSample`:** its place, from 1, on Theme Studio's sample page, the sections drawn with a theme's colours, text and styles (the Hero, Features and Call to action).
 - **`themeControls`:** what Theme Studio shows with it.
   - **`buttons`:** the buttons' tokens beside its look (the Button).

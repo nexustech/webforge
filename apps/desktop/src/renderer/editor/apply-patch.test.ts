@@ -2,7 +2,7 @@ import type { EnginePatch } from "@webforge/engine";
 import { createHistoryManager } from "@webforge/history";
 import type { PageDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { applyPatch } from "./apply-patch.js";
+import { applyPatch, updateField } from "./apply-patch.js";
 
 const page: PageDoc = {
   root: { props: {} },
@@ -68,5 +68,64 @@ describe("applyPatch", () => {
     expect(found).toBe(false);
     expect(entries).toEqual([]);
     expect(next).toEqual(page);
+  });
+});
+
+describe("a text marked as an example, edited (#1228)", () => {
+  const marked: PageDoc = {
+    root: { props: {} },
+    content: [
+      {
+        type: "Text",
+        props: { id: "hours", text: "Open 9am", title: "Hours", examples: { text: true } },
+      },
+      {
+        type: "Faq",
+        props: {
+          id: "faq",
+          items: [
+            { id: "a", question: "Price?", answer: "£12" },
+            { id: "b", question: "When?", answer: "Mon" },
+          ],
+          examples: { "items.a.answer": true, "items.b.answer": true },
+        },
+      },
+    ],
+  };
+  const edited = (nodeId: string, field: string, next: (current: unknown) => unknown) => {
+    const history = createHistoryManager({ initial: marked });
+    history.run("Edit", (draft) => {
+      updateField(draft, marked, nodeId, field, next);
+    });
+    return { props: history.document.getState().content, steps: history.entries().length };
+  };
+
+  it("loses its mark in the same step; another field's edit keeps it", () => {
+    const text = edited("hours", "text", () => "Open 10am");
+    expect(text.props[0]?.props.examples).toBeUndefined();
+    expect(text.steps).toBe(1);
+    expect(edited("hours", "title", () => "Times").props[0]?.props.examples).toEqual({
+      text: true,
+    });
+    // Written as it was: nothing edited, the mark stays.
+    expect(edited("hours", "text", (current) => current).props[0]?.props.examples).toEqual({
+      text: true,
+    });
+  });
+
+  it("in a list, loses the edited item's mark only, wherever the item moves", () => {
+    const items = (current: unknown) => current as { id: string; answer: string }[];
+    const answered = edited("faq", "items", (current) =>
+      items(current).map((item) => (item.id === "a" ? { ...item, answer: "£14" } : item)),
+    );
+    expect(answered.props[1]?.props.examples).toEqual({ "items.b.answer": true });
+    // Reordered, nothing edited: both keep their marks; one removed loses its mark.
+    const moved = edited("faq", "items", (current) => [...items(current)].reverse());
+    expect(moved.props[1]?.props.examples).toEqual({
+      "items.a.answer": true,
+      "items.b.answer": true,
+    });
+    const removed = edited("faq", "items", (current) => items(current).slice(1));
+    expect(removed.props[1]?.props.examples).toEqual({ "items.b.answer": true });
   });
 });

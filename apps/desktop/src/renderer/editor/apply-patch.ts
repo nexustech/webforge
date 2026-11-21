@@ -1,5 +1,14 @@
 import type { EnginePatch } from "@webforge/engine";
-import { isNodeDoc, type NodeDoc, type PageDoc } from "@webforge/model";
+import {
+  clearEditedExamples,
+  elementsAt,
+  exampleFields,
+  findNode,
+  isNodeDoc,
+  type NodeDoc,
+  type PageDoc,
+  type SiteDoc,
+} from "@webforge/model";
 
 type Path = readonly (string | number)[];
 
@@ -46,7 +55,11 @@ export function updateField(
     target = (target as Record<string | number, unknown>)[key];
   }
   const { props } = target as NodeDoc;
-  props[field] = next(props[field]);
+  const before = props[field];
+  const after = next(before);
+  props[field] = after;
+  // Editing a text marked as an example clears its mark, in the same step (#1228, WN-3).
+  clearEditedExamples(props, field, before, after);
   return true;
 }
 
@@ -56,4 +69,54 @@ export function updateField(
  */
 export function applyPatch(draft: PageDoc, page: PageDoc, patch: EnginePatch): boolean {
   return updateField(draft, page, patch.nodeId, patch.field, () => patch.value);
+}
+
+/** A node a canvas edit reaches that has a mark on the edited field: where, and its value before. */
+export type MarkedEdit = { readonly on: string; readonly before: unknown };
+
+/** Whether the node with `props` has a mark on `field`, or on one of its list's items. */
+const markedOn = (props: NodeDoc["props"], field: string) =>
+  exampleFields(props).some((key) => key === field || key.startsWith(`${field}.`));
+
+/**
+ * Where the node `nodeId` is kept, if its `field`, or an item of its list, is marked as an example
+ * (#1228, WN-3), and the field's value before the edit: what a canvas edit of it clears the marks
+ * of, in the same step. Looked for in `site` as it is, not in a draft, so editing a node with no
+ * mark makes no drafts along the way (ADR 0007).
+ */
+export function markedPlaceOf(
+  site: SiteDoc,
+  first: string,
+  nodeId: string,
+  field: string,
+): MarkedEdit | undefined {
+  const places = [
+    first,
+    "header",
+    "footer",
+    ...Object.keys(site.sharedSections),
+    ...Object.keys(site.collections),
+  ];
+  for (const on of places) {
+    const node = findNode(elementsAt(site, on), (each) => each.props.id === nodeId);
+    if (node !== undefined) {
+      return markedOn(node.props, field) ? { on, before: node.props[field] } : undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Clears the marks the edit of `field` on the node `nodeId` edited, once it's written in `draft`
+ * (see {@link markedPlaceOf}): the field's own, or each list item's whose text changed. After the
+ * write, which may have copied the canvas's tree, marks and all.
+ */
+export function clearEditedIn(
+  draft: SiteDoc,
+  marked: MarkedEdit,
+  nodeId: string,
+  field: string,
+): void {
+  const node = findNode(elementsAt(draft, marked.on), (each) => each.props.id === nodeId);
+  if (node !== undefined) clearEditedExamples(node.props, field, marked.before, node.props[field]);
 }

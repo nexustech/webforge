@@ -17,6 +17,9 @@ export const siteCheck = {
   "siteCheck.button.clear": "No problems",
   "siteCheck.fix": "Fix",
   "siteCheck.fix.label": "Fix: {item}",
+  // A text marked as an example whose detail is right after all (#1228): its mark is cleared.
+  "siteCheck.confirm": "This Is Correct",
+  "siteCheck.confirm.label": "This is correct: {item}",
   // A finding its buttons tell apart from another in the same place (#1164).
   "siteCheck.item.inRule": "{item}, {rule}",
   "siteCheck.item.nth": "{item} ({n})",
@@ -59,13 +62,12 @@ export const siteCheck = {
   "siteCheck.rule.placeholders.pass": "No placeholder text left",
   "siteCheck.rule.placeholders.fail.one": "1 text is still a placeholder",
   "siteCheck.rule.placeholders.fail.other": "{count} texts are still placeholders",
-  // A template's made-up email address or phone number, still on the site (#1254).
-  "siteCheck.rule.sampleDetails": "Sample contact details",
-  "siteCheck.rule.sampleDetails.pass": "No sample email addresses or phone numbers",
-  "siteCheck.rule.sampleDetails.fail.one":
-    "1 place still has a sample email address or phone number",
-  "siteCheck.rule.sampleDetails.fail.other":
-    "{count} places still have a sample email address or phone number",
+  // A template's made-up email address or phone number (#1254), or a text marked as holding an
+  // example (#1228, WN-3), still on the site.
+  "siteCheck.rule.sampleDetails": "Examples to check",
+  "siteCheck.rule.sampleDetails.pass": "No examples or sample contact details left",
+  "siteCheck.rule.sampleDetails.fail.one": "1 place still has an example or a sample detail",
+  "siteCheck.rule.sampleDetails.fail.other": "{count} places still have examples or sample details",
   "siteCheck.rule.pageTitles": "Page titles",
   "siteCheck.rule.pageTitles.pass": "Every page has a title",
   "siteCheck.rule.pageTitles.fail.one": "1 page has no title",
@@ -293,6 +295,8 @@ export const siteCheck = {
   "siteCheck.detail.publishedYear": "Shows {year}",
   "siteCheck.detail.selector": "{selector}: nothing on your site matches it",
   "siteCheck.detail.draftPage": "Goes to {page}, a draft",
+  // The first detail in a text marked as an example (#1228): "01632 960123 looks like an example".
+  "siteCheck.detail.example": "{detail} looks like an example",
 
   // Fixes, each one undo step.
   "siteCheck.history.renamed": "Renamed the file of {item}",
@@ -322,6 +326,8 @@ export const siteCheck = {
   "siteCheck.bundle.failed.read-only": "The file couldn't be kept: the site file can't be changed.",
   "siteCheck.bundle.failed.unknown": "The file couldn't be kept with your site.",
   "siteCheck.history.titled": "Gave {item} a title",
+  // *This is correct* on a text marked as an example (#1228): "Kept Testimonial's example as correct".
+  "siteCheck.history.confirmedExample": "Kept {item}'s example as correct",
 
   // Export stops for what must be fixed (X5).
   "siteCheck.exportBlocked.one": "Fix 1 thing in Site Check before exporting",

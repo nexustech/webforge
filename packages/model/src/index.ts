@@ -99,9 +99,29 @@ export {
   themeSchema,
 } from "./documents.js";
 export { escapeHtml, escapeHtmlText, escapeRegExp } from "./escape.js";
+export {
+  clearEditedExamples,
+  clearExample,
+  type ExampleMarks,
+  exampleFields,
+  exampleKey,
+  exampleMarksSchema,
+  isExample,
+  markExamples,
+  markTestimonial,
+  TESTIMONIAL_EXAMPLE,
+} from "./examples.js";
 export type { ExportChoices } from "./export-choices.js";
 export { DEFAULT_EXPORT_CHOICES, exportChoicesSchema } from "./export-choices.js";
 export { exportedAddress, exportedSiteAddress, exportedTitle } from "./exported-page.js";
+export {
+  type FactDetail,
+  type FactKind,
+  factDetailsIn,
+  factKeysIn,
+  settingsFactKeys,
+  unknownFactsIn,
+} from "./facts.js";
 export { safeFileName } from "./file-names.js";
 export type {
   FileTransferDestination,

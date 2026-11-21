@@ -149,6 +149,12 @@ export type ComponentDef = {
    */
   readonly titleField?: string;
   /**
+   * Props over its `defaults` that a preview of it draws (the Add panel's, #1175), never placed on
+   * a page: what it shows once filled in where its defaults leave it empty, such as a Gallery's
+   * images. Each slot's nodes need ids of their own.
+   */
+  readonly sample?: Readonly<Record<string, unknown>>;
+  /**
    * Its place on Theme Studio's sample page (CT-11, #982), from 1: the sections that between them
    * show every colour role, text style, button and card.
    */

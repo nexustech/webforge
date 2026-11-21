@@ -1,5 +1,11 @@
 import { t } from "@webforge/i18n";
-import type { NodeDoc, SharedSectionId, Theme } from "@webforge/model";
+import type {
+  BindableSetting,
+  NodeDoc,
+  SharedSectionId,
+  SiteCollection,
+  Theme,
+} from "@webforge/model";
 import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
@@ -19,11 +25,15 @@ import type { AddItem } from "../editor/add-item.js";
 import { type CompileCanvasCss, classesOfHtml, SITE_CSS_DEBOUNCE_MS } from "../editor/site-css.js";
 import { reportFailure } from "../log.js";
 
-/** How wide a section is drawn for its preview, in CSS pixels, before it is scaled down. */
-const DRAWN_WIDTH = 1280;
+/**
+ * How wide a section is drawn for its preview, in CSS pixels, before it is scaled down: wide enough
+ * for its desktop layout (above Tailwind's `md`), and small enough that its text reads at a third
+ * of its size (#1175).
+ */
+const DRAWN_WIDTH = 960;
 
-/** How wide and at most how tall the preview is on screen. */
-const PREVIEW = { width: 320, height: 200 } as const;
+/** How wide, and at least and at most how tall, the preview is on screen (#1175). */
+const PREVIEW = { width: 320, minHeight: 120, height: 240 } as const;
 
 /** How much the drawn section is scaled down to fit the preview's width. */
 const SCALE = PREVIEW.width / DRAWN_WIDTH;
@@ -98,7 +108,8 @@ function PreviewFrame({ drawn }: { readonly drawn: Drawn }) {
     registerFontFaces(element.ownerDocument, drawn.fontFaces);
     const root = element.shadowRoot ?? element.attachShadow({ mode: "open" });
     const style = document.createElement("style");
-    style.textContent = `${drawn.css}\n.wf-preview { width: ${DRAWN_WIDTH}px; transform: scale(${SCALE}); transform-origin: top left; }`;
+    // At least its smallest height, a short section (an Announcement bar) in its middle.
+    style.textContent = `${drawn.css}\n.wf-preview { width: ${DRAWN_WIDTH}px; min-height: ${PREVIEW.minHeight / SCALE}px; display: flex; flex-direction: column; justify-content: center; transform: scale(${SCALE}); transform-origin: top left; }`;
     const page = document.createElement("div");
     page.className = `wf-preview ${drawn.pageClass}`;
     // daisyUI's theme colours are set for `:root` or `[data-theme]`; a shadow root has no `:root`.
@@ -126,20 +137,74 @@ function PreviewFrame({ drawn }: { readonly drawn: Drawn }) {
   );
 }
 
+/** A sample post of a Latest posts preview: its title, the 1st of `month` 2026 and a summary. */
+const samplePost = (title: string, month: number): SiteCollection["items"][number] => ({
+  pageId: `sample-post-${month}`,
+  path: `blog/sample-post-${month}`,
+  values: {
+    title: { kind: "text", text: title },
+    date: { kind: "date", date: `2026-${String(month).padStart(2, "0")}-01` },
+    summary: { kind: "text", text: t("add.sample.postSummary") },
+  },
+});
+
+/**
+ * What a section's larger preview is drawn with (#1175): the editor's context, with sample contact
+ * details, opening hours and posts where a section shows the site's, and the space a picture takes
+ * where there's none yet. What the section looks like once filled in, never the site's own details,
+ * and none of the canvas's hints. A Video or a Map shows its title and text: a sample address
+ * would load the video or map from the web.
+ */
+/**
+ * A button without its link yet greyed out, as the canvas draws it (#1256), without the hint's
+ * words, which would be too small to read in a preview.
+ */
+const UNLINKED_BUTTONS: Pick<RenderContext, "elementHint"> = {
+  elementHint: (missing) => (missing === "buttonLink" ? "" : undefined),
+};
+
+export function previewContext(): RenderContext {
+  const settings: Partial<Record<BindableSetting, string>> = {
+    "general.name": t("add.sample.businessName"),
+    "contact.businessName": t("add.sample.businessName"),
+    "contact.phone": t("add.sample.phone"),
+    "contact.email": t("add.sample.email"),
+    "contact.address": t("add.sample.address"),
+  };
+  const posts: SiteCollection = {
+    id: "sample-blog",
+    name: "",
+    folder: "blog",
+    items: [
+      samplePost(t("add.sample.post1"), 11),
+      samplePost(t("add.sample.post2"), 10),
+      samplePost(t("add.sample.post3"), 9),
+    ],
+  };
+  return {
+    ...EDITOR_RENDER_CONTEXT,
+    setting: (key) => settings[key],
+    openingHours: [
+      { days: ["mon", "tue", "wed", "thu", "fri"], opens: "09:00", closes: "17:00" },
+      { days: ["sat"], opens: "10:00", closes: "14:00" },
+    ],
+    posts: () => posts,
+    // Defined, so an image not chosen yet draws the space it takes, as on the canvas: a Gallery's,
+    // a logo's, a team member's photo.
+    emptyImage: () => null,
+    ...UNLINKED_BUTTONS,
+  };
+}
+
 /** `node` as the export writes it, in `theme` with its kind's look, with the CSS its classes need. */
 async function drawNode(
   source: Pick<PreviewSource, "library" | "compileCss">,
   node: NodeDoc,
   theme: Theme,
+  base: RenderContext = { ...EDITOR_RENDER_CONTEXT, ...UNLINKED_BUTTONS },
 ): Promise<Drawn | undefined> {
-  // With the theme's look for its kind, as the canvas will draw it once added (3.12). A button
-  // without its link yet greyed out, as the canvas draws it (#1256), without the hint's words,
-  // which would be too small to read here.
-  const context: RenderContext = {
-    ...EDITOR_RENDER_CONTEXT,
-    ...(theme.looks === undefined ? {} : { looks: theme.looks }),
-    elementHint: (missing) => (missing === "buttonLink" ? "" : undefined),
-  };
+  // With the theme's look for its kind, as the canvas will draw it once added (3.12).
+  const context = theme.looks === undefined ? base : { ...base, looks: theme.looks };
   const html = renderNodesToHtml([node], source.library, context);
   const result = await source.compileCss({
     theme,
@@ -196,6 +261,16 @@ function SectionPreview({
   );
 }
 
+/** Markup a person sees something of: words, or a picture, a field or a button. */
+const VISIBLE_PART = /<(img|svg|picture|video|iframe|input|textarea|select|button)\b/;
+
+/**
+ * Whether `html` shows anything (#1175): a Section with nothing in it yet draws an empty box, and
+ * its preview would be an empty card.
+ */
+export const showsAnything = (html: string) =>
+  VISIBLE_PART.test(html) || html.replace(/<[^>]*>/g, "").trim() !== "";
+
 /** What a preview draws: a component type, or a shared section by its id. */
 type PreviewItem = Pick<AddItem, "type" | "sharedSectionId">;
 
@@ -230,8 +305,23 @@ function createPreviews(
     string,
     (node: NodeDoc | undefined, theme: Theme) => Promise<Drawn | undefined>
   >();
-  // A library section's node, with its defaults: made once, so its drawing is kept.
+  // A library section's node, with its defaults and its sample (#1175): made once, so its drawing
+  // is kept.
   const defaults = new Map<string, NodeDoc>();
+  // Library sections are drawn as they look once filled in (#1175); shared ones as the site has them.
+  const sampleContext = previewContext();
+  const contextOf = (item: PreviewItem) =>
+    item.sharedSectionId === undefined ? sampleContext : EDITOR_RENDER_CONTEXT;
+  // Whether each node, drawn as its item is, shows anything: no card for one that shows nothing.
+  const shown = new WeakMap<NodeDoc, boolean>();
+  const showsSomething = (item: PreviewItem, node: NodeDoc) => {
+    let shows = shown.get(node);
+    if (shows === undefined) {
+      shows = showsAnything(renderNodesToHtml([node], source.library, contextOf(item)));
+      shown.set(node, shows);
+    }
+    return shows;
+  };
   const nodeOf = (item: PreviewItem): NodeDoc | undefined => {
     if (item.sharedSectionId !== undefined) return source.sharedSection(item.sharedSectionId);
     const definition = source.library.components[item.type];
@@ -239,7 +329,14 @@ function createPreviews(
     if (definition === undefined || !places.has(definition.place ?? "element")) return undefined;
     let node = defaults.get(item.type);
     if (node === undefined) {
-      node = { type: item.type, props: { ...structuredClone(definition.defaults), id: "preview" } };
+      node = {
+        type: item.type,
+        props: {
+          ...structuredClone(definition.defaults),
+          ...structuredClone(definition.sample ?? {}),
+          id: "preview",
+        },
+      };
       defaults.set(item.type, node);
     }
     return node;
@@ -251,7 +348,7 @@ function createPreviews(
         if (node === undefined) return Promise.resolve(undefined);
         const kept = drawings.get(item.type);
         if (kept !== undefined && kept.node === node && kept.theme === theme) return kept.drawing;
-        const drawing = drawNode(source, node, theme).catch((error: unknown) => {
+        const drawing = drawNode(source, node, theme, contextOf(item)).catch((error: unknown) => {
           // No preview: the Add panel shows the section's name alone.
           reportFailure("add.preview", error);
           return undefined;
@@ -285,8 +382,9 @@ function createPreviews(
     }
     return get;
   };
-  return (item, theme) =>
-    nodeOf(item) === undefined ? null : (
+  return (item, theme) => {
+    const node = nodeOf(item);
+    return node === undefined || !showsSomething(item, node) ? null : (
       <SectionPreview
         draw={drawerFor(item)}
         subscribe={subscribe}
@@ -294,6 +392,7 @@ function createPreviews(
         node={nodeFor(item)}
       />
     );
+  };
 }
 
 /** The widths an item's preview draws it at, in CSS pixels: the canvas's Desktop and Mobile. */
