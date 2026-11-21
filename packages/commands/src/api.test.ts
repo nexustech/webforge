@@ -243,6 +243,34 @@ describe("the command API's commands (4.8)", () => {
     expect(history.state.getState().entries).toEqual([]);
   });
 
+  it("sets one of the theme's own colours on a field, and refuses one it doesn't have (TC-1a)", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const location = home(history);
+    const colour = { location, nodeId: "heading", values: { lookColor: "own-sky-300/50" } };
+
+    const missing = await api.run("updateFields", colour, app);
+    expect(missing).toMatchObject({
+      status: "not-found",
+      message: expect.stringContaining('"sky"'),
+    });
+    expect(history.state.getState().entries).toEqual([]);
+
+    const sky = { id: "sky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } };
+    expect((await api.run("setThemeTokens", { tokens: { ownColors: [sky] } }, app)).status).toBe(
+      "done",
+    );
+    expect(history.document.getState().theme.ownColors).toEqual([sky]);
+    expect((await api.run("updateFields", colour, app)).status).toBe("done");
+    // A text that reads like one is only text.
+    const text = { location, nodeId: "heading", values: { text: "own-moss" } };
+    expect((await api.run("updateFields", text, app)).status).toBe("done");
+    // An id that CSS would read as syntax is refused, changing nothing.
+    const unsafe = { tokens: { ownColors: [{ ...sky, id: "sky;}body{color:red" }] } };
+    expect((await api.run("setThemeTokens", unsafe, app)).status).toBe("invalid");
+    expect(history.document.getState().theme.ownColors).toEqual([sky]);
+  });
+
   it("edits text and fields, moves and removes elements", async () => {
     const { history, host } = setup();
     const api = createCommandApi(host);
