@@ -133,8 +133,11 @@ export function describePlace(
     case "media":
       return String(values.name ?? site.media[place.mediaId]?.fileName ?? place.mediaId);
     case "theme":
+      // In the Theme tab's words (#1174): "Brand is hard to read on Third surface".
       return t(
-        String(values.palette) === "inverse" ? "siteCheck.place.reversed" : "siteCheck.place.theme",
+        String(values.palette) === "inverse"
+          ? "siteCheck.place.reversed"
+          : "theme.contrast.hardToRead",
         { foreground: colourName(values.foreground), background: colourName(values.background) },
       );
     case "address":

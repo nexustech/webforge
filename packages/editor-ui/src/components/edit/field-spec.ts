@@ -105,7 +105,16 @@ type FieldSpecs = {
    * Drawn by the app: one of the theme's colours (the Theme tab, 2.3a), and what it says about the
    * colour's contrast with those it is used with, already translated: nothing when it passes AA.
    */
-  readonly themeColor: { readonly warnings: readonly string[] };
+  readonly themeColor: {
+    readonly warnings: readonly string[];
+    /** Its hex code beside the picker; not in Simple mode's Theme tab (LF-16). Shown unless false. */
+    readonly code?: boolean | undefined;
+    /**
+     * A shade of it that reads with every colour it's used with, offered under the warnings
+     * (#1174): its value, and a button's words for choosing it, already translated.
+     */
+    readonly suggestion?: { readonly value: unknown; readonly label: string } | undefined;
+  };
   /** Drawn by the app: one of the fonts the app has, chosen in the font picker (2.3a, UX-15). */
   readonly font: Nothing;
   /**

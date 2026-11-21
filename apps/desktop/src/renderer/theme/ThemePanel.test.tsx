@@ -4,7 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { t } from "@webforge/i18n";
 import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { starterSite } from "../../shared/starter-site.js";
+import { createPreferencesStore } from "../shell/preferences-store.js";
 import { registriesForTest, sessionWith } from "../testing/fixtures.js";
 import { createOwnThemes } from "./own-themes.js";
 import { registerThemePanel } from "./register-theme-panel.js";
@@ -33,7 +35,7 @@ describe("the Theme tab (2.3a)", () => {
   });
 
   it("shows the theme as rows in groups: its preset, colours, fonts, sizes and tokens", () => {
-    render(<ThemePanel session={sessionWith()} />);
+    render(<ThemePanel session={sessionWith()} advanced />);
 
     expect(screen.getByRole("heading", { name: "Theme: Light" })).toBeTruthy();
     expect((screen.getByRole("combobox", { name: "Theme" }) as HTMLSelectElement).value).toBe(
@@ -70,7 +72,7 @@ describe("the Theme tab (2.3a)", () => {
 
   it("makes a token's change one labelled step", async () => {
     const session = sessionWith();
-    render(<ThemePanel session={session} />);
+    render(<ThemePanel session={session} advanced />);
 
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "Card style" }), "raised");
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "Heading 2" }), "4xl");
@@ -93,27 +95,90 @@ describe("the Theme tab (2.3a)", () => {
     expect(await screen.findByRole("heading", { name: "Theme: Atelier" })).toBeTruthy();
   });
 
-  it("says when a colour is hard to read with those it's used with (WCAG AA)", async () => {
+  it("says when a colour is hard to read with those it's used with, in words, the ratio in Advanced mode (WCAG AA, #1174)", () => {
     const site = starterSite();
     // A pale brand colour: its own text, and the brand as text on the page, both fail.
     site.theme.colors.primary = { l: 0.85, c: 0.08, h: 277 };
-    render(<ThemePanel session={sessionWith(site)} />);
+    const { unmount } = render(<ThemePanel session={sessionWith(site)} />);
 
-    const brand = colourPicker("Brand").closest("[data-field]");
-    if (!(brand instanceof HTMLElement)) throw new Error("no Brand row");
+    const row = (name: string) => {
+      const found = colourPicker(name).closest("[data-field]");
+      if (!(found instanceof HTMLElement)) throw new Error(`no ${name} row`);
+      return found;
+    };
+    // As Site Check's row says it.
+    expect(within(row("Brand")).getByText("Text on Brand is hard to read on Brand")).toBeTruthy();
+    expect(within(row("Brand")).getByText("Brand is hard to read on Surface")).toBeTruthy();
+    expect(row("Accent").textContent).not.toMatch(/hard to read/);
+    unmount();
+
+    render(<ThemePanel session={sessionWith(site)} advanced />);
     expect(
-      within(brand).getByText(/Hard to read with Text on Brand: [\d.]+:1, needs 4.5:1\./),
+      within(row("Brand")).getByText(/^Brand is hard to read on Surface: [\d.]+:1, needs 4\.5:1$/),
     ).toBeTruthy();
-    expect(
-      within(brand).getByText(/Hard to read with Surface: [\d.]+:1, needs 4.5:1\./),
-    ).toBeTruthy();
-    expect(colourPicker("Accent").closest("[data-field]")?.textContent).not.toMatch(/Hard to read/);
   });
 
-  it("changes a colour from its hex code at once, asking nothing (LF-15)", async () => {
+  it("offers a shade that reads beside a colour that doesn't, which takes the warnings away in one step (#1174)", async () => {
+    const site = starterSite();
+    site.theme.colors.primary = { l: 0.85, c: 0.08, h: 277 };
+    const session = sessionWith(site);
+    render(<ThemePanel session={session} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Use a darker shade" }));
+
+    await vi.waitFor(() => expect(labels(session)).toEqual(["Changed brand colour"]));
+    const brand = session.history.document.getState().theme.colors.primary;
+    // Its own hue and chroma, as close as a screen shows them.
+    expect(brand.c).toBeCloseTo(0.08, 2);
+    expect(Math.abs(brand.h - 277)).toBeLessThan(1);
+    expect(brand.l).toBeLessThan(0.85);
+    expect(screen.queryByText(/hard to read/)).toBeNull();
+    expect(screen.queryByRole("button", { name: /shade/ })).toBeNull();
+  });
+
+  it("shows no codes in Simple mode: no hex codes, and one text size for the site (LF-16)", async () => {
+    const session = sessionWith();
+    const { container } = render(<ThemePanel session={session} />);
+
+    expect(screen.queryByRole("textbox", { name: /hex code/ })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Heading 1" })).toBeNull();
+    expect(container.textContent).not.toMatch(/#[0-9a-f]{6}|\d\s?px\b/i);
+    const size = screen.getByRole("combobox", { name: "Text size" }) as HTMLSelectElement;
+    expect([...size.options].map((option) => option.text)).toEqual([
+      "Smaller",
+      "Standard",
+      "Larger",
+    ]);
+    expect(size.value).toBe("standard");
+
+    await userEvent.selectOptions(size, "larger");
+
+    const scale = session.history.document.getState().theme.typeScale;
+    // Every style a size larger than the theme has it.
+    expect([scale.h1.size, scale.h2.size, scale.body.size, scale.small.size]).toEqual([
+      "6xl",
+      "4xl",
+      "xl",
+      "base",
+    ]);
+    expect(labels(session)).toEqual(["Changed text size"]);
+    expect(size.value).toBe("larger");
+  });
+
+  it("says Your own for sizes set one by one, in Theme Studio or Advanced mode (LF-16)", () => {
+    const site = starterSite();
+    site.theme.typeScale.h2.size = "4xl";
+    render(<ThemePanel session={sessionWith(site)} />);
+
+    const size = screen.getByRole("combobox", { name: "Text size" }) as HTMLSelectElement;
+    expect(size.value).toBe("own");
+    expect(size.selectedOptions[0]?.text).toBe("Your own");
+  });
+
+  it("changes a colour from its hex code at once in Advanced mode, asking nothing (LF-15)", async () => {
     const session = sessionWith();
     const siteWide = { confirmSiteWide: vi.fn(() => Promise.resolve(true)) };
-    render(<ThemePanel session={session} siteWide={siteWide} />);
+    render(<ThemePanel session={session} siteWide={siteWide} advanced />);
 
     const hex = screen.getByRole("textbox", { name: "Accent hex code" });
     await userEvent.clear(hex);
@@ -164,6 +229,42 @@ describe("the Theme tab's reveal (3.12, CT-3)", () => {
     const row = document.querySelector('[data-field="token.shadow"]');
     expect(row?.contains(document.activeElement)).toBe(true);
     remove();
+  });
+
+  it("reveals Simple mode's Text size for a text style's size, and the style's own in Advanced", () => {
+    const { panels } = registriesForTest();
+    const remove = registerThemePanel(panels, sessionWith());
+    const Theme = panels.list()[0]?.component;
+    if (Theme === undefined) throw new Error("not registered");
+    // As the Edit panel's "Theme's: Heading 2" asks (provenance), in Simple mode (LF-16).
+    panels.show("theme", "textSize.h2");
+    const { unmount } = render(<Theme />);
+    expect(
+      document.querySelector('[data-field="textScale"]')?.contains(document.activeElement),
+    ).toBe(true);
+    unmount();
+    remove();
+
+    const advanced = createPreferencesStore({
+      preferences: { ...DEFAULT_PREFERENCES, editorLevel: "advanced" },
+    });
+    const removeAdvanced = registerThemePanel(
+      panels,
+      sessionWith(),
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      advanced,
+    );
+    const InMode = panels.list()[0]?.component;
+    if (InMode === undefined) throw new Error("not registered");
+    panels.show("theme", "textSize.h2");
+    render(<InMode />);
+    expect(
+      document.querySelector('[data-field="textSize.h2"]')?.contains(document.activeElement),
+    ).toBe(true);
+    removeAdvanced();
   });
 
   it("opens Theme Studio's Components at a kind's look", () => {

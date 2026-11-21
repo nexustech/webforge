@@ -20,6 +20,7 @@ import {
   catalogueFont,
   contrastIssues,
   FONT_PAIRINGS,
+  readableShade,
   THEME_PRESETS,
   themePreset,
 } from "@webforge/themes";
@@ -44,11 +45,14 @@ import {
   setColor,
   setFont,
   setPairing,
+  setTextScale,
   setTextSize,
   setToken,
   switchPreset,
+  TEXT_SCALES,
   type ThemeAsks,
   type ThemeSiteWide,
+  textScaleOf,
   themeName,
 } from "./theme-edits.js";
 import { named } from "./theme-words.js";
@@ -58,6 +62,9 @@ const FONT_ROLES = ["heading", "body", "accent"] as const;
 
 /** The pairing value of fonts that are no pairing: the person's own choice. */
 const OWN_PAIRING = "own";
+
+/** Simple mode's text size value of sizes set one by one, in Theme Studio or Advanced mode. */
+const OWN_SCALE = "own";
 
 const RENDERERS = themeFieldRenderers();
 
@@ -71,23 +78,40 @@ const GROUPS = {
 
 /**
  * What `role`'s contrast lacks in the page colours (below WCAG AA), from the theme's `issues`, as
- * its field says it.
+ * its field says it: in Site Check's words (#1174), with the ratio in Advanced mode.
  * Reversed sections' colours are Theme Studio's to check and change (2.3b): the tab changes only
  * their brand colours' hue (#200), and many presets have a pair there below AA already (#312).
  */
-function contrastWarnings(issues: readonly ContrastIssue[], role: ColorRole): string[] {
+function contrastWarnings(
+  issues: readonly ContrastIssue[],
+  role: ColorRole,
+  advanced: boolean,
+): string[] {
   return issues.flatMap((issue) => {
     if (issue.palette !== "colors") return [];
     if (issue.background !== role && issue.foreground !== role) return [];
-    const other = ROLE_NAMES[issue.background === role ? issue.foreground : issue.background];
+    const pair = {
+      foreground: t(ROLE_NAMES[issue.foreground]),
+      background: t(ROLE_NAMES[issue.background]),
+    };
     return [
-      t("theme.contrast.low", {
-        other: t(other),
-        ratio: shownRatio(issue.ratio),
-        needed: issue.required,
-      }),
+      advanced
+        ? t("theme.contrast.hardToReadRatio", {
+            ...pair,
+            ratio: shownRatio(issue.ratio),
+            needed: issue.required,
+          })
+        : t("theme.contrast.hardToRead", pair),
     ];
   });
+}
+
+/** A shade of `role` that reads with every colour it's used with, where it doesn't (#1174). */
+function suggestedShade(theme: ThemeTokens, role: ColorRole) {
+  const shade = readableShade(theme, role);
+  if (shade === undefined) return undefined;
+  const darker = shade.l < theme.colors[role].l;
+  return { value: shade, label: t(darker ? "theme.contrast.darker" : "theme.contrast.lighter") };
 }
 
 /** The pairing `theme`'s fonts are, if they are one. */
@@ -103,9 +127,14 @@ const ownValue = (theme: Pick<OwnTheme, "own">) => `own:${theme.own.id}`;
 
 /**
  * The Theme tab's fields for `theme`, in its groups. Its theme list has the person's own themes
- * first (`own`, 2.23), then the built-in ones.
+ * first (`own`, 2.23), then the built-in ones. Simple mode shows no codes (LF-16): each colour
+ * without its hex code, and one text size for the site, not a size for each style.
  */
-function themeFields(theme: ThemeTokens, own: readonly OwnTheme[]): EditPanelField[] {
+function themeFields(
+  theme: ThemeTokens,
+  own: readonly OwnTheme[],
+  advanced: boolean,
+): EditPanelField[] {
   const field = (spec: EditPanelField) => spec;
   const pairing = pairingOf(theme);
   const issues = contrastIssues(theme);
@@ -136,7 +165,9 @@ function themeFields(theme: ThemeTokens, own: readonly OwnTheme[]): EditPanelFie
         group: "content",
         optionGroup: GROUPS.colors,
         label: t(COLOR_WORDS[role].name),
-        warnings: contrastWarnings(issues, role),
+        warnings: contrastWarnings(issues, role, advanced),
+        code: advanced,
+        suggestion: suggestedShade(theme, role),
         value: theme.colors[role],
       }),
     ),
@@ -167,7 +198,8 @@ function themeFields(theme: ThemeTokens, own: readonly OwnTheme[]): EditPanelFie
         value: theme.fonts[which],
       }),
     ),
-    ...TEXT_STYLES.map((style) =>
+    ...(advanced ? [] : [textScaleField(theme)]),
+    ...(advanced ? TEXT_STYLES : []).map((style) =>
       field({
         kind: "select",
         name: `textSize.${style}`,
@@ -207,6 +239,23 @@ function themeFields(theme: ThemeTokens, own: readonly OwnTheme[]): EditPanelFie
   ];
 }
 
+/** Simple mode's one text size for the site (LF-16), "Your own" once sized style by style. */
+function textScaleField(theme: ThemeTokens): EditPanelField {
+  const scale = textScaleOf(theme);
+  return {
+    kind: "select",
+    name: "textScale",
+    group: "content",
+    optionGroup: GROUPS.textSizes,
+    label: t("theme.textScale"),
+    options: [
+      ...TEXT_SCALES.map((each) => ({ label: t(`theme.textScale.${each}`), value: each })),
+      ...(scale === undefined ? [{ label: t("theme.textScale.own"), value: OWN_SCALE }] : []),
+    ],
+    value: scale ?? OWN_SCALE,
+  };
+}
+
 /** Props of {@link ThemePanel}. */
 export type ThemePanelProps = {
   readonly session: EditorSession;
@@ -226,6 +275,11 @@ export type ThemePanelProps = {
   readonly reveal?: StoreApi<{ readonly field?: string | undefined }> | undefined;
   /** The computer's fonts for the font picker: the preload API's (#668). */
   readonly fonts?: (() => FontsApi) | undefined;
+  /**
+   * Advanced mode: each colour's hex code and contrast ratio, and a size for each text style. In
+   * Simple mode, the default, the tab shows no codes (LF-16).
+   */
+  readonly advanced?: boolean | undefined;
 };
 
 /** No field to reveal: the tab drawn without a registration's requests. */
@@ -246,6 +300,7 @@ export function ThemePanel({
   ownThemes,
   reveal,
   fonts,
+  advanced = false,
 }: ThemePanelProps) {
   const theme = useDocument(session, (site) => site.theme);
   const [renderers] = useState(() =>
@@ -255,11 +310,14 @@ export function ThemePanel({
   const field = useStore(reveal ?? NO_REVEAL, (state) => state.field);
   useEffect(() => {
     if (field === undefined) return;
-    const row = root.current?.querySelector<HTMLElement>(`[data-field="${CSS.escape(field)}"]`);
+    // A style's size is Simple mode's one Text size there (LF-16): the Edit panel's "Theme's:
+    // Heading 2" still lands on what sets it.
+    const shown = !advanced && field.startsWith("textSize.") ? "textScale" : field;
+    const row = root.current?.querySelector<HTMLElement>(`[data-field="${CSS.escape(shown)}"]`);
     row?.scrollIntoView({ block: "center" });
     row?.querySelector<HTMLElement>("input, select, button, [tabindex]")?.focus();
     reveal?.setState({ field: undefined });
-  }, [field, reveal]);
+  }, [field, reveal, advanced]);
   const own = useOwnThemeList(ownThemes, theme);
   useEffect(() => {
     void ownThemes?.refresh();
@@ -282,6 +340,9 @@ export function ThemePanel({
       const font = fontRefSchema.safeParse(value);
       const which = FONT_ROLES.find((each) => each === rest);
       if (font.success && which !== undefined) void setFont(session, asks, which, font.data);
+    } else if (name === "textScale") {
+      const scale = TEXT_SCALES.find((each) => each === value);
+      if (scale !== undefined) void setTextScale(session, asks, scale);
     } else if (kind === "textSize") {
       const style = TEXT_STYLES.find((each) => each === rest);
       const size = TEXT_SIZES.find((each) => each === value);
@@ -320,7 +381,7 @@ export function ThemePanel({
             })}
             itemKey="theme"
             single
-            fields={themeFields(theme, own)}
+            fields={themeFields(theme, own, advanced)}
             onChange={onChange}
             // Each change is its own step as it's made: nothing waits for the field to be left.
             onCommit={() => undefined}
