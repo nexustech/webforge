@@ -101,6 +101,24 @@ async function edgeOf(n: number) {
   return { x: box.x + 4, y: box.y + box.height / 2 };
 }
 
+/**
+ * Selects row `n` by a click on its edge, as a person does, until the Edit panel shows a Table row,
+ * and gives the point clicked. A click that selected nothing, or the Table, on CI's Linux runner
+ * (#1272) is tried again, from the row's box as it is then; one that keeps missing says what the
+ * Edit panel shows instead.
+ */
+async function selectRow(n: number) {
+  const heading = right().getByRole("heading", { name: "Table row" });
+  let edge = await edgeOf(n);
+  await expect(async () => {
+    edge = await edgeOf(n);
+    await page.mouse.click(edge.x, edge.y);
+    const shown = (await right().getByRole("heading").first().textContent()) ?? "nothing";
+    await expect(heading, `the Edit panel shows ${shown}`).toBeVisible({ timeout: 5_000 });
+  }).toPass(LAYOUT_WAIT);
+  return edge;
+}
+
 /** The box of `locator`'s element in its own document, at the canvas's own scale. */
 const ownBox = (locator: Locator) =>
   locator.evaluate((element) => {
@@ -151,9 +169,7 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
 
   // On its edge, in its first cell's padding, as a person selects it: not on its text, where a
   // pointer that has made the text editable starts an edit instead (#1209).
-  const edge = await edgeOf(0);
-  await page.mouse.click(edge.x, edge.y);
-  await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible(LAYOUT_WAIT);
+  await selectRow(0);
   await expect(right().getByRole("textbox", { name: "Column 2" })).toBeVisible();
   await expect(right().getByRole("textbox", { name: "Column 3" })).toHaveCount(0);
 
@@ -177,9 +193,7 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   await placeTable();
 
   // Selected, Puck's outline fits the row.
-  const start = await edgeOf(0);
-  await page.mouse.click(start.x, start.y);
-  await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible(LAYOUT_WAIT);
+  const start = await selectRow(0);
   const overlay = canvas().locator(OVERLAY).first();
   await expect
     .poll(
