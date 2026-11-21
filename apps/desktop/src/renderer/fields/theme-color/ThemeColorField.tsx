@@ -121,7 +121,7 @@ export function ThemeColorField({
           )}
           disabled={disabled}
           onClick={() => {
-            // As it is, not through a hex code, whose rounding could take it back below AA.
+            // As it is: the colour whose contrast was checked, not one rebuilt from text.
             setTyped(null);
             setOffers(offers + 1);
             onChange(suggested.data);

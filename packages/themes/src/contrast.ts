@@ -1,6 +1,8 @@
 import type { ColorRole, Oklch, ThemeTokens } from "@webforge/model";
 import {
   contrastRatio,
+  hexOf,
+  hexToOklch,
   inverseColors,
   oklchToSrgb,
   resolveColorRef,
@@ -53,9 +55,12 @@ const SHADE_STEP = 0.01;
 
 /**
  * A shade of page colour `role` that reads with every colour it is paired with (#1174): its hue
- * and chroma at the nearest lightness, darker or lighter, where none of its pairs is below WCAG
+ * and chroma (as much as a screen shows) at the nearest lightness, darker or lighter, where none of its pairs is below WCAG
  * AA. What the Theme tab suggests beside a colour that is hard to read. None when it reads
  * already, or when no lightness does.
+ * Each shade is checked as a screen shows it, through its hex code: a lightness whose chroma sRGB
+ * can't show is clipped (by the export's browser as by `contrastRatio`), and what's suggested is
+ * the colour that is checked, never a brighter one whose contrast differs once drawn.
  */
 export function readableShade(tokens: ThemeTokens, role: ColorRole): Oklch | undefined {
   const pairs = pairsOf(tokens).filter(([background, foreground]) =>
@@ -73,7 +78,7 @@ export function readableShade(tokens: ThemeTokens, role: ColorRole): Oklch | und
   for (let moved = SHADE_STEP; moved <= 1; moved += SHADE_STEP) {
     for (const l of [color.l - moved, color.l + moved]) {
       if (l < 0 || l > 1) continue;
-      const shade = { ...color, l: Math.round(l * 1000) / 1000 };
+      const shade = hexToOklch(hexOf({ ...color, l }));
       if (reads(shade)) return shade;
     }
   }

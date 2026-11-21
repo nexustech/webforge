@@ -155,12 +155,26 @@ describe("readableShade (#1174)", () => {
 
     const shade = readableShade(theme, "primary");
     if (shade === undefined) throw new Error("no shade");
-    expect({ c: shade.c, h: shade.h }).toEqual({ c: pale.c, h: pale.h });
+    // As close as a hex code holds it.
+    expect(Math.abs(shade.c - pale.c)).toBeLessThan(0.005);
+    expect(Math.abs(shade.h - pale.h)).toBeLessThan(1);
     // Darker, as the page is light, and no darker than it needs to be.
     expect(shade.l).toBeLessThan(pale.l);
     expect(pageIssues(withColor("primary", shade), "primary")).toEqual([]);
     const lighter = { ...shade, l: shade.l + 0.01 };
     expect(pageIssues(withColor("primary", lighter), "primary")).not.toEqual([]);
+  });
+
+  it("suggests a colour a screen shows, checked as it is drawn", () => {
+    // A pale vivid yellow: at the lightness that reads on white, sRGB can't show its chroma.
+    const yellow: Oklch = { l: 0.92, c: 0.19, h: 100 };
+    const shade = readableShade(withColor("primary", yellow), "primary");
+    if (shade === undefined) throw new Error("no shade");
+    const drawn = hexToOklch(hexOf(shade));
+    expect(drawn.l).toBeCloseTo(shade.l, 4);
+    expect(drawn.c).toBeCloseTo(shade.c, 4);
+    expect(shade.c).toBeLessThan(yellow.c);
+    expect(pageIssues(withColor("primary", shade), "primary")).toEqual([]);
   });
 
   it("finds one for text too, which reads on every surface", () => {
