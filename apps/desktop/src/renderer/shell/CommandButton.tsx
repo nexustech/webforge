@@ -128,7 +128,7 @@ function MoreMenu({
         <Button
           variant="ghost"
           size="icon"
-          className="w-4"
+          className="w-7"
           aria-label={t("shell.moreOptions", { name })}
         >
           <ChevronDownIcon aria-hidden />

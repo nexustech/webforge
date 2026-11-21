@@ -167,7 +167,7 @@ function AddButton({
       size="sm"
       variant="ghost"
       // Relative: the canvas's drag handle covers the button.
-      className={cn("relative h-6 w-full justify-start px-1.5 font-normal", withMenu && "pr-8")}
+      className={cn("relative h-7 w-full justify-start px-1.5 font-normal", withMenu && "pr-8")}
       disabled={disabled}
       onClick={() => onAdd(item.type)}
     >

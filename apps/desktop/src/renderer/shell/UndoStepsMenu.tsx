@@ -61,7 +61,7 @@ export function UndoStepsMenu({ state: store, undoTo }: UndoStepsMenuProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="-ml-0.5 w-4 [&:disabled_svg]:text-disabled [&_svg]:size-3"
+                className="-ml-0.5 w-7 [&:disabled_svg]:text-disabled [&_svg]:size-3"
                 disabled={disabled}
                 aria-label={t("shell.undoSteps")}
               >

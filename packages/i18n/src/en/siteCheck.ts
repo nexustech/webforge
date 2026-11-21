@@ -53,6 +53,13 @@ export const siteCheck = {
   "siteCheck.rule.placeholders.pass": "No placeholder text left",
   "siteCheck.rule.placeholders.fail.one": "1 text is still a placeholder",
   "siteCheck.rule.placeholders.fail.other": "{count} texts are still placeholders",
+  // A template's made-up email address or phone number, still on the site (#1254).
+  "siteCheck.rule.sampleDetails": "Sample contact details",
+  "siteCheck.rule.sampleDetails.pass": "No sample email addresses or phone numbers",
+  "siteCheck.rule.sampleDetails.fail.one":
+    "1 place still has a sample email address or phone number",
+  "siteCheck.rule.sampleDetails.fail.other":
+    "{count} places still have a sample email address or phone number",
   "siteCheck.rule.pageTitles": "Page titles",
   "siteCheck.rule.pageTitles.pass": "Every page has a title",
   "siteCheck.rule.pageTitles.fail.one": "1 page has no title",
@@ -258,6 +265,7 @@ export const siteCheck = {
   "siteCheck.place.untitled": "Untitled page ({file})",
   "siteCheck.place.contact.address": "Site Settings › Address",
   "siteCheck.place.contact.phone": "Site Settings › Phone number",
+  "siteCheck.place.contact.email": "Site Settings › Email address",
   "siteCheck.place.contact.openingHours": "Site Settings › Opening hours",
   "siteCheck.place.search": "Site Settings › Search engines",
   "siteCheck.place.pages": "Pages",

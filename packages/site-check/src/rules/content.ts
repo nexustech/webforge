@@ -6,9 +6,13 @@ import {
   findBrokenLinks,
   imageValueSchema,
   isDraftPage,
+  isSampleEmail,
+  isSamplePhone,
   linkValueSchema,
+  mayHoldSampleDetail,
   mediaItem,
   publishedSite,
+  sampleDetailsIn,
 } from "@webforge/model";
 import type { Catalogue } from "@webforge/site-components/catalogue-data";
 import {
@@ -339,6 +343,59 @@ export const placeholdersRule: CheckRule = {
             isNamingDefault(text, placed, input.catalogue) ||
             linksToExample(value as string);
       if (placeholder) found.push({ key: fieldKey(placed), place: elementPlace(placed) });
+    });
+    return found;
+  },
+};
+
+/**
+ * Whether `html`, a text or rich text field's value, holds a made-up email address or phone
+ * number. With an email link to an example domain, which is {@link placeholdersRule}'s, only a
+ * sample phone beside it counts: never one finding twice, and never one hidden by the other.
+ */
+function holdsSampleDetail(html: string): boolean {
+  const found = sampleDetailsIn(plainText(html));
+  return linksToExample(html) ? found.some((detail) => !detail.includes("@")) : found.length > 0;
+}
+
+/** Whether `value`, a link field's value, rings a phone number kept for drama and examples. */
+function isSamplePhoneLink(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) return false;
+  const link = linkValueSchema.safeParse(value);
+  return link.success && link.data.kind === "phone" && isSamplePhone(link.data.number);
+}
+
+/**
+ * Made-up contact details (#1254): an email address at a domain kept for examples, or a phone
+ * number kept for drama and examples, as a template's samples are. In Site Settings' email or
+ * phone, an element's text, or a link that rings it, one finding a place; a field bound to Site
+ * Settings is found there. Email links to an example domain are {@link placeholdersRule}'s. *Should
+ * fix*, and *Must fix* to publish: a published site would give it as the business's own. 5.33
+ * (WN-3) widens it to every example a generated site has.
+ */
+export const sampleDetailsRule: CheckRule = {
+  id: "sampleDetails",
+  level: "should",
+  strictOnPublish: true,
+  check: (input) => {
+    const found: Finding[] = [];
+    const { contact } = input.site.settings;
+    if (contact.email !== undefined && isSampleEmail(contact.email)) {
+      found.push({ key: "contact.email", place: { kind: "contact", field: "email" } });
+    }
+    if (contact.phone !== undefined && isSamplePhone(contact.phone)) {
+      found.push({ key: "contact.phone", place: { kind: "contact", field: "phone" } });
+    }
+    eachFieldValue(input, ["text", "richtext", "link"], (placed) => {
+      const { node, field, value } = placed;
+      const bindings = node.props.bindings;
+      if (typeof bindings === "object" && bindings !== null && field in bindings) return;
+      // Most text has no `@` and no digits: passed over before it's made plain (ADR 0016).
+      const sample =
+        typeof value === "string"
+          ? mayHoldSampleDetail(value) && holdsSampleDetail(value)
+          : isSamplePhoneLink(value);
+      if (sample) found.push({ key: fieldKey(placed), place: elementPlace(placed) });
     });
     return found;
   },

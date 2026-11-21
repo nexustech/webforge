@@ -62,7 +62,7 @@ export function ShownMenu({
     "aria-label": label,
     "aria-haspopup": "menu" as const,
     className: cn(
-      "flex size-5 shrink-0 items-center justify-center rounded-sm hover:bg-hover [&_svg]:size-3.5",
+      "flex size-7 shrink-0 items-center justify-center rounded-sm hover:bg-hover [&_svg]:size-3.5",
       shown === "shown" && "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
     ),
     // The row selects on a click: the eye only opens its menu.
