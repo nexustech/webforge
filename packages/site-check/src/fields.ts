@@ -215,24 +215,5 @@ export const fieldKey = ({ on, node, field }: PlacedValue): string =>
 export const elementPlace = ({ on, node }: Pick<PlacedValue, "on" | "node">) =>
   ({ kind: "element", on, nodeId: node.props.id }) as const;
 
-const ENTITIES: Readonly<Record<string, string>> = {
-  amp: "&",
-  lt: "<",
-  gt: ">",
-  quot: '"',
-  "#39": "'",
-  nbsp: " ",
-};
-
-/** The text of rich text's `html`, as a visitor reads it: no tags, single spaces. */
-export function plainText(html: string): string {
-  // Most values are plain already: no tags, no entities.
-  if (!html.includes("<") && !html.includes("&")) return html.replace(/\s+/g, " ").trim();
-  return html
-    .replace(/<\/(p|li|h[1-6])>/gi, " ")
-    .replace(/<br\s*\/?>/gi, " ")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (_, name: string) => ENTITIES[name] ?? "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+/** The text of rich text's `html`, as a visitor reads it: the model's, which commands share. */
+export { plainText } from "@webforge/model";

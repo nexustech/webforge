@@ -120,6 +120,7 @@ export {
   factDetailsIn,
   factKeysIn,
   settingsFactKeys,
+  siteFactKeys,
   unknownFactsIn,
 } from "./facts.js";
 export { safeFileName } from "./file-names.js";
@@ -258,6 +259,7 @@ export {
   slugsInFolder,
   swapPages,
 } from "./pages.js";
+export { plainText } from "./plain-text.js";
 export type { PublishDestination } from "./publish-destinations.js";
 export {
   DESTINATION_NAME_MAX,

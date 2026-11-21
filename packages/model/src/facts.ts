@@ -6,7 +6,9 @@
  * "09:00", "+44 1632 960123" and "01632 960123"), to compare with.
  */
 
+import { plainText } from "./plain-text.js";
 import type { SiteSettings } from "./settings.js";
+import type { SiteDoc } from "./site-doc.js";
 
 /** A kind of detail shaped like a fact. */
 export type FactKind = "email" | "web" | "phone" | "price" | "time" | "day" | "postcode";
@@ -123,5 +125,17 @@ export function settingsFactKeys(settings: SiteSettings): ReadonlySet<string> {
     keys.add(`time:${opens}`);
     keys.add(`time:${closes}`);
   }
+  return keys;
+}
+
+/**
+ * The keys of every detail the site as it is gives: its Site Settings', and those written in its
+ * pages, Header, Footer, shared sections and Blogs' designs. What a generated change to it may
+ * repeat without having made it up (#1228).
+ */
+export function siteFactKeys(site: SiteDoc): ReadonlySet<string> {
+  const keys = new Set(settingsFactKeys(site.settings));
+  const texts = stringsIn([site.pages, site.layout, site.sharedSections, site.collections]);
+  for (const key of factKeysIn(texts.map(plainText))) keys.add(key);
   return keys;
 }
