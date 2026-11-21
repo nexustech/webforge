@@ -34,6 +34,7 @@ import { ContextualToolbarsProvider } from "./shell/contextual-toolbar-context.j
 import { createContextualToolbars } from "./shell/contextual-toolbars.js";
 import { ModeToggle } from "./shell/ModeToggle.js";
 import { OpenSourceLicences } from "./shell/OpenSourceLicences.js";
+import { PanelsMenu } from "./shell/PanelsMenu.js";
 import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
 import { createPreferencesStore, usePreferences } from "./shell/preferences-store.js";
@@ -236,18 +237,27 @@ export function App({
                         onModeChange={(next) => preferences.changeMode(next)}
                       />
                       <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-                      <CommandButton
-                        commandId={COMMAND_IDS.toggleLeftPanels}
-                        icon={<PanelLeftIcon />}
-                      />
-                      <CommandButton
-                        commandId={COMMAND_IDS.toggleDrawer}
-                        icon={<PanelBottomIcon />}
-                      />
-                      <CommandButton
-                        commandId={COMMAND_IDS.toggleRightPanels}
-                        icon={<PanelRightIcon />}
-                      />
+                      {/* One Panels menu while the title bar is narrow (#1195). Written out in
+                          full: Tailwind finds its classes in the source as they are. */}
+                      <div className="hidden @min-[960px]/title-bar:contents">
+                        <CommandButton
+                          commandId={COMMAND_IDS.toggleLeftPanels}
+                          icon={<PanelLeftIcon />}
+                        />
+                        <CommandButton
+                          commandId={COMMAND_IDS.toggleDrawer}
+                          icon={<PanelBottomIcon />}
+                        />
+                        <CommandButton
+                          commandId={COMMAND_IDS.toggleRightPanels}
+                          icon={<PanelRightIcon />}
+                        />
+                      </div>
+                      {/* Hidden as a whole: its tooltip's wrapper, not only its button, so no
+                          empty item takes a gap in a wide title bar. */}
+                      <div className="contents @min-[960px]/title-bar:hidden">
+                        <PanelsMenu />
+                      </div>
                       <div className="mx-1 h-5 w-px bg-border" aria-hidden />
                     </>
                   }

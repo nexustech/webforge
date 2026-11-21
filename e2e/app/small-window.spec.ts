@@ -123,6 +123,71 @@ test("shows the menus' titles again in a wide window, all of it fitting (#1166)"
 });
 
 /**
+ * Text size `zoom` in the smallest window a screen `screen` px wide allows (#1195): the window's
+ * least grows with the text size, to 960 px times it, but no wider than the screen. A smaller
+ * screen is stood in for by lowering the window's least, as only the window's width matters here.
+ */
+async function atTextSize(zoom: number, screen: number): Promise<number> {
+  await page.evaluate(
+    (interfaceZoom) =>
+      (
+        window as unknown as { webforge: { prefs: { set(change: unknown): Promise<unknown> } } }
+      ).webforge.prefs.set({ interfaceZoom }),
+    zoom,
+  );
+  const width = Math.min(Math.round(960 * zoom), screen);
+  await app.evaluate(({ BrowserWindow }, size) => {
+    const main = BrowserWindow.getAllWindows()[0];
+    main?.setMinimumSize(600, 400);
+    main?.setContentSize(size, 700);
+  }, width);
+  // The page's own width at that zoom, in CSS px.
+  const css = Math.floor(width / zoom);
+  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBeGreaterThanOrEqual(css - 1);
+  return css;
+}
+
+for (const [zoom, screen] of [
+  [1.1, 1280],
+  [1.25, 1280],
+  [1.5, 1280],
+  [1.25, 1024],
+] as const) {
+  test(`fits the title bar at ${Math.round(zoom * 100)}% text size on a ${screen} px screen (#1195)`, async () => {
+    const css = await atTextSize(zoom, screen);
+    const banner = page.getByRole("banner");
+    for (const count of ["99 to fix", "99 tips", "No problems"]) {
+      await expectTitleBarFits(count, css);
+    }
+    // Their words still: Design | Content, Site Check's count and Publish.
+    await expect(banner.getByRole("radio", { name: "Design" })).toHaveText("Design");
+    await expect(banner.getByRole("button", { name: "Publish" })).toHaveText("Publish");
+  });
+}
+
+test("folds the panel buttons into one Panels menu in a narrow title bar, ticked as shown (#1195)", async () => {
+  await atTextSize(1.5, 1280);
+  const banner = page.getByRole("banner");
+  // New and Open are in the Menu's File only, and the save status is its tick.
+  await expect(banner.getByRole("button", { name: /^New Site/ })).toBeHidden();
+  await expect(banner.getByRole("status")).toHaveAttribute("data-status", "saved");
+  await expect(banner.getByRole("status")).toHaveText("Saved");
+
+  await expect(banner.getByRole("button", { name: "Show or Hide Left Panels" })).toBeHidden();
+  await banner.getByRole("button", { name: "Show or hide panels" }).click();
+  const bottom = page.getByRole("menuitemcheckbox", { name: /^Bottom Panel/ });
+  await expect(bottom).toHaveAttribute("aria-checked", "false");
+  await bottom.click();
+  await expect(page.getByRole("region", { name: "Bottom panel" })).toBeVisible();
+  await banner.getByRole("button", { name: "Show or hide panels" }).click();
+  await expect(page.getByRole("menuitemcheckbox", { name: /^Bottom Panel/ })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await page.keyboard.press("Escape");
+});
+
+/**
  * The title bar with Site Check showing `count`: whether any two of its controls are over each
  * other or anything is cut off, where Publish ends against the window's own buttons (Windows,
  * Linux), and how wide the search box is, which takes what's left (#1166).
@@ -182,7 +247,8 @@ async function expectTitleBarFits(count: string, width: number, spare = 4): Prom
   );
   expect(layout.overlaps, count).toEqual([]);
   expect(layout.cutOff, count).toBe(false);
-  expect(layout.publishRight, count).toBeLessThanOrEqual(layout.room);
+  // Half a pixel for the zoom's rounding (#1195).
+  expect(layout.publishRight, count).toBeLessThanOrEqual(layout.room + 0.5);
   // The spare is what the search box has over its least, 140 px.
   expect(layout.searchWidth - 140, count).toBeGreaterThanOrEqual(spare);
 }
