@@ -208,7 +208,7 @@ test.describe("editor modes", () => {
     await expect(edit.getByText("https://book.example")).toBeVisible();
 
     // A list item added to the FAQ.
-    await clickOnCanvas(frame.locator(".site-faq h2"));
+    await clickOnCanvas(frame.locator(".site-faq :is(h1, h2)").first());
     await edit.getByRole("button", { name: "Add Question" }).click();
     await expect(frame.locator(".site-faq-item")).toHaveCount(2);
   });

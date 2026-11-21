@@ -44,7 +44,7 @@ const NO_DRAG = "[-webkit-app-region:no-drag]";
 
 /**
  * The 40 px custom title bar (UI1, LF-13, {@link TITLE_BAR_HEIGHT}): app menu (one Menu button
- * below 1280 px, #1166), New and Open, save
+ * below 1280 px, #1166), New and Open (in that menu only, below 960 px, #1195), save
  * status, Undo (with its latest steps) and Redo, the command box with the site name, then panel
  * tools, Site Check, and Preview, Export and Publish, which get a caret once there is more to
  * choose. Its buttons are icons, each named by its command and with a tooltip that gives the
@@ -85,11 +85,14 @@ export function TitleBar({
         <h1 className="sr-only">{t("app.name")}</h1>
         <div className={`flex items-center gap-0.5 ${NO_DRAG}`}>
           {menuBar === undefined ? <AppMenu /> : null}
-          <CommandButton commandId={COMMAND_IDS.newSite} icon={<FilePlusIcon />} />
-          <CommandButton
-            commandId={COMMAND_IDS.openSite}
-            icon={<FolderOpenIcon className="text-warning" />}
-          />
+          {/* In the Menu's File while the title bar is narrow (#1195), as they always are. */}
+          <div className="hidden @min-[960px]/title-bar:contents">
+            <CommandButton commandId={COMMAND_IDS.newSite} icon={<FilePlusIcon />} />
+            <CommandButton
+              commandId={COMMAND_IDS.openSite}
+              icon={<FolderOpenIcon className="text-warning" />}
+            />
+          </div>
           {saveStatus}
           {aiStatus}
           {undo === undefined && redo === undefined ? null : (

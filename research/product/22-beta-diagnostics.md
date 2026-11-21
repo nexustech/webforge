@@ -1,6 +1,6 @@
 # What the beta tells us: a report the tester sends, and sessions
 
-**Status:** ✅ Decided 2026-11-21 ([§6](#6-decisions)): BD-1 to BD-5 are adopted (5 days); BD-6, an upload button, is not taken. Nothing is sent by Webforge itself ([§3](#3-direction)). Not yet planned.
+**Status:** ✅ Decided 2026-11-21 ([§6](#6-decisions)): BD-1 to BD-5 are adopted (5 days); BD-6, an upload button, is not taken. Nothing is sent by Webforge itself ([§3](#3-direction)). Planned as PH5-6: Phase 5 items 5.40–5.43, before the closed beta.
 
 **Date:** 2026-11-21
 
@@ -85,4 +85,13 @@ Product owner, 2026-11-21: "Beta diagnostics adopt BD-1 to BD-5".
 | BD-5 | ✅ **Adopted:** a random number for each install, reset by **Clear**              |
 | BD-6 | ❌ **Not taken:** an upload button. Webforge sends nothing by itself              |
 
-5 days in all. Not yet planned: the plan items, their issues and their place before the beta follow in `spec/04`.
+5 days in all. **Planned as PH5-6** (21 Nov 2026, [the plan's §3](../../spec/04-implementation-plan.md#3-timeline)): they join Phase 5 and land before testers get a build (5.7), with the dates unchanged (PH5-2).
+
+| Item | Issue                                                      | Decisions  | Days | Stream                                          |
+| ---- | ---------------------------------------------------------- | ---------- | ---- | ----------------------------------------------- |
+| 5.40 | [#1263](https://github.com/nexustech/webforge/issues/1263) | BD-1, BD-5 | 2    | B, after 5.27 (#1217), before #1250             |
+| 5.41 | [#1264](https://github.com/nexustech/webforge/issues/1264) | BD-2       | 1.5  | A, after #1252, before 5.33 (#1228); needs 5.40 |
+| 5.42 | [#1265](https://github.com/nexustech/webforge/issues/1265) | BD-3       | 1    | A, after 5.41; needs 5.40                       |
+| 5.43 | [#1266](https://github.com/nexustech/webforge/issues/1266) | BD-4       | 0.5  | A, after 5.42                                   |
+
+If stream A reaches 5.41 before 5.40 has merged, it takes 5.33 (#1228) first.

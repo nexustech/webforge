@@ -40,6 +40,8 @@ export type CanvasPageOptions = {
   readonly editorRevisions: Map<string, number>;
   /** The canvas iframe's document, once Puck has created it. */
   readonly frameDocument: () => Document | null;
+  /** Called with the docs each time they change, from the app or from Puck. */
+  readonly onDocs?: (docs: CanvasDocs) => void;
 };
 
 /**
@@ -95,6 +97,10 @@ export function createCanvasPage(options: CanvasPageOptions): CanvasPage {
   let docs: CanvasDocs = { page: EMPTY_PAGE, layout: EMPTY_LAYOUT, shared: {} };
   const edits = emitter<EngineEdit>();
   const composed = () => composePage(docs.page, docs.layout, docs.shared);
+  const setDocs = (next: CanvasDocs) => {
+    docs = next;
+    options.onDocs?.(next);
+  };
 
   const show = () => {
     if (puck() !== null) {
@@ -138,7 +144,7 @@ export function createCanvasPage(options: CanvasPageOptions): CanvasPage {
    * the app, and Puck's view put back in step from `shown`.
    */
   const follow = (routed: RoutedEdit, shown: PageDoc) => {
-    docs = routed.next;
+    setDocs(routed.next);
     if (routed.emit !== undefined) emitEdit(routed.emit);
     putBack(shown, routed.putBack === "whenOutOfOrder");
   };
@@ -235,7 +241,7 @@ export function createCanvasPage(options: CanvasPageOptions): CanvasPage {
       }),
 
     load(next) {
-      docs = next;
+      setDocs(next);
       sync.changed();
       options.editorRevisions.clear();
       selection.report(null);
@@ -247,7 +253,7 @@ export function createCanvasPage(options: CanvasPageOptions): CanvasPage {
       if (sync.isReporting()) {
         // The document store just took over the edit Puck reported: same content, nothing to show.
         if (CHECK_ECHOES) checkEcho(docs, next);
-        docs = next;
+        setDocs(next);
         return;
       }
       if (next.page === docs.page && next.layout === docs.layout && next.shared === docs.shared) {
@@ -271,7 +277,7 @@ export function createCanvasPage(options: CanvasPageOptions): CanvasPage {
       // Only what changed, unless Puck shows an older page or the change is too big to translate.
       const actions =
         puck() !== null && sync.isShown() ? pageActions(before, after, slotsOf) : null;
-      docs = next;
+      setDocs(next);
       sync.changed();
       preserveCaret(frameDocument);
       if (refocus !== null) refocusRichText(frameDocument, refocus);

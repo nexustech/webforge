@@ -142,6 +142,13 @@ export type ComponentDef = {
    */
   readonly mainHeading?: MainHeading;
   /**
+   * The field its title is in, which `SectionTitle` draws: a titled section's `title`, set by
+   * `defineSection`. On a page with no main heading of its own, the first section with a title
+   * writes it as the page's `<h1>` (#1173, `pageHeadings`). None for a component without one, or
+   * with a main heading of its own (a Hero).
+   */
+  readonly titleField?: string;
+  /**
    * Its place on Theme Studio's sample page (CT-11, #982), from 1: the sections that between them
    * show every colour role, text style, button and card.
    */

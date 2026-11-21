@@ -405,6 +405,8 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
     left: leftStartsCollapsed || savedCollapsed(layout[PANEL_GROUPS.columns]?.left),
     right: savedCollapsed(layout[PANEL_GROUPS.columns]?.right),
   }));
+  // Whether the bottom panel is shown, for the Panels menu's checkbox (#1195).
+  const [drawerShown, setDrawerShown] = useState(false);
   // The columns not yet opened since the window started ({@link NeverOpened}).
   const neverOpened = useRef<NeverOpened>({ left: leftStartsCollapsed, right: false });
   const followCollapsed = (side: "left" | "right") => (size: { readonly inPixels: number }) => {
@@ -458,6 +460,13 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
       for (const remove of removers) remove();
     };
   }, [registry]);
+
+  // What the Panels menu ticks: each column and the bottom panel, shown or not (#1195).
+  useEffect(() => {
+    registry.update(COMMAND_IDS.toggleLeftPanels, { checked: !collapsed.left });
+    registry.update(COMMAND_IDS.toggleRightPanels, { checked: !collapsed.right });
+    registry.update(COMMAND_IDS.toggleDrawer, { checked: drawerShown });
+  }, [registry, collapsed, drawerShown]);
 
   // A panel asked for is shown even if its column is collapsed.
   useEffect(
@@ -606,7 +615,14 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             <CanvasErrorBoundary>{center}</CanvasErrorBoundary>
           </ResizablePanel>
           <ResizableHandle aria-label={t("panels.resizeDrawer")} />
-          <ResizablePanel id="drawer" panelRef={drawer} minSize="10%" maxSize="60%" collapsible>
+          <ResizablePanel
+            id="drawer"
+            panelRef={drawer}
+            minSize="10%"
+            maxSize="60%"
+            collapsible
+            onResize={(size) => setDrawerShown(size.inPixels > 0)}
+          >
             <section
               aria-label={t("panels.drawer")}
               {...{ [REGION_ATTRIBUTE]: "" }}

@@ -1,3 +1,14 @@
+import type { ShellKind } from "../mcp-setup.js";
+
+/** One step of a setup done by hand (#1245): what to do, and what it copies, if anything. */
+type SetupStep = {
+  readonly text: string;
+  /** A command to run, shown with the step, with its copy button's words. */
+  readonly command?: { readonly value: string; readonly copyLabel: string };
+  /** Whether the step copies the key, with its own button. */
+  readonly key?: boolean;
+};
+
 /** What an install by main came to: the client opened it, or it was shown in its folder; or not. */
 type InstallStatus = "opened" | "shown" | "off" | "unknown" | "failed";
 
@@ -21,6 +32,15 @@ export type AiClient<Id extends string = string> = {
   readonly defaultName: () => string;
   /** What its setup comes to, in a line. */
   readonly hint: () => string;
+  /**
+   * Its setup by hand once it's paired (#1245), in numbered steps, each with what it copies: the
+   * commands for a terminal of `shell`, made from `address`, and the key. In place of `steps` and
+   * `copy`.
+   */
+  readonly setup?: {
+    readonly title: () => string;
+    readonly steps: (address: string, shell: ShellKind) => readonly SetupStep[];
+  };
   /** The steps once it's paired: their title, and each one. */
   readonly steps?: { readonly title: () => string; readonly items: () => readonly string[] };
   /** Something to copy besides the key: the address, or a command made from it. */
