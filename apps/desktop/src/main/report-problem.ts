@@ -1,9 +1,8 @@
 import { writeFile } from "node:fs/promises";
 import { release } from "node:os";
 import { t } from "@webforge/i18n";
-import type { IpcMain, NativeImage, WebContents } from "electron";
+import type { NativeImage, WebContents } from "electron";
 import { REPORT_TEXT_MAX } from "../shared/ipc/app.js";
-import { registerIpcHandler } from "./ipc.js";
 
 /**
  * Help › Report a Problem (5.23, OL-10). Webforge has no server and sends nothing: a report is
@@ -81,16 +80,16 @@ export function reportAddress(
   route: "issue" | "mail",
   text: string,
   parts: Pick<ReportParts, "version" | "system" | "email">,
-): string | undefined {
+): { readonly address: string; readonly cut: boolean } | undefined {
   const whole = text.slice(0, REPORT_TEXT_MAX);
   let address = addressOf(route, whole, parts);
-  // Too long for the browser or mail app: shortened, saying the rest is on the clipboard's copy.
+  // Too long for the browser or mail app: shortened, saying the rest is to be pasted.
   let kept = whole.length;
   while (address !== undefined && address.length > ADDRESS_MAX[route] && kept > 0) {
     kept = Math.floor(kept * 0.8);
     address = addressOf(route, `${whole.slice(0, kept).trimEnd()}… ${t("help.report.cut")}`, parts);
   }
-  return address;
+  return address === undefined ? undefined : { address, cut: kept < whole.length };
 }
 
 /** The address that opens a report of `message` (see {@link reportAddress}), however long. */
@@ -113,57 +112,61 @@ function addressOf(
   return `mailto:${parts.email}?subject=${subject}&body=${body}`;
 }
 
-/** Registers Report a Problem's calls (`app:*report*`, `app:*window-capture`). */
-export function registerReportHandlers(
-  ipc: Pick<IpcMain, "handle">,
-  isTrustedSender: (senderUrl: string) => boolean,
-  parts: ReportParts,
-): void {
+/** Report a Problem's calls in main, as `app-calls.ts` routes them (`report-ipc.ts`). */
+export type ReportCalls = ReturnType<typeof createReportCalls>;
+
+/**
+ * Report a Problem's calls (`app:*report*`, `app:*window-capture`), loaded when the person first
+ * uses it, never with main at start-up (#892): main's start-up budget has no room for them.
+ */
+export function createReportCalls(parts: ReportParts) {
   /** The screenshot the person took, until they save it or close the dialog. */
   let taken: NativeImage | undefined;
-
-  registerIpcHandler(ipc, "getReportInfo", isTrustedSender, () => ({
-    version: parts.version,
-    system: parts.system,
-    mail: parts.email !== undefined,
-  }));
-  registerIpcHandler(ipc, "openReport", isTrustedSender, async (route, text) => {
-    const address = reportAddress(route, text, parts);
-    if (address === undefined) return "unavailable";
-    try {
-      await parts.openExternal(address);
-      return "opened";
-    } catch {
-      return "failed";
-    }
-  });
-  registerIpcHandler(ipc, "captureWindow", isTrustedSender, async () => {
-    try {
-      const image = await parts.capture();
-      if (image === undefined || image.isEmpty()) return { status: "failed" };
-      taken = image;
-      const { width } = image.getSize();
-      const small = width > PREVIEW_WIDTH ? image.resize({ width: PREVIEW_WIDTH }) : image;
-      const preview = `data:image/jpeg;base64,${small.toJPEG(80).toString("base64")}`;
-      return { status: "captured", preview };
-    } catch {
-      return { status: "failed" };
-    }
-  });
-  registerIpcHandler(ipc, "saveWindowCapture", isTrustedSender, async () => {
-    const image = taken;
-    if (image === undefined) return "none";
-    const path = await parts.chooseFile();
-    if (path === undefined) return "cancelled";
-    try {
-      await parts.writeFile(path, image.toPNG());
-      return "saved";
-    } catch {
-      return "failed";
-    }
-  });
-  registerIpcHandler(ipc, "discardWindowCapture", isTrustedSender, () => {
-    taken = undefined;
-    return null;
-  });
+  return {
+    getReportInfo: () => ({
+      version: parts.version,
+      system: parts.system,
+      mail: parts.email !== undefined,
+    }),
+    async openReport(route: "issue" | "mail", text: string) {
+      const report = reportAddress(route, text, parts);
+      if (report === undefined) return "unavailable" as const;
+      try {
+        await parts.openExternal(report.address);
+        // Opened, but shortened to fit: the person pastes the rest from Copy My Message.
+        return report.cut ? ("cut" as const) : ("opened" as const);
+      } catch {
+        return "failed" as const;
+      }
+    },
+    async captureWindow() {
+      try {
+        const image = await parts.capture();
+        if (image === undefined || image.isEmpty()) return { status: "failed" as const };
+        taken = image;
+        const { width } = image.getSize();
+        const small = width > PREVIEW_WIDTH ? image.resize({ width: PREVIEW_WIDTH }) : image;
+        const preview = `data:image/jpeg;base64,${small.toJPEG(80).toString("base64")}`;
+        return { status: "captured" as const, preview };
+      } catch {
+        return { status: "failed" as const };
+      }
+    },
+    async saveWindowCapture() {
+      const image = taken;
+      if (image === undefined) return "none" as const;
+      const path = await parts.chooseFile();
+      if (path === undefined) return "cancelled" as const;
+      try {
+        await parts.writeFile(path, image.toPNG());
+        return "saved" as const;
+      } catch {
+        return "failed" as const;
+      }
+    },
+    discardWindowCapture: () => {
+      taken = undefined;
+      return null;
+    },
+  };
 }

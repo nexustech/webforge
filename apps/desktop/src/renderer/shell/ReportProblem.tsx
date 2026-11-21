@@ -20,6 +20,7 @@ export type ReportStatus =
   | "copied"
   | "opened-issue"
   | "opened-mail"
+  | "cut"
   | "open-failed"
   | "captured"
   | "capture-failed"
@@ -92,6 +93,10 @@ export function ReportProblemDialog(props: ReportProblemDialogProps) {
               })}
             </p>
           )}
+          {/* A GitHub issue is public (#1292's review): no personal details in it. */}
+          <p className="m-0 rounded-md border border-border bg-muted p-2 text-sm">
+            {t("help.report.public")}
+          </p>
           <section aria-labelledby={`${id}-screenshot`} className="flex flex-col gap-2">
             <h3 id={`${id}-screenshot`} className="m-0 text-sm font-semibold">
               {t("help.report.screenshot.title")}
@@ -248,7 +253,9 @@ export function ReportProblem({ api, copyText, preferences }: ReportProblemProps
                 ? route === "issue"
                   ? "opened-issue"
                   : "opened-mail"
-                : "open-failed",
+                : opened === "cut"
+                  ? "cut"
+                  : "open-failed",
             ),
           () => setStatus("open-failed"),
         );

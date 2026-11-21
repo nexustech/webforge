@@ -54,6 +54,8 @@ describe("Help › Report a Problem (5.23, OL-10)", () => {
     expect(
       await dialog.findByText(/Sent with it: .* 0\.3\.0 on Windows 10\.0\.26300 \(x64\)/),
     ).toBeDefined();
+    // A GitHub issue is public: said before anything is sent.
+    expect(dialog.getByText(/A GitHub issue is public/)).toBeDefined();
     // Nothing to send yet; no email until the beta has an address.
     expect(dialog.getByRole("button", { name: "Open a GitHub Issue" })).toHaveProperty(
       "disabled",
@@ -98,6 +100,14 @@ describe("Help › Report a Problem (5.23, OL-10)", () => {
 
     await user.keyboard("{Escape}");
     expect(api.discardWindowCapture).toHaveBeenCalled();
+  });
+
+  it("says when the message was cut short to fit, and to paste the rest", async () => {
+    const { api, open, user } = setUp("A very long message");
+    vi.mocked(api.openReport).mockResolvedValueOnce("cut");
+    const dialog = await open();
+    await user.click(dialog.getByRole("button", { name: "Open a GitHub Issue" }));
+    expect(await dialog.findByText(/was cut short\. Click Copy My Message/)).toBeDefined();
   });
 
   it("offers email once the beta has an address", async () => {

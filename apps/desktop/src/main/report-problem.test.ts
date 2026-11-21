@@ -1,10 +1,11 @@
 import { t } from "@webforge/i18n";
 import type { IpcMainInvokeEvent, NativeImage } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { registerReportHandlers } from "./report-ipc.js";
 import {
+  createReportCalls,
   ISSUE_FORM,
   type ReportParts,
-  registerReportHandlers,
   reportAddress,
   systemName,
 } from "./report-problem.js";
@@ -36,10 +37,12 @@ function setUp(changes: Partial<ReportParts> = {}) {
     writeFile: vi.fn(async () => undefined),
     ...changes,
   };
+  // As main registers them: the calls created when first used (#892).
+  const calls = createReportCalls(parts);
   registerReportHandlers(
     { handle: (channel, handler) => handlers.set(channel, handler) },
     () => true,
-    parts,
+    async () => calls,
   );
   const invoke = (channel: string, ...args: unknown[]) =>
     handlers.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
@@ -58,9 +61,10 @@ describe("Report a Problem (5.23, OL-10)", () => {
   });
 
   it("opens the beta form with the message, the version and the system, and nothing else", () => {
-    const address = reportAddress("issue", "The menu won't open", PARTS);
-    expect(address?.startsWith(`${ISSUE_FORM}?`)).toBe(true);
-    const query = new URL(address ?? "").searchParams;
+    const report = reportAddress("issue", "The menu won't open", PARTS);
+    expect(report?.cut).toBe(false);
+    expect(report?.address.startsWith(`${ISSUE_FORM}?`)).toBe(true);
+    const query = new URL(report?.address ?? "").searchParams;
     expect(query.get("template")).toBe("beta-bug.yml");
     expect(query.get("version")).toBe("0.3.0, Windows 10.0.26300 (x64)");
     expect(query.get("happened")).toBe(
@@ -72,20 +76,24 @@ describe("Report a Problem (5.23, OL-10)", () => {
   it("shortens a long message to fit the browser's address, and says so", () => {
     // "&" and ";" take three characters each in an address.
     const long = "Broke & froze; ".repeat(400);
-    const address = reportAddress("issue", long, PARTS) ?? "";
+    const report = reportAddress("issue", long, PARTS);
+    expect(report?.cut).toBe(true);
+    const address = report?.address ?? "";
     expect(address.length).toBeLessThanOrEqual(7000);
     const happened = new URL(address).searchParams.get("happened") ?? "";
     expect(happened.startsWith("Broke & froze;")).toBe(true);
     expect(happened).toContain(t("help.report.cut"));
     // One that fits is left whole.
-    expect(reportAddress("issue", "Short", PARTS)).not.toContain(encodeURIComponent("Cut short"));
+    expect(reportAddress("issue", "Short", PARTS)?.address).not.toContain(
+      encodeURIComponent("Cut short"),
+    );
   });
 
   it("emails the report only once there's an address to send it to", () => {
     expect(reportAddress("mail", "Hello", PARTS)).toBeUndefined();
     const mail = reportAddress("mail", "Hello & more", { ...PARTS, email: "beta@example.com" });
-    expect(mail?.startsWith("mailto:beta@example.com?subject=")).toBe(true);
-    expect(decodeURIComponent(mail?.split("&body=")[1] ?? "")).toContain("Hello & more");
+    expect(mail?.address.startsWith("mailto:beta@example.com?subject=")).toBe(true);
+    expect(decodeURIComponent(mail?.address.split("&body=")[1] ?? "")).toContain("Hello & more");
   });
 
   it("hands the address to the browser and makes no request itself", async () => {
@@ -98,6 +106,9 @@ describe("Report a Problem (5.23, OL-10)", () => {
     expect(await invoke("app:open-report", "mail", "It froze")).toBe("unavailable");
     expect(fetch).not.toHaveBeenCalled();
     expect(await invoke("app:get-report-info")).toEqual({ ...PARTS, mail: false });
+
+    // Shortened to fit: opened, and the person told to paste the rest.
+    expect(await invoke("app:open-report", "issue", "Broke & froze; ".repeat(400))).toBe("cut");
 
     const failing = setUp({ openExternal: async () => Promise.reject(new Error("no browser")) });
     expect(await failing.invoke("app:open-report", "issue", "It froze")).toBe("failed");

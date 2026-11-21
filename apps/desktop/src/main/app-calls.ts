@@ -10,7 +10,8 @@ import { registerHelpHandlers } from "./help-ipc.js";
 import type { HelpWindows } from "./help-window.js";
 import { registerIpcHandler } from "./ipc.js";
 import { licenceFiles, registerLicenceHandlers } from "./licences.js";
-import { REPORT_EMAIL, registerReportHandlers, reportParts } from "./report-problem.js";
+import { registerReportHandlers } from "./report-ipc.js";
+import type { ReportCalls } from "./report-problem.js";
 import { registerSpellCheckHandlers } from "./spellcheck.js";
 
 /** What the app's own calls work with (#985). */
@@ -95,11 +96,18 @@ export function appCallsFeature(deps: AppCallsDeps): AppFeature {
       );
       registerHelpHandlers(ipc, isTrustedSender, deps.helpWindows, openExternal);
       // Help › Report a Problem (OL-10): opened in the browser or mail app; nothing sent from here.
-      registerReportHandlers(ipc, isTrustedSender, {
-        ...reportParts(deps.mainWindow, deps.reportDialogs),
-        version: deps.app.getVersion(),
-        email: REPORT_EMAIL,
-        openExternal,
+      // Its code is loaded when first used, never with main at start-up (#892).
+      let report: Promise<ReportCalls> | undefined;
+      registerReportHandlers(ipc, isTrustedSender, () => {
+        report ??= import("./report-problem.js").then((loaded) =>
+          loaded.createReportCalls({
+            ...loaded.reportParts(deps.mainWindow, deps.reportDialogs),
+            version: deps.app.getVersion(),
+            email: loaded.REPORT_EMAIL,
+            openExternal,
+          }),
+        );
+        return report;
       });
     },
   };

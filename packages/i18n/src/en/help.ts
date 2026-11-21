@@ -10,6 +10,8 @@ export const help = {
   "help.report.details": "{appName} {version} on {system}",
   // A message too long for a browser's address, cut short where it opens.
   "help.report.cut": "(Cut short: the rest is in the message I'll paste below.)",
+  "help.report.public":
+    "A GitHub issue is public: anyone can read it, and you need a GitHub account to send it. Leave out personal details, such as a customer's name or address, and don't attach a screenshot that shows them.",
   "help.report.subject": "A problem with {appName}",
   "help.report.screenshot.saveTitle": "Save the Screenshot",
   "help.report.screenshot.fileName": "{appName} screenshot",
@@ -36,6 +38,8 @@ export const help = {
     "The form opened in your browser, filled in. Send it from there, then clear your message here.",
   "help.report.status.opened-mail":
     "The email opened in your mail app. Send it from there, then clear your message here.",
+  "help.report.status.cut":
+    "It opened, but your message was too long for it and was cut short. Click Copy My Message, and paste the rest in.",
   "help.report.status.open-failed":
     "It didn't open. Copy your message instead, and paste it where you report problems.",
   "help.report.status.captured": "Screenshot taken.",

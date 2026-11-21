@@ -129,7 +129,8 @@ const reportInfoSchema = z.strictObject({
 export type ReportInfo = z.infer<typeof reportInfoSchema>;
 
 /** What became of opening a report in the browser or mail app. */
-const reportOpenedSchema = z.enum(["opened", "failed", "unavailable"]);
+/** `cut`: opened, but the message was shortened to fit the address, so the rest is to be pasted. */
+const reportOpenedSchema = z.enum(["opened", "cut", "failed", "unavailable"]);
 
 /** A screenshot of the editor's window (OL-10): shown small to the person, kept in main to save. */
 const windowCaptureSchema = z.union([
@@ -303,7 +304,10 @@ export interface AppApi {
   /** What Report a Problem sends with a report, and where it can (OL-10). */
   getReportInfo(): Promise<ReportInfo>;
   /** Opens a report of `text` as a new GitHub issue or an email, for the person to send. */
-  openReport(route: "issue" | "mail", text: string): Promise<"opened" | "failed" | "unavailable">;
+  openReport(
+    route: "issue" | "mail",
+    text: string,
+  ): Promise<"opened" | "cut" | "failed" | "unavailable">;
   /** Takes a screenshot of the editor's window. */
   captureWindow(): Promise<WindowCapture>;
   /** Saves the screenshot taken, where the person chooses. */
