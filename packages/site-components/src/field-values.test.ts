@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { siteLibrary } from "./catalogue/index.js";
-import { acceptsFieldValue, type FieldValueShape } from "./field-values.js";
+import { acceptsFieldValue, type FieldValueShape, ICON_NAMES_TAKEN } from "./field-values.js";
+import { isIconName } from "./icons.js";
 
 const field = (type: string, name: string): FieldValueShape => {
   const found = siteLibrary.components[type]?.fields[name];
@@ -43,6 +44,17 @@ describe("acceptsFieldValue (#667)", () => {
     expect(acceptsFieldValue({ kind: "icon" }, undefined, one)).toBe(true);
     expect(acceptsFieldValue({ kind: "text" }, undefined, one)).toBe(false);
     expect(acceptsFieldValue({ kind: "box" }, undefined, one)).toBe(false);
+  });
+
+  it("takes one of the icons by its name, or one Lucide renamed, and no other name (#1251)", () => {
+    const icon = { kind: "icon" } as const;
+    expect(acceptsFieldValue(icon, "phone", one)).toBe(true);
+    expect(acceptsFieldValue(icon, "triangle-alert", one)).toBe(true);
+    expect(acceptsFieldValue(icon, "", one)).toBe(true);
+    expect(acceptsFieldValue(icon, "history-of-art", one)).toBe(false);
+    expect(acceptsFieldValue(icon, "Phone", one)).toBe(false);
+    // Each name it takes draws: the names are the icon set's.
+    expect(ICON_NAMES_TAKEN.every((name) => isIconName(name))).toBe(true);
   });
 
   it("takes Custom Code as text, which only the person writes in the editor", () => {
