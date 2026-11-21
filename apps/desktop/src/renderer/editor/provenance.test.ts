@@ -24,12 +24,12 @@ const textOf = (change: Partial<ProvenanceInput>) => provenanceOf(input(change))
 describe("provenanceOf (3.12, CT-3)", () => {
   it("names the theme's token where one decides the value, and reveals it in the Theme tab", () => {
     expect(provenanceOf(input())).toEqual({
-      text: "Theme's (Corners: Medium)",
+      text: "Same as theme (Corners: Medium)",
       reveal: "token.radius.field",
     });
     // A section's corners are the boxes', by its kind's own flag.
     expect(provenanceOf(input({ type: "Hero", item: "Hero", corners: "box" }))).toEqual({
-      text: "Theme's (Corners: Extra large)",
+      text: "Same as theme (Corners: Extra large)",
       reveal: "token.radius.box",
     });
     expect(provenanceOf(input({ name: "lookShadow", label: "Shadow" }))?.reveal).toBe(
@@ -40,7 +40,7 @@ describe("provenanceOf (3.12, CT-3)", () => {
     );
     // A text size is its text style's, from the type scale.
     expect(provenanceOf(input({ name: "lookSize", label: "Text size", textStyle: "h2" }))).toEqual({
-      text: "Theme's (Text size: Heading 2)",
+      text: "Same as theme (Text size: Heading 2)",
       reveal: "textSize.h2",
     });
   });
@@ -48,11 +48,11 @@ describe("provenanceOf (3.12, CT-3)", () => {
   it("names the token for a field with no default, as the Appearance group's are (#622)", () => {
     // What the Edit panel passes: the components keep no default for these fields.
     expect(provenanceOf(input({ initial: undefined }))).toEqual({
-      text: "Theme's (Corners: Medium)",
+      text: "Same as theme (Corners: Medium)",
       reveal: "token.radius.field",
     });
     expect(textOf({ name: "lookShadow", label: "Shadow", initial: undefined })).toMatch(
-      /^Theme's \(Shadow: /,
+      /^Same as theme \(Shadow: /,
     );
     // Still nothing for a field no token decides.
     expect(textOf({ name: "lookColor", label: "Colour", initial: undefined })).toBeUndefined();
@@ -81,13 +81,13 @@ describe("provenanceOf (3.12, CT-3)", () => {
 
   it("says the kind's look sets it, and reveals the look in Theme Studio", () => {
     expect(provenanceOf(input({ look: "full" }))).toEqual({
-      text: "Theme's look for Button",
+      text: "Same as the theme's look for Button",
       reveal: "look:Button",
     });
     // A look per device reaches the device shown too: Mobile follows the look.
     expect(
       textOf({ look: { $responsive: { desktop: "m", mobile: "full" } }, breakpoint: "mobile" }),
-    ).toBe("Theme's look for Button");
+    ).toBe("Same as the theme's look for Button");
   });
 
   it("says the element sets it, here or on the device shown", () => {
@@ -100,7 +100,7 @@ describe("provenanceOf (3.12, CT-3)", () => {
 
   it("names the token for the theme's own value chosen here, with its reveal (#567)", () => {
     expect(provenanceOf(input({ own: "default", look: "full" }))).toEqual({
-      text: "Theme's (Corners: Medium), chosen here",
+      text: "Same as theme (Corners: Medium), chosen here",
       reveal: "token.radius.field",
     });
     // Where no one token decides it, it is set here.
@@ -120,7 +120,7 @@ describe("provenanceOf (3.12, CT-3)", () => {
     expect(textOf({ classes: "my-card md:rounded-lg" })).toBe("Class (Advanced)");
     expect(textOf({ classes: "!rounded" })).toBe("Class (Advanced)");
     // A class for something else leaves it to the theme.
-    expect(textOf({ classes: "shadow-lg my-card" })).toBe("Theme's (Corners: Medium)");
+    expect(textOf({ classes: "shadow-lg my-card" })).toBe("Same as theme (Corners: Medium)");
     // Its own value comes first.
     expect(textOf({ own: "none", classes: "rounded-lg" })).toBe("Set here");
 
@@ -132,7 +132,7 @@ describe("provenanceOf (3.12, CT-3)", () => {
     expect(text("lookSize", "md:text-2xl")).toBe("Class (Advanced)");
     expect(text("lookColor", "text-2xl")).toBeUndefined();
     expect(text("lookColor", "text-primary")).toBe("Class (Advanced)");
-    expect(text("lookSize", "text-primary")).toBe("Theme's (lookSize: Heading 2)");
+    expect(text("lookSize", "text-primary")).toBe("Same as theme (lookSize: Heading 2)");
     // A border's width, or its colour.
     expect(text("lookBorder", "border-2")).toBe("Class (Advanced)");
     expect(text("lookBorderColor", "border-2")).toBeUndefined();

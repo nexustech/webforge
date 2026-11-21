@@ -280,7 +280,9 @@ export function SiteCheckPanel(props: SiteCheckPanelProps) {
   const { report, ignored, onRestore } = props;
   const problem = (result: RuleResult) => result.findings.length > 0;
   const found = report.results.filter((result) => result.group === "found" && problem(result));
-  const passed = report.results.filter((result) => !problem(result) && result.oneTime !== true);
+  const passed = report.results.filter(
+    (result) => !problem(result) && result.oneTime !== true && result.onlyWhenFound !== true,
+  );
   const levels = LEVELS.map((level) => ({
     level,
     results: report.results.filter(

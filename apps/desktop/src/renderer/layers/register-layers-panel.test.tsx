@@ -41,9 +41,16 @@ function setUp(site: SiteDoc = starterSite(), pageId?: PageId) {
   return { session, panels, commands, remove };
 }
 
-/** A row's eye (UX-23): its menu's button for `item`, which shows as `now`. */
+/** How a layer shows, as its eye says, for each of the menu's choices. */
+const NOW: Readonly<Record<string, string>> = {
+  Show: "Shown",
+  "Hide While Editing": "Hidden while editing",
+  "Don't Publish": "Not published",
+};
+
+/** A row's eye (UX-23): its menu's button for `item`, which shows as the choice `now`. */
 const eye = (item: string, now: string) =>
-  screen.getByRole("button", { name: `Show or hide ${item} (now: ${now})` });
+  screen.getByRole("button", { name: `${NOW[now]}. Choose whether ${item} shows…` });
 
 /** Shows `item`, which shows as `now`, as `choice` says, from its row's eye. */
 async function setShown(item: string, now: string, choice: string): Promise<void> {
@@ -283,7 +290,7 @@ describe("Layers' shared Header and Footer (#673)", () => {
     const { session } = setUp(site);
     const row = document.querySelector('[data-layer="banner"]') as HTMLElement;
 
-    await userEvent.click(within(row).getByRole("button", { name: /^Show or hide / }));
+    await userEvent.click(within(row).getByRole("button", { name: /Choose whether .* shows…$/ }));
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Don't Publish" }));
 
     expect(labels(session)).toEqual(["Hid the Header on this page"]);

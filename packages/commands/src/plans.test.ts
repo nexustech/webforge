@@ -99,7 +99,7 @@ describe("a plan (4.12a, AIB-6)", () => {
     expect(description).toContain('It changes the Page Settings of "About us", "Home".');
     // The switches that decide whether a page is found, from and to, by its title after.
     expect(description).toContain('"Home": Hide this page from search engines, from no to yes.');
-    expect(description).toContain('"Our story": Hide from navigation, from no to yes.');
+    expect(description).toContain('"Our story": Hide in menu, from no to yes.');
     expect(description).not.toContain("Sections and elements");
   });
 

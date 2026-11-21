@@ -177,7 +177,7 @@ test("renames a shared section, then deletes it after asking, its copies staying
   // Deleting asks first (D7); its copies stay as normal sections.
   await sharedSectionMenu("Delete…");
   const ask = page.getByRole("alertdialog", { name: "Delete shared section 'Opening hours'?" });
-  await expect(ask).toContainText("This changes 1 page.");
+  await expect(ask).toContainText("1 page of your site will change.");
   await ask.getByRole("button", { name: "Delete Shared Section" }).click();
   await expect(ask).toHaveCount(0);
   await expect(steps().first()).toHaveText("Deleted shared section 'Opening hours'");
