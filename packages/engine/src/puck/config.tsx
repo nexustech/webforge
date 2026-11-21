@@ -138,7 +138,7 @@ function toPuckComponent(
     const marked = values.hidden === true ? markedHidden(output) : output;
     const noted = typeof values.note === "string" ? markedWith(marked, NOTE_ATTRIBUTE) : marked;
     // A text holding an example (#1228): outlined until the person checks it.
-    return hasExamples(values.examples) ? markedWith(noted, EXAMPLE_ATTRIBUTE) : noted;
+    return hasExamples(values.examples) ? markedExample(noted) : noted;
   };
   return {
     label: def.label,
@@ -188,6 +188,24 @@ function drawWith(
  */
 function markedHidden(output: ReactNode): ReactNode {
   return markedWith(output, HIDDEN_ATTRIBUTE);
+}
+
+/**
+ * `output` marked as holding an example (#1228): its root with {@link EXAMPLE_ATTRIBUTE} when it's
+ * an HTML element; otherwise (a component's own view, such as a Testimonial's) a hidden marker
+ * after it, by which the canvas outlines Puck's wrapper around it. After it, so the element is
+ * still its wrapper's first, which the canvas measures.
+ */
+function markedExample(output: ReactNode): ReactNode {
+  if (isValidElement(output) && typeof output.type === "string") {
+    return markedWith(output, EXAMPLE_ATTRIBUTE);
+  }
+  return (
+    <>
+      {output}
+      <span hidden {...{ [EXAMPLE_ATTRIBUTE]: "" }} />
+    </>
+  );
 }
 
 /** `output` with the empty attribute `attribute`, if its root is an HTML element. */

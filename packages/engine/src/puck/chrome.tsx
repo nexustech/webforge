@@ -24,6 +24,7 @@ import {
   ACTION_BAR,
   ACTIONS,
   ACTIONS_OVERLAY,
+  COMPONENT,
   componentSelector,
   EMPTY_TABLE_BODY,
   EXAMPLE_ATTRIBUTE,
@@ -134,8 +135,10 @@ ${EMPTY_TABLE_BODY}::after {
   outline: calc(2px / var(--wf-zoom, 1)) dashed #f59e0b;
   outline-offset: calc(-2px / var(--wf-zoom, 1));
 }
-/* An element with a text that holds an example (#1228): a dotted violet outline, inside it. */
-[${EXAMPLE_ATTRIBUTE}] {
+/* An element with a text that holds an example (#1228): a dotted violet outline, inside it; on
+   Puck's wrapper for one drawn by a component of its own, which a hidden marker follows. */
+[${EXAMPLE_ATTRIBUTE}]:not([hidden]),
+${COMPONENT}:has(> [${EXAMPLE_ATTRIBUTE}][hidden]) {
   outline: calc(2px / var(--wf-zoom, 1)) dotted #7c3aed;
   outline-offset: calc(-2px / var(--wf-zoom, 1));
 }

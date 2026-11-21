@@ -222,7 +222,8 @@ test("marks a template's sample reviews as examples: outlined, opened from their
 
   // The café's sample reviews, outlined on the canvas as examples.
   const canvas = page.frameLocator(".editor__canvas iframe");
-  const review = canvas.locator("[data-webforge-example]").first();
+  // A Testimonial is drawn by a view of its own: Puck's wrapper is outlined, by its hidden marker.
+  const review = canvas.locator("[data-puck-component]:has(> [data-webforge-example])").first();
   await expect(review).toBeAttached({ timeout: OPEN_WAIT });
   await review.scrollIntoViewIfNeeded();
   await clickOnCanvas(review);
