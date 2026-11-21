@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n/components";
-import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/model";
+import { type Breakpoint, hasLink, type Responsive, resolveResponsive } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
 import { whereOwnColour } from "../appearance.js";
 import { defineComponent, LOOK_TARGET } from "../define.js";
@@ -317,6 +317,9 @@ export const BUTTON_ALIGN_CLASS = {
   right: "justify-end",
 } as const;
 
+/** A Button's alignment, with its hint under it on the canvas (#1256). */
+const HINT_ALIGN_CLASS = { left: "items-start", centre: "items-center", right: "items-end" };
+
 /** An Outline button's look at rest, held when hovered: no fill, its border and text its colour. */
 const OUTLINE_HELD =
   " hover:[--btn-bg:#0000]! hover:[--btn-fg:var(--btn-color)]! hover:[--btn-border:var(--btn-color)]!";
@@ -328,7 +331,7 @@ const button = defineComponent({
   category: t("category.basic"),
   fields: {
     label: { kind: "text", label: t("field.buttonLabel") },
-    link: { kind: "link", label: t("field.buttonLink") },
+    link: { kind: "link", label: t("field.buttonLink"), button: "label" },
     // Before its text (F-ED-22), in the text's size and colour.
     icon: { kind: "icon", label: t("field.icon") },
     style: {
@@ -376,22 +379,43 @@ const button = defineComponent({
       (device) =>
         `${hoverOn(values, device) === "none" ? ` ${hoverClassesOn(values, device, "darken")}` : ""}${values.style === "outline" ? OUTLINE_HELD : ""}`,
     );
+    const classes = `${BUTTON_CLASSES[BUTTON_KIND[values.style][values.size]]}${hoverClasses(values)}${own}`;
+    const content = (
+      <>
+        {values.icon === undefined ? null : <LucideIcon name={values.icon} />}
+        {label}
+      </>
+    );
+    // Without a link it is left out of the export, never a link to `#` (#1256); on the canvas it is
+    // drawn disabled, with a hint under it saying to add one.
+    const linked = hasLink(values.link);
+    const hint = label === "" || linked ? undefined : context.elementHint?.("buttonLink");
+    const hinted = hint !== undefined && hint !== null;
     return (
       <div
-        className={`site-button flex ${BUTTON_ALIGN_CLASS[values.alignment]}${marginClasses(values.margin)}${entranceClasses(values)}`}
+        className={`site-button flex ${hinted ? `flex-col gap-2 ${HINT_ALIGN_CLASS[values.alignment]}` : BUTTON_ALIGN_CLASS[values.alignment]}${marginClasses(values.margin)}${entranceClasses(values)}`}
         {...entranceAttributes(values)}
       >
-        {label === "" ? null : (
+        {label === "" || (!linked && !hinted) ? null : linked ? (
           <a
-            className={`${BUTTON_CLASSES[BUTTON_KIND[values.style][values.size]]}${hoverClasses(values)}${own}`}
+            className={classes}
             {...linkAttributes(values.link, context)}
             // Its Appearance styles the button, not the row that aligns it (2.22b).
             {...{ [LOOK_TARGET]: "" }}
           >
-            {values.icon === undefined ? null : <LucideIcon name={values.icon} />}
-            {label}
+            {content}
           </a>
+        ) : (
+          // Disabled, and said to be (2.15b), as a Buy button without its payment link.
+          <span
+            className={`${classes} btn-disabled`}
+            aria-disabled="true"
+            {...{ [LOOK_TARGET]: "" }}
+          >
+            {content}
+          </span>
         )}
+        {hinted ? <p>{hint}</p> : null}
       </div>
     );
   },

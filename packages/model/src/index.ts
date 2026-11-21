@@ -169,7 +169,13 @@ export {
   tidyKeptAddresses,
 } from "./kept-addresses.js";
 export type { LinkValue } from "./link.js";
-export { anchorIdSchema, EMAIL_SUBJECT_MAX, linkValueSchema, webUrlSchema } from "./link.js";
+export {
+  anchorIdSchema,
+  EMAIL_SUBJECT_MAX,
+  hasLink,
+  linkValueSchema,
+  webUrlSchema,
+} from "./link.js";
 export type { ComponentLook, LookField, Looks, ValueSource } from "./look.js";
 export {
   CUSTOM_COLOUR,

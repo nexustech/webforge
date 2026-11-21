@@ -49,6 +49,12 @@ export const siteCheck = {
   "siteCheck.rule.draftLinks.pass": "No link goes to a draft page",
   "siteCheck.rule.draftLinks.fail.one": "1 link goes to a draft page, which isn't published",
   "siteCheck.rule.draftLinks.fail.other": "{count} links go to a draft page, which isn't published",
+  "siteCheck.rule.buttonLinks": "Buttons without a link",
+  "siteCheck.rule.buttonLinks.pass": "Every button goes somewhere",
+  "siteCheck.rule.buttonLinks.fail.one":
+    "1 button has text but no link, so your site leaves it out",
+  "siteCheck.rule.buttonLinks.fail.other":
+    "{count} buttons have text but no link, so your site leaves them out",
   "siteCheck.rule.placeholders": "Placeholder text",
   "siteCheck.rule.placeholders.pass": "No placeholder text left",
   "siteCheck.rule.placeholders.fail.one": "1 text is still a placeholder",

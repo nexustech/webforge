@@ -4,6 +4,7 @@ import {
   eachElement,
   eachLink,
   findBrokenLinks,
+  hasLink,
   imageValueSchema,
   isDraftPage,
   isSampleEmail,
@@ -52,6 +53,32 @@ export const brokenLinksRule: CheckRule = {
             ? { kind: "menu", itemId: link.nodeId }
             : { kind: "element", on: link.on, nodeId: link.nodeId },
       }));
+  },
+};
+
+/**
+ * Buttons with text and no link (#1256): a Hero's, a Call to action's, a Button or a pricing plan's,
+ * each a link field naming the text field that labels it (`button`). The export leaves such a
+ * button out, as a Buy button with no payment link. *Should fix* on export and publish alike, so it
+ * never blocks publishing (product owner, 21 Nov 2026). Jumping to it selects the element, with its
+ * link in the Edit panel.
+ */
+export const buttonLinksRule: CheckRule = {
+  id: "buttonLinks",
+  level: "should",
+  check: (input) => {
+    const found: Finding[] = [];
+    eachFieldValue(input, ["text"], (placed) => {
+      const component = input.catalogue[placed.node.type];
+      if (component === undefined) return;
+      const link = Object.entries(component.fields).find(
+        ([, field]) => field.kind === "link" && field.button === placed.field,
+      )?.[0];
+      if (link === undefined || typeof placed.value !== "string") return;
+      if (plainText(placed.value).trim() === "" || hasLink(placed.node.props[link])) return;
+      found.push({ key: fieldKey({ ...placed, field: link }), place: elementPlace(placed) });
+    });
+    return found;
   },
 };
 

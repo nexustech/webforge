@@ -45,7 +45,7 @@ const hero = defineSection({
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "text", label: t("field.text"), inline: true },
     buttonLabel: { kind: "text", label: t("field.buttonLabel") },
-    buttonLink: { kind: "link", label: t("field.buttonLink") },
+    buttonLink: { kind: "link", label: t("field.buttonLink"), button: "buttonLabel" },
     alignment: {
       kind: "select",
       label: t("field.alignment"),
@@ -238,7 +238,7 @@ const callToAction = defineSection({
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "text", label: t("field.text"), inline: true },
     buttonLabel: { kind: "text", label: t("field.buttonLabel") },
-    buttonLink: { kind: "link", label: t("field.buttonLink") },
+    buttonLink: { kind: "link", label: t("field.buttonLink"), button: "buttonLabel" },
   },
   // Its text beside the button was Wide before 3.21; format 10 keeps those saved then.
   defaults: {
