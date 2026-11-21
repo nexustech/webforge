@@ -1,3 +1,5 @@
+import { writeFile } from "node:fs/promises";
+import { release } from "node:os";
 import { join, resolve } from "node:path";
 import { t } from "@webforge/i18n";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
@@ -28,6 +30,7 @@ import { openPreferencesStore, registerPreferencesHandlers } from "./preferences
 import { ProjectSession } from "./project-session.js";
 import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
 import { openOrRecover } from "./recovery.js";
+import { systemName } from "./report-problem.js";
 import { createSecretClipboard, electronSecretClipboard } from "./secret-clipboard.js";
 import { isAppUrl } from "./security.js";
 import { siteCallsFeature } from "./site-calls.js";
@@ -277,6 +280,13 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       helpWindows,
       mainWindow: () => lifecycle.mainWindow(),
       crashReports,
+      report: {
+        system: systemName(process.platform, release(), process.arch),
+        // The editor's window only: never the Help window, nor anything else on the screen.
+        capture: async () => lifecycle.mainWindow()?.webContents.capturePage(),
+        chooseFile: () => dialogs.report.chooseScreenshotToSave(),
+        writeFile: (path, data) => writeFile(path, data),
+      },
     }),
     // Opening and closing sites, the Recent list, copy and paste, bundled files, imported posts.
     siteCallsFeature({

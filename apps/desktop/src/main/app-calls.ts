@@ -10,6 +10,7 @@ import { registerHelpHandlers } from "./help-ipc.js";
 import type { HelpWindows } from "./help-window.js";
 import { registerIpcHandler } from "./ipc.js";
 import { licenceFiles, registerLicenceHandlers } from "./licences.js";
+import { REPORT_EMAIL, type ReportParts, registerReportHandlers } from "./report-problem.js";
 import { registerSpellCheckHandlers } from "./spellcheck.js";
 
 /** What the app's own calls work with (#985). */
@@ -32,6 +33,8 @@ export type AppCallsDeps = {
   readonly mainWindow: () => { readonly webContents: Pick<WebContents, "send"> } | undefined;
   /** Local crash reports: Help → Open Crash Reports Folder, and the renderer's errors (R3). */
   readonly crashReports: { registerHandlers: NonNullable<AppFeature["register"]> };
+  /** Help › Report a Problem (OL-10): what a report says, and its screenshot's Save dialog. */
+  readonly report: Pick<ReportParts, "system" | "capture" | "chooseFile" | "writeFile">;
 };
 
 /**
@@ -89,6 +92,13 @@ export function appCallsFeature(deps: AppCallsDeps): AppFeature {
         (path) => deps.shell().openPath(path),
       );
       registerHelpHandlers(ipc, isTrustedSender, deps.helpWindows, openExternal);
+      // Help › Report a Problem (OL-10): opened in the browser or mail app; nothing sent from here.
+      registerReportHandlers(ipc, isTrustedSender, {
+        ...deps.report,
+        version: deps.app.getVersion(),
+        email: REPORT_EMAIL,
+        openExternal,
+      });
     },
   };
 }
