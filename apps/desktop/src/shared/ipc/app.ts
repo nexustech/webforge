@@ -110,6 +110,48 @@ const licencesResultSchema = z.discriminatedUnion("status", [
 /** What `listLicences` gives. */
 export type LicencesResult = z.infer<typeof licencesResultSchema>;
 
+/** The longest message Report a Problem takes (OL-10): a few paragraphs, as a form takes them. */
+export const REPORT_TEXT_MAX = 6000;
+
+/** Where Report a Problem sends a report from (OL-10): a GitHub issue, or an email. */
+const reportRouteSchema = z.enum(["issue", "mail"]);
+
+/** Where Report a Problem can send a report from (OL-10), and what it is sent with. */
+const reportInfoSchema = z.strictObject({
+  /** The app's version, as the report gives it. */
+  version: z.string().min(1).max(100),
+  /** The computer's system, as the report gives it: "Windows 10.0.26300 (x64)". */
+  system: z.string().min(1).max(200),
+  /** Whether a report can be emailed: once the beta has an address (Q7). */
+  mail: z.boolean(),
+});
+
+/** See {@link reportInfoSchema}. */
+export type ReportInfo = z.infer<typeof reportInfoSchema>;
+
+/** What became of opening a report in the browser or mail app. */
+/** `cut`: opened, but the message was shortened to fit the address, so the rest is to be pasted. */
+const reportOpenedSchema = z.enum(["opened", "cut", "failed", "unavailable"]);
+
+/** A screenshot of the editor's window (OL-10): shown small to the person, kept in main to save. */
+const windowCaptureSchema = z.union([
+  z.strictObject({
+    status: z.literal("captured"),
+    /** A smaller copy, as a JPEG data URL, for the dialog to show. */
+    preview: z
+      .string()
+      .startsWith("data:image/jpeg;base64,")
+      .max(4 * 1024 * 1024),
+  }),
+  z.strictObject({ status: z.literal("failed") }),
+]);
+
+/** See {@link windowCaptureSchema}. */
+type WindowCapture = z.infer<typeof windowCaptureSchema>;
+
+/** What became of saving the screenshot. */
+const captureSavedSchema = z.enum(["saved", "cancelled", "failed", "none"]);
+
 /** IPC channels of the `app` domain (`app:*`). */
 export const appChannels = {
   getAppInfo: {
@@ -193,6 +235,40 @@ export const appChannels = {
     request: z.tuple([languageTagSchema]),
     response: z.null(),
   },
+  /** What Report a Problem sends with a report, and where it can (OL-10). */
+  getReportInfo: {
+    channel: "app:get-report-info",
+    request: z.tuple([]),
+    response: reportInfoSchema,
+  },
+  /**
+   * Opens a report for the person to send themself (OL-10): a new GitHub issue in their browser,
+   * or an email in their mail app, filled in with the message, the version and the system. Main
+   * builds the address: the renderer names where, never an address. Nothing is sent from here.
+   */
+  openReport: {
+    channel: "app:open-report",
+    request: z.tuple([reportRouteSchema, z.string().max(REPORT_TEXT_MAX)]),
+    response: reportOpenedSchema,
+  },
+  /** Takes a screenshot of the editor's window, only when the person asks (OL-10). */
+  captureWindow: {
+    channel: "app:capture-window",
+    request: z.tuple([]),
+    response: windowCaptureSchema,
+  },
+  /** Saves the screenshot taken, where the person chooses, for them to attach (OL-10). */
+  saveWindowCapture: {
+    channel: "app:save-window-capture",
+    request: z.tuple([]),
+    response: captureSavedSchema,
+  },
+  /** Forgets the screenshot taken: the dialog has closed, or the person removed it. */
+  discardWindowCapture: {
+    channel: "app:discard-window-capture",
+    request: z.tuple([]),
+    response: z.null(),
+  },
 } as const;
 
 /**
@@ -238,6 +314,19 @@ export interface AppApi {
   openGuide(guide: Guide): Promise<boolean>;
   /** Spell checks text in `language`, the site's (a language tag such as `en-GB`). */
   setSpellCheckLanguage(language: string): Promise<null>;
+  /** What Report a Problem sends with a report, and where it can (OL-10). */
+  getReportInfo(): Promise<ReportInfo>;
+  /** Opens a report of `text` as a new GitHub issue or an email, for the person to send. */
+  openReport(
+    route: "issue" | "mail",
+    text: string,
+  ): Promise<"opened" | "cut" | "failed" | "unavailable">;
+  /** Takes a screenshot of the editor's window. */
+  captureWindow(): Promise<WindowCapture>;
+  /** Saves the screenshot taken, where the person chooses. */
+  saveWindowCapture(): Promise<"saved" | "cancelled" | "failed" | "none">;
+  /** Forgets the screenshot taken. */
+  discardWindowCapture(): Promise<null>;
   /** Shows `menus` in macOS's menu bar; nothing elsewhere. */
   setNativeMenus(menus: NativeMenus): Promise<null>;
   /** Runs `run` with a command's id whenever it is chosen in macOS's menu bar. */

@@ -34,6 +34,7 @@ function setUp(platform: NodeJS.Platform) {
     helpWindows: {} as HelpWindows,
     mainWindow: () => undefined,
     crashReports: { registerHandlers: vi.fn() },
+    reportDialogs: { chooseScreenshotToSave: async () => undefined },
   };
   const feature = appCallsFeature(deps);
   const invoke = (channel: string, ...args: unknown[]) =>

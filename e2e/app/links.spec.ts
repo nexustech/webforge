@@ -42,6 +42,14 @@ test.beforeEach(async () => {
             text: '<p>Order at <a href="https://example.com/cakes">our cake shop</a>.</p>',
           },
         },
+        {
+          type: "Button",
+          props: {
+            id: "find-us",
+            label: "Find us",
+            link: { kind: "url", href: "https://example.com/map" },
+          },
+        },
       ],
     },
   });
@@ -117,7 +125,8 @@ test("follows no link on the canvas, from a click or Enter: the canvas stays on 
     );
   const before = await where();
 
-  for (const name of ["Visit us", "our cake shop"]) {
+  // A button with a link, and a link in text. The Hero's button has none, so isn't a link (#1256).
+  for (const name of ["Find us", "our cake shop"]) {
     const link = canvas.getByRole("link", { name });
     // Where a person clicks: on the element, which Puck's overlay covers.
     await link.click({ force: true });

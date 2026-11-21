@@ -51,8 +51,10 @@ test("adds a Booking button, a Button preset reading Book now, as one step (2.11
 
   await item("Booking button").click();
 
-  const button = canvas().locator(".site-button a");
+  // Greyed out until it has a link, which the export needs (#1256).
+  const button = canvas().locator(".site-button .btn");
   await expect(button).toHaveText("Book now");
+  await expect(button).toHaveAttribute("aria-disabled", "true");
   await left().getByRole("tab", { name: "Undo History" }).click();
   await expect(steps()).toHaveText(["Added Button", "Opened page"]);
 });

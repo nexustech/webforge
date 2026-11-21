@@ -15,6 +15,7 @@ import {
   partnersOf,
   shownValueOf,
   type ThemeControl,
+  withSampleLinks,
 } from "@webforge/site-components";
 import { lookFieldsOf } from "../../clipboard/index.js";
 import { specOf } from "../../editor/edit-panel-fields.js";
@@ -149,10 +150,14 @@ export function KindChoice({ groups, shown, onKind }: KindChoiceProps) {
   );
 }
 
-/** Each kind's node as its larger preview draws it, with its defaults: made once, so kept. */
+/**
+ * Each kind's node as its larger preview and the sample page draw it, with its defaults and a link
+ * on each button, so the theme's buttons show as on a site, not greyed as one without a link
+ * (#1256): made once, so kept.
+ */
 const previewNodes = new WeakMap<ComponentLibrary, Map<string, NodeDoc>>();
 
-/** `type`'s node in `library`, with its defaults, the same object each time. */
+/** `type`'s node in `library`, with its defaults and its buttons linked, the same object each time. */
 export function previewNode(library: ComponentLibrary, type: string): NodeDoc {
   let nodes = previewNodes.get(library);
   if (nodes === undefined) {
@@ -162,7 +167,10 @@ export function previewNode(library: ComponentLibrary, type: string): NodeDoc {
   let node = nodes.get(type);
   if (node === undefined) {
     const defaults = library.components[type]?.defaults ?? {};
-    node = { type, props: { ...structuredClone(defaults), id: "preview" } };
+    node = withSampleLinks(library, {
+      type,
+      props: { ...structuredClone(defaults), id: "preview" },
+    });
     nodes.set(type, node);
   }
   return node;

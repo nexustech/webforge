@@ -155,6 +155,24 @@ describe("the catalogue as data (4.8)", () => {
     expect(CATALOGUE.Section?.fields.lookUnderline).toBeUndefined();
   });
 
+  it("names a text field of its own component as each button's label (#1256)", () => {
+    const buttons = Object.entries(CATALOGUE).flatMap(([type, component]) =>
+      Object.entries(component.fields).flatMap(([name, field]) =>
+        field.kind === "link" && field.button !== undefined
+          ? [{ type, name, label: component.fields[field.button]?.kind }]
+          : [],
+      ),
+    );
+
+    expect(buttons.map(({ type, name }) => `${type}.${name}`).sort()).toEqual([
+      "Button.link",
+      "CallToAction.buttonLink",
+      "Hero.buttonLink",
+      "PricingPlan.link",
+    ]);
+    for (const { label } of buttons) expect(label).toBe("text");
+  });
+
   it("checks a field's value by its kind", () => {
     const hero = CATALOGUE.Hero;
     if (hero === undefined) throw new Error("No Hero");

@@ -95,7 +95,12 @@ export const catalogueFieldSchema = z.discriminatedUnion("kind", [
     /** Can show the picture of the post it is drawn for, in a Blog's design (6.10a). */
     itemBindable: z.literal(true).optional(),
   }),
-  z.strictObject({ ...common, kind: z.literal("link") }),
+  z.strictObject({
+    ...common,
+    kind: z.literal("link"),
+    /** The text field labelling the button it opens: text with no link is a finding (#1256). */
+    button: z.string().optional(),
+  }),
   z.strictObject({ ...common, kind: z.literal("code") }),
   z.strictObject({ ...common, kind: z.literal("icon") }),
   z.strictObject({

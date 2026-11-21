@@ -173,6 +173,8 @@ export const site = {
     "Give the WhatsApp number with its country code (+44 …) in the Edit panel",
   "site.binding.elementHint.paymentLink":
     "Add the payment link (https://…) from Stripe, PayPal or your shop, in the Edit panel",
+  "site.binding.elementHint.buttonLink":
+    "Add a link in the Edit panel: until then, your site leaves this button out",
   "site.binding.elementHint.webAddress":
     "Share buttons show once your site has its web address: add it in Site Settings › Web address",
   "site.settings.title": "Site Settings",

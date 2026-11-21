@@ -204,7 +204,15 @@ export type FieldDef = {
    * Where a link goes (F-ED-18), stored as a `LinkValue`: a page of the site (optionally a section
    * on it), an e-mail address, a phone number or a web address, optionally in a new tab.
    */
-  | { readonly kind: "link"; readonly label: string }
+  | {
+      readonly kind: "link";
+      readonly label: string;
+      /**
+       * The text field that labels the button this link opens (#1256): a button with text and no
+       * link is left out of the export, and Site Check names it.
+       */
+      readonly button?: string;
+    }
   /**
    * Code the person writes themselves (Custom Code's HTML, F-ED-15), stored as written: edited in a
    * monospace box of its own lines, never on the canvas.
@@ -338,13 +346,14 @@ export type SiteBindings = {
 
 /**
  * What an element is missing, for {@link SiteBindings.elementHint}: a video's or a map's address,
- * a Buy button's payment link, Contact buttons' details, or the site's web address, which Share
- * buttons share (6.17b).
+ * a Buy button's payment link, a button's link (#1256), Contact buttons' details, or the site's web
+ * address, which Share buttons share (6.17b).
  */
 export type ElementHint =
   | "videoAddress"
   | "mapAddress"
   | "paymentLink"
+  | "buttonLink"
   | "blog"
   | "contactButtons"
   | "whatsappNumber"

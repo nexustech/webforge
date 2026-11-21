@@ -97,7 +97,7 @@ describe("hover effects (2.12, F-DS-5)", () => {
     expect(hoverClasses({})).toBe("");
     expect(hoverClasses({ hover: "spin" })).toBe("");
 
-    expect(html("Button", { label: "Book", hover: "lift" })).toContain(
+    expect(html("Button", { link: "about", label: "Book", hover: "lift" })).toContain(
       "motion-safe:hover:-translate-y-1",
     );
   });
@@ -220,6 +220,7 @@ describe("hover transitions and transforms (2.28, ST-7)", () => {
   it("darkens a Button of its own colour where its row has no effect, timed by that row", () => {
     const button = html("Button", {
       label: "Book",
+      link: "about",
       lookBackground: "primary",
       hover: { $responsive: { desktop: "lift", mobile: "none" } },
       hoverSpeed: "slow",

@@ -2081,7 +2081,8 @@
         },
         "link": {
           "kind": "link",
-          "label": "Button link"
+          "label": "Button link",
+          "button": "label"
         },
         "icon": {
           "kind": "icon",
@@ -3084,7 +3085,8 @@
         },
         "buttonLink": {
           "kind": "link",
-          "label": "Button link"
+          "label": "Button link",
+          "button": "buttonLabel"
         },
         "alignment": {
           "kind": "select",
@@ -3731,7 +3733,8 @@
         },
         "buttonLink": {
           "kind": "link",
-          "label": "Button link"
+          "label": "Button link",
+          "button": "buttonLabel"
         },
         "contentWidth": {
           "kind": "select",
@@ -7640,7 +7643,8 @@
         "link": {
           "kind": "link",
           "label": "Button link",
-          "sensitive": true
+          "sensitive": true,
+          "button": "buttonLabel"
         },
         "featured": {
           "kind": "toggle",
