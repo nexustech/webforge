@@ -1,14 +1,12 @@
 import {
   collectionOf,
   expandSharedCopies,
-  isNodeDoc,
-  type NodeDoc,
   type PageEntry,
   type PageId,
   pagePath,
   type SiteDoc,
 } from "@webforge/model";
-import { type Catalogue, mainHeadingsOf } from "@webforge/site-components/catalogue-data";
+import { pageHeadings } from "@webforge/site-components/catalogue-data";
 import type { CheckRule, ContactField, Finding } from "../types.js";
 
 // Site Check's *Being found* group (3.17, SEO-7): what stops people finding the site, in plain
@@ -133,26 +131,12 @@ export const sameDescriptionsRule: CheckRule = {
 };
 
 /**
- * How many main headings (`<h1>`) `nodes` show, at any depth, hidden ones left out: each by its
- * component's `mainHeading` in `catalogue` (#982), so a new component that writes one is counted.
- */
-function mainHeadings(nodes: readonly NodeDoc[], catalogue: Catalogue): number {
-  let count = 0;
-  for (const node of nodes) {
-    if (node.props.hidden === true) continue;
-    count += mainHeadingsOf(catalogue[node.type]?.mainHeading, node.props);
-    for (const value of Object.values(node.props)) {
-      if (Array.isArray(value)) count += mainHeadings(value.filter(isNodeDoc), catalogue);
-    }
-  }
-  return count;
-}
-
-/**
  * A page with no main heading, or with several: search engines take the first as the page's
- * subject. Counted as the page shows: its Header and Footer unless it hides them, its copies of
- * shared sections as they are, and a post's Blog design around it, which holds its title (#936). A
- * tip.
+ * subject. Counted as the page shows: its Header and Footer unless it hides them, a post's Blog
+ * design around it, which holds its title (#936), and its copies of shared sections as they are.
+ * A page with none of its own has its first section title as one (#1173), as the canvas and the
+ * export draw it: each component's `mainHeading` and `titleField` in `catalogue` say how (#982),
+ * so a new component that writes one is counted. A tip.
  */
 export const mainHeadingRule: CheckRule = {
   id: "mainHeading",
@@ -161,11 +145,17 @@ export const mainHeadingRule: CheckRule = {
   check: ({ site, catalogue }) =>
     listedPages(site).flatMap((page) => {
       const design = collectionOf(site, page)?.design;
-      const count =
-        (page.settings.hideHeader ? 0 : mainHeadings(site.layout.header, catalogue)) +
-        (design === undefined ? 0 : mainHeadings([...design.before, ...design.after], catalogue)) +
-        mainHeadings(expandSharedCopies(page.doc.content, site.sharedSections), catalogue) +
-        (page.settings.hideFooter ? 0 : mainHeadings(site.layout.footer, catalogue));
+      const { own, promoted } = pageHeadings(
+        [
+          page.settings.hideHeader ? [] : site.layout.header,
+          design?.before ?? [],
+          expandSharedCopies(page.doc.content, site.sharedSections),
+          design?.after ?? [],
+          page.settings.hideFooter ? [] : site.layout.footer,
+        ],
+        (type) => catalogue[type],
+      );
+      const count = own + (promoted === undefined ? 0 : 1);
       return count === 1
         ? []
         : [{ key: page.id, place: pagePlace(page.id), values: { headings: count } }];
