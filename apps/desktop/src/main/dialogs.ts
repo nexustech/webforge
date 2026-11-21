@@ -32,6 +32,8 @@ export type NativeDialogs = {
   readonly publish: Pick<PublishParts, "chooseKeyFile">;
   /** *Import Posts…*'s files (6.10b): Markdown or CSV, several at once. */
   readonly posts: { choosePostFiles(): Promise<readonly string[] | undefined> };
+  /** Report a Problem's screenshot (OL-10), saved for the person to attach. */
+  readonly report: { chooseScreenshotToSave(): Promise<string | undefined> };
 };
 
 /** The native file dialogs, each modal to the focused window when there is one. */
@@ -146,6 +148,19 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
           properties: ["openFile", "multiSelections"],
         });
         return result.canceled ? undefined : result.filePaths;
+      },
+    },
+    report: {
+      chooseScreenshotToSave: async () => {
+        const answer = await parts.testAnswer("save");
+        if (answer !== undefined) return answer.path;
+        // The system's dialog asks before replacing a file of that name.
+        const result = await save({
+          title: t("help.report.screenshot.saveTitle"),
+          defaultPath: `${safeFileName(t("help.report.screenshot.fileName"), "screenshot")}.png`,
+          filters: [{ name: t("help.report.screenshot.fileType"), extensions: ["png"] }],
+        });
+        return result.canceled || result.filePath === "" ? undefined : result.filePath;
       },
     },
     publish: {

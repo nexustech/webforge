@@ -6,6 +6,46 @@ export const help = {
   "help.window.title": "{appName} Help",
   "help.topic": "Help: {title}",
   "help.openFailed": "The Help window didn't open. Try again in a moment.",
+  // Help › Report a Problem (5.23, OL-10): a report the person sends themself.
+  "help.report.details": "{appName} {version} on {system}",
+  // A message too long for a browser's address, cut short where it opens.
+  "help.report.cut": "(Cut short: the rest is in the message I'll paste below.)",
+  "help.report.public":
+    "A GitHub issue is public: anyone can read it, and you need a GitHub account to send it. Leave out personal details, such as a customer's name or address, and don't attach a screenshot that shows them.",
+  "help.report.subject": "A problem with {appName}",
+  "help.report.screenshot.saveTitle": "Save the Screenshot",
+  "help.report.screenshot.fileName": "{appName} screenshot",
+  "help.report.screenshot.fileType": "PNG image",
+  "help.report.title": "Report a Problem",
+  "help.report.about":
+    "Tell us what went wrong. {appName} sends nothing itself: your report opens in your browser or mail app, for you to send, and you see everything in it first.",
+  "help.report.message": "What happened?",
+  "help.report.placeholder": "What you did, what you expected, and what happened instead",
+  "help.report.sentWith": "Sent with it: {details}. Nothing of your site goes with it.",
+  "help.report.screenshot.title": "Screenshot",
+  "help.report.screenshot.take": "Take a Screenshot of This Window",
+  "help.report.screenshot.alt": "The screenshot of the {appName} window",
+  "help.report.screenshot.attach":
+    "It isn't added to the report: save it, then attach it to your issue or email.",
+  "help.report.screenshot.save": "Save Screenshot…",
+  "help.report.screenshot.remove": "Remove",
+  "help.report.clear": "Clear Message",
+  "help.report.copy": "Copy My Message",
+  "help.report.issue": "Open a GitHub Issue",
+  "help.report.mail": "Write an Email",
+  "help.report.status.copied": "Copied, with the version and system.",
+  "help.report.status.opened-issue":
+    "The form opened in your browser, filled in. Send it from there, then clear your message here.",
+  "help.report.status.opened-mail":
+    "The email opened in your mail app. Send it from there, then clear your message here.",
+  "help.report.status.cut":
+    "It opened, but your message was too long for it and was cut short. Click Copy My Message, and paste the rest in.",
+  "help.report.status.open-failed":
+    "It didn't open. Copy your message instead, and paste it where you report problems.",
+  "help.report.status.captured": "Screenshot taken.",
+  "help.report.status.capture-failed": "The screenshot couldn't be taken.",
+  "help.report.status.saved": "Screenshot saved.",
+  "help.report.status.save-failed": "The screenshot couldn't be saved. Try another folder.",
   "help.contents": "Contents",
   "help.search.label": "Search help",
   "help.search.placeholder": "Search help",
