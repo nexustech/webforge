@@ -1,6 +1,6 @@
 # Theme Studio, if we built it again
 
-**Status:** 🟡 For decision (TS-1…TS-16). Nothing here is in the plan, and the product owner asked that nothing be planned yet. [§5](#5-one-way-of-styling-and-no-modes) is a second pass that would replace TS-1, TS-2 and TS-8.
+**Status:** 🟡 For decision (TS-1…TS-22). Nothing here is in the plan, and the product owner asked that nothing be planned yet. [§5](#5-one-way-of-styling-and-no-modes) is a second pass that would replace TS-1, TS-2 and TS-8. [§6](#6-theme-panel-v2-and-theme-studio-v2) is a third: Theme panel v2 and Theme Studio v2, with a value of your own for any setting and fonts of your own.
 
 **Date:** 2026-11-21
 
@@ -18,7 +18,7 @@ From the help page [Themes](../../docs/help/themes.md), the code (`apps/desktop/
 - **Fifteen themes to start from,** and "your own version" saved unasked on the first change.
 - **Contrast checked where the colour is chosen,** with a colour suggested.
 - **Every change is one undo step,** and a site carries its own copy of its theme.
-- **No free values as the main path.** Per-element spacing and raw values are why sites made in designer tools drift and can't be given a new theme.
+- **No free values as the main path.** Per-element spacing and raw values are why sites made in designer tools drift and can't be given a new theme. [§6](#6-theme-panel-v2-and-theme-studio-v2) changes this for the theme's own settings only: a value of your own, within limits, that still reaches every page.
 
 ## 3. What is in the way today
 
@@ -104,12 +104,80 @@ About 14 days. Taking TS-10 to TS-14 drops TS-1, TS-2 and TS-8 (6 days), which l
 - **Decisions this would change:** the Design and Content switch (F-ED-10), Simple and Advanced mode (F-ED-11), the _Style this_ dialog (CT-1…CT-9), what Simple mode's Theme tab shows (LF-16) and the Site menu's Theme… and Theme Studio… ([#1016](https://github.com/nexustech/webforge/issues/1016)). Each needs reading again before any of this is planned.
 - **Two sketches** were drawn in the conversation and aren't kept in the repository: a café page with two buttons, the panel at its three scopes, the groups folding, and the lock.
 
-## 6. What this note does not propose
+## 6. Theme panel v2 and Theme Studio v2
 
-- Free values, raw CSS or spacing for one element as a main path ([§2](#2-what-stays)); Advanced mode keeps what it has.
+A third pass, the same day. The product owner:
+
+> "Lets think about how the Theme panel and Theme Studio work together, we should be consistent so if we make UX/UI changes to the Theme Panel then the Theme Studio should not look out of place"
+
+and, to tell the new from what ships: "Call the new concepts Theme Studio v2 and Theme Panel v2 so we can distinguish it easily from what we offer now which is v1".
+
+|                  | v1, what ships today                                                      | v2, proposed here                                                                            |
+| ---------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Theme panel**  | A list in the right column, built as Edit panel fields (`ThemePanel.tsx`) | The same panel with every theme setting in a group that folds (TS-12), the same for everyone |
+| **Theme Studio** | A window of five tabs with its own rows (`studio/`), over a sample page   | Theme panel v2 itself, beside a large preview of the site's own pages                        |
+
+Theme panel v2 is the _Whole site_ scope of TS-10's Design panel if that is taken, and the Theme panel with TS-12's folding groups if it isn't.
+
+### 6.1 Why v1's two can drift
+
+- **The list is only half shared.** `theme-controls.ts` builds one list (`TOKEN_CONTROLS`) that both read, but it leaves out the colours, the fonts and the text sizes (`DRAWN_OWN_WAY`). Each surface builds those itself, and they are the settings people use most.
+- **The two belong to different families.** The Theme panel is drawn with the Edit panel's fields, so it matches the Edit panel. Theme Studio shares its frame with Style This (`StylingFrame.tsx`), so the two windows match each other. A change to the panels doesn't reach the windows.
+
+### 6.2 What v1 offers beyond its presets
+
+Read from the help pages ([Themes](../../docs/help/themes.md), [Styling](../../docs/help/styling.md), [The Stylesheet panel](../../docs/help/stylesheet.md), [Custom Code](../../docs/help/custom-code.md)), not from using each one.
+
+| What                                                    | Where                                              | Limits                                                                                |
+| ------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Any colour for the theme's five colours                 | Both                                               | Typing a colour's code needs Advanced mode in the panel; Theme Studio always shows it |
+| Colours from an image                                   | Theme Studio › Colours                             |                                                                                       |
+| A size for each heading level, body text and small text | Theme Studio › Text; the panel in Advanced mode    | From a list of sizes; Simple mode's panel has _Smaller_, _Standard_ and _Larger_      |
+| Weight and line spacing for each kind of text           | Theme Studio only                                  |                                                                                       |
+| Any font for Headings, Body text and Accent             | Both                                               | Only the fonts Webforge offers: "You can't add font files of your own yet"            |
+| The look of every item of a kind, with gradients        | Theme Studio › Components                          | A draft until **Apply Changes**                                                       |
+| Your own named themes                                   | Saved on the first change; managed in Theme Studio | Kept on this computer                                                                 |
+| A Custom colour on one item                             | The Style tab's colour fields                      | Advanced mode only, until 5.29                                                        |
+| CSS of your own (`custom.css`)                          | The Stylesheet panel, and Custom Code in Settings  | Advanced mode only. Theme Studio has no CSS and doesn't point to it                   |
+
+Corners, shadows, spacing, border width, button shape and card style are each a short list. No value of your own can be given.
+
+**Already decided, so not proposed again:** colours of your own in the theme (TC-1a, TC-1b; 5.27, 5.28), any colour in Simple mode (TC-2, 5.29), and "Add to your colours" (TC-3, 5.31). TC-2's decision says "Spacing, sizes and corners stay tokens in Simple mode"; TS-19 would change that.
+
+### 6.3 Proposals
+
+Sizes are rough ideal days. The product owner's answer on values and code, which TS-19 to TS-21 follow: "Custom values for everyone, CSS only with code tools". And on fonts: "Not being able to use your own fonts looks like an obvious gap in our current offering".
+
+| #         | Proposal                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Changes or builds on                                                                                                      | Size |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---- |
+| **TS-17** | **One description of every theme setting.** The list both surfaces read gains the colours, the fonts and the text sizes, and says for each setting its group, its kind and whether it is an essential. The panel, Theme Studio, the help page and the words an AI app is given are all made from it, so a setting is never in one and not another                                                                                                                                                                                                           | `TOKEN_CONTROLS` (`theme-controls.ts`); AS-2 and AS-7 ([product/24](24-styling-with-ai.md))                               | 2    |
+| **TS-18** | **Theme Studio v2 is Theme panel v2, beside a large preview.** Opening it keeps the panel, with the same rows and folds, and gives the rest of the window to the site's own pages on Desktop and Mobile, **Before** and **After**, the themes to choose from, and examples for the open group. The Components tab becomes the scope at the top of the panel (_Whole site › Every Button_). Style This follows the same pattern for one item. A change to the panel shows in Theme Studio because it is the same panel                                       | Takes in TS-1. In place of TS-13, which removes the window. `StylingFrame.tsx`                                            | 3.5  |
+| **TS-19** | **A value of your own on every setting with presets.** Each such row ends in **Custom…**, which turns it into a slider with a number, starting from the preset it had; **Back to Rounded** returns to the preset. Each slider has limits, so a value can't break a layout, and nobody types a unit. An AI app can give the same values, which reaches what the trial couldn't (log row 12)                                                                                                                                                                  | The theme's tokens, which hold a preset's name today. Changes TC-2's "stay tokens in Simple mode" and [§2](#2-what-stays) | 4    |
+| **TS-20** | **Every theme setting, for everyone.** A colour's code and a size for each kind of text are in the panel whatever the mode, in groups that start folded; the colour rows themselves stay without codes, as LF-16 decided. With TC-2, nothing in the theme differs between Simple and Advanced mode                                                                                                                                                                                                                                                          | Changes LF-16 (Simple mode's Theme tab shows no codes) to "none on the rows"; TS-16                                       | 1    |
+| **TS-21** | **CSS only with code tools.** With **Show code tools** on, the panel adds **Open Stylesheet** at its foot, each setting's variable (`var(--color-primary)`) with a button to copy it, and **Move This Look to CSS** where it is today. With it off, the panel never mentions CSS                                                                                                                                                                                                                                                                            | The Stylesheet panel; TS-16                                                                                               | 1    |
+| **TS-22** | **Fonts of your own.** **Add Your Own Font…** in **Choose a Font** takes WOFF2, WOFF, TTF or OTF files, reads each one's family, weight and style, and lists the family under **Your fonts**, drawn in itself. The files are kept with the site, as its pictures are, and the exported site carries them like any other font. The panel and Site Check say which weights the theme uses and the font lacks, and when a file is heavy. The person is told once that the licence is theirs to check. An AI app can choose one of your fonts and can't add one | `faces.ts` and the font catalogue, which know only Fontsource's packages; the export's `assets/fonts/`                    | 5    |
+
+About 16.5 days. TS-18 is in place of TS-13 (1.5 days), which leaves about 39.5 days for everything in this note without TS-5.
+
+**What I'd take first:** TS-17 and TS-18. They are what stops the two drifting, and they are the least reversible to do later, since every setting added to v1 is added twice. TS-22 stands alone and needs none of the others.
+
+### 6.4 What isn't known
+
+- **What a theme switch does to a value of your own.** A view, not a decision: colours of your own stay, since they are the business's; a value of your own on a preset row is replaced by the new theme's, and the question that switching already asks says so.
+- **How much code assumes a preset's name.** TS-19's size is the least certain here: the theme's CSS, the font plan and the tests were not read for it.
+- **What Theme Studio v2 gives up.** v1 spreads its settings in columns across the window. Beside a preview they are one column. Not tried with anyone.
+- **Which side the panel sits on** in Theme Studio v2, and whether its changes apply at once (TS-14).
+- **Converting a font to WOFF2** on the way in would make sites lighter and needs a library with a permissive licence. None was looked for.
+- **Where a font of your own is kept for other sites.** A downloaded font is kept on the computer for all of them; whether your own are offered there too is open.
+- **A sketch** of Theme Studio v2 was drawn in the conversation and isn't kept in the repository: the same panel in the editor and in Theme Studio, with Desktop and Mobile, **Before** and **After** and the themes to choose from.
+
+## 7. What this note does not propose
+
+- Free values or spacing for one element, or raw CSS as a main path ([§2](#2-what-stays)). TS-19's value of your own is for a setting of the theme, so it still reaches every page.
+- Fonts loaded from another website, such as a font service's.
 - Animated or generated themes, or a marketplace of themes.
 - Anything already decided: your colours and any colour in Simple mode (TC-1a…TC-4), the colour picker and live theme colours (OL-18, OL-19), dark mode for visitors (6.11), the code editors (TC-5, TC-6).
 
-## 7. Decisions
+## 8. Decisions
 
-None yet. Product owner, 2026-11-21: "Theme Studio write note but do not plan anything yet"; and, the same day, of §5: "Write it into the Theme Studio note as proposals".
+None yet. Product owner, 2026-11-21: "Theme Studio write note but do not plan anything yet"; and, the same day, of §5: "Write it into the Theme Studio note as proposals"; and of §6: "Add it to the Theme Studio note with v2". The owner's answer in §6 ("Custom values for everyone, CSS only with code tools") is the direction TS-19 to TS-21 are written to; it has no decision ID, and none of them is planned.
