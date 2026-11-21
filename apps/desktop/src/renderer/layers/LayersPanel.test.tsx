@@ -155,7 +155,7 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(items[1]?.tabIndex).toBe(0);
     expect(items[0]?.tabIndex).toBe(-1);
     expect(
-      screen.getByRole("button", { name: "Show or hide Heading (now: Don't Publish)" }),
+      screen.getByRole("button", { name: "Not published. Choose whether Heading shows…" }),
     ).toBeTruthy();
   });
 
@@ -165,7 +165,10 @@ describe("LayersPanel (F-ED-12)", () => {
 
     expect(rows.every((row) => row.getAttribute("data-row-draggable") === "false")).toBe(true);
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true, ...MOD });
-    for (const eye of screen.getAllByRole("button", { name: /^Show or hide/, hidden: true })) {
+    for (const eye of screen.getAllByRole("button", {
+      name: /Choose whether .* shows…$/,
+      hidden: true,
+    })) {
       expect(eye.hasAttribute("disabled")).toBe(true);
     }
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown" });
@@ -299,10 +302,12 @@ describe("LayersPanel (F-ED-12)", () => {
   it("shows, hides while editing or keeps off the website with the eye's menu, selecting nothing (UX-23)", async () => {
     const { actions } = setUp();
 
-    await userEvent.click(screen.getByRole("button", { name: "Show or hide 'Hours' (now: Show)" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Shown. Choose whether 'Hours' shows…" }),
+    );
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Don't Publish" }));
     await userEvent.click(
-      screen.getByRole("button", { name: "Show or hide Heading (now: Don't Publish)" }),
+      screen.getByRole("button", { name: "Not published. Choose whether Heading shows…" }),
     );
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Hide While Editing" }));
 
@@ -328,17 +333,23 @@ describe("LayersPanel (F-ED-12)", () => {
         .getByRole("menuitemradio", { name: "Hide While Editing" })
         .getAttribute("aria-disabled");
 
-    await userEvent.click(screen.getByRole("button", { name: "Show or hide Header (now: Show)" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Shown. Choose whether Header shows…" }),
+    );
     expect(disabled()).toBe("true");
     await userEvent.keyboard("{Escape}");
-    await userEvent.click(screen.getByRole("button", { name: "Show or hide Heading (now: Show)" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Shown. Choose whether Heading shows…" }),
+    );
     expect(disabled()).toBeNull();
   });
 
   it("puts the focus back on the row when the eye's menu closes, selecting nothing", async () => {
     const { actions } = setUp(null);
 
-    await userEvent.click(screen.getByRole("button", { name: "Show or hide 'Hours' (now: Show)" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Shown. Choose whether 'Hours' shows…" }),
+    );
     await userEvent.keyboard("{Escape}");
 
     await vi.waitFor(() => expect(document.activeElement?.getAttribute("data-layer")).toBe("b"));

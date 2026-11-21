@@ -33,8 +33,8 @@ export type EditPanelField = FieldSpec & {
    */
   readonly warning?: string;
   /**
-   * Where its value comes from (3.12, CT-3), in words under its control: *Set here*, *Theme's look
-   * for Buttons*, *Theme's (Corners: Medium)*. With `onReveal`, the words are a link that shows
+   * Where its value comes from (3.12, CT-3), in words under its control: *Set here*, *Same as the
+   * theme's look for Buttons*, *Same as theme (Corners: Medium)*. With `onReveal`, the words are a link that shows
    * where it comes from: the token in the Theme tab, the kind's look in Theme Studio.
    */
   readonly source?: FieldSource;
@@ -54,6 +54,11 @@ export type EditPanelField = FieldSpec & {
    * that is a part of a page (glossary).
    */
   readonly optionGroup?: OptionGroup;
+  /**
+   * Another name the search finds it by, not translated: its CSS property, for people who know CSS
+   * ("padding" for *Space inside*, F23).
+   */
+  readonly alsoCalled?: string;
 };
 
 /** Where a field's value comes from (CT-3); see {@link EditPanelField.source}. */

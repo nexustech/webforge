@@ -4,7 +4,7 @@ id: styling
 title: Styling
 summary: Change how a section or element looks, and give the same look to others like it.
 related: [edit-panel, themes, sections, elements]
-updated: 2026-11-16
+updated: 2026-11-20
 ---
 
 # Styling
@@ -21,10 +21,10 @@ The **Appearance** group, at the top of the Style tab, is on every section and e
   - **Letter case:** _As typed_, _CAPITALS_, _lower case_ or _Each Word_.
   - **Text alignment**.
 - **Colour:** **Text colour** and **Background**.
-- **Box:** **Corners**, **Border**, **Border colour** and **Shadow**, and **Padding** on elements.
+- **Box:** **Corners**, **Border**, **Border colour** and **Shadow**, and **Space inside** (padding) on elements.
 - **Opacity**.
 
-_Theme's_ means the item follows the theme. Every option except Font can be [different on each device](edit-panel.md#different-on-each-device).
+_Same as theme_ means the item follows the theme. Every option except Font can be [different on each device](edit-panel.md#different-on-each-device).
 
 ## Colours
 

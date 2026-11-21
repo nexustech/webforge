@@ -202,11 +202,11 @@ test("sets a padding for the Mobile view only, shown and cleared with its dot (F
   await selectSection();
 
   // A new site's Section has Medium padding above and below, so each side has its own row (1.32).
-  const top = panel().getByRole("radiogroup", { name: "Padding Top" });
+  const top = panel().getByRole("radiogroup", { name: "Space inside Top" });
   await top.getByRole("radio", { name: "S", exact: true }).click();
 
-  await expect(steps().first()).toHaveText("Changed Section padding on Mobile");
-  const dot = panel().getByRole("button", { name: /^Padding: set for Mobile only/ });
+  await expect(steps().first()).toHaveText("Changed Section space inside on Mobile");
+  const dot = panel().getByRole("button", { name: /^Space inside: set for Mobile only/ });
   await expect(dot).toBeVisible();
   await expect(section).toHaveClass(/(^| )px-4 pt-8 pb-16 md:py-16( |$)/);
 
@@ -229,10 +229,10 @@ test("sets a padding for the Mobile view only, shown and cleared with its dot (F
   await page.getByRole("radio", { name: "Design", exact: true }).click();
   await selectSection();
   await dot.click();
-  await expect(steps().first()).toHaveText("Reset Section padding on Mobile");
+  await expect(steps().first()).toHaveText("Reset Section space inside on Mobile");
   await expect(
     panel()
-      .getByRole("img", { name: /^Padding: same as Desktop on Mobile/ })
+      .getByRole("img", { name: /^Space inside: same as Desktop on Mobile/ })
       .first(),
   ).toBeVisible();
   await expect(section).toHaveCSS("padding-top", "64px");
