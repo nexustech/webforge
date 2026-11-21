@@ -194,7 +194,7 @@ export function usageSummarySchema(lists: UsageLists) {
 export type UsageSummaryData = z.infer<ReturnType<typeof usageSummarySchema>>;
 
 /** A summary with nothing counted yet, for install `installId`, begun `at`. */
-export function emptyUsageSummary(installId: string, at: number): UsageSummaryData {
+function emptyUsageSummary(installId: string, at: number): UsageSummaryData {
   return {
     version: 1,
     installId,
