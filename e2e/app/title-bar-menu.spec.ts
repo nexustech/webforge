@@ -40,7 +40,11 @@ const title = (name: string) => menuBar().getByRole("menuitem", { name, exact: t
 /** Waits until no menu is fading out: when the press used to leave its menu closed (#689). */
 const closingDone = () => expect(page.locator('[role="menu"][data-state="closed"]')).toHaveCount(0);
 
-/** Where `menu`'s bottom edge is on the page, in CSS pixels. */
+/**
+ * Where `menu`'s bottom edge is on the page, in CSS pixels. A menu that fills the room below its
+ * title or item can end up to a pixel lower: its place is rounded to a whole pixel, its height
+ * isn't.
+ */
 async function bottomOf(menu: Locator): Promise<number> {
   const box = await menu.boundingBox();
   return box === null ? Number.POSITIVE_INFINITY : box.y + box.height;
@@ -96,18 +100,19 @@ test("closes an open menu from its title, or a press outside it", async () => {
   await expect(view).toBeHidden();
 });
 
-test("groups File and View to fit a 600 px window, and opens the history panels and Site Check from the menus (#1165)", async () => {
-  // As short as the smallest window (MIN_WINDOW_SIZE), wide enough for the menus' titles.
-  await sizeWindow(1280, 600);
-  await expect.poll(() => page.evaluate(() => window.innerHeight)).toBeLessThanOrEqual(600);
+test("groups File, Edit and View to fit a 640 px window, and opens the history panels and Site Check from the menus (#1165)", async () => {
+  // A little taller than the smallest window (MIN_WINDOW_SIZE, 600 px), which View and Edit fit
+  // from with 24 px rows (#1181), and wide enough for the menus' titles.
+  await sizeWindow(1280, 640);
+  await expect.poll(() => page.evaluate(() => window.innerHeight)).toBeLessThanOrEqual(640);
   const windowHeight = await page.evaluate(() => window.innerHeight);
 
-  for (const name of ["File", "View"]) {
+  for (const name of ["File", "Edit", "View"]) {
     await title(name).click();
     const menu = page.getByRole("menu", { name });
     await expect(menu).toBeVisible();
     // All of it in the window, with no scrolling, and no run of more than seven items.
-    await expect.poll(() => bottomOf(menu)).toBeLessThanOrEqual(windowHeight);
+    await expect.poll(() => bottomOf(menu)).toBeLessThanOrEqual(windowHeight + 1);
     const fits = await menu.evaluate((root) => root.scrollHeight <= root.clientHeight + 1);
     expect(fits, name).toBe(true);
     const runs = await menu.evaluate((root) => {
@@ -169,8 +174,8 @@ test("groups File and View to fit a 600 px window, and opens the history panels 
 });
 
 test("lists Edit in its groups, and the site's settings, theme and stylesheet under Site (#1016)", async () => {
-  // As short as the smallest window (MIN_WINDOW_SIZE), where Edit is taller than the room below
-  // it, and wide enough for the menus' titles.
+  // As short as the smallest window (MIN_WINDOW_SIZE), where Edit, as View, is taller than the room
+  // below it by a row or two (#1181), and wide enough for the menus' titles.
   await sizeWindow(1280, 600);
   await expect.poll(() => page.evaluate(() => window.innerHeight)).toBeLessThanOrEqual(600);
   const windowHeight = await page.evaluate(() => window.innerHeight);
@@ -181,7 +186,7 @@ test("lists Edit in its groups, and the site's settings, theme and stylesheet un
   // Undo; clipboard; arranging; the Style, Select and Shared Section submenus; notes; find.
   await expect(edit.getByRole("separator")).toHaveCount(5);
   // It ends inside the window and scrolls instead (#1015)…
-  await expect.poll(() => bottomOf(edit)).toBeLessThanOrEqual(windowHeight);
+  await expect.poll(() => bottomOf(edit)).toBeLessThanOrEqual(windowHeight + 1);
   // …so its last item can still be reached, and is shown in it.
   await edit.getByRole("menuitem").first().focus();
   await page.keyboard.press("End");
@@ -215,7 +220,7 @@ test("lists Edit in its groups, and the site's settings, theme and stylesheet un
   const shared = page.getByRole("menu", { name: "Shared Section" });
   // Opened near the bottom, it stays inside the window too.
   await expect(shared).toBeVisible();
-  await expect.poll(() => bottomOf(shared)).toBeLessThanOrEqual(windowHeight);
+  await expect.poll(() => bottomOf(shared)).toBeLessThanOrEqual(windowHeight + 1);
   await expect(shared.getByRole("menuitem")).toHaveText([
     /^Save as Shared Section…/,
     /^Rename…/,
@@ -250,6 +255,13 @@ test("lists Edit in its groups, and the site's settings, theme and stylesheet un
   await title("View").click();
   const view = page.getByRole("menu", { name: "View" });
   await expect(view.getByRole("menuitem", { name: /^Theme/ })).toHaveCount(0);
+  // View too is a row or two taller than the room here: it scrolls to its last item (#1181).
+  await expect.poll(() => bottomOf(view)).toBeLessThanOrEqual(windowHeight + 1);
+  await view.getByRole("menuitem").first().focus();
+  await page.keyboard.press("End");
+  const lastOfView = view.locator('[role="menuitem"]:not([data-disabled])').last();
+  await expect(lastOfView).toBeFocused();
+  await expect.poll(() => isShownIn(lastOfView, view)).toBe(true);
   await view.getByRole("menuitem", { name: "Use Advanced Mode" }).click();
   await closingDone();
   await title("Site").click();

@@ -37,7 +37,7 @@ export function CanvasBreadcrumbs({ session, engine }: CanvasBreadcrumbsProps) {
   return (
     <nav
       aria-label={t("canvas.breadcrumbs")}
-      className="flex h-7 shrink-0 items-center border-border border-b px-2"
+      className="flex h-8 shrink-0 items-center border-border border-b px-2"
     >
       <ol className="m-0 flex min-w-0 list-none items-center gap-0.5 p-0 text-xs">
         {crumbs.map((crumb, index) => {
@@ -51,7 +51,7 @@ export function CanvasBreadcrumbs({ session, engine }: CanvasBreadcrumbsProps) {
                 type="button"
                 aria-current={last ? "location" : undefined}
                 className={cn(
-                  "max-w-48 truncate rounded-sm px-1.5 py-0.5 outline-none",
+                  "h-7 max-w-48 truncate rounded-sm px-1.5 outline-none",
                   "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
                   last ? "font-medium text-foreground" : "text-muted-foreground",
                 )}
