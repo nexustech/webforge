@@ -534,7 +534,9 @@ export async function setBrandColours(
 
 /**
  * Switches the theme to `preset` (D7): asked first, with the pages it changes, then one step,
- * "Changed theme to 'Bistro'". The preset's tokens replace the theme's, colours and fonts too.
+ * "Changed theme to 'Bistro'". The preset's tokens replace the theme's, colours and fonts too, but
+ * not the person's own colours (TC-1a, #1217): those are the business's, and the site uses them.
+ * One of their own themes brings its own with it, and keeps those the site had that it hasn't.
  */
 export async function switchPreset(
   session: ThemeSession,
@@ -549,7 +551,15 @@ export async function switchPreset(
   });
   if (!ok) return false;
   session.edit("props", t("theme.history.preset", { name }), (draft) => {
-    draft.theme = copyTheme(preset);
+    const kept = copyTheme(draft.theme).ownColors ?? [];
+    const next = copyTheme(preset);
+    const brought = next.ownColors ?? [];
+    const ownColors = [
+      ...brought,
+      ...kept.filter(({ id }) => !brought.some((each) => each.id === id)),
+    ];
+    draft.theme =
+      ownColors.length === 0 && next.ownColors === undefined ? next : { ...next, ownColors };
   });
   return true;
 }

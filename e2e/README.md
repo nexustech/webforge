@@ -29,6 +29,13 @@ pnpm e2e
 
 This builds `apps/desktop` and runs the tests against the production build (`out/`, loaded from `file://`), with the Electron version that `apps/desktop` depends on. On Linux, run it under a virtual display (`xvfb-run --auto-servernum pnpm e2e`); CI does this.
 
+CI runs the tests in parts side by side on each OS (#1286): the app's (`--project=app`) in shards, two on Linux and three on Windows and macOS, and the exported site's (`--project=export-setup` and the browsers) in a job of its own, whose exported site Linux's Firefox and WebKit job opens. Playwright's `--shard` splits by test count, and an app test takes several times an export test, so the two are sharded apart. To run one part locally:
+
+```sh
+pnpm e2e --project=app --shard=2/3
+pnpm e2e --project=export-setup --project=export-chromium
+```
+
 ```sh
 pnpm e2e:packaged
 ```
