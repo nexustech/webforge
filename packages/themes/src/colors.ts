@@ -156,7 +156,7 @@ const REVERSED_CONTRAST = 3;
  * from it: as it is where it stands apart from their surface by 3:1, else its hue and chroma at the
  * nearest lightness that does. As it is when no lightness does.
  */
-export function reversedOwnColor(tokens: ThemeTokens, color: Oklch): Oklch {
+function reversedOwnColor(tokens: ThemeTokens, color: Oklch): Oklch {
   const surface = inverseColors(tokens)["base-100"];
   const reads = (shade: Oklch) => contrastRatio(shade, surface) >= REVERSED_CONTRAST;
   if (reads(color)) return color;
