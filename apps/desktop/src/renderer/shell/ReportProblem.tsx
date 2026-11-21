@@ -107,7 +107,7 @@ export function ReportProblemDialog(props: ReportProblemDialogProps) {
                 <img
                   src={screenshot}
                   alt={t("help.report.screenshot.alt")}
-                  className="max-h-48 w-fit max-w-full rounded-sm border border-border"
+                  className="max-h-36 w-fit max-w-full rounded-sm border border-border"
                 />
                 <p className="m-0 text-sm text-muted-foreground">
                   {t("help.report.screenshot.attach")}
