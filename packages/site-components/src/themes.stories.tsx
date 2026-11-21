@@ -5,10 +5,9 @@ import { CURATED_THEMES_A, CURATED_THEMES_B, CURATED_THEMES_C } from "@webforge/
 import { ABOVE_THE_HEADER } from "./catalogue/announcement-bar.js";
 import { BELOW_THE_FOOTER } from "./catalogue/contact-buttons.js";
 import { siteLibrary, starterLayout } from "./catalogue/index.js";
-import { EDITOR_RENDER_CONTEXT } from "./library.js";
+import { EDITOR_RENDER_CONTEXT, withSampleLinks } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
 import type { RenderContext } from "./schema.js";
-import { linkButtons } from "./stories/link-buttons.js";
 
 /** The classes the export gives a page's `<body>` (`BODY_CLASS` in the pipeline). */
 const BODY_CLASS = "flex min-h-screen flex-col bg-base-100 font-sans text-base-content";
@@ -48,7 +47,14 @@ function samplePage(): string {
 function laidOut(header: NodeDoc[], sections: NodeDoc[], footer: NodeDoc[]): string {
   const ids = new Set<string>();
   const html = (nodes: NodeDoc[]) =>
-    renderNodesToHtml(pastedCopies(nodes.map(linkButtons), ids), siteLibrary, SAMPLE_CONTEXT);
+    renderNodesToHtml(
+      pastedCopies(
+        nodes.map((node) => withSampleLinks(siteLibrary, node)),
+        ids,
+      ),
+      siteLibrary,
+      SAMPLE_CONTEXT,
+    );
   return `${html(header)}<main id="main" class="flex-1">${html(sections)}</main>${html(footer)}`;
 }
 

@@ -1,7 +1,7 @@
 import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { siteLibrary } from "./catalogue/index.js";
-import { EDITOR_RENDER_CONTEXT } from "./library.js";
+import { EDITOR_RENDER_CONTEXT, withSampleLinks } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
 import type { RenderContext } from "./schema.js";
 
@@ -75,5 +75,23 @@ describe("a button with text and no link (#1256)", () => {
     const blank = html({ type: "Button", props: { id: "button", label: " ", link: "" } }, canvas);
     expect(blank).not.toContain("[buttonLink]");
     expect(blank).not.toContain("btn");
+  });
+});
+
+describe("a sample's buttons (#1256)", () => {
+  it("get a link where they have none, in slots too, keeping one they have", () => {
+    const own = { kind: "url", href: "https://example.com/order" };
+    const [hero, , button, pricing] = buttons("").map((node) => withSampleLinks(siteLibrary, node));
+    const linked = withSampleLinks(siteLibrary, {
+      type: "Button",
+      props: { id: "own", label: "Order", link: own },
+    });
+
+    expect(hero?.props.buttonLink).toEqual({ kind: "url", href: "https://example.com" });
+    expect(button?.props.link).toEqual({ kind: "url", href: "https://example.com" });
+    const [plan] = (pricing?.props.items ?? []) as readonly NodeDoc[];
+    expect(plan?.props.link).toEqual({ kind: "url", href: "https://example.com" });
+    expect(plan?.props.id).toBe("plan");
+    expect(linked.props.link).toBe(own);
   });
 });

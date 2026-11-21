@@ -66,6 +66,7 @@ export {
   textValue,
   withAdvanced,
   withLook,
+  withSampleLinks,
 } from "./library.js";
 export { ENLARGE_ATTRIBUTE, singleLightboxHtml } from "./lightbox.js";
 export { hrefFor } from "./links.js";
