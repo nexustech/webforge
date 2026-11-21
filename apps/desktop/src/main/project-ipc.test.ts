@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ProjectResult } from "../shared/ipc-contract.js";
 import { type ProjectDialogs, registerProjectHandlers } from "./project-ipc.js";
 import type { ProjectSession } from "./project-session.js";
+import { setUsageSink, type UsageEvent } from "./usage.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
@@ -471,5 +472,43 @@ describe("a site's ZIP (4.7)", () => {
       await expect(invoke("project:open-zip")).resolves.toEqual({ status: "canceled" });
       expect(session.create).not.toHaveBeenCalled();
     }
+  });
+});
+
+describe("making and saving sites in the usage summary (5.40)", () => {
+  it("counts a site once, as how it was made: a brief's as a brief, the quick start's, a template's", async () => {
+    const counted: UsageEvent[] = [];
+    setUsageSink((event) => counted.push(event));
+    try {
+      const { invoke } = setUp();
+      await invoke("project:create", APP_URL, { ...bakery, business: {}, fromBrief: true });
+      await invoke("project:create", APP_URL, { ...bakery, business: {} });
+      await invoke("project:create", APP_URL, bakery);
+      await invoke("project:create", APP_URL, { name: "Blank", theme: "light" });
+    } finally {
+      setUsageSink();
+    }
+
+    expect(counted).toEqual([
+      { kind: "siteStarted", how: "brief", template: "cafe" },
+      { kind: "siteStarted", how: "quickStart", template: "cafe" },
+      { kind: "siteStarted", how: "template", template: "cafe" },
+      { kind: "siteStarted", how: "blank" },
+    ]);
+  });
+
+  it("counts a save that failed by its reason, but not one another site's opening refused", async () => {
+    const counted: UsageEvent[] = [];
+    setUsageSink((event) => counted.push(event));
+    try {
+      const { invoke, session } = setUp();
+      session.commit.mockReturnValueOnce({ status: "failed", reason: "read-only" } as never);
+      await invoke("project:commit", APP_URL, project.sessionId, []);
+      await invoke("project:commit", APP_URL, "0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f", []);
+    } finally {
+      setUsageSink();
+    }
+
+    expect(counted).toEqual([{ kind: "saveFailed", reason: "read-only" }]);
   });
 });

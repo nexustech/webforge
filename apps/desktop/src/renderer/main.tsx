@@ -16,6 +16,7 @@ import {
 } from "./startup.js";
 import "./styles.css";
 import { setFailureLog, showInDevConsole } from "./log.js";
+import { setUsageLog } from "./usage.js";
 
 // Bootstrap only; App is unit-tested and E2E tests cover this file.
 
@@ -29,6 +30,8 @@ const reportError = createErrorReporter(window.webforge.app.reportError);
 installErrorReporting(window, reportError);
 // Failures the editor handles go into the app's log, by code (R12).
 setFailureLog(window.webforge.app.logFailure);
+// What the editor does is counted in the usage summary, on this computer only (5.40, BD-1).
+setUsageLog(window.webforge.app.recordUsage);
 
 document.title = t("app.name");
 // Shift+F10 opens context menus on macOS too, as it does on Windows (#287).

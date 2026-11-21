@@ -35,7 +35,7 @@ export function CanvasCover({ engine }: { readonly engine: CanvasEngine | null }
   useEffect(() => {
     if (engine === null) return;
     const timer = setTimeout(() => {
-      reportFailure("canvas styles", new Error("The site's styles didn't arrive in time"));
+      reportFailure("canvas.styles", new Error("The site's styles didn't arrive in time"));
       setShown(engine);
     }, CANVAS_COVER_TIMEOUT_MS);
     const stop = engine.onStyled(() => {

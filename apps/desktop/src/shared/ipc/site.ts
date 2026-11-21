@@ -71,7 +71,7 @@ export const siteContentSchema = exportRequestSchema.pick({
 export type SiteContent = z.infer<typeof siteContentSchema>;
 
 /** Why an export failed; the renderer shows a translated message for each. */
-const exportFailureReasonSchema = z.enum([
+export const EXPORT_FAILURES = [
   "folder-not-empty",
   "build-failed",
   "write-failed",
@@ -81,7 +81,12 @@ const exportFailureReasonSchema = z.enum([
   "too-large",
   // A Media image the export doesn't decode (S12): `image` says which, to replace.
   "unreadable-image",
-]);
+] as const;
+
+const exportFailureReasonSchema = z.enum(EXPORT_FAILURES);
+
+/** One of {@link EXPORT_FAILURES}. */
+export type ExportFailure = (typeof EXPORT_FAILURES)[number];
 
 /**
  * A problem the export found that didn't stop it (X5), for the export report: a link to a page or

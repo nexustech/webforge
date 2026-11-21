@@ -5,6 +5,23 @@ import type { MediaImportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
 import { importMediaFiles } from "./media-import.js";
 import type { ProjectSession, SessionSite } from "./project-session.js";
+import { recordUsage } from "./usage.js";
+
+/**
+ * Counts in the usage summary (5.40) the files an import left out and why, or why it failed: by
+ * reason only, never a file's name. Another site opening meanwhile isn't a failure of adding files.
+ */
+async function counted(
+  importing: MediaImportResult | Promise<MediaImportResult>,
+): Promise<MediaImportResult> {
+  const result = await importing;
+  if (result.status === "imported" && result.rejected.length > 0) {
+    recordUsage({ kind: "filesFailed", reasons: result.rejected.map((file) => file.reason) });
+  } else if (result.status === "failed" && result.reason !== "stale-session") {
+    recordUsage({ kind: "filesFailed", reasons: [result.reason] });
+  }
+  return result;
+}
 
 /** The native dialog of the Media import, injected so the handlers can be tested. */
 export type MediaDialogs = {
@@ -26,9 +43,11 @@ export function registerMediaHandlers(
   // Into the site the renderer was loaded for only (R6), checked again as each file is stored.
   registerIpcHandler(ipc, "importMedia", isTrustedSender, (sessionId, files) => {
     const reason = session.staleReason(sessionId);
-    return reason === undefined
-      ? importMediaFiles(session.forSession(sessionId), files)
-      : { status: "failed", reason };
+    return counted(
+      reason === undefined
+        ? importMediaFiles(session.forSession(sessionId), files)
+        : { status: "failed", reason },
+    );
   });
   // Dropped files by the paths the preload found for them (R13b): read in the storage writer,
   // their bytes never cross IPC. Only absolute paths, as the operating system gives them.
@@ -37,9 +56,11 @@ export function registerMediaHandlers(
       throw new Error("A dropped file's path must be absolute");
     }
     const reason = session.staleReason(sessionId);
-    return reason === undefined
-      ? importFilesAt(session.forSession(sessionId), paths)
-      : { status: "failed", reason };
+    return counted(
+      reason === undefined
+        ? importFilesAt(session.forSession(sessionId), paths)
+        : { status: "failed", reason },
+    );
   });
   registerIpcHandler(ipc, "chooseMedia", isTrustedSender, async (sessionId) => {
     // No dialog without the site to import into.
@@ -52,7 +73,7 @@ export function registerMediaHandlers(
       return { status: "canceled" };
     }
     // The dialog may have stayed open while a hand-off opened another site: stored only if not.
-    return importFilesAt(session.forSession(sessionId), paths);
+    return counted(importFilesAt(session.forSession(sessionId), paths));
   });
 }
 
