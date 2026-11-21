@@ -26,6 +26,8 @@ export type MediaRequestDeps = {
   readonly answerWithinMs?: number;
   /** How long a request's outcome is kept for `mediaStatus` once the person has chosen. */
   readonly keepMs?: number;
+  /** The first request's id; a random one when left out. */
+  readonly firstId?: number;
 };
 
 /**
@@ -103,7 +105,8 @@ export function createMediaRequests(deps: MediaRequestDeps): MediaRequests {
   >();
   /** Those answered `waiting` whose outcome is still to come. */
   const parked = new Set<number>();
-  let nextId = 1;
+  // From a random start: an id an app kept from the site open before can't name one of this one's.
+  let nextId = deps.firstId ?? 1 + ((crypto.getRandomValues(new Uint32Array(1))[0] ?? 0) % 2 ** 30);
 
   /** Asks the person, then opens Add files: what came of request `id`. */
   const run = async (id: number, asked: MediaAsk): Promise<AiResponse> => {

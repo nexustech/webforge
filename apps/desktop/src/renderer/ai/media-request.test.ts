@@ -35,6 +35,7 @@ function setup(changes: Partial<MediaRequestDeps> = {}) {
     choose: vi.fn<MediaRequestDeps["choose"]>(async () => [photo]),
     add: vi.fn<MediaRequestDeps["add"]>(),
     busy: () => false,
+    firstId: 1,
     ...changes,
   };
   const requests = createMediaRequests(deps);
@@ -195,6 +196,25 @@ describe("a request the person takes minutes over (#1252)", () => {
       status: "waiting",
       message: expect.stringContaining("hasn't answered your question"),
     });
+  });
+
+  it("numbers each opening's requests from a random start", async () => {
+    const ids = [0, 1].map(async () => {
+      const requests = createMediaRequests({
+        ask: () => new Promise<boolean>(() => undefined),
+        choose: async () => [],
+        add: () => undefined,
+        busy: () => false,
+        answerWithinMs: 1,
+      });
+      const waiting = await requests.requestMedia(request({ reason: "Photos" }));
+      return waiting.status === "waiting" && "requestId" in waiting.data
+        ? waiting.data.requestId
+        : undefined;
+    });
+    const [first, second] = await Promise.all(ids);
+    expect(first).toBeGreaterThan(0);
+    expect(first).not.toBe(second);
   });
 
   it("keeps nothing for a request answered at once, nor for one whose site closed", async () => {
