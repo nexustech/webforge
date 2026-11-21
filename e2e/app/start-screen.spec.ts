@@ -68,7 +68,13 @@ test("opens Settings on the start screen, and File › Close Site goes back to i
   // Its keys: Settings… is in File here, and in the app's menu on a Mac.
   await page.keyboard.press("ControlOrMeta+Comma");
   const settings = page.getByRole("dialog", { name: "Settings" });
-  await expect(settings.getByRole("tab")).toHaveText(["Interface", "Devices", "Updates"]);
+  // AI apps too, to connect an app before any site exists (#1244).
+  await expect(settings.getByRole("tab")).toHaveText([
+    "Interface",
+    "Devices",
+    "Updates",
+    "AI apps",
+  ]);
   await settings.getByRole("button", { name: "Cancel" }).click();
   await expect(settings).toBeHidden();
 

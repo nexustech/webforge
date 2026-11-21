@@ -75,6 +75,16 @@ const meta = {
     project: project([]),
     help: { open: async () => true },
     updates: { status: async () => ({ state: "idle" }), onStatus: () => () => undefined },
+    // AI apps, off, as on a first start (#1244).
+    mcp: {
+      status: async () => ({ enabled: false, address: null, moved: false, apps: [] }),
+      setEnabled: async () => ({ enabled: false, address: null, moved: false, apps: [] }),
+      add: async () => ({ status: "off" }),
+      seenMoved: async () => undefined,
+      install: async () => ({ status: "opened" }),
+      remove: async () => ({ enabled: false, address: null, moved: false, apps: [] }),
+    },
+    clipboard: { copyText: async () => null, copySecret: async () => null },
   },
 } satisfies Meta<typeof StartScreen>;
 export default meta;

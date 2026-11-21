@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { describe, expect, it, vi } from "vitest";
+import { UNCLAIMED_KEY_MS } from "../shared/ipc/mcp.js";
 import {
   type AiApps,
   aiAppsFileSchema,
@@ -9,7 +10,6 @@ import {
   createAiApps,
   type NewPairing,
   NO_AI_APPS,
-  UNCLAIMED_KEY_MS,
 } from "./ai-apps.js";
 import { createCredentialStore, mcpCredentialKey, type SecretCipher } from "./credential-store.js";
 import { createJsonStore } from "./json-store.js";

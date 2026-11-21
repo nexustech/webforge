@@ -1,10 +1,12 @@
 import { t } from "@webforge/i18n";
-import { CLAUDE_CODE_KEY_VARIABLE, claudeCodeCommand } from "../mcp-setup.js";
+import { CLAUDE_CODE_KEY_VARIABLE, claudeCodeCommand, claudeCodeKeyCommand } from "../mcp-setup.js";
 import type { AiClient } from "./types.js";
 
 /**
  * Claude Code (5.13, AIA-13): at the address directly, added by a command the person runs, with
- * the key in an environment variable, never in the command.
+ * the key in an environment variable, never in the command. Its setup is three steps, each with
+ * what it copies (#1245): the command that adds it, the one that gives the terminal the key for
+ * this computer's shell, with the key, and starting Claude Code in that terminal.
  */
 export const claudeCode = {
   id: "claudeCode",
@@ -12,17 +14,26 @@ export const claudeCode = {
   label: () => t("aiApps.client.claudeCode.label"),
   defaultName: () => t("aiApps.client.claudeCode.label"),
   hint: () => t("aiApps.client.claudeCode.hint"),
-  steps: {
+  setup: {
     title: () => t("aiApps.client.claudeCode.steps"),
-    items: () => [
-      t("aiApps.client.claudeCode.step1"),
-      t("aiApps.client.claudeCode.step2", { variable: CLAUDE_CODE_KEY_VARIABLE }),
+    steps: (address, shell) => [
+      {
+        text: t("aiApps.client.claudeCode.step1"),
+        command: {
+          value: claudeCodeCommand(address),
+          copyLabel: t("aiApps.client.claudeCode.copyCommand"),
+        },
+      },
+      {
+        text: t("aiApps.client.claudeCode.step2"),
+        command: {
+          value: claudeCodeKeyCommand(shell),
+          copyLabel: t("aiApps.client.claudeCode.copyKeyCommand"),
+        },
+        key: true,
+      },
+      { text: t("aiApps.client.claudeCode.step3") },
     ],
-  },
-  copy: {
-    label: () => t("aiApps.client.claudeCode.command"),
-    copyLabel: () => t("aiApps.client.claudeCode.copyCommand"),
-    value: claudeCodeCommand,
   },
   note: () => t("aiApps.client.claudeCode.keyWhere", { variable: CLAUDE_CODE_KEY_VARIABLE }),
 } as const satisfies AiClient<"claudeCode">;

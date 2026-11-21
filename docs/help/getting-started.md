@@ -55,7 +55,7 @@ Four short steps. Every question is optional, you can go back to any step, and *
 
 ## The tour
 
-The first time a site you made with **Start a Site…** opens, {appName} offers a short tour. Choose **Show Me Around**, or **Not Now** to start working straight away. It isn't offered again either way, and **Help › Take the Tour** starts it at any time.
+The first time a site you made with **Start a Site…** opens, {appName} offers a short tour. A site an AI app started for you opens without it, so it doesn't get in the way while the app builds your pages. Choose **Show Me Around**, or **Not Now** to start working straight away. It isn't offered again either way, and **Help › Take the Tour** starts it at any time.
 
 The tour has three steps, each in a small card beside the button or text it's about:
 
