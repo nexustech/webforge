@@ -16,6 +16,7 @@ import {
   matcher,
   replaceInSite,
   replaceInValue,
+  setTextField,
   type TextSpot,
 } from "./find-text.js";
 
@@ -350,5 +351,27 @@ describe("replaceInSite", () => {
       expect(replaceInSite(draft, siteLibrary, { ...SMITH, query: "" }, "x", [gone])).toEqual([]);
       expect(replaceInSite(draft, siteLibrary, SMITH, "x", [gone])).toEqual([]);
     });
+  });
+});
+
+describe("a text marked as an example, replaced (#1228)", () => {
+  it("loses its mark, a list item's by its id, and the others keep theirs", () => {
+    const node: NodeDoc = {
+      type: "Faq",
+      props: {
+        id: "faq",
+        heading: "Open 9am",
+        items: [
+          { id: "a", answer: "£12" },
+          { id: "b", answer: "Mon" },
+        ],
+        examples: { heading: true, "items.a.answer": true, "items.b.answer": true },
+      },
+    };
+    setTextField(node, { field: "heading" }, "Open 10am");
+    setTextField(node, { field: "items", item: { id: "a", field: "answer" } }, "£14");
+    // The same text again: nothing replaced, so the mark stays.
+    setTextField(node, { field: "items", item: { id: "b", field: "answer" } }, "Mon");
+    expect(node.props.examples).toEqual({ "items.b.answer": true });
   });
 });

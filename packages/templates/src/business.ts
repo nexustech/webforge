@@ -1,8 +1,11 @@
 import {
+  eachElement,
   escapeHtmlText,
+  markTestimonial,
   SITE_DESCRIPTION_MAX,
   type SiteDoc,
   siteSettingsSchema,
+  TESTIMONIAL_EXAMPLE,
   webAddressSchema,
 } from "@webforge/model";
 import { z } from "zod";
@@ -44,7 +47,8 @@ const dialled = (phone: string) => phone.replace(/[^\d+]/g, "");
  * they're published, but not its contact details (#1254): Site Settings' email, phone, address and
  * opening hours are the business's facts, so one the person didn't give is left empty rather than
  * made up, and what shows it shows Site Settings' empty-setting prompt. A sample still written in a
- * page, such as a *Call us* button's number, is Site Check's *Sample contact details*.
+ * page, such as a *Call us* button's number, is Site Check's *Examples to check*. So is each of the
+ * template's sample testimonials, marked as an example (#1228, WN-3): a made-up review.
  */
 export function withBusiness(site: SiteDoc, name: string, business: BusinessDetails): void {
   const { general, contact } = site.settings;
@@ -121,6 +125,10 @@ export function withBusiness(site: SiteDoc, name: string, business: BusinessDeta
   if (description !== undefined && hero !== undefined && typeof hero.props.text === "string") {
     hero.props.text = description;
   }
+  // The template's sample reviews, marked as examples: never published as the business's own.
+  eachElement(site, (node) => {
+    if (node.type === TESTIMONIAL_EXAMPLE.type) markTestimonial(node.props);
+  });
 }
 
 /** `text` without its ends' spaces, or `undefined` when nothing is left. */

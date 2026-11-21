@@ -1,11 +1,11 @@
-import type { CollectionId, PageId } from "@webforge/model";
+import { type CollectionId, isExample, type PageId } from "@webforge/model";
 import type { Finding } from "@webforge/site-check";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { insertBlog, insertPost } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
-import { jumpTo, type SiteCheckActions } from "./actions.js";
+import { confirmFor, jumpTo, type SiteCheckActions } from "./actions.js";
 import { describePlace } from "./describe.js";
 
 const BLOG = "blog" as CollectionId;
@@ -62,5 +62,39 @@ describe("a finding in a Blog's design (#936)", () => {
     jumpTo({ kind: "element", on: BLOG, nodeId: title }, actions);
     expect(panels.show).toHaveBeenCalledWith("site");
     expect(session.ui.getState().pageId).toBe(shown);
+  });
+});
+
+describe("This Is Correct on a text marked as an example (#1228)", () => {
+  it("clears its mark as one undo step of its own, and is offered for marked texts only", () => {
+    const { session, actions } = setUp();
+    const site = session.history.document.getState();
+    const pageId = site.pageOrder[0] as PageId;
+    const node = site.pages[pageId]?.doc.content[0];
+    if (node === undefined) throw new Error("no section");
+    const nodeId = node.props.id;
+    const field = "title";
+    session.edit("props", "Marked an example", (draft) => {
+      const target = draft.pages[pageId]?.doc.content[0];
+      if (target !== undefined) target.props.examples = { [field]: true, text: true };
+    });
+    const finding = (named = field): Finding => ({
+      key: `${pageId}/${nodeId}/${named}`,
+      place: { kind: "element", on: pageId, nodeId },
+    });
+    expect(confirmFor("placeholders", finding(), actions)).toBeUndefined();
+    expect(confirmFor("sampleDetails", finding("label"), actions)).toBeUndefined();
+
+    const confirm = confirmFor("sampleDetails", finding(), actions);
+    confirm?.();
+    const marked = () =>
+      session.history.document.getState().pages[pageId]?.doc.content[0]?.props ?? {};
+    // Every mark of the element, as Site Check lists it once.
+    expect(marked()).not.toHaveProperty("examples");
+    expect(session.history.entries().at(-1)?.label).toMatch(/example as correct/);
+    // Gone, nothing more is offered; undone, it's marked again.
+    expect(confirmFor("sampleDetails", finding(), actions)).toBeUndefined();
+    session.history.undo();
+    expect(isExample(marked(), field)).toBe(true);
   });
 });

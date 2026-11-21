@@ -18,7 +18,7 @@ import {
 import { t } from "@webforge/i18n";
 import type { PageDoc, PageEntry, PageId, SiteDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
-import { applyPatch } from "./apply-patch.js";
+import { applyPatch, clearEditedIn, markedPlaceOf } from "./apply-patch.js";
 import { labelFor } from "./labels.js";
 import { datePages, localDay } from "./page-updated.js";
 import {
@@ -405,6 +405,12 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
       }
       if (pause !== undefined && pause > TYPING_PAUSE_MS) history.breakCoalescing();
       const { patch, sharedSection, copyOf } = edit;
+      // A text marked as an example, edited, is the person's own: its mark goes in the same step
+      // (#1228, WN-3), wherever the edit is written from, a list item's as its list is edited.
+      const marked =
+        edit.nodeId === null || edit.field === null
+          ? undefined
+          : markedPlaceOf(history.document.getState(), pageId, edit.nodeId, edit.field);
       // An edit inside a copy, or another copy placed (F-ED-23): named by its shared section.
       const sharedOf = sharedSection?.id ?? copyOf;
       const sharedName =
@@ -427,25 +433,32 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
               ? t("history.editedSharedSection", { name: named })
               : t("history.addedSharedCopy", { name: named }),
         (draft) => {
-          if (sharedSection !== undefined) {
-            // Inside a linked copy (F-ED-23): its shared section, which every copy shows.
-            const entry = draft.sharedSections[sharedSection.id];
-            if (entry !== undefined) syncDraft(entry.section, sharedSection.section);
-            return;
-          }
-          if (edit.shared === true && edit.layout !== undefined) {
-            // The shared Header or Footer (F-ED-7): the site's layout, which every page shows; on a
-            // post, the Blog's design too, which every post shows (6.10a).
-            syncCanvasLayout(draft, history.document.getState(), pageId, edit.layout, syncDraft);
-            return;
-          }
-          const target = draft.pages[pageId];
-          // A one-field edit is written directly; anything else is compared with the whole page.
-          if (
-            target !== undefined &&
-            (patch === undefined || !applyPatch(target.doc, page, patch))
-          ) {
-            syncDraft(target.doc, edit.page);
+          const write = () => {
+            if (sharedSection !== undefined) {
+              // Inside a linked copy (F-ED-23): its shared section, which every copy shows.
+              const entry = draft.sharedSections[sharedSection.id];
+              if (entry !== undefined) syncDraft(entry.section, sharedSection.section);
+              return;
+            }
+            if (edit.shared === true && edit.layout !== undefined) {
+              // The shared Header or Footer (F-ED-7): the site's layout, which every page shows; on a
+              // post, the Blog's design too, which every post shows (6.10a).
+              syncCanvasLayout(draft, history.document.getState(), pageId, edit.layout, syncDraft);
+              return;
+            }
+            const target = draft.pages[pageId];
+            // A one-field edit is written directly; anything else is compared with the whole page.
+            if (
+              target !== undefined &&
+              (patch === undefined || !applyPatch(target.doc, page, patch))
+            ) {
+              syncDraft(target.doc, edit.page);
+            }
+          };
+          write();
+          // After it's written: a whole tree copied from the canvas brings the mark back with it.
+          if (marked !== undefined && edit.nodeId !== null && edit.field !== null) {
+            clearEditedIn(draft, marked, edit.nodeId, edit.field);
           }
         },
         {
