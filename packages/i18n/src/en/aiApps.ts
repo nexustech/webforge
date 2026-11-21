@@ -87,7 +87,10 @@ export const aiApps = {
   "aiApps.client.claudeCode.step1":
     "Add {appName} to Claude Code: run this command in a terminal. It adds {appName} for all your projects.",
   "aiApps.client.claudeCode.step2":
-    "In the same terminal, give it the key: run this command, then copy the key, paste it when the terminal waits for it, and press Return. The key doesn't show as you paste it.",
+    "In the same terminal, give it the key: run this command, then copy the key, paste it when the terminal waits for it, and press {key}. The key doesn't show as you paste it.",
+  // The key that ends the line, as the computer's keyboard names it (#1268 review).
+  "aiApps.client.claudeCode.returnKey": "Return",
+  "aiApps.client.claudeCode.enterKey": "Enter",
   "aiApps.client.claudeCode.step3":
     "Start Claude Code in that terminal before the key runs out. In Claude Code, /mcp lists webforge once it's connected.",
   "aiApps.client.claudeCode.keyWhere":
