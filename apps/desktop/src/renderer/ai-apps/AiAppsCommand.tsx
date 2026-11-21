@@ -8,7 +8,7 @@ import { COMMAND_IDS } from "../shell/command-ids.js";
 import { AiAppsDialog } from "./AiAppsDialog.js";
 
 /** Props of {@link AiAppsCommand}. */
-export type AiAppsCommandProps = {
+type AiAppsCommandProps = {
   readonly mcp: McpApi;
   readonly clipboard: Pick<ClipboardApi, "copyText" | "copySecret">;
 };

@@ -1,7 +1,7 @@
 import type { ShellKind } from "../mcp-setup.js";
 
 /** One step of a setup done by hand (#1245): what to do, and what it copies, if anything. */
-export type SetupStep = {
+type SetupStep = {
   readonly text: string;
   /** A command to run, shown with the step, with its copy button's words. */
   readonly command?: { readonly value: string; readonly copyLabel: string };

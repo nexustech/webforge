@@ -28,7 +28,7 @@ import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { TemplatesApi } from "../../shared/ipc/templates.js";
 import type { UpdatesApi } from "../../shared/ipc/updates.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
-import { AiAppsCommand } from "../ai-apps/AiAppsCommand.js";
+import { AiAppsCommand } from "../ai-apps/index.js";
 import { createSettingsRegistry } from "../editor/settings-registry.js";
 import { HelpCommands } from "../help/index.js";
 import { reportFailure } from "../log.js";

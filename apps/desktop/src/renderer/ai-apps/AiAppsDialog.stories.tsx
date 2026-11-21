@@ -97,7 +97,7 @@ const NOW = () => Date.UTC(2026, 10, 21, 9, 0, 0);
 
 /** Adds the app chosen in *Which app?* by `choice`, under the name offered for it. */
 const addAs = (choice: string) => async () => {
-  await userEvent.click(await screen.findByRole("button", { name: "Add AI app" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Add AI App" }));
   await userEvent.click(screen.getByRole("radio", { name: choice }));
   await userEvent.click(screen.getByRole("button", { name: "Add" }));
   await screen.findByRole("button", { name: "Done" });
@@ -106,7 +106,7 @@ const addAs = (choice: string) => async () => {
 /** *Add AI app*: the four kinds of app, Claude Desktop first (5.13). */
 export const Adding: Story = {
   play: async () => {
-    await userEvent.click(await screen.findByRole("button", { name: "Add AI app" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Add AI App" }));
   },
 };
 
