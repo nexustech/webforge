@@ -28,7 +28,11 @@ import {
   entranceClasses,
 } from "./motion.js";
 import type { DefaultsOf, FieldDef, RenderContext, RenderPropsOf, ValuesOf } from "./schema.js";
-import { SectionSubtitleAppearance, SectionTitleAppearance } from "./typography.js";
+import {
+  PageHeadingHere,
+  SectionSubtitleAppearance,
+  SectionTitleAppearance,
+} from "./typography.js";
 
 /** A section's own padding (`px-4 py-16`), for the sides left unset (1.32). */
 export const SECTION_PADDING = { top: 16, right: 4, bottom: 16, left: 4 } as const;
@@ -283,9 +287,17 @@ export function defineSection<const F extends Fields, const Variant extends stri
     ...(rest.pictureBehind ?? []),
     ...(background === false ? [] : [{ field: "backgroundImage" }]),
   ];
+  // Its title, which `SectionTitle` draws: the page's main heading on a page with none of its own,
+  // if it is the first section with one (#1173). A Hero's title is one of its own already.
+  const declared: Fields = fields;
+  const titleField =
+    titled !== false && rest.mainHeading === undefined && declared.title?.kind === "text"
+      ? "title"
+      : undefined;
   return defineFramedSection<F & FrameFields, Variant>({
     ...rest,
     ...(pictureBehind.length === 0 ? {} : { pictureBehind }),
+    ...(titleField === undefined ? {} : { titleField }),
     place: "section",
     // Its corners, left to the theme, are a box's (product/11, 3.12 note 7).
     themeCorners: "box",
@@ -355,9 +367,12 @@ export function defineSection<const F extends Fields, const Variant extends stri
           />
           <SectionTitleAppearance.Provider value={appearanceTextClasses(stored)}>
             <SectionSubtitleAppearance.Provider value={appearanceSubtitleClasses(stored)}>
-              <SectionWidthContext value={contentWidthPx(stored.contentWidth)}>
-                {render(props)}
-              </SectionWidthContext>
+              {/* Its title is the page's main heading where it has none of its own (#1173). */}
+              <PageHeadingHere value={props.id === props.context.pageHeading}>
+                <SectionWidthContext value={contentWidthPx(stored.contentWidth)}>
+                  {render(props)}
+                </SectionWidthContext>
+              </PageHeadingHere>
             </SectionSubtitleAppearance.Provider>
           </SectionTitleAppearance.Provider>
         </section>

@@ -69,7 +69,12 @@ export {
 } from "./library.js";
 export { ENLARGE_ATTRIBUTE, singleLightboxHtml } from "./lightbox.js";
 export { hrefFor } from "./links.js";
-export type { MainHeading } from "./main-heading.js";
+export {
+  type HeadingKind,
+  type MainHeading,
+  type PageHeadings,
+  pageHeadings,
+} from "./main-heading.js";
 export {
   ENTRANCE_FIELDS,
   entranceAttributes,
@@ -97,6 +102,7 @@ export {
   renderPage,
   UnknownComponentError,
   walkNodes,
+  withPageHeading,
 } from "./render-static.js";
 export { sanitizeRichText } from "./rich-text-html.js";
 export type {

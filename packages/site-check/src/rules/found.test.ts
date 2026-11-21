@@ -187,6 +187,33 @@ describe("main headings (3.17)", () => {
     expect(counts(withLayout)).toEqual([[ABOUT, 2]]);
   });
 
+  it("counts a page's first section title as its main heading when it has none of its own (#1173)", () => {
+    const story = element("TextSection", "story", { title: "Our story" });
+    const untitled = element("TextSection", "untitled", { title: "" });
+    const features = element("Features", "features", { title: "Why people come back" });
+    const hero = element("Hero", "hero", { title: "Rosa's Bakery" });
+    const hidden = { ...story, props: { ...story.props, id: "hidden", hidden: true } };
+    // The home page's count, with About's one heading.
+    const home = (nodes: NodeDoc[]) => {
+      const checked = site(nodes, [heading("a")]);
+      return (
+        findIn(mainHeadingRule, checked).find(({ key }) => key === checked.homePageId)?.values
+          ?.headings ?? 1
+      );
+    };
+    expect(home([story, features])).toBe(1);
+    // A later title where the first section has none, or is hidden.
+    expect(home([untitled, features])).toBe(1);
+    expect(home([hidden, features])).toBe(1);
+    // A Hero's title is its own: no second one.
+    expect(home([hero, story])).toBe(1);
+    expect(home([hero, heading("h1")])).toBe(2);
+    // No title anywhere, or nothing at all: none.
+    expect(home([untitled])).toBe(0);
+    expect(home([])).toBe(0);
+    expect(home([hidden])).toBe(0);
+  });
+
   it("counts any component whose catalogue entry says it writes one, by no name of its own (#982)", () => {
     // A section added after the rule was written: its title is the page's `<h1>`.
     const banner = element("PageBanner", "banner", { heading: "Opening soon", tone: "loud" });

@@ -65,6 +65,7 @@ function libraryAsData(): unknown {
       graphic,
       pictureBehind,
       mainHeading,
+      titleField,
     } = def;
     const has = group.filter((name) => Object.hasOwn(fields, name));
     const appearance =
@@ -108,6 +109,7 @@ function libraryAsData(): unknown {
         pictureBehind,
         textStyle: textStyleAsData(def),
         mainHeading,
+        titleField,
       },
     ];
   });
