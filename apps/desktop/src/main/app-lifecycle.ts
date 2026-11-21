@@ -4,6 +4,7 @@ import { announceClosedForE2eTests } from "./e2e-closed.js";
 import type { createFlushOnClose } from "./flush-on-close.js";
 import { log, logFailure } from "./log.js";
 import type { PreferencesStore } from "./preferences.js";
+import type { createSitePicture } from "./site-picture.js";
 import { defaultTimers, type Timers } from "./timers.js";
 
 /** The parts of a window the lifecycle brings forward; a fake in tests. */
@@ -28,6 +29,8 @@ export class AppLifecycle<W extends MainWindow = BrowserWindow> {
   preferences: PreferencesStore | undefined;
   /** Saves the renderer's last changes before its window closes (P2), once registered. */
   flushOnClose: ReturnType<typeof createFlushOnClose> | undefined;
+  /** Pictures of the open site for the Recent list (#1175), once IPC is registered. */
+  sitePicture: ReturnType<typeof createSitePicture> | undefined;
 
   readonly #windows: () => readonly W[];
 

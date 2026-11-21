@@ -5,7 +5,7 @@ title: Sections
 summary: Every section you can add to a page, what it's for and what you can change.
 components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat, Steps, Step, ContactButtons, Menu, MenuItem]
 related: [elements, add-panel, edit-panel, forms, header-and-footer]
-updated: 2026-11-20
+updated: 2026-11-21
 ---
 
 # Sections
@@ -45,7 +45,7 @@ Text beside a picture. **Layouts:** _Image on the right_ or _Image on the left_.
 
 ## Call to action
 
-Asks visitors to do one thing, with a title, a short text and a button. **Layouts:** _Banner_, centred in the theme's dark colour, or _Button beside the text_.
+Asks visitors to do one thing, with a title, a short text and a button. **Layouts:** _Banner_, centred in the theme's dark colour (or in the reversed colours when its _Colours_ are _Reversed_), or _Button beside the text_.
 
 ## Features
 

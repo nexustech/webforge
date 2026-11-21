@@ -141,6 +141,9 @@ describe("overlayOf and sectionOverlay (2.26)", () => {
     expect(CallToAction?.sectionText?.({ variant: "banner" })).toBe("neutral-content");
     expect(CallToAction?.sectionText?.({ variant: "split" })).toBeUndefined();
     expect(TextSection?.sectionText?.({})).toBeUndefined();
+    // A Reversed Banner draws the reversed surface, as any section does, with no text of its own
+    // (#1257).
+    expect(CallToAction?.sectionText?.({ variant: "banner", colors: "inverse" })).toBeUndefined();
   });
 
   it("gives the check the text colour the person set, on each device where they set it", () => {

@@ -693,6 +693,39 @@ describe("createPuckEngine", () => {
     expect(pic()).toBe("none");
   });
 
+  it("draws a page as the export does, without the canvas's hints for what's empty (#1175)", async () => {
+    await act(async () => {
+      engine.setSettings({
+        siteText: english,
+        setting: (key) => (key === "contact.phone" ? "0123" : undefined),
+        emptySetting: (key) => `Add ${key}`,
+      });
+      engine.setImages(
+        () => null,
+        () => "Choose one",
+      );
+    });
+    const home: PageDoc = {
+      ...page,
+      content: [
+        { type: "Bound", props: { id: "b1", text: "Own", bindings: { text: "contact.phone" } } },
+        { type: "Bound", props: { id: "b2", text: "Own", bindings: { text: "contact.email" } } },
+        { type: "Pic", props: { id: "p" } },
+      ],
+    };
+    const drawn = engine.staticPage(home, {
+      header: [{ type: "Bound", props: { id: "h", text: "At the top" } }],
+      footer: [],
+    });
+
+    expect(drawn?.header).toContain("At the top");
+    // Site Settings' values, as the canvas has them; none of its hints.
+    expect(drawn?.main).toContain("0123");
+    expect(drawn?.main).not.toContain("Add contact.email");
+    expect(drawn?.main).not.toContain("Choose one");
+    expect(drawn?.main).toContain("none");
+  });
+
   it("shows the site's opening hours, drawing the page again when they change (2.8)", async () => {
     const hours = () =>
       [...element.querySelectorAll(".t-hours li")].map((item) => item.textContent);

@@ -37,6 +37,13 @@ const gallery = defineSection({
     images: { kind: "slot", label: t("field.images"), allow: ["GalleryImage"] },
   },
   defaults: { title: t("starter.galleryTitle"), contentWidth: "wide", images: [] },
+  // Its preview shows the grid it makes: six images, each the space an image takes until chosen.
+  sample: {
+    images: Array.from({ length: 6 }, (_, at) => ({
+      type: "GalleryImage",
+      props: { id: `sample-image-${at + 1}`, caption: "" },
+    })),
+  },
   behaviours: ["lightbox"],
   frame: () => "bg-base-100",
   frameAttributes: () => ({ "data-wf-gallery": "" }),

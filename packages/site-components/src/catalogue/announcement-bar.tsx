@@ -10,7 +10,8 @@ const LAST_DAY = /^\d{4}-\d{2}-\d{2}$/;
 /**
  * A thin bar of news above the Header on every page (6.4, G19): one line of text ("Closed 24–26
  * December"), a link on it if it has one, in the theme's dark colour, whose text every theme
- * keeps readable (as the Call to action's banner is), on any page's colours. Its close button and
+ * keeps readable (as the Call to action's banner is), on any page's colours; set to Reversed
+ * colours, on the reversed surface instead, as any section is (#1257). Its close button and
  * last day work through the `announcement` script: the button shows only with it, and hides the
  * bar for the rest of the visit; after its last day the bar isn't shown. Without the script the
  * bar is always there. The Add panel puts it in the Header region, above the Header, so every page
@@ -34,7 +35,8 @@ const announcementBar = defineSection({
     // Thin: its own small padding inside, which Padding adds to.
     padding: { top: "none", bottom: "none" },
   },
-  frame: () => "bg-neutral text-neutral-content",
+  frame: (values) =>
+    values.colors === "inverse" ? "bg-base-100" : "bg-neutral text-neutral-content",
   // A landmark of its own, so a screen reader can find it, or skip it.
   frameAttributes: (values, context) => ({
     "aria-label": context.siteText("siteText.announcement.label"),

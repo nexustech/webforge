@@ -23,9 +23,9 @@ function matchesSearch(site: RecentSite, query: string): boolean {
 }
 
 /**
- * The start screen's Recent sites (F-SITE-2, LF-10): a search over them, and a card each, with its
- * thumbnail, name, folder and file, and when it was last edited, and buttons to pin it to the top
- * or take it off the list. A card opens its site; one whose file is gone can't.
+ * The start screen's Recent sites (F-SITE-2, LF-10): a search over them, and a card each, with a
+ * picture of its home page (#1175), name, folder and file, and when it was last edited, and buttons
+ * beside them to pin it to the top or take it off the list. A card opens its site; one whose file is gone can't.
  */
 export function RecentSites({ sites, locale, onOpen, onPin, onRemove }: RecentSitesProps) {
   const [query, setQuery] = useState("");
@@ -72,7 +72,9 @@ export function RecentSites({ sites, locale, onOpen, onPin, onRemove }: RecentSi
                     className="aspect-video w-full object-cover object-top"
                   />
                 )}
-                <span className="flex flex-col gap-1 p-3">
+                {/* Room on the right for Pin and Remove, which sit beside the text, never on the
+                    picture (#1175). */}
+                <span className="flex flex-col gap-1 p-3 pr-20">
                   <span className="truncate text-base font-medium">{site.name}</span>
                   <span className="truncate text-sm text-muted-foreground">
                     {site.folder === "" ? site.fileName : `${site.folder} › ${site.fileName}`}
@@ -86,12 +88,12 @@ export function RecentSites({ sites, locale, onOpen, onPin, onRemove }: RecentSi
                   </span>
                 </span>
               </button>
-              <span className="absolute top-1 right-1 flex gap-0.5">
+              <span className="absolute right-1 bottom-1 flex gap-0.5">
                 <Button
                   type="button"
                   size="icon"
                   variant="ghost"
-                  className={cn("bg-panel/80", site.pinned && "text-primary")}
+                  className={cn(site.pinned && "text-primary")}
                   // A toggle (APG): its name stays "Pin …", and pressed says it's pinned; the
                   // tooltip says what a click does.
                   aria-pressed={site.pinned}
@@ -108,7 +110,6 @@ export function RecentSites({ sites, locale, onOpen, onPin, onRemove }: RecentSi
                   type="button"
                   size="icon"
                   variant="ghost"
-                  className="bg-panel/80"
                   aria-label={t("site.start.remove", { name: site.name })}
                   tooltip={t("site.start.remove", { name: site.name })}
                   onClick={() => onRemove(site)}
