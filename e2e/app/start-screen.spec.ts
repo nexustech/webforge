@@ -37,6 +37,12 @@ test.afterEach(async () => {
 
 const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");
 
+/**
+ * How long File › Close Site may take to show the start screen: the last save, then the home
+ * page's picture for the Recent list, each with its own timeout (5 s and 5 s).
+ */
+const CLOSE_SITE_WAIT = 15_000;
+
 /** The running app; tests call it once they have launched one. */
 function running(): ElectronApplication {
   if (app === undefined) throw new Error("The app is not running");
@@ -90,13 +96,78 @@ test("opens Settings on the start screen, and File › Close Site goes back to i
   await waitForCanvas(page);
 
   await chooseFromMenu(running(), page, "File", "Close Site");
-  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
+  // Saved, and its picture taken for the Recent list (#1175): up to a few seconds on a cold start.
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
+    timeout: CLOSE_SITE_WAIT,
+  });
   // On the Recent list, and no longer the open one: it opens again from there.
   const card = page.getByRole("listitem").filter({ hasText: "Rosa's Bakery" });
-  // Its canvas, kept as it closed.
+  // A picture of its home page, taken as it closed (#1175).
   await expect(card.locator("img")).toHaveAttribute("src", /^data:image\/jpeg;base64,/);
   await card.getByRole("button").first().click();
   await waitForCanvas(page);
+});
+
+test("pictures the home page for the Recent list, not the editor with its selection (#1175)", async () => {
+  const page = await startWithoutSite();
+  await stubFileDialogs(running(), join(dir, "Rosa's Bakery.wforge"));
+  await page
+    .getByRole("button", { name: "Choose a Template Yourself…", exact: true })
+    .first()
+    .click();
+  const newSite = page.getByRole("dialog", { name: "New Site" });
+  await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
+  await newSite.getByRole("button", { name: "Create" }).click();
+  await waitForCanvas(page);
+  // A section selected, with its outline and grips on the canvas.
+  await canvas(page).locator("h1").first().click();
+  await expect(page.getByRole("navigation", { name: "Where the selection is" })).toBeVisible();
+
+  await chooseFromMenu(running(), page, "File", "Close Site");
+  // Saved, and its picture taken for the Recent list (#1175): up to a few seconds on a cold start.
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
+    timeout: CLOSE_SITE_WAIT,
+  });
+  // The home page drawn for its picture has gone again.
+  await expect(page.locator("[data-site-picture]")).toHaveCount(0);
+  const picture = page.getByRole("listitem").filter({ hasText: "Rosa's Bakery" }).locator("img");
+  await expect(picture).toHaveAttribute("src", /^data:image\/jpeg;base64,/);
+  // The home page's top 1280 × 800, as the export draws it: never the canvas, whose shape is the
+  // window's, with the panels around it.
+  const size = await picture.evaluate(async (image: HTMLImageElement) => {
+    await image.decode();
+    return { width: image.naturalWidth, height: image.naturalHeight };
+  });
+  expect(size.width).toBe(480);
+  expect(Math.abs(size.height - 300)).toBeLessThanOrEqual(1);
+  // Drawn, and with the site's CSS: more than one colour, and the Footer's band at the bottom of
+  // the page as tall as the window, which only the site's CSS lays out (a blank or unstyled
+  // capture has neither).
+  const pixels = await picture.evaluate((image: HTMLImageElement) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext("2d");
+    if (context === null) return undefined;
+    context.drawImage(image, 0, 0);
+    const at = (x: number, y: number) => [...context.getImageData(x, y, 1, 1).data.slice(0, 3)];
+    const grid = new Set<string>();
+    for (let x = 20; x < canvas.width; x += 40) {
+      for (let y = 15; y < canvas.height; y += 30) grid.add(at(x, y).join(","));
+    }
+    return {
+      colours: grid.size,
+      page: at(canvas.width / 2, Math.round(canvas.height * 0.66)),
+      footer: at(canvas.width / 2, canvas.height - 6),
+    };
+  });
+  if (pixels === undefined) throw new Error("The picture can't be read");
+  expect(pixels.colours).toBeGreaterThan(1);
+  const apart = pixels.page.reduce(
+    (sum, value, at) => sum + Math.abs(value - (pixels.footer[at] ?? 0)),
+    0,
+  );
+  expect(apart).toBeGreaterThan(6);
 });
 
 test("creates a blank site, keeps an edit and reopens it from the Recent list", async () => {

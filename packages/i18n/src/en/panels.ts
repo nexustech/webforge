@@ -91,6 +91,16 @@ export const panels = {
     "The selected section, {section}, holds no elements of its own. Elements go inside a Section: add one from Sections, or select one.",
   "add.noHolder": "Elements go inside a Section, and this page has none. Add one from Sections.",
   "add.noMatch": "Nothing matches '{query}'.",
+  // What a section's larger preview shows of what the site gives it (#1175): sample contact
+  // details and posts, never the site's own.
+  "add.sample.businessName": "Your business",
+  "add.sample.phone": "01632 960123",
+  "add.sample.email": "hello@example.com",
+  "add.sample.address": "1 High Street, Anytown",
+  "add.sample.post1": "Our new opening hours",
+  "add.sample.post2": "Meet the newest member of the team",
+  "add.sample.post3": "A look behind the scenes",
+  "add.sample.postSummary": "A sentence or two about what the post says.",
   "add.other": "Other",
   // The Sections tab's one list, A to Z (#523).
   "add.allSections": "All sections",

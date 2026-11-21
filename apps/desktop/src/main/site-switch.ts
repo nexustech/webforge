@@ -1,7 +1,10 @@
 import type { RecentSites } from "./recent-sites.js";
 
-/** How long the thumbnail may take; a hung renderer never answers, and the switch goes on. */
-const CAPTURE_TIMEOUT_MS = 3_000;
+/**
+ * How long the site's picture may take: the renderer's drawing (`DRAW_TIMEOUT_MS`, 4 s) and the
+ * capture. A hung renderer never answers, and the switch goes on.
+ */
+const CAPTURE_TIMEOUT_MS = 5_000;
 
 /** Options of {@link createSiteSwitch}. */
 export type SiteSwitchOptions = {
@@ -9,7 +12,7 @@ export type SiteSwitchOptions = {
   readonly currentPath: () => string | undefined;
   /** Asks the renderer to save its last changes (`app:flush`). */
   readonly requestFlush: () => Promise<void>;
-  /** A JPEG of the canvas, or `undefined` if there is no window to capture. */
+  /** A JPEG of the site's home page (`site-picture.ts`), or `undefined` if there's none. */
   readonly capture: () => Promise<Uint8Array | undefined>;
   readonly recent: Pick<RecentSites, "saveThumbnail">;
   readonly captureTimeoutMs?: number;
@@ -17,8 +20,8 @@ export type SiteSwitchOptions = {
 
 /**
  * What happens to the open site before another replaces it or the window closes (1.8): the
- * renderer saves its last changes, then the canvas is captured as the site's thumbnail on the
- * start screen's Recent list. A failed or hung capture never stops the switch.
+ * renderer saves its last changes, then its home page is pictured for the start screen's Recent
+ * list (#1175). A failed or hung capture never stops the switch.
  */
 export function createSiteSwitch(options: SiteSwitchOptions) {
   const timeoutMs = options.captureTimeoutMs ?? CAPTURE_TIMEOUT_MS;
