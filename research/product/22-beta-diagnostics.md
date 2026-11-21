@@ -1,6 +1,6 @@
 # What the beta tells us: a report the tester sends, and sessions
 
-**Status:** 🟡 For decision (BD-1…BD-6). The direction is decided: nothing is sent by Webforge itself ([§3](#3-direction)). Nothing here is in the plan.
+**Status:** ✅ Decided 2026-11-21 ([§6](#6-decisions)): BD-1 to BD-5 are adopted (5 days); BD-6, an upload button, is not taken. Nothing is sent by Webforge itself ([§3](#3-direction)). Not yet planned.
 
 **Date:** 2026-11-21
 
@@ -71,3 +71,18 @@ Sizes are rough ideal days.
 **What changes if adopted:** F-SITE-7 gains the summary and the window; the privacy line keeps "No telemetry" and adds that the summary stays on the computer until the person sends it; architecture §9 lists the summary's contents beside the crash report's; the testers' guide, triage notes and the help page on crash reports are updated in the same PRs.
 
 **Risks.** A count can still say something about a person (someone who adds a Buy button sells things): the window shows every count, and **Clear** removes them. The summary could grow into a log: the fixed list of events and the test in BD-1 are the guard. Reports arrive through public GitHub issues: the guide already warns that everything there can be read by anyone, and the report holds nothing private.
+
+## 6. Decisions
+
+Product owner, 2026-11-21: "Beta diagnostics adopt BD-1 to BD-5".
+
+| #    | Decision                                                                          |
+| ---- | --------------------------------------------------------------------------------- |
+| BD-1 | ✅ **Adopted:** a usage summary kept on the computer, with no place for free text |
+| BD-2 | ✅ **Adopted:** Help › Diagnostics…, to read, save and clear it                   |
+| BD-3 | ✅ **Adopted:** the forms ask for the report, and a script adds reports up        |
+| BD-4 | ✅ **Adopted:** watched sessions and a survey in each beta round                  |
+| BD-5 | ✅ **Adopted:** a random number for each install, reset by **Clear**              |
+| BD-6 | ❌ **Not taken:** an upload button. Webforge sends nothing by itself              |
+
+5 days in all. Not yet planned: the plan items, their issues and their place before the beta follow in `spec/04`.
