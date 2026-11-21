@@ -66,7 +66,7 @@ test("switching the theme asks first, with the pages it changes, and is one undo
   await page.getByRole("combobox", { name: "Theme", exact: true }).selectOption("bistro");
   const ask = page.getByRole("alertdialog", { name: "Switch to the theme 'Bistro'?" });
   // Every page: the home page and Page not found.
-  await expect(ask).toContainText("This changes 2 pages.");
+  await expect(ask).toContainText("2 pages of your site will change.");
   await ask.getByRole("button", { name: "Cancel" }).click();
   await expect(ask).toHaveCount(0);
   expect((await themeOf(page)).preset).toBe("light");
@@ -101,21 +101,21 @@ test("a colour hard to read says so under it, and a readable one doesn't", async
   await hex.selectText();
   await page.keyboard.type("d8d4ff");
   await page.keyboard.press("Enter");
-  // A built-in theme is read-only (2.23): the first change saves the person's own version.
-  await page
-    .getByRole("dialog", { name: "Save your own version of 'Light'?" })
-    .getByRole("button", { name: "Save Theme" })
-    .click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Change Colour" }).click();
+  // At once, nothing asked (LF-15): its toast says how far it reached, with Undo. A built-in
+  // theme is read-only (2.23): the first change saves the person's own version, unasked.
+  await expect(page.getByText(/^Brand colour changed on \d+ pages?$/)).toBeVisible();
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 
   await expect(
     brand.getByText(/Hard to read with Surface: [\d.]+:1, needs 4\.5:1\./),
   ).toBeVisible();
   await expect(hex).toHaveValue("#d8d4ff");
+  await expect
+    .poll(async () => (await themeOf(page)) as unknown)
+    .toMatchObject({ own: { name: "Light (yours)" } });
   await page.getByRole("tab", { name: "Undo History" }).click();
-  await expect(page.locator(".undo-history__step").first()).toHaveText(
-    "Saved theme 'Light (my version)'",
-  );
+  await expect(page.locator(".undo-history__step").first()).toHaveText("Changed brand colour");
 });
 
 test("Theme Studio opens from the View menu, switches theme from a card, and undoes it there", async () => {
@@ -172,14 +172,8 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
   await expect(studio.getByRole("list", { name: "Colours from Shop front.jpg" })).toBeVisible();
   const before = (await themeOf(page)).colors.primary;
   await studio.getByRole("button", { name: "Use These Colours" }).click();
-  // A built-in theme is read-only (2.23): the first change saves the person's own version.
-  await page
-    .getByRole("dialog", { name: "Save your own version of 'Light'?" })
-    .getByRole("button", { name: "Save Theme" })
-    .click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Use Colours" }).click();
-  // The change waits for a version of the site saved before it (`beforeSiteWide`), written to
-  // disk: longer than the poll's 5 s on a busy runner (#1147).
+  // At once, nothing asked (LF-15). The change waits for a version of the site saved before it
+  // (`beforeUnaskedChange`), written to disk: longer than the poll's 5 s on a busy runner (#1147).
   await expect
     .poll(async () => (await themeOf(page)).colors.primary, { timeout: OPEN_WAIT })
     .not.toEqual(before);
@@ -187,7 +181,7 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: "Undo History" }).click();
   await expect(page.locator(".undo-history__step").first()).toHaveText(
-    "Saved theme 'Light (my version)'",
+    "Changed brand colours from 'Shop front.jpg'",
   );
 });
 
@@ -202,14 +196,12 @@ test("a change to a built-in theme saves the person's own, which another site ca
     .getByRole("tab", { name: "Theme", exact: true })
     .click();
 
+  // Saved without asking, named after the built-in theme (LF-15).
   await page.getByRole("combobox", { name: "Card style" }).selectOption("raised");
-  const save = page.getByRole("dialog", { name: "Save your own version of 'Light'?" });
-  await save.getByRole("textbox", { name: "Theme name" }).fill("Bakery");
-  await save.getByRole("button", { name: "Save Theme" }).click();
-  await expect(page.getByRole("heading", { name: "Theme: Bakery" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Theme: Light (yours)" })).toBeVisible();
   await expect
     .poll(async () => (await themeOf(page)) as unknown)
-    .toMatchObject({ preset: "light", own: { name: "Bakery" } });
+    .toMatchObject({ preset: "light", own: { name: "Light (yours)" } });
   await app.close();
 
   // Another site on the same computer lists it first, and uses it.
@@ -223,11 +215,11 @@ test("a change to a built-in theme saves the person's own, which another site ca
     .getByRole("tab", { name: "Theme", exact: true })
     .click();
   const themes = page.getByRole("combobox", { name: "Theme", exact: true });
-  await expect(themes.locator("option").first()).toHaveText("Bakery");
-  await themes.selectOption({ label: "Bakery" });
+  await expect(themes.locator("option").first()).toHaveText("Light (yours)");
+  await themes.selectOption({ label: "Light (yours)" });
   await page.getByRole("alertdialog").getByRole("button", { name: "Switch Theme" }).click();
-  await expect(page.getByRole("heading", { name: "Theme: Bakery" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Theme: Light (yours)" })).toBeVisible();
   await expect
     .poll(async () => (await themeOf(page)) as unknown)
-    .toMatchObject({ own: { name: "Bakery" } });
+    .toMatchObject({ own: { name: "Light (yours)" } });
 });

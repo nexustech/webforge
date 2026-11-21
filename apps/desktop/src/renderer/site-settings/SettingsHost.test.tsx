@@ -169,7 +169,14 @@ describe("SettingsHost (LF-12)", () => {
     );
     expect(screen.getByRole("tab", { name: "Devices" })).toBeDefined();
     expect(screen.getByRole("tab", { name: "General" })).toBeDefined();
-    await user.selectOptions(screen.getByLabelText("Appearance"), "light");
+    // The editor's own appearance, worded apart from a site's theme, the computer's first (#1169).
+    const appearance = screen.getByLabelText("Webforge's appearance") as HTMLSelectElement;
+    expect([...appearance.options].map((option) => option.text)).toEqual([
+      "Same as my computer",
+      "Dark",
+      "Light",
+    ]);
+    await user.selectOptions(appearance, "light");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(preferences.getState().preferences.theme).toBe("light");

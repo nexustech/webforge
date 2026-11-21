@@ -25,7 +25,11 @@ const RECHECK_DELAY_MS = 400;
  */
 const IDLE_MARGIN_MS = 4;
 
-/** The longest a recheck's next rule waits for an idle period, so a busy window still updates. */
+/**
+ * The longest a recheck waits for an idle period. A window that has none for that long runs the
+ * rules left all at once, so it shows the report in about a second, not a rule a second: 35 rules,
+ * 35 s, which left a fixed problem showing in a busy window (#1207).
+ */
 const IDLE_TIMEOUT_MS = 1000;
 
 /** Calls `work` once the renderer is idle; on the next turn where it has no idle callbacks. */
@@ -163,12 +167,14 @@ export function createSiteCheck(
     const rules = [...SITE_CHECK_RULES];
     const step = (deadline?: IdleDeadline) => {
       if (mine !== pass) return;
-      // At least one rule each time, so a window never idle still gets there.
+      // At least one rule each time; every rule left once the window has had no idle period in
+      // IDLE_TIMEOUT_MS, so a busy one still gets there.
+      const busy = deadline?.didTimeout === true;
       do {
         const rule = rules.shift();
         if (rule === undefined) break;
         next.set(rule, runRule(rule, inputOf(site)));
-      } while (rules.length > 0 && (deadline?.timeRemaining() ?? 0) > IDLE_MARGIN_MS);
+      } while (rules.length > 0 && (busy || (deadline?.timeRemaining() ?? 0) > IDLE_MARGIN_MS));
       if (rules.length > 0) {
         whenIdle(step);
       } else {

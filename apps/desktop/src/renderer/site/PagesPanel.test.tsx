@@ -99,7 +99,7 @@ describe("PagesPanel (F-ED-13)", () => {
       .map((button) => button.textContent);
     expect(names).toEqual([
       "My site(Home page)",
-      "About(Hidden from navigation)",
+      "About(Hidden in the menu)",
       "TeamDraft",
       "Page not found(Shown when a page doesn't exist)",
     ]);
@@ -243,7 +243,7 @@ describe("PagesPanel (F-ED-13)", () => {
     await openMenu("About");
     await userEvent.click(screen.getByRole("menuitem", { name: "Set as Home Page" }));
     await openMenu("About");
-    await userEvent.click(screen.getByRole("menuitemcheckbox", { name: "Hide from Navigation" }));
+    await userEvent.click(screen.getByRole("menuitemcheckbox", { name: "Hide in Menu" }));
     await openMenu("About");
     await userEvent.click(screen.getByRole("menuitemcheckbox", { name: "Draft" }));
 
@@ -336,7 +336,7 @@ describe("PagesPanel (F-ED-13)", () => {
     const file = within(dialog).getByRole("textbox", { name: "File name" }) as HTMLInputElement;
     expect(file.value).toBe("404.html");
     expect(file.disabled).toBe(true);
-    expect(within(dialog).queryByRole("checkbox", { name: "Hide from navigation" })).toBeNull();
+    expect(within(dialog).queryByRole("checkbox", { name: "Hide in menu" })).toBeNull();
     await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
 
     await openMenu("My site");

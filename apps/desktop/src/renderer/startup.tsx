@@ -1,6 +1,24 @@
 import { ErrorFallback } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import type { Preferences } from "../shared/ipc/prefs.js";
+import type { ShownTheme } from "../shared/editor-theme.js";
+
+/** The computer's light or dark setting, as the window's page sees it (Electron follows it). */
+const DARK_QUERY = "(prefers-color-scheme: dark)";
+
+/** Whether the computer is set to dark: what "Same as my computer" shows (#1169). */
+export function computerDark(page: Pick<Window, "matchMedia">): boolean {
+  return page.matchMedia?.(DARK_QUERY).matches ?? false;
+}
+
+/** Calls `listener` when the computer's light or dark setting changes; returns what stops it. */
+export function onComputerThemeChange(
+  page: Pick<Window, "matchMedia">,
+  listener: () => void,
+): () => void {
+  const query = page.matchMedia?.(DARK_QUERY);
+  query?.addEventListener("change", listener);
+  return () => query?.removeEventListener("change", listener);
+}
 
 /**
  * Shows the editor in `theme`, and puts it in the page's address (`?theme=`), where the start-up
@@ -8,7 +26,7 @@ import type { Preferences } from "../shared/ipc/prefs.js";
  * site from the start screen does, then starts in the theme the person has now.
  */
 export function applyTheme(
-  theme: Preferences["theme"],
+  theme: ShownTheme,
   page: { readonly document: Document; readonly location: Location; readonly history: History },
 ): void {
   page.document.documentElement.dataset.theme = theme;

@@ -150,8 +150,11 @@ export function interfaceZoomStep(current: number, direction: "in" | "out"): num
  * `<userData>/preferences.json`.
  */
 export const preferencesSchema = z.strictObject({
-  /** The editor's look (UI1). */
-  theme: z.enum(["dark", "light"]),
+  /**
+   * The editor's look (UI1): dark, light, or the computer's (#1169), which it follows as the
+   * computer's setting changes. Not a site's theme.
+   */
+  theme: z.enum(["system", "dark", "light"]),
   /**
    * Simple hides the Edit panel's Advanced tab, Custom Code and the other Advanced-only parts (T2,
    * 1.10). Layers shows in both (ADR 0011).
@@ -187,9 +190,12 @@ export const preferencesSchema = z.strictObject({
 /** One person's editor preferences. */
 export type Preferences = z.infer<typeof preferencesSchema>;
 
-/** Preferences for someone who hasn't changed any. */
+/**
+ * Preferences for someone who hasn't changed any: the editor follows the computer's light or dark
+ * setting (#1169). An install that chose Dark or Light keeps it, as the file holds the choice.
+ */
 export const DEFAULT_PREFERENCES: Preferences = {
-  theme: "dark",
+  theme: "system",
   editorLevel: "simple",
   panelLayout: {},
   window: null,

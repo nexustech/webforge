@@ -14,6 +14,7 @@ export type AppElectron = Pick<
   | "dialog"
   | "ipcMain"
   | "Menu"
+  | "nativeTheme"
   | "net"
   | "protocol"
   | "safeStorage"

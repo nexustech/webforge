@@ -73,7 +73,8 @@ export function writeTestPreferences(userData: string, tips = false): void {
   mkdirSync(userData, { recursive: true });
   writeFileSync(
     preferences,
-    JSON.stringify({ onboarding: { tour: "new", tipsSeen: [], showTips: tips } }),
+    // Dark, as the editor was before it followed the computer (#1169): the same on every runner.
+    JSON.stringify({ theme: "dark", onboarding: { tour: "new", tipsSeen: [], showTips: tips } }),
   );
 }
 

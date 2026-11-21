@@ -298,9 +298,12 @@ describe("StartScreen", () => {
 
     await act(async () => button("Rosa's Bakery")?.click());
 
-    expect(container.querySelector('[role="alert"]')?.textContent).toBe(
+    // In the main area, beside the recent sites, with a way to choose another file (#1167).
+    const alert = container.querySelector('main section [role="alert"]');
+    expect(alert?.querySelector("p")?.textContent).toBe(
       "This site was saved by a newer version of Webforge. Update Webforge to open it.",
     );
+    expect(alert?.querySelector("button")?.textContent).toBe("Choose Another File…");
   });
 
   it("pins a site to the top of the list, and unpins it (2.14b)", async () => {
@@ -490,6 +493,25 @@ describe("StartScreen", () => {
     expect(container.textContent).toContain("Rosa's Bakery.wforge");
   });
 
+  /** The texts of the start screen's side buttons. */
+  const sideButtons = () =>
+    [...container.querySelectorAll("aside button")].map((b) => b.textContent);
+
+  it("shows each way in once on a first start: the welcome's cards, none beside them (#1167)", async () => {
+    await render(api([]));
+
+    expect(container.textContent).toContain("Welcome to Webforge");
+    expect(sideButtons()).toEqual([]);
+  });
+
+  it("shows the ways in beside the recent sites once there are some, and no cards (#1167)", async () => {
+    await render(api([bakery]));
+
+    expect(container.textContent).not.toContain("Welcome to Webforge");
+    expect(sideButtons()).toEqual(
+      expect.arrayContaining(["Start a Site…", "Choose a Template Yourself…", "Open a Site…"]),
+    );
+  });
   it("welcomes a first start whose list can't be read", async () => {
     const project = api([]);
     project.listRecent.mockRejectedValueOnce(new Error("unreadable"));

@@ -113,7 +113,9 @@ export const shell = {
   "settings.heading.site": "This site",
   "settings.interface": "Interface",
   // The editor's own look, never the site's Theme (#452, glossary: Appearance).
-  "settings.interface.appearance": "Appearance",
+  // The editor's own look, not a site's theme (#1169): its name says so.
+  "settings.interface.appearance": "{appName}'s appearance",
+  "settings.interface.system": "Same as my computer",
   "settings.interface.dark": "Dark",
   "settings.interface.light": "Light",
   "settings.interface.level": "Editing",
@@ -361,7 +363,8 @@ export const shell = {
   "shell.mode.design": "Design",
   "shell.mode.content": "Content",
   // Site-wide confirmations (D7, F-ED-14): actions that change more than the page shown.
-  "confirm.siteWide.affectsOne": "This changes 1 page. You can undo it afterwards.",
-  "confirm.siteWide.affectsMany": "This changes {count} pages. You can undo it afterwards.",
+  "confirm.siteWide.affectsOne": "1 page of your site will change. You can undo it afterwards.",
+  "confirm.siteWide.affectsMany":
+    "{count} pages of your site will change. You can undo it afterwards.",
   "confirm.siteWide.cancel": "Cancel",
 } as const;

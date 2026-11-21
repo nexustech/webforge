@@ -4,7 +4,7 @@ id: ai-apps
 title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
 related: [undo-and-history, version-history, site-check]
-updated: 2026-11-17
+updated: 2026-11-20
 ---
 
 # AI apps
@@ -88,7 +88,7 @@ An app works on the site you have open in {appName}, and only that one. It can:
 
 - read your site's pages, settings and theme, and the sections and elements it can add, with their options;
 - add, change, move and delete sections and elements, and change text;
-- add, rename, move and delete pages, and change a page's title, description, **Hide from navigation** and **Hide this page from search engines**, as [Page Settings](pages.md) does. When an app renames a page of a site you've published, the page's old address keeps working, as **Rename…** does, in the same step: see [Keeping old addresses working](pages.md#keeping-old-addresses-working);
+- add, rename, move and delete pages, and change a page's title, description, **Hide in menu** and **Hide this page from search engines**, as [Page Settings](pages.md) does. When an app renames a page of a site you've published, the page's old address keeps working, as **Rename…** does, in the same step: see [Keeping old addresses working](pages.md#keeping-old-addresses-working);
 - change your business's details in [Site Settings](site-settings.md): its name, description, language and type, web address, contact details, opening hours, social profiles and search engine settings;
 - change the theme;
 - see what's in [Media](media.md), and place your pictures in elements;
@@ -113,7 +113,7 @@ Before an app's first change after you open your site, {appName} saves a version
 For a bigger job, such as building out your pages, an app can send its changes together, with a title such as "Build the Rapidfix site". {appName} checks every change first. If any of them can't be made, nothing changes and the app is told which one. Then it asks you once, with **Allow**, and says what the changes would do. First, set apart, any change to where visitors' payments or details go, such as a Buy button's payment link, and any change to Site Settings, each from the old value to the new one. Then:
 
 - the pages added, deleted, renamed and moved, and those whose **Page Settings** change;
-- any page it hides from navigation or from search engines, or shows again, from before to after;
+- any page it hides in the menu or from search engines, or shows again, from before to after;
 - whether the theme changes;
 - how many sections and elements are added, changed, moved and removed;
 - the other changes that would have asked on their own, such as a change to the Header.

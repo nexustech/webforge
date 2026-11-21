@@ -32,6 +32,8 @@ const common = {
   label: z.string(),
   group: z.enum(["content", "style"]).optional(),
   help: z.string().optional(),
+  /** Another name the search finds it by: its CSS property. */
+  alsoCalled: z.string().optional(),
   responsive: z.boolean().optional(),
   optionGroup: z.strictObject({ id: z.string(), label: z.string() }).optional(),
   /** Shown only in *Style this ‹component›…* (3.13b): the dialog's deeper groups. */
@@ -222,22 +224,45 @@ export const catalogueFileSchema = z.strictObject({
 /** See {@link catalogueFileSchema}. */
 export type CatalogueFile = z.infer<typeof catalogueFileSchema>;
 
-/** The catalogue `file` holds, each component's Appearance fields first, as the library has them. */
+/**
+ * The catalogue `file` holds, with each component's Appearance fields where the library has them:
+ * first on an element; on a section after its own options, colours and overlay, its background and
+ * box before its text (F23, #1180).
+ */
 export function expandCatalogue(file: CatalogueFile): Catalogue {
+  const text: readonly string[] = APPEARANCE_TEXT_FIELDS;
   return Object.fromEntries(
     Object.entries(file.components).map(([type, { appearance, deeper, ...component }]) => {
+      const section = component.place === "section";
+      const shared = Object.entries(file.appearance).filter(
+        ([name]) => appearance === "all" || !text.includes(name),
+      );
       const group =
         appearance === undefined
-          ? {}
-          : Object.fromEntries(
-              Object.entries(file.appearance).filter(
-                ([name]) =>
-                  appearance === "all" ||
-                  !(APPEARANCE_TEXT_FIELDS as readonly string[]).includes(name),
-              ),
-            );
-      const own = deeper === undefined ? {} : file[deeper];
-      return [type, { ...component, fields: { ...group, ...own, ...component.fields } }];
+          ? []
+          : section
+            ? // Its background and box, then its text, its colour last (SECTION_APPEARANCE_ORDER).
+              [
+                ...shared.filter(
+                  ([name, field]) =>
+                    !text.includes(name) && name !== "lookColor" && !field.inDialog,
+                ),
+                ...shared.filter(([name]) => text.includes(name) || name === "lookColor"),
+                // The dialog's deeper fields (3.13b) after the group, as before.
+                ...shared.filter(([, field]) => field.inDialog === true),
+              ]
+            : shared;
+      const own = Object.entries(deeper === undefined ? {} : file[deeper]);
+      const rest = Object.entries(component.fields);
+      const names = rest.map(([name]) => name);
+      const at = section ? Math.max(names.indexOf("colors"), names.indexOf("overlayColor")) + 1 : 0;
+      const fields = Object.fromEntries([
+        ...rest.slice(0, at),
+        ...group,
+        ...own,
+        ...rest.slice(at),
+      ]);
+      return [type, { ...component, fields }];
     }),
   );
 }

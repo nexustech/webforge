@@ -38,6 +38,13 @@ const row = (name: string) => tree().getByRole("treeitem", { name: new RegExp(`^
 const selected = () => canvas().locator(`${SELECTED_COMPONENT} ${ACTION_BAR_LABEL}`);
 const steps = () => page.locator(".undo-history__step");
 
+/** How a layer shows, as its eye says, for each of the menu's choices. */
+const NOW: Readonly<Record<string, string>> = {
+  Show: "Shown",
+  "Hide While Editing": "Hidden while editing",
+  "Don't Publish": "Not published",
+};
+
 /**
  * Shows `item`, which shows as `now`, as `choice` says, from its row's eye (UX-23): the row named
  * `item` unless `on` is given (the Header's row starts with *On every page*).
@@ -45,7 +52,7 @@ const steps = () => page.locator(".undo-history__step");
 async function setShown(item: string, now: string, choice: string, on = row(item)): Promise<void> {
   await on.hover();
   await tree()
-    .getByRole("button", { name: `Show or hide ${item} (now: ${now})` })
+    .getByRole("button", { name: `${NOW[now]}. Choose whether ${item} shows…` })
     .click();
   await page.getByRole("menuitemradio", { name: choice }).click();
 }
@@ -89,7 +96,7 @@ test("moves a layer with Ctrl/Cmd+Alt+↓ and hides one, each as one undo step",
 
   await setShown("Text", "Show", "Don't Publish");
   await expect(
-    tree().getByRole("button", { name: "Show or hide Text (now: Don't Publish)" }),
+    tree().getByRole("button", { name: "Not published. Choose whether Text shows…" }),
   ).toBeVisible();
   // Still on the canvas, dimmed (#141), but left out of the export.
   const text = canvas().locator(".site-text");
@@ -116,7 +123,7 @@ test("lists the shared Header first and Footer last; the Header's eye hides it o
   await setShown("Header", "Show", "Don't Publish", rows.first());
   await expect(canvas().locator(".site-header")).toHaveCount(0);
   await expect(
-    tree().getByRole("button", { name: "Show or hide Header (now: Don't Publish)" }),
+    tree().getByRole("button", { name: "Not published. Choose whether Header shows…" }),
   ).toBeVisible();
   await left().getByRole("tab", { name: "Undo History" }).click();
   await expect(steps().first()).toHaveText("Hid the Header on this page");
@@ -172,10 +179,11 @@ test("shows Layers in Content mode too, where nothing can be moved or hidden", a
   await expect(row("Heading")).toBeVisible();
   await row("Heading").hover();
   await expect(
-    tree().getByRole("button", { name: "Show or hide Heading (now: Show)" }),
+    tree().getByRole("button", { name: "Shown. Choose whether Heading shows…" }),
   ).toBeDisabled();
   const order = await tree().getByRole("treeitem").allInnerTexts();
   await row("Heading").click();
   await page.keyboard.press("Alt+ArrowDown");
-  await expect(tree().getByRole("treeitem")).toHaveText(order);
+  // As shown: a disabled eye's tooltip is also its description, in a hidden element (F24).
+  await expect(tree().getByRole("treeitem")).toHaveText(order, { useInnerText: true });
 });

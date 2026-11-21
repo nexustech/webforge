@@ -211,10 +211,10 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   await tree().getByRole("textbox", { name: "Name for this Text" }).fill("Intro");
   await page.keyboard.press("Enter");
   await expect(row("Intro")).toBeVisible();
-  await tree().getByRole("button", { name: "Show or hide Image (now: Show)" }).click();
+  await tree().getByRole("button", { name: "Shown. Choose whether Image shows…" }).click();
   await page.getByRole("menuitemradio", { name: "Don't Publish" }).click();
   await expect(
-    tree().getByRole("button", { name: "Show or hide Image (now: Don't Publish)" }),
+    tree().getByRole("button", { name: "Not published. Choose whether Image shows…" }),
   ).toBeVisible();
 
   await selectSection();

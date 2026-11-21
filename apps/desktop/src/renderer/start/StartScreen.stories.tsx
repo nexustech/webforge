@@ -111,6 +111,25 @@ export const Searching: Story = {
   },
 };
 
+/** A file that isn't a site, chosen with Open: why, and what to choose, above the list (#1167). */
+export const NotASite: Story = {
+  args: {
+    project: {
+      ...project(many),
+      open: async () => ({ status: "failed", reason: "not-a-project" }),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const open = await waitFor(() =>
+      [...canvasElement.querySelectorAll<HTMLButtonElement>("aside button")].find(
+        (each) => each.textContent === t("site.start.open"),
+      ),
+    );
+    open.click();
+    await waitFor(() => canvasElement.querySelector('main [role="alert"]'));
+  },
+};
+
 /** The Help tab: the shortcuts sheet and Try an example. */
 export const Help: Story = {
   play: async ({ canvasElement }) => {

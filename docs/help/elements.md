@@ -12,7 +12,7 @@ updated: 2026-11-20
 
 An **element** is anything inside a section: a heading, some text, a picture, a button. Open the **Add** panel's **Elements** tab and click one to add it to the selected section, or drag it into a section. A page needs a section before it can hold elements.
 
-The Elements tab groups them as below. Every element but the Spacer has a **Margin**, most have an **Entrance animation**, and all of them have the **Appearance** group in the Style tab (see [Styling](styling.md)).
+The Elements tab groups them as below. Every element but the Spacer has a **Space outside** (margin), most have an **Entrance animation**, and all of them have the **Appearance** group in the Style tab (see [Styling](styling.md)).
 
 ## Text
 

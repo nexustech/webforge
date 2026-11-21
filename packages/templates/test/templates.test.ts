@@ -421,6 +421,28 @@ describe("siteFromTemplate with the person's business (QS-2, 3.11)", () => {
     }
   });
 
+  it("says what the person does in the home page's Hero, not the sample business's line (#1167)", () => {
+    for (const { template, images } of templates) {
+      const sampleHero = template.site.pages[template.site.homePageId]?.doc.content.find(
+        (node) => node.type === "Hero",
+      );
+      const site = siteFromTemplate(template, images, { name: "Rosa's Bakery", theme, business });
+      const hero = site.pages[site.homePageId]?.doc.content.find((node) => node.type === "Hero");
+
+      if (sampleHero === undefined || typeof sampleHero.props.text !== "string") continue;
+      expect(hero?.props.text, template.id).toBe(business.description);
+    }
+    // Without an answer, the template's line stays (QS-6): Site Check flags it as a placeholder.
+    const cafe = readTemplate("cafe");
+    const plain = siteFromTemplate(cafe.template, cafe.images, {
+      name: "Rosa's Bakery",
+      theme,
+      business: {},
+    });
+    const line = plain.pages[plain.homePageId]?.doc.content.find((node) => node.type === "Hero");
+    expect(line?.props.text).toBe("A small café by the river in Kendal, open seven days a week.");
+  });
+
   it("writes the name into the Footer's text and the pages' own, escaped in rich text", () => {
     const shop = readTemplate("shop");
 
