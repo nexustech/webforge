@@ -210,6 +210,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
    * remounts the text typed in it: emptying the first title, or typing the first letter of one,
    * would leave the person typing into nothing. So a change waits while text on the canvas has the
    * focus, until it loses it. The two tags look the same, so nothing shows the wait.
+   *
+   * A blog post's page counts its Blog design too: the design's sections before and after the post
+   * are in the canvas's layout (the desktop app's `shared-layout.ts`), which `composePage` puts in
+   * the page this reads, as the export's page has them.
    */
   const followPageHeading = () => {
     if (headingDue) return;
