@@ -10,6 +10,7 @@ function handlers() {
     runSiteCheck: vi.fn(() => DONE),
     openPreview: vi.fn(() => DONE),
     requestMedia: vi.fn(async () => DONE),
+    mediaStatus: vi.fn(() => DONE),
   } satisfies WindowToolHandlers;
 }
 
