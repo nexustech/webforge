@@ -18,13 +18,15 @@ export type TokenControl = {
 
 /**
  * Tokens the Theme tab draws its own way: the preset (switched as a whole), the colours (Brand,
- * Accent…), the fonts and the type scale. `scheme` and `inverse` go with the preset and colours.
+ * Accent…), the fonts and the type scale. `scheme` and `inverse` go with the preset and colours;
+ * the person's own colours (TC-1a) are Theme Studio's list (5.28).
  */
 const DRAWN_OWN_WAY = new Set<string>([
   "preset",
   "scheme",
   "colors",
   "inverse",
+  "ownColors",
   "fonts",
   "typeScale",
 ]);

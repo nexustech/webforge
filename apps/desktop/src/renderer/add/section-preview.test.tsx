@@ -209,6 +209,8 @@ describe("createItemPreviews (3.13a)", () => {
     expect(frame()?.style.width).toBe("375px");
     const page = frame()?.getAttribute("srcdoc") ?? "";
     expect(page).toContain("Book now");
+    // Without its link yet, greyed out as the canvas draws it (#1256).
+    expect(page).toContain("btn-disabled");
     expect(page).toContain(".wf-hero{color:red}");
     // Its own font faces: a frame is a document of its own.
     expect(page).toContain("@font-face");

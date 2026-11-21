@@ -31,7 +31,15 @@ function page(html: string) {
 /** A plan with `props`. */
 const plan = (id: string, props: Record<string, unknown> = {}) => ({
   type: "PricingPlan",
-  props: { id, name: id, price: "£10", period: "a week", buttonLabel: "Book", ...props },
+  props: {
+    id,
+    name: id,
+    price: "£10",
+    period: "a week",
+    buttonLabel: "Book",
+    link: "about",
+    ...props,
+  },
 });
 
 describe("the Pricing section", () => {

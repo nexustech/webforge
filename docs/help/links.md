@@ -4,7 +4,7 @@ id: links
 title: Links
 summary: Link to a page, a section, an email address, a phone number, a website or a file.
 related: [editing-on-the-page, elements, media, pages]
-updated: 2026-11-10
+updated: 2026-11-21
 ---
 
 # Links
@@ -27,6 +27,8 @@ Buttons, menu items and text can link somewhere. To add a link:
 **Open in a new tab** keeps your site open behind the link. It's offered for a page, a web address or a file, and a file opens in a new tab unless you turn it off. Click **Save Link** to add the link.
 
 Links don't open while you edit. Use [Preview](preview.md) to try them.
+
+A button shows on your website once it has a link. Until then, your site leaves it out: in the editor it's greyed out, with a note saying to add one, and [Site Check](site-check.md) lists it. It doesn't stop you publishing.
 
 On a [one-page site](one-page-sites.md), the menu and buttons link to sections of the home page this way.
 

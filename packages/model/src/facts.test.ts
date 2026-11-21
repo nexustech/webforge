@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { factDetailsIn, factKeysIn, settingsFactKeys, unknownFactsIn } from "./facts.js";
+import {
+  factDetailsIn,
+  factKeysIn,
+  settingsFactKeys,
+  siteFactKeys,
+  unknownFactsIn,
+} from "./facts.js";
 import { createSite } from "./site-doc.js";
 
 const kinds = (text: string) =>
@@ -70,5 +76,36 @@ describe("details shaped like facts (#1228, WN-3)", () => {
     const unknown = (text: string) => unknownFactsIn(text, known).map(({ text: found }) => found);
     expect(unknown("Tue–Fri, 7am–3pm: ring 0113 496 0000 or orders@rosas.co.uk")).toEqual([]);
     expect(unknown("Mon–Fri, 7am–4pm")).toEqual(["4pm", "Mon"]);
+  });
+
+  it("knows the site's texts, but never one marked as an example, a list item's by its id", () => {
+    const site = createSite({
+      name: "Rosa's Bakery",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Not found",
+    });
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content = [
+      { type: "Text", props: { id: "own", text: "<p>Ring 0113 496 0000</p>" } },
+      { type: "Text", props: { id: "made", text: "Open 9am", examples: { text: true } } },
+      {
+        type: "Faq",
+        props: {
+          id: "faq",
+          items: [
+            { id: "a", answer: "From £12" },
+            { id: "b", answer: "From £20" },
+          ],
+          examples: { "items.a.answer": true },
+        },
+      },
+    ];
+    const known = siteFactKeys(site);
+    expect(known.has("phone:01134960000")).toBe(true);
+    expect(known.has("time:09:00")).toBe(false);
+    expect(known.has("price:12.00")).toBe(false);
+    expect(known.has("price:20.00")).toBe(true);
   });
 });

@@ -99,6 +99,10 @@ An app works on the site you have open in {appName}, and only that one. It can:
 
 It can't change publishing, forms, analytics, Custom Code, search engines' verification codes or your site's icon: those stay yours. It never adds a picture or file itself.
 
+### Examples, never made-up facts
+
+An AI never passes off a made-up fact as yours. If it needs one you didn't give, such as a price, an opening time or a phone number, it writes an example, and {appName} marks that text as one. {appName} also marks any text that holds such a detail it can't find in what you told it, in [Site Settings](site-settings.md) or elsewhere on your site, whether the AI said so or not. A testimonial an AI writes is always an example. [Site Check](site-check.md)'s **Examples to check** lists each, and publishing waits until you've edited it or clicked **This Is Correct**. On the page, an example has a dotted violet outline and an **Example** chip (see [Examples](editing-on-the-page.md#examples)).
+
 Some changes ask you first, with **Allow**:
 
 - changes that reach every page: the theme, a new page with a menu entry, deleting a page, Site Settings, the Header or Footer, or a shared section;

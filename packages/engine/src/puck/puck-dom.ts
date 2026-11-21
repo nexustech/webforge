@@ -20,6 +20,12 @@ export const COMPONENT_ATTRIBUTE = "data-puck-component";
  */
 export const NOTE_ATTRIBUTE = "data-webforge-note";
 
+/**
+ * Marks an element with a text that holds an example (#1228, WN-3) on the canvas, which outlines
+ * it; the export never draws the mark, so never this either.
+ */
+export const EXAMPLE_ATTRIBUTE = "data-webforge-example";
+
 /** The class the canvas gives the page's drop zone, its list of sections (config.tsx). */
 export const SECTIONS_ZONE_CLASS = "wf-sections";
 

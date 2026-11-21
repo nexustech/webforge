@@ -27,8 +27,8 @@ function withButtons(looks?: NonNullable<SiteSnapshot["theme"]["looks"]>): SiteS
   const [home, ...rest] = site.pages;
   if (home === undefined) throw new Error("The sample site has no pages");
   const buttons = [
-    { type: "Button", props: { id: "look", label: "Follows the look" } },
-    { type: "Button", props: { id: "own", label: "Its own", lookCorners: "none" } },
+    { type: "Button", props: { link: "about", id: "look", label: "Follows the look" } },
+    { type: "Button", props: { link: "about", id: "own", label: "Its own", lookCorners: "none" } },
   ];
   return {
     ...site,

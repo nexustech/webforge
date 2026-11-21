@@ -1,6 +1,6 @@
 import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { pageIdSchema } from "@webforge/model";
+import { exampleFields, findNode, pageIdSchema } from "@webforge/model";
 import { SparklesIcon } from "lucide-react";
 import { ASSISTANT_CONSENT_VERSION, type AssistantApi } from "../../shared/ipc/assistant.js";
 import type { EditorSession } from "../editor/editor-session.js";
@@ -58,6 +58,15 @@ export function registerAssistantPanel(options: AssistantPanelOptions): () => vo
           }
           session.showPage(page.data);
           if (step.target?.nodeId !== undefined) session.select(step.target.nodeId);
+        }}
+        holdsExample={(step) => {
+          // As the site is now: a change the person has since checked shows no more.
+          const page = pageIdSchema.safeParse(step.target?.pageId);
+          const nodeId = step.target?.nodeId;
+          if (!page.success || nodeId === undefined) return false;
+          const content = session.history.document.getState().pages[page.data]?.doc.content ?? [];
+          const node = findNode(content, (each) => each.props.id === nodeId);
+          return node !== undefined && exampleFields(node.props).length > 0;
         }}
         onOpenLink={(href, replyId) =>
           void model.openLink(replyId, href).then((status) => {

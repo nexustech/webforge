@@ -28,6 +28,11 @@ export type ReviewCardProps = {
   readonly onOpenVersions: () => void;
   /** Selects and shows a change on the canvas. */
   readonly onShowStep: (step: ReviewStep) => void;
+  /**
+   * Whether the element a change is on holds an example, as the site has it now (#1228, WN-3):
+   * listed for the person to check, each leading to its place.
+   */
+  readonly holdsExample?: ((step: ReviewStep) => boolean) | undefined;
 };
 
 /** The "AI (Assistant): " every step's label starts with, which the card needn't repeat. */
@@ -49,8 +54,11 @@ export function ReviewCard({
   onUndo,
   onOpenVersions,
   onShowStep,
+  holdsExample,
 }: ReviewCardProps) {
   const id = useId();
+  const examples = steps.map((step) => step.target !== undefined && holdsExample?.(step) === true);
+  const exampleCount = examples.filter(Boolean).length;
   return (
     <section
       aria-labelledby={`${id}-title`}
@@ -59,6 +67,9 @@ export function ReviewCard({
       <h3 id={`${id}-title`} className="m-0 text-xs font-semibold">
         {plural("assistant.review.title", steps.length)}
       </h3>
+      {exampleCount === 0 ? null : (
+        <p className="m-0">{plural("assistant.review.examples", exampleCount)}</p>
+      )}
       <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
         {steps.map((step, index) => {
           const label = step.label.replace(LABEL_PREFIX, "");
@@ -78,6 +89,11 @@ export function ReviewCard({
                   </button>
                 </WithTooltip>
               )}
+              {examples[index] === true ? (
+                <span className="ml-1 rounded-sm border border-border px-1 font-semibold">
+                  {t("assistant.review.example")}
+                </span>
+              ) : null}
             </li>
           );
         })}

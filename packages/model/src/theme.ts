@@ -50,6 +50,36 @@ export type Oklch = z.infer<typeof oklchSchema>;
 
 const colorRoleSchema = z.enum(COLOR_ROLES);
 
+/**
+ * What one of the person's own colours' ids is made of (TC-1a, #1217): lower-case letters and
+ * digits, a letter first, at most 24. It goes into class names and CSS variables as it is
+ * (`bg-own-<id>-300`, `--color-own-<id>`), so it holds nothing CSS reads as syntax, and no dash, so
+ * a shade after it can't be taken for part of it.
+ */
+export const OWN_COLOR_ID_PATTERN = "[a-z][a-z0-9]{0,23}";
+
+/** See {@link OWN_COLOR_ID_PATTERN}. */
+export const ownColorIdSchema = z.string().regex(new RegExp(`^${OWN_COLOR_ID_PATTERN}$`));
+
+/** The longest name one of the person's own colours may have: a name is never written into CSS. */
+export const OWN_COLOR_NAME_MAX = 40;
+
+/** How many colours of their own a theme may have: more than a business needs, so never in the way. */
+export const OWN_COLORS_MAX = 200;
+
+/**
+ * One of the person's own colours (TC-1a, #1217): its id, which references use (`own-<id>`, so a
+ * rename changes none of them), its name, and its colour.
+ */
+export const ownColorSchema = z.strictObject({
+  id: ownColorIdSchema,
+  name: z.string().trim().min(1).max(OWN_COLOR_NAME_MAX),
+  color: oklchSchema,
+});
+
+/** See {@link ownColorSchema}. */
+export type OwnColor = z.infer<typeof ownColorSchema>;
+
 /** A font the theme uses, by family name, and the kind of font to fall back on. */
 export const fontRefSchema = z.strictObject({
   // Any family 2.2's catalogue can hold ("Noto Sans JP", "M PLUS 1p", "Mrs. Saint-Delafield"):
@@ -183,6 +213,19 @@ export const themeTokensSchema = z.strictObject({
    * as the surface and `neutral-content` as the text, its other colours as they are.
    */
   inverse: z.record(colorRoleSchema, oklchSchema).optional(),
+  /**
+   * The person's own colours (TC-1a, #1217), beside the roles: a colour reference names one by its
+   * id (`own-<id>`), with shades and opacity as for the colour roles, and one change to it reaches
+   * every place it's used. Reversed sections work out a value of their own from each. A theme
+   * without them has none; a site from before format 17 gets an empty list.
+   */
+  ownColors: z
+    .array(ownColorSchema)
+    .max(OWN_COLORS_MAX)
+    .refine((colors) => new Set(colors.map(({ id }) => id)).size === colors.length, {
+      error: "Two of your colours have the same id",
+    })
+    .optional(),
   /**
    * Headings', body text's and the accent's fonts (3.22, PF-5). An element or a section's title can
    * take any of the three (`lookFont`); none takes the accent until someone picks it.
