@@ -1069,9 +1069,11 @@ describe("tree helpers", () => {
     expect(render({ kind: "page", pageId: "about", newTab: true })).toContain(
       'href="about.html" target="_blank" rel="noopener"',
     );
-    // A page path typed before link fields, and no link at all.
+    // A page path typed before link fields. No link at all leaves the button out, never a link to
+    // `#` (#1256).
     expect(render("about")).toContain('href="about.html"');
-    expect(render(undefined)).toContain('href="#"');
+    expect(render(undefined)).not.toContain("<a");
+    expect(render(undefined)).not.toContain("Go");
   });
 
   it("documentsLinkedBy finds the documents link fields and rich text point to (1.28)", () => {

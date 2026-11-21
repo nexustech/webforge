@@ -5,8 +5,10 @@ import {
   type Breakpoint,
   bindingOf,
   formatColorRef,
+  hasLink,
   type ImageValue,
   type ItemValue,
+  isNodeDoc,
   isResponsiveValue,
   itemBindingOf,
   type LinkValue,
@@ -554,6 +556,31 @@ function slotCounts(
     }
   }
   return counts;
+}
+
+/** Where {@link withSampleLinks} sends a sample's buttons: nowhere a preview goes. */
+const SAMPLE_LINK: LinkValue = { kind: "url", href: "https://example.com" };
+
+/**
+ * `doc` with a link on each button that has none, its slots' elements too: for a sample drawn from
+ * a kind's defaults, which have no link, as Theme Studio's sample page and Storybook's. A button
+ * without one is left out of the export (#1256) and drawn greyed on the canvas, and a sample shows
+ * the theme's buttons as they look on a site.
+ */
+export function withSampleLinks(library: ComponentLibrary, doc: NodeDoc): NodeDoc {
+  const fields = library.components[doc.type]?.fields ?? {};
+  const props: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(doc.props)) {
+    props[key] = Array.isArray(value)
+      ? value.map((item: unknown) => (isNodeDoc(item) ? withSampleLinks(library, item) : item))
+      : value;
+  }
+  for (const [key, field] of Object.entries(fields)) {
+    if (field.kind === "link" && field.button !== undefined && !hasLink(props[key])) {
+      props[key] = SAMPLE_LINK;
+    }
+  }
+  return { ...doc, props: { ...props, id: doc.props.id } };
 }
 
 /**

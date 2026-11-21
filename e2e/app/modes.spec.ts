@@ -192,8 +192,9 @@ test.describe("editor modes", () => {
     await expect(text.locator("strong, b")).toHaveText("Warm");
 
     // Only dragging is off: no element on the canvas says it is disabled, and a click selects one.
+    // The Hero's button is, as it has no link yet (#1256).
     await expect(frame.locator(COMPONENT).first()).toBeVisible();
-    await expect(frame.locator("[aria-disabled='true']")).toHaveCount(0);
+    await expect(frame.locator("[aria-disabled='true']:not(.btn-disabled)")).toHaveCount(0);
 
     // An image swapped, and a link set, on the Hero.
     await frame.locator("h1").click();
@@ -206,6 +207,7 @@ test.describe("editor modes", () => {
     await dialog.getByRole("textbox", { name: "Web address" }).fill("book.example");
     await dialog.getByRole("button", { name: "Save Link" }).click();
     await expect(edit.getByText("https://book.example")).toBeVisible();
+    await expect(frame.locator(".site-hero a.btn")).toHaveText("Visit us");
 
     // A list item added to the FAQ.
     await clickOnCanvas(frame.locator(".site-faq :is(h1, h2)").first());

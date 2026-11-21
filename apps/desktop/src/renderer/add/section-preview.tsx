@@ -155,6 +155,14 @@ const samplePost = (title: string, month: number): SiteCollection["items"][numbe
  * and none of the canvas's hints. A Video or a Map shows its title and text: a sample address
  * would load the video or map from the web.
  */
+/**
+ * A button without its link yet greyed out, as the canvas draws it (#1256), without the hint's
+ * words, which would be too small to read in a preview.
+ */
+const UNLINKED_BUTTONS: Pick<RenderContext, "elementHint"> = {
+  elementHint: (missing) => (missing === "buttonLink" ? "" : undefined),
+};
+
 export function previewContext(): RenderContext {
   const settings: Partial<Record<BindableSetting, string>> = {
     "general.name": t("add.sample.businessName"),
@@ -184,6 +192,7 @@ export function previewContext(): RenderContext {
     // Defined, so an image not chosen yet draws the space it takes, as on the canvas: a Gallery's,
     // a logo's, a team member's photo.
     emptyImage: () => null,
+    ...UNLINKED_BUTTONS,
   };
 }
 
@@ -192,7 +201,7 @@ async function drawNode(
   source: Pick<PreviewSource, "library" | "compileCss">,
   node: NodeDoc,
   theme: Theme,
-  base: RenderContext = EDITOR_RENDER_CONTEXT,
+  base: RenderContext = { ...EDITOR_RENDER_CONTEXT, ...UNLINKED_BUTTONS },
 ): Promise<Drawn | undefined> {
   // With the theme's look for its kind, as the canvas will draw it once added (3.12).
   const context = theme.looks === undefined ? base : { ...base, looks: theme.looks };

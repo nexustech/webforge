@@ -239,7 +239,13 @@ function themed(site: SiteSnapshot): SiteSnapshot {
   // A Button the person set to Filled: the theme's outline style never reaches it (PH2-14).
   const filled: NodeDoc = {
     type: "Button",
-    props: { id: "filled", label: "Call us", style: "primary", size: "medium" },
+    props: {
+      id: "filled",
+      label: "Call us",
+      link: "tel:+441234567890",
+      style: "primary",
+      size: "medium",
+    },
   };
   return {
     ...site,
