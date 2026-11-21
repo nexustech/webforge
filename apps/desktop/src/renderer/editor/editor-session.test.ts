@@ -170,6 +170,43 @@ describe("connectEngine", () => {
     });
   });
 
+  it("clears a list item's mark as its list is edited on the canvas, through the sync (#1228)", () => {
+    const { session, engine, doc } = setup();
+    const faq: NodeDoc = {
+      type: "Faq",
+      props: {
+        id: "faq",
+        items: [
+          { id: "a", question: "Price?", answer: "£12" },
+          { id: "b", question: "When?", answer: "Mon" },
+        ],
+        examples: { "items.a.answer": true, "items.b.answer": true },
+      },
+    };
+    session.edit("insert", "Added questions", (draft) => {
+      draft.pages[draft.homePageId]?.doc.content.push(structuredClone(faq));
+    });
+    // The canvas's page, its list edited and its marks as the canvas still has them.
+    const page = structuredClone(doc());
+    const edited = page.content.find((node) => node.props.id === "faq");
+    if (edited === undefined) throw new Error("no questions");
+    edited.props.items = [
+      { id: "a", question: "Price?", answer: "£14" },
+      { id: "b", question: "When?", answer: "Mon" },
+    ];
+
+    engine.edit({
+      kind: "props",
+      nodeId: "faq",
+      componentType: "Faq",
+      field: "items",
+      page,
+      selection: "faq",
+    });
+    const kept = doc().content.find((node) => node.props.id === "faq");
+    expect(kept?.props.examples).toEqual({ "items.b.answer": true });
+  });
+
   it("shows a page without the Header it hides, and keeps that Header for the other pages", () => {
     const { session, engine, about } = setup();
     const layout = session.history.document.getState().layout;

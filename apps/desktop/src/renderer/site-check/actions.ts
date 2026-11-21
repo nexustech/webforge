@@ -4,6 +4,7 @@ import {
   copiedNodeId,
   designAt,
   elementsAt,
+  exampleFields,
   exampleKey,
   findNode,
   isDeviceName,
@@ -308,9 +309,10 @@ export function fixFor(
 }
 
 /**
- * *This is correct* for a text marked as holding an example (#1228, WN-3), when the example happens
- * to be right: its mark is cleared as one undo step of its own, and Site Check finds it no more.
- * `undefined` for any other finding, or one whose mark has gone.
+ * *This is correct* for an element with a text marked as holding an example (#1228, WN-3), when the
+ * example happens to be right: every mark it has is cleared (a testimonial's quote, name and role
+ * alike, as Site Check lists the element once) as one undo step of its own, and Site Check finds it
+ * no more. `undefined` for any other finding, or one whose marks have gone.
  */
 export function confirmFor(
   rule: string,
@@ -332,6 +334,7 @@ export function confirmFor(
   return () =>
     session.edit("props", t("siteCheck.history.confirmedExample", { item }), (draft) => {
       const found = marked(elementsAt(draft, place.on));
-      if (found !== undefined) clearExample(found.props, mark);
+      if (found === undefined) return;
+      for (const each of exampleFields(found.props)) clearExample(found.props, each);
     });
 }

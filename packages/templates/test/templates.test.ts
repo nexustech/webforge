@@ -245,7 +245,7 @@ describe("every template's sample contact details (#1254)", () => {
       expect(contact.openingHours, template.id).toEqual([]);
 
       // Every sample email or phone still written in the site has a finding, and so has each
-      // field of a sample testimonial, marked as an example (#1228).
+      // sample testimonial, marked as an example on each of its texts and found once (#1228).
       const samples = sampleDetailsIn(
         JSON.stringify([site.pages, site.layout, site.sharedSections]),
       );
@@ -257,7 +257,7 @@ describe("every template's sample contact details (#1254)", () => {
             (field) => typeof node.props[field] === "string" && node.props[field] !== "",
           ),
         );
-        testimonials.push(...exampleFields(node.props));
+        testimonials.push(node.props.id);
       });
       const result = checkSite({ site, catalogue: CATALOGUE }, "export").results.find(
         (each) => each.rule === "sampleDetails",

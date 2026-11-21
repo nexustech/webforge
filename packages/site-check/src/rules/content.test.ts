@@ -528,17 +528,18 @@ describe("sample contact details (#1254)", () => {
     ).toEqual(["both/text"]);
   });
 
-  it("finds each text marked as an example once, naming its first detail (#1228)", () => {
+  it("finds each element with a text marked as an example once, naming its first detail (#1228)", () => {
     const site = siteWith([
       element("Text", "hours", {
         text: "<p>Open Mon–Fri, 9am to 5pm</p>",
         examples: { text: true },
       }),
-      // A sample testimonial: marked, with no detail to name.
+      // A sample testimonial: marked on each text, found once, named by its role's detail.
       element("Testimonial", "review", {
         quote: "The best bread in town",
         name: "Margaret",
-        examples: { quote: true, name: true },
+        role: "In every Saturday",
+        examples: { quote: true, name: true, role: true },
       }),
       // Marked and a placeholder too: found once, here, and not as a placeholder.
       element("Text", "both", {
@@ -553,8 +554,7 @@ describe("sample contact details (#1254)", () => {
     }));
     expect(found).toEqual([
       { key: "hours/text", values: { example: "9am" } },
-      { key: "review/quote", values: undefined },
-      { key: "review/name", values: undefined },
+      { key: "review/quote", values: { example: "Saturday" } },
       { key: "both/text", values: undefined },
     ]);
     expect(
