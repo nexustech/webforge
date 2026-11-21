@@ -73,8 +73,9 @@ const steps = () => page.locator(".undo-history__step");
 const questions = () => canvas().locator(".site-faq-item summary");
 
 test("adds, moves and deletes a FAQ's questions in the Edit panel, one step each", async () => {
-  // Past the end of the FAQ's title: clicking the text itself would edit it.
-  const title = canvas().locator(".site-faq h2");
+  // Past the end of the FAQ's title: clicking the text itself would edit it. Its `h1` or `h2`: the
+  // page's first section title is its main heading where it has none of its own (#1173).
+  const title = canvas().locator(".site-faq :is(h1, h2)").first();
   const box = await title.boundingBox();
   if (box === null) throw new Error("FAQ not visible");
   await clickOnCanvas(title, { position: { x: box.width * 0.97, y: box.height / 2 } });
@@ -100,7 +101,7 @@ test("adds, moves and deletes a FAQ's questions in the Edit panel, one step each
 });
 
 test("adds a testimonial in the Edit panel and edits its name in its row (2.7b)", async () => {
-  const title = canvas().locator(".site-testimonials h2");
+  const title = canvas().locator(".site-testimonials :is(h1, h2)").first();
   await title.scrollIntoViewIfNeeded();
   const box = await title.boundingBox();
   if (box === null) throw new Error("Testimonials not visible");
