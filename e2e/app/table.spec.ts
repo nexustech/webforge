@@ -113,7 +113,8 @@ async function selectRow(n: number) {
   await expect(async () => {
     edge = await edgeOf(n);
     await page.mouse.click(edge.x, edge.y);
-    const shown = (await right().getByRole("heading").first().textContent()) ?? "nothing";
+    // What the panel shows now, without waiting for a heading there may not be.
+    const shown = (await right().getByRole("heading").allTextContents()).join(", ") || "nothing";
     await expect(heading, `the Edit panel shows ${shown}`).toBeVisible({ timeout: 5_000 });
   }).toPass(LAYOUT_WAIT);
   return edge;
