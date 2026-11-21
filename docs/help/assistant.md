@@ -4,7 +4,7 @@ id: assistant
 title: The assistant
 summary: Ask {appName}'s built-in assistant to change your site, and check, keep or undo what it changed.
 related: [settings, undo-and-history, version-history, ai-apps]
-updated: 2026-11-17
+updated: 2026-11-21
 status: partial
 ---
 
@@ -67,6 +67,10 @@ While the assistant is on, **Start a Site…**'s first step asks you to **Tell u
 3. Click **Use These**, **Try Again** for new words, or **Keep the Template's Words**.
 
 What you use is one step in Undo History, named _AI (Assistant): Wrote the home and About pages' words_. The assistant is told your business's name, its kind, what you said, and the template's words on those two pages: nothing else of the site. What you said isn't saved, in the site or anywhere else: it's used once, when the site first opens.
+
+### Examples, never made-up facts
+
+An AI never passes off a made-up fact as yours. If it needs one you didn't give, such as a price, an opening time or a phone number, it writes an example, and {appName} marks that text as one. {appName} also marks any text that holds such a detail it can't find in what you told it, in [Site Settings](site-settings.md) or elsewhere on your site, whether the AI said so or not. A testimonial an AI writes is always an example. [Site Check](site-check.md)'s **Examples to check** lists each, and publishing waits until you've edited it or clicked **This Is Correct**.
 
 ## Asking for a change
 

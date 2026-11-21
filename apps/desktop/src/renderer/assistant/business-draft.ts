@@ -1,12 +1,19 @@
 import { t } from "@webforge/i18n";
 import {
   escapeHtmlText,
+  factDetailsIn,
+  factKeysIn,
   findNode,
   isNodeDoc,
   languageTagSchema,
+  markExamples,
+  markTestimonial,
   type NodeDoc,
   type PageId,
+  plainText,
   type SiteDoc,
+  settingsFactKeys,
+  TESTIMONIAL_EXAMPLE,
 } from "@webforge/model";
 import { type ComponentLibrary, MAX_TEXT_LENGTH } from "@webforge/site-components";
 import { DRAFT_TEXT_MAX, DRAFT_TEXTS_MAX, type DraftRequest } from "../../shared/ipc/assistant.js";
@@ -136,22 +143,65 @@ function fieldValue(text: string, rich: boolean): string {
     .join("");
 }
 
+/** What a business draft was, to tell its examples by (#1228, WN-3). */
+export type BusinessDraft = {
+  /** The texts as drafted, before the person reviewed them. */
+  readonly texts: readonly string[];
+  /** For each, whether the model flagged it as holding an example. */
+  readonly examples: readonly boolean[];
+  /** What the person said about their business: facts they gave. */
+  readonly told: string;
+};
+
+/** The mark's name for `text`'s field: its own, or its list item's by the item's id. */
+const markOf = (text: TextFieldRef) =>
+  text.item === undefined ? text.field : `${text.field}.${text.item.id}.${text.item.field}`;
+
+/**
+ * Whether the drafted text `index`, kept as drafted, holds an example (#1228, WN-3): the model
+ * flagged it, or it has a detail shaped like a fact that nobody gave, neither the person (in what
+ * they told the quick start, or Site Settings) nor the draft's request.
+ */
+function holdsExample(draft: BusinessDraft, index: number, known: () => ReadonlySet<string>) {
+  if (draft.examples[index] === true) return true;
+  const details = factDetailsIn(plainText(draft.texts[index] ?? ""));
+  return details.some(({ key }) => !known().has(key));
+}
+
 /**
  * Keeps the person's reviewed words, `words[i]` for `texts[i]`, as one undo step labelled as the
  * assistant's. A text left empty keeps the template's sample, as does one whose element has gone.
+ *
+ * A text kept as `draft` wrote it that holds an example is marked as one, which Site Check lists
+ * until the person checks it; one the person changed in review is their own. A testimonial drafted
+ * is always an example (#1228, WN-3).
  */
 export function keepBusinessWords(
   session: Pick<EditorSession, "edit">,
   texts: readonly BusinessText[],
   words: readonly string[],
+  draft?: BusinessDraft,
 ): void {
-  session.edit("props", assistantLabel(t("assistant.business.history")), (draft) => {
+  session.edit("props", assistantLabel(t("assistant.business.history")), (site) => {
+    let known: ReadonlySet<string> | undefined;
+    const facts = () => {
+      known ??= new Set([
+        ...settingsFactKeys(site.settings),
+        ...factKeysIn([draft?.told ?? "", site.settings.general.name]),
+      ]);
+      return known;
+    };
     texts.forEach((text, index) => {
-      const value = fieldValue(words[index] ?? "", text.rich);
+      const word = words[index] ?? "";
+      const value = fieldValue(word, text.rich);
       if (value === "" || value.length > MAX_TEXT_LENGTH) return;
-      const content = draft.pages[text.pageId]?.doc.content ?? [];
+      const content = site.pages[text.pageId]?.doc.content ?? [];
       const node = findNode(content, (each) => each.props.id === text.nodeId);
-      if (node !== undefined) setTextField(node, text, value);
+      if (node === undefined) return;
+      setTextField(node, text, value);
+      if (node.type === TESTIMONIAL_EXAMPLE.type) markTestimonial(node.props);
+      const asDrafted = draft !== undefined && word === draft.texts[index]?.trim();
+      if (asDrafted && holdsExample(draft, index, facts)) markExamples(node.props, [markOf(text)]);
     });
   });
 }
