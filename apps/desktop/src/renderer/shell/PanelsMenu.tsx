@@ -24,7 +24,7 @@ const PANELS = [
  * each column and the bottom panel as a checkbox, ticked while it's shown, with its shortcut. It
  * runs the same commands the buttons do. Nothing while none of them is registered.
  */
-export function PanelsMenu({ className }: { readonly className?: string }) {
+export function PanelsMenu() {
   const registry = useCommandRegistry();
   const commands = useCommands();
   const panels = PANELS.flatMap(({ id, label }) => {
@@ -39,7 +39,6 @@ export function PanelsMenu({ className }: { readonly className?: string }) {
         <Button
           variant="ghost"
           size="icon"
-          className={className}
           aria-label={t("shell.panelsMenu")}
           tooltip={t("shell.panelsMenu")}
         >

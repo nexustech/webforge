@@ -253,7 +253,11 @@ export function App({
                           icon={<PanelRightIcon />}
                         />
                       </div>
-                      <PanelsMenu className="@min-[960px]/title-bar:hidden" />
+                      {/* Hidden as a whole: its tooltip's wrapper, not only its button, so no
+                          empty item takes a gap in a wide title bar. */}
+                      <div className="contents @min-[960px]/title-bar:hidden">
+                        <PanelsMenu />
+                      </div>
                       <div className="mx-1 h-5 w-px bg-border" aria-hidden />
                     </>
                   }
