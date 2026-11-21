@@ -30,7 +30,7 @@ describe("confirmSiteWide (D7)", () => {
       answer = confirm.confirmSiteWide(deletePage(6));
     });
     expect(screen.getByRole("alertdialog", { name: "Delete page 'About'?" }).textContent).toContain(
-      "This removes the page and its content. This changes 6 pages. You can undo it afterwards.",
+      "This removes the page and its content. 6 pages of your site will change. You can undo it afterwards.",
     );
     await userEvent.click(screen.getByRole("button", { name: "Delete Page" }));
 
@@ -49,7 +49,9 @@ describe("confirmSiteWide (D7)", () => {
     act(() => {
       answer = confirm.confirmSiteWide(deletePage(1));
     });
-    expect(screen.getByRole("alertdialog").textContent).toContain("This changes 1 page.");
+    expect(screen.getByRole("alertdialog").textContent).toContain(
+      "1 page of your site will change.",
+    );
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     await expect(answer).resolves.toBe(false);

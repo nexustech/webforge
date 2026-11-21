@@ -100,7 +100,7 @@ const appearance = (
   group: "style",
   value,
   options: [
-    { label: "Theme's", value: "default" },
+    { label: "Same as theme", value: "default" },
     { label: "None", value: "none" },
     { label: "Large", value: "large" },
     { label: "Full", value: "full" },
@@ -118,11 +118,11 @@ export const Provenance: Story = {
     heading: "Button",
     fields: [
       appearance("lookCorners", "Corners", "default", {
-        text: "Theme's (Corners: Medium)",
+        text: "Same as theme (Corners: Medium)",
         onReveal: () => undefined,
       }),
       appearance("lookShadow", "Shadow", "large", {
-        text: "Theme's look for Button",
+        text: "Same as the theme's look for Button",
         onReveal: () => undefined,
       }),
       appearance("lookBorder", "Border", "none", { text: "Set here" }),

@@ -71,7 +71,7 @@ Right-click while typing to see spelling suggestions.
 
 ## Spacing and sizes
 
-When a section or element is selected, drag the handles on its edges to change the room inside it (padding) and around it (margin). On an image, the side handles change its width. Each drag is one step you can undo.
+When a section or element is selected, drag the handles on its edges to change its **Space inside** (padding) and **Space outside** (margin). On an image, the side handles change its width. Each drag is one step you can undo.
 
 ## The right-click menu
 

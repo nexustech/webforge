@@ -64,15 +64,15 @@ test("drags a section's padding as one step, shown live; Esc cancels a drag", as
 
   // Far into the section: the largest size.
   await dragBy(grip("padding", "top"), 300);
-  await expect(canvas().locator(".wf-grip-readout")).toHaveText("Padding Top: XL");
+  await expect(canvas().locator(".wf-grip-readout")).toHaveText("Space inside Top: XL");
   await expect(section).toHaveClass(/(^| )px-4 pt-32 pb-16( |$)/);
   await expect(section).toHaveCSS("padding-top", "128px");
   await page.mouse.up();
 
   await expect(steps()).toHaveCount(2);
-  await expect(steps().first()).toHaveText("Changed Section padding");
+  await expect(steps().first()).toHaveText("Changed Section space inside");
   await expect(canvas().locator(".wf-grip-readout")).toHaveCount(0);
-  const top = panel().getByRole("radiogroup", { name: "Padding Top" });
+  const top = panel().getByRole("radiogroup", { name: "Space inside Top" });
   await panel().getByRole("tab", { name: "Style" }).click();
   await expect(top.getByRole("radio", { name: "XL", exact: true })).toHaveAttribute(
     "aria-checked",
@@ -114,11 +114,11 @@ test("drags a Medium Section's padding on its column, the section a band across 
 
   // From the column's 64 px, far in: the largest size, on the column.
   await dragBy(grip("padding", "top"), 300);
-  await expect(canvas().locator(".wf-grip-readout")).toHaveText("Padding Top: XL");
+  await expect(canvas().locator(".wf-grip-readout")).toHaveText("Space inside Top: XL");
   await page.mouse.up();
   await expect(column).toHaveCSS("padding-top", "128px");
   await expect(section).toHaveCSS("padding-top", "0px");
-  await expect(steps().first()).toHaveText("Changed Section padding");
+  await expect(steps().first()).toHaveText("Changed Section space inside");
 });
 
 test("drags a heading's margin on Mobile; hidden in Content mode", async () => {
@@ -132,7 +132,7 @@ test("drags a heading's margin on Mobile; hidden in Content mode", async () => {
   await dragBy(grip("margin", "bottom"), 200);
   await page.mouse.up();
 
-  await expect(steps().first()).toHaveText("Changed Heading margin on Mobile");
+  await expect(steps().first()).toHaveText("Changed Heading space outside on Mobile");
   await expect(canvas().locator(".site-heading")).toHaveClass(/(^| )max-md:mb-24( |$)/);
 
   await page.getByRole("radio", { name: "Content", exact: true }).click();

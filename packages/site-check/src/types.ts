@@ -113,6 +113,11 @@ export type CheckRule = {
    */
   readonly oneTime?: true;
   /**
+   * Listed only while it finds something, never among the rules that passed (F24, #1180): the
+   * Stylesheet's, which Simple mode doesn't show and most sites never use.
+   */
+  readonly onlyWhenFound?: true;
+  /**
    * Given the whole site, draft pages included (G37, #864). Every other rule is given the site as
    * it is published ({@link runRule}), so nothing on a draft page is checked. A rule with this
    * leaves out what isn't published itself: it is for links to a draft page.
@@ -129,6 +134,8 @@ export type RuleResult = {
   readonly group?: "found";
   /** A one-time tip: see {@link CheckRule.oneTime}. */
   readonly oneTime?: true;
+  /** Listed only while it finds something: see {@link CheckRule.onlyWhenFound}. */
+  readonly onlyWhenFound?: true;
   /** What it found, but not what the person ignored. */
   readonly findings: readonly Finding[];
   /** How many of its findings the person ignored. */

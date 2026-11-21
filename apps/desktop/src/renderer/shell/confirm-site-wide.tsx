@@ -20,7 +20,7 @@ export type SiteWideAction = {
   readonly description?: string;
   /** The confirm button: "Delete Page". */
   readonly confirm: string;
-  /** How many pages it changes, which the dialog states ("This changes 6 pages."). */
+  /** How many pages it changes, which the dialog states ("6 pages of your site will change."). */
   readonly affectedPages: number;
   /** The version's name, saved once confirmed, if not "Before: {confirm}" (an AI app's plan). */
   readonly version?: string;

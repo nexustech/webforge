@@ -33,9 +33,10 @@ export const siteCheck = {
 
   // Each rule: its name, the verdict when it passes, and when it doesn't.
   "siteCheck.rule.deviceNames": "Page names",
-  "siteCheck.rule.deviceNames.pass": "Every page has a name Windows can save",
-  "siteCheck.rule.deviceNames.fail.one": "1 page has a name Windows keeps for itself",
-  "siteCheck.rule.deviceNames.fail.other": "{count} pages have a name Windows keeps for itself",
+  "siteCheck.rule.deviceNames.pass": "Every page's name works as a file name on any computer",
+  "siteCheck.rule.deviceNames.fail.one": "1 page has a name Windows can't use as a file name",
+  "siteCheck.rule.deviceNames.fail.other":
+    "{count} pages have a name Windows can't use as a file name",
   "siteCheck.rule.homePage": "Home page",
   "siteCheck.rule.homePage.pass": "The site has a home page",
   "siteCheck.rule.homePage.fail.one": "The site has no home page",

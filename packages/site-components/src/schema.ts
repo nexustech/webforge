@@ -62,6 +62,11 @@ export type FieldDef = {
    */
   readonly help?: string;
   /**
+   * Another name the Edit panel's search finds it by, not translated: its CSS property, for people
+   * who know CSS ("padding" for *Space inside*, F23, #1180).
+   */
+  readonly alsoCalled?: string;
+  /**
    * Why the field can't be used while the element has `values` (with its defaults), already
    * translated, or none when it can. The Edit panel then shows it disabled, with that sentence
    * as its help: a List's style while an icon takes the place of its markers.

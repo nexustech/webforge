@@ -266,10 +266,7 @@ describe("page actions (F-ED-13)", () => {
     setHiddenFromNavigation(session, about, false);
     setHiddenFromNavigation(session, notFound, false);
 
-    expect(labels().slice(1)).toEqual([
-      "Hid 'About' from navigation",
-      "Showed 'About' in navigation",
-    ]);
+    expect(labels().slice(1)).toEqual(["Hid 'About' in the menu", "Showed 'About' in the menu"]);
     expect(site().pages[notFound]?.settings.hideFromNavigation).toBe(true);
   });
 

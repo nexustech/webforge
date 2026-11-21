@@ -380,6 +380,7 @@ export function fieldsFor(target: FieldTarget, options: FieldsOptions): EditPane
           // A gradient's end without a colour shows the one it draws with (CT-10).
           value: shownValueOf(field, responsive ? valueAt(stored, breakpoint) : stored),
           ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
+          ...(field.alsoCalled === undefined ? {} : { alsoCalled: field.alsoCalled }),
           ...(help === undefined ? {} : { help }),
           ...(warning === undefined ? {} : { warning }),
           // Where its value comes from (CT-3), on the Appearance basics and the dialog's deeper

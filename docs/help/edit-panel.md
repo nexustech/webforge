@@ -4,7 +4,7 @@ id: edit-panel
 title: The Edit panel
 summary: Change the selected section or element's content and options, on every device or just one.
 related: [styling, sections, elements, editing-on-the-page]
-updated: 2026-11-17
+updated: 2026-11-20
 ---
 
 # The Edit panel
@@ -56,7 +56,7 @@ Many options can be different on Desktop, Tablet and Mobile. Columns side by sid
 
 ## Where a value comes from
 
-Some options show where their value comes from, such as _Theme's look for Button_. Click it to see that part of the [theme](themes.md).
+Some options show where their value comes from, such as _Same as the theme's look for Button_ or _Same as theme (Corners: Large)_. Click it to see that part of the [theme](themes.md).
 
 ## Advanced options
 

@@ -152,6 +152,7 @@ export function reportOf(
       level,
       ...(rule.group === undefined ? {} : { group: rule.group }),
       ...(rule.oneTime === undefined ? {} : { oneTime: rule.oneTime }),
+      ...(rule.onlyWhenFound === undefined ? {} : { onlyWhenFound: rule.onlyWhenFound }),
       findings,
       ignored: all.length - findings.length,
     };

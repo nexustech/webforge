@@ -5,14 +5,14 @@ title: Elements
 summary: Every element you can put inside a section, what it's for and what you can change.
 components: [Heading, Text, List, ListItem, Image, Carousel, CarouselSlide, EmbedVideo, Button, Spacer, Divider, Icon, SocialLinks, Columns, Column, Tabs, Tab, EmbedMap, Form, FormField, BuyButton, Accordion, AccordionItem, Table, TableRow]
 related: [sections, add-panel, edit-panel, media, links, forms, custom-code]
-updated: 2026-11-18
+updated: 2026-11-20
 ---
 
 # Elements
 
 An **element** is anything inside a section: a heading, some text, a picture, a button. Open the **Add** panel's **Elements** tab and click one to add it to the selected section, or drag it into a section. A page needs a section before it can hold elements.
 
-The Elements tab groups them as below. Every element but the Spacer has a **Margin**, most have an **Entrance animation**, and all of them have the **Appearance** group in the Style tab (see [Styling](styling.md)).
+The Elements tab groups them as below. Every element but the Spacer has a **Space outside** (margin), most have an **Entrance animation**, and all of them have the **Appearance** group in the Style tab (see [Styling](styling.md)).
 
 ## Text
 

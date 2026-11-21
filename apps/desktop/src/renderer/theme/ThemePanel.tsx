@@ -221,7 +221,7 @@ export type ThemePanelProps = {
   readonly ownThemes?: OwnThemes | undefined;
   /**
    * A field to reveal (CT-3): scrolled to and focused once drawn, then cleared. The Edit panel's
-   * *Theme's (Corners: Medium)* asks for its token's.
+   * *Same as theme (Corners: Medium)* asks for its token's.
    */
   readonly reveal?: StoreApi<{ readonly field?: string | undefined }> | undefined;
   /** The computer's fonts for the font picker: the preload API's (#668). */
