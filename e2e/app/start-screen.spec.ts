@@ -37,6 +37,12 @@ test.afterEach(async () => {
 
 const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");
 
+/**
+ * How long File › Close Site may take to show the start screen: the last save, then the home
+ * page's picture for the Recent list, each with its own timeout (5 s and 3 s).
+ */
+const CLOSE_SITE_WAIT = 15_000;
+
 /** The running app; tests call it once they have launched one. */
 function running(): ElectronApplication {
   if (app === undefined) throw new Error("The app is not running");
@@ -90,7 +96,10 @@ test("opens Settings on the start screen, and File › Close Site goes back to i
   await waitForCanvas(page);
 
   await chooseFromMenu(running(), page, "File", "Close Site");
-  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
+  // Saved, and its picture taken for the Recent list (#1175): up to about 3 s on a cold start.
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
+    timeout: CLOSE_SITE_WAIT,
+  });
   // On the Recent list, and no longer the open one: it opens again from there.
   const card = page.getByRole("listitem").filter({ hasText: "Rosa's Bakery" });
   // A picture of its home page, taken as it closed (#1175).
@@ -115,7 +124,10 @@ test("pictures the home page for the Recent list, not the editor with its select
   await expect(page.getByRole("navigation", { name: "Where the selection is" })).toBeVisible();
 
   await chooseFromMenu(running(), page, "File", "Close Site");
-  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
+  // Saved, and its picture taken for the Recent list (#1175): up to about 3 s on a cold start.
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
+    timeout: CLOSE_SITE_WAIT,
+  });
   // The home page drawn for its picture has gone again.
   await expect(page.locator("[data-site-picture]")).toHaveCount(0);
   const picture = page.getByRole("listitem").filter({ hasText: "Rosa's Bakery" }).locator("img");
