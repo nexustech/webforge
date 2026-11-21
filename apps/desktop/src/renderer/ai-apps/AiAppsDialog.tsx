@@ -32,7 +32,9 @@ import {
   type McpApi,
   type McpInstallResult,
   type McpStatus,
+  UNCLAIMED_KEY_MS,
 } from "../../shared/ipc/mcp.js";
+import { type ShellKind, shellOf } from "../../shared/mcp-setup.js";
 
 /** How often the dialog asks for the apps' status while open, so *Connected* follows them. */
 export const STATUS_EVERY_MS = 2_000;
@@ -47,6 +49,10 @@ export type AiAppsDialogProps = {
   /** Says what went wrong, in the window's toasts. */
   readonly notify: (message: string) => void;
   readonly onClose: () => void;
+  /** The shell of this computer's terminals, for the commands it shows (#1245); from the browser. */
+  readonly shell?: ShellKind;
+  /** The time now, in ms; injectable for tests and stories. */
+  readonly now?: () => number;
 };
 
 type AppStatus = McpStatus["apps"][number];
@@ -74,6 +80,17 @@ type Shown = {
   readonly name: string;
   readonly key: string;
   readonly address: string;
+  /** When it was paired, in ms: its key works for {@link UNCLAIMED_KEY_MS} from then, unused. */
+  readonly pairedAt: number;
+};
+
+/** What a button copied: the key, the address, a command, or a setup step's command by its number. */
+type Copied = "key" | "address" | "command" | `step${number}`;
+
+/** `ms` as minutes and seconds, as a countdown shows it: "4:05". */
+const minutesAndSeconds = (ms: number) => {
+  const seconds = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 };
 
 /**
@@ -106,26 +123,136 @@ function CopyRow({
 }
 
 /**
+ * A setup's steps done by hand (#1245): each numbered, with the command it runs and a button that
+ * copies it, and the key's own button where it's pasted.
+ */
+function SetupSteps({
+  shown,
+  shell,
+  copied,
+  onCopy,
+}: {
+  readonly shown: Shown;
+  readonly shell: ShellKind;
+  readonly copied: Copied | null;
+  readonly onCopy: (what: Copied, text: string) => void;
+}) {
+  const setup = clientOf(shown.kind).setup;
+  if (setup === undefined) return null;
+  return (
+    <>
+      <h4 className="mt-2 text-sm font-medium">{setup.title()}</h4>
+      <ol className="mt-1 flex list-decimal flex-col gap-3 pl-5 text-sm">
+        {setup.steps(shown.address, shell).map((step, index) => {
+          const what: Copied = `step${index + 1}`;
+          return (
+            <li key={step.text} className="flex flex-col gap-1.5">
+              <span>{step.text}</span>
+              {step.command === undefined ? null : (
+                <span className="flex items-center gap-2">
+                  <code className="min-w-0 flex-1 break-all rounded-sm bg-muted px-1.5 py-1 font-mono text-xs">
+                    {step.command.value}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onCopy(what, step.command?.value ?? "")}
+                  >
+                    {copied === what ? t("aiApps.key.copied") : step.command.copyLabel}
+                  </Button>
+                </span>
+              )}
+              {step.key === true ? (
+                <span className="flex items-center gap-2">
+                  <code className="min-w-0 flex-1 break-all font-mono text-xs">{shown.key}</code>
+                  <Button variant="outline" size="sm" onClick={() => onCopy("key", shown.key)}>
+                    {copied === "key" ? t("aiApps.key.copied") : t("aiApps.key.copyKey")}
+                  </Button>
+                </span>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+    </>
+  );
+}
+
+/**
+ * Where a just-paired app is (#1245): waiting for it to use its key, with the time the key has
+ * left; using it, connected; or gone, its key run out unused. Polled with the dialog's status.
+ */
+function ShownState({
+  shown,
+  app,
+  now,
+}: {
+  readonly shown: Shown;
+  /** The app as AI apps lists it now: none once it's removed. */
+  readonly app: AppStatus | undefined;
+  readonly now: number;
+}) {
+  const name = shown.name;
+  const text =
+    app === undefined
+      ? t("aiApps.shown.expired", { name })
+      : app.connected
+        ? t("aiApps.shown.connected", { name })
+        : app.claimed
+          ? t("aiApps.shown.used", { name })
+          : t("aiApps.shown.waiting", {
+              name,
+              time: minutesAndSeconds(shown.pairedAt + UNCLAIMED_KEY_MS - now),
+            });
+  return (
+    <p role="status" className="mt-3 text-sm font-medium" data-state={stateOf(app)}>
+      {text}
+    </p>
+  );
+}
+
+/** A just-paired app's state, for {@link ShownState}'s `data-state`. */
+const stateOf = (app: AppStatus | undefined) =>
+  app === undefined ? "expired" : app.connected ? "connected" : app.claimed ? "used" : "waiting";
+
+/**
  * A just-paired app's setup, as its kind has it (#980): its steps, what to copy, its install and
  * what that came to, or where the key goes and what an app that doesn't check costs.
  */
 function ShownSetup({
   shown,
+  shell,
   copied,
   installed,
   onCopy,
   onInstall,
 }: {
   readonly shown: Shown;
-  readonly copied: "key" | "address" | "command" | null;
+  readonly shell: ShellKind;
+  readonly copied: Copied | null;
   readonly installed: McpInstallResult["status"] | null;
-  readonly onCopy: (what: "key" | "address" | "command", text: string) => void;
+  readonly onCopy: (what: Copied, text: string) => void;
   readonly onInstall: () => void;
 }) {
   const client = clientOf(shown.kind);
   const extra = client.copy;
   // The address, as a value of its own: the generic app's only; another copies what it makes of it.
   const what = extra?.value(shown.address) === shown.address ? "address" : "command";
+  if (client.setup !== undefined) {
+    return (
+      <>
+        <SetupSteps shown={shown} shell={shell} copied={copied} onCopy={onCopy} />
+        {/* Empty, it takes no room. */}
+        <p role="status" className={copied === "key" ? "mt-2 text-sm" : "text-sm"}>
+          {copied === "key" ? t("aiApps.key.cleared") : null}
+        </p>
+        {client.note === undefined ? null : (
+          <p className="mt-2 text-sm text-muted-foreground">{client.note()}</p>
+        )}
+        {client.verifiesServer ? null : <p className="mt-2 text-sm">{t("aiApps.key.risk")}</p>}
+      </>
+    );
+  }
   return (
     <>
       {client.steps === undefined ? null : (
@@ -189,6 +316,8 @@ export function AiAppsDialog({
   copySecret,
   notify,
   onClose,
+  shell = shellOf(navigator.userAgent),
+  now: clock = Date.now,
 }: AiAppsDialogProps) {
   const [status, setStatus] = useState<McpStatus | null>(null);
   // Shown for as long as the dialog stays open, though main forgets it once it's been seen (S27).
@@ -196,7 +325,9 @@ export function AiAppsDialog({
   const [adding, setAdding] = useState<Adding | null>(null);
   const [addError, setAddError] = useState<string | undefined>(undefined);
   const [shown, setShown] = useState<Shown | null>(null);
-  const [copied, setCopied] = useState<"key" | "address" | "command" | null>(null);
+  const [copied, setCopied] = useState<Copied | null>(null);
+  // The time now, ticking each second while a new app's key waits, for its countdown (#1245).
+  const [now, setNow] = useState(clock);
   const [removing, setRemoving] = useState<AppStatus | null>(null);
   const [installed, setInstalled] = useState<McpInstallResult["status"] | null>(null);
   const whichId = useId();
@@ -233,6 +364,15 @@ export function AiAppsDialog({
     };
   }, [open, mcp, notify]);
 
+  // The shown app as AI apps lists it now: none once its key ran out unused, or it was removed.
+  const shownApp = shown === null ? undefined : status?.apps.find((app) => app.id === shown.id);
+  const waiting = shownApp !== undefined && !shownApp.claimed;
+  useEffect(() => {
+    if (!waiting) return;
+    const timer = setInterval(() => setNow(clock()), 1_000);
+    return () => clearInterval(timer);
+  }, [waiting, clock]);
+
   const act = (work: Promise<McpStatus>) => work.then(setStatus, () => notify(t("aiApps.failed")));
 
   const add = async () => {
@@ -242,17 +382,20 @@ export function AiAppsDialog({
     if (result.status !== "paired") return setAddError(t(`aiApps.add.failed.${result.status}`));
     setAdding(null);
     setAddError(undefined);
+    const pairedAt = clock();
+    setNow(pairedAt);
     setShown({
       id: result.app.id,
       kind: adding.kind,
       name: result.app.name,
       key: result.key,
       address: result.address,
+      pairedAt,
     });
     await act(mcp.status());
   };
 
-  const copy = (what: "key" | "address" | "command", text: string) => {
+  const copy = (what: Copied, text: string) => {
     const copying = what === "key" ? copySecret(text) : copyText(text);
     void copying.then(
       () => setCopied(what),
@@ -310,11 +453,13 @@ export function AiAppsDialog({
                 <p className="text-sm">{t("aiApps.key.once", { name: shown.name })}</p>
                 <ShownSetup
                   shown={shown}
+                  shell={shell}
                   copied={copied}
                   installed={installed}
                   onCopy={copy}
                   onInstall={() => install(shown.id)}
                 />
+                <ShownState shown={shown} app={shownApp} now={now} />
                 <Button className="mt-2 block" onClick={closeShown}>
                   {t("aiApps.key.done")}
                 </Button>

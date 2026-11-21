@@ -1,12 +1,10 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { AI_CLIENT_IDS, type AiClientId, clientOf } from "../shared/ai-clients/index.js";
+import { UNCLAIMED_KEY_MS } from "../shared/ipc/mcp.js";
 import { type CredentialStore, mcpCredentialKey } from "./credential-store.js";
 import type { JsonStore } from "./json-store.js";
 import type { McpApp } from "./mcp-server.js";
-
-/** How long a new key stays valid without being used: then it's revoked (ADR 0021). */
-export const UNCLAIMED_KEY_MS = 5 * 60_000;
 
 /** Wrong keys in a minute before each further wrong key's answer is held back. */
 const FAILURES_BEFORE_DELAY = 3;

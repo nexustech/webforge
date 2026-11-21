@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { AI_CLIENT_IDS, type AiClientId } from "../ai-clients/index.js";
 
+/**
+ * How long a new key stays valid without being used: then it's revoked (ADR 0021), and AI apps
+ * counts it down while it waits (#1245).
+ */
+export const UNCLAIMED_KEY_MS = 5 * 60_000;
+
 /** The longest name the person can give an AI app (the AI contract's limit). */
 export const AI_APP_NAME_MAX = 80;
 
