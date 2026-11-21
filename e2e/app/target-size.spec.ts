@@ -17,9 +17,18 @@ test.afterEach(async () => {
  * The controls `page` shows that are under 24 px either way, as "role name (width × height)": every
  * button, link, field and control role in view, but an inline link in a sentence, and what is
  * drawn for screen readers only. The canvas's page is the person's site, so it isn't measured.
+ * Measured once what is opening has finished: a dialog grows from 95% as it opens, which would
+ * measure its 24 px controls as 23.
  */
 const smallTargets = (page: Page) =>
-  page.evaluate(() => {
+  page.evaluate(async () => {
+    // Each animation with an end (a spinner's has none).
+    await Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().endTime !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    );
     const CONTROLS = [
       "button",
       "a[href]",
