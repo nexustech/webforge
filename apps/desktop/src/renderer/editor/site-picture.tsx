@@ -10,7 +10,7 @@ import { type CompileCanvasCss, classesOfHtml } from "./site-css.js";
  * The home page is drawn for its picture as a desktop shows it, the top of it as tall as a
  * template's thumbnail (`pnpm template-thumbnails`): 1280 × 800.
  */
-export const PICTURE = { width: 1280, height: 800 } as const;
+const PICTURE = { width: 1280, height: 800 } as const;
 
 /** How long the drawn page may take to load its fonts and first images before it's pictured. */
 const SETTLE_TIMEOUT_MS = 1_500;

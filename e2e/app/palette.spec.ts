@@ -113,8 +113,15 @@ test.describe("every section's preview", () => {
     const preview = page.locator('[data-slot="hover-card-content"] > div');
     const away = page.getByRole("region", { name: "Right panels" });
     const rows = left().getByRole("list", { name: "All sections" }).getByRole("button");
+    // Each row's label, its own text: the drag handle inside it has labels of its own.
     const names = await rows.evaluateAll((buttons) =>
-      buttons.map((button) => button.textContent?.trim() ?? ""),
+      buttons.map((button) =>
+        [...button.childNodes]
+          .filter((node) => node.nodeType === Node.TEXT_NODE)
+          .map((node) => node.textContent ?? "")
+          .join("")
+          .trim(),
+      ),
     );
     expect(names.length).toBeGreaterThan(20);
     const sizes: Record<string, number> = {};
