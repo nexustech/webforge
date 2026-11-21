@@ -145,7 +145,7 @@ const windowCaptureSchema = z.union([
 ]);
 
 /** See {@link windowCaptureSchema}. */
-export type WindowCapture = z.infer<typeof windowCaptureSchema>;
+type WindowCapture = z.infer<typeof windowCaptureSchema>;
 
 /** What became of saving the screenshot. */
 const captureSavedSchema = z.enum(["saved", "cancelled", "failed", "none"]);

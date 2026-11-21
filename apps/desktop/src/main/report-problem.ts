@@ -45,7 +45,7 @@ export function systemName(platform: NodeJS.Platform, release: string, arch: str
 }
 
 /** The report's text: the person's message, then the version and the system. */
-export function reportBody(text: string, version: string, system: string): string {
+function reportBody(text: string, version: string, system: string): string {
   return `${text.trim()}\n\n${t("help.report.details", { version, system })}`;
 }
 

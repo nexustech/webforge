@@ -30,7 +30,7 @@ export type ReportStatus =
 const KEEP_AFTER_MS = 500;
 
 /** The report's text as {@link ReportProblem} copies it: the message, the version and system. */
-export function reportText(text: string, info: ReportInfo): string {
+function reportText(text: string, info: ReportInfo): string {
   return `${text.trim()}\n\n${t("help.report.details", { version: info.version, system: info.system })}`;
 }
 
@@ -123,10 +123,11 @@ export function ReportProblemDialog(props: ReportProblemDialogProps) {
               </>
             )}
           </section>
-          <p role="status" className="m-0 min-h-5 text-sm">
-            {status === null ? "" : t(`help.report.status.${status}`)}
-          </p>
         </div>
+        {/* Outside the scrolling part: what became of the last action is always in view. */}
+        <p role="status" className="m-0 min-h-5 text-sm">
+          {status === null ? "" : t(`help.report.status.${status}`)}
+        </p>
         <DialogFooter className="flex-wrap gap-2">
           <Button variant="ghost" disabled={empty} onClick={props.onClear}>
             {t("help.report.clear")}
