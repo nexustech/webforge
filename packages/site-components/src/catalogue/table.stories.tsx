@@ -45,3 +45,40 @@ export const Table: Story = {
     ],
   },
 };
+
+/**
+ * A comparison, its first heading empty: each row's first cell is its heading, on Mobile its block's
+ * title across the full width (#1258).
+ */
+export const Comparison: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Section",
+        props: {
+          id: "section",
+          content: [
+            {
+              type: "Table",
+              props: {
+                id: "compare",
+                columns: "3",
+                heading1: "",
+                heading2: "Our cakes",
+                heading3: "Supermarket",
+                rows: [
+                  ["Baked on the day", "Yes", "No"],
+                  ["Names iced on", "Free", "Not offered"],
+                  ["Delivery", "Within 5 miles", "Collect only"],
+                ].map(([cell1, cell2, cell3], index) => ({
+                  type: "TableRow",
+                  props: { id: `compare-${index}`, cell1, cell2, cell3 },
+                })),
+              },
+            },
+          ],
+        },
+      },
+    ],
+  },
+};

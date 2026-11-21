@@ -82,6 +82,31 @@ describe("the Table (6.16c)", () => {
     ).toEqual(["Cake", "Serves", "Price"]);
   });
 
+  it("makes each row's first cell its heading when the first column has none (#1258)", () => {
+    const doc = page([prices({ heading1: "" })]);
+
+    // The corner above the rows' names is a cell, not a heading with no name.
+    expect(doc.querySelector("thead tr > :first-child")?.tagName).toBe("TD");
+    expect(texts(doc, "thead th")).toEqual(["Serves", "Price"]);
+    const first = doc.querySelector("tbody > tr:first-child > :first-child");
+    expect(first?.tagName).toBe("TH");
+    expect(first?.getAttribute("scope")).toBe("row");
+    expect(first?.getAttribute("role")).toBe("rowheader");
+    expect(first?.textContent).toBe("Lemon drizzle");
+    // On a narrow screen, the block's title across the full width, with no heading beside it.
+    expect(first?.hasAttribute("data-label")).toBe(false);
+    expect(first?.className).toContain("max-md:block");
+    expect(first?.className).not.toContain("grid-cols-2");
+    expect(texts(doc, "tbody > tr:first-child > td")).toEqual(["8", "£18"]);
+  });
+
+  it("keeps every cell a cell when the first column has a heading", () => {
+    const doc = page([prices()]);
+
+    expect(doc.querySelectorAll("tbody th")).toHaveLength(0);
+    expect(doc.querySelectorAll("thead td")).toHaveLength(0);
+  });
+
   it("draws only the columns it has: fewer leave the last ones' headings and cells out", () => {
     const three = page([prices()]);
     const two = page([prices({ columns: "2" })]);
