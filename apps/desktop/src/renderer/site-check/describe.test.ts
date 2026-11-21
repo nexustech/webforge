@@ -119,14 +119,6 @@ describe("describePlace", () => {
         at({ kind: "theme" }, { palette: "colors", foreground: "primary", background: "base-300" }),
       ),
     ).toBe("Brand is hard to read on Third surface");
-    // One of the person's own colours (TC-1a), by its name in the theme.
-    const sky = { id: "sky", name: "Sky", color: { l: 0.9, c: 0.05, h: 240 } };
-    const withSky = { ...doc, theme: { ...doc.theme, ownColors: [sky] } };
-    const finding = at(
-      { kind: "theme" },
-      { palette: "colors", foreground: "own-sky", background: "base-100" },
-    );
-    expect(describePlace(finding, withSky, siteLibrary)).toBe("Sky is hard to read on Surface");
     expect(name(at({ kind: "address" }))).toBe("Site Settings › Web address");
     expect(name(at({ kind: "code", part: "css" }))).toBe("Custom Code › Stylesheet");
     // Being found (3.17).

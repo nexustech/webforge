@@ -2,7 +2,6 @@ import {
   type ColorRole,
   findUnderlinedText,
   type NodeDoc,
-  OWN_COLOR_PREFIX,
   type Responsive,
   resolveResponsive,
   TEXT_COLOR_CLASSES,
@@ -19,7 +18,6 @@ import {
   contrastIssues,
   contrastNeeded,
   contrastOn,
-  ownColorIssues,
   readableTextColour,
   resolveColorRef,
   type Surface,
@@ -105,21 +103,8 @@ export const contrastRule: CheckRule = {
         required: issue.required,
       },
     }));
-    // The person's own colours (TC-1a, #1217), measured as the brand colours are; named by their
-    // reference, which says which of them it is.
-    for (const issue of ownColorIssues(theme)) {
-      found.push({
-        key: `${issue.palette}/${issue.background}/${OWN_COLOR_PREFIX}${issue.id}`,
-        place: { kind: "theme" },
-        values: {
-          palette: issue.palette,
-          background: issue.background,
-          foreground: `${OWN_COLOR_PREFIX}${issue.id}`,
-          ratio: issue.ratio,
-          required: issue.required,
-        },
-      });
-    }
+    // The person's own colours (TC-1a, #1217) are measured where an element uses one, below, and
+    // never on their own: a pale colour kept for backgrounds isn't hard to read until it's text.
     // One walk for both: rich text's colour marks, and the fields that colour text.
     const marks = (placed: PlacedValue) => {
       if (typeof placed.value !== "string") return;

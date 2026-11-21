@@ -26,30 +26,26 @@ describe("contrast", () => {
     expect(findIn(contrastRule, site)).toEqual([]);
   });
 
-  it("lists the person's own colours that fail on a surface, and an element coloured with one (TC-1a)", () => {
+  it("lists text coloured with one of the person's own colours that fails, not the colour itself (TC-1a)", () => {
     const { passing } = themeWithLightAccent();
     const pale = { id: "pale", name: "Pale", color: { l: 0.95, c: 0.03, h: 90 } };
-    const site = siteWith(
-      [element("Text", "text", { text: "<p>Fresh</p>", lookColor: "own-pale" })],
-      {
-        theme: { ...passing, ownColors: [pale] },
-      },
-    );
-    const found = findIn(contrastRule, site);
+    const theme = { ...passing, ownColors: [pale] };
 
-    expect(
-      found.filter(
-        (finding) => finding.place.kind === "theme" && finding.values?.palette === "colors",
-      ),
-    ).toEqual(
-      ["base-100", "base-200", "base-300"].map((background) => ({
-        key: `colors/${background}/own-pale`,
-        place: { kind: "theme" },
-        values: expect.objectContaining({ background, foreground: "own-pale", required: 3 }),
-      })),
+    // A pale colour kept for backgrounds is hard to read on every surface, but no text is in it.
+    const unused = siteWith([element("Text", "text", { text: "<p>Fresh</p>" })], { theme });
+    expect(findIn(contrastRule, unused)).toEqual([]);
+
+    // Text in it is measured as any colour field's colour is (`resolveColorRef`), once.
+    const used = siteWith(
+      [element("Text", "text", { text: "<p>Fresh</p>", lookColor: "own-pale" })],
+      { theme },
     );
-    // Where it colours text, as any colour field's colour is (`resolveColorRef`).
-    expect(found.filter((finding) => finding.place.kind === "element").length).toBeGreaterThan(0);
+    expect(findIn(contrastRule, used)).toEqual([
+      expect.objectContaining({
+        place: expect.objectContaining({ kind: "element" }),
+        values: expect.objectContaining({ foreground: "own-pale" }),
+      }),
+    ]);
   });
 
   it("lists the theme's failing pairs, and text coloured with a colour that fails as text", () => {

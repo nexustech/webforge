@@ -51,5 +51,5 @@ The product owner's first request (option B of [product/18](../../research/produ
    - In reversed sections each colour has a value worked out from it: as it is where it stands apart from their surface by 3:1, else the nearest lightness in its hue and chroma that does.
 4. **Everything that reads a reference reads the new base,** through `resolveColorRef`: the canvas, Preview, the export, the contrast warnings and Site Check. A reference to a colour the theme no longer has draws nothing and is measured as nothing.
    - The command API refuses one an AI app sets.
-   - Site Check measures each colour as the brand colours other than the main one are: as large text, 3:1, on every surface, in both palettes.
+   - Site Check measures a colour where text or an icon uses it, as it measures any colour field's. Not on its own: a pale colour kept for backgrounds isn't hard to read until it's text. `ownColorIssues` measures each colour as the brand colours other than the main one are (3:1 on every surface, in both palettes), for Theme Studio's warnings in 5.28.
 5. **Not here:** Theme Studio's list of the colours and the picker's (5.28, TC-1b). Until then the colour field shows a colour in use by its name, and AI apps can add colours with `setThemeTokens`.
