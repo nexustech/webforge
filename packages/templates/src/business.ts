@@ -38,8 +38,13 @@ const dialled = (phone: string) => phone.replace(/[^\d+]/g, "");
  * Makes `site`, a copy of a template's, the person's own (QS-2): its sample business (the name,
  * phone, email and address its Site Settings hold) is replaced by `name` and `business`, in Site
  * Settings and wherever the copy says them, in the pages, the Header and Footer, shared sections
- * and the menu. Text bound to Site Settings follows them by itself. What the person skipped keeps
- * the template's placeholders (QS-6), which Site Check flags before they're published.
+ * and the menu. Text bound to Site Settings follows them by itself.
+ *
+ * What the person skipped keeps the template's placeholders (QS-6), which Site Check flags before
+ * they're published, but not its contact details (#1254): Site Settings' email, phone, address and
+ * opening hours are the business's facts, so one the person didn't give is left empty rather than
+ * made up, and what shows it shows Site Settings' empty-setting prompt. A sample still written in a
+ * page, such as a *Call us* button's number, is Site Check's *Sample contact details*.
  */
 export function withBusiness(site: SiteDoc, name: string, business: BusinessDetails): void {
   const { general, contact } = site.settings;
@@ -63,17 +68,20 @@ export function withBusiness(site: SiteDoc, name: string, business: BusinessDeta
   contact.businessName = name;
   const description = nonEmpty(business.description);
   if (description !== undefined) general.description = description;
-  if (phone !== undefined) contact.phone = phone;
-  if (email !== undefined) contact.email = email;
-  if (address !== undefined) contact.address = address;
+  // The business's own, or none: never the template's sample (#1254).
+  if (phone === undefined) delete contact.phone;
+  else contact.phone = phone;
+  if (email === undefined) delete contact.email;
+  else contact.email = email;
+  if (address === undefined) delete contact.address;
+  else contact.address = address;
   if (business.webAddress !== undefined) {
     site.settings.address.url = business.webAddress.replace(/\/$/, "");
   }
   if (business.businessType !== undefined) general.businessType = business.businessType;
   if (business.businessKind !== undefined) general.businessKind = business.businessKind;
-  if (business.openingHours !== undefined && business.openingHours.length > 0) {
-    contact.openingHours = structuredClone(business.openingHours);
-  }
+  contact.openingHours =
+    business.openingHours === undefined ? [] : structuredClone(business.openingHours);
 
   // The longest first, so a phone number's spaced form goes before a shorter one inside it.
   const ordered = replacements

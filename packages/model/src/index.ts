@@ -269,6 +269,7 @@ export {
   richTextPageLinks,
 } from "./rich-text-links.js";
 export { sameJson } from "./same-json.js";
+export { isSampleEmail, isSamplePhone, sampleDetailsIn } from "./sample-details.js";
 export type {
   BusinessKind,
   BusinessType,
