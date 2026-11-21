@@ -15,8 +15,8 @@ import {
 import { z } from "zod";
 import data from "./catalogue-data.json" with { type: "json" };
 
-// What a field may hold (#667), the rule the editor uses too.
-export { fieldValueSchema } from "./field-values.js";
+// What a field may hold (#667), the rule the editor uses too, and the icon names it takes (#1251).
+export { fieldValueSchema, ICON_NAMES_TAKEN } from "./field-values.js";
 // The fields a component's layout or values leave unused, as the Edit panel hides them (#670).
 export { hiddenFieldsOf, hideableFieldsOf } from "./hidden-fields.js";
 export { mainHeadingsOf, pageHeadings } from "./main-heading.js";

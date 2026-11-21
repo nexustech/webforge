@@ -1,5 +1,9 @@
 import { effectiveValues, isSharedCopy, type NodeDoc, type SiteDoc } from "@webforge/model";
-import { CATALOGUE, fieldValueSchema } from "@webforge/site-components/catalogue-data";
+import {
+  CATALOGUE,
+  fieldValueSchema,
+  ICON_NAMES_TAKEN,
+} from "@webforge/site-components/catalogue-data";
 import { z } from "zod";
 import {
   componentDetail,
@@ -133,6 +137,18 @@ export const QUERIES = {
         label: component?.label ?? node.type,
         fields: Object.fromEntries(fields),
       };
+    },
+  },
+  /** The names an icon field takes (#1251): all of them, or those with `search` in them. */
+  icons: {
+    description:
+      "The names an icon field takes (Webforge's icons, which are Lucide's), A to Z: all of them, or with search, only those with it in their name (phone, arrow, star). An icon field refuses any other name.",
+    input: z.strictObject({ search: z.string().trim().min(1).max(40).optional() }),
+    read: (_site: SiteDoc, { search }: { readonly search?: string | undefined }) => {
+      const wanted = search?.toLowerCase();
+      return wanted === undefined
+        ? ICON_NAMES_TAKEN
+        : ICON_NAMES_TAKEN.filter((name) => name.includes(wanted));
     },
   },
   /** Site Settings that say what the business is: never publishing, forms or analytics. */

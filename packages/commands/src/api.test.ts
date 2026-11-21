@@ -243,6 +243,56 @@ describe("the command API's commands (4.8)", () => {
     expect(history.state.getState().entries).toEqual([]);
   });
 
+  it("refuses an icon Webforge doesn't have, naming the field, and lists those it has (#1251)", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const location = home(history);
+    const inSection = { location, type: "Icon", parentId: "section", slot: "content" } as const;
+    const added = await api.run("addNode", { ...inSection, values: { icon: "phone" } }, app);
+    if (added.status !== "done" || added.id === undefined) throw new Error("no icon added");
+    const before = history.document.getState();
+    const steps = history.state.getState().entries.length;
+
+    for (const [name, input] of [
+      ["addNode", { ...inSection, values: { icon: "history-of-art" } }],
+      ["updateFields", { location, nodeId: added.id, values: { icon: "history-of-art" } }],
+      [
+        "plan",
+        {
+          title: "Icons",
+          commands: [
+            {
+              name: "updateFields",
+              input: { location, nodeId: added.id, values: { icon: "history-of-art" } },
+            },
+          ],
+        },
+      ],
+    ] as const) {
+      const result = await api.run(name, input, app);
+      expect(result, name).toMatchObject({
+        status: "invalid",
+        message: expect.stringContaining('"icon" isn\'t a valid icon'),
+      });
+      expect((result as { message: string }).message, name).toContain("the icons query lists");
+    }
+    expect(history.document.getState()).toBe(before);
+    expect(history.state.getState().entries).toHaveLength(steps);
+
+    // A name Lucide renamed still draws, so it's taken; and none, to take the icon away.
+    const renamed = { location, nodeId: added.id, values: { icon: "triangle-alert" } };
+    expect((await api.run("updateFields", renamed, app)).status).toBe("done");
+
+    // The icons query lists the names, all or by a part of them.
+    const all = api.query("icons", {});
+    expect(all).toMatchObject({ status: "done", data: expect.arrayContaining(["phone", "star"]) });
+    const arrows = api.query("icons", { search: "Arrow-Right" });
+    if (arrows.status !== "done") throw new Error("no answer");
+    expect(arrows.data).toContain("arrow-right");
+    expect((arrows.data as string[]).every((icon) => icon.includes("arrow-right"))).toBe(true);
+    expect(api.query("icons", { search: "" })).toMatchObject({ status: "invalid" });
+  });
+
   it("edits text and fields, moves and removes elements", async () => {
     const { history, host } = setup();
     const api = createCommandApi(host);
