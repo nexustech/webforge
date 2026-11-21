@@ -146,30 +146,33 @@ function SetupSteps({
         {setup.steps(shown.address, shell).map((step, index) => {
           const what: Copied = `step${index + 1}`;
           return (
-            <li key={step.text} className="flex flex-col gap-1.5">
-              <span>{step.text}</span>
-              {step.command === undefined ? null : (
-                <span className="flex items-center gap-2">
-                  <code className="min-w-0 flex-1 break-all rounded-sm bg-muted px-1.5 py-1 font-mono text-xs">
-                    {step.command.value}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onCopy(what, step.command?.value ?? "")}
-                  >
-                    {copied === what ? t("aiApps.key.copied") : step.command.copyLabel}
-                  </Button>
-                </span>
-              )}
-              {step.key === true ? (
-                <span className="flex items-center gap-2">
-                  <code className="min-w-0 flex-1 break-all font-mono text-xs">{shown.key}</code>
-                  <Button variant="outline" size="sm" onClick={() => onCopy("key", shown.key)}>
-                    {copied === "key" ? t("aiApps.key.copied") : t("aiApps.key.copyKey")}
-                  </Button>
-                </span>
-              ) : null}
+            <li key={step.text}>
+              {/* Its number shows only while the item stays a list item. */}
+              <div className="flex flex-col gap-1.5">
+                <span>{step.text}</span>
+                {step.command === undefined ? null : (
+                  <span className="flex items-center gap-2">
+                    <code className="min-w-0 flex-1 break-all rounded-sm bg-muted px-1.5 py-1 font-mono text-xs">
+                      {step.command.value}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onCopy(what, step.command?.value ?? "")}
+                    >
+                      {copied === what ? t("aiApps.key.copied") : step.command.copyLabel}
+                    </Button>
+                  </span>
+                )}
+                {step.key === true ? (
+                  <span className="flex items-center gap-2">
+                    <code className="min-w-0 flex-1 break-all font-mono text-xs">{shown.key}</code>
+                    <Button variant="outline" size="sm" onClick={() => onCopy("key", shown.key)}>
+                      {copied === "key" ? t("aiApps.key.copied") : t("aiApps.key.copyKey")}
+                    </Button>
+                  </span>
+                ) : null}
+              </div>
             </li>
           );
         })}
