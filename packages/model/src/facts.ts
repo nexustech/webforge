@@ -6,9 +6,12 @@
  * "09:00", "+44 1632 960123" and "01632 960123"), to compare with.
  */
 
+import type { NodeDoc } from "./documents.js";
+import { isExample } from "./examples.js";
 import { plainText } from "./plain-text.js";
 import type { SiteSettings } from "./settings.js";
 import type { SiteDoc } from "./site-doc.js";
+import { eachElement } from "./site-elements.js";
 
 /** A kind of detail shaped like a fact. */
 export type FactKind = "email" | "web" | "phone" | "price" | "time" | "day" | "postcode";
@@ -128,14 +131,50 @@ export function settingsFactKeys(settings: SiteSettings): ReadonlySet<string> {
   return keys;
 }
 
+/** Whether `value` is a node, which {@link eachElement} visits on its own. */
+const isNode = (value: unknown) =>
+  typeof value === "object" && value !== null && "type" in value && "props" in value;
+
 /**
- * The keys of every detail the site as it is gives: its Site Settings', and those written in its
- * pages, Header, Footer, shared sections and Blogs' designs. What a generated change to it may
- * repeat without having made it up (#1228).
+ * The texts of `node` that give facts: every field's, but those marked as holding an example
+ * (#1228), a list item's by its id. An example someone made up gives nothing, however often it's
+ * repeated or reworded. Its slots' elements are visited on their own.
+ */
+function givenTextsOf(node: NodeDoc): string[] {
+  const { props } = node;
+  const texts: string[] = [];
+  for (const [field, value] of Object.entries(props)) {
+    if (field === "examples") continue;
+    if (typeof value === "string") {
+      if (!isExample(props, field)) texts.push(value);
+    } else if (Array.isArray(value)) {
+      for (const item of value) {
+        if (isNode(item) || typeof item !== "object" || item === null) continue;
+        const id = (item as { id?: unknown }).id;
+        for (const [name, text] of Object.entries(item as Record<string, unknown>)) {
+          const marked = typeof id === "string" && isExample(props, `${field}.${id}.${name}`);
+          if (!marked) texts.push(...stringsIn(text));
+        }
+      }
+    } else {
+      texts.push(...stringsIn(value));
+    }
+  }
+  return texts;
+}
+
+/**
+ * The keys of every detail the site as it is gives: its Site Settings', its pages' titles and
+ * descriptions, and those written in its elements, on its pages, in its Header, Footer, shared
+ * sections and Blogs' designs, but never a text marked as holding an example. What a generated
+ * change to it may repeat without having made it up (#1228).
  */
 export function siteFactKeys(site: SiteDoc): ReadonlySet<string> {
   const keys = new Set(settingsFactKeys(site.settings));
-  const texts = stringsIn([site.pages, site.layout, site.sharedSections, site.collections]);
+  const texts = Object.values(site.pages).flatMap(({ doc: _doc, ...page }) => stringsIn(page));
+  eachElement(site, (node) => {
+    texts.push(...givenTextsOf(node));
+  });
   for (const key of factKeysIn(texts.map(plainText))) keys.add(key);
   return keys;
 }

@@ -68,6 +68,36 @@ describe("text an AI writes holds an example (#1228, WN-3)", () => {
     expect(marks("heading")).toBeUndefined();
   });
 
+  it("never takes an example for a given fact: reworded, or repeated elsewhere (PR 1289's review)", async () => {
+    const { api, location, marks } = writing();
+
+    // Made-up hours, flagged; then reworded unflagged: still made up, still marked.
+    await api.run(
+      "editText",
+      { location, nodeId: "heading", field: "text", text: "Open 9am–5pm", example: true },
+      app,
+    );
+    await api.run(
+      "editText",
+      {
+        location,
+        nodeId: "heading",
+        field: "text",
+        text: "We're open from 9am to 5pm",
+      },
+      app,
+    );
+    expect(marks("heading")).toEqual({ text: true });
+
+    // The same hours written into another element, unflagged: marked there too.
+    await api.run(
+      "updateFields",
+      { location, nodeId: "hero", values: { title: "Come by from 9am" } },
+      app,
+    );
+    expect(marks("hero")).toEqual({ title: true });
+  });
+
   it("marks the fields updateFields is told hold examples, and those that made a detail up", async () => {
     const { api, location, marks } = writing();
 
