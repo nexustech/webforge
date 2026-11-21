@@ -213,7 +213,7 @@ export default {
       to: {
         path: [REACT, "^packages/site-components/src/"],
         pathNot:
-          "^packages/site-components/src/(catalogue-data\\.(ts|json)|rich-text-html\\.ts|document-path\\.ts|field-values\\.ts|hidden-fields\\.ts|main-heading\\.ts|picture-behind\\.ts|text-colour-fields\\.ts)$",
+          "^packages/site-components/src/(catalogue-data\\.(ts|json)|icon-names-offered\\.json|rich-text-html\\.ts|document-path\\.ts|field-values\\.ts|hidden-fields\\.ts|main-heading\\.ts|picture-behind\\.ts|text-colour-fields\\.ts)$",
       },
     },
     {

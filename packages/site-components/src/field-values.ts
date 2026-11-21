@@ -1,9 +1,18 @@
 // What a component's field may hold (#667): one rule for the Edit panel, its copy and paste, list
 // edits, canvas drags, and what an AI app sets (packages/commands). Without React or the catalogue's
-// data, so every one of them can load it.
+// data, so every one of them can load it: the icon names only, not the icons.
 
 import { boxValueSchema, colorRefSchema, imageValueSchema, linkValueSchema } from "@webforge/model";
 import { z } from "zod";
+import iconNames from "./icon-names-offered.json" with { type: "json" };
+
+/**
+ * The names an icon field takes (#1251): every name Webforge has offered (#838), Lucide's now and
+ * those it renamed, A to Z. `icon-names.test.ts` checks each still draws and none is missing.
+ */
+export const ICON_NAMES_TAKEN: readonly string[] = iconNames;
+
+const TAKEN_ICONS: ReadonlySet<string> = new Set(ICON_NAMES_TAKEN);
 
 /** The longest text a text, rich text or icon field takes: the Edit panel's input stops there too. */
 export const MAX_TEXT_LENGTH = 20_000;
@@ -68,8 +77,17 @@ export function fieldValueSchema(field: FieldValueShape): z.ZodType {
           ? z.string().regex(/^(?:\d{4}-\d{2}-\d{2})?$/)
           : z.string().max(MAX_TEXT_LENGTH);
       case "richtext":
-      case "icon":
         return z.string().max(MAX_TEXT_LENGTH);
+      case "icon":
+        // One of the icons, or none (#1251): any other name would draw nothing.
+        return z
+          .string()
+          .refine((name) => name === "" || TAKEN_ICONS.has(name), {
+            error: "isn't one of Webforge's icons: the icons query lists their names",
+          })
+          .describe(
+            "The name of one of Webforge's icons (Lucide's), such as phone or star; the icons query lists them.",
+          );
       case "select":
       case "spacing":
         return optionValues(field.options);
