@@ -162,11 +162,13 @@ test("the editor's controls are 24 px or more, with an element selected and in e
   await page.getByRole("button", { name: "Show or Hide Bottom Panel" }).click();
   await measure("Site Check");
 
-  // A menu of the menu bar, and the command box: their rows.
-  await page.getByRole("menubar").getByRole("menuitem", { name: "Edit" }).click();
-  await expect(page.getByRole("menu")).toBeVisible();
-  await measure("Edit menu");
-  await page.keyboard.press("Escape");
+  // A menu of the menu bar, and the command box: their rows. macOS's menus are the system's.
+  if (process.platform !== "darwin") {
+    await page.getByRole("menubar").getByRole("menuitem", { name: "Edit" }).click();
+    await expect(page.getByRole("menu")).toBeVisible();
+    await measure("Edit menu");
+    await page.keyboard.press("Escape");
+  }
   await page.getByRole("button", { name: /^Search commands/ }).click();
   await expect(page.getByRole("dialog", { name: "Commands" })).toBeVisible();
   await measure("Commands");
