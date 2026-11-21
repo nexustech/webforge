@@ -608,6 +608,7 @@ describe("an AI app's brief (4.12a, AIB-5)", () => {
     ) as HTMLButtonElement | undefined;
 
   it("opens the quick start filled in, and makes the site only when the person creates it", async () => {
+    prefs.set.mockClear();
     const { project, answers, hand } = await withBrief();
 
     await hand();
@@ -629,6 +630,8 @@ describe("an AI app's brief (4.12a, AIB-5)", () => {
       pages: { leaveOut: ["about"], recipes: [] },
     });
     expect(request?.themeTokens).toBeDefined();
+    // No tour offered over the site the app goes on to build (#1246): Help › Take the Tour has it.
+    expect(prefs.set).not.toHaveBeenCalled();
   });
 
   it("answers declined when the person closes it, and makes nothing", async () => {
