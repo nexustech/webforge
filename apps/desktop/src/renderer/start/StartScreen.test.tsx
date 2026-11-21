@@ -1,10 +1,12 @@
 // @vitest-environment happy-dom
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "@webforge/editor-ui";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BriefOutcome, SiteBrief } from "../../shared/ipc/ai.js";
+import type { McpApi } from "../../shared/ipc/mcp.js";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import type { NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
@@ -77,6 +79,17 @@ const prefs = {
   set: vi.fn(async () => DEFAULT_PREFERENCES),
 };
 
+/** AI apps (F-AI-1), off and with none paired, as on a first start (#1244). */
+const mcp = {
+  status: vi.fn(async () => ({ enabled: false, address: null, moved: false, apps: [] })),
+  setEnabled: vi.fn(async () => ({ enabled: false, address: null, moved: false, apps: [] })),
+  add: vi.fn(async () => ({ status: "off" as const })),
+  seenMoved: vi.fn(async () => undefined),
+  install: vi.fn(async () => ({ status: "opened" as const })),
+  remove: vi.fn(async () => ({ enabled: false, address: null, moved: false, apps: [] })),
+} satisfies McpApi;
+const clipboard = { copyText: vi.fn(async () => null), copySecret: vi.fn(async () => null) };
+
 /** The Help window, as the start screen opens it (5.4b). */
 const helpWindow = { open: vi.fn(async () => true) };
 
@@ -105,6 +118,8 @@ async function render(
         help={helpWindow}
         prefs={prefs}
         updates={updates}
+        mcp={mcp}
+        clipboard={clipboard}
         {...(ai === undefined ? {} : { ai })}
       />,
     ),
@@ -146,7 +161,8 @@ describe("StartScreen", () => {
       return found;
     });
     const tabs = [...dialog.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
-    expect(tabs).toEqual(["Interface", "Devices", "Updates"]);
+    // AI apps too, before any site exists (#1244).
+    expect(tabs).toEqual(["Interface", "Devices", "Updates", "AI apps"]);
 
     const appearance = dialog.querySelector<HTMLSelectElement>("select");
     const save = [...dialog.querySelectorAll("button")].find((each) => each.textContent === "Save");
@@ -158,6 +174,22 @@ describe("StartScreen", () => {
       expect(prefs.set).toHaveBeenCalledWith(expect.objectContaining({ theme: "light" })),
     );
     expect(document.documentElement.dataset.theme).toBe("light");
+  });
+
+  it("opens AI apps from Settings before any site exists, to connect an app first (#1244)", async () => {
+    mcp.status.mockClear();
+    await render(api([]));
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: ",", ctrlKey: true }));
+    });
+    const user = userEvent.setup();
+    const settings = await screen.findByRole("dialog", { name: "Settings" });
+    await user.click(within(settings).getByRole("tab", { name: "AI apps" }));
+    await user.click(within(settings).getByRole("button", { name: "Open AI Apps…" }));
+
+    expect(await screen.findByRole("dialog", { name: "AI Apps" })).toBeTruthy();
+    expect(mcp.status).toHaveBeenCalled();
   });
 
   it("answers save requests at once, having nothing to save", async () => {

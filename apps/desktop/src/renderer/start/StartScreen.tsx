@@ -19,13 +19,16 @@ import { useEffect, useState } from "react";
 import { shownTheme } from "../../shared/editor-theme.js";
 import type { AiApi } from "../../shared/ipc/ai.js";
 import type { AppApi } from "../../shared/ipc/app.js";
+import type { ClipboardApi } from "../../shared/ipc/clipboard.js";
 import type { HelpApi } from "../../shared/ipc/help.js";
+import type { McpApi } from "../../shared/ipc/mcp.js";
 import type { PrefsApi } from "../../shared/ipc/prefs.js";
 import { DEFAULT_PREFERENCES, type Preferences } from "../../shared/ipc/prefs.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { TemplatesApi } from "../../shared/ipc/templates.js";
 import type { UpdatesApi } from "../../shared/ipc/updates.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
+import { AiAppsCommand } from "../ai-apps/AiAppsCommand.js";
 import { createSettingsRegistry } from "../editor/settings-registry.js";
 import { HelpCommands } from "../help/index.js";
 import { reportFailure } from "../log.js";
@@ -82,6 +85,10 @@ export type StartScreenProps = {
   readonly prefs?: Pick<PrefsApi, "get" | "set">;
   /** Webforge's own update (0.5a), whose notice shows here too; injectable for tests. */
   readonly updates?: Pick<UpdatesApi, "status" | "onStatus">;
+  /** AI apps (F-AI-1), connected from here before any site exists (#1244); injectable for tests. */
+  readonly mcp?: McpApi;
+  /** Copies AI apps' commands and key (4.9); injectable for tests. */
+  readonly clipboard?: Pick<ClipboardApi, "copyText" | "copySecret">;
 };
 
 /**
@@ -101,6 +108,8 @@ export function StartScreen({
   ai,
   prefs,
   updates,
+  mcp,
+  clipboard,
 }: StartScreenProps) {
   const [registry] = useState(createCommandRegistry);
   // Unknown until main first answers: neither the welcome nor the list shows before then, so a
@@ -122,9 +131,18 @@ export function StartScreen({
       { preferences: (change) => (prefs ?? window.webforge.prefs).set(change) },
     ),
   );
+  // Its AI apps line too (#1244): an app is connected here, before it's asked for a site (4.12a).
   useEffect(
-    () => registerAppSettings(settings, preferenceStore, undefined, info.version),
-    [settings, preferenceStore, info.version],
+    () =>
+      registerAppSettings(
+        settings,
+        preferenceStore,
+        () => {
+          registry.run(COMMAND_IDS.aiApps);
+        },
+        info.version,
+      ),
+    [settings, preferenceStore, info.version, registry],
   );
   // The theme chosen in Settings, and the computer's while the person follows it (#1169).
   useEffect(() => {
@@ -258,6 +276,10 @@ export function StartScreen({
           {...(prefs === undefined ? {} : { prefs })}
         />
         <AboutDialog info={info} />
+        <AiAppsCommand
+          mcp={mcp ?? window.webforge.mcp}
+          clipboard={clipboard ?? window.webforge.clipboard}
+        />
         <SettingsHost registry={settings} site={false} />
         <ShortcutSheet editor={false} />
         <Toaster theme="dark" />
