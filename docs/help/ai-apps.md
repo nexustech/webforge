@@ -148,7 +148,7 @@ You need [Claude Code](https://code.claude.com/docs/en/setup) installed.
    ```
 
    The key isn't in it. Claude Code reads it from `WEBFORGE_KEY` each time it connects, so the key isn't in your terminal's history or in Claude Code's settings.
-3. **Give that terminal the key:** in the same terminal, click **Copy the key command** and run it. Then click **Copy the key**, paste it when the terminal waits for it, and press Return. The key doesn't show as you paste it, and it isn't typed on the command line. {appName} shows the command for your computer:
+3. **Give that terminal the key:** in the same terminal, click **Copy the key command** and run it. Then click **Copy the key**, paste it when the terminal waits for it, and press Return (Enter on Windows). The key doesn't show as you paste it, and it isn't typed on the command line. {appName} shows the command for your computer:
    - On a Mac or Linux:
 
      ```

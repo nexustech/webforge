@@ -4,7 +4,7 @@ id: themes
 title: Themes, colours and fonts
 summary: Change your whole site's colours, fonts, corners and spacing at once, in the Theme panel or Theme Studio.
 related: [styling, templates, media]
-updated: 2026-11-20
+updated: 2026-11-21
 ---
 
 # Themes, colours and fonts
@@ -39,17 +39,29 @@ Switching theme changes the colours, fonts and styles on every page. Anything yo
 
 The Theme panel lists the theme's settings:
 
-- **Colours:** **Brand**, **Accent**, **Second accent**, **Surface** (backgrounds) and **Text**. {appName} warns when two colours that sit together would be hard to read, and says how far off they are.
+- **Colours:** **Brand**, **Accent**, **Second accent**, **Surface** (backgrounds) and **Text**. Click a colour's swatch to choose another.
+  - When a colour you choose would be hard to read with one it sits with, {appName} says so under it straight away, such as "Brand is hard to read on Surface". Site Check says the same.
+  - **Use a darker shade** (or **Use a lighter shade**) picks the nearest shade of the same colour that reads well.
 - **Fonts:**
   - **Font pairing:** a tested pair for headings and text, such as _Classic_, _Modern_ or _Friendly_.
   - Or choose **Headings**, **Body text** and **Accent** fonts yourself. The Accent font is for text whose Font is set to _Accent_.
   - Until you choose an Accent font of its own, it's the same as your Headings font and changes with it, and with a font pairing. Once you've chosen one, it stays.
-- **Text sizes** for each heading level, body text and small text.
+- **Text size:** **Smaller**, **Standard** or **Larger**, for all the text on your site at once. **Standard** is the size your theme comes with. It says **Your own** when you've sized kinds of text one by one.
 - **Headings:** capitals or small capitals, and letter spacing.
 - **Buttons:** shape (_Square_, _Rounded_ or _Pill_), size and style.
 - **Links:** underlined always, or only when pointed at.
 - **Corners** of boxes, buttons and fields, from _Square_ to _Round_.
 - **Photo corners**, **Card style**, **Section backgrounds** (all the same, or alternating), **Room around things**, **Shadows**, **Border width** and **Effects**.
+
+### In Advanced mode
+
+In Advanced mode (**View › Use Advanced Mode**), the Theme panel also shows:
+
+- each colour's code, such as #405f39, which you can type in;
+- how far off a colour that's hard to read is, such as "4.19:1, needs 4.5:1";
+- a size for each heading level, body text and small text, in place of **Text size**.
+
+Theme Studio always shows them.
 
 ## Built-in themes and your own
 

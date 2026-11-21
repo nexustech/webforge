@@ -16,6 +16,7 @@ export {
   contrastIssues,
   overlayContrast,
   overlayContrastIssue,
+  readableShade,
 } from "./contrast.js";
 export {
   CURATED_BATCHES,

@@ -15,10 +15,13 @@ import {
   setLook,
   setPairing,
   setPaletteColor,
+  setTextScale,
   setTextSize,
   setTextStep,
   setToken,
   switchPreset,
+  textScaleOf,
+  textScaleSizes,
 } from "./theme-edits.js";
 
 /** A session on the starter site, the labels of its steps, and its theme now. */
@@ -97,6 +100,39 @@ describe("the Theme tab's edits (2.3a)", () => {
 
     expect(theme().typeScale.h1.size).toBe("6xl");
     expect(labels()).toEqual(["Changed text size for Heading 1"]);
+  });
+
+  it("sets every text style a size smaller or larger than its preset's as one step (LF-16)", async () => {
+    const { session, labels, theme } = setUp();
+    expect(textScaleOf(theme())).toBe("standard");
+
+    expect(await setTextScale(session, undefined, "smaller")).toBe(true);
+    expect(theme().typeScale.h1.size).toBe("4xl");
+    expect(theme().typeScale.body.size).toBe("base");
+    expect(textScaleOf(theme())).toBe("smaller");
+    // Already that size: no step.
+    expect(await setTextScale(session, undefined, "smaller")).toBe(false);
+    await setTextScale(session, undefined, "standard");
+
+    expect(theme().typeScale).toEqual(DEFAULT_THEME.typeScale);
+    expect(labels()).toEqual(["Changed text size", "Changed text size"]);
+  });
+
+  it("keeps the smallest and largest sizes at the ends, and reads a preset's own as standard (LF-16)", () => {
+    const bistro = themePreset("bistro");
+    if (bistro === undefined) throw new Error("no Bistro");
+    expect(textScaleOf(bistro)).toBe("standard");
+    // Bistro's main heading is the largest size already.
+    expect(bistro.typeScale.h1.size).toBe("6xl");
+    expect(textScaleSizes(bistro, "larger").h1).toBe("6xl");
+    expect(textScaleSizes(DEFAULT_THEME, "smaller").h6).toBe("xs");
+    // A preset no longer listed: the default theme's sizes are the standard ones.
+    expect(textScaleOf({ ...DEFAULT_THEME, preset: "from-a-newer-webforge" })).toBe("standard");
+    // One style sized on its own: none of the three.
+    const h2 = { ...DEFAULT_THEME.typeScale.h2, size: "4xl" as const };
+    expect(
+      textScaleOf({ ...DEFAULT_THEME, typeScale: { ...DEFAULT_THEME.typeScale, h2 } }),
+    ).toBeUndefined();
   });
 
   it("switches the preset once asked, with every page counted, as one step (D7)", async () => {
