@@ -3,6 +3,7 @@ import { act, cleanup, render, screen, waitFor, within } from "@testing-library/
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { McpApi, McpStatus } from "../../shared/ipc/mcp.js";
+import type { ShellKind } from "../../shared/mcp-setup.js";
 import { AiAppsDialog, STATUS_EVERY_MS } from "./AiAppsDialog.js";
 
 afterEach(() => {
@@ -62,7 +63,10 @@ function fakeMcp(start: Partial<McpStatus> = {}) {
   };
 }
 
-function setUp(start: Partial<McpStatus> = {}) {
+function setUp(
+  start: Partial<McpStatus> = {},
+  extra: { readonly shell?: ShellKind; readonly now?: () => number } = {},
+) {
   const fake = fakeMcp(start);
   const copyText = vi.fn(async () => null);
   const copySecret = vi.fn(async () => null);
@@ -75,6 +79,7 @@ function setUp(start: Partial<McpStatus> = {}) {
       copySecret={copySecret}
       notify={notify}
       onClose={() => undefined}
+      {...extra}
     />,
   );
   const dialog = () => within(screen.getByRole("dialog", { name: "AI Apps" }));
@@ -201,7 +206,9 @@ describe("AI apps (4.9)", () => {
     expect(copySecret).toHaveBeenCalledWith(KEY);
     expect(copyText).not.toHaveBeenCalled();
     expect(dialog().getByRole("button", { name: "Copied" })).toBeTruthy();
-    expect(dialog().getByRole("status").textContent).toMatch(/cleared from the clipboard/);
+    expect(dialog().getByText(/cleared from the clipboard/)).toBeTruthy();
+    // Waiting for it to use its key, with the time the key has left (#1245).
+    expect(dialog().getByText(/Waiting for Cursor to connect/)).toBeTruthy();
     await user.click(dialog().getByRole("button", { name: "Copy the address" }));
     expect(copyText).toHaveBeenCalledWith(ADDRESS);
 
@@ -227,11 +234,95 @@ describe("AI apps (4.9)", () => {
     expect(command).not.toContain(KEY);
     expect(dialog().getAllByText(/WEBFORGE_KEY/).length).toBeGreaterThan(1);
     expect(dialog().getByText(/another program on this computer could answer/)).toBeTruthy();
-    await user.click(dialog().getByRole("button", { name: "Copy the command" }));
+    await user.click(dialog().getByRole("button", { name: "Copy the add command" }));
     expect(copyText).toHaveBeenCalledWith(command);
     await user.click(dialog().getByRole("button", { name: "Copy the key" }));
     expect(copySecret).toHaveBeenCalledWith(KEY);
     expect(copyText).not.toHaveBeenCalledWith(KEY);
+  });
+
+  it("gives Claude Code three steps, each with what it copies, the key command for this computer's shell (#1245)", async () => {
+    for (const [shell, keyCommand] of [
+      ["posix", "read -rs WEBFORGE_KEY && export WEBFORGE_KEY"],
+      [
+        "powershell",
+        "$env:WEBFORGE_KEY = [Net.NetworkCredential]::new('', (Read-Host 'Key' -AsSecureString)).Password",
+      ],
+    ] as const) {
+      const { dialog, copyText, copySecret, user } = setUp({}, { shell });
+      await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+      await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
+      await user.click(dialog().getByRole("button", { name: "Add" }));
+      await dialog().findByText(KEY);
+
+      const steps = dialog()
+        .getAllByRole("listitem")
+        .filter((item) => item.closest("ol"));
+      expect(steps.map((step) => step.textContent?.slice(0, 20))).toEqual([
+        "Add Webforge to Clau",
+        "In the same terminal",
+        "Start Claude Code in",
+      ]);
+      // The key command for this shell, with no key in it: it waits for the key to be pasted.
+      expect(within(steps[1] as HTMLElement).getByText(keyCommand)).toBeTruthy();
+      expect(keyCommand).not.toContain(KEY);
+      await user.click(dialog().getByRole("button", { name: "Copy the key command" }));
+      expect(copyText).toHaveBeenLastCalledWith(keyCommand);
+      // The key, as a secret, from its own button in that step.
+      await user.click(
+        within(steps[1] as HTMLElement).getByRole("button", { name: "Copy the key" }),
+      );
+      expect(copySecret).toHaveBeenCalledWith(KEY);
+      cleanup();
+    }
+  });
+
+  it("counts down the key's time while it waits, then says when the app has connected (#1245)", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let time = 1_000_000;
+    const { dialog, connect, user } = setUp({ apps: [] }, { now: () => time });
+    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
+    await user.click(dialog().getByRole("button", { name: "Add" }));
+    await dialog().findByText(KEY);
+    await waitFor(() =>
+      expect(dialog().getByText(/Waiting for Claude Code to connect/).textContent).toContain(
+        "5:00",
+      ),
+    );
+
+    time += 65_000;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(dialog().getByText(/Waiting for Claude Code/).textContent).toContain("3:55");
+
+    // Connected, without the dialog being closed: shown at its next look at the apps.
+    connect("1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect(dialog().getByText("Claude Code is connected.")).toBeTruthy();
+  });
+
+  it("says a new app's key ran out once AI apps no longer lists it (#1245)", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { dialog, mcp, user } = setUp({ apps: [] });
+    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
+    await user.click(dialog().getByRole("button", { name: "Add" }));
+    await dialog().findByText(KEY);
+
+    // Main revoked the unused key and removed the app.
+    mcp.status.mockResolvedValue({ enabled: true, address: ADDRESS, moved: false, apps: [] });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect(
+      dialog().getByText(
+        "Claude Code's key wasn't used within 5 minutes, so Claude Code was removed. Add it again.",
+      ),
+    ).toBeTruthy();
   });
 
   it("adds VS Code as another app is added, and opens its install link (5.13)", async () => {

@@ -46,3 +46,20 @@ export const vsCodeInstallLink = (address: string, appId: string, prompt: string
  */
 export const claudeCodeCommand = (address: string): string =>
   `claude mcp add --transport http --scope user ${MCP_SERVER_NAME} ${address} --header 'Authorization: Bearer \${${CLAUDE_CODE_KEY_VARIABLE}}'`;
+
+/** The shell a terminal on the computer Webforge runs on is, for a command made for it (#1245). */
+export type ShellKind = "posix" | "powershell";
+
+/** The shell of a terminal on the computer whose browser says `userAgent`: Windows', or a Unix one. */
+export const shellOf = (userAgent: string): ShellKind =>
+  /Windows/i.test(userAgent) ? "powershell" : "posix";
+
+/**
+ * The command that gives a terminal Claude Code's key in {@link CLAUDE_CODE_KEY_VARIABLE} (#1245),
+ * for `shell`: it waits for the key to be pasted and doesn't show it, so the key is never on a
+ * command line or in the shell's history. It lasts as long as that terminal.
+ */
+export const claudeCodeKeyCommand = (shell: ShellKind): string =>
+  shell === "powershell"
+    ? `$env:${CLAUDE_CODE_KEY_VARIABLE} = [Net.NetworkCredential]::new('', (Read-Host 'Key' -AsSecureString)).Password`
+    : `read -rs ${CLAUDE_CODE_KEY_VARIABLE} && export ${CLAUDE_CODE_KEY_VARIABLE}`;

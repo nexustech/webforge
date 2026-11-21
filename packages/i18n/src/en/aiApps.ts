@@ -62,6 +62,12 @@ export const aiApps = {
   "aiApps.key.risk":
     "While {appName} is closed, another program on this computer could answer at this address and get the key. Turn this server off in the app while {appName} is closed.",
   "aiApps.key.done": "Done",
+  // While the dialog shows a new app's key (#1245): waiting for it, then connected, or run out.
+  "aiApps.shown.waiting": "Waiting for {name} to connect. The key works for {time} more.",
+  "aiApps.shown.connected": "{name} is connected.",
+  "aiApps.shown.used": "{name} has used its key.",
+  "aiApps.shown.expired":
+    "{name}'s key wasn't used within 5 minutes, so {name} was removed. Add it again.",
   "aiApps.client.claude.steps": "To connect Claude Desktop",
   "aiApps.client.claude.step1": "Copy the key.",
   "aiApps.client.claude.step2":
@@ -77,14 +83,17 @@ export const aiApps = {
   "aiApps.client.claude.unknown":
     "{name}'s key wasn't used within 5 minutes, so {name} was removed. Add it again, then install its new extension.",
   "aiApps.client.claudeCode.steps": "To connect Claude Code",
+  // Three steps, each with what it copies (#1245).
   "aiApps.client.claudeCode.step1":
-    "Copy the command, and run it in a terminal. It adds {appName} to Claude Code for all your projects.",
+    "Add {appName} to Claude Code: run this command in a terminal. It adds {appName} for all your projects.",
   "aiApps.client.claudeCode.step2":
-    "Copy the key. In the terminal you start Claude Code from, set {variable} to it, then start Claude Code.",
+    "In the same terminal, give it the key: run this command, then copy the key, paste it when the terminal waits for it, and press Return. The key doesn't show as you paste it.",
+  "aiApps.client.claudeCode.step3":
+    "Start Claude Code in that terminal before the key runs out. In Claude Code, /mcp lists webforge once it's connected.",
   "aiApps.client.claudeCode.keyWhere":
-    "Claude Code reads the key from {variable} as it connects, so the key isn't in the command or in Claude Code's settings. The help page shows how to set it without leaving it in the terminal's history.",
-  "aiApps.client.claudeCode.command": "Command",
-  "aiApps.client.claudeCode.copyCommand": "Copy the command",
+    "Why the key isn't in the commands: Claude Code reads it from {variable} as it connects, so it isn't in your terminal's history or in Claude Code's settings. {variable} lasts as long as that terminal.",
+  "aiApps.client.claudeCode.copyCommand": "Copy the add command",
+  "aiApps.client.claudeCode.copyKeyCommand": "Copy the key command",
   "aiApps.client.vscode.steps": "To connect VS Code",
   "aiApps.client.vscode.step1": "Copy the key.",
   "aiApps.client.vscode.step2":

@@ -218,10 +218,11 @@ export function SiteCommands({
     const quickStart = open?.dialog === "quickStart";
     setOpen(null);
     // A site the quick start made opens with the tour offered (OB-1), asked for before the window
-    // starts over with it.
+    // starts over with it: not one an AI app started from its brief, which it goes on to build, the
+    // tour over it in the way (#1246). Help › Take the Tour still has it.
     const made = async () => {
       const result = await (project ?? window.webforge.project).create(request);
-      if (result.status === "opened" && quickStart) {
+      if (result.status === "opened" && quickStart && brief === undefined) {
         await offerTour(prefs ?? window.webforge.prefs);
       }
       return result;
