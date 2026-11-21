@@ -156,6 +156,26 @@ describe("toPuckConfig", () => {
       components: { Spacer: { label: "Spacer", fields: {}, defaults: {}, render: () => null } },
     }).components.Spacer as ComponentConfig;
     expect(noText.fields).not.toHaveProperty("examples");
+    // Text in its list's items only: its items' marks are kept too.
+    const listed = toPuckConfig({
+      components: {
+        Faq: {
+          label: "Faq",
+          fields: {
+            items: {
+              kind: "list",
+              label: "Questions",
+              itemLabel: "Question",
+              fields: { answer: { kind: "text", label: "Answer" } },
+              defaults: {},
+            },
+          },
+          defaults: {},
+          render: () => null,
+        },
+      },
+    }).components.Faq as ComponentConfig;
+    expect(listed.fields?.examples).toEqual({ type: "object", objectFields: {} });
   });
 
   it("allows only the site's rich-text formatting and safe link addresses (F-ED-3)", () => {
