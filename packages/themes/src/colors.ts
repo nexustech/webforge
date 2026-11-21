@@ -116,7 +116,9 @@ export function rgbToOklch(red: number, green: number, blue: number): Oklch {
 /**
  * What colour ref `ref` (a colour style field's value, `@webforge/model`'s `parseColorRef`) shows
  * with `tokens`, in its page colours or those of inverse sections: the colour, and its opacity
- * from 0 to 1. A field's own hex colour is the same everywhere. Undefined for a ref that isn't one.
+ * from 0 to 1. A field's own hex colour is the same everywhere; one of the person's colours (TC-1a)
+ * has a value of its own in inverse sections. Undefined for a ref that isn't one, or names one of
+ * the person's colours the theme doesn't have.
  */
 export function resolveColorRef(
   tokens: ThemeTokens,
@@ -126,11 +128,60 @@ export function resolveColorRef(
   const parsed = parseColorRef(ref);
   if (parsed === undefined) return undefined;
   const colors = palette === "inverse" ? inverseColors(tokens) : tokens.colors;
-  const base = "role" in parsed.base ? colors[parsed.base.role] : hexToOklch(parsed.base.hex);
+  const base =
+    "role" in parsed.base
+      ? colors[parsed.base.role]
+      : "own" in parsed.base
+        ? ownColorOf(tokens, parsed.base.own, palette)
+        : hexToOklch(parsed.base.hex);
+  // One of the person's colours the theme no longer has draws nothing.
+  if (base === undefined) return undefined;
   return {
     color: parsed.shade === undefined ? base : shadeOf(base, parsed.shade),
     opacity: (parsed.opacity ?? 100) / 100,
   };
+}
+
+/** How far a reversed colour's lightness moves at a time, as `readableShade`'s does. */
+const REVERSED_STEP = 0.01;
+
+/**
+ * What one of the person's colours reaches against reversed sections' surface: a coloured part's
+ * 3:1 (WCAG 1.4.11), as the brand colours are checked on every surface (`contrast.ts`).
+ */
+const REVERSED_CONTRAST = 3;
+
+/**
+ * One of the person's colours (TC-1a, #1217) in sections that invert the page (2.4), worked out
+ * from it: as it is where it stands apart from their surface by 3:1, else its hue and chroma at the
+ * nearest lightness that does. As it is when no lightness does.
+ */
+export function reversedOwnColor(tokens: ThemeTokens, color: Oklch): Oklch {
+  const surface = inverseColors(tokens)["base-100"];
+  const reads = (shade: Oklch) => contrastRatio(shade, surface) >= REVERSED_CONTRAST;
+  if (reads(color)) return color;
+  for (let moved = REVERSED_STEP; moved <= 1; moved += REVERSED_STEP) {
+    for (const l of [color.l - moved, color.l + moved]) {
+      if (l < 0 || l > 1) continue;
+      const shade = { ...color, l: Math.round(l * 1000) / 1000 };
+      if (reads(shade)) return shade;
+    }
+  }
+  return color;
+}
+
+/**
+ * One of `tokens`' own colours by its id (TC-1a), in the page's colours or reversed sections'
+ * ({@link reversedOwnColor}); none for an id the theme doesn't have.
+ */
+export function ownColorOf(
+  tokens: ThemeTokens,
+  id: string,
+  palette: "colors" | "inverse" = "colors",
+): Oklch | undefined {
+  const own = tokens.ownColors?.find((each) => each.id === id);
+  if (own === undefined) return undefined;
+  return palette === "inverse" ? reversedOwnColor(tokens, own.color) : own.color;
 }
 
 /**

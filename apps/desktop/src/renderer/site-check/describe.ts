@@ -7,6 +7,7 @@ import {
   isPageIn,
   type MenuItem,
   type NodeDoc,
+  OWN_COLOR_PREFIX,
   pageEntryOf,
   pagePath,
   type SiteDoc,
@@ -71,10 +72,18 @@ function menuItem(site: SiteDoc, id: string): MenuItem | undefined {
 }
 
 /** A theme colour's name, as Theme Studio has it. */
-const colourName = (role: unknown) =>
-  typeof role === "string" && Object.hasOwn(ROLE_NAMES, role)
-    ? t(ROLE_NAMES[role as ColorRole])
-    : String(role);
+/**
+ * A colour a theme finding names, as people see it: a role by its glossary name ("Brand"), one of
+ * the person's own colours (`own-<id>`, TC-1a) by its name in the theme.
+ */
+const colourName = (colour: unknown, site: SiteDoc) => {
+  if (typeof colour !== "string") return String(colour);
+  if (Object.hasOwn(ROLE_NAMES, colour)) return t(ROLE_NAMES[colour as ColorRole]);
+  const own = colour.startsWith(OWN_COLOR_PREFIX)
+    ? colour.slice(OWN_COLOR_PREFIX.length)
+    : undefined;
+  return site.theme.ownColors?.find(({ id }) => id === own)?.name ?? colour;
+};
 
 /** How an element on a page is named: Site Check's "Heading on About". */
 const ON_PAGE = (element: string, page: string) => t("siteCheck.place.page", { element, page });
@@ -138,7 +147,10 @@ export function describePlace(
         String(values.palette) === "inverse"
           ? "siteCheck.place.reversed"
           : "theme.contrast.hardToRead",
-        { foreground: colourName(values.foreground), background: colourName(values.background) },
+        {
+          foreground: colourName(values.foreground, site),
+          background: colourName(values.background, site),
+        },
       );
     case "address":
       return t("siteCheck.place.address");

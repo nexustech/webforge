@@ -5,17 +5,19 @@ export {
   hexToOklch,
   inverseColors,
   oklchToSrgb,
+  ownColorOf,
   resolveColorRef,
   rgbToOklch,
   shadeOf,
 } from "./colors.js";
-export type { ContrastIssue, SectionOverlay } from "./contrast.js";
+export type { ContrastIssue, OwnColorIssue, SectionOverlay } from "./contrast.js";
 export {
   AA_LARGE,
   AA_TEXT,
   contrastIssues,
   overlayContrast,
   overlayContrastIssue,
+  ownColorIssues,
   readableShade,
 } from "./contrast.js";
 export {
