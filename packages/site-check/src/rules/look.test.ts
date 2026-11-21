@@ -26,6 +26,28 @@ describe("contrast", () => {
     expect(findIn(contrastRule, site)).toEqual([]);
   });
 
+  it("lists text coloured with one of the person's own colours that fails, not the colour itself (TC-1a)", () => {
+    const { passing } = themeWithLightAccent();
+    const pale = { id: "pale", name: "Pale", color: { l: 0.95, c: 0.03, h: 90 } };
+    const theme = { ...passing, ownColors: [pale] };
+
+    // A pale colour kept for backgrounds is hard to read on every surface, but no text is in it.
+    const unused = siteWith([element("Text", "text", { text: "<p>Fresh</p>" })], { theme });
+    expect(findIn(contrastRule, unused)).toEqual([]);
+
+    // Text in it is measured as any colour field's colour is (`resolveColorRef`), once.
+    const used = siteWith(
+      [element("Text", "text", { text: "<p>Fresh</p>", lookColor: "own-pale" })],
+      { theme },
+    );
+    expect(findIn(contrastRule, used)).toEqual([
+      expect.objectContaining({
+        place: expect.objectContaining({ kind: "element" }),
+        values: expect.objectContaining({ foreground: "own-pale" }),
+      }),
+    ]);
+  });
+
   it("lists the theme's failing pairs, and text coloured with a colour that fails as text", () => {
     const { light } = themeWithLightAccent();
     const site = siteWith(

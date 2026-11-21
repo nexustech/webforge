@@ -2,11 +2,13 @@ import { t } from "@webforge/i18n";
 import {
   isNodeDoc,
   isPageIn,
+  isResponsiveValue,
   linkValueSchema,
   type NodeDoc,
   newId,
   type PageEntry,
   pageEntryOf,
+  parseColorRef,
   richTextFileLinks,
   richTextPageLinks,
   type SiteDoc,
@@ -155,8 +157,32 @@ export function storedValues(
         : value,
     ]),
   );
-  const missing = missingReference(site, stored);
+  const missing = missingReference(site, stored) ?? missingOwnColour(site, component, stored);
   return missing === undefined ? { values: stored } : fail("not-found", missing);
+}
+
+/**
+ * The first of the person's own colours (TC-1a, #1217) a colour field in `values` names that the
+ * site's theme doesn't have, as a message: it would draw nothing. Colour fields only, one value or
+ * one per device; a text that reads `own-sky` is only text.
+ */
+function missingOwnColour(
+  site: SiteDoc,
+  component: CatalogueComponent,
+  values: Readonly<Record<string, unknown>>,
+): string | undefined {
+  const ids = new Set((site.theme.ownColors ?? []).map(({ id }) => id));
+  for (const [name, value] of Object.entries(values)) {
+    if (component.fields[name]?.kind !== "color") continue;
+    const each = isResponsiveValue(value) ? Object.values(value.$responsive) : [value];
+    for (const ref of each) {
+      const parsed = typeof ref === "string" ? parseColorRef(ref) : undefined;
+      if (parsed !== undefined && "own" in parsed.base && !ids.has(parsed.base.own)) {
+        return `The theme has no colour "${parsed.base.own}" of its own: the theme query lists them.`;
+      }
+    }
+  }
+  return undefined;
 }
 
 /** `node` and everything in its slots, with new ids: a component's defaults keep theirs. */
