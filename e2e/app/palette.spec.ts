@@ -84,13 +84,13 @@ test.describe("section previews", () => {
         }),
       )
       .toEqual(pageColours);
-    // Scaled to a quarter, with no space left below the section.
+    // Scaled to a third (#1175), with no space left below the section.
     const heights = await preview.evaluate((host) => [
       host.getBoundingClientRect().height,
       (host.shadowRoot?.querySelector(".wf-preview")?.getBoundingClientRect().height ??
         0) as number,
     ]);
-    expect(Math.abs((heights[0] ?? 0) - Math.min(heights[1] ?? 0, 200))).toBeLessThan(1);
+    expect(Math.abs((heights[0] ?? 0) - Math.min(heights[1] ?? 0, 240))).toBeLessThan(1);
     // The site's font: the editor's own is the system's, so only the preview loads Inter.
     await expect
       .poll(() =>
@@ -102,6 +102,49 @@ test.describe("section previews", () => {
         }),
       )
       .toBe(true);
+  });
+});
+
+test.describe("every section's preview", () => {
+  test.beforeEach(() => launch());
+  test.afterEach(() => app.close());
+
+  test("is at least 120 px tall and shows what the section holds, and no card is empty (#1175)", async () => {
+    const preview = page.locator('[data-slot="hover-card-content"] > div');
+    const away = page.getByRole("region", { name: "Right panels" });
+    const rows = left().getByRole("list", { name: "All sections" }).getByRole("button");
+    const names = await rows.evaluateAll((buttons) =>
+      buttons.map((button) => button.textContent?.trim() ?? ""),
+    );
+    expect(names.length).toBeGreaterThan(20);
+    const sizes: Record<string, number> = {};
+    for (const name of names) {
+      const row = left()
+        .getByRole("list", { name: "All sections" })
+        .getByRole("button", { name, exact: true });
+      if (name === "Section") {
+        // A Section with nothing in it yet: no card at all, rather than an empty one. A row with a
+        // card is its trigger, which says whether the card is open.
+        await expect(row).not.toHaveAttribute("data-state");
+        continue;
+      }
+      await expect(row).toHaveAttribute("data-state", "closed");
+      await hoverUntilShown(row, preview, away);
+      // Drawn, with the section's own words or pictures in it.
+      await expect
+        .poll(() =>
+          preview.evaluate(
+            (host) => host.shadowRoot?.querySelector(".wf-preview")?.innerHTML ?? "",
+          ),
+        )
+        .not.toBe("");
+      sizes[name] = await preview.evaluate((host) => host.getBoundingClientRect().height);
+      // Closed before the next, so its card is never taken for the next one's.
+      await away.hover({ position: { x: 20, y: 40 } });
+      await expect(preview).toHaveCount(0);
+    }
+    const short = Object.entries(sizes).filter(([, height]) => height < 119.5);
+    expect(short).toEqual([]);
   });
 });
 
