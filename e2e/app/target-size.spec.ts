@@ -49,7 +49,7 @@ const smallTargets = (page: Page) =>
     /** An inline link in a sentence: other text beside it in the same block. */
     const inSentence = (element: Element) => {
       if (element.tagName !== "A") return false;
-      const block = element.parentElement?.closest("p, li, dd, td, span");
+      const block = element.parentElement?.closest("p, li, dd, td");
       return (block?.textContent ?? "").trim().length > (element.textContent ?? "").trim().length;
     };
     const small: string[] = [];
