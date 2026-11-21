@@ -195,8 +195,9 @@ export function FieldRow({
                   aria-expanded={perDevice}
                   aria-controls={perDevice ? devicesId : undefined}
                   aria-label={t("editPanel.devices.show", { field: field.label })}
-                  // A 24 px target round its small chevron (LF-18), in the room the chevron took.
-                  className="-my-1.5 ml-auto flex size-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-hover focus-visible:outline-2 focus-visible:outline-ring"
+                  // A 24 px target round its small chevron (LF-18): over the row's padding and into
+                  // the gap before the field, so the label keeps its room.
+                  className="-my-1.5 -mr-1.5 ml-auto flex size-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-hover focus-visible:outline-2 focus-visible:outline-ring"
                   onClick={() => setPerDevice(!perDevice)}
                 >
                   <ChevronRightIcon
