@@ -7,6 +7,7 @@ import {
   type BusinessText,
   businessRequest,
   businessTexts,
+  draftExamples,
   keepBusinessWords,
 } from "./business-draft.js";
 import { type DraftApi, useAssistantStatus, useDraft } from "./use-draft.js";
@@ -34,6 +35,8 @@ export function BusinessDraftHost({ session, api, takeAbout, sessionId }: Busine
   // The paragraph, until the draft of it starts; then the texts it's of, while it's shown.
   const [about, setAbout] = useState<string | null>(null);
   const [texts, setTexts] = useState<readonly BusinessText[] | null>(null);
+  // What the person told the quick start, while its draft is shown: facts they gave (#1228).
+  const [told, setTold] = useState("");
 
   // Main gives it once, to this opening's editor; a page that loads again gets none.
   useEffect(() => {
@@ -54,6 +57,7 @@ export function BusinessDraftHost({ session, api, takeAbout, sessionId }: Busine
     const list = businessTexts(site, session.library);
     if (list.length === 0) return;
     setTexts(list);
+    setTold(text);
     void draft.ask(businessRequest(site, text, list));
   });
   // Once main has said whether the assistant is on and how it's reached: the site's question
@@ -73,9 +77,26 @@ export function BusinessDraftHost({ session, api, takeAbout, sessionId }: Busine
       open
       texts={texts}
       state={draft.state}
+      examples={
+        draft.state.step === "draft"
+          ? draftExamples(session.history.document.getState(), {
+              texts: draft.state.texts,
+              examples: draft.state.examples ?? [],
+              told,
+            })
+          : undefined
+      }
       onSiteAnswer={draft.answerSite}
       onUse={(words) => {
-        keepBusinessWords(session, texts, words);
+        const { state } = draft;
+        keepBusinessWords(
+          session,
+          texts,
+          words,
+          state.step === "draft"
+            ? { texts: state.texts, examples: state.examples ?? [], told }
+            : undefined,
+        );
         close();
       }}
       onAgain={draft.again}
