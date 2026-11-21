@@ -61,6 +61,36 @@ describe("the quick start's business step, once the site opens (QS-7, #873)", ()
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("lists the texts that hold examples, and marks them as kept (#1228, WN-3)", async () => {
+    // The stand-in model: a price nobody gave, unflagged, then a text it flags itself.
+    const { session, user } = setUp({
+      draft: () => ({
+        status: "ok",
+        texts: ["Loaves from £3.50", "Baked every morning in Leeds."],
+        examples: [false, true],
+        costUsd: 0,
+      }),
+    });
+    const dialog = await screen.findByRole("dialog", { name: "Words for Your Pages" });
+    await within(dialog).findAllByRole("textbox");
+    expect(
+      within(dialog).getByText(
+        "2 texts hold examples for details you didn't give: check them before you publish.",
+      ),
+    ).toBeDefined();
+    // Each text says so to a screen reader too.
+    const [first] = within(dialog).getAllByRole("textbox");
+    expect(first?.getAttribute("aria-describedby")).not.toBeNull();
+
+    await user.click(within(dialog).getByRole("button", { name: "Use These" }));
+    const site = session.history.document.getState();
+    const content = site.pages[site.homePageId]?.doc.content[0]?.props.content;
+    const marks = Array.isArray(content)
+      ? content.map((node: { props: { examples?: unknown } }) => node.props.examples)
+      : [];
+    expect(marks.slice(0, 2)).toEqual([{ text: true }, { text: true }]);
+  });
+
   it("asks this site's question in place first", async () => {
     const { user } = setUp({ siteConsent: { asked: false, allowed: false } });
     const dialog = await screen.findByRole("dialog", { name: "Words for Your Pages" });

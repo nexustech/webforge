@@ -4,7 +4,7 @@ id: editing-on-the-page
 title: Editing on the page
 summary: Select, type, move, copy and delete sections and elements right on the page.
 related: [the-editor, edit-panel, layers, styling, links, keyboard-shortcuts]
-updated: 2026-11-20
+updated: 2026-11-21
 ---
 
 # Editing on the page
@@ -97,6 +97,13 @@ A note is a reminder for you on a section or element, such as _Swap this photo b
 - **Change or resolve it:** **Edit Note…** opens it again. **Resolve Note**, or emptying it and saving, removes it.
 
 Adding, changing and resolving a note are each one step you can undo.
+
+## Examples
+
+When an AI writes a detail you didn't give it, such as a price, an opening time or a phone number, or when a template's sample review comes with your new site, the text is marked as an _example_: it isn't your business's fact yet. It's never marked on your website, but it needs checking before you publish.
+
+- **Where it shows:** the item has a dotted violet outline on the page. Select it, and its bar has an **Example** chip: click it to edit the text. [Site Check](site-check.md) lists every item with examples under **Examples to check**.
+- **Clearing it:** edit the text, and its mark goes in the same step. If the example happens to be right, click **This Is Correct** in Site Check.
 
 ## Toolbars for some elements
 

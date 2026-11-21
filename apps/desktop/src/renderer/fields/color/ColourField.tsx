@@ -16,6 +16,7 @@ import {
   type ColorRole,
   formatColorRef,
   OPACITY_STEPS,
+  OWN_COLOR_PREFIX,
   parseColorRef,
   SHADE_STEPS,
   SHADED_ROLES,
@@ -120,6 +121,7 @@ function readRef(value: unknown, options: readonly string[]): ColorRef | undefin
 function baseKey(ref: ColorRef | undefined, options: readonly string[]): string | undefined {
   if (ref === undefined) return undefined;
   if ("hex" in ref.base) return CUSTOM;
+  if ("own" in ref.base) return `${OWN_COLOR_PREFIX}${ref.base.own}`;
   const { role } = ref.base;
   return role === "base-content" && options.includes("default") ? "default" : role;
 }
@@ -187,6 +189,7 @@ export function ColourField({
   const base = ref === undefined && options.includes(THEMES) ? THEMES : baseKey(ref, options);
   const hex = ref !== undefined && "hex" in ref.base ? ref.base.hex : undefined;
   const role = ref !== undefined && "role" in ref.base ? ref.base.role : undefined;
+  const own = ref !== undefined && "own" in ref.base ? ref.base.own : undefined;
 
   /** One choice: the new colour, stored, and the end of the change. */
   const choose = (next: ColorRef) => {
@@ -206,6 +209,16 @@ export function ColourField({
       colour: oklchCss(theme.colors[optionRole]),
     };
   });
+  // One of the person's own colours (TC-1a), by its name in the theme: shown, and chosen again.
+  // Theme Studio's list of them, and the picker's, come with 5.28 (#1218).
+  if (own !== undefined) {
+    const colour = theme.ownColors?.find((each) => each.id === own);
+    swatches.push({
+      value: `${OWN_COLOR_PREFIX}${own}`,
+      label: colour?.name ?? t("colour.ownGone"),
+      ...(colour === undefined ? {} : { colour: oklchCss(colour.color) }),
+    });
+  }
   // Advanced mode offers a colour of the field's own; Simple mode shows one it already has.
   if (advanced) {
     swatches.push({
@@ -282,6 +295,10 @@ export function ColourField({
             // A colour of its own starts from the one it shows now, to adjust from there.
             const start = hex ?? hexOf(shown?.color ?? theme.colors["base-content"]);
             choose(withOpacity({ base: { hex: start } }));
+            return;
+          }
+          if (own !== undefined && next === `${OWN_COLOR_PREFIX}${own}`) {
+            choose({ ...ref, base: { own } });
             return;
           }
           const nextRole = roleOfOption(next);

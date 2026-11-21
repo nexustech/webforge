@@ -29,13 +29,14 @@ const TEXTS: readonly BusinessText[] = [
   text(ABOUT, "story-text", "About us · Text · Text", "Hannah and Sam opened in 2015.", true),
 ];
 
-/** The dialog at `state`. */
-const at = (state: DraftState): Story => ({
+/** The dialog at `state`, with `examples` marked among the drafted texts (#1228). */
+const at = (state: DraftState, examples?: readonly boolean[]): Story => ({
   render: () => (
     <BusinessDraftDialog
       open
       texts={TEXTS}
       state={state}
+      examples={examples}
       onSiteAnswer={() => undefined}
       onUse={() => undefined}
       onAgain={() => undefined}
@@ -54,6 +55,23 @@ export const Draft: Story = at({
     "Two friends and one oven.\n\nWe still bake every loaf by hand, before the sun is up.",
   ],
 });
+
+/**
+ * Words with examples for details the person didn't give (#1228, WN-3): a price and an opening
+ * time, listed above the texts, each with its badge.
+ */
+export const WithExamples: Story = at(
+  {
+    step: "draft",
+    texts: [
+      "Sourdough worth the walk",
+      "Loaves from £3.50, baked every morning from 7am on Kirkgate, Leeds.",
+      "How we started",
+      "Two friends and one oven, open Tuesday to Sunday.",
+    ],
+  },
+  [false, true, false, true],
+);
 
 /** Waiting for the assistant. */
 export const Writing: Story = at({ step: "writing" });

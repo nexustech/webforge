@@ -1,4 +1,5 @@
 import type { GetPromptResult, Prompt } from "@modelcontextprotocol/sdk/types.js";
+import { EXAMPLES_RULE } from "@webforge/commands";
 import { t } from "@webforge/i18n";
 
 /** The longest description the prompt takes: a few paragraphs about a business. */
@@ -18,7 +19,8 @@ export const buildSitePromptInfo = (): Prompt => ({
 
 /**
  * The prompt's message, sent in the person's name, with their `description` when they gave one:
- * the order of the tools, and what stays with the person (§5.7).
+ * the order of the tools, and what stays with the person (§5.7), and the rule for facts the person
+ * didn't give, which the in-app assistant and the quick start's drafts follow too (#1228, WN-3).
  */
 export function buildSitePrompt(description: string | undefined): GetPromptResult {
   const given = description?.trim().slice(0, DESCRIPTION_MAX) ?? "";
@@ -32,6 +34,7 @@ export function buildSitePrompt(description: string | undefined): GetPromptResul
     t("ai.prompt.preview"),
     t("ai.prompt.left"),
     "",
+    EXAMPLES_RULE,
     t("ai.prompt.untrusted"),
   ];
   return {

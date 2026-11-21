@@ -33,6 +33,21 @@ describe("colour refs (2.1)", () => {
     }
   });
 
+  it("read one of the theme's own colours by its id, with shades and opacity (TC-1a)", () => {
+    expect(parseColorRef("own-sky")).toEqual({ base: { own: "sky" } });
+    expect(parseColorRef("own-sky-300")).toEqual({ base: { own: "sky" }, shade: 300 });
+    expect(parseColorRef("own-moss2-950/40")).toEqual({
+      base: { own: "moss2" },
+      shade: 950,
+      opacity: 40,
+    });
+    // An id may be a role's name: the prefix keeps it apart from the role.
+    expect(parseColorRef("own-primary")).toEqual({ base: { own: "primary" } });
+    expect(colorRefSchema.parse("own-sky-300/80")).toBe("own-sky-300/80");
+    const parsed = parseColorRef("own-sky-50/5");
+    expect(parsed && formatColorRef(parsed)).toBe("own-sky-50/5");
+  });
+
   it.each([
     "brand",
     "primary-350",
@@ -58,6 +73,24 @@ describe("colour refs (2.1)", () => {
     "[var(--x)]",
     "[rgb(0,0,0)]",
     "custom-sky",
+    // One of your colours: an id of lower-case letters and digits, a letter first, at most 24, and
+    // nothing CSS reads as syntax, so neither a class nor a variable can carry anything else.
+    "own-",
+    "own-Sky",
+    "own-1sky",
+    "own-sky-blue",
+    "own-sky_blue",
+    "own-sky-350",
+    "own-sky/85",
+    "own-sky;}body{color:red",
+    "own-sky)",
+    "own-sky\\",
+    "own-sky%20",
+    "own-sky.x",
+    "own-var(--x)",
+    "own--sky",
+    "own-sky ",
+    `own-${"a".repeat(25)}`,
   ])("refuse %j", (ref) => {
     expect(parseColorRef(ref)).toBeUndefined();
     expect(colorRefSchema.safeParse(ref).success).toBe(false);

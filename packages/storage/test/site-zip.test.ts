@@ -125,6 +125,11 @@ function projectFrom(plan: Plan): ProjectStore {
     homeTitle: plan.heading === "" ? "Home" : plan.heading,
     notFoundTitle: "Not found",
   });
+  // A colour of the person's own in its theme (TC-1a), which the file and the ZIP keep.
+  site.theme = {
+    ...site.theme,
+    ownColors: [{ id: "sky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } }],
+  };
   plan.images.forEach((image, index) => {
     const id = `photo-${index}` as MediaId;
     const { hash } = store.putAsset({

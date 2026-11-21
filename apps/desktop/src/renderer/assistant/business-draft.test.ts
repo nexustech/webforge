@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { insertPage, newId, type SiteDoc } from "@webforge/model";
+import { findNode, insertPage, newId, type SiteDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
@@ -101,5 +101,50 @@ describe("the quick start's business words (QS-7, #873)", () => {
     ]);
     session.history.undo();
     expect(session.history.document.getState()).toEqual(site);
+  });
+});
+
+describe("a business draft's examples (#1228, WN-3)", () => {
+  /** The words kept as the stand-in model drafted them, with its flags, and what was told. */
+  function kept(drafted: string[], examples: boolean[], told: string, words = drafted) {
+    const session = createEditorSession(siteLibrary, bakery());
+    session.edit("props", "Phone", (draft) => {
+      draft.settings.contact.phone = "0113 496 0000";
+    });
+    const texts = businessTexts(session.history.document.getState(), siteLibrary);
+    keepBusinessWords(session, texts, words, { texts: drafted, examples, told });
+    const site = session.history.document.getState();
+    return (id: string) =>
+      findNode(
+        Object.values(site.pages).flatMap((page) => page.doc.content),
+        (node) => node.props.id === id,
+      )?.props.examples;
+  }
+
+  it("marks a text the model flagged, or that made a detail up, kept as drafted", () => {
+    const marks = kept(
+      ["Bread from £2", "Open from 7am, every day", "How we started", "Two friends, one oven."],
+      [false, false, true, false],
+      "A bakery on Kirkgate since 1990",
+    );
+    expect(marks("heading-1")).toEqual({ text: true });
+    expect(marks("text-1")).toEqual({ text: true });
+    expect(marks("story-heading")).toEqual({ text: true });
+    expect(marks("story-text")).toBeUndefined();
+  });
+
+  it("leaves what the person told it, Site Settings' details and their own words unmarked", () => {
+    const drafted = ["Call 0113 496 0000", "Open from 7am", "Since 1990", "Bread from £2"];
+    const marks = kept(drafted, [false, false, false, true], "We open at 7am", [
+      ...drafted.slice(0, 3),
+      // Changed in review: the person's own.
+      "Bread from £3",
+    ]);
+    expect(["heading-1", "text-1", "story-heading", "story-text"].map(marks)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
   });
 });

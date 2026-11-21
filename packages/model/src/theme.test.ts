@@ -146,6 +146,41 @@ describe("theme tokens (2.1)", () => {
     }
   });
 
+  it("may have colours of the person's own, each by an id safe in a class and a variable (TC-1a)", () => {
+    const colours = (value: unknown) =>
+      changed((theme) => Object.assign(theme, { ownColors: value }));
+    const sky = { id: "sky", name: "  Sky blue  ", color: { l: 0.62, c: 0.14, h: 240 } };
+
+    expect(DEFAULT_THEME.ownColors).toBeUndefined();
+    expect(themeTokensSchema.parse(colours([])).ownColors).toEqual([]);
+    expect(themeTokensSchema.parse(colours([sky])).ownColors).toEqual([
+      { ...sky, name: "Sky blue" },
+    ]);
+    // Any name, even one CSS would read as syntax: a name is never written into CSS.
+    expect(
+      themeTokensSchema.safeParse(colours([{ ...sky, name: "Red; } body { color: red" }])).success,
+    ).toBe(true);
+    for (const wrong of [
+      [{ ...sky, id: "Sky" }],
+      [{ ...sky, id: "sky-blue" }],
+      [{ ...sky, id: "1sky" }],
+      [{ ...sky, id: "sky;}body{color:red" }],
+      [{ ...sky, id: "sky)" }],
+      [{ ...sky, id: "a".repeat(25) }],
+      [{ ...sky, name: "   " }],
+      [{ ...sky, name: "x".repeat(41) }],
+      [{ ...sky, color: "#1f6feb" }],
+      [{ ...sky, color: { l: 2, c: 0, h: 0 } }],
+      [sky, { ...sky, name: "Another" }],
+      Array.from({ length: 201 }, (_, at) => ({ ...sky, id: `c${at}` })),
+      "sky",
+    ]) {
+      expect(themeTokensSchema.safeParse(colours(wrong)).success, JSON.stringify(wrong)).toBe(
+        false,
+      );
+    }
+  });
+
   it("copies a theme sharing nothing with it", () => {
     const copy: ThemeTokens = copyTheme(DEFAULT_THEME);
 
