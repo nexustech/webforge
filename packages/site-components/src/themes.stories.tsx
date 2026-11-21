@@ -8,6 +8,7 @@ import { siteLibrary, starterLayout } from "./catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
 import type { RenderContext } from "./schema.js";
+import { linkButtons } from "./stories/link-buttons.js";
 
 /** The classes the export gives a page's `<body>` (`BODY_CLASS` in the pipeline). */
 const BODY_CLASS = "flex min-h-screen flex-col bg-base-100 font-sans text-base-content";
@@ -41,12 +42,13 @@ function samplePage(): string {
 
 /**
  * `sections` between `header` and `footer`, laid out as the export lays out a page: the sections
- * in `<main id="main">`, which the theme's alternating sections count (2.13d).
+ * in `<main id="main">`, which the theme's alternating sections count (2.13d). Each button has a
+ * link, so it shows.
  */
 function laidOut(header: NodeDoc[], sections: NodeDoc[], footer: NodeDoc[]): string {
   const ids = new Set<string>();
   const html = (nodes: NodeDoc[]) =>
-    renderNodesToHtml(pastedCopies(nodes, ids), siteLibrary, SAMPLE_CONTEXT);
+    renderNodesToHtml(pastedCopies(nodes.map(linkButtons), ids), siteLibrary, SAMPLE_CONTEXT);
   return `${html(header)}<main id="main" class="flex-1">${html(sections)}</main>${html(footer)}`;
 }
 
