@@ -142,7 +142,7 @@ Read from the help pages ([Themes](../../docs/help/themes.md), [Styling](../../d
 
 Corners, shadows, spacing, border width, button shape and card style are each a short list. No value of your own can be given.
 
-**Already decided, so not proposed again:** colours of your own in the theme (TC-1a, TC-1b; 5.27, 5.28), any colour in Simple mode (TC-2, 5.29), and "Add to your colours" (TC-3, 5.31). TC-2's decision says "Spacing, sizes and corners stay tokens in Simple mode"; TS-19 would change that.
+**Already decided, so not proposed again:** colours of your own in the theme (TC-1a, 5.27, built; TC-1b, 5.28), any colour in Simple mode (TC-2, 5.29), and "Add to your colours" (TC-3, 5.31). TC-2's decision says "Spacing, sizes and corners stay tokens in Simple mode"; TS-19 would change that.
 
 ### 6.3 Proposals
 
@@ -163,9 +163,9 @@ About 18.5 days. TS-18 is in place of TS-13 (1.5 days), which leaves about 41.5 
 **A theme switch,** the product owner's rule: "added colours stay and custom values on preset rows are replaced by the new themes". So:
 
 - **The question switching already asks says both halves,** such as "Your corners and spacing will change to Bistro's. Your colours Sale and Gold stay."
-- **Colours of your own are copied into the new theme's list** at the switch. TC-1a (5.27) keeps them in the theme's list, and isn't built yet, so this is for its design.
+- **Colours of your own already stay.** TC-1a is built (5.27, PR 1284): at a switch, `switchPreset` (`theme-edits.ts`) copies the site's own colours into the new theme. What is new is the wording only: the question asked today (`theme.preset.confirmDescription`) doesn't say they stay.
 - **A font of your own follows the rule for preset rows:** the new theme's fonts replace it, and it stays under **Your fonts** to choose again.
-- **One case needs a rule:** the new theme is one of your own and has a colour of the same name with another value. A view: the site's is kept.
+- **A clash, today:** own colours are matched by id, not by name. When the new theme brings a colour with the same id, the theme's wins, and the site's are kept only for ids the theme doesn't bring. A view, which would change that: the site's is kept. Whether two colours of the same name and different ids matter at all is a separate question.
 
 **What I'd take first:** TS-17 and TS-18. They are what stops the two drifting, and they are the least reversible to do later, since every setting added to v1 is added twice. TS-22 stands alone and needs none of the others.
 
