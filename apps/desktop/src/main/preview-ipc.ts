@@ -10,6 +10,7 @@ import { log } from "./log.js";
 import type { PreviewBuilder } from "./preview-builder.js";
 import { type PreviewScope, type PreviewServer, VERSION_PATH } from "./preview-server.js";
 import type { SessionSite } from "./project-session.js";
+import { recordUsage } from "./usage.js";
 
 /** The open site as a preview of one opening of it reaches it (R6, #663): its Media. */
 type PreviewSite = Pick<SessionSite, "staleReason" | "readMedia">;
@@ -248,6 +249,37 @@ export function createPreview(deps: PreviewDeps): Preview {
   };
 }
 
+/**
+ * Opens a preview with `open` and counts it in the usage summary (5.40): how long its build took,
+ * with the site's pages and pictures, or that it failed.
+ */
+async function timedPreview<R>(
+  on: "computer" | "phone",
+  site: SiteContent,
+  open: () => Promise<R>,
+): Promise<R> {
+  const began = performance.now();
+  const result = await open();
+  const failed =
+    result === "failed" ||
+    (typeof result === "object" &&
+      result !== null &&
+      "status" in result &&
+      result.status === "failed");
+  recordUsage(
+    failed
+      ? { kind: "previewFailed" }
+      : {
+          kind: "preview",
+          on,
+          ms: performance.now() - began,
+          pages: site.snapshot.pages.length,
+          pictures: site.media.length,
+        },
+  );
+  return result;
+}
+
 /** Registers the `preview` IPC calls (3.2) on the open site's preview. */
 export function registerPreviewHandlers(
   ipc: Pick<IpcMain, "handle">,
@@ -255,7 +287,7 @@ export function registerPreviewHandlers(
   preview: Preview,
 ): void {
   registerIpcHandler(ipc, "previewOpen", isTrustedSender, (sessionId, site, page) =>
-    preview.open(sessionId, site, page),
+    timedPreview("computer", site, () => preview.open(sessionId, site, page)),
   );
   registerIpcHandler(ipc, "previewVersion", isTrustedSender, (sessionId, site, page) =>
     preview.openVersion(sessionId, site, page),
@@ -269,7 +301,7 @@ export function registerPreviewHandlers(
     return null;
   });
   registerIpcHandler(ipc, "previewPhone", isTrustedSender, (sessionId, site, page) =>
-    preview.phone(sessionId, site, page),
+    timedPreview("phone", site, () => preview.phone(sessionId, site, page)),
   );
   registerIpcHandler(ipc, "previewStopPhone", isTrustedSender, async () => {
     await preview.stopPhone();

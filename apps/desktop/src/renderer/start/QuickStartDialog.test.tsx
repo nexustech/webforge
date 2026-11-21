@@ -5,6 +5,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
+import type { EditorUsage } from "../../shared/usage.js";
+import { setUsageLog } from "../usage.js";
 import { QuickStartDialog, type QuickStartStep } from "./QuickStartDialog.js";
 
 const cafe: TemplateSummary = {
@@ -296,5 +298,29 @@ describe("QuickStartDialog (QS-1, 3.11b)", () => {
     expect(document.body.textContent).toContain(t("quickStart.blankPages"));
     await click(t("quickStart.back"));
     expect(shownStep()).toContain(t("quickStart.step.look"));
+  });
+});
+
+describe("the quick start in the usage summary (5.40)", () => {
+  afterEach(() => {
+    setUsageLog(undefined);
+  });
+
+  it("counts where it ended: a site made at a step, or put away at one", async () => {
+    const counted = vi.fn(async (_usage: EditorUsage) => null);
+    setUsageLog(counted);
+    const { onCancel } = await render();
+    await goTo(t("quickStart.step.pages"));
+    await click(t("quickStart.cancel"));
+    expect(onCancel).toHaveBeenCalled();
+    await act(async () => root.unmount());
+    root = createRoot(container);
+    await render({ initialStep: "look" });
+    await click(t("quickStart.create"));
+
+    expect(counted.mock.calls.map(([usage]) => usage)).toEqual([
+      { kind: "quickStart", outcome: "cancelled", step: "pages" },
+      { kind: "quickStart", outcome: "created", step: "look" },
+    ]);
   });
 });

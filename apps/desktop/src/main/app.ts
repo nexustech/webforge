@@ -1,3 +1,4 @@
+import { release, totalmem } from "node:os";
 import { join, resolve } from "node:path";
 import { t } from "@webforge/i18n";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
@@ -36,13 +37,15 @@ import { siteOutput } from "./site-output.js";
 import { findProjectArgument } from "./site-paths.js";
 import { createSitePicture } from "./site-picture.js";
 import { createSiteSwitch } from "./site-switch.js";
-import { logStartupTimes, markStartup } from "./startup-timing.js";
+import { logStartupTimes, markStartup, startupTimes } from "./startup-timing.js";
 import { createStorageWriter } from "./storage-writer.js";
 import { createTemplatesFeature } from "./templates-ipc.js";
 import { myThemesFeature } from "./themes-ipc.js";
 import { codeTrustFeature } from "./trust-ipc.js";
 import { updatesSupported } from "./updates.js";
 import { createUpdates } from "./updates-ipc.js";
+import { usageFeature } from "./usage-feature.js";
+import { createUsageSummary, listedOr, loadUsageLists, versionNumbers } from "./usage-summary.js";
 
 // The app's wiring (R13c): Electron comes in as a parameter, so app.test.ts runs all of it against
 // a fake one, and the E2E tests against the real one. The logic lives in the modules it wires.
@@ -94,6 +97,22 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const myThemes = createMyThemes({ dir: app.getPath("userData") });
   // The code each site's owner trusts (#649): only that goes into a build.
   const codeTrust = createCodeTrust({ dir: app.getPath("userData") });
+  // The usage summary (5.40, BD-1): counts and timings kept beside the crash reports, never sent.
+  const usageSummary = createUsageSummary({
+    dir: app.getPath("userData"),
+    lists: loadUsageLists,
+    crashReports: () => crashReports.count(),
+    computer: () => ({
+      version: versionNumbers(app.getVersion()),
+      channel: updateChannelFor(lifecycle.preferences?.get().updateChannel, app.getVersion()),
+      platform: listedOr(["win32", "darwin", "linux"], process.platform),
+      arch: listedOr(["x64", "arm64"], process.arch),
+      osVersion: versionNumbers(release()),
+      memoryGb: Math.round(totalmem() / 1024 ** 3),
+      scale: electron.screen.getAllDisplays()[0]?.scaleFactor ?? 1,
+      language: "en",
+    }),
+  });
   /** How many of Webforge's own versions each site keeps: the person's choice (P3). */
   const versionsKept = () =>
     lifecycle.preferences?.get().versionsKept ?? DEFAULT_PREFERENCES.versionsKept;
@@ -298,6 +317,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     }),
     output.publishCalls,
     output.netlify,
+    // Last: what the others record reaches it from the start.
+    usageFeature(usageSummary, () => startupTimes()["window-created"]),
   ];
   for (const feature of features) {
     if (feature.site !== undefined) projectSession.listen(feature.site);

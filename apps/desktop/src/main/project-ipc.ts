@@ -8,6 +8,7 @@ import {
   SiteZipError,
 } from "@webforge/storage";
 import type { IpcMain } from "electron";
+import type { NewSiteRequest } from "../shared/ipc/project.js";
 import type { ProjectFailureReason } from "../shared/ipc-contract.js";
 import type { Backups } from "./backups.js";
 import { registerIpcHandler } from "./ipc.js";
@@ -16,6 +17,7 @@ import { fillNewSite, type TemplateReader } from "./new-site.js";
 import type { ProjectSession } from "./project-session.js";
 import type { RecentSites } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
+import { recordUsage, type UsageEvent } from "./usage.js";
 
 /** Native file dialogs, injected so the handlers can be tested without Electron. */
 export type ProjectDialogs = {
@@ -57,6 +59,24 @@ async function readSiteZipFile(
     logFailure("Webforge could not read a site's ZIP", error);
     return { reason: "unknown" };
   }
+}
+
+/**
+ * How a new site was made, for the usage summary (5.40): empty, the quick start's (its answers
+ * came with it), or a template's as it is; by the template's id, never anything typed.
+ */
+function siteStarted(request: NewSiteRequest): UsageEvent {
+  if (request.template === undefined) return { kind: "siteStarted", how: "blank" };
+  const quickStart =
+    request.business !== undefined ||
+    request.pages !== undefined ||
+    request.themeTokens !== undefined ||
+    request.about !== undefined;
+  return {
+    kind: "siteStarted",
+    how: quickStart ? "quickStart" : "template",
+    template: request.template,
+  };
 }
 
 /**
@@ -106,9 +126,15 @@ export function registerProjectHandlers(
   const open = async (path: string) => {
     about = undefined;
     await beforeSwitch?.();
-    return recovery === undefined
-      ? session.open(path)
-      : openOrRecover(session, path, recovery.backups, recovery.dialogs);
+    const began = performance.now();
+    const result =
+      recovery === undefined
+        ? await session.open(path)
+        : await openOrRecover(session, path, recovery.backups, recovery.dialogs);
+    if (result.status === "opened") {
+      recordUsage({ kind: "siteOpened", ms: performance.now() - began });
+    }
+    return result;
   };
   registerIpcHandler(ipc, "createProject", isTrustedSender, async (request) => {
     const path = await dialogs.chooseNewProjectPath(request.name);
@@ -124,6 +150,7 @@ export function registerProjectHandlers(
     if (result.status === "opened" && request.about !== undefined) {
       about = { sessionId: result.project.sessionId, text: request.about };
     }
+    if (result.status === "opened") recordUsage(siteStarted(request));
     return result;
   });
   // Once, and only to the editor of the opening it was given for.
@@ -208,9 +235,15 @@ export function registerProjectHandlers(
   registerIpcHandler(ipc, "readSite", isTrustedSender, () => session.readSite());
   // Only from a renderer loaded for the site open now (R6): a save on its way while another site
   // replaced it is refused, now and again once the store gate lets it in (R13b).
-  registerIpcHandler(ipc, "commitSite", isTrustedSender, (sessionId, changes) => {
+  registerIpcHandler(ipc, "commitSite", isTrustedSender, async (sessionId, changes) => {
     const reason = session.staleReason(sessionId);
-    return reason === undefined ? session.commit(changes, sessionId) : { status: "failed", reason };
+    const result =
+      reason === undefined
+        ? await session.commit(changes, sessionId)
+        : ({ status: "failed", reason } as const);
+    // Why a save failed, by its reason, in the usage summary (5.40).
+    if (result.status === "failed") recordUsage({ kind: "saveFailed", reason: result.reason });
+    return result;
   });
   registerIpcHandler(ipc, "getUiState", isTrustedSender, () => session.uiState());
   registerIpcHandler(ipc, "setUiState", isTrustedSender, (sessionId, state) => {

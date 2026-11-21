@@ -92,6 +92,21 @@ const readSiteResultSchema = z.discriminatedUnion("status", [
 /** Outcome of reading the open site's documents. */
 export type ReadSiteResult = z.infer<typeof readSiteResultSchema>;
 
+/**
+ * Why saving changes failed: no site open, another site opened since the renderer loaded
+ * (`stale-session`), a read-only site, changes that would break the site, or a write error.
+ */
+export const COMMIT_FAILURES = [
+  "no-site",
+  "stale-session",
+  "read-only",
+  "invalid",
+  "unknown",
+] as const;
+
+/** One of {@link COMMIT_FAILURES}. */
+export type CommitFailure = (typeof COMMIT_FAILURES)[number];
+
 /** Outcome of saving changes to the open site. */
 const commitResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("saved") }),
@@ -101,7 +116,7 @@ const commitResultSchema = z.discriminatedUnion("status", [
      * No site open, another site opened since the renderer loaded (`stale-session`), a read-only
      * site, changes that would break the site, or a write error.
      */
-    reason: z.enum(["no-site", "stale-session", "read-only", "invalid", "unknown"]),
+    reason: z.enum(COMMIT_FAILURES),
   }),
 ]);
 

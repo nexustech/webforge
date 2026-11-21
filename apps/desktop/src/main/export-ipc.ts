@@ -7,6 +7,7 @@ import type { ExportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
 import { log, logFailure } from "./log.js";
 import type { SessionSite } from "./project-session.js";
+import { recordUsage } from "./usage.js";
 
 /** Native dialogs, injected so the handler can be tested without Electron. */
 export type ExportDialogs = {
@@ -183,6 +184,7 @@ export function registerExportHandlers(
           format: choices.format,
           output: request.output,
         };
+        const began = performance.now();
         const outcome = await deps.runExport(snapshotOf(request), target, {
           // A site replaced while the export runs cancels it, as Cancel would: nothing changes on
           // disk, rather than a site written without its images. Checked again once a read comes
@@ -196,7 +198,18 @@ export function registerExportHandlers(
           onProgress: (progress) => deps.sendProgress(operationId, progress),
         });
         if (outcome.type === "exported") last = { target, sessionId };
-        return toExportResult(outcome, target);
+        const result = toExportResult(outcome, target);
+        if (result.status === "exported") {
+          recordUsage({
+            kind: "exported",
+            ms: performance.now() - began,
+            pages: request.snapshot.pages.length,
+            pictures: request.media.length,
+          });
+        } else if (result.status === "failed") {
+          recordUsage({ kind: "exportFailed", reason: result.reason });
+        }
+        return result;
       } finally {
         underWay.delete(operationId);
       }
