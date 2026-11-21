@@ -3,6 +3,7 @@ import type { NodeDoc, SharedSectionId, Theme } from "@webforge/model";
 import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
+  type RenderContext,
   renderNodesToHtml,
 } from "@webforge/site-components";
 import {
@@ -131,11 +132,14 @@ async function drawNode(
   node: NodeDoc,
   theme: Theme,
 ): Promise<Drawn | undefined> {
-  // With the theme's look for its kind, as the canvas will draw it once added (3.12).
-  const context =
-    theme.looks === undefined
-      ? EDITOR_RENDER_CONTEXT
-      : { ...EDITOR_RENDER_CONTEXT, looks: theme.looks };
+  // With the theme's look for its kind, as the canvas will draw it once added (3.12). A button
+  // without its link yet greyed out, as the canvas draws it (#1256), without the hint's words,
+  // which would be too small to read here.
+  const context: RenderContext = {
+    ...EDITOR_RENDER_CONTEXT,
+    ...(theme.looks === undefined ? {} : { looks: theme.looks }),
+    elementHint: (missing) => (missing === "buttonLink" ? "" : undefined),
+  };
   const html = renderNodesToHtml([node], source.library, context);
   const result = await source.compileCss({
     theme,

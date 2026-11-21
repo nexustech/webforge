@@ -789,7 +789,7 @@ export function fieldKindPlanFor(root: string, names: Names): Plan {
         (text) =>
           insertAfter(
             text,
-            '  | { readonly kind: "link"; readonly label: string }\n',
+            "      readonly button?: string;\n    }\n",
             `  /** ${label}: say what it stores. */\n  | { readonly kind: "${kind}"; readonly label: string }\n`,
           ),
         (text) =>

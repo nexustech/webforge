@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { NodeDoc } from "@webforge/model";
+import { hasLink, isNodeDoc, type NodeDoc } from "@webforge/model";
 import { userEvent, within } from "storybook/test";
 import { SiteNodes } from "../stories/site-nodes.js";
 import { siteLibrary } from "./index.js";
@@ -36,12 +36,32 @@ const ELEMENT_LOOK = {
   lookShadow: "small",
 } as const;
 
-/** `type` with its defaults, then `props`. */
+/**
+ * `doc` with a link on each button that has none, its items' too: a button without one is left out
+ * of the export (#1256), and these show buttons.
+ */
+function linked(doc: NodeDoc): NodeDoc {
+  const fields = siteLibrary.components[doc.type]?.fields ?? {};
+  const props: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(doc.props)) {
+    props[key] = Array.isArray(value)
+      ? value.map((item: unknown) => (isNodeDoc(item) ? linked(item) : item))
+      : value;
+  }
+  for (const [key, field] of Object.entries(fields)) {
+    if (field.kind === "link" && field.button !== undefined && !hasLink(props[key])) {
+      props[key] = "about";
+    }
+  }
+  return { ...doc, props: { ...props, id: doc.props.id } };
+}
+
+/** `type` with its defaults, then `props`, its buttons linked. */
 function node(type: string, props: Readonly<Record<string, unknown>>): NodeDoc {
-  return {
+  return linked({
     type,
     props: { ...structuredClone(siteLibrary.components[type]?.defaults ?? {}), id: type, ...props },
-  };
+  });
 }
 
 /** The section `type` with the section's Appearance. */
