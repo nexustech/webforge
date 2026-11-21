@@ -337,6 +337,12 @@ export const projectChannels = {
     request: z.tuple([z.int().positive()]),
     response: z.null(),
   },
+  /** The renderer's answer to `app:site-picture`'s `draw`: whether the home page is drawn (#1175). */
+  sitePictureDrawn: {
+    channel: "project:site-picture-drawn",
+    request: z.tuple([z.int().positive(), z.boolean()]),
+    response: z.null(),
+  },
 } as const;
 
 /** `window.webforge.project`. */

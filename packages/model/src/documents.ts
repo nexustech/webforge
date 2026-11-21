@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { type ExampleMarks, exampleMarksSchema } from "./examples.js";
 import { sha256HexSchema } from "./hashes.js";
 import { anchorIdSchema } from "./link.js";
 import { type ThemeTokens, themeTokensSchema } from "./theme.js";
@@ -23,8 +24,8 @@ export type NodeAdvanced = {
 /**
  * An element or section on a page: its component type and its props (always with an `id`).
  * Slots (e.g. a Section's content) are arrays of nodes inside `props`. `id`, `layerName`, `hidden`,
- * `editorHidden`, `note` and `advanced` are reserved for Webforge; components never use them as
- * field names.
+ * `editorHidden`, `note`, `examples` and `advanced` are reserved for Webforge (as is `bindings`,
+ * which `bindings.ts` types); components never use them as field names.
  */
 export type NodeDoc = {
   type: string;
@@ -50,6 +51,12 @@ export type NodeDoc = {
      * Layers and as a Site Check tip until it's resolved; never exported. None when absent.
      */
     note?: string | undefined;
+    /**
+     * The text fields that hold an example, by field name (#1228, WN-3): a detail a generated text
+     * made up for a fact it wasn't given, or a template's sample testimonial. Site Check reports
+     * each until the person edits the text or says it's correct; never exported. None when absent.
+     */
+    examples?: ExampleMarks | undefined;
     advanced?: NodeAdvanced | undefined;
   } & Record<string, unknown>;
 };
@@ -146,6 +153,7 @@ export const nodeDocSchema: z.ZodType<NodeDoc> = z.object({
       hidden: z.boolean().optional(),
       editorHidden: z.boolean().optional(),
       note: z.string().min(1).max(NOTE_MAX).optional(),
+      examples: exampleMarksSchema.optional(),
       advanced: storedAdvancedSchema.optional(),
     })
     .transform((props, context) => {

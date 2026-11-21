@@ -116,6 +116,8 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "project:remove-recent": "the Recent list, the app's",
   "project:clear-recent": "the Recent list, the app's",
   "project:flushed": "the window's answer to main's flush before it closes",
+  "project:site-picture-drawn":
+    "the window's answer to main's request to draw the home page for its picture as it closes",
   "site:cancel-export": "cancels whichever export is under way",
   "templates:list": "the app's templates",
   "themes:list": "My themes, the app's",

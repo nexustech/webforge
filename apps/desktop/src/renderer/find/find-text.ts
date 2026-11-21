@@ -1,6 +1,8 @@
 import {
   BUSINESS_NAME_MAX,
   bindingOf,
+  clearEditedExamples,
+  clearExample,
   type ElementPlace,
   eachElement,
   elementsAt,
@@ -314,6 +316,8 @@ export function* textFieldsOf(
 export function setTextField(node: NodeDoc, ref: TextFieldRef, value: string): boolean {
   const { item } = ref;
   if (item === undefined) {
+    // A text marked as an example, replaced, is the person's own (#1228): its mark goes with it.
+    clearEditedExamples(node.props, ref.field, node.props[ref.field], value);
     node.props[ref.field] = value;
     return true;
   }
@@ -324,7 +328,9 @@ export function setTextField(node: NodeDoc, ref: TextFieldRef, value: string): b
       typeof each === "object" && each !== null && "id" in each && each.id === item.id,
   );
   if (typeof entry !== "object" || entry === null) return false;
+  const before = (entry as Record<string, unknown>)[item.field];
   (entry as Record<string, unknown>)[item.field] = value;
+  if (before !== value) clearExample(node.props, `${ref.field}.${item.id}.${item.field}`);
   return true;
 }
 
