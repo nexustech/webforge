@@ -16,8 +16,15 @@ export type DraftState =
   /** The person said no to this site. */
   | { readonly step: "denied" }
   | { readonly step: "writing" }
-  /** The draft: one text, or a business draft's one per text asked. */
-  | { readonly step: "draft"; readonly texts: readonly string[] }
+  /**
+   * The draft: one text, or a business draft's one per text asked, each with whether the model
+   * flagged it as holding an example (#1228).
+   */
+  | {
+      readonly step: "draft";
+      readonly texts: readonly string[];
+      readonly examples?: readonly boolean[];
+    }
   /** More text than a draft takes. */
   | { readonly step: "too-long" }
   | { readonly step: "failed"; readonly error: AssistantErrorCode };
@@ -70,7 +77,11 @@ async function draftOrFailure(
 /** What a draft's answer shows: its texts, or why there are none. */
 function stateOf(result: DraftResult): DraftState {
   return result.status === "ok"
-    ? { step: "draft", texts: result.texts }
+    ? {
+        step: "draft",
+        texts: result.texts,
+        ...(result.examples === undefined ? {} : { examples: result.examples }),
+      }
     : { step: "failed", error: result.status };
 }
 

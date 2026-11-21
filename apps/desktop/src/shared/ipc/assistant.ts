@@ -360,6 +360,8 @@ const draftResultSchema = z.union([
   z.strictObject({
     status: z.literal("ok"),
     texts: z.array(z.string().max(DRAFT_RESULT_MAX)).min(1).max(DRAFT_TEXTS_MAX),
+    /** For each text, whether the model flagged it as holding an example (#1228, WN-3). */
+    examples: z.array(z.boolean()).max(DRAFT_TEXTS_MAX).optional(),
     costUsd: z.number().nonnegative().nullable(),
   }),
   z.strictObject({ status: errorSchema }),

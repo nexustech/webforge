@@ -35,6 +35,8 @@ export type AssistantPanelProps = {
   readonly onOpenSettings: () => void;
   readonly onOpenVersions: () => void;
   readonly onShowStep: (step: ReplyStep) => void;
+  /** Whether the element a change is on holds an example now (#1228), for the review card. */
+  readonly holdsExample?: ((step: ReplyStep) => boolean) | undefined;
   /** Opens a link from a reply in the browser: its address as the reply wrote it. */
   readonly onOpenLink: (href: string, replyId: string) => void;
 };
@@ -172,6 +174,7 @@ export function AssistantPanel(props: AssistantPanelProps) {
                 // Version History lists the safety version, known here or not.
                 onOpenVersions={props.onOpenVersions}
                 onShowStep={props.onShowStep}
+                holdsExample={props.holdsExample}
               />
             );
           }}

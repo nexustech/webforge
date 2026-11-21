@@ -242,6 +242,18 @@ export const assistant = {
     "The assistant wrote your home and About pages' words from what you said about your business. Check each one and change what you like: nothing changes until you use them.",
   "assistant.business.writing": "Writing your pages' words…",
   "assistant.business.use": "Use These",
+  // A drafted text that holds an example for a fact the person didn't give (#1228, WN-3).
+  "assistant.business.example": "Example",
+  // A change of a reply whose element holds an example (#1228, WN-3), on the review card.
+  "assistant.review.example": "Example",
+  "assistant.review.examples.one":
+    "1 change holds an example for a detail you didn't give: check it.",
+  "assistant.review.examples.other":
+    "{count} changes hold examples for details you didn't give: check them.",
+  "assistant.business.examples.one":
+    "1 text holds an example for a detail you didn't give: check it before you publish.",
+  "assistant.business.examples.other":
+    "{count} texts hold examples for details you didn't give: check them before you publish.",
   "assistant.business.keep": "Keep the Template's Words",
   "assistant.business.history": "Wrote the home and About pages' words",
 } as const;

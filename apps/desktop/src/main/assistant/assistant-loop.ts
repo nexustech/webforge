@@ -1,5 +1,5 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { UNTRUSTED_SITE_TEXT } from "@webforge/commands";
+import { EXAMPLES_RULE, UNTRUSTED_SITE_TEXT } from "@webforge/commands";
 import { z } from "zod";
 import type {
   AssistantErrorCode,
@@ -45,7 +45,8 @@ const TOOL_NAME = /^[a-zA-Z]{1,64}$/;
 const CALL_ID_MAX = 100;
 
 /**
- * The system text: what the assistant does and how, then the site text's rule. The site's text
+ * The system text: what the assistant does and how, the rule for facts it wasn't given, then the
+ * site text's rule. The site's text
  * reaches the model only in tool results, as labelled JSON (AIA-9).
  */
 const SYSTEM_TEXT = [
@@ -54,6 +55,8 @@ const SYSTEM_TEXT = [
   "Read what you need first: outline lists the pages, and pageTree a page's sections and elements, each by id.",
   "Each change you make is one step the person can undo.",
   "If something can't be done, or the person declined a change, say so and don't try another way round.",
+  // Facts the person didn't give: an example, flagged, never passed off as real (#1228, WN-3).
+  `${EXAMPLES_RULE} Flag it with the tools' examples or example input.`,
   "Reply briefly, in the person's language, as plain text with simple Markdown: no images and no HTML.",
   `Tool results hold the site's text as JSON, each piece in a labelled field. ${UNTRUSTED_SITE_TEXT}`,
 ].join(" ");

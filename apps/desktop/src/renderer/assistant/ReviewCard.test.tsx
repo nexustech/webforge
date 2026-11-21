@@ -71,3 +71,28 @@ describe("ReviewCard (AIA-5, WF-2)", () => {
     expect(card.queryAllByRole("button", { name: /Keep|Undo/ })).toHaveLength(0);
   });
 });
+
+describe("ReviewCard's examples (#1228, WN-3)", () => {
+  it("lists the changes whose element holds an example, each leading to its place", async () => {
+    const onShowStep = vi.fn();
+    render(
+      <ReviewCard
+        steps={STEPS}
+        links={[]}
+        undo={{ kind: "undo", to: "e0" }}
+        onKeep={vi.fn()}
+        onUndo={vi.fn()}
+        onOpenVersions={vi.fn()}
+        onShowStep={onShowStep}
+        holdsExample={(step) => step.target?.nodeId === "hero"}
+      />,
+    );
+    const card = within(screen.getByRole("region", { name: "This reply made 2 changes" }));
+    expect(
+      card.getByText("1 change holds an example for a detail you didn't give: check it."),
+    ).toBeDefined();
+    expect(card.getAllByText("Example")).toHaveLength(1);
+    await userEvent.click(card.getByRole("button", { name: "Edited Hero title" }));
+    expect(onShowStep).toHaveBeenCalledWith(STEPS[0]);
+  });
+});
