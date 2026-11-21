@@ -22,7 +22,11 @@ const STEPS = [
 ];
 
 /** The card in `undo`'s state, with a link to another website, and any changes refused. */
-const card = (undo: ReplyUndo, refused: readonly { label: string }[] = []): Story => ({
+const card = (
+  undo: ReplyUndo,
+  refused: readonly { label: string }[] = [],
+  examples = false,
+): Story => ({
   render: () => (
     <div className="w-80 rounded-md border border-border bg-panel p-3">
       <ReviewCard
@@ -34,6 +38,8 @@ const card = (undo: ReplyUndo, refused: readonly { label: string }[] = []): Stor
         onUndo={() => undefined}
         onOpenVersions={() => undefined}
         onShowStep={() => undefined}
+        // The Hero's changes hold an example (#1228).
+        holdsExample={examples ? (step) => step.target?.nodeId === "hero" : undefined}
       />
     </div>
   ),
@@ -52,3 +58,6 @@ export const Undone: Story = card({ kind: "undone" });
 export const AppliedWithRefused: Story = card({ kind: "undo", to: "e0" }, [
   { label: "AI (Assistant): Removed Text from Hero" },
 ]);
+
+/** Changes that hold examples for details the person didn't give (#1228, WN-3), to check. */
+export const WithExamples: Story = card({ kind: "undo", to: "e0" }, [], true);

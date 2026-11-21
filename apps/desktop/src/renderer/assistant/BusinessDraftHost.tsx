@@ -7,6 +7,7 @@ import {
   type BusinessText,
   businessRequest,
   businessTexts,
+  draftExamples,
   keepBusinessWords,
 } from "./business-draft.js";
 import { type DraftApi, useAssistantStatus, useDraft } from "./use-draft.js";
@@ -76,6 +77,15 @@ export function BusinessDraftHost({ session, api, takeAbout, sessionId }: Busine
       open
       texts={texts}
       state={draft.state}
+      examples={
+        draft.state.step === "draft"
+          ? draftExamples(session.history.document.getState(), {
+              texts: draft.state.texts,
+              examples: draft.state.examples ?? [],
+              told,
+            })
+          : undefined
+      }
       onSiteAnswer={draft.answerSite}
       onUse={(words) => {
         const { state } = draft;

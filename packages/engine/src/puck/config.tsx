@@ -26,7 +26,8 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { NOTE_ATTRIBUTE, SECTIONS_ZONE_CLASS } from "./puck-dom.js";
+import { hasExamples } from "./examples.js";
+import { EXAMPLE_ATTRIBUTE, NOTE_ATTRIBUTE, SECTIONS_ZONE_CLASS } from "./puck-dom.js";
 import {
   type ContextTracker,
   createContextTracker,
@@ -135,7 +136,9 @@ function toPuckComponent(
     );
     const output = withAdvanced(def.render({ id, values, slots, context }), values.advanced);
     const marked = values.hidden === true ? markedHidden(output) : output;
-    return typeof values.note === "string" ? markedWith(marked, NOTE_ATTRIBUTE) : marked;
+    const noted = typeof values.note === "string" ? markedWith(marked, NOTE_ATTRIBUTE) : marked;
+    // A text holding an example (#1228): outlined until the person checks it.
+    return hasExamples(values.examples) ? markedWith(noted, EXAMPLE_ATTRIBUTE) : noted;
   };
   return {
     label: def.label,

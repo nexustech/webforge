@@ -624,6 +624,27 @@ describe("createPuckEngine", () => {
     expect(element.textContent).not.toContain("Check the date");
   });
 
+  it("outlines an element with a text marked as an example, and draws it as it is otherwise (#1228)", async () => {
+    const [first, second] = page.content;
+    if (first === undefined || second === undefined) throw new Error("unexpected page");
+    const before = headings();
+    await act(async () =>
+      engine.applyChange({
+        page: {
+          ...page,
+          content: [first, { ...second, props: { ...second.props, examples: { text: true } } }],
+        },
+      }),
+    );
+    await settle();
+
+    const marked = [...element.querySelectorAll(".t-heading")].map((heading) =>
+      heading.hasAttribute("data-webforge-example"),
+    );
+    expect(marked).toEqual([false, true]);
+    expect(headings()).toEqual(before);
+  });
+
   it("shows a bound element's Site Settings value, or the hint, as they change (1.17)", async () => {
     const bound = (bindings?: Record<string, string>): PageDoc => ({
       ...page,

@@ -5,6 +5,7 @@ import { expect, test } from "@playwright/test";
 import type { Oklch } from "@webforge/model";
 import { brandedTheme, brandFromImage, themePreset } from "@webforge/themes";
 import { OPEN_WAIT } from "./budget.js";
+import { clickOnCanvas } from "./canvas-click.js";
 import {
   APP_START_TIMEOUT_MS,
   launchDesktopApp,
@@ -199,4 +200,47 @@ test("starts a one-page site: every page a section of the home page, the menu sc
   await contact.scrollIntoViewIfNeeded();
   await expect(contact).toBeVisible();
   await expect(contact.getByText("Get a free quote")).toBeVisible();
+});
+
+test("marks a template's sample reviews as examples: outlined, opened from their chip, and confirmed (#1228)", async () => {
+  app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
+  const page = await app.firstWindow();
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
+    timeout: APP_START_TIMEOUT_MS,
+  });
+  await stubFileDialogs(app, join(dir, "Rosa's Cafe.wforge"));
+  await page.getByRole("button", { name: /^Start a Site…/ }).click();
+  const quickStart = page.getByRole("dialog", { name: "Start a site" });
+  await quickStart.getByRole("radio", { name: "Food and drink" }).click();
+  await quickStart.getByRole("textbox", { name: "Business or site name" }).fill("Rosa's Cafe");
+  const create = quickStart.getByRole("button", { name: "Create site" });
+  // Through the steps as they come, nothing else given.
+  while (!(await create.isVisible())) {
+    await quickStart.getByRole("button", { name: "Next" }).click();
+  }
+  await create.click();
+
+  // The café's sample reviews, outlined on the canvas as examples.
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  const review = canvas.locator("[data-webforge-example]").first();
+  await expect(review).toBeAttached({ timeout: OPEN_WAIT });
+  await review.scrollIntoViewIfNeeded();
+  await clickOnCanvas(review);
+  // Its bar's Example chip opens the text for editing.
+  await canvas
+    .getByRole("button", { name: "Example: check this text and put in your own details" })
+    .click();
+  await expect(canvas.locator('[contenteditable="true"]:focus')).toHaveCount(1);
+  await page.keyboard.press("Escape");
+
+  // Site Check lists each review once, and This Is Correct takes one off the list.
+  await page.getByRole("button", { name: "Show or Hide Bottom Panel" }).click();
+  const examples = page
+    .getByRole("region", { name: "Bottom panel" })
+    .locator('[data-rule="sampleDetails"]');
+  const confirm = examples.getByRole("button", { name: /^This is correct: / });
+  await expect(confirm.first()).toBeVisible();
+  const before = await confirm.count();
+  await confirm.first().click();
+  await expect(confirm).toHaveCount(before - 1);
 });

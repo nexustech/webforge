@@ -29,6 +29,9 @@ export const canvas = {
   "canvas.editText": "Edit Text",
   "canvas.clearText": "Clear Text and Edit",
   "canvas.edit": "Edit",
+  // The chip in the bar of an element whose text holds an example (#1228): it opens the text.
+  "canvas.example": "Example",
+  "canvas.example.label": "Example: check this text and put in your own details",
   // A hovered element's name chip with its size, while spacing on hover shows (SP-2).
   "canvas.chipSize": "{name} · {size}",
   // Opens Style this ‹kind›… for the selected element (3.13a).

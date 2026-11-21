@@ -8,7 +8,7 @@ import {
   DialogTitle,
   ScrollArea,
 } from "@webforge/editor-ui";
-import { t } from "@webforge/i18n";
+import { plural, t } from "@webforge/i18n";
 import { useId, useState } from "react";
 import type { BusinessText } from "./business-draft.js";
 import { SiteConsent } from "./Consent.js";
@@ -20,6 +20,8 @@ export type BusinessDraftDialogProps = {
   /** The texts the draft is of, in the draft's order. */
   readonly texts: readonly BusinessText[];
   readonly state: DraftState;
+  /** For each drafted text, whether it holds an example (#1228): listed for the person to check. */
+  readonly examples?: readonly boolean[] | undefined;
   readonly onSiteAnswer: (allowed: boolean) => void;
   /** The words to keep, one for each text: empty for a text that keeps the template's. */
   readonly onUse: (words: readonly string[]) => void;
@@ -47,6 +49,8 @@ export function BusinessDraftDialog(props: BusinessDraftDialogProps) {
       ? edited.words[index]
       : (drafts?.[index] ?? ""),
   );
+  // How many drafted texts hold an example (#1228), listed above them.
+  const exampleCount = props.examples?.filter(Boolean).length ?? 0;
   const message =
     state.step === "denied"
       ? t("assistant.siteDenied")
@@ -78,6 +82,11 @@ export function BusinessDraftDialog(props: BusinessDraftDialogProps) {
           </p>
         ) : (
           <ScrollArea className="min-h-0 flex-1">
+            {exampleCount === 0 ? null : (
+              <p className="m-0 mb-3 rounded-md border border-border bg-muted p-2 text-sm">
+                {plural("assistant.business.examples", exampleCount)}
+              </p>
+            )}
             <ol className="m-0 flex list-none flex-col gap-3 p-px">
               {texts.map((text, index) => (
                 <li
@@ -85,11 +94,24 @@ export function BusinessDraftDialog(props: BusinessDraftDialogProps) {
                     "/",
                   )}
                 >
-                  <label htmlFor={`${id}-${index}`} className="text-xs font-semibold">
-                    {text.role}
-                  </label>
+                  <span className="flex items-center gap-2">
+                    <label htmlFor={`${id}-${index}`} className="text-xs font-semibold">
+                      {text.role}
+                    </label>
+                    {props.examples?.[index] === true ? (
+                      <span
+                        id={`${id}-${index}-example`}
+                        className="rounded-sm border border-border px-1.5 text-xs font-semibold"
+                      >
+                        {t("assistant.business.example")}
+                      </span>
+                    ) : null}
+                  </span>
                   <textarea
                     id={`${id}-${index}`}
+                    aria-describedby={
+                      props.examples?.[index] === true ? `${id}-${index}-example` : undefined
+                    }
                     value={words[index]}
                     rows={text.rich ? 4 : 2}
                     className="w-full resize-y rounded-sm border border-border bg-input px-2 py-1 text-sm"

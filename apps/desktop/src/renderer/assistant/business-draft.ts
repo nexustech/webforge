@@ -168,6 +168,27 @@ function holdsExample(draft: BusinessDraft, index: number, known: () => Readonly
   return details.some(({ key }) => !known().has(key));
 }
 
+/** The facts the person gave, to tell a draft's examples by: what they told it, and Site Settings. */
+function givenFacts(site: SiteDoc, told: string): () => ReadonlySet<string> {
+  let known: ReadonlySet<string> | undefined;
+  return () => {
+    known ??= new Set([
+      ...settingsFactKeys(site.settings),
+      ...factKeysIn([told, site.settings.general.name]),
+    ]);
+    return known;
+  };
+}
+
+/**
+ * For each of `draft`'s texts, whether it holds an example, kept as drafted (#1228, WN-3): what
+ * the review lists, and what {@link keepBusinessWords} marks.
+ */
+export function draftExamples(site: SiteDoc, draft: BusinessDraft): boolean[] {
+  const known = givenFacts(site, draft.told);
+  return draft.texts.map((_, index) => holdsExample(draft, index, known));
+}
+
 /**
  * Keeps the person's reviewed words, `words[i]` for `texts[i]`, as one undo step labelled as the
  * assistant's. A text left empty keeps the template's sample, as does one whose element has gone.
@@ -183,14 +204,7 @@ export function keepBusinessWords(
   draft?: BusinessDraft,
 ): void {
   session.edit("props", assistantLabel(t("assistant.business.history")), (site) => {
-    let known: ReadonlySet<string> | undefined;
-    const facts = () => {
-      known ??= new Set([
-        ...settingsFactKeys(site.settings),
-        ...factKeysIn([draft?.told ?? "", site.settings.general.name]),
-      ]);
-      return known;
-    };
+    const facts = givenFacts(site, draft?.told ?? "");
     texts.forEach((text, index) => {
       const word = words[index] ?? "";
       const value = fieldValue(word, text.rich);
