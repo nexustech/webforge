@@ -1,9 +1,9 @@
 /**
- * A menu row, 21 px at the editor's 14 px rem (#1015); shared with Command items, which mark their
- * state differently.
+ * A menu row, 24.5 px at the editor's 14 px rem: WCAG 2.2's 24 px target (LF-18, #1181); shared
+ * with Command items, which mark their state differently.
  */
 const ROW =
-  "relative flex h-6 cursor-default select-none items-center gap-2 rounded-sm px-2 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0";
+  "relative flex h-7 cursor-default select-none items-center gap-2 rounded-sm px-2 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0";
 
 /**
  * Class names shared by the three menu families (DropdownMenu, ContextMenu, Menubar), so app
@@ -35,7 +35,11 @@ export const menuStyles = {
   inset: "pl-7",
   indicator: "pointer-events-none absolute left-2 flex size-4 items-center justify-center",
   label: "flex h-6 items-center px-2 text-xs font-medium text-muted-foreground",
-  separator: "-mx-1 my-1 h-px bg-border",
+  /**
+   * Between a menu's groups. Its line keeps them apart; its margin is small, so View and Edit fit
+   * a 640 px window with 24 px rows (#1181), and scroll by a row or two below that (#1015).
+   */
+  separator: "-mx-1 my-0.5 h-px bg-border",
   shortcut: "ml-auto pl-4 text-xs tracking-wide text-muted-foreground",
   subTrigger: "data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
 } as const;

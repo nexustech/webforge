@@ -37,7 +37,7 @@ export type FindingPlace =
   | { readonly kind: "guide"; readonly guide: SearchGuide };
 
 /** A detail of the business that search engines show with it (3.15's structured data). */
-export type ContactField = "address" | "phone" | "openingHours";
+export type ContactField = "address" | "phone" | "email" | "openingHours";
 
 /**
  * A step only the person can take, outside Webforge (3.17, SEO-7): setting up or checking the

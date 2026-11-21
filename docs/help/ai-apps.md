@@ -80,6 +80,8 @@ An app never adds a picture itself, and {appName} downloads nothing. To use your
 - Click **Add Files…** to choose them on your computer, as **Add Images or Files…** in [Media](media.md#adding-files) does. They're added to Media as one step in Undo History, and the app is told which you added.
 - Click **Not Now**, or choose no files, and nothing is added.
 
+Take as long as you need to choose: the app waits. If you're still choosing after about 45 seconds, the app is told you are, and it asks again a little later for what you added. While you choose, it can't ask you for more files. If you leave the question itself unanswered for a minute, it closes, and nothing is added.
+
 A site made from a template starts with the template's pictures. Site Check's tip **Pictures from the template** lists those your pages still show, so you and the app know which to replace.
 
 ## What an app can do
@@ -146,7 +148,7 @@ You need [Claude Code](https://code.claude.com/docs/en/setup) installed.
    ```
 
    The key isn't in it. Claude Code reads it from `WEBFORGE_KEY` each time it connects, so the key isn't in your terminal's history or in Claude Code's settings.
-3. **Give that terminal the key:** in the same terminal, click **Copy the key command** and run it. Then click **Copy the key**, paste it when the terminal waits for it, and press Return. The key doesn't show as you paste it, and it isn't typed on the command line. {appName} shows the command for your computer:
+3. **Give that terminal the key:** in the same terminal, click **Copy the key command** and run it. Then click **Copy the key**, paste it when the terminal waits for it, and press Return (Enter on Windows). The key doesn't show as you paste it, and it isn't typed on the command line. {appName} shows the command for your computer:
    - On a Mac or Linux:
 
      ```

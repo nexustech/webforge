@@ -194,7 +194,11 @@ export function CheckField({
   onCommit,
 }: FieldRendererProps<"toggle">) {
   return (
-    <label htmlFor={id} className="flex items-center gap-2 text-sm has-[:disabled]:text-disabled">
+    <label
+      htmlFor={id}
+      // The label is the checkbox's 24 px target too (LF-18).
+      className="flex min-h-7 items-center gap-2 text-sm has-[:disabled]:text-disabled"
+    >
       <input
         id={id}
         type="checkbox"

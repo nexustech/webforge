@@ -28,7 +28,7 @@ type Asking = { readonly asked: MediaAsk; readonly answer: (addFiles: boolean) =
  * AI apps' requests (F-AI-1, 4.8): while a site is open in the window, main forwards each tool
  * call here and the command layer answers it, every change one labelled undo step. Run Site Check
  * and Open Preview the window answers itself (4.9, `WINDOW_TOOLS`), and `requestMedia`, which asks
- * the person for pictures or files (4.12b).
+ * the person for pictures or files (4.12b), with `mediaStatus` for one still being answered.
  */
 export const aiRequestsArea: Area<WindowContext> = {
   id: "aiRequests",
@@ -95,7 +95,11 @@ export const aiRequestsArea: Area<WindowContext> = {
       });
     }
     const removeDialog = windowDialogs.register({ id: "aiMediaRequest", component: MediaRequest });
-    const windowTools: WindowToolHandlers = { ...appTools, requestMedia: mediaRequests };
+    const windowTools: WindowToolHandlers = {
+      ...appTools,
+      requestMedia: mediaRequests.requestMedia,
+      mediaStatus: mediaRequests.mediaStatus,
+    };
 
     // For the opening of the site this page was loaded for (#663).
     const stopAnswering = api.ai.onRequest(siteSession(), async (request, onCancel) => {
@@ -114,6 +118,7 @@ export const aiRequestsArea: Area<WindowContext> = {
       removeDialog();
       // A question still open closes with the site: nothing is added.
       asking.getState().current?.answer(false);
+      mediaRequests.close();
     };
   },
 };

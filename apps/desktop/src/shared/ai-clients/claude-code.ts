@@ -25,7 +25,13 @@ export const claudeCode = {
         },
       },
       {
-        text: t("aiApps.client.claudeCode.step2"),
+        text: t("aiApps.client.claudeCode.step2", {
+          key: t(
+            shell === "powershell"
+              ? "aiApps.client.claudeCode.enterKey"
+              : "aiApps.client.claudeCode.returnKey",
+          ),
+        }),
         command: {
           value: claudeCodeKeyCommand(shell),
           copyLabel: t("aiApps.client.claudeCode.copyKeyCommand"),

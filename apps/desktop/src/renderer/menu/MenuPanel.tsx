@@ -206,7 +206,7 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
                 )
           }
           className={cn(
-            "flex h-6 w-full items-center gap-1.5 rounded-sm px-2 pr-8 text-left text-xs outline-none",
+            "flex h-7 w-full items-center gap-1.5 rounded-sm px-2 pr-8 text-left text-xs outline-none",
             "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
             row.group !== null && "pl-6",
             hidden && "text-muted-foreground",

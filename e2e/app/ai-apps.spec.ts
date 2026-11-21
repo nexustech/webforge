@@ -474,6 +474,75 @@ test("an AI app asks for pictures with its reason; the person chooses them in Ad
   }
 });
 
+test("files chosen in Add files after an app's timeouts still reach it, through mediaStatus (#1252)", async () => {
+  test.skip(
+    process.platform !== "win32" && process.platform !== "darwin",
+    "an app's key is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5, ADR 0021)",
+  );
+  // Past main's 75 s for a command and a client's 60 s, as the trial's three minutes were.
+  test.setTimeout(180_000);
+  const { address, key } = await pairAnotherApp("Test client");
+  const client = await connect(address, key);
+  const dir = mkdtempSync(join(tmpdir(), "webforge-e2e-media-"));
+  folders.push(dir);
+  try {
+    const photo = join(dir, "Workshop.jpg");
+    writeFileSync(photo, heroPhoto());
+    // Add files stays open until the test closes it, as a person choosing pictures keeps it.
+    await app.evaluate(({ dialog }, path) => {
+      Object.assign(dialog, {
+        showOpenDialog: () =>
+          new Promise((resolve) => {
+            Object.assign(globalThis, {
+              closeAddFiles: () => resolve({ canceled: false, filePaths: [path] }),
+            });
+          }),
+      });
+    }, photo);
+    const asked = page.getByRole("alertdialog", {
+      name: "Test client asks you to add pictures or files",
+    });
+
+    const started = Date.now();
+    const request = client.callTool({
+      name: "requestMedia",
+      arguments: { reason: "Photos of your workshop" },
+    });
+    await asked.getByRole("button", { name: "Add Files…" }).click();
+    // Within the client's minute: waiting, with the request's id.
+    const waiting = answer(await request) as unknown as {
+      status: string;
+      data: { requestId: number };
+    };
+    expect(waiting).toMatchObject({ status: "waiting", data: { requestId: expect.any(Number) } });
+    expect(Date.now() - started).toBeLessThan(60_000);
+    const { requestId } = waiting.data;
+    // Asked again meanwhile: the same request, still open, not "busy".
+    expect(
+      answer(await client.callTool({ name: "requestMedia", arguments: { reason: "Photos" } })),
+    ).toMatchObject({ status: "waiting", data: { requestId } });
+    expect(
+      answer(await client.callTool({ name: "mediaStatus", arguments: { requestId } })),
+    ).toMatchObject({ status: "waiting" });
+
+    // The person chooses after the old timeouts: the file still reaches the app.
+    // Time itself is what's tested here: no event marks the old timeouts passing.
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.max(0, 80_000 - (Date.now() - started))),
+    );
+    await app.evaluate(() => (globalThis as unknown as { closeAddFiles(): void }).closeAddFiles());
+    await expect(step("Added image 'Workshop.jpg'")).toBeVisible();
+    expect(
+      answer(await client.callTool({ name: "mediaStatus", arguments: { requestId } })),
+    ).toMatchObject({
+      status: "done",
+      data: { added: [{ fileName: "Workshop.jpg", kind: "image" }] },
+    });
+  } finally {
+    await client.close();
+  }
+});
+
 /** What the garage's owner asks for in product/16's prompt, as its brief. */
 const RAPIDFIX = {
   businessType: "trades",
