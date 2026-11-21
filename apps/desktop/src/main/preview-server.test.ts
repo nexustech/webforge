@@ -392,6 +392,10 @@ ${THEME_VALUES_MARKER}
   });
 
   it("stops the phone's listener once unused, but not while a page is open on it (S9)", async () => {
+    // Its idle timer on the test's clock (#1280): a real 150 ms could run out between the listener
+    // starting and the page's stream reaching it on a busy machine, stopping the listener with no
+    // page open yet, so the stream's request was reset (ECONNRESET). The clock moves only here.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     server = createPreviewServer({ phoneIdleMs: 150 });
     const preview = server;
     preview.update(FIRST);
@@ -400,17 +404,21 @@ ${THEME_VALUES_MARKER}
     const phonePort = await preview.listen("network", "127.0.0.1");
     const phoneBase = preview.phoneBase() ?? "";
 
-    // A page open on the phone keeps it on.
+    // A page open on the phone keeps it on, past its idle time and more.
     const stream = events(phonePort, phoneBase);
     const close = await stream.opened;
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await expect.poll(() => preview.watching()).toBe(1);
+    vi.advanceTimersByTime(400);
     expect(stopped).not.toHaveBeenCalled();
     expect((await get(phonePort, phoneBase)).status).toBe(200);
 
-    // Closed, then unused: it stops, and says so.
+    // Closed, then unused for its idle time: it stops, and says so.
     close();
-    await vi.waitFor(() => expect(stopped).toHaveBeenCalledOnce());
+    await expect.poll(() => preview.watching()).toBe(0);
+    vi.advanceTimersByTime(150);
+    expect(stopped).toHaveBeenCalledOnce();
     expect(preview.phoneBase()).toBe(undefined);
+    await closed(phonePort);
     await expect(get(phonePort, phoneBase)).rejects.toThrow();
   });
 

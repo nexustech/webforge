@@ -467,7 +467,7 @@ jobs:
             for browser in $BROWSERS; do args="$args --project=export-$browser"; done
             if [ "$RUNNER_OS" = Windows ]; then args="$args --project=export-msedge"; fi
           else
-            # One shard of the app's tests: Playwright splits them by file, in order.
+            # One shard of the app's tests: Playwright splits them by test count, in order, each file whole.
             args="--project=app --shard=${PART#app-}/$APP_SHARDS"
           fi
           echo "args=$args" >> "$GITHUB_OUTPUT"
