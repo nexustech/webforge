@@ -210,10 +210,16 @@ export function createMcpService(options: McpServiceOptions): McpService {
    * Counts an app's request in the usage summary (5.40): the kind of app, the tool and what came of
    * it. Never the app's name, nor what it asked or was told.
    */
+  const kinds = new Map<string, AppKind>();
   const countRequest = async (app: McpApp, tool: string, answer: Promise<AiResponse>) => {
     try {
-      const [paired, response] = await Promise.all([apps.list(), answer]);
-      const kind = paired.find((each) => each.id === app.id)?.kind ?? "other";
+      // Each app's kind, read once: an app's kind never changes, and its id is never reused.
+      let kind = kinds.get(app.id);
+      if (kind === undefined) {
+        kind = (await apps.list()).find((each) => each.id === app.id)?.kind ?? "other";
+        kinds.set(app.id, kind);
+      }
+      const response = await answer;
       recordUsage({ kind: "aiApp", app: kind, tool, outcome: response.status });
     } catch {
       // A request that failed is the caller's to report; the count is only a count.

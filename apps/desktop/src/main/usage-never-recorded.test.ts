@@ -69,7 +69,10 @@ describe("the usage summary holds nothing of a site (BD-1)", () => {
     });
     const { ipc, invoke } = fakeIpc();
     const trusted = (url: string) => url === APP_URL;
-    const feature = usageFeature(summary, () => 1500);
+    const feature = usageFeature(
+      async () => summary,
+      () => 1500,
+    );
     feature.register?.(ipc, trusted);
     feature.started?.();
 

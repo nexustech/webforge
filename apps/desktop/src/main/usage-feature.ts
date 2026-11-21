@@ -1,29 +1,33 @@
-import { release, totalmem } from "node:os";
-import { type UpdateChannel, updateChannelFor } from "../shared/update-channel.js";
+import type { UpdateChannel } from "../shared/update-channel.js";
 import type { AppFeature } from "./app-feature.js";
 import type { AppElectron } from "./app-parts.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
 import { startupTimes } from "./startup-timing.js";
-import { recordUsage, setUsageSink } from "./usage.js";
-import {
-  createUsageSummary,
-  listedOr,
-  loadUsageLists,
-  type UsageSummary,
-  versionNumbers,
-} from "./usage-summary.js";
+import { recordUsage, setUsageSink, type UsageEvent } from "./usage.js";
+import type { UsageSummary } from "./usage-summary.js";
+
+/** The most events kept while the summary loads: a start-up's, and some to spare. */
+const WAITING_MAX = 500;
 
 /**
  * The usage summary as a feature (5.40, BD-1): what the editor tells it (`app:record-usage`), a
  * site's first edit after it opens, the start-up's time once the window is there, and its last
- * write before Webforge exits. Everything the main process records reaches it from now on.
+ * write before Webforge exits. Everything the main process records reaches it from now on: kept
+ * until `make` gives the summary, which waits for the window, so main's start-up loads none of it
+ * (#892).
  */
 export function usageFeature(
-  summary: UsageSummary,
+  make: () => Promise<UsageSummary>,
   startupMs: () => number | undefined,
 ): AppFeature {
-  setUsageSink((event) => summary.record(event));
+  const waiting: UsageEvent[] = [];
+  let summary: UsageSummary | undefined;
+  let made: Promise<UsageSummary | undefined> | undefined;
+  setUsageSink((event) => {
+    if (summary !== undefined) summary.record(event);
+    else if (waiting.length < WAITING_MAX) waiting.push(event);
+  });
   // Counted once for each opening of a site: the first change saved after it opened.
   let edited = true;
   return {
@@ -36,10 +40,17 @@ export function usageFeature(
     started: () => {
       const ms = startupMs();
       if (ms !== undefined) recordUsage({ kind: "startup", ms });
-      // Its lists come with the site's code, after the window has opened (#892).
-      void summary
-        .start()
-        .catch((error: unknown) => logFailure("Webforge could not read the usage summary", error));
+      made = make()
+        .then(async (loaded) => {
+          summary = loaded;
+          for (const event of waiting.splice(0)) loaded.record(event);
+          await loaded.start();
+          return loaded;
+        })
+        .catch((error: unknown) => {
+          logFailure("Webforge could not read the usage summary", error);
+          return undefined;
+        });
     },
     site: {
       opened: () => {
@@ -51,7 +62,9 @@ export function usageFeature(
         recordUsage({ kind: "firstEdit" });
       },
     },
-    quit: () => summary.idle(),
+    quit: async () => {
+      await (await made)?.idle();
+    },
   };
 }
 
@@ -65,20 +78,30 @@ export function usageFeatureFor(
   crashReports: { count(): number },
   chosen: () => UpdateChannel | undefined,
 ): AppFeature {
-  const summary = createUsageSummary({
-    dir: app.getPath("userData"),
-    lists: loadUsageLists,
-    crashReports: () => crashReports.count(),
-    computer: () => ({
-      version: versionNumbers(app.getVersion()),
-      channel: updateChannelFor(chosen(), app.getVersion()),
-      platform: listedOr(["win32", "darwin", "linux"], process.platform),
-      arch: listedOr(["x64", "arm64"], process.arch),
-      osVersion: versionNumbers(release()),
-      memoryGb: Math.round(totalmem() / 1024 ** 3),
-      scale: screen.getAllDisplays()[0]?.scaleFactor ?? 1,
-      language: "en",
-    }),
-  });
-  return usageFeature(summary, () => startupTimes()["window-created"]);
+  return usageFeature(
+    async () => {
+      const [{ release, totalmem }, { updateChannelFor }, usage] = await Promise.all([
+        import("node:os"),
+        import("../shared/update-channel.js"),
+        import("./usage-summary.js"),
+      ]);
+      const { listedOr, versionNumbers } = usage;
+      return usage.createUsageSummary({
+        dir: app.getPath("userData"),
+        lists: usage.loadUsageLists,
+        crashReports: () => crashReports.count(),
+        computer: () => ({
+          version: versionNumbers(app.getVersion()),
+          channel: updateChannelFor(chosen(), app.getVersion()),
+          platform: listedOr(["win32", "darwin", "linux"], process.platform),
+          arch: listedOr(["x64", "arm64"], process.arch),
+          osVersion: versionNumbers(release()),
+          memoryGb: Math.round(totalmem() / 1024 ** 3),
+          scale: screen.getAllDisplays()[0]?.scaleFactor ?? 1,
+          language: "en",
+        }),
+      });
+    },
+    () => startupTimes()["window-created"],
+  );
 }
