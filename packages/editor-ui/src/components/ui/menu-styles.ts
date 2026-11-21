@@ -35,7 +35,11 @@ export const menuStyles = {
   inset: "pl-7",
   indicator: "pointer-events-none absolute left-2 flex size-4 items-center justify-center",
   label: "flex h-6 items-center px-2 text-xs font-medium text-muted-foreground",
-  separator: "-mx-1 my-1 h-px bg-border",
+  /**
+   * Between a menu's groups. Its line keeps them apart; its margin is small, so View and Edit fit
+   * a 640 px window with 24 px rows (#1181), and scroll by a row or two below that (#1015).
+   */
+  separator: "-mx-1 my-0.5 h-px bg-border",
   shortcut: "ml-auto pl-4 text-xs tracking-wide text-muted-foreground",
   subTrigger: "data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
 } as const;

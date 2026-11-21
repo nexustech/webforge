@@ -30,7 +30,7 @@ export function MenubarTrigger({
     <MenubarPrimitive.Trigger
       data-slot="menubar-trigger"
       className={cn(
-        "flex h-7 select-none items-center rounded-sm px-2 text-sm outline-none hover:bg-hover",
+        "flex h-7 select-none items-center rounded-sm px-1.5 text-sm outline-none hover:bg-hover",
         "focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-accent",
         className,
       )}
