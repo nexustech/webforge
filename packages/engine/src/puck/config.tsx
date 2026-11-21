@@ -107,9 +107,12 @@ function toPuckComponent(
     fields.bindings = { type: "object", objectFields: {} };
   }
   if (
-    Object.values(def.fields).some((field) => field.kind === "text" || field.kind === "richtext")
+    Object.values(def.fields).some(
+      (field) => field.kind === "text" || field.kind === "richtext" || field.kind === "list",
+    )
   ) {
-    // The same for the fields marked as holding an example (#1228): `examples.text` is no field.
+    // The same for the fields marked as holding an example (#1228): `examples.text` is no field,
+    // nor is a list item's `items.k3f.text`.
     fields.examples = { type: "object", objectFields: {} };
   }
   const draw = (props: Record<string, unknown>, context: RenderContext) => {
