@@ -69,6 +69,18 @@ describe("Report a Problem (5.23, OL-10)", () => {
     expect([...query.keys()]).toEqual(["template", "version", "happened"]);
   });
 
+  it("shortens a long message to fit the browser's address, and says so", () => {
+    // "&" and ";" take three characters each in an address.
+    const long = "Broke & froze; ".repeat(400);
+    const address = reportAddress("issue", long, PARTS) ?? "";
+    expect(address.length).toBeLessThanOrEqual(7000);
+    const happened = new URL(address).searchParams.get("happened") ?? "";
+    expect(happened.startsWith("Broke & froze;")).toBe(true);
+    expect(happened).toContain(t("help.report.cut"));
+    // One that fits is left whole.
+    expect(reportAddress("issue", "Short", PARTS)).not.toContain(encodeURIComponent("Cut short"));
+  });
+
   it("emails the report only once there's an address to send it to", () => {
     expect(reportAddress("mail", "Hello", PARTS)).toBeUndefined();
     const mail = reportAddress("mail", "Hello & more", { ...PARTS, email: "beta@example.com" });

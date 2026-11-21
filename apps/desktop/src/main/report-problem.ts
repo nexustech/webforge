@@ -22,6 +22,12 @@ const ISSUE_TEMPLATE = "beta-bug.yml";
 /** Where reports are emailed: none yet, until the beta has an address (Q7). */
 export const REPORT_EMAIL: string | undefined = undefined;
 
+/**
+ * The longest address a report opens, by where it goes: what a browser sends to GitHub, and what a
+ * mail app takes from a `mailto:` on Windows. A longer message is shortened to fit, and says so.
+ */
+const ADDRESS_MAX = { issue: 7000, mail: 1800 } as const;
+
 /** How wide the screenshot's preview is, in pixels: the dialog shows it small. */
 const PREVIEW_WIDTH = 640;
 
@@ -76,7 +82,23 @@ export function reportAddress(
   text: string,
   parts: Pick<ReportParts, "version" | "system" | "email">,
 ): string | undefined {
-  const message = text.slice(0, REPORT_TEXT_MAX);
+  const whole = text.slice(0, REPORT_TEXT_MAX);
+  let address = addressOf(route, whole, parts);
+  // Too long for the browser or mail app: shortened, saying the rest is on the clipboard's copy.
+  let kept = whole.length;
+  while (address !== undefined && address.length > ADDRESS_MAX[route] && kept > 0) {
+    kept = Math.floor(kept * 0.8);
+    address = addressOf(route, `${whole.slice(0, kept).trimEnd()}… ${t("help.report.cut")}`, parts);
+  }
+  return address;
+}
+
+/** The address that opens a report of `message` (see {@link reportAddress}), however long. */
+function addressOf(
+  route: "issue" | "mail",
+  message: string,
+  parts: Pick<ReportParts, "version" | "system" | "email">,
+): string | undefined {
   if (route === "issue") {
     const query = new URLSearchParams({
       template: ISSUE_TEMPLATE,

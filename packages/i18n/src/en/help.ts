@@ -8,6 +8,8 @@ export const help = {
   "help.openFailed": "The Help window didn't open. Try again in a moment.",
   // Help › Report a Problem (5.23, OL-10): a report the person sends themself.
   "help.report.details": "{appName} {version} on {system}",
+  // A message too long for a browser's address, cut short where it opens.
+  "help.report.cut": "(Cut short: the rest is in the message I'll paste below.)",
   "help.report.subject": "A problem with {appName}",
   "help.report.screenshot.saveTitle": "Save the Screenshot",
   "help.report.screenshot.fileName": "{appName} screenshot",
