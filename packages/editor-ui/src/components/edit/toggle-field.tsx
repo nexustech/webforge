@@ -24,13 +24,8 @@ export function ToggleField({
       disabled={disabled}
       aria-invalid={errorId !== undefined}
       aria-describedby={describedBy(errorId, helpId)}
-      className={cn(
-        "relative h-4 w-7 shrink-0 rounded-full border border-border transition-colors",
-        "outline-none focus-visible:ring-2 focus-visible:ring-ring aria-invalid:border-destructive",
-        // Disabled, a muted track and knob, on or off (#1010).
-        "group disabled:pointer-events-none disabled:bg-muted",
-        on ? "bg-primary" : "bg-input",
-      )}
+      // A 24 px target (LF-18) round the switch it draws.
+      className="group flex size-7 shrink-0 items-center justify-center outline-none disabled:pointer-events-none"
       onClick={() => {
         onChange(!on);
         onCommit();
@@ -39,11 +34,21 @@ export function ToggleField({
       <span
         aria-hidden
         className={cn(
-          "absolute top-px left-px size-3 rounded-full bg-foreground transition-transform",
-          "group-disabled:bg-disabled",
-          on && "translate-x-3",
+          "relative h-4 w-7 rounded-full border border-border transition-colors",
+          "group-focus-visible:ring-2 group-focus-visible:ring-ring group-aria-invalid:border-destructive",
+          // Disabled, a muted track and knob, on or off (#1010).
+          on ? "bg-primary" : "bg-input",
+          "group-disabled:bg-muted",
         )}
-      />
+      >
+        <span
+          className={cn(
+            "absolute top-px left-px size-3 rounded-full bg-foreground transition-transform",
+            "group-disabled:bg-disabled",
+            on && "translate-x-3",
+          )}
+        />
+      </span>
     </button>
   );
 }

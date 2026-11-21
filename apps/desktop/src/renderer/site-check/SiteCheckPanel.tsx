@@ -93,7 +93,8 @@ function FindingRow({
       <button
         type="button"
         className={cn(
-          "text-left [overflow-wrap:anywhere] hover:underline focus-visible:underline",
+          // 24 px tall at least (LF-18), as the row's Fix and Ignore buttons are.
+          "min-h-7 text-left [overflow-wrap:anywhere] hover:underline focus-visible:underline",
           guide && "inline-flex items-center gap-1 underline underline-offset-2",
         )}
         aria-label={guide ? undefined : t("siteCheck.show.label", { item })}
@@ -225,7 +226,7 @@ function RuleRow({
         <HelpButton
           topic={helpTopicOf(result)}
           about={ruleText(name)}
-          className="ml-auto size-5 self-center"
+          className="ml-auto size-7 self-center"
         />
       </div>
       {count === 0 ? null : (

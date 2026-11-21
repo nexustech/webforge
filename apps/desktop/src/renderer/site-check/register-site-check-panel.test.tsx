@@ -509,7 +509,9 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
       },
     });
 
-    const [first] = within(rule("contrast")).getAllByRole("button", { name: /^Show Text on/ });
+    const [first] = within(rule("contrast")).getAllByRole("button", {
+      name: /^Show Text is hard to read on/,
+    });
     if (first === undefined) throw new Error("no contrast finding");
     await userEvent.click(first);
 

@@ -79,7 +79,7 @@ export function TitleBar({
         {...{ [REGION_ATTRIBUTE]: "" }}
         // As tall as the native window controls, whatever the type scale makes a rem (#484).
         style={{ height: TITLE_BAR_HEIGHT }}
-        className="flex shrink-0 items-center gap-2 border-b border-border-strong bg-titlebar pr-[max(calc(100vw-env(titlebar-area-x,0px)-env(titlebar-area-width,100vw)),4px)] pl-[max(env(titlebar-area-x,0px),4px)] select-none [-webkit-app-region:drag]"
+        className="flex shrink-0 items-center gap-1 border-b border-border-strong bg-titlebar pr-[max(calc(100vw-env(titlebar-area-x,0px)-env(titlebar-area-width,100vw)),4px)] pl-[max(env(titlebar-area-x,0px),4px)] select-none [-webkit-app-region:drag]"
       >
         {/* The window's heading for screen readers; the window title says the same. */}
         <h1 className="sr-only">{t("app.name")}</h1>
@@ -96,7 +96,7 @@ export function TitleBar({
           {saveStatus}
           {aiStatus}
           {undo === undefined && redo === undefined ? null : (
-            <div className="mx-1 h-5 w-px bg-border" aria-hidden />
+            <div className="mx-0.5 h-5 w-px bg-border" aria-hidden />
           )}
           <CommandButton commandId={COMMAND_IDS.undo} icon={<Undo2Icon />} />
           {undoSteps}
@@ -113,7 +113,9 @@ export function TitleBar({
         <div
           role="group"
           aria-label={t("shell.actions")}
-          className={`flex items-center gap-0.5 ${NO_DRAG}`}
+          // Touching: each button's own padding keeps their icons apart, and 24 px buttons need the
+          // room at 960 px (#1181).
+          className={`flex items-center ${NO_DRAG}`}
         >
           {tools}
           <PhonePreviewCue />

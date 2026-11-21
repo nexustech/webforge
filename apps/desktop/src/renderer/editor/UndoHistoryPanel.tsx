@@ -81,7 +81,7 @@ export function UndoHistoryPanel({ history, state }: UndoHistoryPanelProps) {
               <button
                 type="button"
                 className={cn(
-                  "undo-history__step flex h-6 w-full items-center gap-1.5 rounded-sm px-2 text-left text-xs outline-none",
+                  "undo-history__step flex h-7 w-full items-center gap-1.5 rounded-sm px-2 text-left text-xs outline-none",
                   "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                   stepState === "current" && "bg-accent font-medium text-accent-foreground",
                   // Greyed, yet still readable (4.5:1 on the panel): it can be clicked to redo.

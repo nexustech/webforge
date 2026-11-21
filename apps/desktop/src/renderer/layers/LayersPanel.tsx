@@ -199,7 +199,7 @@ export function LayersPanel({
           aria-label={t("layers.filter")}
           placeholder={t("layers.filterPlaceholder")}
           value={filter}
-          className={cn(fieldControlClass, "h-6 w-full px-1.5 text-xs")}
+          className={cn(fieldControlClass, "h-7 w-full px-1.5 text-xs")}
           onChange={(event) => setFilter(event.currentTarget.value)}
           onKeyDown={(event) => {
             if (event.key === "Escape" && filter !== "") {

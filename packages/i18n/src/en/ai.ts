@@ -78,7 +78,7 @@ export const ai = {
   "ai.prompt.plan":
     "3. Make the changes as one plan: a title, and the commands in order, for the pages, sections, text, theme and Site Settings. I allow it once, and Undo takes it all back. New pages' and elements' ids aren't known until a plan runs, so add pages in one plan and fill them in the next.",
   "ai.prompt.check":
-    "4. Call runSiteCheck, and fix what it finds that you can. Its templateImages tip lists the template's pictures still shown: call requestMedia to ask me for my own, and put them in place with updateFields.",
+    "4. Call runSiteCheck, and fix what it finds that you can. Its templateImages tip lists the template's pictures still shown: call requestMedia to ask me for my own, and put them in place with updateFields. Choosing them takes me a few minutes: if it answers waiting, call mediaStatus with its requestId until it says what I added.",
   "ai.prompt.preview": "5. Call openPreview, so I can see the site in my browser.",
   "ai.prompt.left":
     "6. Tell me what's still mine to do: my own photos if I haven't added them, choosing where the contact form sends messages, and publishing.",

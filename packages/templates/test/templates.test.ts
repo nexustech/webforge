@@ -17,6 +17,7 @@ import {
   type PageId,
   SITE_FORMAT_VERSION,
   type SiteDoc,
+  sampleDetailsIn,
   siteDocSchema,
 } from "@webforge/model";
 import { checkSite } from "@webforge/site-check";
@@ -221,6 +222,35 @@ describe("the templates' styling (2.29, ST-8)", () => {
         const found = result?.findings.filter((finding) => finding.place.kind !== "theme");
         expect(found, `${template.id} ${rule}`).toEqual([]);
       }
+    }
+  });
+});
+
+describe("every template's sample contact details (#1254)", () => {
+  it("never reach Site Settings when skipped, and Site Check finds any left in a page", () => {
+    for (const { template, images } of templates) {
+      // Started with nothing given, as the quick start and an AI app's brief can.
+      const site = siteFromTemplate(template, images, {
+        name: "Rosa's",
+        theme: template.site.theme,
+        business: {},
+      });
+      const { contact } = site.settings;
+      expect([contact.email, contact.phone, contact.address], template.id).toEqual([
+        undefined,
+        undefined,
+        undefined,
+      ]);
+      expect(contact.openingHours, template.id).toEqual([]);
+
+      // Every sample email or phone still written in the site has a finding.
+      const samples = sampleDetailsIn(
+        JSON.stringify([site.pages, site.layout, site.sharedSections]),
+      );
+      const result = checkSite({ site, catalogue: CATALOGUE }, "export").results.find(
+        (each) => each.rule === "sampleDetails",
+      );
+      expect(result?.findings.length ?? 0, template.id).toBe(samples.length);
     }
   });
 });
@@ -458,7 +488,7 @@ describe("siteFromTemplate with the person's business (QS-2, 3.11)", () => {
     expect(copyOf(site)).not.toContain("Fern &");
   });
 
-  it("calls the person's number from the template's buttons, and keeps what they skipped", () => {
+  it("calls the person's number from the template's buttons, and keeps no sample contact details (#1254)", () => {
     const cafe = readTemplate("cafe");
     const sample = cafe.template.site.settings.contact;
 
@@ -474,9 +504,12 @@ describe("siteFromTemplate with the person's business (QS-2, 3.11)", () => {
     });
 
     expect(copyOf(called)).toContain(`"number":"${business.phone}"`);
-    // Skipped: the template's placeholders stay, for Site Check to flag (QS-6).
-    expect(skipped.settings.contact.phone).toBe(sample.phone);
-    expect(skipped.settings.contact.openingHours).toEqual(sample.openingHours);
+    // Skipped: Site Settings' contact details are left empty, never the template's samples (#1254).
+    expect(skipped.settings.contact.phone).toBeUndefined();
+    expect(skipped.settings.contact.email).toBeUndefined();
+    expect(skipped.settings.contact.address).toBeUndefined();
+    expect(skipped.settings.contact.openingHours).toEqual([]);
+    // The page's own copy of the number stays, for Site Check's Sample contact details to find.
     expect(copyOf(skipped)).toContain(`"number":"${sample.phone}"`);
     expect(copyOf(skipped)).not.toContain("The Copper Kettle");
   });

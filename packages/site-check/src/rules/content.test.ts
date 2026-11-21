@@ -20,6 +20,7 @@ import {
   outdatedYearRule,
   pastAnnouncementRule,
   placeholdersRule,
+  sampleDetailsRule,
 } from "./content.js";
 
 const media = (...items: MediaMeta[]) => Object.fromEntries(items.map((item) => [item.id, item]));
@@ -466,5 +467,77 @@ describe("an Announcement bar past its last day (6.4)", () => {
 
   it("has its texts", () => {
     expect(t("siteCheck.rule.pastAnnouncement.fail.one")).toContain("Delete it");
+  });
+});
+
+describe("sample contact details (#1254)", () => {
+  it("finds a made-up email address or phone number in Site Settings, text and phone links", () => {
+    const site = siteWith([
+      element("Text", "visit", {
+        text: "<p>Call +44 1632 960 123 or write to hello@example.com</p>",
+      }),
+      element("Text", "real", { text: "<p>Call 020 7123 4567 or write to rosa@rosas.co.uk</p>" }),
+      element("Button", "call", {
+        label: "Call us",
+        link: { kind: "phone", number: "+44 1632 960 123" },
+      }),
+      element("Button", "callReal", {
+        label: "Call us",
+        link: { kind: "phone", number: "+44 20 7123 4567" },
+      }),
+      // An example email link is the placeholder rule's, not this one's too.
+      element("Button", "mail", {
+        label: "Mail",
+        link: { kind: "email", address: "hello@example.com" },
+      }),
+    ]);
+    const withContact: SiteDoc = {
+      ...site,
+      settings: {
+        ...site.settings,
+        contact: {
+          ...site.settings.contact,
+          email: "hello@example.com",
+          phone: "+44 20 7946 0000",
+        },
+      },
+    };
+
+    expect(
+      findIn(sampleDetailsRule, withContact).map((finding) =>
+        finding.key.replace(`${site.homePageId}/`, ""),
+      ),
+    ).toEqual(["contact.email", "contact.phone", "visit/text", "call/link"]);
+    expect(findIn(sampleDetailsRule, withContact)[0]?.place).toEqual({
+      kind: "contact",
+      field: "email",
+    });
+  });
+
+  it("names a sample phone beside an example mail link, which stays Placeholder text's", () => {
+    const linked = (phone: string) =>
+      `<p>Call ${phone} or <a href="mailto:hello@example.com">hello@example.com</a></p>`;
+    const site = siteWith([
+      element("Text", "both", { text: linked("+44 1632 960 123") }),
+      element("Text", "mailOnly", { text: linked("020 7555 0123") }),
+    ]);
+    expect(
+      findIn(sampleDetailsRule, site).map((finding) =>
+        finding.key.replace(`${site.homePageId}/`, ""),
+      ),
+    ).toEqual(["both/text"]);
+  });
+
+  it("leaves a field bound to Site Settings to Site Settings' own finding", () => {
+    const site = siteWith([
+      element("Footer", "footer", {
+        text: "+44 1632 960 123",
+        bindings: { text: "contact.phone" },
+      }),
+    ]);
+    expect(findIn(sampleDetailsRule, site)).toEqual([]);
+    // The same text, not bound, is the element's own.
+    const own = siteWith([element("Footer", "footer", { text: "+44 1632 960 123" })]);
+    expect(findIn(sampleDetailsRule, own)).toHaveLength(1);
   });
 });

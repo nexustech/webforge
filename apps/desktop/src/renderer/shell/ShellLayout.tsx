@@ -347,7 +347,7 @@ function toggleSide(columns: SideColumns, side: Side, neverOpened: NeverOpened):
  * The fewest pixels the drawer opens at (#1164): its tabs, a summary and at least three of Site
  * Check's findings, at 960 × 600 too.
  */
-const READABLE_DRAWER_PX = 240;
+const READABLE_DRAWER_PX = 272;
 
 /**
  * An open drawer at a height it can be read at (#1164). Opened for the first time, the library gave

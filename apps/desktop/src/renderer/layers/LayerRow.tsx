@@ -77,7 +77,7 @@ export function LayerRow({
       {...drag.rowProps(row, draggable)}
       className={cn(
         draggable && DRAGGABLE_ROW_CLASS,
-        "group relative flex h-6 items-center gap-1 rounded-sm pr-1 text-xs outline-none",
+        "group relative flex h-7 items-center gap-1 rounded-sm pr-1 text-xs outline-none",
         "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
         selected && "bg-accent text-accent-foreground",
         layer.hidden && !selected && "text-muted-foreground",
@@ -254,7 +254,7 @@ function RenameField({
       autoFocus
       maxLength={LAYER_NAME_MAX}
       value={value}
-      className={cn(fieldControlClass, "h-5 flex-1 px-1 text-xs")}
+      className={cn(fieldControlClass, "h-6 flex-1 px-1 text-xs")}
       onFocus={(event) => event.currentTarget.select()}
       onChange={(event) => setValue(event.currentTarget.value)}
       onClick={(event) => event.stopPropagation()}
