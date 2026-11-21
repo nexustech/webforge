@@ -59,6 +59,17 @@ const CELL_CLASSES =
   "border-b border-base-300 px-3 py-2 align-top max-md:grid max-md:grid-cols-2 max-md:gap-4 max-md:border-b-0 max-md:px-0 max-md:py-1 max-md:first:pt-3 max-md:last:border-b max-md:last:pb-3 max-md:before:font-semibold max-md:before:content-[attr(data-label)_/_'']";
 
 /**
+ * A row's first cell when the first column has no heading (#1258): it names its row, as in a
+ * comparison table, so it is the row's heading (`scope="row"`), and on a narrow screen its block's
+ * title, across the full width, with no empty heading drawn beside it.
+ */
+const ROW_HEADING_CLASSES =
+  "border-b border-base-300 px-3 py-2 align-top font-semibold max-md:block max-md:border-b-0 max-md:px-0 max-md:pt-3 max-md:pb-1";
+
+/** Whether a Table's rows are named by their first cell: its first column has no heading. */
+const rowsNamed = (headings: readonly string[]) => headings.length > 0 && headings[0] === "";
+
+/**
  * A Table (6.16c, CC-10): prices, sizes or a timetable, as a real `<table>` with a heading for each
  * of its 2–6 columns and its rows under them. Fewer columns hide the last ones' headings and cells,
  * which keep their text. On a narrow screen each row stacks as heading and value pairs, with CSS
@@ -130,18 +141,24 @@ const table = defineComponent({
           <thead className="max-md:sr-only" role="rowgroup">
             {/* biome-ignore lint/a11y/noRedundantRoles: kept while visually hidden */}
             <tr className="border-b-2 border-base-300" role="row">
-              {headings.map((heading, index) => (
-                <th
-                  // A heading's place is its column: it never moves.
-                  key={index}
-                  className="px-3 py-2 align-bottom font-semibold"
+              {headings.map((heading, index) =>
+                // Above the rows' names, an empty corner, not a heading with no name (#1258).
+                index === 0 && rowsNamed(headings) ? (
                   // biome-ignore lint/a11y/noRedundantRoles: kept while visually hidden
-                  role="columnheader"
-                  scope="col"
-                >
-                  {heading}
-                </th>
-              ))}
+                  <td key={index} className="px-3 py-2" role="cell" />
+                ) : (
+                  <th
+                    // A heading's place is its column: it never moves.
+                    key={index}
+                    className="px-3 py-2 align-bottom font-semibold"
+                    // biome-ignore lint/a11y/noRedundantRoles: kept while visually hidden
+                    role="columnheader"
+                    scope="col"
+                  >
+                    {heading}
+                  </th>
+                ),
+              )}
             </tr>
           </thead>
           {/* The slot is the table's body: on the canvas, Puck's drop zone, its rows in it. */}
@@ -154,19 +171,30 @@ const table = defineComponent({
   },
 });
 
-/** A row's cells, one for each of its Table's columns shown, each named by its column's heading. */
+/**
+ * A row's cells, one for each of its Table's columns shown, each named by its column's heading; the
+ * first is the row's own heading when its column has none (#1258).
+ */
 function TableRowView({ cells }: { readonly cells: readonly ReactNode[] }) {
   const headings = useContext(TableContext);
+  const named = rowsNamed(headings);
   return (
     // biome-ignore lint/a11y/noRedundantRoles: kept while drawn as a block (see the Table's comment)
     <tr className="site-table-row max-md:block" role="row">
-      {headings.map((heading, index) => (
+      {headings.map((heading, index) =>
         // A cell's place is its column, its key.
-        // biome-ignore lint/a11y/noRedundantRoles: kept while drawn as a grid
-        <td key={index} className={CELL_CLASSES} data-label={heading} role="cell">
-          {cells[index]}
-        </td>
-      ))}
+        index === 0 && named ? (
+          // biome-ignore lint/a11y/noRedundantRoles: kept while drawn as a block
+          <th key={index} className={ROW_HEADING_CLASSES} role="rowheader" scope="row">
+            {cells[index]}
+          </th>
+        ) : (
+          // biome-ignore lint/a11y/noRedundantRoles: kept while drawn as a grid
+          <td key={index} className={CELL_CLASSES} data-label={heading} role="cell">
+            {cells[index]}
+          </td>
+        ),
+      )}
     </tr>
   );
 }
