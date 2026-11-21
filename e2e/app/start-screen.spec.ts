@@ -93,10 +93,41 @@ test("opens Settings on the start screen, and File › Close Site goes back to i
   await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
   // On the Recent list, and no longer the open one: it opens again from there.
   const card = page.getByRole("listitem").filter({ hasText: "Rosa's Bakery" });
-  // Its canvas, kept as it closed.
+  // A picture of its home page, taken as it closed (#1175).
   await expect(card.locator("img")).toHaveAttribute("src", /^data:image\/jpeg;base64,/);
   await card.getByRole("button").first().click();
   await waitForCanvas(page);
+});
+
+test("pictures the home page for the Recent list, not the editor with its selection (#1175)", async () => {
+  const page = await startWithoutSite();
+  await stubFileDialogs(running(), join(dir, "Rosa's Bakery.wforge"));
+  await page
+    .getByRole("button", { name: "Choose a Template Yourself…", exact: true })
+    .first()
+    .click();
+  const newSite = page.getByRole("dialog", { name: "New Site" });
+  await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
+  await newSite.getByRole("button", { name: "Create" }).click();
+  await waitForCanvas(page);
+  // A section selected, with its outline and grips on the canvas.
+  await canvas(page).locator("h1").first().click();
+  await expect(page.getByRole("navigation", { name: "Where the selection is" })).toBeVisible();
+
+  await chooseFromMenu(running(), page, "File", "Close Site");
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
+  // The home page drawn for its picture has gone again.
+  await expect(page.locator("[data-site-picture]")).toHaveCount(0);
+  const picture = page.getByRole("listitem").filter({ hasText: "Rosa's Bakery" }).locator("img");
+  await expect(picture).toHaveAttribute("src", /^data:image\/jpeg;base64,/);
+  // The home page's top 1280 × 800, as the export draws it: never the canvas, whose shape is the
+  // window's, with the panels around it.
+  const size = await picture.evaluate(async (image: HTMLImageElement) => {
+    await image.decode();
+    return { width: image.naturalWidth, height: image.naturalHeight };
+  });
+  expect(size.width).toBe(480);
+  expect(Math.abs(size.height - 300)).toBeLessThanOrEqual(1);
 });
 
 test("creates a blank site, keeps an edit and reopens it from the Recent list", async () => {

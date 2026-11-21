@@ -29,4 +29,18 @@ export const appApi = (call: Call, subscribe: Subscribe): AppApi => ({
         .catch(() => undefined)
         .then(() => call("projectFlushed", id));
     }),
+  onSitePicture: (draw, done) =>
+    subscribe(appEvents.sitePicture.channel, (...args) => {
+      const parsed = appEvents.sitePicture.args.safeParse(args);
+      if (!parsed.success) return;
+      const [id, step] = parsed.data;
+      if (step === "done") {
+        done();
+        return;
+      }
+      // Answer even if drawing failed: the main process then takes no picture.
+      void draw()
+        .catch(() => false)
+        .then((drawn) => call("sitePictureDrawn", id, drawn));
+    }),
 });

@@ -2,11 +2,13 @@ import { type Config, Puck, type PuckAction, type useGetPuck } from "@puckeditor
 // Puck's default stylesheet loads the Inter font from rsms.me; Webforge makes no external requests.
 import "@puckeditor/core/no-external.css";
 import { t } from "@webforge/i18n";
+import { expandSharedCopies } from "@webforge/model";
 import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   pageHeadings,
   type RenderContext,
+  renderPage,
   type SiteBindings,
   samePreviews,
 } from "@webforge/site-components";
@@ -511,6 +513,35 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     setPosts(posts) {
       const { posts: _posts, ...rest } = parts;
       changeContext({ parts: posts === undefined ? rest : { ...rest, posts } });
+    },
+
+    staticPage(shown, layout, shared = {}) {
+      if (library === null) return undefined;
+      const {
+        emptyImage: _emptyImage,
+        previews: _previews,
+        item: _item,
+        emptyItem: _emptyItem,
+        pageAddress: _pageAddress,
+        pageHeading: _pageHeading,
+        ...drawn
+      } = parts;
+      const {
+        emptySetting: _emptySetting,
+        socialHint: _socialHint,
+        formHint: _formHint,
+        elementHint: _elementHint,
+        ...settings
+      } = bindings;
+      return renderPage(
+        {
+          header: layout.header,
+          content: expandSharedCopies(shown.content, shared),
+          footer: layout.footer,
+        },
+        library,
+        { ...drawn, ...settings },
+      );
     },
 
     setPreviews(previews) {
