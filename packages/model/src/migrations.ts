@@ -56,7 +56,8 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   12: siteCollections,
   13: collectionTags,
   14: listLinks,
-  15: ownColours,
+  15: exampleMarks,
+  16: ownColours,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -410,14 +411,23 @@ function listLinks(site: RawSite): RawSite {
 }
 
 /**
- * Format 15 → 16 (TC-1a, #1217): the theme has a list of the person's own colours, which a colour
+ * Format 15 → 16 (#1228, WN-3): a node's text fields may be marked as holding an example, in
+ * `props.examples`. No older site has a mark, so nothing changes but the version: a build that
+ * reads format 15 opens a site with one read-only rather than refusing it as invalid.
+ */
+function exampleMarks(site: RawSite): RawSite {
+  return { ...site, formatVersion: 16 };
+}
+
+/**
+ * Format 16 → 17 (TC-1a, #1217): the theme has a list of the person's own colours, which a colour
  * reference can name (`own-<id>`). An older site has none: an empty list. A list already there is
  * kept, and a theme that isn't a record is left for validation.
  */
 function ownColours(site: RawSite): RawSite {
   const theme = site.theme;
-  if (!isRecord(theme)) return { ...site, formatVersion: 16 };
-  return { ...site, theme: { ...theme, ownColors: theme.ownColors ?? [] }, formatVersion: 16 };
+  if (!isRecord(theme)) return { ...site, formatVersion: 17 };
+  return { ...site, theme: { ...theme, ownColors: theme.ownColors ?? [] }, formatVersion: 17 };
 }
 
 /** The Blog preset's Tags field, as format 14 gives a Blog that has none (in English, as it was). */

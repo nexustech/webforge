@@ -1,5 +1,6 @@
 import {
   copiedNodeId,
+  findNode,
   type NodeDoc,
   type PageDoc,
   type PageId,
@@ -121,6 +122,89 @@ describe("connectEngine", () => {
       expect.objectContaining({ layout: expect.objectContaining({ footer: [footer] }) }),
     );
     expect(session.history.document.getState().layout.footer[0]).toEqual(footer);
+  });
+
+  it("clears the mark of a text marked as an example as it's typed in, in the same step (#1228)", () => {
+    const { session, engine, doc, typeHeading, labels } = setup();
+    const layout = session.history.document.getState().layout;
+    const [footer] = layout.footer;
+    if (footer === undefined) throw new Error("no footer");
+    session.edit("props", "Marked examples", (draft) => {
+      const heading = findNode(
+        draft.pages[draft.homePageId]?.doc.content ?? [],
+        (node) => node.props.id === "heading-1",
+      );
+      if (heading !== undefined) heading.props.examples = { text: true };
+      const shared = draft.layout.footer[0];
+      if (shared !== undefined) shared.props.examples = { text: true };
+    });
+    const before = labels().length;
+
+    // The page as the canvas has it, the mark still on it: written whole, and the mark still goes.
+    typeHeading("Open from 10am");
+    const heading = () => findNode(doc().content, (node) => node.props.id === "heading-1");
+    expect(heading()?.props.text).toBe("Open from 10am");
+    expect(heading()?.props.examples).toBeUndefined();
+    expect(labels()).toHaveLength(before + 1);
+
+    // The shared Footer, as the canvas sends its layout back with the mark on it.
+    const marked = session.history.document.getState().layout.footer[0];
+    if (marked === undefined) throw new Error("no footer");
+    engine.edit({
+      kind: "text",
+      nodeId: marked.props.id,
+      componentType: "Footer",
+      field: "text",
+      page: doc(),
+      selection: marked.props.id,
+      shared: true,
+      layout: { ...layout, footer: [{ ...marked, props: { ...marked.props, text: "Bye" } }] },
+    });
+    expect(session.history.document.getState().layout.footer[0]?.props.examples).toBeUndefined();
+    // Undone, both are marked again.
+    session.history.undo();
+    session.history.undo();
+    expect(heading()?.props.examples).toEqual({ text: true });
+    expect(session.history.document.getState().layout.footer[0]?.props.examples).toEqual({
+      text: true,
+    });
+  });
+
+  it("clears a list item's mark as its list is edited on the canvas, through the sync (#1228)", () => {
+    const { session, engine, doc } = setup();
+    const faq: NodeDoc = {
+      type: "Faq",
+      props: {
+        id: "faq",
+        items: [
+          { id: "a", question: "Price?", answer: "£12" },
+          { id: "b", question: "When?", answer: "Mon" },
+        ],
+        examples: { "items.a.answer": true, "items.b.answer": true },
+      },
+    };
+    session.edit("insert", "Added questions", (draft) => {
+      draft.pages[draft.homePageId]?.doc.content.push(structuredClone(faq));
+    });
+    // The canvas's page, its list edited and its marks as the canvas still has them.
+    const page = structuredClone(doc());
+    const edited = page.content.find((node) => node.props.id === "faq");
+    if (edited === undefined) throw new Error("no questions");
+    edited.props.items = [
+      { id: "a", question: "Price?", answer: "£14" },
+      { id: "b", question: "When?", answer: "Mon" },
+    ];
+
+    engine.edit({
+      kind: "props",
+      nodeId: "faq",
+      componentType: "Faq",
+      field: "items",
+      page,
+      selection: "faq",
+    });
+    const kept = doc().content.find((node) => node.props.id === "faq");
+    expect(kept?.props.examples).toEqual({ "items.b.answer": true });
   });
 
   it("shows a page without the Header it hides, and keeps that Header for the other pages", () => {

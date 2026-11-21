@@ -194,6 +194,15 @@ export const appEvents = {
    * `project:flushed` and that id once everything is saved.
    */
   flushRequest: { channel: "app:flush", args: z.tuple([z.int().positive()]) },
+  /**
+   * The site is being left (closed, or another opened): draw its home page for its picture in the
+   * Recent list (`draw`, #1175), answered with `project:site-picture-drawn` and the request id; or
+   * take that drawing away again (`done`), once the picture is taken or given up on.
+   */
+  sitePicture: {
+    channel: "app:site-picture",
+    args: z.tuple([z.int().positive(), z.enum(["draw", "done"])]),
+  },
   /** An item of macOS's menu bar was chosen: run the renderer's command with this id (LF-13). */
   runCommand: { channel: "app:run-command", args: z.tuple([commandIdSchema]) },
 } as const;
@@ -225,4 +234,10 @@ export interface AppApi {
    * finished (or failed), so the window can close. Returns a function that stops listening.
    */
   onFlushRequest(save: () => Promise<void>): () => void;
+  /**
+   * Runs `draw` when the site is being left, to draw its home page where the window's picture of it
+   * is taken (#1175), and tells the main process whether it did; runs `done` once the picture is
+   * taken. Returns a function that stops listening.
+   */
+  onSitePicture(draw: () => Promise<boolean>, done: () => void): () => void;
 }

@@ -218,6 +218,10 @@ export function describeDetail(finding: Finding): string | undefined {
   if (typeof values.draftPage === "string") {
     return t("siteCheck.detail.draftPage", { page: values.draftPage });
   }
+  // The first detail of a text marked as an example (#1228, WN-3), as written there.
+  if (typeof values.example === "string") {
+    return t("siteCheck.detail.example", { detail: values.example });
+  }
   // A note on an element (UX-17), as the person wrote it.
   if (typeof values.note === "string") return values.note;
   // The year a published site shows (F-CM-8), as it was published.

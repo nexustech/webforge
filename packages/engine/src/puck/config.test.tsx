@@ -95,6 +95,8 @@ describe("toPuckConfig", () => {
       },
       size: { type: "select", label: "Size", options: [{ label: "Large", value: "large" }] },
       any: { type: "slot", label: "Anything" },
+      // Its example marks, kept as they are (#1228).
+      examples: { type: "object", objectFields: {} },
     });
     expect(component("Section").fields).toEqual({
       content: { type: "slot", label: "Content", allow: ["Text"] },
@@ -146,6 +148,34 @@ describe("toPuckConfig", () => {
 
     expect(bound.fields?.bindings).toEqual({ type: "object", objectFields: {} });
     expect(component("Text").fields).not.toHaveProperty("bindings");
+  });
+
+  it("gives an element with text a field for its example marks, so Puck leaves them as they are (#1228)", () => {
+    expect(component("Text").fields?.examples).toEqual({ type: "object", objectFields: {} });
+    const noText = toPuckConfig({
+      components: { Spacer: { label: "Spacer", fields: {}, defaults: {}, render: () => null } },
+    }).components.Spacer as ComponentConfig;
+    expect(noText.fields).not.toHaveProperty("examples");
+    // Text in its list's items only: its items' marks are kept too.
+    const listed = toPuckConfig({
+      components: {
+        Faq: {
+          label: "Faq",
+          fields: {
+            items: {
+              kind: "list",
+              label: "Questions",
+              itemLabel: "Question",
+              fields: { answer: { kind: "text", label: "Answer" } },
+              defaults: {},
+            },
+          },
+          defaults: {},
+          render: () => null,
+        },
+      },
+    }).components.Faq as ComponentConfig;
+    expect(listed.fields?.examples).toEqual({ type: "object", objectFields: {} });
   });
 
   it("allows only the site's rich-text formatting and safe link addresses (F-ED-3)", () => {

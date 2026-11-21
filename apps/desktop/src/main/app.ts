@@ -34,6 +34,7 @@ import { siteCallsFeature } from "./site-calls.js";
 import { siteFontsOf } from "./site-fonts.js";
 import { siteOutput } from "./site-output.js";
 import { findProjectArgument } from "./site-paths.js";
+import { createSitePicture } from "./site-picture.js";
 import { createSiteSwitch } from "./site-switch.js";
 import { logStartupTimes, markStartup } from "./startup-timing.js";
 import { createStorageWriter } from "./storage-writer.js";
@@ -117,7 +118,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     },
   );
 
-  // Before another site replaces the open one: save it, and capture its canvas for Recent.
+  // Before another site replaces the open one: save it, and take its picture for Recent.
   /** The renderer saves its last changes (`app:flush`). */
   const requestFlush = async () => {
     const window = lifecycle.mainWindow();
@@ -126,7 +127,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const siteSwitch = createSiteSwitch({
     currentPath: () => projectSession.currentPath(),
     requestFlush,
-    capture: () => captureCanvas(lifecycle.mainWindow()),
+    capture: async () => lifecycle.sitePicture?.capture(lifecycle.mainWindow()),
     recent: recentSites,
   });
   const openSite = (path: string) =>
@@ -323,8 +324,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       updates.service()?.setChannel(updateChannelFor(next.updateChannel, app.getVersion()));
       followWindows(next);
     });
+    lifecycle.sitePicture = createSitePicture(ipcMain, isTrustedSender);
     lifecycle.flushOnClose = createFlushOnClose(ipcMain, isTrustedSender, {
-      // The flush has just run; capture the canvas for the Recent list before the window goes.
+      // The flush has just run; take the site's picture for the Recent list before the window goes.
       beforeClose: () => siteSwitch.leaveSite(),
       onClosed: () => {
         if (lifecycle.quitting) app.quit();

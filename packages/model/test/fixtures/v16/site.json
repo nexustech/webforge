@@ -164,17 +164,6 @@
         "h": 12.094
       }
     },
-    "ownColors": [
-      {
-        "id": "sky",
-        "name": "Sky",
-        "color": {
-          "l": 0.62,
-          "c": 0.14,
-          "h": 240
-        }
-      }
-    ],
     "fonts": {
       "heading": {
         "family": "Inter",
@@ -279,7 +268,7 @@
         }
       },
       "CallToAction": {
-        "lookBackground": "own-sky-300",
+        "lookBackground": "primary",
         "lookFont": "accent"
       }
     }
@@ -341,6 +330,9 @@
                   "desktop": "left",
                   "mobile": "center"
                 }
+              },
+              "examples": {
+                "title": true
               }
             }
           },

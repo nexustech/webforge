@@ -3,6 +3,8 @@ export const canvas = {
   "editor.canvas": "Page",
   // The page's frame, as a screen reader names it (5.5).
   "canvas.frame": "Page you're editing: {site}",
+  // The home page drawn for a moment as the site is left, for its picture in Recent sites (#1175).
+  "canvas.sitePicture": "Your home page, for its picture in Recent sites",
   // The canvas ran into an error (R3): it shows this instead, and the panels keep working.
   "canvas.error.message": "Something went wrong showing this page. Your work is saved.",
   "canvas.error.reload": "Reload Page",

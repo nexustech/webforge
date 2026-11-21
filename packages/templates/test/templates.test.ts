@@ -13,6 +13,7 @@ import { join } from "node:path";
 import {
   DEFAULT_THEME,
   eachElement,
+  exampleFields,
   type NodeDoc,
   type PageId,
   SITE_FORMAT_VERSION,
@@ -227,7 +228,7 @@ describe("the templates' styling (2.29, ST-8)", () => {
 });
 
 describe("every template's sample contact details (#1254)", () => {
-  it("never reach Site Settings when skipped, and Site Check finds any left in a page", () => {
+  it("never reach Site Settings when skipped, and Site Check finds any left in a page, and every sample testimonial", () => {
     for (const { template, images } of templates) {
       // Started with nothing given, as the quick start and an AI app's brief can.
       const site = siteFromTemplate(template, images, {
@@ -243,14 +244,25 @@ describe("every template's sample contact details (#1254)", () => {
       ]);
       expect(contact.openingHours, template.id).toEqual([]);
 
-      // Every sample email or phone still written in the site has a finding.
+      // Every sample email or phone still written in the site has a finding, and so has each
+      // sample testimonial, marked as an example on each of its texts and found once (#1228).
       const samples = sampleDetailsIn(
         JSON.stringify([site.pages, site.layout, site.sharedSections]),
       );
+      const testimonials: string[] = [];
+      eachElement(site, (node) => {
+        if (node.type !== "Testimonial") return;
+        expect(exampleFields(node.props), template.id).toEqual(
+          (["quote", "name", "role"] as const).filter(
+            (field) => typeof node.props[field] === "string" && node.props[field] !== "",
+          ),
+        );
+        testimonials.push(node.props.id);
+      });
       const result = checkSite({ site, catalogue: CATALOGUE }, "export").results.find(
         (each) => each.rule === "sampleDetails",
       );
-      expect(result?.findings.length ?? 0, template.id).toBe(samples.length);
+      expect(result?.findings.length ?? 0, template.id).toBe(samples.length + testimonials.length);
     }
   });
 });

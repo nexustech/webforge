@@ -54,6 +54,7 @@ import { confirmSharedRemovals } from "./shared-confirmations.js";
 import { canvasLayout } from "./shared-layout.js";
 import { type SharedSectionNaming, sharedSection } from "./shared-sections.js";
 import type { CompileCanvasCss } from "./site-css.js";
+import { homePageDocument, SitePictureStage } from "./site-picture.js";
 import { installUndoToasts } from "./undo-toasts.js";
 import { useUi } from "./use-document.js";
 
@@ -165,6 +166,14 @@ export function Editor({
     [givenReportError, api],
   );
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
+  // The home page as the export draws it, for the site's picture in the Recent list (#1175).
+  const drawHomePage = useMemo(
+    () => async () =>
+      engine === null
+        ? undefined
+        : homePageDocument(session.history.document.getState(), engine, compileCss),
+    [engine, session, compileCss],
+  );
   const [defaultPreferences] = useState(() => createPreferencesStore());
   const preferences = givenPreferences ?? defaultPreferences;
   const mode = usePreferences(preferences, (state) => state.mode);
@@ -385,6 +394,7 @@ export function Editor({
       <CanvasBreadcrumbs session={session} engine={engine} />
       <SharedRegionBanner session={session} />
       <RichTextLinkHost session={session} engine={engine} />
+      <SitePictureStage app={api.app} draw={drawHomePage} />
       <RewriteHost
         session={session}
         engine={engine}

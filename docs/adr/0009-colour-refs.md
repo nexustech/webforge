@@ -40,7 +40,7 @@ The product owner chose the second on 2026-10-23.
 
 The product owner's first request (option B of [product/18](../../research/product/18-theme-colours-and-code-editing.md) §6, PH5-4): a colour the business owns behaves like Brand everywhere. It is added to the theme and named, and one change to it reaches every place it's used. This resolves the cost the Consequences accepted. The way back they described is the way taken: a new theme field and a format migration.
 
-1. **The theme has the person's own colours** (`ownColors` in `themeTokensSchema`, site format 16): each with an id, a name and a colour in OKLCH. They travel with the theme, so _My themes_ carry them. A theme switch keeps the site's (they're the business's, not the preset's), and one of the person's own themes brings its own.
+1. **The theme has the person's own colours** (`ownColors` in `themeTokensSchema`, site format 17): each with an id, a name and a colour in OKLCH. They travel with the theme, so _My themes_ carry them. A theme switch keeps the site's (they're the business's, not the preset's), and one of the person's own themes brings its own.
 2. **A colour reference has a third base:** `own-<id>[-<shade>][/<opacity>]`, with the 11 shades and the opacity steps as the colour roles have them.
    - The id is lower-case letters and digits, a letter first, at most 24 characters. So it goes into a class name and a CSS variable as it is (`bg-own-sky-300`, `--color-own-sky`), holds nothing CSS reads as syntax, and has no dash for a shade to be mistaken for.
    - A colour's name is never written into CSS.

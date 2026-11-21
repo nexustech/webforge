@@ -210,7 +210,7 @@ export function removeWhenFree(folder: string): Promise<void> {
 /**
  * How long closing the app may take before its process is killed (#393). The app's own close (its
  * last save, the Recent thumbnail, closing the site file, quitting) takes under a second, and at
- * most about 13 s when its renderer doesn't answer. On a busy machine, Electron then took up to a
+ * most about 15 s when its renderer doesn't answer. On a busy machine, Electron then took up to a
  * minute more to tear the process down after quitting, past the test's timeout.
  */
 const CLOSE_TIMEOUT_MS = 30_000;
