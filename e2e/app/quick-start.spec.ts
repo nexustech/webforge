@@ -11,6 +11,7 @@ import {
   launchDesktopApp,
   removeWhenFree,
   type WebforgeApp,
+  waitForCanvas,
 } from "./launch.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
@@ -219,19 +220,23 @@ test("marks a template's sample reviews as examples: outlined, opened from their
     await quickStart.getByRole("button", { name: "Next" }).click();
   }
   await create.click();
+  await waitForCanvas(page);
 
   // The café's sample reviews, outlined on the canvas as examples.
   const canvas = page.frameLocator(".editor__canvas iframe");
   // A Testimonial is drawn by a view of its own: Puck's wrapper is outlined, by its hidden marker.
   const review = canvas.locator("[data-puck-component]:has(> [data-webforge-example])").first();
   await expect(review).toBeAttached({ timeout: OPEN_WAIT });
+  // The tour a new site offers, declined: its card sits over the canvas.
+  await page.getByRole("button", { name: "Not Now" }).click();
   await review.scrollIntoViewIfNeeded();
   await clickOnCanvas(review);
   // Its bar's Example chip opens the text for editing.
-  await canvas
-    .getByRole("button", { name: "Example: check this text and put in your own details" })
-    .click();
-  await expect(canvas.locator('[contenteditable="true"]:focus')).toHaveCount(1);
+  await canvas.getByRole("button", { name: "Example", exact: true }).click();
+  // Its first text, focused for typing: plain text is editable as `plaintext-only`.
+  const typing = canvas.locator("[contenteditable]:focus");
+  await expect(typing).toHaveCount(1);
+  await expect(typing).not.toHaveAttribute("contenteditable", "false");
   await page.keyboard.press("Escape");
 
   // Site Check lists each review once, and This Is Correct takes one off the list.
