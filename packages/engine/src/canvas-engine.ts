@@ -414,13 +414,15 @@ export interface CanvasEngine {
   /**
    * `page` with `layout` and `shared` around it as the export draws it (#1175): static HTML from
    * what the canvas draws with (its navigation, images, settings, posts and looks), without its
-   * hints for what's empty, its edit previews or the post it shows. For a picture of the site's
-   * home page; none before {@link mount} has given the library.
+   * hints for what's empty, its edit previews or the post it shows. `navigation` is the page's own,
+   * where it isn't the page the canvas shows. For a picture of the site's home page; none before
+   * {@link mount} has given the library.
    */
   staticPage(
     page: PageDoc,
     layout: LayoutDoc,
     shared?: SharedSectionsDoc,
+    navigation?: RenderContext["navigation"],
   ): RenderedPage | undefined;
   /**
    * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one

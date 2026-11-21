@@ -35,6 +35,30 @@ const inert = ({ newTab: _newTab, download: _download, ...link }: NavLink): NavL
 });
 
 /**
+ * The site's navigation as the canvas shows it on page `pageId` (F-ED-17): made as the export makes
+ * it, that page the current one, its links inert. None for a page the site doesn't have.
+ */
+export function canvasNavigation(site: SiteDoc, pageId: string): readonly NavItem[] | undefined {
+  const pages = navigationPages(site);
+  const page = pages.find((candidate) => candidate.id === pageId);
+  if (page === undefined) return undefined;
+  // A link to a document shows while the document is in Media; its address is inert here.
+  const inMedia = (id: string) => (mediaItem(site.media, id)?.kind === "file" ? id : undefined);
+  // A menu item to a Blog's list goes nowhere on the canvas, as every link does (#940).
+  const collections = Object.values(site.collections);
+  return navigationFor(
+    { pages, menu: site.menu, collections },
+    page,
+    "",
+    () => undefined,
+    inMedia,
+  ).map(
+    (item): NavItem =>
+      "children" in item ? { ...item, children: item.children.map(inert) } : inert(item),
+  );
+}
+
+/**
  * Shows the site's navigation in the Header on the canvas (F-ED-17), made as the export makes it,
  * for the page shown. The canvas is drawn again only when the navigation changes (an edit of the
  * menu or of the pages, or another page shown), not on every keystroke. Not a document change, so
@@ -47,24 +71,8 @@ export function connectCanvasNavigation(
   const { document } = session.history;
   let shown: readonly NavItem[] | undefined;
   const show = () => {
-    const site = document.getState();
-    const pages = navigationPages(site);
-    const page = pages.find((candidate) => candidate.id === session.ui.getState().pageId);
-    if (page === undefined) return;
-    // A link to a document shows while the document is in Media; its address is inert here.
-    const inMedia = (id: string) => (mediaItem(site.media, id)?.kind === "file" ? id : undefined);
-    // A menu item to a Blog's list goes nowhere on the canvas, as every link does (#940).
-    const collections = Object.values(site.collections);
-    const items = navigationFor(
-      { pages, menu: site.menu, collections },
-      page,
-      "",
-      () => undefined,
-      inMedia,
-    ).map(
-      (item): NavItem =>
-        "children" in item ? { ...item, children: item.children.map(inert) } : inert(item),
-    );
+    const items = canvasNavigation(document.getState(), session.ui.getState().pageId);
+    if (items === undefined) return;
     if (shown === undefined || !sameJson(items, shown)) {
       shown = items;
       engine.setNavigation(items);

@@ -515,7 +515,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       changeContext({ parts: posts === undefined ? rest : { ...rest, posts } });
     },
 
-    staticPage(shown, layout, shared = {}) {
+    staticPage(shown, layout, shared = {}, navigation = parts.navigation) {
       if (library === null) return undefined;
       const {
         emptyImage: _emptyImage,
@@ -540,7 +540,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
           footer: layout.footer,
         },
         library,
-        { ...drawn, ...settings },
+        { ...drawn, ...settings, navigation },
       );
     },
 

@@ -3,6 +3,7 @@ import { t } from "@webforge/i18n";
 import type { SiteDoc } from "@webforge/model";
 import { useEffect, useState } from "react";
 import type { AppApi } from "../../shared/ipc/app.js";
+import { canvasNavigation } from "../menu/canvas-navigation.js";
 import { canvasLayout } from "./shared-layout.js";
 import { type CompileCanvasCss, classesOfHtml } from "./site-css.js";
 
@@ -37,6 +38,8 @@ export async function homePageDocument(
     home.doc,
     canvasLayout(site, site.homePageId),
     site.sharedSections,
+    // Its own menu, Home the current page, whichever page the canvas shows.
+    canvasNavigation(site, site.homePageId),
   );
   if (drawn === undefined) return undefined;
   const body = [drawn.header, `<main id="main" class="flex-1">${drawn.main}</main>`, drawn.footer]

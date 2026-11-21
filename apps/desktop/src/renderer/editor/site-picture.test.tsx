@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import type { RenderedPage } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
+import { canvasNavigation } from "../menu/canvas-navigation.js";
 import { canvasLayout } from "./shared-layout.js";
 import { homePageDocument, SitePictureStage } from "./site-picture.js";
 
@@ -30,7 +31,12 @@ describe("homePageDocument (#1175)", () => {
       site.pages[site.homePageId]?.doc,
       canvasLayout(site, site.homePageId),
       site.sharedSections,
+      // Its own menu, Home the current page.
+      canvasNavigation(site, site.homePageId),
     );
+    expect(canvasNavigation(site, site.homePageId)?.find((item) => item.current)).toMatchObject({
+      label: site.pages[site.homePageId]?.navLabel ?? site.pages[site.homePageId]?.title,
+    });
     // The classes its markup uses, the export's <main>'s among them.
     expect(compileCss).toHaveBeenCalledWith({
       theme: site.theme,
