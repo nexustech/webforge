@@ -13,12 +13,16 @@ const NOTHING = z.strictObject({});
 /** What `requestMedia` takes: the app's reason, in its own words; never a path or an address. */
 export const requestMediaInput = z.strictObject({ reason: z.string().trim().min(1).max(200) });
 
+/** What `mediaStatus` takes: the id `requestMedia` answered `waiting` with (#1252). */
+export const mediaStatusInput = z.strictObject({ requestId: z.int().positive() });
+
 /**
  * The tools the window answers itself, beside the command layer's (4.9, #981). Run Site Check and
  * Open Preview take nothing, so neither can be pointed at an address, a path or a host;
  * `requestMedia` (4.12b, AIB-7) asks the person for pictures or files through Webforge's own
- * *Add files* dialog, with the app's reason. The app never gives a path or an address, and
- * Webforge fetches nothing: the person chooses what's added.
+ * *Add files* dialog, with the app's reason, and `mediaStatus` says what became of one the person
+ * was still answering (#1252). The app never gives a path or an address, and Webforge fetches
+ * nothing: the person chooses what's added.
  */
 export const WINDOW_TOOLS = [
   tool({
@@ -52,10 +56,20 @@ export const WINDOW_TOOLS = [
     kind: "command",
     input: requestMediaInput,
     description:
-      'Asks the person to add pictures or files to the site\'s Media, with your reason ("Photos of your workshop and team"), through Webforge\'s own Add files dialog. You never give a path or a web address, and nothing is downloaded: the person chooses the files on their computer, or adds none. Answers with the id, file name and kind of each one added, which updateFields takes as { "mediaId": id }. If it times out while the person is still choosing, the media query shows what they added.',
+      'Asks the person to add pictures or files to the site\'s Media, with your reason ("Photos of your workshop and team"), through Webforge\'s own Add files dialog. You never give a path or a web address, and nothing is downloaded: the person chooses the files on their computer, or adds none. Answers with the id, file name and kind of each one added, which updateFields takes as { "mediaId": id }. Choosing takes a person minutes: if they are still at it after about 45 seconds, it answers waiting with a requestId. Then ask mediaStatus with it a little later, rather than asking requestMedia again.',
     answeredBy: "window",
     savesVersionFirst: true,
     // It asks for files: the assistant works with the site's Media as it is.
+    forAssistant: false,
+  }),
+  tool({
+    name: "mediaStatus",
+    kind: "query",
+    input: mediaStatusInput,
+    description:
+      "What became of a requestMedia that answered waiting: waiting still (the person is answering its question, or choosing files in Add files), done with the files added, or declined. Takes its requestId. An outcome is kept for half an hour, or until the site closes.",
+    answeredBy: "window",
+    savesVersionFirst: false,
     forAssistant: false,
   }),
 ] as const;
