@@ -225,7 +225,8 @@ const textImage = defineSection({
 /**
  * Asks visitors to do one thing, with a button: a centred banner in the theme's dark colour (whose
  * text every theme keeps readable, unlike its main colour's), or the text with the button beside
- * it (2.6).
+ * it (2.6). Set to Reversed colours, the banner is on the reversed surface, as any section is: a
+ * choice of colours wins over the layout's own band (#1257).
  */
 const callToAction = defineSection({
   label: t("section.callToAction"),
@@ -247,7 +248,11 @@ const callToAction = defineSection({
     contentWidth: "narrow",
   },
   frame: (values) =>
-    values.variant === "banner" ? "bg-neutral text-neutral-content" : "bg-base-200",
+    values.variant !== "banner"
+      ? "bg-base-200"
+      : values.colors === "inverse"
+        ? "bg-base-100"
+        : "bg-neutral text-neutral-content",
   render: ({ values, context }) => {
     const banner = values.variant === "banner";
     const width = contentWidthClass(values.contentWidth);
