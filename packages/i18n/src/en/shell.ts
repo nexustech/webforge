@@ -62,6 +62,11 @@ export const shell = {
   // The site's settings, theme and stylesheet (#1016).
   "shell.menu.site": "Site",
   "shell.menu.help": "Help",
+  // The panel buttons as one menu, while the title bar is narrow (#1195).
+  "shell.panelsMenu": "Show or hide panels",
+  "shell.panelsMenu.left": "Left Panels",
+  "shell.panelsMenu.bottom": "Bottom Panel",
+  "shell.panelsMenu.right": "Right Panels",
   // The menus' titles folded into one button, while the title bar is narrow (#1166).
   "shell.menu.folded": "Menu",
   "shell.menu.folded.tooltip": "File, Edit, View, Site and Help",
