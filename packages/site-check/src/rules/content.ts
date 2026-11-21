@@ -3,14 +3,18 @@ import {
   altTextFor,
   eachElement,
   eachLink,
+  exampleKey,
+  factDetailsIn,
   findBrokenLinks,
   imageValueSchema,
   isDraftPage,
+  isExample,
   isSampleEmail,
   isSamplePhone,
   linkValueSchema,
   mayHoldSampleDetail,
   mediaItem,
+  type NodeDoc,
   publishedSite,
   sampleDetailsIn,
 } from "@webforge/model";
@@ -335,6 +339,8 @@ export const placeholdersRule: CheckRule = {
     const found: Finding[] = [];
     eachFieldValue(input, ["text", "richtext", "link"], (placed) => {
       const { value } = placed;
+      // A text marked as an example is {@link sampleDetailsRule}'s: reported once (#1228).
+      if (typeof value === "string" && isMarked(placed.node, placed.field)) return;
       const text = typeof value === "string" ? plainText(value) : undefined;
       const placeholder =
         text === undefined
@@ -358,6 +364,10 @@ function holdsSampleDetail(html: string): boolean {
   return linksToExample(html) ? found.some((detail) => !detail.includes("@")) : found.length > 0;
 }
 
+/** Whether `field` of `node`, as Site Check names it (`items.2.text`), is marked as an example. */
+const isMarked = (node: NodeDoc, field: string) =>
+  isExample(node.props, exampleKey(node.props, field));
+
 /** Whether `value`, a link field's value, rings a phone number kept for drama and examples. */
 function isSamplePhoneLink(value: unknown): boolean {
   if (typeof value !== "object" || value === null) return false;
@@ -370,8 +380,11 @@ function isSamplePhoneLink(value: unknown): boolean {
  * number kept for drama and examples, as a template's samples are. In Site Settings' email or
  * phone, an element's text, or a link that rings it, one finding a place; a field bound to Site
  * Settings is found there. Email links to an example domain are {@link placeholdersRule}'s. *Should
- * fix*, and *Must fix* to publish: a published site would give it as the business's own. 5.33
- * (WN-3) widens it to every example a generated site has.
+ * fix*, and *Must fix* to publish: a published site would give it as the business's own.
+ *
+ * And every text marked as holding an example (#1228, WN-3): a detail a generated text made up,
+ * or a template's sample testimonial, until the person edits it or says it's correct. Each is
+ * found once, naming the first detail in it that looks like a fact, and never as a placeholder too.
  */
 export const sampleDetailsRule: CheckRule = {
   id: "sampleDetails",
@@ -390,6 +403,15 @@ export const sampleDetailsRule: CheckRule = {
       const { node, field, value } = placed;
       const bindings = node.props.bindings;
       if (typeof bindings === "object" && bindings !== null && field in bindings) return;
+      if (typeof value === "string" && isMarked(node, field)) {
+        const [detail] = factDetailsIn(plainText(value));
+        found.push({
+          key: fieldKey(placed),
+          place: elementPlace(placed),
+          ...(detail === undefined ? {} : { values: { example: detail.text } }),
+        });
+        return;
+      }
       // Most text has no `@` and no digits: passed over before it's made plain (ADR 0016).
       const sample =
         typeof value === "string"

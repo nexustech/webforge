@@ -1,8 +1,13 @@
 import { t } from "@webforge/i18n";
 import {
+  clearExample,
   copiedNodeId,
   designAt,
+  elementsAt,
+  exampleKey,
+  findNode,
   isDeviceName,
+  isExample,
   isNodeDoc,
   isPageIn,
   type NodeDoc,
@@ -15,6 +20,7 @@ import {
 } from "@webforge/model";
 import type { Finding, FindingPlace, SearchGuide } from "@webforge/site-check";
 import type { EditorSession } from "../editor/editor-session.js";
+import { quotedElementName } from "../editor/labels.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
 import { postShowingDesign } from "../editor/shared-layout.js";
 import { reportFailure } from "../log.js";
@@ -27,7 +33,10 @@ import { type BundleActions, canBundle, downloadAndBundle } from "./bundle.js";
 
 /** What Site Check's jumps and fixes reach. */
 export type SiteCheckActions = {
-  readonly session: Pick<EditorSession, "history" | "ui" | "edit" | "showPage" | "select">;
+  readonly session: Pick<
+    EditorSession,
+    "history" | "ui" | "edit" | "showPage" | "select" | "library"
+  >;
   readonly panels: Pick<PanelRegistry, "show">;
   readonly settings: Pick<SettingsRegistry, "show">;
   /** Runs Page Settings… for the page shown (3.17). */
@@ -296,4 +305,33 @@ export function fixFor(
       : undefined;
   }
   return undefined;
+}
+
+/**
+ * *This is correct* for a text marked as holding an example (#1228, WN-3), when the example happens
+ * to be right: its mark is cleared as one undo step of its own, and Site Check finds it no more.
+ * `undefined` for any other finding, or one whose mark has gone.
+ */
+export function confirmFor(
+  rule: string,
+  finding: Finding,
+  { session }: SiteCheckActions,
+): (() => void) | undefined {
+  const { place, key } = finding;
+  if (rule !== "sampleDetails" || place.kind !== "element") return undefined;
+  // The field is the last part of the finding's key: `<place>/<node id>/<field>`.
+  const field = key.slice(key.lastIndexOf("/") + 1);
+  const site = session.history.document.getState();
+  const marked = (nodes: readonly NodeDoc[]) =>
+    findNode(nodes, (node) => node.props.id === place.nodeId);
+  const node = marked(elementsAt(site, place.on));
+  // A list item's mark is by its id (`items.k3f.text`), not its place as Site Check names it.
+  const mark = node === undefined ? undefined : exampleKey(node.props, field);
+  if (node === undefined || mark === undefined || !isExample(node.props, mark)) return undefined;
+  const item = quotedElementName(node, session.library, site.sharedSections);
+  return () =>
+    session.edit("props", t("siteCheck.history.confirmedExample", { item }), (draft) => {
+      const found = marked(elementsAt(draft, place.on));
+      if (found !== undefined) clearExample(found.props, mark);
+    });
 }

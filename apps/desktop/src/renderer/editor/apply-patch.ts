@@ -1,5 +1,15 @@
 import type { EnginePatch } from "@webforge/engine";
-import { isNodeDoc, type NodeDoc, type PageDoc } from "@webforge/model";
+import {
+  clearEditedExamples,
+  clearExample,
+  elementsAt,
+  findNode,
+  isExample,
+  isNodeDoc,
+  type NodeDoc,
+  type PageDoc,
+  type SiteDoc,
+} from "@webforge/model";
 
 type Path = readonly (string | number)[];
 
@@ -46,7 +56,11 @@ export function updateField(
     target = (target as Record<string | number, unknown>)[key];
   }
   const { props } = target as NodeDoc;
-  props[field] = next(props[field]);
+  const before = props[field];
+  const after = next(before);
+  props[field] = after;
+  // Editing a text marked as an example clears its mark, in the same step (#1228, WN-3).
+  clearEditedExamples(props, field, before, after);
   return true;
 }
 
@@ -56,4 +70,36 @@ export function updateField(
  */
 export function applyPatch(draft: PageDoc, page: PageDoc, patch: EnginePatch): boolean {
   return updateField(draft, page, patch.nodeId, patch.field, () => patch.value);
+}
+
+/**
+ * Where the node `nodeId` is kept, if its `field` is marked as an example (#1228, WN-3): the place
+ * (a page, the Header or Footer, a shared section, a Blog's design) a canvas edit of that text
+ * clears it in. Looked for in `site` as it is, not in a draft, so editing a text with no mark makes
+ * no drafts along the way (ADR 0007).
+ */
+export function markedPlaceOf(
+  site: SiteDoc,
+  first: string,
+  nodeId: string,
+  field: string,
+): string | undefined {
+  const places = [
+    first,
+    "header",
+    "footer",
+    ...Object.keys(site.sharedSections),
+    ...Object.keys(site.collections),
+  ];
+  for (const on of places) {
+    const node = findNode(elementsAt(site, on), (each) => each.props.id === nodeId);
+    if (node !== undefined) return isExample(node.props, field) ? on : undefined;
+  }
+  return undefined;
+}
+
+/** Clears `field`'s mark on the node `nodeId` kept `on` in `draft` (see {@link markedPlaceOf}). */
+export function clearMarkIn(draft: SiteDoc, on: string, nodeId: string, field: string): void {
+  const node = findNode(elementsAt(draft, on), (each) => each.props.id === nodeId);
+  if (node !== undefined) clearExample(node.props, field);
 }

@@ -106,6 +106,12 @@ function toPuckComponent(
     // no fields of its own keeps the bindings as they are (1.17).
     fields.bindings = { type: "object", objectFields: {} };
   }
+  if (
+    Object.values(def.fields).some((field) => field.kind === "text" || field.kind === "richtext")
+  ) {
+    // The same for the fields marked as holding an example (#1228): `examples.text` is no field.
+    fields.examples = { type: "object", objectFields: {} };
+  }
   const draw = (props: Record<string, unknown>, context: RenderContext) => {
     // *Hide while editing* (UX-23, #864): not drawn on the canvas, and still exported. Layers
     // lists it, to select it or show it again.

@@ -528,6 +528,42 @@ describe("sample contact details (#1254)", () => {
     ).toEqual(["both/text"]);
   });
 
+  it("finds each text marked as an example once, naming its first detail (#1228)", () => {
+    const site = siteWith([
+      element("Text", "hours", {
+        text: "<p>Open Mon–Fri, 9am to 5pm</p>",
+        examples: { text: true },
+      }),
+      // A sample testimonial: marked, with no detail to name.
+      element("Testimonial", "review", {
+        quote: "The best bread in town",
+        name: "Margaret",
+        examples: { quote: true, name: true },
+      }),
+      // Marked and a placeholder too: found once, here, and not as a placeholder.
+      element("Text", "both", {
+        text: "<p>Add your opening hours here</p>",
+        examples: { text: true },
+      }),
+      element("Text", "own", { text: "<p>Open Mon–Fri, 9am to 5pm</p>" }),
+    ]);
+    const found = findIn(sampleDetailsRule, site).map((finding) => ({
+      key: finding.key.replace(`${site.homePageId}/`, ""),
+      values: finding.values,
+    }));
+    expect(found).toEqual([
+      { key: "hours/text", values: { example: "9am" } },
+      { key: "review/quote", values: undefined },
+      { key: "review/name", values: undefined },
+      { key: "both/text", values: undefined },
+    ]);
+    expect(
+      findIn(placeholdersRule, site).map((finding) =>
+        finding.key.replace(`${site.homePageId}/`, ""),
+      ),
+    ).not.toContain("both/text");
+  });
+
   it("leaves a field bound to Site Settings to Site Settings' own finding", () => {
     const site = siteWith([
       element("Footer", "footer", {
