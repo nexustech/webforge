@@ -3,8 +3,8 @@ import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import type { RenderedPage } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { canvasNavigation } from "../menu/canvas-navigation.js";
 import { canvasLayout } from "./shared-layout.js";
+import { canvasNavigation } from "./site-navigation.js";
 import { homePageDocument, SitePictureStage } from "./site-picture.js";
 
 afterEach(cleanup);

@@ -3,9 +3,9 @@ import { t } from "@webforge/i18n";
 import type { SiteDoc } from "@webforge/model";
 import { useEffect, useState } from "react";
 import type { AppApi } from "../../shared/ipc/app.js";
-import { canvasNavigation } from "../menu/canvas-navigation.js";
 import { canvasLayout } from "./shared-layout.js";
 import { type CompileCanvasCss, classesOfHtml } from "./site-css.js";
+import { canvasNavigation } from "./site-navigation.js";
 
 /**
  * The home page is drawn for its picture as a desktop shows it, the top of it as tall as a
