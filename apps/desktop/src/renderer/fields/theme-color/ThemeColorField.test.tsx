@@ -108,9 +108,13 @@ describe("a theme colour's field (2.3a)", () => {
       suggestion: { value: darker, label: "Use a darker shade" },
     });
 
-    await user.click(screen.getByRole("button", { name: "Use a darker shade" }));
+    const button = screen.getByRole("button", { name: "Use a darker shade" });
+    // Which colour's shade, when several colours offer one in the same words.
+    expect(button.getAttribute("aria-describedby")).toBeTruthy();
+    expect(screen.getByRole("button", { description: "Brand" })).toBe(button);
+    await user.click(button);
 
-    // Not through its hex code, whose rounding could take it back below AA.
+    // As it is, the colour whose contrast was checked.
     expect(onChange).toHaveBeenCalledWith(darker);
     expect(onCommit).toHaveBeenCalledOnce();
   });

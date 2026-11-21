@@ -120,6 +120,8 @@ export function ThemeColorField({
             "flex h-7 w-auto items-center gap-1.5 self-start px-2 text-xs",
           )}
           disabled={disabled}
+          // Which colour's shade: each failing colour has one, in the same words.
+          aria-describedby={labelId}
           onClick={() => {
             // As it is: the colour whose contrast was checked, not one rebuilt from text.
             setTyped(null);

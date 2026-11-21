@@ -310,11 +310,14 @@ export function ThemePanel({
   const field = useStore(reveal ?? NO_REVEAL, (state) => state.field);
   useEffect(() => {
     if (field === undefined) return;
-    const row = root.current?.querySelector<HTMLElement>(`[data-field="${CSS.escape(field)}"]`);
+    // A style's size is Simple mode's one Text size there (LF-16): the Edit panel's "Theme's:
+    // Heading 2" still lands on what sets it.
+    const shown = !advanced && field.startsWith("textSize.") ? "textScale" : field;
+    const row = root.current?.querySelector<HTMLElement>(`[data-field="${CSS.escape(shown)}"]`);
     row?.scrollIntoView({ block: "center" });
     row?.querySelector<HTMLElement>("input, select, button, [tabindex]")?.focus();
     reveal?.setState({ field: undefined });
-  }, [field, reveal]);
+  }, [field, reveal, advanced]);
   const own = useOwnThemeList(ownThemes, theme);
   useEffect(() => {
     void ownThemes?.refresh();

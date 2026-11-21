@@ -4,7 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { t } from "@webforge/i18n";
 import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { starterSite } from "../../shared/starter-site.js";
+import { createPreferencesStore } from "../shell/preferences-store.js";
 import { registriesForTest, sessionWith } from "../testing/fixtures.js";
 import { createOwnThemes } from "./own-themes.js";
 import { registerThemePanel } from "./register-theme-panel.js";
@@ -227,6 +229,42 @@ describe("the Theme tab's reveal (3.12, CT-3)", () => {
     const row = document.querySelector('[data-field="token.shadow"]');
     expect(row?.contains(document.activeElement)).toBe(true);
     remove();
+  });
+
+  it("reveals Simple mode's Text size for a text style's size, and the style's own in Advanced", () => {
+    const { panels } = registriesForTest();
+    const remove = registerThemePanel(panels, sessionWith());
+    const Theme = panels.list()[0]?.component;
+    if (Theme === undefined) throw new Error("not registered");
+    // As the Edit panel's "Theme's: Heading 2" asks (provenance), in Simple mode (LF-16).
+    panels.show("theme", "textSize.h2");
+    const { unmount } = render(<Theme />);
+    expect(
+      document.querySelector('[data-field="textScale"]')?.contains(document.activeElement),
+    ).toBe(true);
+    unmount();
+    remove();
+
+    const advanced = createPreferencesStore({
+      preferences: { ...DEFAULT_PREFERENCES, editorLevel: "advanced" },
+    });
+    const removeAdvanced = registerThemePanel(
+      panels,
+      sessionWith(),
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      advanced,
+    );
+    const InMode = panels.list()[0]?.component;
+    if (InMode === undefined) throw new Error("not registered");
+    panels.show("theme", "textSize.h2");
+    render(<InMode />);
+    expect(
+      document.querySelector('[data-field="textSize.h2"]')?.contains(document.activeElement),
+    ).toBe(true);
+    removeAdvanced();
   });
 
   it("opens Theme Studio's Components at a kind's look", () => {
