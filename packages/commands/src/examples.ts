@@ -29,12 +29,21 @@ export const EXAMPLES_FIELD =
  * Settings and its text give. Worked out once, and only if a written text has a detail to compare.
  */
 export function knownFacts(site: SiteDoc): () => ReadonlySet<string> {
-  let known: ReadonlySet<string> | undefined;
   return () => {
-    known ??= siteFactKeys(site);
+    let known = KNOWN.get(site);
+    if (known === undefined) {
+      known = siteFactKeys(site);
+      KNOWN.set(site, known);
+    }
     return known;
   };
 }
+
+/**
+ * The facts each site gives, by the site as a plan's steps see it: a plan of many steps on one
+ * site works them out once. A site that changes is another object, and nothing holds an old one.
+ */
+const KNOWN = new WeakMap<SiteDoc, ReadonlySet<string>>();
 
 /**
  * Marks the text fields of `node`, a draft, that a command wrote with `values` (#1228, WN-3): each
