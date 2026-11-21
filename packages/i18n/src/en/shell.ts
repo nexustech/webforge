@@ -191,6 +191,8 @@ export const shell = {
   "command.nextRegion": "Next Part of the Window",
   "command.previousRegion": "Previous Part of the Window",
   "command.about": "About {appName}",
+  // Help › Report a Problem (5.23, OL-10).
+  "command.reportProblem": "Report a Problem…",
   "command.licences": "Open-Source Licences",
   // Help → Open-Source Licences (5.3): every package the app ships, with its licence.
   "licences.title": "Open-Source Licences",

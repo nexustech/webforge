@@ -1,3 +1,4 @@
+import { hasLink } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
 import { linkAttributes } from "./library.js";
 import type { RenderContext } from "./schema.js";
@@ -168,7 +169,11 @@ export const BUTTON_CLASSES = {
   menu: "btn btn-square btn-ghost",
 } as const;
 
-/** A link drawn as a button of `kind`, if it has a label; `className` places it ("mt-8"). */
+/**
+ * A link drawn as a button of `kind`, if it has a label; `className` places it ("mt-8"). Without a
+ * link it is left out of the export, never a link to `#` (#1256): on the canvas it is drawn
+ * disabled, with a hint saying to add one. Site Check lists it.
+ */
 export function ButtonLink({
   label,
   link,
@@ -184,13 +189,23 @@ export function ButtonLink({
   readonly className?: string;
 }) {
   if (label === "") return null;
+  const classes =
+    className === undefined ? BUTTON_CLASSES[kind] : `${BUTTON_CLASSES[kind]} ${className}`;
+  if (!hasLink(link)) {
+    const hint = context.elementHint?.("buttonLink");
+    if (hint === undefined || hint === null) return null;
+    return (
+      <>
+        {/* Disabled, and said to be (2.15b), so it isn't taken for text to read at full contrast. */}
+        <span className={`${classes} btn-disabled`} aria-disabled="true">
+          {label}
+        </span>
+        <span className="mt-2 block">{hint}</span>
+      </>
+    );
+  }
   return (
-    <a
-      className={
-        className === undefined ? BUTTON_CLASSES[kind] : `${BUTTON_CLASSES[kind]} ${className}`
-      }
-      {...linkAttributes(link, context)}
-    >
+    <a className={classes} {...linkAttributes(link, context)}>
       {label}
     </a>
   );

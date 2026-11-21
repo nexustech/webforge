@@ -66,3 +66,13 @@ export const linkValueSchema = z.discriminatedUnion("kind", [
 
 /** See {@link linkValueSchema}. */
 export type LinkValue = z.infer<typeof linkValueSchema>;
+
+/**
+ * Whether a link field's `value` goes somewhere (#1256): a link, or an address typed as text. An
+ * empty one, or none, doesn't: the export leaves out a button with it, and Site Check names it. A
+ * link to a page that has gone is a broken link, not this.
+ */
+export function hasLink(value: unknown): boolean {
+  if (linkValueSchema.safeParse(value).success) return true;
+  return typeof value === "string" && value.trim() !== "";
+}

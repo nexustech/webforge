@@ -71,6 +71,7 @@ export function parsePreferences(raw: unknown): Preferences {
     versionsKept: field("versionsKept"),
     onboarding: field("onboarding"),
     interfaceZoom: field("interfaceZoom"),
+    reportDraft: field("reportDraft"),
     ...(updateChannel === undefined ? {} : { updateChannel }),
   };
 }

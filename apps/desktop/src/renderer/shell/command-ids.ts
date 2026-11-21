@@ -75,5 +75,7 @@ export const COMMAND_IDS = {
   shortcuts: "help.shortcuts",
   tryExample: "help.tryExample",
   licences: "help.licences",
+  // Help › Report a Problem (5.23, OL-10).
+  reportProblem: "help.reportProblem",
   about: "help.about",
 } as const;

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { updateChannelSchema } from "../update-channel.js";
+import { REPORT_TEXT_MAX } from "./app.js";
 
 /** At most this many panel groups, and panels per group, are remembered. */
 const MAX_LAYOUT_ENTRIES = 32;
@@ -185,6 +186,11 @@ export const preferencesSchema = z.strictObject({
    * choose: the default then follows the app's version (`updateChannelFor`).
    */
   updateChannel: updateChannelSchema.optional(),
+  /**
+   * Help › Report a Problem's message, kept until the person sends or clears it (OL-10), so it
+   * survives the dialog closing and the app restarting. Their own words, never the site's.
+   */
+  reportDraft: z.string().max(REPORT_TEXT_MAX),
 });
 
 /** One person's editor preferences. */
@@ -211,6 +217,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   versionsKept: 20,
   onboarding: { tour: "new", tipsSeen: [], showTips: true },
   interfaceZoom: 1,
+  reportDraft: "",
 };
 
 /** A change to some preferences; the rest stay as they are. */
@@ -236,6 +243,7 @@ export function applyPreferencesChange(
     versionsKept: change.versionsKept ?? preferences.versionsKept,
     onboarding: change.onboarding ?? preferences.onboarding,
     interfaceZoom: change.interfaceZoom ?? preferences.interfaceZoom,
+    reportDraft: change.reportDraft ?? preferences.reportDraft,
     ...(updateChannel === undefined ? {} : { updateChannel }),
   };
 }

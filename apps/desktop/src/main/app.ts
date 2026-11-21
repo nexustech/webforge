@@ -141,7 +141,6 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     ...handOffWindow({ lifecycle, openWindow: (prefs) => mainWindows.open(prefs), dialog }),
   });
 
-  // Dialogs are modal to the focused window.
   const dialogs = createNativeDialogs({
     dialog,
     focusedWindow: () => BrowserWindow.getFocusedWindow(),
@@ -277,6 +276,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       helpWindows,
       mainWindow: () => lifecycle.mainWindow(),
       crashReports,
+      reportDialogs: dialogs.report,
     }),
     // Opening and closing sites, the Recent list, copy and paste, bundled files, imported posts.
     siteCallsFeature({
