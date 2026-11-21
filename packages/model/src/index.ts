@@ -68,7 +68,7 @@ export {
   tagSlug,
 } from "./collections.js";
 export type { ColorRef } from "./color-ref.js";
-export { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";
+export { colorRefSchema, formatColorRef, OWN_COLOR_PREFIX, parseColorRef } from "./color-ref.js";
 export { cssVariablesUsed } from "./css-variables.js";
 export { csvRecords, parseCsv } from "./csv.js";
 export type {
@@ -120,6 +120,7 @@ export {
   factDetailsIn,
   factKeysIn,
   settingsFactKeys,
+  siteFactKeys,
   unknownFactsIn,
 } from "./facts.js";
 export { safeFileName } from "./file-names.js";
@@ -258,6 +259,7 @@ export {
   slugsInFolder,
   swapPages,
 } from "./pages.js";
+export { plainText } from "./plain-text.js";
 export type { PublishDestination } from "./publish-destinations.js";
 export {
   DESTINATION_NAME_MAX,
@@ -430,6 +432,7 @@ export type {
   ColorRole,
   FontRef,
   Oklch,
+  OwnColor,
   ShadeStep,
   TextStyle,
   ThemeTokens,
@@ -447,7 +450,11 @@ export {
   INVERSE_THEME,
   LINK_UNDERLINES,
   OPACITY_STEPS,
+  OWN_COLOR_NAME_MAX,
+  OWN_COLORS_MAX,
   oklchSchema,
+  ownColorIdSchema,
+  ownColorSchema,
   RADIUS_TOKENS,
   SECTION_RHYTHMS,
   SHADE_STEPS,

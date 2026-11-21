@@ -18,13 +18,16 @@ import type { FieldDrag, InsertPoint } from "../canvas-engine.js";
 export const OUTLINED_ATTRIBUTE = "data-wf-outlined";
 
 import { followPlacement } from "./bar-placement.js";
+import { hasExamples } from "./examples.js";
 import { FRAME_TOOLTIP_CSS } from "./frame-tooltips.js";
 import {
   ACTION_BAR,
   ACTIONS,
   ACTIONS_OVERLAY,
+  COMPONENT,
   componentSelector,
   EMPTY_TABLE_BODY,
+  EXAMPLE_ATTRIBUTE,
   elementOf,
   HOVERED_COMPONENT,
   NOTE_ATTRIBUTE,
@@ -131,6 +134,22 @@ ${EMPTY_TABLE_BODY}::after {
 [${NOTE_ATTRIBUTE}] {
   outline: calc(2px / var(--wf-zoom, 1)) dashed #f59e0b;
   outline-offset: calc(-2px / var(--wf-zoom, 1));
+}
+/* An element with a text that holds an example (#1228): a dotted violet outline, inside it; on
+   Puck's wrapper for one drawn by a component of its own, which a hidden marker follows. */
+[${EXAMPLE_ATTRIBUTE}]:not([hidden]),
+${COMPONENT}:has(> [${EXAMPLE_ATTRIBUTE}][hidden]) {
+  outline: calc(2px / var(--wf-zoom, 1)) dotted #7c3aed;
+  outline-offset: calc(-2px / var(--wf-zoom, 1));
+}
+/* Its *Example* chip in the element's bar: the bar's own button, with its word. */
+.wf-example-chip {
+  padding: 0 6px;
+  border-radius: 3px;
+  background: #7c3aed;
+  color: #fff;
+  font: 600 11px/18px system-ui, sans-serif;
+  white-space: nowrap;
 }
 /* An empty page's *Add Your First Section…* (#1012), where its sections would go. */
 .wf-empty-page {
@@ -473,6 +492,8 @@ function ElementActionButtons({
 }) {
   const type = usePuck((state) => state.getItemById(id)?.type);
   const hidden = usePuck((state) => state.getItemById(id)?.props.hidden === true);
+  // A text that holds an example (#1228): the chip opens it for editing.
+  const example = usePuck((state) => hasExamples(state.getItemById(id)?.props.examples));
   // Not in Content mode, which locks the layout (M3).
   const layoutOpen = usePuck((state) => state.getPermissions().insert === true);
   if (type === undefined) {
@@ -480,6 +501,11 @@ function ElementActionButtons({
   }
   return (
     <>
+      {example && actions.canEdit(type) ? (
+        <ActionBar.Action label={t("canvas.example.label")} onClick={() => actions.edit(id, type)}>
+          <span className="wf-example-chip">{t("canvas.example")}</span>
+        </ActionBar.Action>
+      ) : null}
       {actions.canEdit(type) ? (
         <ActionBar.Action label={t("canvas.edit")} onClick={() => actions.edit(id, type)}>
           <PencilIcon size={16} />

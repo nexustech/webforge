@@ -219,6 +219,37 @@ describe("buildSiteCss", () => {
     expect(css).toContain("#1f6feb");
   });
 
+  it("compiles one of the person's own colours, a shade at an opacity, from its variables (TC-1a)", async () => {
+    const theme = {
+      ...DEFAULT_THEME,
+      ownColors: [{ id: "sky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } }],
+    };
+    const candidates = classCandidates(
+      '<h2 class="text-own-sky-300/50"></h2><div class="bg-own-sky"></div><p class="text-own-moss"></p>',
+    );
+    const css = await buildSiteCss(resources, { theme, candidates, fontsUrl: "../fonts/" });
+
+    // As CSS escapes the class names: each reads its variable, which the theme declares.
+    expect(css).toContain(String.raw`.text-own-sky-300\/50`);
+    expect(css).toContain(".bg-own-sky");
+    expect(css).toContain("--wf-color-own-sky-300:");
+    // A colour the theme doesn't have makes no class: it draws nothing.
+    expect(css).not.toContain(".text-own-moss");
+    // The same classes, compiled for another value of it: the same stylesheet but its values.
+    const other = {
+      ...theme,
+      ownColors: [{ id: "sky", name: "Sky", color: { l: 0.4, c: 0.2, h: 30 } }],
+    };
+    const shapeOf = (stylesheet: string) => stylesheet.replace(/oklch\([^)]*\)/g, "");
+    const again = await buildSiteCss(resources, {
+      theme: other,
+      candidates,
+      fontsUrl: "../fonts/",
+    });
+    expect(shapeOf(again)).toBe(shapeOf(css));
+    expect(again).not.toBe(css);
+  });
+
   it("fails when a Tailwind stylesheet is missing from the resources", async () => {
     const options = { theme: DEFAULT_THEME, candidates: [], fontsUrl: "" };
 

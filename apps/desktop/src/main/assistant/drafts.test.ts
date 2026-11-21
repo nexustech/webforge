@@ -1,7 +1,8 @@
+import { EXAMPLES_RULE } from "@webforge/commands";
 import { PAGE_DESCRIPTION_MAX } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import type { DraftRequest } from "../../shared/ipc/assistant.js";
-import { draftChat, draftTexts } from "./drafts.js";
+import { draftChat, draftTexts, readDraft } from "./drafts.js";
 import { SITE_TEXT_RULE } from "./site-text.js";
 
 const REWRITE: DraftRequest = { kind: "rewrite", how: "friendlier", text: "Open 9 to 5." };
@@ -48,7 +49,7 @@ describe("a draft's model call (#873)", () => {
   it("names the language a new text is written in, and how many texts a business draft wants", () => {
     const signal = new AbortController().signal;
     expect(draftChat(BUSINESS, "a/model", signal).messages[0]?.content).toMatch(
-      /language tagged en-GB.*JSON array of 2 strings/s,
+      /language tagged en-GB.*JSON array of 2 items/s,
     );
   });
 });
@@ -89,5 +90,25 @@ describe("a draft's answer (#873)", () => {
     expect(draftTexts(BUSINESS, '["Only one"]')).toBeUndefined();
     expect(draftTexts(BUSINESS, '["One", 2]')).toBeUndefined();
     expect(draftTexts(BUSINESS, "Sourdough at dawn")).toBeUndefined();
+  });
+});
+
+describe("a business draft's examples (#1228, WN-3)", () => {
+  it("asks for an example where a fact wasn't given, flagged, as the shared rule says", () => {
+    const signal = new AbortController().signal;
+    const system = draftChat(BUSINESS, "a/model", signal).messages[0]?.content ?? "";
+    expect(system).toContain(EXAMPLES_RULE);
+    expect(system).not.toContain("without inventing");
+  });
+
+  it("reads each text's flag, a text given as a string unflagged", () => {
+    expect(
+      readDraft(BUSINESS, '["Sourdough at dawn", {"text": "Open from 7am", "example": true}]'),
+    ).toEqual({ texts: ["Sourdough at dawn", "Open from 7am"], examples: [false, true] });
+    expect(readDraft(BUSINESS, '[{"text": "Sourdough"}, "Pull up a chair."]')).toEqual({
+      texts: ["Sourdough", "Pull up a chair."],
+      examples: [false, false],
+    });
+    expect(readDraft(BUSINESS, '[{"words": "Sourdough"}, "Pull up a chair."]')).toBeUndefined();
   });
 });

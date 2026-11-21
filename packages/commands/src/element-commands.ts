@@ -18,6 +18,7 @@ import {
   values,
   withNewIds,
 } from "./command-checks.js";
+import { EXAMPLES_FIELD, examplesInput, knownFacts, markWritten } from "./examples.js";
 import { holds, type Location, locate, locationSchema, nodesAt } from "./locations.js";
 import { type Failure, fail, failed, type Plan, type PlanSummary } from "./plan.js";
 
@@ -25,12 +26,12 @@ import { type Failure, fail, failed, type Plan, type PlanSummary } from "./plan.
 export const ELEMENT_COMMANDS = {
   /** Adds a section to a page, or an element to a slot, with `values` over its defaults. */
   addNode: {
-    description:
-      "Adds a section to a page (parentId null) or an element to a section's slot, of a type from the catalogue, with values over its defaults. Answers with the new element's id. One undo step.",
+    description: `Adds a section to a page (parentId null) or an element to a section's slot, of a type from the catalogue, with values over its defaults. Answers with the new element's id. One undo step. ${EXAMPLES_FIELD}`,
     input: z.strictObject({
       location: locationSchema,
       type: z.string().min(1).max(64),
       values: values.default({}),
+      examples: examplesInput,
       ...placement,
     }),
     summarize(summary: PlanSummary) {
@@ -42,6 +43,7 @@ export const ELEMENT_COMMANDS = {
         location: Location;
         type: string;
         values: Record<string, unknown>;
+        examples?: string[] | undefined;
         parentId: string | null;
         slot: string | null;
         index?: number | undefined;
@@ -67,6 +69,8 @@ export const ELEMENT_COMMANDS = {
         type: input.type,
         props: { ...structuredClone(component.defaults), ...values, id: "" },
       });
+      // What it wrote that holds an example is marked as one (#1228, WN-3).
+      markWritten(node, component.fields, values, input.examples, knownFacts(site));
       const { location, slot, index } = input;
       return {
         action: t("history.added", { item: component.label }),
@@ -87,15 +91,19 @@ export const ELEMENT_COMMANDS = {
   },
   /** Sets fields of an element: its title, a select's option, an image, a link… */
   updateFields: {
-    description:
-      "Sets fields of an element, by the names and value schemas fields gives. One undo step. A change to the shared Header, Footer or a shared section, or to where visitors' payments or details go, waits for the person to allow it.",
-    input: z.strictObject({ location: locationSchema, nodeId, values }),
+    description: `Sets fields of an element, by the names and value schemas fields gives. One undo step. A change to the shared Header, Footer or a shared section, or to where visitors' payments or details go, waits for the person to allow it. ${EXAMPLES_FIELD}`,
+    input: z.strictObject({ location: locationSchema, nodeId, values, examples: examplesInput }),
     summarize(summary: PlanSummary) {
       summary.elements.changed += 1;
     },
     plan(
       site: SiteDoc,
-      input: { location: Location; nodeId: string; values: Record<string, unknown> },
+      input: {
+        location: Location;
+        nodeId: string;
+        values: Record<string, unknown>;
+        examples?: string[] | undefined;
+      },
     ): Plan | Failure {
       const placed = find(site, input.location, input.nodeId);
       if (failed(placed)) return placed;
@@ -109,6 +117,8 @@ export const ELEMENT_COMMANDS = {
       const fields = names.map((name) => component.fields[name]).filter((f) => f !== undefined);
       const [only] = fields;
       const { location, nodeId: id } = input;
+      // The facts the site gives as it is, to tell what the text made up (#1228).
+      const known = knownFacts(site);
       return {
         action:
           fields.length === 1 && only !== undefined
@@ -120,7 +130,9 @@ export const ELEMENT_COMMANDS = {
         recipe: (draft) => {
           const top = nodesAt(draft, location);
           const node = top === undefined ? undefined : locate(top, id)?.node;
-          if (node !== undefined) Object.assign(node.props, structuredClone(values));
+          if (node === undefined) return;
+          Object.assign(node.props, structuredClone(values));
+          markWritten(node, component.fields, values, input.examples, known);
         },
       };
     },
@@ -128,19 +140,26 @@ export const ELEMENT_COMMANDS = {
   /** Replaces an element's text, or rich text's HTML. */
   editText: {
     description:
-      "Replaces an element's text, or a rich-text field's HTML (cleaned). One undo step.",
+      "Replaces an element's text, or a rich-text field's HTML (cleaned). One undo step. Set example to true if the new text holds an example for a fact you weren't given.",
     input: z.strictObject({
       location: locationSchema,
       nodeId,
       field: z.string().min(1).max(64),
       text: z.string().max(20_000),
+      example: z.boolean().optional(),
     }),
     summarize(summary: PlanSummary) {
       summary.elements.changed += 1;
     },
     plan(
       site: SiteDoc,
-      input: { location: Location; nodeId: string; field: string; text: string },
+      input: {
+        location: Location;
+        nodeId: string;
+        field: string;
+        text: string;
+        example?: boolean | undefined;
+      },
     ): Plan | Failure {
       const placed = find(site, input.location, input.nodeId);
       if (failed(placed)) return placed;
@@ -155,6 +174,8 @@ export const ELEMENT_COMMANDS = {
       if (failed(stored)) return stored;
       const text = stored.values[input.field];
       const { location, nodeId: id } = input;
+      // The facts the site gives as it is, to tell what the text made up (#1228).
+      const known = knownFacts(site);
       return {
         action: t("history.editedText", { item: component.label }),
         structural: false,
@@ -165,7 +186,15 @@ export const ELEMENT_COMMANDS = {
         recipe: (draft) => {
           const top = nodesAt(draft, location);
           const node = top === undefined ? undefined : locate(top, id)?.node;
-          if (node !== undefined) node.props[input.field] = text;
+          if (node === undefined) return;
+          node.props[input.field] = text;
+          markWritten(
+            node,
+            component.fields,
+            { [input.field]: text },
+            input.example === true ? [input.field] : [],
+            known,
+          );
         },
       };
     },

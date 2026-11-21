@@ -1,3 +1,4 @@
+import { EXAMPLES_RULE } from "@webforge/commands";
 import { PAGE_DESCRIPTION_MAX } from "@webforge/model";
 import { z } from "zod";
 import { DRAFT_RESULT_MAX, type DraftRequest } from "../../shared/ipc/assistant.js";
@@ -36,7 +37,7 @@ function instructionsFor(request: DraftRequest): string {
     case "alt":
       return `You write alt text, which describes an image for people who can't see it. You can't see the image: write it from its file's name and the text near it, describing what it most likely shows, in at most 125 characters. Don't start with "Image of" or "Picture of".${language} ${PLAIN_ANSWER} ${SITE_TEXT_RULE}`;
     case "business":
-      return `You write the words of a small business's new website, from what the owner says about it. The message has the business, and a page's texts in order, each with its role and the template's sample. Write each text afresh for this business, in the sample's role and at about its length, without inventing prices, awards, dates or people's names.${language} Answer with a JSON array of ${request.texts.length} strings, one for each text in order, and nothing else. In the strings, use no Markdown and no HTML; separate paragraphs with a blank line. ${SITE_TEXT_RULE}`;
+      return `You write the words of a small business's new website, from what the owner says about it. The message has the business, and a page's texts in order, each with its role and the template's sample. Write each text afresh for this business, in the sample's role and at about its length. ${EXAMPLES_RULE}${language} Answer with a JSON array of ${request.texts.length} items, one for each text in order, and nothing else: each the text as a string, or, for a text that holds an example, {"text": "…", "example": true}. In the texts, use no Markdown and no HTML; separate paragraphs with a blank line. ${SITE_TEXT_RULE}`;
   }
 }
 
@@ -124,19 +125,29 @@ const TEXT_MAX: Record<DraftRequest["kind"], number> = {
   business: DRAFT_RESULT_MAX,
 };
 
-/** A business draft's answer: one string for each text asked. */
-const textsSchema = z.array(z.string());
+/** A business draft's answer: one for each text asked, as a string or flagged as an example. */
+const textsSchema = z.array(
+  z.union([z.string(), z.strictObject({ text: z.string(), example: z.boolean().optional() })]),
+);
+
+/** A draft's texts, and for each whether the model flagged it as holding an example (#1228). */
+export type ReadDraft = { readonly texts: string[]; readonly examples: boolean[] };
+
+/** The model's answer to `request` as its texts (see {@link readDraft}). */
+export const draftTexts = (request: DraftRequest, answer: string): string[] | undefined =>
+  readDraft(request, answer)?.texts;
 
 /**
  * The model's answer to `request` as the draft's texts: one, or a business draft's one per text
- * asked, each fitted to its kind's limit. Undefined for an answer that isn't one: empty, or a
- * business draft's that isn't an array of as many strings.
+ * asked, each fitted to its kind's limit, with whether the model flagged it as holding an example.
+ * Undefined for an answer that isn't one: empty, or a business draft's that isn't an array of as
+ * many texts.
  */
-export function draftTexts(request: DraftRequest, answer: string): string[] | undefined {
+export function readDraft(request: DraftRequest, answer: string): ReadDraft | undefined {
   const max = TEXT_MAX[request.kind];
   if (request.kind !== "business") {
     const text = fitted(unwrapped(answer), max);
-    return text === "" ? undefined : [text];
+    return text === "" ? undefined : { texts: [text], examples: [false] };
   }
   let json: unknown;
   try {
@@ -146,5 +157,10 @@ export function draftTexts(request: DraftRequest, answer: string): string[] | un
   }
   const texts = textsSchema.safeParse(json);
   if (!texts.success || texts.data.length !== request.texts.length) return undefined;
-  return texts.data.map((text) => fitted(text.trim(), max));
+  return {
+    texts: texts.data.map((each) =>
+      fitted((typeof each === "string" ? each : each.text).trim(), max),
+    ),
+    examples: texts.data.map((each) => typeof each !== "string" && each.example === true),
+  };
 }

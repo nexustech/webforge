@@ -17,6 +17,7 @@ import v13Site from "../test/fixtures/v13/site.json" with { type: "json" };
 import v14Site from "../test/fixtures/v14/site.json" with { type: "json" };
 import v15Site from "../test/fixtures/v15/site.json" with { type: "json" };
 import v16Site from "../test/fixtures/v16/site.json" with { type: "json" };
+import v17Site from "../test/fixtures/v17/site.json" with { type: "json" };
 import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
 import type { PageId, SharedSectionId } from "./ids.js";
 import {
@@ -119,6 +120,13 @@ const exampleMarks =
     throw new Error("No migration from format 15");
   });
 
+/** Format 16 → 17 (`MIGRATIONS[16]`). */
+const ownColours =
+  MIGRATIONS[16] ??
+  ((): never => {
+    throw new Error("No migration from format 16");
+  });
+
 /** Format 5 → 16, each step's own fixture tested below: what the later steps do to an older one. */
 function latest(site: Record<string, unknown> & { formatVersion: 5 }): unknown {
   return exampleMarks(
@@ -159,6 +167,17 @@ const asFormat16 = (site: Record<string, unknown>) =>
     ),
   );
 
+/**
+ * `site` as format 16 had it: format 17 gives its theme an empty list of the person's own colours
+ * (TC-1a, #1217), and nothing else, so what the steps before made of it is compared as it was.
+ */
+function atFormat16<T extends { formatVersion: number; theme: object }>(site: T) {
+  const { ownColors, ...theme } = site.theme as { ownColors?: unknown };
+  expect(ownColors).toEqual([]);
+  expect(site.formatVersion).toBe(17);
+  return { ...site, theme, formatVersion: 16 };
+}
+
 /** `settings` without the publish destinations format 12 moved out of them (4.4a). */
 function withoutPublish<T extends { publish?: unknown }>(settings: T): Omit<T, "publish"> {
   const { publish: _publish, ...rest } = settings;
@@ -187,19 +206,49 @@ function widthsOf(...nodes: { type: string; props: Record<string, unknown> }[]):
 }
 
 describe("migrateSite", () => {
-  it("opens the format 16 fixture unchanged, its Hero's title marked as an example (#1228)", () => {
+  it("opens the format 17 fixture unchanged, its own colour in the theme and a look (TC-1a)", () => {
+    const site = migrateSite(v17Site);
+
+    expect(site).toEqual(v17Site);
+    expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
+    expect(site.theme.ownColors).toEqual([
+      { id: "sky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } },
+    ]);
+    expect(site.theme.looks?.CallToAction?.lookBackground).toBe("own-sky-300");
+  });
+
+  it("opens the format 16 fixture as format 17, with an empty list of the person's own colours", () => {
     const site = migrateSite(v16Site);
 
-    expect(site).toEqual(v16Site);
-    expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
+    expect(site).toEqual({
+      ...v16Site,
+      formatVersion: 17,
+      theme: { ...v16Site.theme, ownColors: [] },
+    });
+    // A list already there is kept, and a theme that isn't a record is left for validation.
+    const own = [{ id: "sky", name: "Sky", color: { l: 0.6, c: 0.1, h: 240 } }];
+    expect(ownColours({ formatVersion: 16, theme: { ownColors: own } })).toEqual({
+      formatVersion: 17,
+      theme: { ownColors: own },
+    });
+    expect(ownColours({ formatVersion: 16, theme: "light" })).toEqual({
+      formatVersion: 17,
+      theme: "light",
+    });
+  });
+
+  it("keeps the format 16 fixture's Hero title marked as an example (#1228)", () => {
+    const site = migrateSite(v16Site);
+
+    expect(atFormat16(site)).toEqual(v16Site);
     const [hero] = site.pages[Object.keys(site.pages)[0] as PageId]?.doc.content ?? [];
     expect(hero?.props.examples).toEqual({ title: true });
   });
 
-  it("opens the format 15 fixture as format 16, as it was, with no example marked (#1228)", () => {
+  it("opens the format 15 fixture as format 17, as it was, with no example marked (#1228)", () => {
     const site = migrateSite(v15Site);
 
-    expect(site).toEqual({ ...v15Site, formatVersion: 16 });
+    expect(atFormat16(site)).toEqual({ ...v15Site, formatVersion: 16 });
     expect(JSON.stringify(site)).not.toContain('"examples"');
   });
 
@@ -212,19 +261,19 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 14 fixture as format 16, as it was, with its Blog's tags (6.10b)", () => {
+  it("opens the format 14 fixture as format 17, as it was, with its Blog's tags (6.10b)", () => {
     const site = migrateSite(v14Site);
 
-    expect(site).toEqual({ ...v14Site, formatVersion: 16 });
+    expect(atFormat16(site)).toEqual({ ...v14Site, formatVersion: 16 });
     const [blog] = Object.values(site.collections);
     expect(blog?.fields.at(-1)).toEqual({ name: "tags", label: "Tags", kind: "tags" });
   });
 
-  it("opens the format 13 fixture as format 16, its Blog given Tags, its post as it was (6.10b)", () => {
+  it("opens the format 13 fixture as format 17, its Blog given Tags, its post as it was (6.10b)", () => {
     const site = migrateSite(v13Site);
     const [blog] = Object.values(v13Site.collections);
 
-    expect(site).toEqual({
+    expect(atFormat16(site)).toEqual({
       ...v13Site,
       formatVersion: 16,
       collections: {
@@ -247,10 +296,10 @@ describe("migrateSite", () => {
     expect(post?.entry).toMatchObject({ date: "2026-11-10" });
   });
 
-  it("opens the format 12 fixture as format 16, with no collections yet (6.10a)", () => {
+  it("opens the format 12 fixture as format 17, with no collections yet (6.10a)", () => {
     const site = migrateSite(v12Site);
 
-    expect(site).toEqual({ ...v12Site, formatVersion: 16, collections: {} });
+    expect(atFormat16(site)).toEqual({ ...v12Site, formatVersion: 16, collections: {} });
     expect(site.settings).not.toHaveProperty("publish");
     // A site that has collections already keeps them; one whose aren't a record gets none.
     const kept = { blog: { id: "blog" } };
@@ -264,19 +313,19 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 11 fixture as format 16, its destinations out of Site Settings (4.4a)", () => {
+  it("opens the format 11 fixture as format 17, its destinations out of Site Settings (4.4a)", () => {
     // The fixture has two, as format 11's schema allowed; no site could have any, as nothing could
     // add one, and a site's destinations are now beside its document (ADR 0018 §2).
     expect(v11Site.settings.publish.destinations).toHaveLength(2);
     const site = migrateSite(v11Site);
 
-    expect(site).toEqual({
+    expect(atFormat16(site)).toEqual({
       ...v11Site,
       formatVersion: 16,
       settings: withoutPublish(v11Site.settings),
       collections: {},
     });
-    expect(site).toEqual({ ...v12Site, formatVersion: 16, collections: {} });
+    expect(atFormat16(site)).toEqual({ ...v12Site, formatVersion: 16, collections: {} });
     // Settings that aren't a record, or have no destinations, are left for validation.
     for (const settings of ["none", { general: {} }]) {
       expect(destinationsOutOfSettings({ formatVersion: 11, settings })).toEqual({
@@ -294,10 +343,10 @@ describe("migrateSite", () => {
     expect(site.theme.looks?.CallToAction?.lookFont).toBe("accent");
   });
 
-  it("opens the format 10 fixture as format 16, its accent font its headings' (3.22)", () => {
+  it("opens the format 10 fixture as format 17, its accent font its headings' (3.22)", () => {
     const site = migrateSite(v10Site);
 
-    expect(site).toEqual({
+    expect(atFormat16(site)).toEqual({
       ...v10Site,
       formatVersion: 16,
       collections: {},
@@ -323,7 +372,7 @@ describe("migrateSite", () => {
     );
   });
 
-  it("opens the format 9 fixture as format 16, every Section Medium as it was (3.21)", () => {
+  it("opens the format 9 fixture as format 17, every Section Medium as it was (3.21)", () => {
     const site = migrateSite(v9Site);
     const sections = [
       ...Object.values(site.pages).flatMap((page) => page.doc.content),
@@ -332,7 +381,7 @@ describe("migrateSite", () => {
 
     expect(sections).toHaveLength(2);
     for (const section of sections) expect(section.props.contentWidth).toBe("medium");
-    expect(site).toEqual(asLatest(v9Site));
+    expect(atFormat16(site)).toEqual(asLatest(v9Site));
   });
 
   it("gives a Section saved with Full width on Full, and drops the toggle (9 → 10)", () => {
@@ -395,10 +444,10 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 8 fixture as format 16, its theme without looks as it was (3.12)", () => {
+  it("opens the format 8 fixture as format 17, its theme without looks as it was (3.12)", () => {
     const site = migrateSite(v8Site);
 
-    expect(site).toEqual(asLatest(v8Site));
+    expect(atFormat16(site)).toEqual(asLatest(v8Site));
     expect(site.theme.looks).toBeUndefined();
     expect(componentLooks({ formatVersion: 8, theme: "light" })).toEqual({
       formatVersion: 9,
@@ -413,10 +462,10 @@ describe("migrateSite", () => {
     expect(site.theme.own).toEqual({ id: "theme00000000001", name: "Cupcake (my version)" });
   });
 
-  it("opens the format 7 fixture as format 16, its theme a built-in one as it was (2.23)", () => {
+  it("opens the format 7 fixture as format 17, its theme a built-in one as it was (2.23)", () => {
     const site = migrateSite(v7Site);
 
-    expect(site).toEqual(v7AsLatest);
+    expect(atFormat16(site)).toEqual(v7AsLatest);
     expect(site.theme.own).toBeUndefined();
     expect(ownThemes({ formatVersion: 7, theme: "light" })).toEqual({
       formatVersion: 8,
@@ -424,11 +473,11 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 6 fixture as format 16, its theme's style tokens as it looked (2.13d)", () => {
+  it("opens the format 6 fixture as format 17, its theme's style tokens as it looked (2.13d)", () => {
     const site = migrateSite(v6Site);
 
     expect(v6Site.theme).not.toHaveProperty("cards");
-    expect(site).toEqual(v7AsLatest);
+    expect(atFormat16(site)).toEqual(v7AsLatest);
     expect(site.theme).toMatchObject({
       headings: { case: "normal", tracking: "normal" },
       cards: { style: "flat" },
@@ -444,7 +493,7 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 5 fixture as format 16, a Section's padding size as its top and bottom (R14)", () => {
+  it("opens the format 5 fixture as format 17, a Section's padding size as its top and bottom (R14)", () => {
     const site = migrateSite(v5Site);
 
     // The fixture's Sections have format 5's sizes, one plain, one per device.
@@ -455,7 +504,7 @@ describe("migrateSite", () => {
     expect(v5Site.sharedSections["shared-hours"].section.props.padding).toEqual({
       $responsive: { desktop: "large", mobile: "small" },
     });
-    expect(site).toEqual(v7AsLatest);
+    expect(atFormat16(site)).toEqual(v7AsLatest);
     const padding = (id: string) =>
       site.pages["home000000000000" as PageId]?.doc.content.find((node) => node.props.id === id)
         ?.props.padding;
@@ -489,10 +538,10 @@ describe("migrateSite", () => {
     expect(hero.pages.home.doc.content[0]?.props.padding).toBe("large");
   });
 
-  it("opens the format 4 fixture as format 16, its theme as tokens named after it (2.1)", () => {
+  it("opens the format 4 fixture as format 17, its theme as tokens named after it (2.1)", () => {
     const site = migrateSite(v4Site);
 
-    expect(site).toEqual(latest({ ...v4Site, formatVersion: 5, theme: cupcakeTokens }));
+    expect(atFormat16(site)).toEqual(latest({ ...v4Site, formatVersion: 5, theme: cupcakeTokens }));
     expect(site.theme.preset).toBe("cupcake");
     // daisyUI's own cupcake colours and corners (FORMAT_5_DAISYUI_THEMES; the pipeline's tests
     // compare every built-in theme with daisyUI's).
@@ -514,12 +563,12 @@ describe("migrateSite", () => {
     expect(migrateSite({ ...v4Site, theme: undefined }).theme.preset).toBe("light");
   });
 
-  it("opens the format 3 fixture as format 16, its shared sections' names made unique (3 → 4)", () => {
+  it("opens the format 3 fixture as format 17, its shared sections' names made unique (3 → 4)", () => {
     const site = migrateSite(v3Site);
 
     // The fixture's second shared section repeats the first's name, as format 3 allowed.
     expect(v3Site.sharedSections["shared-hours-weekend"].name).toBe(" opening HOURS ");
-    expect(site).toEqual(
+    expect(atFormat16(site)).toEqual(
       latest({
         ...v3Site,
         formatVersion: 5,
@@ -562,13 +611,13 @@ describe("migrateSite", () => {
     ]);
   });
 
-  it("opens the format 2 fixture as format 16, with no shared sections yet", () => {
-    expect(migrateSite(v2Site)).toEqual(
+  it("opens the format 2 fixture as format 17, with no shared sections yet", () => {
+    expect(atFormat16(migrateSite(v2Site))).toEqual(
       latest({ ...v2Site, formatVersion: 5, sharedSections: {}, theme: cupcakeTokens }),
     );
   });
 
-  it("opens the format 1 fixture as format 16, its Hero image one value with its alt text (1 → 2)", () => {
+  it("opens the format 1 fixture as format 17, its Hero image one value with its alt text (1 → 2)", () => {
     // Fixtures of released formats are never deleted: every old site must keep opening. This one
     // has its Hero image in the format 1 shape: a media id, and its alt text apart.
     const site = migrateSite(v1Site);
@@ -911,6 +960,14 @@ const LAYOUT_WIDTHS: Readonly<Record<string, Readonly<Record<string, string>>>> 
 
 /** Each step's inverse, keyed by the version it goes down *to*. */
 const DOWN: Readonly<Record<number, (site: Raw) => Raw>> = {
+  // 17 → 16: a theme had no list of its own colours; a list with colours in it is kept, as format
+  // 17 reads it.
+  16: (site) => {
+    const { ownColors, ...theme } = site.theme as { ownColors?: unknown[] };
+    return Array.isArray(ownColors) && ownColors.length === 0
+      ? { ...site, theme, formatVersion: 16 }
+      : { ...site, formatVersion: 16 };
+  },
   // 16 → 15: no text was marked as an example; a site with no mark is as format 15 had it.
   15: (site) => {
     eachNode(site, (node) => {
@@ -1106,7 +1163,9 @@ const migratableSite = fc
         );
     return {
       ...site,
-      theme,
+      // With the empty list of the person's own colours format 17 gives a theme (TC-1a): colours in
+      // it can't go below format 5, where a theme was its preset's name, as its looks can't.
+      theme: { ...theme, ownColors: [] },
       sharedSections: shared ? site.sharedSections : {},
       collections: blog ? site.collections : {},
       pages: { ...pages, [site.homePageId]: { ...home, doc: { ...home.doc, content } } },

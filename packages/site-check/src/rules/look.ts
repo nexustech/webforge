@@ -103,6 +103,8 @@ export const contrastRule: CheckRule = {
         required: issue.required,
       },
     }));
+    // The person's own colours (TC-1a, #1217) are measured where an element uses one, below, and
+    // never on their own: a pale colour kept for backgrounds isn't hard to read until it's text.
     // One walk for both: rich text's colour marks, and the fields that colour text.
     const marks = (placed: PlacedValue) => {
       if (typeof placed.value !== "string") return;

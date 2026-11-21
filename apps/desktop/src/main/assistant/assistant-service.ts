@@ -736,7 +736,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
         if (target.status !== "ok") return { status: target.status };
         // Loaded when first used, never at start-up (#892): the site text's rule comes from the
         // commands package, which brings the site components with it.
-        const { draftChat, draftTexts } = await import("./drafts.js");
+        const { draftChat, readDraft } = await import("./drafts.js");
         const chat = draftChat(request, target.model, AbortSignal.timeout(DRAFT_TIMEOUT_MS));
         const result = await streamChat(options.fetchFn, target.endpoint, chat, () => undefined);
         // Only a timeout stops a draft: the model didn't answer in time.
@@ -745,10 +745,16 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
         const { costUsd } = result.usage;
         // Counted even when the answer can't be used: the provider has billed it.
         if (costUsd !== null && costUsd > 0) await service.addCost(costUsd);
-        const texts = draftTexts(request, result.text);
-        return texts === undefined
+        const draft = readDraft(request, result.text);
+        return draft === undefined
           ? { status: "provider-error" }
-          : { status: "ok", texts, costUsd };
+          : {
+              status: "ok",
+              texts: draft.texts,
+              // Each text's flag, when the model flagged any (#1228).
+              ...(draft.examples.some(Boolean) ? { examples: draft.examples } : {}),
+              costUsd,
+            };
       } finally {
         drafting.delete(checked.project);
       }
