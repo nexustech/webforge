@@ -122,13 +122,9 @@ test.describe("every section's preview", () => {
       const row = left()
         .getByRole("list", { name: "All sections" })
         .getByRole("button", { name, exact: true });
-      if (name === "Section") {
-        // A Section with nothing in it yet: no card at all, rather than an empty one. A row with a
-        // card is its trigger, which says whether the card is open.
-        await expect(row).not.toHaveAttribute("data-state");
-        continue;
-      }
-      await expect(row).toHaveAttribute("data-state", "closed");
+      // A Section with nothing in it yet has no card at all, rather than an empty one
+      // (`section-preview.test.tsx`): nothing to wait for here.
+      if (name === "Section") continue;
       await hoverUntilShown(row, preview, away);
       // Drawn, with the section's own words or pictures in it.
       await expect
