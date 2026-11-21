@@ -43,6 +43,16 @@ type AssistantPanelState = {
   readonly safetyVersionId: string | undefined;
   /** The reply whose held changes are being applied (6.9e). */
   readonly applying: string | undefined;
+  /**
+   * A message sent while a reply was under way (5.19, OL-4): held, and sent by itself when the
+   * reply finishes, with what was selected when it was written.
+   */
+  readonly waiting: { readonly text: string; readonly context: MessageContext } | undefined;
+  /**
+   * A held message given back to the box, unsent: the reply failed or was stopped, or the person
+   * chose to edit it. The panel puts it in the box, then takes it ({@link AssistantPanelModel.taken}).
+   */
+  readonly returned: string | undefined;
 };
 
 /** A reply the conversation keeps, as the panel shows it: its steps are its tool calls that changed something. */
@@ -63,6 +73,17 @@ export type AssistantPanelModel = {
    */
   readonly send: (text: string, context: MessageContext) => Promise<boolean>;
   readonly stop: () => Promise<void>;
+  /**
+   * Holds a message sent while a reply is under way (5.19, OL-4), to send when it finishes; one
+   * sent while another is held is added to it, so nothing typed is lost.
+   */
+  readonly hold: (text: string, context: MessageContext) => void;
+  /** Gives the held message back to the box to edit (`returned`), unsent. */
+  readonly editWaiting: () => void;
+  /** Drops the held message, unsent. */
+  readonly removeWaiting: () => void;
+  /** The panel has put `returned` in the box. */
+  readonly taken: () => void;
   readonly newConversation: () => Promise<void>;
   /** This site's yes or no (ADR 0026 §4), kept on this computer by main. */
   readonly answerSite: (allowed: boolean) => Promise<void>;
@@ -93,6 +114,8 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
     refused: undefined,
     safetyVersionId: undefined,
     applying: undefined,
+    waiting: undefined,
+    returned: undefined,
   }));
   /** The replies whose held changes the person discarded: others' were dropped for a newer one. */
   const discarding = new Set<string>();
@@ -208,6 +231,8 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
             ? {}
             : { status: { ...status, month: { ...status.month, ...event.month } } }),
         }));
+        // Stopped, or out of the month's budget: not finished, so its held message isn't sent.
+        releaseWaiting(event.stop !== "stopped" && event.stop !== "limit-reached");
         return;
       case "held":
         turn(event.replyId, (each) =>
@@ -238,8 +263,56 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
         state.setState(({ replying }) => ({
           replying: replying === event.replyId ? undefined : replying,
         }));
+        releaseWaiting(false);
         return;
     }
+  };
+  /**
+   * Sends a message with what's selected; nothing while a reply is under way or a message is on
+   * its way. Whether main took it: a refused message stays for the person to send again.
+   */
+  const send = async (text: string, context: MessageContext): Promise<boolean> => {
+    if (state.getState().replying !== undefined || sending !== undefined || text.trim() === "") {
+      return false;
+    }
+    sending = text;
+    state.setState({ refused: undefined });
+    try {
+      const result = await api.send(session, text, context);
+      if (result.status === "sending") {
+        ensure(result.replyId, text);
+        return true;
+      }
+      state.setState({ refused: result.status });
+      return false;
+    } catch (error) {
+      // Main couldn't take it: said as any failure, logged without content.
+      reportFailure("assistant.send", error);
+      state.setState({ refused: "failed" });
+      return false;
+    } finally {
+      sending = undefined;
+    }
+  };
+  /**
+   * A reply ended (5.19, OL-4): the held message is sent if it finished, or given back to the box,
+   * unsent, if it failed or was stopped, or if main didn't take it.
+   */
+  const releaseWaiting = (finished: boolean) => {
+    const { waiting } = state.getState();
+    if (waiting === undefined) return;
+    state.setState({ waiting: undefined });
+    const giveBack = () =>
+      state.setState(({ returned }) => ({
+        returned: returned === undefined ? waiting.text : `${waiting.text}\n\n${returned}`,
+      }));
+    if (!finished) {
+      giveBack();
+      return;
+    }
+    void send(waiting.text, waiting.context).then((taken) => {
+      if (!taken) giveBack();
+    });
   };
   const unsubscribe = api.onEvent(onEvent);
   void Promise.all([api.status(), api.siteConsent(session), api.conversation(session)])
@@ -260,29 +333,19 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
     .catch((error: unknown) => reportFailure("assistant.load", error));
   return {
     state,
-    send: async (text, context) => {
-      if (state.getState().replying !== undefined || sending !== undefined || text.trim() === "") {
-        return false;
-      }
-      sending = text;
-      state.setState({ refused: undefined });
-      try {
-        const result = await api.send(session, text, context);
-        if (result.status === "sending") {
-          ensure(result.replyId, text);
-          return true;
-        }
-        state.setState({ refused: result.status });
-        return false;
-      } catch (error) {
-        // Main couldn't take it: said as any failure, logged without content.
-        reportFailure("assistant.send", error);
-        state.setState({ refused: "failed" });
-        return false;
-      } finally {
-        sending = undefined;
-      }
+    send,
+    hold: (text, context) => {
+      if (text.trim() === "") return;
+      state.setState(({ waiting }) => ({
+        waiting: {
+          text: waiting === undefined ? text : `${waiting.text}\n\n${text}`,
+          context,
+        },
+      }));
     },
+    editWaiting: () => releaseWaiting(false),
+    removeWaiting: () => state.setState({ waiting: undefined }),
+    taken: () => state.setState({ returned: undefined }),
     stop: async () => {
       const replyId = state.getState().replying;
       if (replyId !== undefined) await api.stop(replyId).catch(failed("assistant.stop"));
