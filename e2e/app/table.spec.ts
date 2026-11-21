@@ -1,5 +1,6 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { ACTION_BAR_ACTION, ACTION_BAR_LABEL, COMPONENT, OVERLAY } from "@webforge/engine/puck-dom";
+import { OPEN_WAIT } from "./budget.js";
 import { clickOnCanvas, editOnCanvas, stillBox } from "./canvas-click.js";
 import { drag } from "./drag.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
@@ -24,6 +25,14 @@ test.afterEach(async () => {
 const canvas = () => page.frameLocator(".editor__canvas iframe");
 const left = () => page.getByRole("region", { name: "Left panels" });
 const right = () => page.getByRole("region", { name: "Right panels" });
+
+/**
+ * How long a poll waits for the Table to be laid out, or outlined, as it should be (#1209). The
+ * canvas compiles the styles a change needs a moment after it, and the first time on a worker, or
+ * on a busy runner, that took longer than a poll's own 5 s: twice in 80 runs here, and in CI on
+ * Windows and Linux. The polls still wait for the layout itself, only no longer give up at 5 s.
+ */
+const LAYOUT_WAIT = { timeout: OPEN_WAIT };
 
 /** What {@link boxOf} throws for something not drawn: in a poll, not yet drawn (#1147). */
 class NotShown extends Error {}
@@ -70,6 +79,7 @@ async function placeTable() {
         const { a1, b1 } = await cellBoxes();
         return b1.y >= a1.y + a1.height - 1;
       }),
+      LAYOUT_WAIT,
     )
     .toBe(true);
 }
@@ -119,6 +129,7 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
           b1.y >= a1.y + a1.height - 1
         );
       }),
+      LAYOUT_WAIT,
     )
     .toBe(true);
 
@@ -134,11 +145,15 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
           Math.abs(wrapperBox.height - a1.height) < 1
         );
       }),
+      LAYOUT_WAIT,
     )
     .toBe(true);
 
-  await clickOnCanvas(row(0).locator("td").first());
-  await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible();
+  // On its edge, in its first cell's padding, as a person selects it: not on its text, where a
+  // pointer that has made the text editable starts an edit instead (#1209).
+  const edge = await edgeOf(0);
+  await page.mouse.click(edge.x, edge.y);
+  await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible(LAYOUT_WAIT);
   await expect(right().getByRole("textbox", { name: "Column 2" })).toBeVisible();
   await expect(right().getByRole("textbox", { name: "Column 3" })).toHaveCount(0);
 
@@ -153,6 +168,7 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
         const { a1, a2, b1 } = await cellBoxes();
         return a2.y >= a1.y + a1.height - 1 && b1.y >= a2.y + a2.height - 1;
       }),
+      LAYOUT_WAIT,
     )
     .toBe(true);
 });
@@ -163,7 +179,7 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   // Selected, Puck's outline fits the row.
   const start = await edgeOf(0);
   await page.mouse.click(start.x, start.y);
-  await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible();
+  await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible(LAYOUT_WAIT);
   const overlay = canvas().locator(OVERLAY).first();
   await expect
     .poll(
@@ -175,6 +191,7 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
           Math.abs(rowBox.width - outline.width) < 2
         );
       }),
+      LAYOUT_WAIT,
     )
     .toBe(true);
 
@@ -216,7 +233,7 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   // Moved up twice with its bar, the row comes first.
   const end = await edgeOf(2);
   await page.mouse.click(end.x, end.y);
-  await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible();
+  await expect(right().getByRole("heading", { name: "Table row" })).toBeVisible(LAYOUT_WAIT);
   const moveUp = canvas()
     .locator(ACTION_BAR_ACTION)
     .and(canvas().getByRole("button", { name: "Move up", exact: true }));
@@ -233,7 +250,9 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
 test("keeps a Table with no rows open on the canvas, and lays a row added again out under its headings", async () => {
   await placeTable();
   await clickOnCanvas(canvas().locator("th").first());
-  await expect(right().getByRole("heading", { name: "Table", exact: true })).toBeVisible();
+  await expect(right().getByRole("heading", { name: "Table", exact: true })).toBeVisible(
+    LAYOUT_WAIT,
+  );
   const list = right().getByRole("group", { name: "Rows" });
   await expect(list.getByRole("listitem")).toHaveCount(3);
 
@@ -245,7 +264,9 @@ test("keeps a Table with no rows open on the canvas, and lays a row added again 
   // The body, a slot with nothing in it, keeps the room Puck gives one (128px at the canvas's own
   // scale, which zooms out to fit a small window), across the table.
   const body = canvas().locator(".site-table > table > tbody");
-  await expect.poll(async () => (await ownBox(body)).height).toBeGreaterThanOrEqual(100);
+  await expect
+    .poll(async () => (await ownBox(body)).height, LAYOUT_WAIT)
+    .toBeGreaterThanOrEqual(100);
   const [bodyBox, tableBox] = await Promise.all([
     ownBox(body),
     ownBox(canvas().locator(".site-table > table")),
@@ -271,6 +292,7 @@ test("keeps a Table with no rows open on the canvas, and lays a row added again 
           Math.abs(room.height - first.height) < 1
         );
       }),
+      LAYOUT_WAIT,
     )
     .toBe(true);
 });
