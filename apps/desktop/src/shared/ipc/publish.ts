@@ -192,6 +192,20 @@ type TestSavedResult = z.infer<typeof testSavedResultSchema>;
 /** One publish, named by the renderer, for its progress and its cancel (#665). */
 const operationIdSchema = z.uuid();
 
+/** Why a publish failed: what publishing found, or what kept it from starting. */
+export const PUBLISH_FAILURE_REASONS = [
+  ...PUBLISH_FAILURES,
+  "no-site",
+  "stale-session",
+  "no-destination",
+  "no-version",
+  "unreadable-version",
+  "unknown",
+] as const;
+
+/** One of {@link PUBLISH_FAILURE_REASONS}. */
+export type PublishFailure = (typeof PUBLISH_FAILURE_REASONS)[number];
+
 /**
  * What became of a publish (4.5, ADR 0018): live at `url` (the live check's result with it, and
  * whether the version it went live with was saved, or a republished one's record of it written:
@@ -217,15 +231,7 @@ const publishResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("cancelled") }),
   z.strictObject({
     status: z.literal("failed"),
-    reason: z.enum([
-      ...PUBLISH_FAILURES,
-      "no-site",
-      "stale-session",
-      "no-destination",
-      "no-version",
-      "unreadable-version",
-      "unknown",
-    ]),
+    reason: z.enum(PUBLISH_FAILURE_REASONS),
     /** The title of the page to fix, for `reserved-name`. */
     page: z.string().max(500).optional(),
     /** The id of the Media image to replace, for `unreadable-image`. */

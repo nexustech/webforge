@@ -1,6 +1,8 @@
 import { createStore, type StoreApi } from "zustand/vanilla";
 import type { OnboardingPreferences } from "../../shared/ipc/prefs.js";
+import { TOUR_STEPS_MAX } from "../../shared/usage.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
+import { recordUsage } from "../usage.js";
 import { TOUR_STEPS } from "./tour-steps.js";
 
 /** What the tour shows: nothing, the offer (OB-1), or a step by its place in {@link TOUR_STEPS}. */
@@ -40,16 +42,25 @@ export function createTour(preferences: PreferencesStore): Tour {
     stage,
     start() {
       remember("done");
+      recordUsage({ kind: "tour", outcome: "taken" });
       go(0);
     },
     skip() {
-      if (at() === "closed") return;
+      const now = at();
+      if (now === "closed") return;
       if (onboarding().tour !== "done") remember("skipped");
+      // Its offer turned down, or the tour closed at a step (5.40).
+      recordUsage(
+        now === "offer"
+          ? { kind: "tour", outcome: "declined" }
+          : { kind: "tour", outcome: "closed", step: Math.min(now, TOUR_STEPS_MAX - 1) },
+      );
       go("closed");
     },
     next() {
       const now = at();
       if (typeof now !== "number") return;
+      if (now + 1 >= TOUR_STEPS.length) recordUsage({ kind: "tour", outcome: "finished" });
       go(now + 1 < TOUR_STEPS.length ? now + 1 : "closed");
     },
     back() {

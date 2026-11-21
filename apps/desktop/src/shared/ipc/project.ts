@@ -92,6 +92,21 @@ const readSiteResultSchema = z.discriminatedUnion("status", [
 /** Outcome of reading the open site's documents. */
 export type ReadSiteResult = z.infer<typeof readSiteResultSchema>;
 
+/**
+ * Why saving changes failed: no site open, another site opened since the renderer loaded
+ * (`stale-session`), a read-only site, changes that would break the site, or a write error.
+ */
+export const COMMIT_FAILURES = [
+  "no-site",
+  "stale-session",
+  "read-only",
+  "invalid",
+  "unknown",
+] as const;
+
+/** One of {@link COMMIT_FAILURES}. */
+export type CommitFailure = (typeof COMMIT_FAILURES)[number];
+
 /** Outcome of saving changes to the open site. */
 const commitResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("saved") }),
@@ -101,7 +116,7 @@ const commitResultSchema = z.discriminatedUnion("status", [
      * No site open, another site opened since the renderer loaded (`stale-session`), a read-only
      * site, changes that would break the site, or a write error.
      */
-    reason: z.enum(["no-site", "stale-session", "read-only", "invalid", "unknown"]),
+    reason: z.enum(COMMIT_FAILURES),
   }),
 ]);
 
@@ -212,6 +227,8 @@ const newSiteRequestSchema = z.strictObject({
    * `project:take-about` and draft the pages' words from. Never written to the site's file.
    */
   about: z.string().trim().min(1).max(BUSINESS_ABOUT_MAX).optional(),
+  /** Made from an AI app's brief (4.12a): counted as one in the usage summary (5.40). */
+  fromBrief: z.literal(true).optional(),
 });
 
 /** See {@link newSiteRequestSchema}. */

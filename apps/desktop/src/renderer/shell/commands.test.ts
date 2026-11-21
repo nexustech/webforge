@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { EditorUsage } from "../../shared/usage.js";
 import { setFailureLog } from "../log.js";
+import { setUsageLog } from "../usage.js";
 import {
   availability,
   createCommandRegistry,
@@ -600,5 +602,30 @@ describe("shortcuts", () => {
       draggable.remove();
       dialog.remove();
     });
+  });
+});
+
+describe("the usage summary's count of commands (5.40)", () => {
+  afterEach(() => {
+    setUsageLog(undefined);
+  });
+
+  it("counts a command run by its listed name: a site's id never, and an unlisted one not at all", () => {
+    const counted = vi.fn(async (_usage: EditorUsage) => null);
+    setUsageLog(counted);
+    const registry = createCommandRegistry();
+    for (const id of ["edit.undo", "site.openRecent.0c1d2e3f", "made.up", "help.about"]) {
+      registry.register({ id, label: id, run: () => undefined });
+    }
+    registry.register({ id: "site.export", label: "Export", enabled: false, run: () => undefined });
+
+    for (const id of ["edit.undo", "site.openRecent.0c1d2e3f", "made.up", "site.export"]) {
+      registry.run(id);
+    }
+
+    expect(counted.mock.calls.map(([usage]) => usage)).toEqual([
+      { kind: "command", id: "edit.undo" },
+      { kind: "command", id: "site.openRecent" },
+    ]);
   });
 });

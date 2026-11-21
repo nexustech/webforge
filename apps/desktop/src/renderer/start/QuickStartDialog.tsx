@@ -25,8 +25,10 @@ import { FileIcon, ImageIcon } from "lucide-react";
 import { type ChangeEvent, useEffect, useId, useRef, useState } from "react";
 import { BUSINESS_ABOUT_MAX, type NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
+import { QUICK_START_STEPS } from "../../shared/usage.js";
 import { recipeName } from "../site/index.js";
 import { readPixels } from "../theme/index.js";
+import { recordUsage } from "../usage.js";
 import {
   emptyAnswers,
   palettesFor,
@@ -51,9 +53,6 @@ import { TemplateDetails } from "./TemplateDetails.js";
 import { TemplatePreview } from "./TemplatePreview.js";
 import { ThemeOption } from "./ThemeOption.js";
 import { presetLabel, TEMPLATE_GRID, templateName } from "./template-labels.js";
-
-/** The quick start's steps, in order (QS-1). */
-const QUICK_START_STEPS = ["business", "look", "pages", "details"] as const;
 
 /** One of {@link QUICK_START_STEPS}. */
 export type QuickStartStep = (typeof QUICK_START_STEPS)[number];
@@ -89,16 +88,28 @@ export type QuickStartDialogProps = {
  * (LF-11). Main makes the site, with the person's business in place of the template's (QS-2).
  */
 export function QuickStartDialog({ open, ...body }: QuickStartDialogProps) {
+  // The step shown, for where the quick start was put away (5.40's usage summary).
+  const shown = useRef<QuickStartStep>(body.initialStep ?? "business");
+  const cancel = () => {
+    recordUsage({ kind: "quickStart", outcome: "cancelled", step: shown.current });
+    body.onCancel();
+  };
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) body.onCancel();
+        if (!next) cancel();
       }}
     >
       {/* The content mounts with each opening, so the quick start starts afresh every time. */}
       <DialogContent className="flex h-[min(44rem,calc(100dvh-2rem))] flex-col sm:max-w-5xl">
-        <QuickStartBody {...body} />
+        <QuickStartBody
+          {...body}
+          onCancel={cancel}
+          onShown={(step) => {
+            shown.current = step;
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -114,7 +125,11 @@ function QuickStartBody({
   initialStep = "business",
   initialAnswers,
   askAbout = false,
-}: Omit<QuickStartDialogProps, "open">) {
+  onShown,
+}: Omit<QuickStartDialogProps, "open"> & {
+  /** Told each step as it's shown. */
+  readonly onShown: (step: QuickStartStep) => void;
+}) {
   const untitled = t("site.untitledName");
   const [answers, setAnswers] = useState(() => initialAnswers ?? emptyAnswers());
   const [step, setStep] = useState(QUICK_START_STEPS.indexOf(initialStep));
@@ -140,10 +155,12 @@ function QuickStartBody({
       setStep(QUICK_START_STEPS.length - 1);
       return;
     }
+    recordUsage({ kind: "quickStart", outcome: "created", step: current });
     onCreate(quickStartRequest({ ...answers, ...detailsAnswers(details.values) }, untitled));
   };
 
   const current = QUICK_START_STEPS[step] ?? "business";
+  useEffect(() => onShown(current), [current, onShown]);
   return (
     <form
       className="flex min-h-0 flex-1 flex-col gap-4"
