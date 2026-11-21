@@ -59,10 +59,23 @@ const EMAIL_IN_TEXT = /[\w.+-]+@[\w-]+(\.[\w-]+)+/g;
 /** A phone number in running text: digits, with the spaces, brackets and dashes they're written with. */
 const PHONE_IN_TEXT = /\+?\d[\d\s().-]{6,}\d/g;
 
+/** Four digits in a row, or with one space or dash between: any phone number has them. */
+const DIGITS = /\d[\s-]?\d[\s-]?\d[\s-]?\d/;
+
+/**
+ * Whether `text` may hold an email address or a phone number at all: an `@`, or a run of digits.
+ * Cheap, so most text is passed over before it's searched (Site Check's cost, ADR 0016).
+ */
+export const mayHoldSampleDetail = (text: string): boolean =>
+  text.includes("@") || DIGITS.test(text);
+
 /** The made-up email addresses and phone numbers in `text`, as written there. */
 export function sampleDetailsIn(text: string): readonly string[] {
+  if (!mayHoldSampleDetail(text)) return [];
   return [
-    ...[...text.matchAll(EMAIL_IN_TEXT)].map(([found]) => found).filter(isSampleEmail),
+    ...(text.includes("@")
+      ? [...text.matchAll(EMAIL_IN_TEXT)].map(([found]) => found).filter(isSampleEmail)
+      : []),
     ...[...text.matchAll(PHONE_IN_TEXT)].map(([found]) => found.trim()).filter(isSamplePhone),
   ];
 }

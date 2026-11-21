@@ -9,6 +9,7 @@ import {
   isSampleEmail,
   isSamplePhone,
   linkValueSchema,
+  mayHoldSampleDetail,
   mediaItem,
   publishedSite,
   sampleDetailsIn,
@@ -379,9 +380,12 @@ export const sampleDetailsRule: CheckRule = {
       const { node, field, value } = placed;
       const bindings = node.props.bindings;
       if (typeof bindings === "object" && bindings !== null && field in bindings) return;
+      // Most text has no `@` and no digits: passed over before it's made plain (ADR 0016).
       const sample =
         typeof value === "string"
-          ? !linksToExample(value) && sampleDetailsIn(plainText(value)).length > 0
+          ? mayHoldSampleDetail(value) &&
+            !linksToExample(value) &&
+            sampleDetailsIn(plainText(value)).length > 0
           : isSamplePhoneLink(value);
       if (sample) found.push({ key: fieldKey(placed), place: elementPlace(placed) });
     });
