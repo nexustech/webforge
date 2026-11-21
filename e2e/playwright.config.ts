@@ -18,7 +18,9 @@ export default defineConfig({
   // the ones it didn't reach: a run held up past the job's limit was cancelled with no report at
   // all (#1161). The E2E jobs allow 35 (ci.yml), and the 9 minutes between cover what the job does
   // besides Playwright: its setup (about 1.5), `pnpm e2e`'s build before the tests, uncached on a
-  // slow runner, and the report's upload after. The longest shard (macOS 1/2) takes 15–23 minutes.
+  // slow runner, and the report's upload after. CI runs the tests in parts (#1286): the app's in
+  // shards and the exported site's in a job of their own. In a full run on 21 Nov 2026 the longest
+  // part, macOS's app 2/3, took 13 minutes, half the limit; the two shards before took 18–26.
   globalTimeout: process.env.CI ? 26 * 60_000 : 0,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: {

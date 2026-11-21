@@ -22,8 +22,10 @@ name: CI
 #   merge commit and the `main` it merges into, in two interleaved rounds in the same job, so the
 #   runner's own speed cancels out. More than 20% slower than `main` in both rounds fails. Nightly,
 #   `main` is compared with itself, which shows the runner's spread.
-# - To keep runs short: E2E runs in two shards on every OS, and Storybook in two; `export-browsers`
-#   waits only for Linux's E2E, whose exported site it opens; and the static checks (lint,
+# - To keep runs short: E2E runs in parts side by side on every OS: the app's tests in shards (two
+#   on Linux, three on Windows and macOS) and the exported-site tests in a job of their own
+#   (#1286). Storybook runs in two shards. `export-browsers` waits only for Linux's E2E, whose
+#   export job's site it opens; and the static checks (lint,
 #   typecheck, boundaries, knip, UI strings, React Compiler) run on Linux only, as they read the
 #   same source on every OS.
 # - Unit tests run on Linux in every run, and on Windows and macOS only nightly and in "Run
@@ -284,19 +286,22 @@ jobs:
 
   e2e-linux:
     # Linux runs the E2E tests in a job of its own, which `export-browsers` waits for (it opens the
-    # site this job exports), so it starts without waiting for Windows and macOS. Two shards: one
-    # took 11–12 minutes, the longest E2E job. The steps are shared with `e2e` through the
-    # `e2e-steps` anchor.
+    # site the `export` part exports), so it starts without waiting for Windows and macOS. The steps
+    # are shared with `e2e` through the `e2e-steps` anchor.
+    # Parts (#1286): `app-1`, `app-2`… are the app's tests in `app-shards` shards, and `export` the
+    # export setup and the exported-site tests. Playwright's `--shard` splits by test count, and an
+    # app test takes several times an export test, so sharding both together left the first shard
+    # with most of the app's tests: 18–26 minutes on macOS against 8–12 for the second.
     # The name uses the matrix, so GitHub doesn't add the matrix values to it.
-    name: E2E (${{ matrix.os }}, ${{ matrix.shard }}/${{ matrix.shards }})
+    name: E2E (${{ matrix.os }}, ${{ matrix.part }})
     needs: changes
     if: needs.changes.outputs.e2e == 'true'
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        shard: [1, 2]
-        shards: [2]
+        part: [app-1, app-2, export]
+        app-shards: [2]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     env: &e2e-env
@@ -311,7 +316,8 @@ jobs:
       # Where export.setup.ts exports the fixture site (e2e/export/exported-site.ts).
       WEBFORGE_EXPORTED_SITE_DIR: ${{ github.workspace }}/.ci-cache/exported-site
       # Every template exported and opened from disk (3.10) only when what they're made from can
-      # have changed, as Firefox and WebKit: several minutes a shard otherwise. Always, nightly.
+      # have changed, as Firefox and WebKit: several minutes of the `export` part otherwise. Always,
+      # nightly.
       WEBFORGE_EXPORT_TEMPLATES: ${{ needs.changes.outputs.all-browsers == 'true' && '1' || '0' }}
     steps: &e2e-steps
       - name: Check out
@@ -448,25 +454,31 @@ jobs:
       - name: Choose the test projects
         id: projects
         shell: bash
+        env:
+          PART: ${{ matrix.part }}
+          APP_SHARDS: ${{ matrix.app-shards }}
         run: |
-          # The app, and the export tests in each browser installed (Firefox and WebKit run in
-          # `export-browsers` on Linux, or not at all when the exported site can't have changed),
-          # and on Windows Edge's too, which comes with Windows (3.10).
-          args="--project=app --project=export-setup"
-          # shellcheck disable=SC2086 # BROWSERS is a space-separated list
-          for browser in $BROWSERS; do args="$args --project=export-$browser"; done
-          if [ "$RUNNER_OS" = Windows ]; then args="$args --project=export-msedge"; fi
+          if [ "$PART" = export ]; then
+            # The export setup, and the export tests in each browser installed (Firefox and WebKit
+            # run in `export-browsers` on Linux, or not at all when the exported site can't have
+            # changed), and on Windows Edge's too, which comes with Windows (3.10).
+            args="--project=export-setup"
+            # shellcheck disable=SC2086 # BROWSERS is a space-separated list
+            for browser in $BROWSERS; do args="$args --project=export-$browser"; done
+            if [ "$RUNNER_OS" = Windows ]; then args="$args --project=export-msedge"; fi
+          else
+            # One shard of the app's tests: Playwright splits them by file, in order.
+            args="--project=app --shard=${PART#app-}/$APP_SHARDS"
+          fi
           echo "args=$args" >> "$GITHUB_OUTPUT"
 
-      # Playwright splits the tests across the matrix's shards by file (the export setup goes with
-      # the export tests that need it), two on every OS.
       - name: Electron E2E tests (Linux, virtual display)
         if: runner.os == 'Linux'
-        run: xvfb-run --auto-servernum pnpm e2e ${{ steps.projects.outputs.args }} --shard=${{ matrix.shard }}/${{ matrix.shards }}
+        run: xvfb-run --auto-servernum pnpm e2e ${{ steps.projects.outputs.args }}
 
       - name: Electron E2E tests
         if: runner.os != 'Linux'
-        run: pnpm e2e ${{ steps.projects.outputs.args }} --shard=${{ matrix.shard }}/${{ matrix.shards }}
+        run: pnpm e2e ${{ steps.projects.outputs.args }}
 
       - name: Save Electron
         # The first app start downloads Electron's binary, so this runs after the tests.
@@ -477,37 +489,38 @@ jobs:
           key: ${{ steps.keys.outputs.electron }}
 
       - name: Upload the exported site
-        # For the `export-browsers` job, which opens it in Firefox and WebKit. Only a shard that ran
-        # the export setup has it; if none did, that job finds no site and fails.
-        if: runner.os == 'Linux' && needs.changes.outputs.all-browsers == 'true'
+        # For the `export-browsers` job, which opens it in Firefox and WebKit: the `export` part's,
+        # the one that runs the export setup. Without it, that job finds no site and fails.
+        if: runner.os == 'Linux' && matrix.part == 'export' && needs.changes.outputs.all-browsers == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: exported-site-${{ matrix.shard }}
+          name: exported-site
           path: .ci-cache/exported-site/
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 1
 
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report-${{ matrix.os }}-${{ matrix.shard }}
+          name: playwright-report-${{ matrix.os }}-${{ matrix.part }}
           path: e2e/playwright-report/
           if-no-files-found: ignore
           retention-days: 7
 
   e2e:
-    # Windows and macOS, while FULL_CI_ENABLED is true (see the notes above), each in two shards
-    # that run side by side: macOS took 11–12 minutes in one job, the longest in a run.
-    name: E2E (${{ matrix.os }}, ${{ matrix.shard }}/${{ matrix.shards }})
+    # Windows and macOS, while FULL_CI_ENABLED is true (see the notes above), each in parts that run
+    # side by side, as Linux's: the app's tests in three shards, as they take longest there, and
+    # the exported-site tests.
+    name: E2E (${{ matrix.os }}, ${{ matrix.part }})
     needs: changes
     if: vars.FULL_CI_ENABLED == 'true' && needs.changes.outputs.e2e == 'true'
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest, macos-latest]
-        shard: [1, 2]
-        shards: [2]
+        part: [app-1, app-2, app-3, export]
+        app-shards: [3]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     env: *e2e-env
@@ -541,11 +554,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download the exported site
-        # From whichever E2E shard exported it (both, if each ran the export setup: the same site).
+        # From Linux's `export` part, which exported it.
         uses: actions/download-artifact@v8
         with:
-          pattern: exported-site-*
-          merge-multiple: true
+          name: exported-site
           path: exported-site
 
       - name: Firefox and WebKit
