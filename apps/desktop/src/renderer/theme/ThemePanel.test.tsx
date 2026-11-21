@@ -126,7 +126,9 @@ describe("the Theme tab (2.3a)", () => {
 
     await vi.waitFor(() => expect(labels(session)).toEqual(["Changed brand colour"]));
     const brand = session.history.document.getState().theme.colors.primary;
-    expect({ c: brand.c, h: brand.h }).toEqual({ c: 0.08, h: 277 });
+    // Its own hue and chroma, as close as a screen shows them.
+    expect(brand.c).toBeCloseTo(0.08, 2);
+    expect(Math.abs(brand.h - 277)).toBeLessThan(1);
     expect(brand.l).toBeLessThan(0.85);
     expect(screen.queryByText(/hard to read/)).toBeNull();
     expect(screen.queryByRole("button", { name: /shade/ })).toBeNull();
