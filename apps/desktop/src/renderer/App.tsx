@@ -38,6 +38,7 @@ import { PanelsMenu } from "./shell/PanelsMenu.js";
 import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
 import { createPreferencesStore, usePreferences } from "./shell/preferences-store.js";
+import { ReportProblem } from "./shell/ReportProblem.js";
 import { ShellLayout } from "./shell/ShellLayout.js";
 import { ShortcutSheet } from "./shell/ShortcutSheet.js";
 import { TitleBar } from "./shell/TitleBar.js";
@@ -292,6 +293,11 @@ export function App({
                 </main>
               </div>
               <HelpCommands help={api.help} />
+              <ReportProblem
+                api={api.app}
+                copyText={(text) => api.clipboard.copyText(text)}
+                preferences={preferences}
+              />
               <AboutDialog info={info} />
               <OpenSourceLicences licences={api.app} />
               <ShortcutSheet />

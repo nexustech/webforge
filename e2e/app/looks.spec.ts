@@ -58,3 +58,35 @@ test("a kind's look set in Theme Studio shows on an item without its own, once i
   // The look's background, on the canvas: Accent is the theme's secondary colour.
   await expect(features).toHaveClass(/bg-secondary!/);
 });
+
+test("Theme Studio draws its samples' buttons as links, not greyed for want of one (#1256)", async () => {
+  await chooseFromMenu(app, page, "Site", "Theme Studio…");
+  const studio = page.getByRole("dialog", { name: "Theme Studio" });
+  const buttonsIn = async (region: string) => {
+    const frames = studio.getByRole("region", { name: region }).locator("iframe");
+    await expect(frames.first()).toBeAttached();
+    const drawn = { links: 0, greyed: 0 };
+    for (const frame of await frames.all()) {
+      const content = frame.contentFrame();
+      await expect(content.locator("body")).not.toBeEmpty();
+      drawn.links += await content.locator("a.btn").count();
+      drawn.greyed += await content.locator(".btn-disabled").count();
+    }
+    return drawn;
+  };
+
+  // The sample page, over Colours (CT-11): a Hero's and a Call to action's buttons among others.
+  await studio.getByRole("tab", { name: "Colours" }).click();
+  const sample = await buttonsIn("A sample page in your theme");
+  expect(sample.links).toBeGreaterThan(0);
+  expect(sample.greyed).toBe(0);
+
+  // A Button's own preview, under Components.
+  await studio.getByRole("tab", { name: "Components" }).click();
+  await studio
+    .getByRole("combobox", { name: "Sections and elements" })
+    .selectOption({ value: "Button" });
+  const button = await buttonsIn("Button, as it looks in this theme");
+  expect(button.links).toBeGreaterThan(0);
+  expect(button.greyed).toBe(0);
+});

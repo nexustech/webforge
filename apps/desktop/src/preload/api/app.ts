@@ -11,6 +11,11 @@ export const appApi = (call: Call, subscribe: Subscribe): AppApi => ({
   listLicences: () => call("listLicences"),
   openChromiumLicences: () => call("openChromiumLicences"),
   setSpellCheckLanguage: (language) => call("setSpellCheckLanguage", language),
+  getReportInfo: () => call("getReportInfo"),
+  openReport: (route, text) => call("openReport", route, text),
+  captureWindow: () => call("captureWindow"),
+  saveWindowCapture: () => call("saveWindowCapture"),
+  discardWindowCapture: () => call("discardWindowCapture"),
   setNativeMenus: (menus) => call("setNativeMenus", menus),
   onRunCommand: (run) =>
     subscribe(appEvents.runCommand.channel, (...args) => {

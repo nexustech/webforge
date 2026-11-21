@@ -4,7 +4,7 @@ id: saving-and-backups
 title: Saving, copies and backups
 summary: How {appName} saves your work, how to copy a site to another computer, and what happens if something goes wrong.
 related: [version-history, undo-and-history, export, getting-started]
-updated: 2026-11-17
+updated: 2026-11-21
 ---
 
 # Saving, copies and backups
@@ -51,6 +51,18 @@ The damaged file is kept beside the restored one, so nothing is lost.
 ## If {appName} closes unexpectedly
 
 Your work is saved as you go, so it's still there when you open {appName} again. {appName} also saves a crash report on your computer. It contains none of your site's content or personal details, and it's never sent anywhere.
+
+## Reporting a problem
+
+If something goes wrong, tell us: choose **Help › Report a Problem…**. {appName} sends nothing itself. You see everything in your report first, and send it yourself.
+
+1. Write what happened: what you did, what you expected, and what happened instead. Under it, {appName} shows what's sent with your message: its version and your computer's system, such as _Windows 10.0.26300 (x64)_. Nothing of your site goes with it.
+2. To show the problem, click **Take a Screenshot of This Window**. It's a picture of {appName}'s window only, without the dialog, and it's taken only when you click. Click **Save Screenshot…** to save it as a file, then attach it to your report.
+3. Click **Open a GitHub Issue**: your browser opens our report form with your message, the version and your system filled in, for you to send. Or click **Copy My Message** to paste it into a message of your own. A very long message is cut short to fit the form: {appName} says so, and you paste the rest in from **Copy My Message**.
+
+A GitHub issue is public: anyone can read it, and you need a GitHub account to send one. Leave out personal details, such as a customer's name or address, and don't attach a screenshot that shows them.
+
+Your message is kept, even if you close the dialog or {appName}, until you click **Clear Message**. If {appName} has closed unexpectedly, you can attach a crash report too: see below.
 
 ## Sharing a crash report
 

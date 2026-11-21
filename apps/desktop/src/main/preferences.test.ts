@@ -43,6 +43,7 @@ describe("parsePreferences", () => {
       versionsKept: 20,
       onboarding: { tour: "new", tipsSeen: [], showTips: true },
       interfaceZoom: 1,
+      reportDraft: "",
     });
     expect(parsePreferences({ panelLayout: { group: { panel: 250 } } }).panelLayout).toEqual({});
     // Versions kept (P3): 5 to 100, else the default 20.
@@ -56,6 +57,12 @@ describe("parsePreferences", () => {
     ).toEqual(DEFAULT_PREFERENCES.canvas);
     const tooMany = Object.fromEntries(Array.from({ length: 33 }, (_, i) => [`g${i}`, {}]));
     expect(parsePreferences({ panelLayout: tooMany }).panelLayout).toEqual({});
+  });
+
+  it("keeps Report a Problem's message until it's cleared, or none if it's too long (OL-10)", () => {
+    expect(parsePreferences({ reportDraft: "The menu froze" }).reportDraft).toBe("The menu froze");
+    expect(parsePreferences({ reportDraft: "x".repeat(6001) }).reportDraft).toBe("");
+    expect(parsePreferences({}).reportDraft).toBe("");
   });
 
   it("keeps the update channel the person chose, and leaves it out if none or invalid (5.2)", () => {

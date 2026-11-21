@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { NodeDoc } from "@webforge/model";
 import { userEvent, within } from "storybook/test";
+import { withSampleLinks } from "../library.js";
 import { SiteNodes } from "../stories/site-nodes.js";
 import { siteLibrary } from "./index.js";
 
@@ -36,12 +37,12 @@ const ELEMENT_LOOK = {
   lookShadow: "small",
 } as const;
 
-/** `type` with its defaults, then `props`. */
+/** `type` with its defaults, then `props`, its buttons linked. */
 function node(type: string, props: Readonly<Record<string, unknown>>): NodeDoc {
-  return {
+  return withSampleLinks(siteLibrary, {
     type,
     props: { ...structuredClone(siteLibrary.components[type]?.defaults ?? {}), id: type, ...props },
-  };
+  });
 }
 
 /** The section `type` with the section's Appearance. */

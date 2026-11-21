@@ -258,6 +258,19 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
           { maxLength: 2 },
         ),
         looks,
+        // The person's own colours (TC-1a, #1217): none, or a few, each id once.
+        ownColors: fc.uniqueArray(
+          fc.record({
+            id: fc.stringMatching(/^[a-z][a-z0-9]{0,23}$/),
+            name: fc.constantFrom("Sky", "Moss", "Rosa's red"),
+            color: fc.record({
+              l: fc.double({ min: 0, max: 1, noNaN: true }),
+              c: fc.double({ min: 0, max: 0.5, noNaN: true }),
+              h: fc.double({ min: 0, max: 360, noNaN: true }),
+            }),
+          }),
+          { maxLength: 3, selector: (color) => color.id },
+        ),
         order: fc.shuffledSubarray(pageIds, {
           minLength: pageIds.length,
         }),
@@ -272,6 +285,7 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
           settings: siteSettings,
           kept,
           looks: themeLooks,
+          ownColors,
           order,
           posts,
         }): SiteDoc => ({
@@ -283,6 +297,7 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
           theme: {
             ...DEFAULT_THEME,
             preset: "cupcake",
+            ownColors,
             ...(themeLooks === undefined ? {} : { looks: themeLooks }),
           },
           layout: { header: [], footer: [{ type: "Footer", props: { id: "footer", text: "©" } }] },

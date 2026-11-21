@@ -10,7 +10,7 @@ import {
   TEXT_STYLES,
   type ThemeTokens,
 } from "@webforge/model";
-import { inverseColors, shadeOf } from "./colors.js";
+import { inverseColors, ownColorOf, shadeOf } from "./colors.js";
 
 /** Each corner token in CSS, as daisyUI's own themes use them. */
 const RADIUS: Readonly<Record<ThemeTokens["radius"]["box"], string>> = {
@@ -244,6 +244,34 @@ const roleShades = (colors: ThemeTokens["colors"]) =>
     ),
   );
 
+/**
+ * The person's own colours (TC-1a, #1217) and their shades, in the page's colours or reversed
+ * sections', as the variables their utilities read (`bg-own-sky-300`). An id is letters and digits
+ * only (`@webforge/model`), so it goes into a variable's name as it is; a name never goes in.
+ */
+const ownColorValues = (tokens: ThemeTokens, palette: "colors" | "inverse") =>
+  (tokens.ownColors ?? []).flatMap(({ id }) => {
+    const color = ownColorOf(tokens, id, palette);
+    return color === undefined
+      ? []
+      : [
+          `  --wf-color-own-${id}: ${oklchCss(color)};`,
+          ...SHADE_STEPS.map(
+            (step) => `  --wf-color-own-${id}-${step}: ${oklchCss(shadeOf(color, step))};`,
+          ),
+        ];
+  });
+
+/**
+ * The colour utilities of the person's own colours (TC-1a): each one's, and its shades', reading
+ * the variables {@link ownColorValues} declares, so a new value needs no new compile.
+ */
+const ownColorUtilities = (tokens: ThemeTokens) =>
+  (tokens.ownColors ?? []).flatMap(({ id }) => [
+    `  --color-own-${id}: var(--wf-color-own-${id});`,
+    ...SHADE_STEPS.map((step) => `  --color-own-${id}-${step}: var(--wf-color-own-${id}-${step});`),
+  ]);
+
 /** Whether `colors` make a dark page: a dark surface. */
 const schemeOf = (colors: ThemeTokens["colors"]): ThemeTokens["scheme"] =>
   colors["base-100"].l < 0.5 ? "dark" : "light";
@@ -428,6 +456,7 @@ export function themeCss(tokens: ThemeTokens, options: ThemeCssOptions = {}): st
     ...SHADED_ROLES.flatMap((role) =>
       SHADE_STEPS.map((step) => `  --color-${role}-${step}: var(--wf-color-${role}-${step});`),
     ),
+    ...ownColorUtilities(tokens),
     "}",
     `:root, [data-theme="${tokens.preset}"] {`,
     `  --wf-link-decoration: ${tokens.links.underline === "always" ? "underline" : "none"};`,
@@ -439,12 +468,14 @@ export function themeCss(tokens: ThemeTokens, options: ThemeCssOptions = {}): st
     `  --wf-button-radius: ${BUTTON_RADIUS[tokens.buttons.shape]};`,
     `  --wf-button-height: ${BUTTON_HEIGHT[tokens.buttons.size]};`,
     ...roleShades(tokens.colors),
+    ...ownColorValues(tokens, "colors"),
     "}",
     `[data-theme="${INVERSE_THEME}"] {`,
     // Declared again, so its main colour is the inverse one: a custom property inherits as
     // its value, already resolved with the page's colours.
     `  --wf-link-color: ${linkColor};`,
     ...roleShades(inverse),
+    ...ownColorValues(tokens, "inverse"),
     "}",
     ...buttonRules(tokens),
     ...styleRules(tokens, [PAGE_EVEN_SECTIONS, ...(options.evenSections ?? [])]),
@@ -475,6 +506,17 @@ export function themeShape(tokens: ThemeTokens): ThemeTokens {
     ...tokens,
     colors,
     inverse: inverseColors(DEFAULT_THEME),
+    // Its own colours' ids, which its utilities are named for, and the default theme's main colour
+    // for each: a value or a name changes no rule.
+    ...(tokens.ownColors === undefined
+      ? {}
+      : {
+          ownColors: tokens.ownColors.map(({ id }) => ({
+            id,
+            name: id,
+            color: DEFAULT_THEME.colors.primary,
+          })),
+        }),
     scheme,
     radius,
     border,
@@ -540,6 +582,7 @@ export function themeValuesCss(tokens: ThemeTokens): string {
     `  --wf-link-color: ${linkColor};`,
     `  --wf-button-height: ${BUTTON_HEIGHT[tokens.buttons.size]};`,
     ...roleShades(tokens.colors),
+    ...ownColorValues(tokens, "colors"),
     "}",
     `@media (width < ${PHONE_WIDTH}) {`,
     "  :root {",
@@ -550,6 +593,7 @@ export function themeValuesCss(tokens: ThemeTokens): string {
     ...daisyValues(tokens, inverse, schemeOf(inverse)),
     `  --wf-link-color: ${linkColor};`,
     ...roleShades(inverse),
+    ...ownColorValues(tokens, "inverse"),
     "}",
   ].join("\n");
 }

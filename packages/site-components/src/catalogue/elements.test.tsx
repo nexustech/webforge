@@ -313,13 +313,19 @@ describe("the Button element (2.9)", () => {
       '<div class="site-button flex justify-start"><a class="btn btn-primary" href="about.html">Order</a></div>',
     );
     expect(
-      render("Button", { label: "Order", style: "outline", size: "large", alignment: "right" }),
+      render("Button", {
+        link: "about",
+        label: "Order",
+        style: "outline",
+        size: "large",
+        alignment: "right",
+      }),
     ).toContain(
       '<div class="site-button flex justify-end"><a class="btn btn-outline btn-primary btn-lg"',
     );
-    expect(render("Button", { label: "Order", style: "secondary", size: "small" })).toContain(
-      'class="btn btn-secondary btn-sm"',
-    );
+    expect(
+      render("Button", { link: "about", label: "Order", style: "secondary", size: "small" }),
+    ).toContain('class="btn btn-secondary btn-sm"');
   });
 
   it("takes the theme's button style unless the person chose one (PH2-14, #423)", () => {
@@ -333,11 +339,11 @@ describe("the Button element (2.9)", () => {
       "Outline",
     ]);
     // The theme's: the main buttons' classes, which the theme's CSS styles.
-    expect(render("Button", { label: "Order", style: "theme" })).toContain(
+    expect(render("Button", { link: "about", label: "Order", style: "theme" })).toContain(
       'class="btn btn-primary"',
     );
     // Filled, as every Button was before: marked, so no theme's style reaches it.
-    expect(render("Button", { label: "Order", style: "primary" })).toContain(
+    expect(render("Button", { link: "about", label: "Order", style: "primary" })).toContain(
       'class="btn btn-primary wf-filled"',
     );
     // The Booking button is a Button with the theme's style too.
@@ -506,11 +512,13 @@ describe("icons (2.9b, F-ED-22)", () => {
   it("draws an Icon's own icon for a name Lucide doesn't have, and no icon on a Button", () => {
     // As any field reads what it can't use: the Icon's default, a star.
     expect(render("Icon", { icon: "not-an-icon" })).toBe(render("Icon", { icon: "star" }));
-    expect(render("Button", { label: "Call", icon: "not-an-icon" })).not.toContain("<svg");
+    expect(render("Button", { link: "about", label: "Call", icon: "not-an-icon" })).not.toContain(
+      "<svg",
+    );
   });
 
   it("puts a Button's icon before its text", () => {
-    const html = render("Button", { label: "Call us", icon: "phone" });
+    const html = render("Button", { link: "about", label: "Call us", icon: "phone" });
 
     expect(html).toContain('<a class="btn btn-primary"');
     expect(html).toContain('class="size-[1em]" aria-hidden="true">');

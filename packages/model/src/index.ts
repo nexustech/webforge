@@ -68,7 +68,7 @@ export {
   tagSlug,
 } from "./collections.js";
 export type { ColorRef } from "./color-ref.js";
-export { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";
+export { colorRefSchema, formatColorRef, OWN_COLOR_PREFIX, parseColorRef } from "./color-ref.js";
 export { cssVariablesUsed } from "./css-variables.js";
 export { csvRecords, parseCsv } from "./csv.js";
 export type {
@@ -190,7 +190,13 @@ export {
   tidyKeptAddresses,
 } from "./kept-addresses.js";
 export type { LinkValue } from "./link.js";
-export { anchorIdSchema, EMAIL_SUBJECT_MAX, linkValueSchema, webUrlSchema } from "./link.js";
+export {
+  anchorIdSchema,
+  EMAIL_SUBJECT_MAX,
+  hasLink,
+  linkValueSchema,
+  webUrlSchema,
+} from "./link.js";
 export type { ComponentLook, LookField, Looks, ValueSource } from "./look.js";
 export {
   CUSTOM_COLOUR,
@@ -432,6 +438,7 @@ export type {
   ColorRole,
   FontRef,
   Oklch,
+  OwnColor,
   ShadeStep,
   TextStyle,
   ThemeTokens,
@@ -449,7 +456,11 @@ export {
   INVERSE_THEME,
   LINK_UNDERLINES,
   OPACITY_STEPS,
+  OWN_COLOR_NAME_MAX,
+  OWN_COLORS_MAX,
   oklchSchema,
+  ownColorIdSchema,
+  ownColorSchema,
   RADIUS_TOKENS,
   SECTION_RHYTHMS,
   SHADE_STEPS,

@@ -5,6 +5,7 @@ import {
   hexToOklch,
   inverseColors,
   oklchToSrgb,
+  ownColorOf,
   resolveColorRef,
   type Srgb,
   srgbContrast,
@@ -115,6 +116,45 @@ export function contrastIssues(tokens: ThemeTokens): ContrastIssue[] {
         : [];
     }),
   );
+}
+
+/**
+ * One of the person's own colours (TC-1a, #1217) below WCAG AA on one of the surfaces, in the
+ * page's colours or reversed sections'.
+ */
+export type OwnColorIssue = {
+  readonly palette: "colors" | "inverse";
+  /** The colour's id: a colour ref names it `own-<id>`. */
+  readonly id: string;
+  readonly background: "base-100" | "base-200" | "base-300";
+  /** Rounded down to two places, as {@link ContrastIssue}'s. */
+  readonly ratio: number;
+  readonly required: number;
+};
+
+/** The surfaces a colour of the person's own is measured on. */
+const SURFACES = ["base-100", "base-200", "base-300"] as const;
+
+/**
+ * The person's own colours that fail WCAG AA on a surface (TC-1a, #1217), measured as the brand
+ * colours other than the main one are: as large text, 3:1, on every surface, in the page's colours
+ * and in reversed sections' (their value there worked out from each, `reversedOwnColor`). An empty
+ * list: every one passes, or the theme has none.
+ */
+export function ownColorIssues(tokens: ThemeTokens): OwnColorIssue[] {
+  return (["colors", "inverse"] as const).flatMap((palette) => {
+    const colors = palette === "inverse" ? inverseColors(tokens) : tokens.colors;
+    return (tokens.ownColors ?? []).flatMap(({ id }) => {
+      const color = ownColorOf(tokens, id, palette);
+      if (color === undefined) return [];
+      return SURFACES.flatMap((background) => {
+        const ratio = contrastRatio(color, colors[background]);
+        return ratio < AA_LARGE
+          ? [{ palette, id, background, ratio: Math.floor(ratio * 100) / 100, required: AA_LARGE }]
+          : [];
+      });
+    });
+  });
 }
 
 /** A section's overlay over its background image (2.26): its colour, how opaque, and its palette. */
