@@ -12,6 +12,7 @@ import * as jsqr from "jsqr";
 import { expectMedianWithin, hotSwapBudgetMs } from "./budget.js";
 import { editOnCanvas } from "./canvas-click.js";
 import { selectText } from "./caret.js";
+import { chooseColour } from "./colour-picker.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { openPreview } from "./sites.js";
@@ -93,7 +94,11 @@ test("opens the site in the browser, and every edit reaches it", async () => {
     .getByRole("tab", { name: "Theme", exact: true })
     .click();
   // Its picker: Simple mode's Theme tab shows no hex code (LF-16). At once, nothing asked (LF-15).
-  await page.locator('[data-field="color.primary"] input[type="color"]').fill("#b0306a");
+  await chooseColour(
+    page,
+    page.locator('[data-field="color.primary"]').getByRole("button", { name: "Brand" }),
+    "#b0306a",
+  );
   await expect.poll(() => brand(site), { timeout: 15_000 }).not.toBe(before);
   expect(await site.evaluate(() => (window as unknown as { stillHere?: boolean }).stillHere)).toBe(
     true,

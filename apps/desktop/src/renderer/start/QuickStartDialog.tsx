@@ -1,6 +1,7 @@
 import {
   Button,
   Check,
+  ColourPicker,
   cn,
   Dialog,
   DialogContent,
@@ -614,13 +615,7 @@ function DetailsStep({
               onChoose={() => onHex(hex)}
             />
           </div>
-          <input
-            type="color"
-            aria-label={t("quickStart.colours.colour")}
-            value={hex}
-            onChange={(event) => onHex(event.currentTarget.value)}
-            className="h-7 w-9 shrink-0 cursor-pointer rounded-sm border border-border bg-transparent"
-          />
+          <ColourPicker aria-label={t("quickStart.colours.colour")} value={hex} onChoose={onHex} />
         </div>
         <Button
           type="button"

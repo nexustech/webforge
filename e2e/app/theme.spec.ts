@@ -6,6 +6,7 @@ import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
 import { themePreset } from "@webforge/themes";
 import { OPEN_WAIT } from "./budget.js";
+import { chooseColour } from "./colour-picker.js";
 import { launchDesktopApp, removeWhenFree, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import type { RendererWindow } from "./sites.js";
@@ -102,7 +103,7 @@ test("a colour hard to read says so under it at once, in words, with a shade tha
   await expect(theme.getByText(/\d\s?px\b/)).toHaveCount(0);
 
   // A pale brand colour, from the picker.
-  await brand.locator('input[type="color"]').fill("#d8d4ff");
+  await chooseColour(page, brand.getByRole("button", { name: "Brand" }), "#d8d4ff");
   // At once, nothing asked (LF-15): its toast says how far it reached, with Undo. A built-in
   // theme is read-only (2.23): the first change saves the person's own version, unasked.
   await expect(page.getByText(/^Brand colour changed on \d+ pages?$/)).toBeVisible();

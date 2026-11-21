@@ -109,6 +109,21 @@ async function type(element: HTMLInputElement | HTMLTextAreaElement | undefined,
   });
 }
 
+/** Chooses `hex` in the colour picker named `name` (5.26): opens it, types the code, closes it. */
+async function pickColour(name: string, hex: string) {
+  const swatch = () =>
+    [...document.querySelectorAll<HTMLButtonElement>("button")].find(
+      (each) => each.getAttribute("aria-label") === name,
+    );
+  await act(async () => swatch()?.click());
+  const code = field(t("ui.colourPicker.hex"));
+  await type(code, hex);
+  await act(async () =>
+    code?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })),
+  );
+  await act(async () => swatch()?.click());
+}
+
 describe("QuickStartDialog (QS-1, 3.11b)", () => {
   it("makes the untitled Blank site from the first step, every step skipped", async () => {
     const { onCreate } = await render();
@@ -153,10 +168,7 @@ describe("QuickStartDialog (QS-1, 3.11b)", () => {
 
     // Colours and details.
     expect(shownStep()).toContain(t("quickStart.step.details"));
-    await type(
-      document.querySelector<HTMLInputElement>('input[type="color"]') ?? undefined,
-      "#c0392b",
-    );
+    await pickColour(t("quickStart.colours.colour"), "#c0392b");
     await type(field(t("site.settings.phone")), " +44 1234 567890 ");
     await type(field(t("site.settings.webAddress")), "https://rosas.example");
     expect(document.body.textContent).toContain(t("quickStart.searchNote"));

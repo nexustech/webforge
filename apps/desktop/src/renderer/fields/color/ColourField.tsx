@@ -1,5 +1,6 @@
 import {
   Button,
+  ColourPicker,
   type FieldRenderer,
   type FieldRendererProps,
   fieldControlClass,
@@ -311,15 +312,14 @@ export function ColourField({
           <label htmlFor={customId} className="text-xs text-muted-foreground">
             {t("colour.customHex")}
           </label>
-          <input
+          {/* Shown on the page as it's chosen, and one step once the picker closes (5.26). */}
+          <ColourPicker
             id={customId}
-            type="color"
-            className={`${fieldControlClass} h-7 w-16 p-0.5`}
+            className="w-16"
             value={hex}
-            onChange={(event) =>
-              onChange(storedRef(withOpacity({ base: { hex: event.target.value } }), options))
-            }
-            onBlur={onCommit}
+            onPreview={(next) => onChange(storedRef(withOpacity({ base: { hex: next } }), options))}
+            onChoose={(next) => onChange(storedRef(withOpacity({ base: { hex: next } }), options))}
+            onClose={onCommit}
           />
           <p className="m-0 text-xs text-muted-foreground">{t("colour.offTheme")}</p>
         </div>
