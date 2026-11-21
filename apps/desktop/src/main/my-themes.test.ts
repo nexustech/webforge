@@ -38,6 +38,16 @@ describe("My themes (2.23)", () => {
     expect(await createMyThemes({ dir }).list()).toHaveLength(2);
   });
 
+  it("keeps a theme's own colours with it, as they were (TC-1a)", async () => {
+    const theme: OwnTheme = {
+      ...own("theme0000000000a", "Bakery"),
+      ownColors: [{ id: "sky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } }],
+    };
+    await createMyThemes({ dir }).keep(theme);
+
+    expect(await createMyThemes({ dir }).list()).toEqual([theme]);
+  });
+
   it("writes one at a time, in the order asked, and says when it's done (before the app exits)", async () => {
     const themes = createMyThemes({ dir });
     for (const letter of ["a", "b", "c", "d"]) {
