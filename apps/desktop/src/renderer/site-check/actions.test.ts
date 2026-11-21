@@ -90,7 +90,7 @@ describe("This Is Correct on a text marked as an example (#1228)", () => {
     const marked = () =>
       session.history.document.getState().pages[pageId]?.doc.content[0]?.props ?? {};
     // Every mark of the element, as Site Check lists it once.
-    expect(marked().examples).toBeUndefined();
+    expect(marked()).not.toHaveProperty("examples");
     expect(session.history.entries().at(-1)?.label).toMatch(/example as correct/);
     // Gone, nothing more is offered; undone, it's marked again.
     expect(confirmFor("sampleDetails", finding(), actions)).toBeUndefined();
