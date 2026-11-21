@@ -58,10 +58,10 @@ function warningsOf(issues: readonly ContrastIssue[], palette: Palette, role: Co
   return issues.flatMap((issue) => {
     if (issue.palette !== palette) return [];
     if (issue.background !== role && issue.foreground !== role) return [];
-    const other = issue.background === role ? issue.foreground : issue.background;
     return [
-      t("theme.contrast.low", {
-        other: t(ROLE_NAMES[other]),
+      t("theme.contrast.hardToReadRatio", {
+        foreground: t(ROLE_NAMES[issue.foreground]),
+        background: t(ROLE_NAMES[issue.background]),
         ratio: shownRatio(issue.ratio),
         needed: issue.required,
       }),

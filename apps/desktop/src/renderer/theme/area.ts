@@ -49,6 +49,7 @@ export const themePanelArea: Area<WindowContext> = {
       studio,
       ownThemes,
       () => api.fonts,
+      preferences,
     );
     const removeCommands = registerThemeCommands(commands, panels, studio);
     const removeStudio = registerThemeStudio(windowDialogs, session, studio, {

@@ -52,7 +52,13 @@ export const theme = {
   "theme.role.onWarning": "Text on Warning",
   "theme.role.error": "Error",
   "theme.role.onError": "Text on Error",
-  "theme.contrast.low": "Hard to read with {other}: {ratio}:1, needs {needed}:1.",
+  // A colour hard to read on another, in the words Site Check's row has too (#1174); Advanced mode
+  // and Theme Studio add the ratio. A shade that reads is offered, one click away.
+  "theme.contrast.hardToRead": "{foreground} is hard to read on {background}",
+  "theme.contrast.hardToReadRatio":
+    "{foreground} is hard to read on {background}: {ratio}:1, needs {needed}:1",
+  "theme.contrast.darker": "Use a darker shade",
+  "theme.contrast.lighter": "Use a lighter shade",
 
   // Fonts (F-DS-2): a tested pairing, or a font for headings and one for the rest.
   "theme.fonts.pairing": "Font pairing",
@@ -78,6 +84,13 @@ export const theme = {
   "theme.textStyle.body": "Body text",
   "theme.textStyle.small": "Small text",
   "theme.textSize.option": "{px} px",
+  // Simple mode's one text size for the whole site (LF-16): every style a step smaller or larger
+  // than the theme has them. Theme Studio, and Advanced mode, size each style.
+  "theme.textScale": "Text size",
+  "theme.textScale.smaller": "Smaller",
+  "theme.textScale.standard": "Standard",
+  "theme.textScale.larger": "Larger",
+  "theme.textScale.own": "Your own",
 
   // Each token the theme has (the model's theme schema), and its values.
   "theme.token.headings.case": "Heading letters",
@@ -245,6 +258,7 @@ export const theme = {
   "theme.history.color.text": "Changed text colour",
   "theme.history.fonts": "Changed fonts",
   "theme.history.textSize": "Changed text size for {style}",
+  "theme.history.textScale": "Changed text size",
   "theme.history.textStyle": "Changed text style for {style}",
   "theme.history.color": "Changed {name} colour",
   "theme.history.colorReversed": "Changed {name} colour in reversed sections",
