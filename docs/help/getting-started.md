@@ -30,8 +30,9 @@ When no site is open, you see the start screen. On the left are {appName}'s icon
 
 On the right, **Recent sites** lists the sites you've opened, newest first.
 
+- Each site's card shows the top of its home page as your visitors see it, taken when you last closed the site or opened another one.
 - **Search sites** finds one by its name, file name or folder.
-- The pin keeps a site at the top of the list.
+- The pin, beside the site's name, keeps a site at the top of the list.
 - The **×** takes a site off the list. It doesn't delete the site's file.
 
 If a file can't be opened, such as one that isn't a site, a message above the list says why and what to choose instead, with **Choose Another File…**.

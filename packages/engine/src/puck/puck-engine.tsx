@@ -2,11 +2,13 @@ import { type Config, Puck, type PuckAction, type useGetPuck } from "@puckeditor
 // Puck's default stylesheet loads the Inter font from rsms.me; Webforge makes no external requests.
 import "@puckeditor/core/no-external.css";
 import { t } from "@webforge/i18n";
+import { expandSharedCopies } from "@webforge/model";
 import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   pageHeadings,
   type RenderContext,
+  renderPage,
   type SiteBindings,
   samePreviews,
 } from "@webforge/site-components";
@@ -210,6 +212,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
    * remounts the text typed in it: emptying the first title, or typing the first letter of one,
    * would leave the person typing into nothing. So a change waits while text on the canvas has the
    * focus, until it loses it. The two tags look the same, so nothing shows the wait.
+   *
+   * A blog post's page counts its Blog design too: the design's sections before and after the post
+   * are in the canvas's layout (the desktop app's `shared-layout.ts`), which `composePage` puts in
+   * the page this reads, as the export's page has them.
    */
   const followPageHeading = () => {
     if (headingDue) return;
@@ -507,6 +513,35 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     setPosts(posts) {
       const { posts: _posts, ...rest } = parts;
       changeContext({ parts: posts === undefined ? rest : { ...rest, posts } });
+    },
+
+    staticPage(shown, layout, shared = {}, navigation = parts.navigation) {
+      if (library === null) return undefined;
+      const {
+        emptyImage: _emptyImage,
+        previews: _previews,
+        item: _item,
+        emptyItem: _emptyItem,
+        pageAddress: _pageAddress,
+        pageHeading: _pageHeading,
+        ...drawn
+      } = parts;
+      const {
+        emptySetting: _emptySetting,
+        socialHint: _socialHint,
+        formHint: _formHint,
+        elementHint: _elementHint,
+        ...settings
+      } = bindings;
+      return renderPage(
+        {
+          header: layout.header,
+          content: expandSharedCopies(shown.content, shared),
+          footer: layout.footer,
+        },
+        library,
+        { ...drawn, ...settings, navigation },
+      );
     },
 
     setPreviews(previews) {

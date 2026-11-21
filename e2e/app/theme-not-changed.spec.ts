@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
+import { stillBox } from "./canvas-click.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
@@ -61,10 +62,12 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   const field = studio().locator('[data-field="lookBackground"]');
   const accent = field.getByRole("radio", { name: "Accent", exact: true });
   // It stays where it first shows while the look's preview draws, so one click lands (#626):
-  // the preview is in the strip above the controls (CT-11). Within 2 px: the dialog may still be
-  // finishing its zoom as it opens (0.7 px on macOS, #972), while a preview pushing the controls
-  // down moved them by its height.
+  // the preview is in the strip above the controls (CT-11). Read once the dialog has finished its
+  // zoom as it opens, which on a slow runner still moved the control 13 px across (#972, #1275):
+  // the dialog keeps its size while the preview draws, so a preview pushing the controls down
+  // still moves them by its height. Within 2 px, for rounding.
   await expect(accent).toBeVisible();
+  await stillBox(studio());
   const shownAt = await accent.boundingBox();
   // Drawn: the strip's figures hold the drawings' frames.
   await expect(studio().locator("figure iframe")).toHaveCount(2);

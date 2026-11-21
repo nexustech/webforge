@@ -104,6 +104,7 @@ export function createFakeEngine(options: { readonly unstyled?: boolean } = {}):
     setLooks: vi.fn(),
     setItem: vi.fn(),
     setPosts: vi.fn(),
+    staticPage: vi.fn(() => undefined),
     perform: vi.fn(() => true),
     onAddRequest: adds.add,
     onFieldDrag: drags.add,

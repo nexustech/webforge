@@ -1,6 +1,6 @@
 # Theme Studio, if we built it again
 
-**Status:** 🟡 For decision (TS-1…TS-9). Nothing here is in the plan, and the product owner asked that nothing be planned yet.
+**Status:** 🟡 For decision (TS-1…TS-16). Nothing here is in the plan, and the product owner asked that nothing be planned yet. [§5](#5-one-way-of-styling-and-no-modes) is a second pass that would replace TS-1, TS-2 and TS-8.
 
 **Date:** 2026-11-21
 
@@ -56,12 +56,60 @@ About 16.5 days for all of it, without TS-5.
 
 **Order matters for some.** TS-6 needs the colour picker of 5.26. TS-4 is better after your colours (5.27, 5.28). TS-1 and TS-2 are best done together, since both rebuild how the preview and the applying work.
 
-## 5. What this note does not propose
+## 5. One way of styling, and no modes
+
+A second pass, the same day, after the product owner read §4:
+
+> "There should be one consistent way of styling, if it means that the Theme Panel only has basic settings and Theme Studio is the more comprehensive design surface then this should be consistent. We also have Simple and Advanced mode and this potentially adds more friction to the user. It should be obvious in the UI whether we are in Simple, Design or Content mode"
+
+and, on whether one panel could hold everything: "Panels should be collapsible, then the width of the panel doesn't matter".
+
+### 5.1 What is inconsistent today
+
+Read from the help pages ([Themes](../../docs/help/themes.md), [Styling](../../docs/help/styling.md), [The Edit panel](../../docs/help/edit-panel.md), [The editor](../../docs/help/the-editor.md)), not from using the app.
+
+|                    | Quick, in the right column | A window that fills the editor |
+| ------------------ | -------------------------- | ------------------------------ |
+| **The whole site** | Theme panel                | Theme Studio                   |
+| **One item**       | The Edit panel's Style tab | Style This…                    |
+
+- **The Theme panel isn't the basic one.** It lists nearly every setting of the theme (a text size for each level, shadows, border width, card style), so Theme Studio mostly repeats it and adds shades, reversed colours and Components.
+- **Three ways of applying.** The Theme panel and the Style tab apply at once; Components keeps a draft until **Apply Changes**; Style This has **Cancel** and **Apply**.
+- **Two windows do one job.** Style This's _Make it the theme's look for Button_ and Theme Studio's Components both set the look of every Button.
+- **A person chooses where a change belongs before making it:** the theme, or the item.
+- **Two switches, one of them out of sight.** **Design | Content** is in the title bar and kept with the site (F-ED-10); Simple and Advanced is in the View menu and Settings and kept with the person (F-ED-11). That makes four states, one of which means nothing (Content with Advanced).
+
+### 5.2 Proposals
+
+Sizes are rough ideal days, and rougher than §4's: none of this was tried in the app.
+
+| #         | Proposal                                                                                                                                                                                                                                                                                                                                                                                   | Changes or builds on                                                                                           | Size |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | ---- |
+| **TS-10** | **One Design panel, at three scopes.** The Edit panel's Style tab becomes **Design**, with the scope at its top: _Whole site › Every Button › This Button_. Clicking the page itself shows _Whole site_, which holds what the Theme panel holds today. The same controls, with the same names in the same order, at every scope                                                            | The Theme panel, the Style tab, Components (CT-1), the "where a value comes from" line. Replaces TS-2 and TS-8 | 5    |
+| **TS-11** | **Change it first, say how far afterwards.** A change lands on the selected item. The message that follows offers **Make Every Button Like This**, beside **Undo**. Widening a look to other pages still asks first, as now                                                                                                                                                                | LF-15's message; Style This's **Where it applies**                                                             | 1.5  |
+| **TS-12** | **Every setting in a group that folds.** The panel keeps one width. An **Essentials** group is open at the top of each scope (for the whole site: the colours, the font pairing and TS-3's feel); the rest are folded under it. Theme Studio's tabs and Style This's sections become groups. A control that needs room (a gradient, each corner, a colour's shades) opens from its own row | The Edit panel's groups, their highlighted titles and **Search options**, which exist                          | 3    |
+| **TS-13** | **The page is the preview.** With everything in the panel, the canvas shows each change on the site's own pages and devices, and the Theme Studio and Style This windows go. A window stays for one job, choosing a theme, where fifteen need comparing side by side                                                                                                                       | Replaces TS-1. Changes CT's _Style this_ dialog and Theme Studio                                               | 1.5  |
+| **TS-14** | **One way of applying.** Every change applies at once and is one undo step, at every scope. The draft bar and **Cancel** and **Apply** go; **Before** and **After** stay as a way to compare                                                                                                                                                                                               | LF-15                                                                                                          | 1    |
+| **TS-15** | **A lock, in place of Content mode.** **Site › Lock the Design** shows a padlock and tints the title bar, with **Unlock** beside it; while it is on, only words, pictures and links can change. The **Design \| Content** switch goes. Kept with the site, as now                                                                                                                          | F-ED-10 (M3)                                                                                                   | 1    |
+| **TS-16** | **Code tools, in place of Advanced mode.** **Show code tools** in Settings adds a **Code** tab and Custom Code; the tab being there is the sign. It only ever adds, and never changes what is already shown. An option that needs it says so, with a link that turns it on. Kept with the person, as now                                                                                   | F-ED-11 (T2); LF-16                                                                                            | 1    |
+
+About 14 days. Taking TS-10 to TS-14 drops TS-1, TS-2 and TS-8 (6 days), which leaves about 24.5 days for everything in this note without TS-5. TS-3, TS-4, TS-6, TS-7 and TS-9 stand as they are.
+
+**The cautious version,** if one panel is too far: keep the four surfaces and make them consistent. Each panel is a short list drawn from its window's list, so it never holds a setting the window lacks; the two windows become one with a scope at its top; and one switch of three steps (_Content_, _Design_, _Code_) sits in the title bar. It costs less and leaves the modes in place.
+
+### 5.3 What isn't known
+
+- **A long panel.** A Button has few groups; a Hero has many. One panel leans on search and the highlighted titles to stay findable, and that hasn't been tried with anyone.
+- **What Style This gives up.** Its settings sit in columns under two previews. In a column 300 px wide they become one long list.
+- **Decisions this would change:** the Design and Content switch (F-ED-10), Simple and Advanced mode (F-ED-11), the _Style this_ dialog (CT-1…CT-9), what Simple mode's Theme tab shows (LF-16) and the Site menu's Theme… and Theme Studio… ([#1016](https://github.com/nexustech/webforge/issues/1016)). Each needs reading again before any of this is planned.
+- **Two sketches** were drawn in the conversation and aren't kept in the repository: a café page with two buttons, the panel at its three scopes, the groups folding, and the lock.
+
+## 6. What this note does not propose
 
 - Free values, raw CSS or spacing for one element as a main path ([§2](#2-what-stays)); Advanced mode keeps what it has.
 - Animated or generated themes, or a marketplace of themes.
 - Anything already decided: your colours and any colour in Simple mode (TC-1a…TC-4), the colour picker and live theme colours (OL-18, OL-19), dark mode for visitors (6.11), the code editors (TC-5, TC-6).
 
-## 6. Decisions
+## 7. Decisions
 
-None yet. Product owner, 2026-11-21: "Theme Studio write note but do not plan anything yet".
+None yet. Product owner, 2026-11-21: "Theme Studio write note but do not plan anything yet"; and, the same day, of §5: "Write it into the Theme Studio note as proposals".

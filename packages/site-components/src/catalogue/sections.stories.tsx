@@ -115,11 +115,12 @@ export const TextImageRight: Story = { args: { nodes: [textImage("imageRight")] 
 /** Text + Image, the image on the left (2.6). */
 export const TextImageLeft: Story = { args: { nodes: [textImage("imageLeft")] } };
 
-const callToAction = (variant: string, contentWidth?: string) => ({
+const callToAction = (variant: string, contentWidth?: string, colors?: string) => ({
   type: "CallToAction",
   props: {
     id: `cta-${variant}`,
     ...(contentWidth === undefined ? {} : { contentWidth }),
+    ...(colors === undefined ? {} : { colors }),
     title: "Order a cake",
     text: "Tell us what you'd like two days ahead, and we'll have it ready.",
     buttonLabel: "Get in touch",
@@ -128,8 +129,16 @@ const callToAction = (variant: string, contentWidth?: string) => ({
   },
 });
 
-/** A Call to action as a banner in the theme's main colour (2.6). */
+/** A Call to action as a banner in the theme's dark colour (2.6). */
 export const CallToActionBanner: Story = { args: { nodes: [callToAction("banner")] } };
+
+/**
+ * A banner set to Reversed colours: on the reversed surface, a light band on Dark and a dark one
+ * on Light, not in the theme's dark colour (#1257).
+ */
+export const CallToActionBannerReversed: Story = {
+  args: { nodes: [callToAction("banner", undefined, "inverse")] },
+};
 
 /** A Call to action with its button beside the text (2.6). */
 export const CallToActionSplit: Story = { args: { nodes: [callToAction("split", "wide")] } };
