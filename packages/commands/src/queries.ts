@@ -8,10 +8,16 @@ import { z } from "zod";
 import {
   componentDetail,
   componentSummaries,
+  isSharedStyleField,
   jsonSchema,
   type Place,
+  styleFieldDetails,
   usableComponents,
 } from "./catalogue.js";
+
+/** The most icon names one answer lists: a search narrows them (#1250). */
+const ICONS_LISTED = 200;
+
 import { isSlot, type Location, locate, locationSchema, nodesAt } from "./locations.js";
 
 /** A node in a page tree: what it is, and what its slots hold. */
@@ -99,9 +105,21 @@ export const QUERIES = {
   },
   /** An element's fields: their kinds, labels and value schemas, and what each holds now. */
   fields: {
-    description: `One element's fields: each one's kind, label, help, JSON Schema for its value, what it holds now, and where that comes from: "own" (set on the element), "look" (the theme's look for its kind, which every one of them takes unless it sets its own) or "default". Read it before updateFields, which takes these names and values.`,
-    input: z.strictObject({ location: locationSchema, nodeId: z.string().min(1).max(200) }),
-    read: (site: SiteDoc, { location, nodeId }: { location: Location; nodeId: string }) => {
+    description: `One element's fields: each of its own fields' kind, label, help, JSON Schema for its value, what it holds now, and where that comes from: "own" (set on the element), "look" (the theme's look for its kind, which every one of them takes unless it sets its own) or "default". The styling fields it shares with other types come in styleFields with what each holds and where from; their schemas are in the styleFields query, or here with styles. Read it before updateFields, which takes these names and values.`,
+    input: z.strictObject({
+      location: locationSchema,
+      nodeId: z.string().min(1).max(200),
+      /** The shared styling fields in full too, as each own field is (#1250). */
+      styles: z.boolean().optional(),
+    }),
+    read: (
+      site: SiteDoc,
+      {
+        location,
+        nodeId,
+        styles = false,
+      }: { location: Location; nodeId: string; styles?: boolean | undefined },
+    ) => {
       const nodes = nodesAt(site, location);
       const placed = nodes === undefined ? undefined : locate(nodes, nodeId);
       if (placed === undefined) return undefined;
@@ -114,9 +132,18 @@ export const QUERIES = {
         component?.defaults ?? {},
         site.theme.looks,
       );
-      const fields = Object.entries(component?.fields ?? {}).flatMap(([name, field]) =>
+      const listed = Object.entries(component?.fields ?? {}).filter(
         // Slots are read through the page tree; Custom Code isn't for AI apps.
-        field.kind === "slot" || field.kind === "code"
+        ([, field]) => field.kind !== "slot" && field.kind !== "code",
+      );
+      const held = (name: string) => ({
+        value: drawn.values[name],
+        ...(drawn.sources[name] === undefined ? {} : { source: drawn.sources[name] }),
+      });
+      // The styling fields it shares with other types, by what they hold only (#1250).
+      const shared = styles ? [] : listed.filter(([name]) => isSharedStyleField(name));
+      const fields = listed.flatMap(([name, field]) =>
+        !styles && isSharedStyleField(name)
           ? []
           : [
               [
@@ -136,20 +163,31 @@ export const QUERIES = {
         type: node.type,
         label: component?.label ?? node.type,
         fields: Object.fromEntries(fields),
+        ...(shared.length === 0
+          ? {}
+          : { styleFields: Object.fromEntries(shared.map(([name]) => [name, held(name)])) }),
       };
     },
   },
   /** The names an icon field takes (#1251): all of them, or those with `search` in them. */
   icons: {
-    description:
-      "The names an icon field takes (Webforge's icons, which are Lucide's), A to Z: all of them, or with search, only those with it in their name (phone, arrow, star). An icon field refuses any other name.",
+    description: `The names an icon field takes (Webforge's icons, which are Lucide's), A to Z, with how many there are: with search, only those with it in their name (phone, arrow, star). At most ${ICONS_LISTED} at a time: a search narrows them. An icon field refuses any other name.`,
     input: z.strictObject({ search: z.string().trim().min(1).max(40).optional() }),
     read: (_site: SiteDoc, { search }: { readonly search?: string | undefined }) => {
       const wanted = search?.toLowerCase();
-      return wanted === undefined
-        ? ICON_NAMES_TAKEN
-        : ICON_NAMES_TAKEN.filter((name) => name.includes(wanted));
+      const found =
+        wanted === undefined
+          ? ICON_NAMES_TAKEN
+          : ICON_NAMES_TAKEN.filter((name) => name.includes(wanted));
+      return { count: found.length, names: found.slice(0, ICONS_LISTED) };
     },
+  },
+  /** The styling fields components share, each once (#1250). */
+  styleFields: {
+    description:
+      "The styling fields section and element types share (their Appearance: font, size, colours, background, spacing, border…), each once, by name: its kind, label, help and the JSON Schema of its value. components and fields name the ones a type has; set them with updateFields like any other field.",
+    input: z.strictObject({}),
+    read: () => styleFieldDetails(),
   },
   /** Site Settings that say what the business is: never publishing, forms or analytics. */
   settings: {
@@ -167,18 +205,24 @@ export const QUERIES = {
    */
   components: {
     description:
-      "The section and element types you can add. Without type: each type's place (section, element or child), label and category, place narrowing them. With type: its fields (kind, label, help, JSON Schema of the value; a slot's types), presets and defaults, as addNode and updateFields take them. The catalogue resource holds them all at once.",
+      "The section and element types you can add. Without type: each type's place (section, element or child), label and category, place narrowing them. With type: its own fields (kind, label, help, JSON Schema of the value; a slot's types), presets and defaults, as addNode and updateFields take them, and the styling fields it shares with other types by name (styleFields), whose schemas the styleFields query gives once; with styles, those in full too. The catalogue resource holds them all at once.",
     input: z.strictObject({
       type: z.string().min(1).max(64).optional(),
       place: z.enum(["section", "element", "child"]).optional(),
+      /** With a type: its shared styling fields in full too (#1250). */
+      styles: z.boolean().optional(),
     }),
     read: (
       _site: SiteDoc,
-      { type, place }: { type?: string | undefined; place?: Place | undefined },
+      {
+        type,
+        place,
+        styles,
+      }: { type?: string | undefined; place?: Place | undefined; styles?: boolean | undefined },
     ) => {
       if (type === undefined) return componentSummaries(place);
       return (
-        componentDetail(type) ??
+        componentDetail(type, { styles: styles === true }) ??
         new QueryRefusal(
           "invalid",
           `There is no component "${type}". There are: ${usableComponents()
