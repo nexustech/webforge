@@ -112,7 +112,7 @@ describe("describePlace", () => {
           { palette: "inverse", foreground: "primary", background: "base-100" },
         ),
       ),
-    ).toBe("Brand is hard to read on Surface, in reversed sections");
+    ).toBe("Brand on Surface, in reversed sections");
     // In the Theme tab's words (#1174).
     expect(
       name(
