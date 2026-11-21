@@ -1,5 +1,9 @@
 import { DOCUMENT_EXTENSIONS, isNodeDoc, type NodeDoc, type SiteSnapshot } from "@webforge/model";
-import { type ComponentLibrary, renderNodesToHtml } from "@webforge/site-components";
+import {
+  type ComponentLibrary,
+  renderNodesToHtml,
+  withPageHeading,
+} from "@webforge/site-components";
 import { pagePrefix, pageRender } from "./export-context.js";
 import { formatHtml } from "./html.js";
 import { plannedImage } from "./images.js";
@@ -83,12 +87,14 @@ export function itemHtml(
   });
   const node = findNode([...regions.header, ...regions.content, ...regions.footer], nodeId);
   if (node === undefined) return undefined;
-  // As `renderPage` renders the content: its first section's picture loads first (3.15, SEO-4).
+  // As `renderPage` renders the content: its first section's picture loads first (3.15, SEO-4),
+  // and its first section title is the page's main heading where it has none of its own (#1173).
   const first = regions.content.find((each) => each.props.hidden !== true)?.props.id;
+  const shown = withPageHeading(regions, library, context);
   const html = renderNodesToHtml(
     [node],
     library,
-    typeof first === "string" ? { ...context, firstSection: first } : context,
+    typeof first === "string" ? { ...shown, firstSection: first } : shown,
   );
   return html === "" ? "" : formatHtml(html);
 }

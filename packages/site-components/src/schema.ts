@@ -395,6 +395,12 @@ export type RenderContext = SiteBindings & {
    * image is above the fold, so it loads at once rather than lazily.
    */
   readonly firstSection?: string;
+  /**
+   * The id of the section whose title is the page's main heading, `<h1>`, on a page with none of
+   * its own (#1173): its first section with a title, as `pageHeadings` decides. Set by
+   * `renderPage`, and by the canvas for the page it shows.
+   */
+  readonly pageHeading?: string;
   /** The canvas's edit-only previews (UX-26); the export renders without them. */
   readonly previews?: EditPreviews;
   /** What an Image without its image shows instead (2.9): a hint on the canvas; nothing in the export. */

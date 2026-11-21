@@ -10,6 +10,7 @@ type Source =
   | "setSettings"
   | "setItem"
   | "setPosts"
+  | "page"
   | "export";
 
 /**
@@ -40,6 +41,8 @@ export const RENDER_CONTEXT_SOURCES = {
   netlifyForms: "export",
   // The canvas loads every image as it comes into view; only the export knows the first section.
   firstSection: "export",
+  // The section whose title is the page's main heading (#1173): found again as the page changes.
+  pageHeading: "page",
   // The post shown, on a Blog's post (6.10a): set again when the page shown or its fields change.
   item: "setItem",
   emptyItem: "setItem",

@@ -113,6 +113,26 @@ const library: ComponentLibrary = {
       defaults: {},
       render: ({ context }) => <p className="t-pic">{context.emptyImage?.() ?? "none"}</p>,
     },
+    Titled: {
+      label: "Titled",
+      fields: { title: { kind: "text", label: "Title" } },
+      defaults: { title: "" },
+      titleField: "title",
+      // As a section's title is drawn: the page's main heading where the canvas says so (#1173).
+      render: ({ id, values, context }) => (
+        <p className="t-titled" data-level={context.pageHeading === id ? "h1" : "h2"}>
+          {textValue(values.title)}
+        </p>
+      ),
+    },
+    Banner: {
+      label: "Banner",
+      fields: { title: { kind: "text", label: "Title" } },
+      defaults: { title: "" },
+      // A main heading of its own, as a Hero's title is.
+      mainHeading: { field: "title" },
+      render: ({ values }) => <p className="t-banner">{textValue(values.title)}</p>,
+    },
     Hours: {
       label: "Hours",
       fields: {},
@@ -762,9 +782,10 @@ describe("createPuckEngine", () => {
 
   it("keeps every part of the render context not from Site Settings when they change (#367)", async () => {
     const keys = () => element.querySelector(".t-keys")?.textContent?.split(" ") ?? [];
-    // Every part the canvas has: not Site Settings', nor one only the export sets.
+    // Every part the canvas has: not Site Settings', nor one only the export sets, nor the page's
+    // main heading, which only a page with a titled section has (the test after this one).
     const notSettings = Object.entries(RENDER_CONTEXT_SOURCES)
-      .filter(([, source]) => source !== "setSettings" && source !== "export")
+      .filter(([, source]) => source !== "setSettings" && source !== "export" && source !== "page")
       .map(([key]) => key);
     // Every part from somewhere else than Site Settings, set.
     await act(async () => {
@@ -804,6 +825,75 @@ describe("createPuckEngine", () => {
     await act(async () => engine.setSettings({ siteText: english, setting: () => undefined }));
     await settle();
     expect(keys().sort()).toEqual([...notSettings, "siteText", "setting"].sort());
+  });
+
+  it("draws the first section title as the page's main heading where it has none of its own (#1173)", async () => {
+    const levels = () =>
+      [...element.querySelectorAll(".t-titled")].map(
+        (each) => `${each.textContent ?? ""}: ${each.getAttribute("data-level") ?? ""}`,
+      );
+    const titled = (id: string, title: string) => ({ type: "Titled", props: { id, title } });
+    await act(async () =>
+      engine.applyChange({
+        page: {
+          ...page,
+          content: [titled("t1", ""), titled("t2", "Our story"), titled("t3", "Menu")],
+        },
+      }),
+    );
+    await settle();
+    // The first with a title, as the export finds it.
+    expect(levels()).toEqual([": h2", "Our story: h1", "Menu: h2"]);
+
+    // A main heading of its own added: no title is one any more.
+    await act(async () =>
+      engine.applyChange({
+        page: {
+          ...page,
+          content: [
+            { type: "Banner", props: { id: "b", title: "Rosa's" } },
+            titled("t2", "Our story"),
+          ],
+        },
+      }),
+    );
+    await settle();
+    expect(levels()).toEqual(["Our story: h2"]);
+  });
+
+  it("moves the page's main heading only once text on the canvas loses the focus (#1173)", async () => {
+    const levels = () =>
+      [...element.querySelectorAll(".t-titled")].map(
+        (each) => `${each.textContent ?? ""}: ${each.getAttribute("data-level") ?? ""}`,
+      );
+    const titled = (id: string, title: string) => ({ type: "Titled", props: { id, title } });
+    await act(async () =>
+      engine.applyChange({
+        page: { ...page, content: [titled("t1", "Our story"), titled("t2", "Menu")] },
+      }),
+    );
+    await settle();
+    expect(levels()).toEqual(["Our story: h1", "Menu: h2"]);
+
+    // Its title emptied while it is typed in: changing its tag would remount the text.
+    const text = document.createElement("span");
+    text.contentEditable = "true";
+    element.append(text);
+    text.focus();
+    vi.spyOn(document, "hasFocus").mockReturnValue(true);
+    await act(async () =>
+      engine.applyChange({
+        page: { ...page, content: [titled("t1", ""), titled("t2", "Menu")] },
+      }),
+    );
+    await settle();
+    expect(levels()).toEqual([": h1", "Menu: h2"]);
+
+    text.blur();
+    await settle();
+    expect(levels()).toEqual([": h2", "Menu: h1"]);
+    text.remove();
+    vi.restoreAllMocks();
   });
 
   it("shows the site's navigation, drawing the page again when it changes (1.21)", async () => {
