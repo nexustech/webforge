@@ -1,8 +1,10 @@
 import type { CheckLevel, CheckReport, Finding } from "@webforge/site-check";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "zustand/vanilla";
+import type { EditorUsage } from "../../shared/usage.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";
+import { setUsageLog } from "../usage.js";
 import { registerSiteCheckCommand, siteCheckStatus } from "./site-check-command.js";
 
 const found = (count: number): Finding[] =>
@@ -94,5 +96,33 @@ describe("registerSiteCheckCommand", () => {
     expect(commands.get(COMMAND_IDS.siteCheck)).toBeUndefined();
     state.setState({ report: reportOf({ tip: 2 }) });
     expect(commands.get(COMMAND_IDS.siteCheck)).toBeUndefined();
+  });
+});
+
+describe("Site Check in the usage summary (5.40)", () => {
+  afterEach(() => {
+    setUsageLog(undefined);
+  });
+
+  it("counts opening it, with the rules that found something by level: never where or what", () => {
+    const counted = vi.fn(async (_usage: EditorUsage) => null);
+    setUsageLog(counted);
+    const commands = createCommandRegistry();
+    const panels = { show: vi.fn() };
+    const state = createStore<{ report: CheckReport }>()(() => ({
+      report: reportOf({ must: 2, should: 0, tip: 1 }),
+    }));
+    registerSiteCheckCommand(commands, panels, "siteCheck", state);
+
+    commands.run(COMMAND_IDS.siteCheck);
+
+    expect(panels.show).toHaveBeenCalledWith("siteCheck");
+    expect(counted.mock.calls.map(([usage]) => usage)).toContainEqual({
+      kind: "siteCheck",
+      found: [
+        { rule: "must", level: "must" },
+        { rule: "tip", level: "tip" },
+      ],
+    });
   });
 });

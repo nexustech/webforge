@@ -7,6 +7,7 @@ export const appApi = (call: Call, subscribe: Subscribe): AppApi => ({
   openCrashReports: () => call("openCrashReports"),
   reportError: (kind, error) => call("reportError", kind, error),
   logFailure: (context, code) => call("logFailure", context, code),
+  recordUsage: (usage) => call("recordUsage", usage),
   openGuide: (guide) => call("openGuide", guide),
   listLicences: () => call("listLicences"),
   openChromiumLicences: () => call("openChromiumLicences"),

@@ -1,6 +1,7 @@
 import type { IpcMain } from "electron";
 import type { AssistantApi } from "../shared/ipc/assistant.js";
 import { registerIpcHandler } from "./ipc.js";
+import { recordUsage } from "./usage.js";
 
 /** What main does for the `assistant` domain (ADR 0026 §7): the panel's calls, without its events. */
 export type AssistantService = Omit<AssistantApi, "onEvent">;
@@ -35,9 +36,12 @@ export function registerAssistantHandlers(
     await service.setSiteConsent(session, allowed);
     return null;
   });
-  registerIpcHandler(ipc, "assistantSend", isTrustedSender, (session, text, context) =>
-    service.send(session, text, context),
-  );
+  registerIpcHandler(ipc, "assistantSend", isTrustedSender, async (session, text, context) => {
+    const result = await service.send(session, text, context);
+    // A question asked, and whether it went or why not, in the usage summary (5.40): never its words.
+    recordUsage({ kind: "assistant", outcome: result.status });
+    return result;
+  });
   registerIpcHandler(ipc, "assistantDraft", isTrustedSender, (session, request) =>
     service.draft(session, request),
   );
