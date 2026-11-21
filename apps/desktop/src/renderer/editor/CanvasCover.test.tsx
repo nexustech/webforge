@@ -44,7 +44,7 @@ describe("the canvas's cover (#1013)", () => {
 
     act(() => vi.advanceTimersByTime(1));
     expect(screen.queryByRole("status")).toBeNull();
-    expect(failures).toHaveBeenCalledWith("canvas styles", expect.any(Error));
+    expect(failures).toHaveBeenCalledWith("canvas.styles", expect.any(Error));
   });
 
   it("covers the canvas before it has an engine", () => {

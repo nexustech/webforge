@@ -58,7 +58,7 @@ const assistantOn = (assistant: Pick<AssistantApi, "status"> | undefined) =>
     .then(
       (status) => status.enabled,
       (error: unknown) => {
-        reportFailure("assistant status", error);
+        reportFailure("assistant.status", error);
         return false;
       },
     );
