@@ -274,6 +274,7 @@ async function timedPreview<R>(
           on,
           ms: performance.now() - began,
           pages: site.snapshot.pages.length,
+          // The images only: documents are `documents`.
           pictures: site.media.length,
         },
   );

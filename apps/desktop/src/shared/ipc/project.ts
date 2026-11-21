@@ -227,6 +227,8 @@ const newSiteRequestSchema = z.strictObject({
    * `project:take-about` and draft the pages' words from. Never written to the site's file.
    */
   about: z.string().trim().min(1).max(BUSINESS_ABOUT_MAX).optional(),
+  /** Made from an AI app's brief (4.12a): counted as one in the usage summary (5.40). */
+  fromBrief: z.literal(true).optional(),
 });
 
 /** See {@link newSiteRequestSchema}. */

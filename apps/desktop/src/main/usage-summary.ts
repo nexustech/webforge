@@ -81,8 +81,13 @@ export const listedOr = <T extends string>(list: readonly T[], value: string): T
 const count = z.int().nonnegative();
 const time = z.int().nonnegative();
 /** A count for each of `names`, only those counted. */
-const counts = (names: readonly string[]) =>
+const listedCounts = (names: readonly string[]) =>
   z.partialRecord(z.enum(names as [string, ...string[]]), count);
+/**
+ * Counts as a file may hold them: by any name, as an earlier build listed it. Only ever read, and
+ * the names today's lists don't have are dropped ({@link keepListed}) before they're counted on.
+ */
+const storedCounts = (_names: readonly string[]) => z.record(z.string().max(64), count);
 /** The newest timings of one kind: when, how long, and how big. */
 const samples = z
   .array(
@@ -116,6 +121,23 @@ export type UsageComputer = z.infer<typeof computerSchema>;
 
 /** The summary's schema, with `lists`' names: what it may hold, and nothing else. */
 export function usageSummarySchema(lists: UsageLists) {
+  return summaryShape(lists, listedCounts, computerSchema);
+}
+
+/**
+ * The summary as its file may hold it, written by this build or an earlier one (BD-5): its counts
+ * by any name, and the computer as it was, both put right before they're counted on.
+ */
+function storedSummarySchema(lists: UsageLists) {
+  return summaryShape(lists, storedCounts, z.unknown());
+}
+
+/** The summary's shape, its counts and its computer as `counts` and `computer` take them. */
+function summaryShape<C extends z.ZodType, P extends z.ZodType>(
+  lists: UsageLists,
+  counts: (names: readonly string[]) => C,
+  computer: P,
+) {
   return z.strictObject({
     version: z.literal(1),
     /** A random number for this install (BD-5): names nobody; Clear makes a new one. */
@@ -124,7 +146,7 @@ export function usageSummarySchema(lists: UsageLists) {
     since: time,
     /** When it was last written. */
     saved: time,
-    computer: computerSchema.optional(),
+    computer: computer.optional(),
     /** The path to a finished site (§2's first question). */
     sites: z.strictObject({
       started: counts(SITE_STARTS),
@@ -235,6 +257,51 @@ export type UsageSummary = {
   idle(): Promise<void>;
 };
 
+/**
+ * `value` with only what `schema` lists: each count whose name its list doesn't have (any longer)
+ * left out. The rest is as it was, for `schema` to check.
+ */
+function keepListed(value: unknown, schema: z.ZodType): unknown {
+  if (schema instanceof z.ZodOptional) {
+    return value === undefined ? undefined : keepListed(value, schema.unwrap() as z.ZodType);
+  }
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return value;
+  if (schema instanceof z.ZodObject) {
+    const shape = schema.shape as Record<string, z.ZodType>;
+    return Object.fromEntries(
+      Object.entries(value).map(([key, each]) => [
+        key,
+        Object.hasOwn(shape, key) ? keepListed(each, shape[key] as z.ZodType) : each,
+      ]),
+    );
+  }
+  if (schema instanceof z.ZodRecord && schema.keyType instanceof z.ZodEnum) {
+    const listed = new Set<unknown>(schema.keyType.options);
+    return Object.fromEntries(Object.entries(value).filter(([key]) => listed.has(key)));
+  }
+  return value;
+}
+
+/**
+ * A summary as a file holds it (`storedSummarySchema` has read it), counted on: the names this
+ * build doesn't list dropped, and a computer described as an earlier build did left for the next
+ * write. Whatever else can't be read begins again from nothing, with the same install number and
+ * the same beginning, so two reports from one tester still go together (BD-5).
+ */
+function fromStored(
+  stored: unknown,
+  schema: ReturnType<typeof usageSummarySchema>,
+): UsageSummaryData {
+  const kept = keepListed(stored, schema) as Record<string, unknown>;
+  const read = schema.safeParse(kept);
+  if (read.success) return read.data;
+  const { computer: _computer, ...rest } = kept;
+  const withoutComputer = schema.safeParse(rest);
+  if (withoutComputer.success) return withoutComputer.data;
+  const { installId, since } = stored as { readonly installId: string; readonly since: number };
+  return emptyUsageSummary(installId, since);
+}
+
 /** Adds one to `record[name]`, when `names` has it. */
 function bump(record: Partial<Record<string, number>>, name: string, names: ReadonlySet<string>) {
   if (names.has(name)) record[name] = (record[name] ?? 0) + 1;
@@ -269,7 +336,7 @@ export function createUsageSummary(options: {
   let loaded:
     | {
         readonly schema: ReturnType<typeof usageSummarySchema>;
-        readonly store: ReturnType<typeof createJsonStore<UsageSummaryData | null>>;
+        readonly store: ReturnType<typeof createJsonStore<unknown>>;
         readonly names: {
           readonly components: ReadonlySet<string>;
           readonly rules: ReadonlySet<string>;
@@ -278,6 +345,8 @@ export function createUsageSummary(options: {
       }
     | undefined;
   let current: UsageSummaryData | undefined;
+  /** The value last written, or read: what goes on if a change is ever refused. */
+  let lastGood: UsageSummaryData | undefined;
   let starting: Promise<void> | undefined;
   let dirty = false;
   let scheduled = false;
@@ -419,11 +488,14 @@ export function createUsageSummary(options: {
     };
     const checked = loaded.schema.safeParse(next);
     if (!checked.success) {
-      // Never written: a value its schema refuses could be one that shouldn't be there.
+      // Never written: a value its schema refuses could be one that shouldn't be there. The last
+      // good one goes on, so one refused change doesn't stop the summary for the rest of the run.
       logFailure("Webforge could not keep the usage summary", new Error("invalid"));
+      current = lastGood === undefined ? undefined : structuredClone(lastGood);
       return;
     }
     current = checked.data;
+    lastGood = structuredClone(checked.data);
     const value = current;
     await loaded.store.update(() => value);
   };
@@ -445,10 +517,12 @@ export function createUsageSummary(options: {
     starting ??= (async () => {
       const lists = await options.lists();
       const schema = usageSummarySchema(lists);
-      const store = createJsonStore<UsageSummaryData | null>(
+      // Read leniently (BD-5): an earlier build's counts by names this one no longer lists are
+      // dropped, not taken for a damaged file, so an update keeps the counts and the install number.
+      const store = createJsonStore<unknown>(
         join(options.dir, USAGE_FILE),
-        schema.nullable(),
-        // A file that fails its schema (damaged, or a newer build's) is kept aside, never counted.
+        storedSummarySchema(lists).nullable(),
+        // A file that isn't one (damaged, or a newer build's shape) is kept aside, never counted.
         {
           empty: null,
           onDamaged: "move-aside",
@@ -467,7 +541,8 @@ export function createUsageSummary(options: {
       let begun = false;
       await store.update((stored) => {
         begun = stored === null;
-        current = stored ?? emptyUsageSummary(newId(), now());
+        current = begun ? emptyUsageSummary(newId(), now()) : fromStored(stored, schema);
+        lastGood = structuredClone(current);
         // A new one is written at once, setting a damaged file aside; a kept one waits for news.
         return begun ? current : undefined;
       });

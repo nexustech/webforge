@@ -204,6 +204,7 @@ export function registerExportHandlers(
             kind: "exported",
             ms: performance.now() - began,
             pages: request.snapshot.pages.length,
+            // The images only: documents are `documents`.
             pictures: request.media.length,
           });
         } else if (result.status === "failed") {

@@ -14,7 +14,6 @@ import {
 } from "../shared/ipc/ai.js";
 import type { AiWindow } from "./ai-ipc.js";
 import { registerIpcHandler } from "./ipc.js";
-import { recordUsage } from "./usage.js";
 
 /** How long a brief waits for the person to create the site or close the quick start. */
 const BRIEF_TIMEOUT_MS = 30 * 60_000;
@@ -193,8 +192,6 @@ export function createSiteBriefs(options: SiteBriefsOptions) {
     const kept = briefs.get(id);
     if (kept === undefined || kept.outcome !== undefined) return;
     kept.outcome = outcome;
-    // A site made from an AI app's brief, in the usage summary (5.40): that it was, nothing of it.
-    if (outcome === "created") recordUsage({ kind: "siteStarted", how: "brief" });
     if (shown === id) shown = undefined;
     clearTimeout(kept.timer);
     kept.timer = setTimeout(() => briefs.delete(id), keepMs);

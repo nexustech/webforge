@@ -221,7 +221,9 @@ export function SiteCommands({
     // starts over with it: not one an AI app started from its brief, which it goes on to build, the
     // tour over it in the way (#1246). Help › Take the Tour still has it.
     const made = async () => {
-      const result = await (project ?? window.webforge.project).create(request);
+      const result = await (project ?? window.webforge.project).create(
+        brief === undefined ? request : { ...request, fromBrief: true },
+      );
       if (result.status === "opened" && quickStart && brief === undefined) {
         await offerTour(prefs ?? window.webforge.prefs);
       }

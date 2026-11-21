@@ -62,10 +62,19 @@ async function readSiteZipFile(
 }
 
 /**
- * How a new site was made, for the usage summary (5.40): empty, the quick start's (its answers
- * came with it), or a template's as it is; by the template's id, never anything typed.
+ * How a new site was made, for the usage summary (5.40): from an AI app's brief, empty, the quick
+ * start's (its answers came with it), or a template's as it is; by the template's id, never
+ * anything typed.
  */
 function siteStarted(request: NewSiteRequest): UsageEvent {
+  // An AI app's brief is counted as one, whatever it chose; once, here, as the site is made.
+  if (request.fromBrief === true) {
+    return {
+      kind: "siteStarted",
+      how: "brief",
+      ...(request.template === undefined ? {} : { template: request.template }),
+    };
+  }
   if (request.template === undefined) return { kind: "siteStarted", how: "blank" };
   const quickStart =
     request.business !== undefined ||
@@ -241,8 +250,11 @@ export function registerProjectHandlers(
       reason === undefined
         ? await session.commit(changes, sessionId)
         : ({ status: "failed", reason } as const);
-    // Why a save failed, by its reason, in the usage summary (5.40).
-    if (result.status === "failed") recordUsage({ kind: "saveFailed", reason: result.reason });
+    // Why a save failed, by its reason, in the usage summary (5.40). Another site opening meanwhile
+    // isn't a failure of saving.
+    if (result.status === "failed" && result.reason !== "stale-session") {
+      recordUsage({ kind: "saveFailed", reason: result.reason });
+    }
     return result;
   });
   registerIpcHandler(ipc, "getUiState", isTrustedSender, () => session.uiState());

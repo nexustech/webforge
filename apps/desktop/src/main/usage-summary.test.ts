@@ -293,6 +293,59 @@ describe("createUsageSummary", () => {
     expect(readdirSync(dir).filter((name) => name.includes(".damaged-"))).toHaveLength(1);
   });
 
+  it("reads an earlier build's file, its names no longer listed dropped, its install number kept", async () => {
+    const dir = tempDir();
+    const earlier = {
+      ...emptyFor(),
+      installId: "00000000-0000-4000-8000-0000000000aa",
+      since: Date.UTC(2026, 10, 1),
+      // A rule and a command a later build renamed, a computer as an earlier build described it.
+      used: { commands: { "edit.undo": 4, "edit.retired": 3 }, added: { Hero: 2 } },
+      siteCheck: { must: {}, should: { "alt-text": 1, "old-rule": 2 }, tip: {} },
+      computer: { platform: "beos" },
+    };
+    writeFileSync(join(dir, USAGE_FILE), JSON.stringify(earlier));
+    const { summary, flush } = summaryIn(dir);
+    await summary.start();
+    summary.record({ kind: "command", id: "edit.undo" });
+    await flush();
+
+    const file = fileIn(dir);
+    expect(file).toMatchObject({
+      installId: "00000000-0000-4000-8000-0000000000aa",
+      since: Date.UTC(2026, 10, 1),
+      used: { commands: { "edit.undo": 5 }, added: { Hero: 2 } },
+      siteCheck: { should: { "alt-text": 1 } },
+      computer: COMPUTER,
+    });
+    expect(JSON.stringify(file)).not.toMatch(/retired|old-rule|beos/);
+    expect(readdirSync(dir).filter((name) => name.includes(".damaged-"))).toEqual([]);
+  });
+
+  it("goes on after a change its schema refuses, from the last good value", async () => {
+    const dir = tempDir();
+    let scale = 0;
+    const writes: (() => void)[] = [];
+    const summary = createUsageSummary({
+      dir,
+      lists: async () => LISTS,
+      // Refused once (a scale of 0), then as it should be.
+      computer: () => ({ ...COMPUTER, scale: scale++ === 0 ? 0 : 1.5 }),
+      later: (write) => writes.push(write),
+    });
+    const flush = async () => {
+      for (const write of writes.splice(0)) write();
+      await summary.idle();
+    };
+    await summary.start();
+    summary.record({ kind: "command", id: "edit.undo" });
+    await flush();
+    summary.record({ kind: "command", id: "edit.redo" });
+    await flush();
+
+    expect(fileIn(dir).used.commands).toEqual({ "edit.redo": 1 });
+  });
+
   it("Clear removes everything it holds and makes a new install number (BD-2, BD-5)", async () => {
     const dir = tempDir();
     const { summary, flush } = summaryIn(dir);
