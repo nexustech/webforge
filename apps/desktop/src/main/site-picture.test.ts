@@ -1,6 +1,11 @@
 import type { IpcMain, IpcMainInvokeEvent, NativeImage } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createSitePicture, type PicturedWindow, SITE_PICTURE_SELECTOR } from "./site-picture.js";
+import {
+  createSitePicture,
+  DRAW_TIMEOUT_MS,
+  type PicturedWindow,
+  SITE_PICTURE_SELECTOR,
+} from "./site-picture.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
@@ -14,7 +19,7 @@ function setUp(renderer: (id: number, answer: Answer) => void, crashed = false) 
   const ipc = {
     handle: (channel: string, handler: Handler) => handlers.set(channel, handler),
   } as unknown as Pick<IpcMain, "handle">;
-  const pictures = createSitePicture(ipc, (url) => url === APP_URL, { drawTimeoutMs: 2_000 });
+  const pictures = createSitePicture(ipc, (url) => url === APP_URL);
   // A sender other than the app is refused (the handler rejects), and nothing is answered.
   const answer: Answer = (id, drawn, senderUrl = APP_URL) =>
     void handlers
@@ -75,6 +80,17 @@ describe("createSitePicture (#1175)", () => {
     ]);
   });
 
+  it("waits for a large home page: its CSS compiled, then its fonts and pictures for 1.5 s", async () => {
+    const { pictures, window, jpeg } = setUp((id, answer) => {
+      setTimeout(() => answer(id, true), 3_500);
+    });
+    const taken = pictures.capture(window);
+    await vi.advanceTimersByTimeAsync(3_500);
+    expect(await taken).toBe(jpeg);
+    // Room to spare: the budget is more than the 1.5 s the renderer waits for what loads.
+    expect(DRAW_TIMEOUT_MS).toBeGreaterThanOrEqual(3_500);
+  });
+
   it("takes no picture when the renderer can't draw the page, and still has it tidy up", async () => {
     const { pictures, window, sent, capturePage } = setUp((id, answer) => answer(id, false));
 
@@ -86,13 +102,13 @@ describe("createSitePicture (#1175)", () => {
   it("gives up on a renderer that doesn't answer in time, or answers from elsewhere", async () => {
     const silent = setUp(() => undefined);
     const taken = silent.pictures.capture(silent.window);
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(DRAW_TIMEOUT_MS);
     expect(await taken).toBeUndefined();
     expect(silent.capturePage).not.toHaveBeenCalled();
 
     const stranger = setUp((id, answer) => answer(id, true, "https://example.com/"));
     const late = stranger.pictures.capture(stranger.window);
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(DRAW_TIMEOUT_MS);
     expect(await late).toBeUndefined();
   });
 

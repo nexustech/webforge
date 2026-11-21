@@ -16,8 +16,11 @@ const PICTURE = { width: 1280, height: 800 } as const;
 /** How long the drawn page may take to load its fonts and first images before it's pictured. */
 const SETTLE_TIMEOUT_MS = 1_500;
 
-/** How long a drawing stays if the main process never says it's done with it. */
-const STAY_MS = 5_000;
+/**
+ * How long a drawing stays if the main process never says it's done with it: longer than main
+ * waits for it (`DRAW_TIMEOUT_MS`, 4 s) and then takes to capture it.
+ */
+const STAY_MS = 8_000;
 
 /** `value` safe in a double-quoted HTML attribute. */
 const attribute = (value: string) => value.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
@@ -71,9 +74,9 @@ const painted = () =>
   );
 
 /**
- * `html` in a frame at the window's top left, 1280 × 800 scaled down to fit the window, for the
- * main process to capture (`[data-site-picture]`). `onDrawn` once its fonts and the images in view
- * have loaded, or {@link SETTLE_TIMEOUT_MS} has passed. The frame runs no scripts (an empty
+ * `html` in a frame in the middle of the window, on the panels' colour, 1280 × 800 scaled down to
+ * fit the window, for the main process to capture (`[data-site-picture]`). `onDrawn` once its
+ * fonts and the images in view have loaded, or {@link SETTLE_TIMEOUT_MS} has passed. The frame runs no scripts (an empty
  * `sandbox` but for reading what loaded); the markup is the site library's static HTML.
  */
 function PictureFrame({ html, onDrawn }: { readonly html: string; readonly onDrawn: () => void }) {
@@ -92,35 +95,37 @@ function PictureFrame({ html, onDrawn }: { readonly html: string; readonly onDra
       .then(onDrawn);
   };
   return (
+    // The whole window in the panels' colour, the home page in its middle: a moment of its own as
+    // the site closes, not a page laid over the editor.
     <div
-      data-site-picture=""
       aria-hidden
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: PICTURE.width * scale,
-        height: PICTURE.height * scale,
-        overflow: "hidden",
-        pointerEvents: "none",
-        background: "#fff",
-        zIndex: 2147483647,
-      }}
+      className="fixed inset-0 flex items-center justify-center bg-panel"
+      style={{ zIndex: 2147483647 }}
     >
-      <iframe
-        title={t("canvas.sitePicture")}
-        tabIndex={-1}
-        sandbox="allow-same-origin"
-        srcDoc={html}
-        onLoad={(event) => settle(event.currentTarget)}
+      <div
+        data-site-picture=""
         style={{
-          width: PICTURE.width,
-          height: PICTURE.height,
-          border: 0,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
+          width: PICTURE.width * scale,
+          height: PICTURE.height * scale,
+          overflow: "hidden",
+          background: "#fff",
         }}
-      />
+      >
+        <iframe
+          title={t("canvas.sitePicture")}
+          tabIndex={-1}
+          sandbox="allow-same-origin"
+          srcDoc={html}
+          onLoad={(event) => settle(event.currentTarget)}
+          style={{
+            width: PICTURE.width,
+            height: PICTURE.height,
+            border: 0,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -129,7 +134,7 @@ function PictureFrame({ html, onDrawn }: { readonly html: string; readonly onDra
  * Draws the site's home page when the site is being left, for the main process to take its picture
  * for the Recent list (#1175, `app:site-picture`): never the editor's canvas, with its selection,
  * outlines and grips, or whichever page it shows. `draw` gives the page's document, none when it
- * can't be drawn; the drawing goes once the picture is taken, or after 5 s if that's never said.
+ * can't be drawn; the drawing goes once the picture is taken, or after 8 s if that's never said.
  */
 export function SitePictureStage({
   app,

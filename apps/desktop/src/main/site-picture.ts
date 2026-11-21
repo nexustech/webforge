@@ -3,8 +3,12 @@ import { appEvents } from "../shared/ipc/app.js";
 import { type CapturedWindow, captureArea } from "./canvas-capture.js";
 import { registerIpcHandler } from "./ipc.js";
 
-/** How long the renderer may take to draw the home page for its picture before it's given up on. */
-const DRAW_TIMEOUT_MS = 2_000;
+/**
+ * How long the renderer may take to draw the home page for its picture before it's given up on:
+ * compiling the CSS a large home page needs, then up to 1.5 s for its fonts and pictures to load
+ * (`SitePictureStage`), with room to spare on a slow computer.
+ */
+export const DRAW_TIMEOUT_MS = 4_000;
 
 /** What the renderer draws the home page in for its picture (`SitePictureStage`). */
 export const SITE_PICTURE_SELECTOR = "[data-site-picture]";
@@ -21,7 +25,7 @@ export type PicturedWindow = CapturedWindow & {
  * draws it, never the editor. The renderer is asked to draw the home page (`app:site-picture`,
  * `draw`) and answers once it's drawn, or that it can't (`project:site-picture-drawn`); that is
  * captured, and the renderer takes the drawing away (`done`). A renderer that doesn't answer within
- * 2 s gives no picture, and the Recent list keeps the one it had.
+ * {@link DRAW_TIMEOUT_MS} gives no picture, and the Recent list keeps the one it had.
  */
 export function createSitePicture(
   ipc: Pick<IpcMain, "handle">,
