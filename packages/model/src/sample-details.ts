@@ -49,8 +49,9 @@ export function isSamplePhone(number: string): boolean {
       ? `0${digits.slice(4)}`
       : digits;
   if (uk.length === 11 && UK_SAMPLE_BLOCKS.has(uk.slice(0, 8))) return true;
-  // North America's: an area code, then 555-01xx.
-  const nanp = trimmed.startsWith("+1") || digits.length === 11 ? digits.slice(1) : digits;
+  // North America's: an area code, then 555-01xx; with its country code 1 when it has 11 digits.
+  // Any other 11 digits are no North American number: 020 7555 0123 is London's.
+  const nanp = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
   return nanp.length === 10 && !nanp.startsWith("0") && nanp.slice(3, 8) === "55501";
 }
 

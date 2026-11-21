@@ -19,7 +19,7 @@ import {
   resolveColorRef,
   shadeOf,
 } from "./colors.js";
-import { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
+import { AA_LARGE, AA_TEXT, contrastIssues, readableShade } from "./contrast.js";
 import { CURATED_BATCHES, CURATED_THEMES } from "./curated/index.js";
 import { FONT_CATALOGUE, FONT_PAIRINGS } from "./fonts/catalogue.js";
 import { THEME_PRESETS, themePreset } from "./presets.js";
@@ -129,6 +129,70 @@ describe("colour refs with a theme (2.1)", () => {
     expect(inverse["base-100"]).toEqual(DEFAULT_THEME.colors.neutral);
     expect(inverse["base-content"]).toEqual(DEFAULT_THEME.colors["neutral-content"]);
     expect(inverse.primary).toEqual(DEFAULT_THEME.colors.primary);
+  });
+});
+
+describe("readableShade (#1174)", () => {
+  const withColor = (role: "primary" | "base-content", color: Oklch) =>
+    themeTokensSchema.parse({
+      ...withoutInverse,
+      colors: { ...DEFAULT_THEME.colors, [role]: color },
+    });
+  const pageIssues = (theme: ThemeTokens, role: string) =>
+    contrastIssues(theme).filter(
+      (issue) =>
+        issue.palette === "colors" && (issue.background === role || issue.foreground === role),
+    );
+
+  it("suggests nothing for a colour that reads already", () => {
+    expect(readableShade(DEFAULT_THEME, "primary")).toBeUndefined();
+  });
+
+  it("finds the nearest lightness in the colour's own hue where every pair it is in reads", () => {
+    const pale: Oklch = { l: 0.8, c: 0.12, h: 150 };
+    const theme = withColor("primary", pale);
+    expect(pageIssues(theme, "primary")).not.toEqual([]);
+
+    const shade = readableShade(theme, "primary");
+    if (shade === undefined) throw new Error("no shade");
+    // As close as a hex code holds it.
+    expect(Math.abs(shade.c - pale.c)).toBeLessThan(0.005);
+    expect(Math.abs(shade.h - pale.h)).toBeLessThan(1);
+    // Darker, as the page is light, and no darker than it needs to be.
+    expect(shade.l).toBeLessThan(pale.l);
+    expect(pageIssues(withColor("primary", shade), "primary")).toEqual([]);
+    const lighter = { ...shade, l: shade.l + 0.01 };
+    expect(pageIssues(withColor("primary", lighter), "primary")).not.toEqual([]);
+  });
+
+  it("suggests a colour a screen shows, checked as it is drawn", () => {
+    // A pale vivid yellow: at the lightness that reads on white, sRGB can't show its chroma.
+    const yellow: Oklch = { l: 0.92, c: 0.19, h: 100 };
+    const shade = readableShade(withColor("primary", yellow), "primary");
+    if (shade === undefined) throw new Error("no shade");
+    const drawn = hexToOklch(hexOf(shade));
+    expect(drawn.l).toBeCloseTo(shade.l, 4);
+    expect(drawn.c).toBeCloseTo(shade.c, 4);
+    expect(shade.c).toBeLessThan(yellow.c);
+    expect(pageIssues(withColor("primary", shade), "primary")).toEqual([]);
+  });
+
+  it("finds one for text too, which reads on every surface", () => {
+    const grey: Oklch = { l: 0.7, c: 0, h: 0 };
+    const shade = readableShade(withColor("base-content", grey), "base-content");
+    if (shade === undefined) throw new Error("no shade");
+    expect(pageIssues(withColor("base-content", shade), "base-content")).toEqual([]);
+  });
+
+  it("suggests none when no lightness reads with both colours it is between", () => {
+    // Brand under mid-grey text, on a white page: dark enough for the page, nothing is dark enough
+    // under the text, and light enough for the text, nothing reads on the page.
+    const grey: Oklch = { l: 0.53, c: 0, h: 0 };
+    const theme = themeTokensSchema.parse({
+      ...withoutInverse,
+      colors: { ...DEFAULT_THEME.colors, "primary-content": grey },
+    });
+    expect(readableShade(theme, "primary")).toBeUndefined();
   });
 });
 

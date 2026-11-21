@@ -32,6 +32,10 @@ describe("sample details (#1254)", () => {
     expect(isSamplePhone("01632 961000")).toBe(false);
     expect(isSamplePhone("+1 212 555 0200")).toBe(false);
     expect(isSamplePhone("020 7123 4567")).toBe(false);
+    // A UK number with 555 in it is no North American one (PR 1270's review).
+    expect(isSamplePhone("020 7555 0123")).toBe(false);
+    expect(isSamplePhone("0161 555 0145")).toBe(false);
+    expect(isSamplePhone("+44 20 7555 0123")).toBe(false);
   });
 
   it("finds them in running text, as written there", () => {

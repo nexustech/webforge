@@ -514,6 +514,20 @@ describe("sample contact details (#1254)", () => {
     });
   });
 
+  it("names a sample phone beside an example mail link, which stays Placeholder text's", () => {
+    const linked = (phone: string) =>
+      `<p>Call ${phone} or <a href="mailto:hello@example.com">hello@example.com</a></p>`;
+    const site = siteWith([
+      element("Text", "both", { text: linked("+44 1632 960 123") }),
+      element("Text", "mailOnly", { text: linked("020 7555 0123") }),
+    ]);
+    expect(
+      findIn(sampleDetailsRule, site).map((finding) =>
+        finding.key.replace(`${site.homePageId}/`, ""),
+      ),
+    ).toEqual(["both/text"]);
+  });
+
   it("leaves a field bound to Site Settings to Site Settings' own finding", () => {
     const site = siteWith([
       element("Footer", "footer", {

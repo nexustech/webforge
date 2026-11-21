@@ -348,6 +348,16 @@ export const placeholdersRule: CheckRule = {
   },
 };
 
+/**
+ * Whether `html`, a text or rich text field's value, holds a made-up email address or phone
+ * number. With an email link to an example domain, which is {@link placeholdersRule}'s, only a
+ * sample phone beside it counts: never one finding twice, and never one hidden by the other.
+ */
+function holdsSampleDetail(html: string): boolean {
+  const found = sampleDetailsIn(plainText(html));
+  return linksToExample(html) ? found.some((detail) => !detail.includes("@")) : found.length > 0;
+}
+
 /** Whether `value`, a link field's value, rings a phone number kept for drama and examples. */
 function isSamplePhoneLink(value: unknown): boolean {
   if (typeof value !== "object" || value === null) return false;
@@ -383,9 +393,7 @@ export const sampleDetailsRule: CheckRule = {
       // Most text has no `@` and no digits: passed over before it's made plain (ADR 0016).
       const sample =
         typeof value === "string"
-          ? mayHoldSampleDetail(value) &&
-            !linksToExample(value) &&
-            sampleDetailsIn(plainText(value)).length > 0
+          ? mayHoldSampleDetail(value) && holdsSampleDetail(value)
           : isSamplePhoneLink(value);
       if (sample) found.push({ key: fieldKey(placed), place: elementPlace(placed) });
     });

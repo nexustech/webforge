@@ -258,7 +258,9 @@ export const siteCheck = {
   "siteCheck.place.code.js": "Custom Code › Script",
   "siteCheck.place.code.head": "Custom Code › HTML in every page's head",
   "siteCheck.place.code.bodyEnd": "Custom Code › HTML at the end of every page",
-  "siteCheck.place.theme": "{foreground} on {background}",
+  // The page's colours are in the Theme tab's words (`theme.contrast.hardToRead`, #1174). Reversed
+  // sections' are Theme Studio's, not the tab's, and kept short: the starter theme has three, and
+  // longer rows wrap, so fewer show in the drawer at 960 x 600 (#1164).
   "siteCheck.place.reversed": "{foreground} on {background}, in reversed sections",
   "siteCheck.place.untitled": "Untitled page ({file})",
   "siteCheck.place.contact.address": "Site Settings › Address",

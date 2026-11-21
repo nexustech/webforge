@@ -11,7 +11,9 @@ const HEX = /^#?([0-9a-f]{6})$/i;
 /**
  * One of the theme's colours in the Theme tab (2.3a, F-DS-2): the system's colour picker and the
  * colour's hex code, each changing it once the person is done (the picker closed, Enter, or the box
- * left), and under them what its contrast with the colours it's used with lacks, below WCAG AA.
+ * left), and under them what its contrast with the colours it's used with lacks, below WCAG AA,
+ * with a shade that reads, one click away (#1174). Simple mode's Theme tab leaves the code out
+ * (LF-16).
  */
 export function ThemeColorField({
   id,
@@ -54,7 +56,8 @@ export function ThemeColorField({
     return () => input.removeEventListener("change", done);
   };
 
-  const warnings = field.warnings;
+  const { warnings, code = true, suggestion } = field;
+  const suggested = suggestion === undefined ? undefined : oklchSchema.safeParse(suggestion.value);
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex min-w-0 items-center gap-1.5">
@@ -71,31 +74,35 @@ export function ThemeColorField({
           defaultValue={hex}
           disabled={disabled}
         />
-        <span id={hexLabelId} className="sr-only">
-          {t("colour.hexCode")}
-        </span>
-        <input
-          id={hexId}
-          aria-labelledby={`${labelId} ${hexLabelId}`}
-          className={cn(fieldControlClass, "h-7 w-auto min-w-0 flex-1 font-mono text-xs")}
-          value={text}
-          spellCheck={false}
-          disabled={disabled}
-          onChange={(event) => setTyped({ from: hex, text: event.currentTarget.value })}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              // Used up here: the key would go on to press the button of what opens next (D7's
-              // question, focused on Cancel).
-              event.preventDefault();
-              choose(event.currentTarget.value);
-            }
-            if (event.key === "Escape" && typed !== null) {
-              event.stopPropagation();
-              setTyped(null);
-            }
-          }}
-          onBlur={(event) => choose(event.currentTarget.value)}
-        />
+        {code ? (
+          <>
+            <span id={hexLabelId} className="sr-only">
+              {t("colour.hexCode")}
+            </span>
+            <input
+              id={hexId}
+              aria-labelledby={`${labelId} ${hexLabelId}`}
+              className={cn(fieldControlClass, "h-7 w-auto min-w-0 flex-1 font-mono text-xs")}
+              value={text}
+              spellCheck={false}
+              disabled={disabled}
+              onChange={(event) => setTyped({ from: hex, text: event.currentTarget.value })}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  // Used up here: the key would go on to press the button of what opens next (D7's
+                  // question, focused on Cancel).
+                  event.preventDefault();
+                  choose(event.currentTarget.value);
+                }
+                if (event.key === "Escape" && typed !== null) {
+                  event.stopPropagation();
+                  setTyped(null);
+                }
+              }}
+              onBlur={(event) => choose(event.currentTarget.value)}
+            />
+          </>
+        ) : null}
       </div>
       <ul id={warningsId} aria-live="polite" className="m-0 flex list-none flex-col gap-0.5 p-0">
         {warnings.map((warning) => (
@@ -105,6 +112,32 @@ export function ThemeColorField({
           </li>
         ))}
       </ul>
+      {suggestion === undefined || suggested?.success !== true ? null : (
+        <button
+          type="button"
+          className={cn(
+            fieldControlClass,
+            "flex h-7 w-auto items-center gap-1.5 self-start px-2 text-xs",
+          )}
+          disabled={disabled}
+          // Which colour's shade: each failing colour has one, in the same words.
+          aria-describedby={labelId}
+          onClick={() => {
+            // As it is: the colour whose contrast was checked, not one rebuilt from text.
+            setTyped(null);
+            setOffers(offers + 1);
+            onChange(suggested.data);
+            onCommit();
+          }}
+        >
+          <span
+            aria-hidden
+            className="size-3.5 shrink-0 rounded-sm border border-border-strong"
+            style={{ backgroundColor: hexOf(suggested.data) }}
+          />
+          {suggestion.label}
+        </button>
+      )}
     </div>
   );
 }
