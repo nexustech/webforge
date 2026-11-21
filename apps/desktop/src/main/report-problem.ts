@@ -1,5 +1,7 @@
+import { writeFile } from "node:fs/promises";
+import { release } from "node:os";
 import { t } from "@webforge/i18n";
-import type { IpcMain, NativeImage } from "electron";
+import type { IpcMain, NativeImage, WebContents } from "electron";
 import { REPORT_TEXT_MAX } from "../shared/ipc/app.js";
 import { registerIpcHandler } from "./ipc.js";
 
@@ -42,6 +44,22 @@ export type ReportParts = {
 export function systemName(platform: NodeJS.Platform, release: string, arch: string): string {
   const name = platform === "win32" ? "Windows" : platform === "darwin" ? "macOS" : "Linux";
   return `${name} ${release} (${arch})`;
+}
+
+/**
+ * Report a Problem's parts on this computer: its system, the editor's window to take, and the Save
+ * dialog. The editor's window only: never the Help window, nor anything else on the screen.
+ */
+export function reportParts(
+  editorWindow: () => { readonly webContents: Pick<WebContents, "capturePage"> } | undefined,
+  dialogs: { chooseScreenshotToSave(): Promise<string | undefined> },
+): Pick<ReportParts, "system" | "capture" | "chooseFile" | "writeFile"> {
+  return {
+    system: systemName(process.platform, release(), process.arch),
+    capture: async () => editorWindow()?.webContents.capturePage(),
+    chooseFile: () => dialogs.chooseScreenshotToSave(),
+    writeFile: (path, data) => writeFile(path, data),
+  };
 }
 
 /** The report's text: the person's message, then the version and the system. */

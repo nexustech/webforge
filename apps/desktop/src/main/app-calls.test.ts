@@ -34,12 +34,7 @@ function setUp(platform: NodeJS.Platform) {
     helpWindows: {} as HelpWindows,
     mainWindow: () => undefined,
     crashReports: { registerHandlers: vi.fn() },
-    report: {
-      system: "Windows 10.0.26300 (x64)",
-      capture: async () => undefined,
-      chooseFile: async () => undefined,
-      writeFile: vi.fn(),
-    },
+    reportDialogs: { chooseScreenshotToSave: async () => undefined },
   };
   const feature = appCallsFeature(deps);
   const invoke = (channel: string, ...args: unknown[]) =>
