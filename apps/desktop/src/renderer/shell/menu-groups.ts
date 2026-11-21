@@ -20,8 +20,9 @@ type GroupItem = string | Submenu;
 
 /**
  * The groups of the menus that have them, in order (#1016, #1165), none longer than seven, so a
- * menu reads in parts and fits a 600 px window. A command a menu's groups leave out comes after
- * them, in a group of its own.
+ * menu reads in parts and fits a 640 px window with 24 px rows (#1181), scrolling a row or two in
+ * the smallest, 600 px. A command a menu's groups leave out comes after them, in a group of its
+ * own.
  * - File: opening a site; saving it and its versions; previewing, exporting and publishing;
  *   settings; closing.
  * - Edit: undo; the clipboard; arranging; the Style, Select and Shared Section submenus; notes;
