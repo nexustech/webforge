@@ -5,6 +5,7 @@ import type { FontsApi } from "../../shared/ipc/fonts.js";
 import type { EditorSession } from "../editor/editor-session.js";
 
 import type { PanelRegistry } from "../shell/panels.js";
+import { type PreferencesStore, usePreferences } from "../shell/preferences-store.js";
 import type { OwnThemes } from "./own-themes.js";
 import { draftChanges } from "./studio/look-draft.js";
 import type { StudioState } from "./studio/studio-state.js";
@@ -18,7 +19,9 @@ export const THEME_PANEL_ID = "theme";
  * Adds the Theme tab to the right column, after Site (2.3a, ADR 0008), in Simple and Advanced
  * mode. Another theme is asked about first with `siteWide` (D7), if given. With
  * `studio`, the tab has a button that opens Theme Studio (2.3b), which the window draws. With
- * `ownThemes`, it lists My themes first and keeps built-in themes read-only (2.23).
+ * `ownThemes`, it lists My themes first and keeps built-in themes read-only (2.23). With
+ * `preferences`, it shows codes and a size for each text style in Advanced mode only (LF-16);
+ * without, as in Simple mode.
  *
  * A request to show it can name what to reveal (CT-3, the Edit panel's provenance): a field of the
  * tab, which it scrolls to and focuses, or `look:‹type›`, a kind's look, which Theme Studio's
@@ -31,6 +34,7 @@ export function registerThemePanel(
   studio?: StoreApi<StudioState>,
   ownThemes?: OwnThemes,
   fonts?: () => FontsApi,
+  preferences?: PreferencesStore,
 ): () => void {
   // The field to reveal once the tab is drawn: it may be hidden when it is asked for.
   const reveal = createStore<{ readonly field?: string | undefined }>()(() => ({}));
@@ -51,7 +55,7 @@ export function registerThemePanel(
       reveal.setState({ field: target });
     }
   });
-  function Theme() {
+  function Theme({ advanced = false }: { readonly advanced?: boolean }) {
     return (
       <ThemePanel
         session={session}
@@ -60,15 +64,21 @@ export function registerThemePanel(
         ownThemes={ownThemes}
         reveal={reveal}
         fonts={fonts}
+        advanced={advanced}
       />
     );
+  }
+  /** The tab in the mode `store` says, Simple or Advanced, as it changes. */
+  function ThemeInMode({ store }: { readonly store: PreferencesStore }) {
+    const advanced = usePreferences(store, (state) => state.preferences.editorLevel === "advanced");
+    return <Theme advanced={advanced} />;
   }
   const remove = panels.register({
     id: THEME_PANEL_ID,
     slot: "right.bottom",
     title: t("theme.panelTitle"),
     icon: PaletteIcon,
-    component: Theme,
+    component: preferences === undefined ? Theme : () => <ThemeInMode store={preferences} />,
   });
   return () => {
     stop();

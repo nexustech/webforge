@@ -10,14 +10,18 @@ afterEach(cleanup);
 
 const BLUE = hexToOklch("#1f6feb");
 
-/** The field showing `value`, with `warnings`, and what it reports. */
-function setUp(value: unknown = BLUE, warnings: readonly string[] = []) {
+/** The field showing `value`, with `warnings` and `more` of its spec, and what it reports. */
+function setUp(
+  value: unknown = BLUE,
+  warnings: readonly string[] = [],
+  more: Pick<FieldRendererProps<"themeColor">["field"], "code" | "suggestion"> = {},
+) {
   const onChange = vi.fn();
   const onCommit = vi.fn();
   const props: FieldRendererProps<"themeColor"> = {
     id: "brand",
     labelId: "brand-label",
-    field: { kind: "themeColor", label: "Brand", warnings },
+    field: { kind: "themeColor", label: "Brand", warnings, ...more },
     value,
     onChange,
     onCommit,
@@ -89,5 +93,25 @@ describe("a theme colour's field (2.3a)", () => {
     const picker = screen.getByLabelText("Brand", { selector: 'input[type="color"]' });
     const warnings = document.getElementById(picker.getAttribute("aria-describedby") ?? "");
     expect(warnings?.textContent).toBe("Hard to read with Surface: 2.1:1, needs 4.5:1.");
+  });
+
+  it("leaves its hex code out where it is asked to: Simple mode's Theme tab (LF-16)", () => {
+    setUp(BLUE, [], { code: false });
+
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.getByLabelText("Brand", { selector: 'input[type="color"]' })).toBeTruthy();
+  });
+
+  it("offers a shade that reads, and chooses it in one click as it is (#1174)", async () => {
+    const darker = { l: 0.42, c: 0.19, h: 259 };
+    const { onChange, onCommit, user } = setUp(BLUE, ["Brand is hard to read on Surface"], {
+      suggestion: { value: darker, label: "Use a darker shade" },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Use a darker shade" }));
+
+    // Not through its hex code, whose rounding could take it back below AA.
+    expect(onChange).toHaveBeenCalledWith(darker);
+    expect(onCommit).toHaveBeenCalledOnce();
   });
 });

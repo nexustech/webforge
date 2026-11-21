@@ -92,18 +92,15 @@ test("opens the site in the browser, and every edit reaches it", async () => {
     .getByRole("region", { name: "Right panels" })
     .getByRole("tab", { name: "Theme", exact: true })
     .click();
-  const hex = page.getByRole("textbox", { name: "Brand hex code" });
-  await hex.selectText();
-  await page.keyboard.type("b0306a");
-  // At once, nothing asked (LF-15).
-  await page.keyboard.press("Enter");
+  // Its picker: Simple mode's Theme tab shows no hex code (LF-16). At once, nothing asked (LF-15).
+  await page.locator('[data-field="color.primary"] input[type="color"]').fill("#b0306a");
   await expect.poll(() => brand(site), { timeout: 15_000 }).not.toBe(before);
   expect(await site.evaluate(() => (window as unknown as { stillHere?: boolean }).stillHere)).toBe(
     true,
   );
 
-  // Another page shown in the editor: the browser goes there. Out of the hex field first, where
-  // Ctrl/Cmd+K is the field's; the Commands dialog's own search, among the panels' many.
+  // Another page shown in the editor: the browser goes there. Out of the colour's field first,
+  // where Ctrl/Cmd+K could be the field's; the Commands dialog's own search, among the panels' many.
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("ControlOrMeta+k");
   await page

@@ -1,4 +1,4 @@
-import type { ColorRole, ThemeTokens } from "@webforge/model";
+import type { ColorRole, Oklch, ThemeTokens } from "@webforge/model";
 import {
   contrastRatio,
   inverseColors,
@@ -41,6 +41,45 @@ const PAIRS: readonly (readonly [ColorRole, ColorRole, number])[] = [
   ["base-300", "accent", AA_LARGE],
 ];
 
+/**
+ * The pairs `tokens`' colours are checked in: {@link PAIRS}, and links not always underlined, which
+ * stand apart from the text by their colour, the main one: 3:1 against it (WCAG 1.4.1, 2.13a).
+ */
+const pairsOf = (tokens: ThemeTokens): readonly (readonly [ColorRole, ColorRole, number])[] =>
+  tokens.links.underline === "always" ? PAIRS : [...PAIRS, ["base-content", "primary", AA_LARGE]];
+
+/** How far a suggested shade's lightness moves at a time: about a percent of OKLCH's range. */
+const SHADE_STEP = 0.01;
+
+/**
+ * A shade of page colour `role` that reads with every colour it is paired with (#1174): its hue
+ * and chroma at the nearest lightness, darker or lighter, where none of its pairs is below WCAG
+ * AA. What the Theme tab suggests beside a colour that is hard to read. None when it reads
+ * already, or when no lightness does.
+ */
+export function readableShade(tokens: ThemeTokens, role: ColorRole): Oklch | undefined {
+  const pairs = pairsOf(tokens).filter(([background, foreground]) =>
+    [background, foreground].includes(role),
+  );
+  const reads = (color: Oklch) => {
+    const colors = { ...tokens.colors, [role]: color };
+    return pairs.every(
+      ([background, foreground, required]) =>
+        contrastRatio(colors[foreground], colors[background]) >= required,
+    );
+  };
+  const color = tokens.colors[role];
+  if (reads(color)) return undefined;
+  for (let moved = SHADE_STEP; moved <= 1; moved += SHADE_STEP) {
+    for (const l of [color.l - moved, color.l + moved]) {
+      if (l < 0 || l > 1) continue;
+      const shade = { ...color, l: Math.round(l * 1000) / 1000 };
+      if (reads(shade)) return shade;
+    }
+  }
+  return undefined;
+}
+
 /** A pair of a theme's colours below WCAG AA. */
 export type ContrastIssue = {
   /** The page's colours, or those of sections that invert it. */
@@ -63,12 +102,8 @@ export function contrastIssues(tokens: ThemeTokens): ContrastIssue[] {
     ["colors", tokens.colors],
     ["inverse", inverseColors(tokens)],
   ] as const;
-  // Links not always underlined stand apart from the text by their colour, the main one: 3:1
-  // against it (WCAG 1.4.1, 2.13a).
-  const links: readonly (readonly [ColorRole, ColorRole, number])[] =
-    tokens.links.underline === "always" ? [] : [["base-content", "primary", AA_LARGE]];
   return palettes.flatMap(([palette, colors]) =>
-    [...PAIRS, ...links].flatMap(([background, foreground, required]) => {
+    pairsOf(tokens).flatMap(([background, foreground, required]) => {
       const ratio = contrastRatio(colors[foreground], colors[background]);
       return ratio < required
         ? [{ palette, background, foreground, ratio: Math.floor(ratio * 100) / 100, required }]

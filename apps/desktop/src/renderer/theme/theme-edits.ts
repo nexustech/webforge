@@ -7,6 +7,7 @@ import {
 import {
   type ColorRole,
   copyTheme,
+  DEFAULT_THEME,
   type FontRef,
   isNodeDoc,
   type NodeDoc,
@@ -14,12 +15,19 @@ import {
   type Oklch,
   type SiteDoc,
   sameJson,
-  type TEXT_SIZES,
+  TEXT_SIZES,
+  TEXT_STYLES,
   type TextStyle,
   type ThemeTokens,
 } from "@webforge/model";
 import type { BrandProposal, FontPairing } from "@webforge/themes";
-import { brandedTheme, catalogueFont, fontRefOf, inverseColors } from "@webforge/themes";
+import {
+  brandedTheme,
+  catalogueFont,
+  fontRefOf,
+  inverseColors,
+  themePreset,
+} from "@webforge/themes";
 import type { OwnTheme } from "../../shared/ipc/themes.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -372,6 +380,62 @@ export function setTextSize(
       tokens.typeScale[style].size = size;
     },
   );
+}
+
+/**
+ * Simple mode's text sizes (LF-16): the theme's own, as its preset has them, or every style one size
+ * smaller or larger.
+ */
+export const TEXT_SCALES = ["smaller", "standard", "larger"] as const;
+
+/** One of {@link TEXT_SCALES}. */
+export type TextScale = (typeof TEXT_SCALES)[number];
+
+/** How many sizes each style moves at each of {@link TEXT_SCALES}. */
+const SCALE_STEP: Readonly<Record<TextScale, number>> = { smaller: -1, standard: 0, larger: 1 };
+
+/**
+ * The size of each of `theme`'s text styles at `scale`: its preset's, a size smaller or larger
+ * (the smallest and largest stay). A theme from a preset this app doesn't list (a newer version's)
+ * has the default theme's.
+ */
+export function textScaleSizes(
+  theme: ThemeTokens,
+  scale: TextScale,
+): Readonly<Record<TextStyle, (typeof TEXT_SIZES)[number]>> {
+  const standard = (themePreset(theme.preset) ?? DEFAULT_THEME).typeScale;
+  const sizes = {} as Record<TextStyle, (typeof TEXT_SIZES)[number]>;
+  for (const style of TEXT_STYLES) {
+    const at = TEXT_SIZES.indexOf(standard[style].size) + SCALE_STEP[scale];
+    sizes[style] =
+      TEXT_SIZES[Math.min(Math.max(at, 0), TEXT_SIZES.length - 1)] ?? standard[style].size;
+  }
+  return sizes;
+}
+
+/** Which of {@link TEXT_SCALES} `theme`'s text sizes are, if they are one: none once sized one by one. */
+export function textScaleOf(theme: ThemeTokens): TextScale | undefined {
+  return TEXT_SCALES.find((scale) => {
+    const sizes = textScaleSizes(theme, scale);
+    return TEXT_STYLES.every((style) => theme.typeScale[style].size === sizes[style]);
+  });
+}
+
+/**
+ * Sets every text style's size to `scale`'s (Simple mode's Text size, LF-16): one step, "Changed
+ * text size", or none if they are that already.
+ */
+export function setTextScale(
+  session: ThemeSession,
+  asks: ThemeAsks,
+  scale: TextScale,
+): Promise<boolean> {
+  const current = theme(session);
+  if (textScaleOf(current) === scale) return Promise.resolve(false);
+  const sizes = textScaleSizes(current, scale);
+  return changeTheme(session, asks, t("theme.history.textScale"), undefined, (tokens) => {
+    for (const style of TEXT_STYLES) tokens.typeScale[style].size = sizes[style];
+  });
 }
 
 /** How a text style looks: its size, weight and line height. */

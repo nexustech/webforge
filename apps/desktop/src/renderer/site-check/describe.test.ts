@@ -112,7 +112,13 @@ describe("describePlace", () => {
           { palette: "inverse", foreground: "primary", background: "base-100" },
         ),
       ),
-    ).toBe("Brand on Surface, in reversed sections");
+    ).toBe("Brand is hard to read on Surface, in reversed sections");
+    // In the Theme tab's words (#1174).
+    expect(
+      name(
+        at({ kind: "theme" }, { palette: "colors", foreground: "primary", background: "base-300" }),
+      ),
+    ).toBe("Brand is hard to read on Third surface");
     expect(name(at({ kind: "address" }))).toBe("Site Settings › Web address");
     expect(name(at({ kind: "code", part: "css" }))).toBe("Custom Code › Stylesheet");
     // Being found (3.17).

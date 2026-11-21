@@ -91,29 +91,32 @@ test("switching the theme asks first, with the pages it changes, and is one undo
   await expect.poll(async () => (await themeOf(page)).preset).toBe("light");
 });
 
-test("a colour hard to read says so under it, and a readable one doesn't", async () => {
+test("a colour hard to read says so under it at once, in words, with a shade that reads (#1174)", async () => {
   const page = await openTheme();
   const brand = page.locator('[data-field="color.primary"]');
   await expect(brand.getByRole("listitem")).toHaveCount(0);
+  // Simple mode shows no codes (LF-16): no hex code, and one text size for the site.
+  const theme = page.getByRole("region", { name: "Right panels" });
+  await expect(theme.getByRole("textbox", { name: /hex code/ })).toHaveCount(0);
+  await expect(theme.getByRole("combobox", { name: "Text size" })).toHaveValue("standard");
+  await expect(theme.getByText(/\d\s?px\b/)).toHaveCount(0);
 
-  const hex = page.getByRole("textbox", { name: "Brand hex code" });
-  // Typed as a person types it (a filled-in value skips React's input events); the # is optional.
-  await hex.selectText();
-  await page.keyboard.type("d8d4ff");
-  await page.keyboard.press("Enter");
+  // A pale brand colour, from the picker.
+  await brand.locator('input[type="color"]').fill("#d8d4ff");
   // At once, nothing asked (LF-15): its toast says how far it reached, with Undo. A built-in
   // theme is read-only (2.23): the first change saves the person's own version, unasked.
   await expect(page.getByText(/^Brand colour changed on \d+ pages?$/)).toBeVisible();
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
-  await expect(
-    brand.getByText(/Hard to read with Surface: [\d.]+:1, needs 4\.5:1\./),
-  ).toBeVisible();
-  await expect(hex).toHaveValue("#d8d4ff");
+  // Before the panel is left, in the words Site Check's row has.
+  await expect(brand.getByText("Brand is hard to read on Surface", { exact: true })).toBeVisible();
   await expect
     .poll(async () => (await themeOf(page)) as unknown)
     .toMatchObject({ own: { name: "Light (yours)" } });
+
+  await brand.getByRole("button", { name: "Use a darker shade" }).click();
+  await expect(brand.getByRole("listitem")).toHaveCount(0);
   await page.getByRole("tab", { name: "Undo History" }).click();
   await expect(page.locator(".undo-history__step").first()).toHaveText("Changed brand colour");
 });
