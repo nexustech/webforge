@@ -291,6 +291,12 @@ describe("the command API's commands (4.8)", () => {
     expect(arrows.data).toContain("arrow-right");
     expect((arrows.data as string[]).every((icon) => icon.includes("arrow-right"))).toBe(true);
     expect(api.query("icons", { search: "" })).toMatchObject({ status: "invalid" });
+    // The field's own schema says so too.
+    expect(api.query("fields", { location, nodeId: added.id })).toMatchObject({
+      data: {
+        fields: { icon: { schema: { description: expect.stringContaining("the icons query") } } },
+      },
+    });
   });
 
   it("edits text and fields, moves and removes elements", async () => {
