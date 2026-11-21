@@ -99,7 +99,7 @@ describe("spacing handles (1.32)", () => {
     press(top, 100);
     // 64 px of padding and 40 px further in: Large (96 px) is nearest.
     move(top, 140);
-    expect(host.querySelector(".wf-grip-readout")?.textContent).toBe("Padding Top: L");
+    expect(host.querySelector(".wf-grip-readout")?.textContent).toBe("Space inside Top: L");
     move(top, 141);
     release(top, 141);
 

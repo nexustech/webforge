@@ -31,6 +31,7 @@ export function withCodeWords(site: SiteDoc, used: UsedSelectors): UsedSelectors
 export const unusedCssRulesRule: CheckRule = {
   id: "unusedCssRules",
   level: "tip",
+  onlyWhenFound: true,
   check: ({ site, usedSelectors }) => {
     if (usedSelectors === undefined || site.code.css.trim() === "") return [];
     const used = withCodeWords(site, usedSelectors);

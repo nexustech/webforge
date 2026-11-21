@@ -51,12 +51,12 @@ describe("connectFieldDrags (1.32)", () => {
     });
 
     expect(section()?.padding).toEqual({ top: "xl", bottom: "m" });
-    expect(labels()).toEqual(["Changed Section padding"]);
+    expect(labels()).toEqual(["Changed Section space inside"]);
     expect(flush).toHaveBeenCalled();
     expect(session.history.entries()[0]?.selectionAfter.nodeId).toBe("section-1");
 
     drag("heading-1", "margin", [{ bottom: "s" }]);
-    expect(labels()).toEqual(["Changed Section padding", "Changed Heading margin"]);
+    expect(labels()).toEqual(["Changed Section space inside", "Changed Heading space outside"]);
     session.history.undo();
     session.history.undo();
     expect(section()?.padding).toEqual(before);
@@ -71,7 +71,7 @@ describe("connectFieldDrags (1.32)", () => {
     expect(section()?.padding).toEqual({
       $responsive: { desktop: { top: "m", bottom: "m" }, mobile: { top: "s", bottom: "m" } },
     });
-    expect(labels()).toEqual(["Changed Section padding on Mobile"]);
+    expect(labels()).toEqual(["Changed Section space inside on Mobile"]);
   });
 
   it("leaves no step for a cancelled drag, and the value as it was", () => {
@@ -164,7 +164,7 @@ describe("connectFieldDrags (1.32)", () => {
     drag("heading-1", "margin", [{ top: "s" }]);
 
     expect(section()?.padding).toEqual(before);
-    expect(labels()).toEqual(["Changed Heading margin"]);
+    expect(labels()).toEqual(["Changed Heading space outside"]);
   });
 
   it("stops listening when disconnected", () => {

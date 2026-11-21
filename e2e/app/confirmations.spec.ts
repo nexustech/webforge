@@ -83,7 +83,9 @@ test("deleting a page says how many pages change, and undo brings it back", asyn
 
   // About is in the menu every page shows: Home, About and "Not found".
   await expect(confirmation()).toHaveAccessibleName("Delete Page 'About'?");
-  await expect(confirmation()).toContainText("This changes 3 pages. You can undo it afterwards.");
+  await expect(confirmation()).toContainText(
+    "3 pages of your site will change. You can undo it afterwards.",
+  );
   await confirmation().getByRole("button", { name: "Delete Page" }).click();
   const about = page.getByRole("list", { name: "Pages" }).getByRole("button", { name: /^About/ });
   await expect(about).toHaveCount(0);
@@ -117,7 +119,7 @@ test("deleting an element of the shared Footer asks first; undo waits for the an
   await clickOnCanvas(hours, { position: { x: box.width * 0.97, y: box.height - 2 } });
   await quickAction("Delete").click();
   await expect(confirmation()).toHaveAccessibleName("Delete Heading from the Shared Footer?");
-  await expect(confirmation()).toContainText("This changes 3 pages.");
+  await expect(confirmation()).toContainText("3 pages of your site will change.");
 
   // Undo, Delete and Duplicate do nothing while it asks: the typing stays, as the step it is.
   await page.keyboard.press("ControlOrMeta+z");

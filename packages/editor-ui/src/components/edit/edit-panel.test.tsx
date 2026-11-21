@@ -753,6 +753,41 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(screen.getByRole("radiogroup", { name: "Padding" })).toBeDefined();
   });
 
+  it("finds a field by its CSS name too: Space inside by padding (F23, #1180)", async () => {
+    const user = userEvent.setup();
+    render(
+      <EditPanel
+        heading="Section"
+        fields={[
+          {
+            name: "padding",
+            kind: "spacing",
+            label: "Space inside",
+            alsoCalled: "padding",
+            group: "style",
+            value: "small",
+            options: sizes,
+          },
+          {
+            name: "gap",
+            kind: "slider",
+            label: "Gap",
+            group: "style",
+            value: "small",
+            steps: sizes,
+          },
+        ]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole("tab", { name: "Style" }));
+    await user.type(screen.getByRole("searchbox", { name: "Search options" }), "Padding");
+
+    expect(screen.getByRole("radiogroup", { name: "Space inside" })).toBeDefined();
+    expect(screen.queryByLabelText("Gap")).toBeNull();
+  });
+
   it("starts with every field shown for another element: the search was the last one's", async () => {
     const props = {
       heading: "Section",

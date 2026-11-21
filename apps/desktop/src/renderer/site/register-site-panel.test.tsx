@@ -149,7 +149,7 @@ describe("Site panel", () => {
       "Duplicated page 'Company'",
       "Moved page 'Company'",
       "Moved page 'Company'",
-      "Hid 'Company' from navigation",
+      "Hid 'Company' in the menu",
       "Set 'Company' as Home page",
       "Deleted page 'My site'",
     ]);

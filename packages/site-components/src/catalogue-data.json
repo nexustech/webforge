@@ -39,7 +39,7 @@
       "responsive": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -87,7 +87,7 @@
       "responsive": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -139,7 +139,7 @@
       "responsive": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -171,7 +171,7 @@
       "responsive": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -199,7 +199,7 @@
       "responsive": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "theme"
         },
         {
@@ -231,7 +231,7 @@
       "responsive": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "theme"
         },
         {
@@ -275,7 +275,7 @@
       "responsive": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -311,7 +311,7 @@
       "responsive": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -339,7 +339,7 @@
       "responsive": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "theme"
         },
         {
@@ -375,7 +375,7 @@
       "responsive": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -407,7 +407,7 @@
       "responsive": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -588,7 +588,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -617,7 +617,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -646,7 +646,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -675,7 +675,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -733,7 +733,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -770,7 +770,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -807,7 +807,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -844,7 +844,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -893,7 +893,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "theme"
         },
         {
@@ -930,7 +930,9 @@
   "element": {
     "lookPadding": {
       "kind": "select",
-      "label": "Padding",
+      "label": "Space inside",
+      "help": "Space between its edges and what's inside it (padding)",
+      "alsoCalled": "padding",
       "group": "style",
       "optionGroup": {
         "id": "appearance",
@@ -939,7 +941,7 @@
       "responsive": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -978,7 +980,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "theme"
         },
         {
@@ -1011,7 +1013,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -1060,7 +1062,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -1093,7 +1095,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -1126,7 +1128,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "theme"
         },
         {
@@ -1159,7 +1161,7 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
+          "label": "Same as theme",
           "value": "default"
         },
         {
@@ -1300,57 +1302,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "gap": {
           "kind": "slider",
           "label": "Space between elements",
@@ -1441,15 +1392,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -1589,7 +1595,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -1688,7 +1696,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -1972,7 +1982,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -2227,7 +2239,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -2346,7 +2360,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -2422,7 +2438,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -2604,7 +2622,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -2878,7 +2898,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -3020,7 +3042,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -3121,13 +3145,17 @@
         },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -3257,6 +3285,55 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
+        "title": {
+          "kind": "text",
+          "label": "Title",
+          "inline": true
+        },
+        "text": {
+          "kind": "richtext",
+          "label": "Text",
+          "inline": true
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
+        "colors": {
+          "kind": "select",
+          "label": "Colours",
+          "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+          "options": [
+            {
+              "label": "Page colours",
+              "value": "page"
+            },
+            {
+              "label": "Reversed",
+              "value": "inverse"
+            }
+          ]
+        },
         "overlay": {
           "kind": "slider",
           "label": "Overlay",
@@ -3308,64 +3385,19 @@
             }
           ]
         },
-        "title": {
-          "kind": "text",
-          "label": "Title",
-          "inline": true
-        },
-        "text": {
-          "kind": "richtext",
-          "label": "Text",
-          "inline": true
-        },
-        "contentWidth": {
-          "kind": "select",
-          "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
-          "group": "style",
-          "options": [
-            {
-              "label": "Narrow",
-              "value": "narrow"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Wide",
-              "value": "wide"
-            },
-            {
-              "label": "Full",
-              "value": "full"
-            }
-          ]
-        },
-        "colors": {
-          "kind": "select",
-          "label": "Colours",
-          "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
-          "options": [
-            {
-              "label": "Page colours",
-              "value": "page"
-            },
-            {
-              "label": "Reversed",
-              "value": "inverse"
-            }
-          ]
-        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -3457,57 +3489,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -3561,15 +3542,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -3677,57 +3713,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -3785,15 +3770,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -3902,57 +3942,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -4004,15 +3993,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -4169,57 +4213,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -4271,15 +4264,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -4446,7 +4494,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -4520,57 +4570,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -4625,15 +4624,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -4742,57 +4796,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -4850,15 +4853,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -4972,7 +5030,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -5063,7 +5123,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -5146,57 +5208,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -5256,15 +5267,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -5374,57 +5440,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -5482,15 +5497,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -5605,57 +5675,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -5724,15 +5743,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -5860,7 +5934,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -6039,57 +6115,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -6238,15 +6263,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -6411,57 +6491,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -6605,15 +6634,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -6783,57 +6867,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -6982,15 +7015,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -7161,57 +7249,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -7360,15 +7397,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -7695,7 +7787,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -7782,7 +7876,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -7940,57 +8036,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -8042,15 +8087,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -8204,57 +8304,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -8311,15 +8360,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -8478,7 +8582,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -8507,57 +8613,6 @@
           "label": "Background image",
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
-        },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
         },
         "text": {
           "kind": "text",
@@ -8612,15 +8667,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -8716,57 +8826,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -8849,15 +8908,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -8964,7 +9078,9 @@
       "fields": {
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -9050,13 +9166,17 @@
         },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -9149,57 +9269,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -9256,15 +9325,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -9431,7 +9555,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -9559,57 +9685,6 @@
           "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
           "group": "content"
         },
-        "overlay": {
-          "kind": "slider",
-          "label": "Overlay",
-          "help": "A layer of colour over the background image, so the text on it is easier to read.",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "steps": [
-            {
-              "label": "None",
-              "value": "0"
-            },
-            {
-              "label": "Light",
-              "value": "20"
-            },
-            {
-              "label": "Medium",
-              "value": "40"
-            },
-            {
-              "label": "Strong",
-              "value": "60"
-            },
-            {
-              "label": "Very strong",
-              "value": "80"
-            }
-          ]
-        },
-        "overlayColor": {
-          "kind": "select",
-          "label": "Overlay colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "appearance",
-            "label": "Appearance"
-          },
-          "options": [
-            {
-              "label": "Page background",
-              "value": "base"
-            },
-            {
-              "label": "Neutral",
-              "value": "neutral"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -9666,15 +9741,70 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
-          "label": "Padding",
+          "label": "Space inside",
+          "help": "Space between the section's edges and its content (padding)",
+          "alsoCalled": "padding",
           "property": "padding",
           "responsive": true
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -9893,7 +10023,9 @@
         },
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [
@@ -10098,7 +10230,9 @@
       "fields": {
         "margin": {
           "kind": "box",
-          "label": "Margin",
+          "label": "Space outside",
+          "help": "Space above and below it (margin)",
+          "alsoCalled": "margin",
           "property": "margin",
           "responsive": true,
           "sides": [

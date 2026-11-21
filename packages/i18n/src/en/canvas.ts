@@ -24,8 +24,8 @@ export const canvas = {
   // Keyboard navigation and the selection chip (1.30, F-ED-25, F-ED-27).
   "canvas.selectParent": "Select Parent",
   "canvas.selectChild": "Select First Element Inside",
-  "canvas.selectPreviousSibling": "Select Previous Sibling",
-  "canvas.selectNextSibling": "Select Next Sibling",
+  "canvas.selectPreviousSibling": "Select Previous Element Beside It",
+  "canvas.selectNextSibling": "Select Next Element Beside It",
   "canvas.editText": "Edit Text",
   "canvas.clearText": "Clear Text and Edit",
   "canvas.edit": "Edit",
@@ -189,9 +189,9 @@ export const canvas = {
   "editPanel.source.device": "Set on {device}",
   "editPanel.source.custom": "Custom colour (Advanced)",
   "editPanel.source.class": "Class (Advanced)",
-  "editPanel.source.look": "Theme's look for {item}",
-  "editPanel.source.themeToken": "Theme's ({token}: {value})",
-  "editPanel.source.themeTokenChosen": "Theme's ({token}: {value}), chosen here",
+  "editPanel.source.look": "Same as the theme's look for {item}",
+  "editPanel.source.themeToken": "Same as theme ({token}: {value})",
+  "editPanel.source.themeTokenChosen": "Same as theme ({token}: {value}), chosen here",
   "editPanel.source.reveal": "Show where it comes from",
   // A field that may differ per device (SP-5): its rows, one per device.
   "editPanel.devices.show": "{field} on each device",

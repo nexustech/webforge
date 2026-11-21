@@ -88,7 +88,9 @@ export function EditPanel({
   const shown = fields.filter(
     (field) =>
       renderers[field.kind] !== undefined &&
-      (wanted === "" || field.label.toLocaleLowerCase().includes(wanted)),
+      (wanted === "" ||
+        field.label.toLocaleLowerCase().includes(wanted) ||
+        field.alsoCalled?.includes(wanted) === true),
   );
   const content = shown.filter((field) => field.group === "content");
   const style = shown.filter((field) => field.group === "style");

@@ -66,7 +66,7 @@ test("switching the theme asks first, with the pages it changes, and is one undo
   await page.getByRole("combobox", { name: "Theme", exact: true }).selectOption("bistro");
   const ask = page.getByRole("alertdialog", { name: "Switch to the theme 'Bistro'?" });
   // Every page: the home page and Page not found.
-  await expect(ask).toContainText("This changes 2 pages.");
+  await expect(ask).toContainText("2 pages of your site will change.");
   await ask.getByRole("button", { name: "Cancel" }).click();
   await expect(ask).toHaveCount(0);
   expect((await themeOf(page)).preset).toBe("light");

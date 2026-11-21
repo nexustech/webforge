@@ -17,7 +17,7 @@ Pages are listed in order. Click one to show it. Icons mark:
 
 - the **Home page**, the first page visitors see;
 - the **Page not found** page, shown when someone follows a broken link;
-- pages **hidden from navigation**;
+- pages **hidden in the menu**;
 - **Draft** pages, which aren't on your website yet. See [Draft pages](#draft-pages).
 
 Click a page to show it, from its top. To jump to a page from anywhere, press Ctrl+P (Cmd+P on a Mac) and type its name.
@@ -43,7 +43,7 @@ Point at a page and click **…** for:
 - **Move Up · Move Down:** reorder the pages.
 - **Move to Folder:** group pages under a folder, such as _services_. The page's address then becomes `services/plumbing.html`.
 - **Set as Home Page**.
-- **Hide from Navigation:** takes the page off the menu, but keeps it on your site for links.
+- **Hide in Menu:** takes the page off the menu, but keeps it on your site for links.
 - **Draft:** keeps the page in your site but off your website. See [Draft pages](#draft-pages).
 - **Delete…:** asks first, and says how many pages change, such as pages with links to it. You can undo it.
 
@@ -87,7 +87,7 @@ If your site has a form, a newsletter signup or Google Analytics, it collects de
 
 Its first paragraph reminds you that it's a starting point, not legal advice. Read the page, change anything that doesn't match how your business works, then delete that paragraph: [Site Check](site-check.md) lists it as placeholder text until you do, and won't publish the site with it.
 
-The page goes in your menu like any other. To keep it off the menu, turn on **Hide from navigation** in its Page Settings, and link to it from the Footer instead.
+The page goes in your menu like any other. To keep it off the menu, turn on **Hide in menu** in its Page Settings, and link to it from the Footer instead.
 
 If you wrote your own privacy page, open its Page Settings and turn on **This is the site's privacy page**, so Site Check knows it's there.
 
@@ -109,7 +109,7 @@ If you wrote your own privacy page, open its Page Settings and turn on **This is
 
 Each page is written from your settings at the moment you add it. If you change them later, for example by turning the consent banner off, update the page too.
 
-Like the privacy page, each starts with a reminder that it's a starting point, not legal advice. Check every part, change what doesn't fit your business, then delete that paragraph: Site Check lists it as placeholder text until you do. To keep the pages off the menu, turn on **Hide from navigation** in their Page Settings, and link to them from the Footer.
+Like the privacy page, each starts with a reminder that it's a starting point, not legal advice. Check every part, change what doesn't fit your business, then delete that paragraph: Site Check lists it as placeholder text until you do. To keep the pages off the menu, turn on **Hide in menu** in their Page Settings, and link to them from the Footer.
 
 ### Keeping old addresses working
 
@@ -132,8 +132,8 @@ Open a page's **…** menu and choose **Page Settings…**. These settings decid
 - **Share image:** the picture shown when someone shares the page. _The site's image_ uses the one from Site Settings.
 - **Draft: don't publish this page yet:** keeps the page in your site but off your website. See [Draft pages](#draft-pages).
 - **Hide the Header on this page** and **Hide the Footer on this page**.
-- **Hide from navigation:** takes the page off the menu.
-- **Hide this page from search engines:** search engines won't list the page. It stays on your site, and anyone with its address can still open it. This is different from hiding it from navigation, which is about your menu.
+- **Hide in menu:** takes the page off the menu.
+- **Hide this page from search engines:** search engines won't list the page. It stays on your site, and anyone with its address can still open it. This is different from hiding it in the menu.
 - **Hide the back-to-top button on this page:** shown when the site has that button (Site Settings › General).
 - **This is the site's privacy page:** tells Site Check this page says what your site collects. **Add Page › Privacy Page** turns it on for the page it adds. See [A privacy page](#a-privacy-page).
 
