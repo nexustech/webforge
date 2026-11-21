@@ -312,14 +312,15 @@ export function ColourField({
           <label htmlFor={customId} className="text-xs text-muted-foreground">
             {t("colour.customHex")}
           </label>
-          {/* Shown on the page as it's chosen, and one step once the picker closes (5.26). */}
+          {/* One step, once the picker closes on another colour (5.26). */}
           <ColourPicker
             id={customId}
             className="w-16"
             value={hex}
-            onPreview={(next) => onChange(storedRef(withOpacity({ base: { hex: next } }), options))}
-            onChoose={(next) => onChange(storedRef(withOpacity({ base: { hex: next } }), options))}
-            onClose={onCommit}
+            onChoose={(next) => {
+              onChange(storedRef(withOpacity({ base: { hex: next } }), options));
+              onCommit();
+            }}
           />
           <p className="m-0 text-xs text-muted-foreground">{t("colour.offTheme")}</p>
         </div>

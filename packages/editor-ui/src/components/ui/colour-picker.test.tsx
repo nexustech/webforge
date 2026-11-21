@@ -10,24 +10,16 @@ afterEach(() => {
 
 /** The picker on `value`, named "Brand", and what it reports. */
 function setUp(value = "#1f6feb") {
-  const onPreview = vi.fn();
   const onChoose = vi.fn();
-  const onClose = vi.fn();
   render(
     <>
       <span id="label">Brand</span>
-      <ColourPicker
-        value={value}
-        aria-labelledby="label"
-        onPreview={onPreview}
-        onChoose={onChoose}
-        onClose={onClose}
-      />
+      <ColourPicker value={value} aria-labelledby="label" onChoose={onChoose} />
     </>,
   );
   const swatch = () => screen.getByRole("button", { name: "Brand" });
   const hex = () => screen.getByRole("textbox", { name: "Hex code" }) as HTMLInputElement;
-  return { onPreview, onChoose, onClose, swatch, hex, user: userEvent.setup({ delay: null }) };
+  return { onChoose, swatch, hex, user: userEvent.setup({ delay: null }) };
 }
 
 describe("the colour picker (5.26, OL-19)", () => {
@@ -44,22 +36,22 @@ describe("the colour picker (5.26, OL-19)", () => {
     expect(screen.getByRole("slider", { name: "Hue" })).toBeTruthy();
   });
 
-  it("chooses once, as it closes, after showing each step of the choice", async () => {
-    const { onPreview, onChoose, onClose, swatch, user } = setUp("#808080");
+  it("chooses once, as it closes, showing each step in its code meanwhile", async () => {
+    const { onChoose, swatch, hex, user } = setUp("#808080");
     await user.click(swatch());
     const area = screen.getByRole("slider", { name: "Saturation and brightness" });
 
     area.focus();
     await user.keyboard("{Shift>}{ArrowRight}{/Shift}{ArrowUp}");
     expect(area.getAttribute("aria-valuetext")).toBe("Saturation 10%, brightness 51%");
-    expect(onPreview).toHaveBeenCalledTimes(2);
+    const chosen = hex().value;
+    expect(chosen).not.toBe("#808080");
     expect(onChoose).not.toHaveBeenCalled();
 
     await user.click(swatch());
 
     expect(onChoose).toHaveBeenCalledOnce();
-    expect(onChoose).toHaveBeenCalledWith(onPreview.mock.lastCall?.[0]);
-    expect(onClose).toHaveBeenCalledOnce();
+    expect(onChoose).toHaveBeenCalledWith(chosen);
   });
 
   it("moves the hue by key, keeping it on a grey that has none of its own", async () => {
@@ -75,7 +67,7 @@ describe("the colour picker (5.26, OL-19)", () => {
   });
 
   it("leaves the colour as it was on Escape, showing it again", async () => {
-    const { onPreview, onChoose, onClose, swatch, user } = setUp();
+    const { onChoose, swatch, user } = setUp();
     await user.click(swatch());
     screen.getByRole("slider", { name: "Hue" }).focus();
     await user.keyboard("{End}");
@@ -83,17 +75,17 @@ describe("the colour picker (5.26, OL-19)", () => {
     await user.keyboard("{Escape}");
 
     expect(onChoose).not.toHaveBeenCalled();
-    expect(onPreview).toHaveBeenLastCalledWith("#1f6feb");
-    expect(onClose).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const code = swatch().getAttribute("aria-describedby")?.split(" ")[0] ?? "";
+    expect(document.getElementById(code)?.textContent).toBe("#1f6feb");
   });
 
   it("chooses nothing when it closes on the colour it opened on", async () => {
-    const { onChoose, onClose, swatch, user } = setUp();
+    const { onChoose, swatch, user } = setUp();
     await user.click(swatch());
     await user.click(swatch());
 
     expect(onChoose).not.toHaveBeenCalled();
-    expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("takes a hex code typed in, of three or six digits, once Enter is pressed", async () => {
@@ -106,6 +98,19 @@ describe("the colour picker (5.26, OL-19)", () => {
     await user.click(swatch());
 
     expect(onChoose).toHaveBeenCalledWith("#ffaa00");
+  });
+
+  it("takes a code still in its box when a click away closes it", async () => {
+    const { onChoose, swatch, hex, user } = setUp();
+    await user.click(swatch());
+
+    await user.clear(hex());
+    await user.type(hex(), "#c0392b");
+    await user.click(document.body);
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(onChoose).toHaveBeenCalledOnce();
+    expect(onChoose).toHaveBeenCalledWith("#c0392b");
   });
 
   it("refuses a code that isn't one, saying why, and keeps the colour", async () => {

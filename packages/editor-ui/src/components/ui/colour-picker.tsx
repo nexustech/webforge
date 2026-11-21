@@ -39,14 +39,10 @@ export type ColourPickerProps = {
   /** The swatch button's size and place ("h-7 w-9"). */
   readonly className?: string;
   /**
-   * The colour while it is being chosen, at each step of a drag or key, for a field that shows it
-   * as it goes; once more with the colour it opened on if the choice is cancelled (Escape).
+   * The colour chosen, once, when the picker closes on a colour other than the one it opened on:
+   * one change, so one undo step. Nothing while it is being chosen, nor when Escape closes it.
    */
-  onPreview?(hex: string): void;
-  /** The colour chosen, once, when the picker closes on a colour other than the one it opened on. */
   onChoose(hex: string): void;
-  /** The picker closed, chosen or not: where a field ends its run of changes. */
-  onClose?(): void;
 };
 
 /**
@@ -63,9 +59,7 @@ export function ColourPicker({
   "aria-describedby": describedBy,
   disabled = false,
   className,
-  onPreview,
   onChoose,
-  onClose,
 }: ColourPickerProps) {
   const codeId = useId();
   const hexId = useId();
@@ -86,13 +80,11 @@ export function ColourPicker({
   const colour = open && held !== undefined ? held : hsvFor(value, undefined);
   const hex = hsvToHex(colour);
 
-  /** Shows `next`: the area, slider and code follow, and a field that previews it does. */
+  /** Shows `next`: the area, slider, code and swatch follow. */
   const show = (next: Hsv) => {
     setHeld(next);
     setTyped(undefined);
     setRefused(false);
-    const nextHex = hsvToHex(next);
-    if (nextHex !== hex) onPreview?.(nextHex);
   };
 
   const onOpenChange = (next: boolean) => {
@@ -106,13 +98,11 @@ export function ColourPicker({
       return;
     }
     setOpen(false);
-    if (cancelled.current) {
-      if (hex !== opened.current) onPreview?.(opened.current);
-    } else if (hex !== opened.current) {
-      onChoose(hex);
-    }
+    // A code still in its box counts: a click away closes the picker before the box is left.
+    const chosen = (typed === undefined ? undefined : parseHex(typed)) ?? hex;
+    if (!cancelled.current && chosen !== opened.current) onChoose(chosen);
     setHeld(undefined);
-    onClose?.();
+    setTyped(undefined);
   };
 
   /** Uses what's typed in the hex box, or refuses it, saying why. */
@@ -148,19 +138,21 @@ export function ColourPicker({
   };
 
   /** A drag from a pointer press: it keeps the pointer, so it goes on outside the area. */
-  const drag =
-    (at: (event: PointerEvent<HTMLDivElement>) => void) =>
-    (event: PointerEvent<HTMLDivElement>) => {
-      if (event.button !== 0) return;
-      event.currentTarget.setPointerCapture(event.pointerId);
-      event.currentTarget.focus();
-      at(event);
-    };
-  const dragging =
-    (at: (event: PointerEvent<HTMLDivElement>) => void) =>
-    (event: PointerEvent<HTMLDivElement>) => {
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) at(event);
-    };
+  const drag = (
+    event: PointerEvent<HTMLDivElement>,
+    at: (event: PointerEvent<HTMLDivElement>) => void,
+  ) => {
+    if (event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.focus();
+    at(event);
+  };
+  const dragging = (
+    event: PointerEvent<HTMLDivElement>,
+    at: (event: PointerEvent<HTMLDivElement>) => void,
+  ) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) at(event);
+  };
 
   const byKey =
     (move: (colour: Hsv, key: string, shift: boolean) => Hsv | undefined) =>
@@ -255,8 +247,8 @@ export function ColourPicker({
               backgroundImage:
                 "linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent)",
             }}
-            onPointerDown={drag(pointAt)}
-            onPointerMove={dragging(pointAt)}
+            onPointerDown={(event) => drag(event, pointAt)}
+            onPointerMove={(event) => dragging(event, pointAt)}
             onKeyDown={byKey(moveInArea)}
           >
             <span
@@ -279,8 +271,8 @@ export function ColourPicker({
               backgroundImage:
                 "linear-gradient(to right, #f00, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00)",
             }}
-            onPointerDown={drag(hueAt)}
-            onPointerMove={dragging(hueAt)}
+            onPointerDown={(event) => drag(event, hueAt)}
+            onPointerMove={(event) => dragging(event, hueAt)}
             onKeyDown={byKey(moveHue)}
           >
             <span

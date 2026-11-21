@@ -125,14 +125,15 @@ describe("ColourField (1.37, UX-25, ADR 0009)", () => {
     const custom = setUp("[#1f6feb]", { advanced: true });
     expect(custom.swatch("Custom")).toBe("#1f6feb");
     expect(screen.getByText(/Off the theme/)).toBeTruthy();
-    // Webforge's picker (5.26): shown on the page as it's chosen, one step once it closes.
+    // Webforge's picker (5.26): one change, one step, once it closes.
     await userEvent.click(screen.getByRole("button", { name: "Custom colour" }));
     const code = screen.getByRole("textbox", { name: "Hex code" });
     await userEvent.clear(code);
     await userEvent.type(code, "#ff8800{Enter}");
-    expect(custom.onChange).toHaveBeenLastCalledWith("[#ff8800]");
-    expect(custom.onCommit).not.toHaveBeenCalled();
+    expect(custom.onChange).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole("button", { name: "Custom colour" }));
+    expect(custom.onChange).toHaveBeenCalledOnce();
+    expect(custom.onChange).toHaveBeenLastCalledWith("[#ff8800]");
     expect(custom.onCommit).toHaveBeenCalledOnce();
   });
 

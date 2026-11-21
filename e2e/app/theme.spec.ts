@@ -189,6 +189,32 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
   );
 });
 
+test("Theme Studio's colour picker chooses a colour in its dialog, and Escape leaves it (5.26)", async () => {
+  const page = await openTheme();
+  await chooseFromMenu(running(), page, "Site", "Theme Studio…");
+  const studio = page.getByRole("dialog", { name: "Theme Studio" });
+  await studio.getByRole("tab", { name: "Colours" }).click();
+  // In its table of colours: Brand's row, the page's column.
+  const brand = studio.getByRole("button", { name: "Brand Page", exact: true });
+
+  // Escape closes the picker only, and keeps the colour it had.
+  const before = (await themeOf(page)).colors.primary;
+  await brand.click();
+  const picker = page.getByRole("dialog", { name: "Colour picker" });
+  await picker.getByRole("slider", { name: "Hue" }).press("End");
+  await page.keyboard.press("Escape");
+  await expect(picker).toHaveCount(0);
+  await expect(studio).toBeVisible();
+  expect((await themeOf(page)).colors.primary).toEqual(before);
+
+  // A code typed in: chosen once the picker closes.
+  await chooseColour(page, brand, "#c0392b");
+  await expect(brand).toHaveAccessibleDescription(/#c0392b/);
+  await expect
+    .poll(async () => (await themeOf(page)).colors.primary, { timeout: OPEN_WAIT })
+    .not.toEqual(before);
+});
+
 test("a change to a built-in theme saves the person's own, which another site can use (2.23)", async () => {
   // Both sites on one computer: the same user data.
   const userData = join(dir, "user-data");
