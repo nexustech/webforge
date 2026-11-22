@@ -109,7 +109,10 @@ describe("starter content", () => {
           },
         },
       ],
-      footer: [{ type: "Footer", props: { id: "footer", text: "Thanks for visiting." } }],
+      // With no columns yet (HF-4, 5.39).
+      footer: [
+        { type: "Footer", props: { id: "footer", text: "Thanks for visiting.", columns: [] } },
+      ],
     });
   });
 });
