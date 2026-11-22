@@ -6,6 +6,7 @@ import { sessionWith } from "../testing/fixtures.js";
 import { TOKEN_CONTROLS, tokenKey } from "./theme-controls.js";
 import {
   addOwnColor,
+  colorFieldsOf,
   createOwnTheme,
   deleteOwnColor,
   lookReach,
@@ -795,5 +796,32 @@ describe("your colours (TC-1b, #1218)", () => {
     // Its shade worked out as a hex colour of its own, its opacity kept: no reference left.
     expect(background(session)).toMatch(/^\[#[0-9a-f]{6}\]\/50$/);
     expect(ownColorUseCount(session, sky, isColorField)).toBe(0);
+  });
+});
+
+describe("colorFieldsOf (#1218)", () => {
+  const library = {
+    components: {
+      Card: {
+        fields: {
+          lookColor: { kind: "color" },
+          title: { kind: "text" },
+          items: {
+            kind: "list",
+            fields: { iconColor: { kind: "color" }, label: { kind: "text" } },
+          },
+        },
+      },
+    },
+  } as unknown as Parameters<typeof colorFieldsOf>[0];
+  const isColorField = colorFieldsOf(library);
+
+  it("finds a type's colour fields, and a list item's as <list>.<field>", () => {
+    expect(isColorField("Card", "lookColor")).toBe(true);
+    expect(isColorField("Card", "items.iconColor")).toBe(true);
+    expect(isColorField("Card", "title")).toBe(false);
+    expect(isColorField("Card", "items.label")).toBe(false);
+    expect(isColorField("Card", "title.iconColor")).toBe(false);
+    expect(isColorField("Unknown", "lookColor")).toBe(false);
   });
 });

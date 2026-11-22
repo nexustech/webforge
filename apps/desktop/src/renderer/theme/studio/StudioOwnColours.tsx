@@ -46,6 +46,15 @@ function warningOf(issues: readonly OwnColorIssue[], id: string): string | undef
     : t("theme.studio.own.hardToRead", values);
 }
 
+/** A new colour's name: "Colour 1", "Colour 2"…, the first no colour has already. */
+function newName(colors: readonly OwnColor[]): string {
+  const taken = new Set(colors.map(({ name }) => name));
+  for (let n = 1; ; n++) {
+    const name = t("theme.studio.own.newName", { n });
+    if (!taken.has(name)) return name;
+  }
+}
+
 /** How many colours the list shows before it offers its search. */
 const SEARCH_FROM = 6;
 
@@ -64,10 +73,10 @@ export function StudioOwnColours(props: StudioOwnColoursProps) {
   const [deleting, setDeleting] = useState<{ readonly id: string; readonly uses: number } | null>(
     null,
   );
+  // A search only while its box shows: a list that shrinks below it shows every colour again.
+  const search = colors.length < SEARCH_FROM ? "" : query.trim().toLowerCase();
   const shown =
-    query.trim() === ""
-      ? colors
-      : colors.filter(({ name }) => name.toLowerCase().includes(query.trim().toLowerCase()));
+    search === "" ? colors : colors.filter(({ name }) => name.toLowerCase().includes(search));
   const full = colors.length >= OWN_COLORS_MAX;
   const deleted = colors.find((each) => each.id === deleting?.id);
   const others = colors.filter((each) => each.id !== deleting?.id);
@@ -85,9 +94,7 @@ export function StudioOwnColours(props: StudioOwnColoursProps) {
           variant="outline"
           className="ml-auto"
           disabled={full}
-          onClick={() =>
-            props.onAdd(t("theme.studio.own.newName", { n: colors.length + 1 }), props.startColor)
-          }
+          onClick={() => props.onAdd(newName(colors), props.startColor)}
         >
           <PlusIcon aria-hidden />
           {t("theme.studio.own.add")}

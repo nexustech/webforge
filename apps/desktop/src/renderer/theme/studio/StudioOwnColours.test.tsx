@@ -10,8 +10,11 @@ afterEach(cleanup);
 const SKY: OwnColor = { id: "csky", name: "Sky", color: { l: 0.7, c: 0.12, h: 230 } };
 const SEA: OwnColor = { id: "csea", name: "Sea", color: { l: 0.5, c: 0.1, h: 200 } };
 
-function shown(colors: readonly OwnColor[], uses: (id: string) => number = () => 0) {
-  const props: StudioOwnColoursProps = {
+function shownProps(
+  colors: readonly OwnColor[],
+  uses: (id: string) => number = () => 0,
+): StudioOwnColoursProps {
+  return {
     colors,
     startColor: { l: 0.5, c: 0.2, h: 30 },
     onAdd: vi.fn(),
@@ -20,13 +23,18 @@ function shown(colors: readonly OwnColor[], uses: (id: string) => number = () =>
     usesOf: vi.fn(uses),
     onDelete: vi.fn(),
   };
+}
+
+function shown(colors: readonly OwnColor[], uses: (id: string) => number = () => 0) {
+  const props = shownProps(colors, uses);
   render(<StudioOwnColours {...props} />);
   return { props, user: userEvent.setup() };
 }
 
 describe("Theme Studio's list of your colours (TC-1b, #1218)", () => {
   it("adds a colour named for its place, and renames one when its name is left", async () => {
-    const { props, user } = shown([SKY]);
+    // The first name no colour has: here "Colour 1" is taken, "Colour 2" not.
+    const { props, user } = shown([SKY, { ...SEA, name: "Colour 1" }]);
     await user.click(screen.getByRole("button", { name: "Add a Colour" }));
     expect(props.onAdd).toHaveBeenCalledWith("Colour 2", props.startColor);
 
@@ -92,5 +100,22 @@ describe("Theme Studio's list of your colours (TC-1b, #1218)", () => {
     const list = within(screen.getByRole("list", { name: "Your colours" }));
     expect(list.getAllByRole("listitem")).toHaveLength(1);
     expect(list.getByRole("textbox", { name: "Harbour blue: its name" })).toBeDefined();
+  });
+
+  it("shows every colour again once the list is too short for its search", async () => {
+    const colors = Array.from({ length: 6 }, (_, n) => ({
+      ...SKY,
+      id: `c${n}x`,
+      name: `Tone ${n}`,
+    }));
+    const props = { ...shownProps(colors) };
+    const { rerender } = render(<StudioOwnColours {...props} />);
+    await userEvent.type(screen.getByRole("searchbox"), "tone 0");
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+
+    // One deleted: five, no search box, and no search left hiding four of them.
+    rerender(<StudioOwnColours {...props} colors={colors.slice(1)} />);
+    expect(screen.queryByRole("searchbox")).toBeNull();
+    expect(screen.getAllByRole("listitem")).toHaveLength(5);
   });
 });
