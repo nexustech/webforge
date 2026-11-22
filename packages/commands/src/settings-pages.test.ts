@@ -3,7 +3,10 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createCommandApi } from "./api.js";
 import { app, home, type Setup, setup } from "./api.test-helper.js";
-import { catalogueResourceText } from "./catalogue.js";
+import { type ComponentDetail, catalogueResourceText } from "./catalogue.js";
+
+/** The most a Hero's answer may be, in characters, without its shared styling fields (#1250). */
+const HERO_ANSWER_MAX = 10_000;
 
 describe("the catalogue, offered (4.11, AIB-1)", () => {
   it("lists the types AI apps may add, by place, never the Header, Footer or Custom Code", () => {
@@ -84,16 +87,46 @@ describe("the catalogue, offered (4.11, AIB-1)", () => {
     expect(elements).not.toMatch(/\bHero\b/);
   });
 
-  it("holds every type in full as a resource, the same as the query gives", () => {
+  it("holds every type as a resource, the same as the query gives, and the styling fields once", () => {
     const api = createCommandApi(setup().host);
-    const resource = JSON.parse(catalogueResourceText()) as Record<string, unknown>;
+    const resource = JSON.parse(catalogueResourceText()) as {
+      styleFields: Record<string, unknown>;
+      components: Record<string, unknown>;
+    };
 
-    expect(Object.keys(resource)).toEqual(
+    expect(Object.keys(resource.components)).toEqual(
       (api.query("components", {}) as { data: { type: string }[] }).data.map(({ type }) => type),
     );
-    expect(resource.Hero).toEqual(
+    expect(resource.components.Hero).toEqual(
       (api.query("components", { type: "Hero" }) as { data: unknown }).data,
     );
+    expect(resource.styleFields).toEqual((api.query("styleFields", {}) as { data: unknown }).data);
+  });
+
+  it("answers a type with its own fields, naming the styling fields it shares (#1250)", () => {
+    const api = createCommandApi(setup().host);
+    const own = (api.query("components", { type: "Hero" }) as { data: ComponentDetail }).data;
+    const full = (
+      api.query("components", { type: "Hero", styles: true }) as {
+        data: ComponentDetail;
+      }
+    ).data;
+    const styles = (api.query("styleFields", {}) as { data: Record<string, unknown> }).data;
+
+    // Its content, layout and links in full; the shared ones by name, defined once elsewhere.
+    expect(own.fields).toHaveProperty("title");
+    expect(own.fields).not.toHaveProperty("lookFont");
+    expect(own.styleFields).toContain("lookFont");
+    expect(own.defaults).not.toHaveProperty("lookFont");
+    for (const name of own.styleFields ?? []) {
+      expect(full.fields[name]).toEqual(styles[name]);
+    }
+    expect(Object.keys(full.fields).sort()).toEqual(
+      [...Object.keys(own.fields), ...(own.styleFields ?? [])].sort(),
+    );
+    // Under a written-down size: about 7,900 now, where the trial's Hero took about 30,000 (#1230).
+    expect(JSON.stringify(own).length).toBeLessThan(HERO_ANSWER_MAX);
+    expect(JSON.stringify(full).length).toBeGreaterThan(JSON.stringify(own).length * 2);
   });
 });
 

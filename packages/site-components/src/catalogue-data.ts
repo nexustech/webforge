@@ -272,8 +272,21 @@ export function expandCatalogue(file: CatalogueFile): Catalogue {
   );
 }
 
+const FILE = catalogueFileSchema.parse(data);
+
 /** Webforge's site components as data (`catalogue-data.json`), the Appearance group put back. */
-export const CATALOGUE: Catalogue = expandCatalogue(catalogueFileSchema.parse(data));
+export const CATALOGUE: Catalogue = expandCatalogue(FILE);
+
+/**
+ * The styling fields many components share, each defined once (#1250): the Appearance group's
+ * (2.22), and *Style this ‹component›…*'s for elements and for titled sections (3.13b). A component
+ * has some or all of them; its own fields are the rest.
+ */
+export const SHARED_STYLE_FIELDS: Readonly<Record<string, CatalogueField>> = {
+  ...FILE.appearance,
+  ...FILE.element,
+  ...FILE.titled,
+};
 
 /**
  * The text styles `component`'s text is set in with `values` (#670): one, or one for each device

@@ -38,6 +38,15 @@ export const shell = {
   "ui.picker.categories": "Categories",
   "ui.picker.all": "All",
   "ui.picker.noMatch": "Nothing matches '{query}'.",
+  // Webforge's own colour picker (5.26, OL-19).
+  "ui.colourPicker.label": "Colour picker",
+  "ui.colourPicker.area": "Saturation and brightness",
+  "ui.colourPicker.areaValue": "Saturation {saturation}%, brightness {brightness}%",
+  "ui.colourPicker.hue": "Hue",
+  "ui.colourPicker.hueValue": "{degrees} degrees",
+  "ui.colourPicker.hex": "Hex code",
+  "ui.colourPicker.hexRefused": "A hex code is 6 digits and letters from a to f, such as #1a7f5a",
+  "ui.colourPicker.pick": "Pick a Colour from the Screen",
   // A count: plural("ui.picker.match", n) picks one or other (B10).
   "ui.picker.match.one": "{count} match",
   "ui.picker.match.other": "{count} matches",

@@ -15,9 +15,8 @@ import { ThemePanel } from "./ThemePanel.js";
 
 afterEach(cleanup);
 
-/** A colour's picker, by the colour's name. */
-const colourPicker = (name: string) =>
-  screen.getByLabelText(name, { selector: 'input[type="color"]' });
+/** A colour's picker (5.26): its swatch button, named by the colour. */
+const colourPicker = (name: string) => screen.getByRole("button", { name });
 
 const labels = (session: ReturnType<typeof sessionWith>) =>
   session.history.entries().map((entry) => entry.label);
@@ -142,7 +141,10 @@ describe("the Theme tab (2.3a)", () => {
 
     expect(screen.queryByRole("textbox", { name: /hex code/ })).toBeNull();
     expect(screen.queryByRole("combobox", { name: "Heading 1" })).toBeNull();
-    expect(container.textContent).not.toMatch(/#[0-9a-f]{6}|\d\s?px\b/i);
+    // None shown: a colour's swatch tells a screen reader its code, out of sight.
+    const shown = container.cloneNode(true) as HTMLElement;
+    for (const hidden of shown.querySelectorAll(".sr-only")) hidden.remove();
+    expect(shown.textContent).not.toMatch(/#[0-9a-f]{6}|\d\s?px\b/i);
     const size = screen.getByRole("combobox", { name: "Text size" }) as HTMLSelectElement;
     expect([...size.options].map((option) => option.text)).toEqual([
       "Smaller",
