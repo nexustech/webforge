@@ -109,6 +109,7 @@ export const shared = {
   // One of the person's own colours (TC-1a) a field uses that the theme no longer has: it draws
   // nothing until another colour is chosen.
   "colour.ownGone": "A colour no longer in your theme",
+  "colour.yourColours": "Your colours",
   "colour.shade": "Shade",
   "colour.shadeStep": "Shade {step}",
   // A colour with its shade, in a sentence (CT-13): "Brand, shade 100".

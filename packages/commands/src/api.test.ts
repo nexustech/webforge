@@ -271,6 +271,19 @@ describe("the command API's commands (4.8)", () => {
     expect(history.document.getState().theme.ownColors).toEqual([sky]);
   });
 
+  it("lists your colours by id and name, and says how a colour field names one (TC-1b)", async () => {
+    const { host } = setup();
+    const api = createCommandApi(host);
+    const sky = { id: "csky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } };
+    await api.run("setThemeTokens", { tokens: { ownColors: [sky] } }, app);
+    expect(api.query("theme", {})).toMatchObject({ status: "done", data: { ownColors: [sky] } });
+
+    const styles = api.query("styleFields", {});
+    if (styles.status !== "done") throw new Error("no styling fields");
+    const { lookColor } = styles.data as Record<string, { readonly schema?: unknown }>;
+    expect(JSON.stringify(lookColor?.schema)).toContain("own-<id>");
+  });
+
   it("refuses an icon Webforge doesn't have, naming the field, and lists those it has (#1251)", async () => {
     const { history, host } = setup();
     const api = createCommandApi(host);
