@@ -36,7 +36,7 @@ const STEPS = {
       if (!theme.success) return fail("invalid", z.prettifyError(theme.error));
       const next = theme.data;
       // One of the person's colours still in use stays: its uses would draw nothing (#1308).
-      const dropped = droppedOwnColourInUse(site, next.ownColors ?? []);
+      const dropped = droppedOwnColourInUse(site, next);
       if (dropped !== undefined) return fail("refused", dropped);
       return {
         action: t("ai.history.theme"),

@@ -316,6 +316,29 @@ describe("the command API's commands (4.8)", () => {
     expect(history.document.getState().theme.ownColors).toEqual([]);
   });
 
+  it("counts a look's use of a colour as the change leaves the looks, not as they were (#1308)", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const sky = { id: "csky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } };
+    const sea = { id: "csea", name: "Sea", color: { l: 0.5, c: 0.1, h: 200 } };
+    await api.run("setThemeTokens", { tokens: { ownColors: [sky, sea] } }, app);
+    const before = history.document.getState();
+
+    // A look moved onto Sky in the same call that drops it: every Heading would draw nothing.
+    const onto = { ownColors: [sea], looks: { Heading: { lookColor: "own-csky" } } };
+    const refused = await api.run("setThemeTokens", { tokens: onto }, app);
+    expect(refused).toMatchObject({ status: "refused", message: expect.stringContaining('"Sky"') });
+    expect(history.document.getState()).toBe(before);
+
+    // A look on Sky, moved off it in the same call that drops it: nothing uses Sky any more.
+    const lookOnSky = { looks: { Heading: { lookColor: "own-csky-700" } } };
+    expect((await api.run("setThemeTokens", { tokens: lookOnSky }, app)).status).toBe("done");
+    const off = { ownColors: [sea], looks: { Heading: { lookColor: "primary" } } };
+    expect((await api.run("setThemeTokens", { tokens: off }, app)).status).toBe("done");
+    expect(history.document.getState().theme.ownColors).toEqual([sea]);
+    expect(history.document.getState().theme.looks?.Heading).toEqual({ lookColor: "primary" });
+  });
+
   it("refuses an icon Webforge doesn't have, naming the field, and lists those it has (#1251)", async () => {
     const { history, host } = setup();
     const api = createCommandApi(host);
