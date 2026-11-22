@@ -1,8 +1,8 @@
 import type { EditorSession } from "../editor/editor-session.js";
+import type { OwnThemes } from "../editor/own-themes.js";
 import { useDocument } from "../editor/use-document.js";
 import type { WindowDialogRegistry } from "../shell/window-dialogs.js";
 import { OwnThemeDialogs } from "./OwnThemeDialogs.js";
-import type { OwnThemes } from "./own-themes.js";
 
 /**
  * My themes for the window (2.23, PH2-17): its dialogs, drawn once whatever the panels show, and

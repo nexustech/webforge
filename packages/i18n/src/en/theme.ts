@@ -292,6 +292,8 @@ export const theme = {
   "theme.history.colorReversed": "Changed {name} colour in reversed sections",
   // Your colours (TC-1b, #1218): each add, rename, change and delete one step.
   "theme.history.ownAdded": "Added colour '{name}'",
+  // A one-off colour made one of the person's colours, every use of it with it (TC-3, #1221).
+  "theme.history.ownFromOneOff": "Made '{name}' one of your colours",
   "theme.history.ownRenamed": "Renamed colour '{from}' to '{name}'",
   "theme.history.ownChanged": "Changed colour '{name}'",
   "theme.history.ownDeleted": "Deleted colour '{name}'",

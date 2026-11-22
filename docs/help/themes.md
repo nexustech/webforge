@@ -100,6 +100,7 @@ Besides the theme's five colours, you can keep your business's own colours in th
 - Type a new name in its box and press Enter. Renaming a colour changes nothing on your pages: everything that uses it keeps using it.
 - Once you have six or more, **Find a colour by name** narrows the list.
 - A theme can have up to 200 of your colours.
+- A colour your site already uses that isn't in your theme can be added from the Edit panel with **Add to Your Colours…**, and everything that uses it then uses your colour ([Colours](styling.md#colours)).
 
 Your colours are in every colour picker on the Edit panel, under **Your colours**, with their shades and opacity, and either end of a gradient can be one ([Colours](styling.md#colours)). Change one in Theme Studio and everything that uses it changes too.
 
@@ -108,7 +109,7 @@ Your colours are in every colour picker on the Edit panel, under **Your colours*
 - **Use That Colour** gives them another of your colours, chosen in the list, with the same shade and opacity.
 - **Keep Each as It Looks** keeps each one in the colour it has now, as a colour of its own that doesn't change with the theme.
 
-Adding, renaming, changing and deleting a colour are each one step you can undo. [AI apps](ai-apps.md) can use your colours too.
+Adding, renaming, changing and deleting a colour are each one step you can undo. [AI apps](ai-apps.md) can use your colours too, but can't remove one your site still uses: delete it here, where you choose what its uses become.
 
 ## Fonts
 

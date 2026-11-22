@@ -1,4 +1,4 @@
-import { type ResizableLayout, Toaster, TooltipProvider } from "@webforge/editor-ui";
+import { type ResizableLayout, Toaster, TooltipProvider, toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
@@ -13,6 +13,7 @@ import { connectAreas, type WindowContext } from "./editor/areas.js";
 import { createCanvasPointer } from "./editor/canvas-pointer.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
+import { createOwnThemes } from "./editor/own-themes.js";
 import { createSettingsRegistry } from "./editor/settings-registry.js";
 import { useDocument } from "./editor/use-document.js";
 import { HelpCommands, HelpProvider, openHelpWith } from "./help/index.js";
@@ -95,6 +96,10 @@ export function App({
   const [windowDialogs] = useState(createWindowDialogs);
   // Actions that change more than the page shown ask first (D7); one dialog for the window.
   const [siteWide] = useState(createSiteWideConfirm);
+  // My themes (2.23): one list for the window, which the theme and the colour fields both change.
+  const [ownThemes] = useState(() =>
+    createOwnThemes(() => api.themes, { notify: (message) => toast.error(message) }),
+  );
   // The person's preferences, and Design or Content mode (M3) remembered with the open site (R9).
   const [preferences] = useState(() =>
     createPreferencesStore(
@@ -155,6 +160,7 @@ export function App({
     appVersion: info.version,
     siteUiState: uiState ?? undefined,
     windowDialogs,
+    ownThemes,
   }));
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);
 
@@ -284,6 +290,7 @@ export function App({
                             {...(createEngine === undefined ? {} : { createEngine })}
                             preferences={preferences}
                             siteWide={siteWide}
+                            ownThemes={ownThemes}
                             canvasView={canvasView}
                             canvasPointer={canvasPointer}
                           />

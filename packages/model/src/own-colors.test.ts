@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  countOneOffUses,
   countOwnColorUses,
   type IsColorField,
   newOwnColorId,
+  rewriteOneOffUses,
   rewriteOwnColorUses,
   toOwnColor,
 } from "./own-colors.js";
@@ -82,5 +84,53 @@ describe("your colours across a site (TC-1b, #1218)", () => {
     expect(d?.props.text).toBe("own-sky");
     expect(doc.theme.looks?.Section).toEqual({ lookBackground: "own-sea-100" });
     expect(countOwnColorUses(doc, "sky", isColorField)).toBe(0);
+  });
+});
+
+/** A site with one-off `#1f6feb` used twice and for a device, at different opacities (TC-3). */
+function siteWithOneOff() {
+  const doc = site();
+  const home = doc.pages[doc.homePageId];
+  if (home === undefined) throw new Error("no home page");
+  home.doc.content = [
+    { type: "Section", props: { id: "e", lookBackground: "[#1f6feb]/50", content: [] } },
+    {
+      type: "Section",
+      props: {
+        id: "f",
+        lookBackground: { $responsive: { desktop: "[#1F6FEB]", mobile: "[#000000]" } },
+        content: [],
+      },
+    },
+    {
+      type: "Features",
+      props: { id: "g", items: [{ id: "i3", iconColor: "[#1f6feb]" }] },
+    },
+    // Another colour, and the same code in a field that isn't a colour's: never one.
+    { type: "Section", props: { id: "h", lookBackground: "[#1f6fec]", content: [] } },
+    { type: "Text", props: { id: "t", text: "[#1f6feb]" } },
+  ];
+  return doc;
+}
+
+describe("a one-off colour across a site (TC-3, #1221)", () => {
+  it("counts its uses in colour fields at any opacity and for any device, in any case", () => {
+    expect(countOneOffUses(siteWithOneOff(), "#1f6feb", isColorField)).toBe(3);
+    expect(countOneOffUses(siteWithOneOff(), "#1F6FEB", isColorField)).toBe(3);
+    expect(countOneOffUses(siteWithOneOff(), "#123456", isColorField)).toBe(0);
+  });
+
+  it("makes every use one of the person's colours, keeping its opacity, and nothing else", () => {
+    const doc = siteWithOneOff();
+    expect(rewriteOneOffUses(doc, "#1f6feb", isColorField, toOwnColor("cblue"))).toBe(3);
+    const [e, f, g, h, t] = doc.pages[doc.homePageId]?.doc.content ?? [];
+    expect(e?.props.lookBackground).toBe("own-cblue/50");
+    expect(f?.props.lookBackground).toEqual({
+      $responsive: { desktop: "own-cblue", mobile: "[#000000]" },
+    });
+    expect(g?.props.items).toEqual([{ id: "i3", iconColor: "own-cblue" }]);
+    expect(h?.props.lookBackground).toBe("[#1f6fec]");
+    expect(t?.props.text).toBe("[#1f6feb]");
+    expect(countOneOffUses(doc, "#1f6feb", isColorField)).toBe(0);
   });
 });

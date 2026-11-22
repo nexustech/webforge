@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEVICE_SIZE } from "./prefs.js";
 import { sessionIdSchema } from "./project.js";
 import { type SiteContent, siteContentSchema } from "./site.js";
 
@@ -26,6 +27,47 @@ const phoneAddressSchema = z.discriminatedUnion("status", [
 
 /** The preview's address for a phone. */
 export type PhoneAddress = z.infer<typeof phoneAddressSchema>;
+
+/** What a page is saved as (5.22): a picture of all of it, or a PDF. */
+const pageFileKindSchema = z.enum(["png", "pdf"]);
+
+/** What a page is saved as. */
+export type PageFileKind = z.infer<typeof pageFileKindSchema>;
+
+/** The page to save (5.22): its file, its name for the file's, and the device width it's drawn at. */
+const pageToSaveSchema = z.strictObject({
+  page: pagePathSchema,
+  /** The page's title, which the save dialog offers as the file's name. */
+  name: z.string().max(200),
+  width: z.number().int().min(DEVICE_SIZE.min).max(DEVICE_SIZE.max),
+  kind: pageFileKindSchema,
+});
+
+/** The page to save as a picture or a PDF. */
+type PageToSave = z.infer<typeof pageToSaveSchema>;
+
+/** Outcome of saving a page as a picture or a PDF (5.22). */
+const savePageResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({
+    status: z.literal("saved"),
+    /** The file's name, never its full path. */
+    fileName: z.string().min(1),
+    /** A picture of a page longer than one can hold: it stops short of the page's end. */
+    cut: z.boolean(),
+  }),
+  z.strictObject({ status: z.literal("canceled") }),
+  z.strictObject({
+    status: z.literal("failed"),
+    /**
+     * The page couldn't be built or drawn; or the file couldn't be written: no permission there,
+     * a full disk, or another reason.
+     */
+    reason: z.enum(["draw", "not-allowed", "disk-full", "write"]),
+  }),
+]);
+
+/** Outcome of saving a page as a picture or a PDF. */
+export type SavePageResult = z.infer<typeof savePageResultSchema>;
 
 /**
  * IPC channels of the `preview` domain (`preview:*`, 3.2). Each one's arguments are checked; each
@@ -77,6 +119,16 @@ export const previewChannels = {
     request: z.tuple([]),
     response: z.null(),
   },
+  /**
+   * Saves a page of the site as it is now, as Preview builds it, as a picture of all of it or a
+   * PDF (5.22): main asks where, draws it and writes the file. Nothing is written when the person
+   * cancels.
+   */
+  previewSavePage: {
+    channel: "preview:save-page",
+    request: z.tuple([sessionIdSchema, siteContentSchema, pageToSaveSchema]),
+    response: savePageResultSchema,
+  },
 } as const;
 
 /** Messages the main process sends to the renderer in the `preview` domain. */
@@ -106,6 +158,8 @@ export interface PreviewApi {
   phone(sessionId: string, site: SiteContent, page: PreviewPage): Promise<PhoneAddress>;
   /** Stops the preview on the local network: no phone can open it any more. */
   stopPhone(): Promise<null>;
+  /** Saves a page of the site opened as `sessionId` as a picture or a PDF, where the person chooses. */
+  savePage(sessionId: string, site: SiteContent, page: PageToSave): Promise<SavePageResult>;
   /**
    * Calls `listener` when the preview on the local network stops by itself, until the returned
    * function is called.

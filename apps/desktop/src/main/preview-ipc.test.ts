@@ -6,10 +6,12 @@ import type { SiteContent } from "../shared/ipc/site.js";
 import type { PreviewBuilder } from "./preview-builder.js";
 import {
   createPreview,
+  type PageSaves,
   type Preview,
   type PreviewDeps,
   previewFeature,
   registerPreviewHandlers,
+  savePage,
 } from "./preview-ipc.js";
 import type { PreviewBuild, PreviewServer } from "./preview-server.js";
 
@@ -39,6 +41,13 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/** Page saves that are never asked for. */
+const PAGE_SAVES: PageSaves = {
+  chooseFile: async () => undefined,
+  capture: async () => ({ data: new Uint8Array(), cut: false }),
+  write: async () => undefined,
+};
+
 /** The opening of the site the window was loaded for, and the one a hand-off opens (#663). */
 const SITE_A = "11111111-1111-4111-8111-111111111111";
 const SITE_B = "22222222-2222-4222-8222-222222222222";
@@ -58,6 +67,7 @@ function previewOf(overrides: Partial<PreviewDeps> = {}) {
     stop: vi.fn(async (_scope: "local" | "network") => undefined),
     update: vi.fn((_build: PreviewBuild) => undefined),
     showVersion: vi.fn((_build: PreviewBuild) => undefined),
+    showCapture: vi.fn((_build: PreviewBuild | undefined) => undefined),
     show: vi.fn((_page: string) => undefined),
     watching: () => watching,
     onWatch: (listener: () => void) => watchers.push(listener),
@@ -193,6 +203,67 @@ describe("createPreview (3.2)", () => {
     expect(deps.openInBrowser).toHaveBeenCalledWith(
       `http://127.0.0.1:5001${BASE}__webforge/version/services/about.html`,
     );
+  });
+
+  it("draws a page of the site as it is now, built once apart, then takes it away (5.22)", async () => {
+    const { preview, deps, server, builder, finish } = previewOf();
+    const draw = vi.fn(async (url: string) => {
+      // Served while it's drawn.
+      expect(server.showCapture).toHaveBeenLastCalledWith(build);
+      return url;
+    });
+    const build: PreviewOutcome = { type: "previewed", full: true, changed: [], removed: [] };
+
+    const drawing = preview.render(SITE_A, site("Now"), "services/about.html", draw);
+    await vi.waitFor(() => expect(builder.request).toHaveBeenCalledOnce());
+    finish(build);
+
+    expect(await drawing).toBe(
+      `http://127.0.0.1:5001${BASE}__webforge/capture/services/about.html`,
+    );
+    expect(builder.request.mock.calls[0]?.[0].snapshot.name).toBe("Now");
+    expect(builder.close).toHaveBeenCalledOnce();
+    expect(server.showCapture).toHaveBeenLastCalledWith(undefined);
+    expect(server.update).not.toHaveBeenCalled();
+    expect(deps.openInBrowser).not.toHaveBeenCalled();
+  });
+
+  it("draws nothing whose build failed, nor for another opening, and takes it away after a failed drawing (5.22)", async () => {
+    const { preview, server, builder, finish, opened } = previewOf();
+    const draw = vi.fn(async () => "drawn");
+    const failing = preview.render(SITE_A, site("Now"), "index.html", draw);
+    await vi.waitFor(() => expect(builder.request).toHaveBeenCalledOnce());
+    finish({ type: "preview-failed", detail: "missing-font" });
+    expect(await failing).toBeUndefined();
+    expect(draw).not.toHaveBeenCalled();
+
+    const throwing = preview.render(SITE_A, site("Now"), "index.html", async () => {
+      throw new Error("No window");
+    });
+    await vi.waitFor(() => expect(builder.request).toHaveBeenCalledTimes(2));
+    finish({ type: "previewed", full: true, changed: [], removed: [] });
+    expect(await throwing).toBeUndefined();
+    expect(server.showCapture).toHaveBeenLastCalledWith(undefined);
+
+    opened.sessionId = SITE_B;
+    expect(await preview.render(SITE_A, site("Now"), "index.html", draw)).toBeUndefined();
+    expect(draw).not.toHaveBeenCalled();
+  });
+
+  it("gives up on a page that takes too long to build, closing its builder, and draws the next (5.22)", async () => {
+    const { preview, builder, finish } = previewOf({ renderMs: 200 });
+    const draw = vi.fn(async () => "drawn");
+
+    // Its build never answers.
+    expect(await preview.render(SITE_A, site("Now"), "index.html", draw)).toBeUndefined();
+    expect(builder.close).toHaveBeenCalledOnce();
+    expect(draw).not.toHaveBeenCalled();
+
+    // The next isn't held behind it.
+    const next = preview.render(SITE_A, site("Next"), "index.html", draw);
+    await vi.waitFor(() => expect(builder.request).toHaveBeenCalledTimes(2));
+    finish({ type: "previewed", full: true, changed: [], removed: [] });
+    expect(await next).toBe("drawn");
   });
 
   it("previews no version whose build failed, nor one for another opening", async () => {
@@ -395,7 +466,7 @@ describe("registerPreviewHandlers (3.2)", () => {
       handle: (name: string, handler: Handler) => registered.set(name, handler),
     } as unknown as Pick<IpcMain, "handle">;
     const made = previewOf();
-    registerPreviewHandlers(ipc, () => trusted, made.preview);
+    registerPreviewHandlers(ipc, () => trusted, made.preview, PAGE_SAVES);
     return {
       ...made,
       call: (...args: unknown[]) =>
@@ -436,17 +507,82 @@ describe("registerPreviewHandlers (3.2)", () => {
   });
 });
 
+describe("savePage (5.22)", () => {
+  const PAGE = { page: "index.html", name: "Home", width: 375, kind: "png" } as const;
+  /** Saves over `preview`, whose drawing gives `drawn`, to `chosen`. */
+  function saving(chosen: string | undefined, write: PageSaves["write"] = async () => undefined) {
+    const drawn = { data: new Uint8Array([1, 2, 3]), cut: false };
+    /** The pages drawn: their opening and file. */
+    const drew: [string, string][] = [];
+    const render: Preview["render"] = async (sessionId, _site, page, draw) => {
+      drew.push([sessionId, page]);
+      return draw("http://x/");
+    };
+    const saves: PageSaves = {
+      chooseFile: vi.fn(async () => chosen),
+      capture: vi.fn(async () => drawn),
+      write: vi.fn(write),
+    };
+    return { render, saves, drawn, drew };
+  }
+
+  it("asks where first: a cancel draws and writes nothing", async () => {
+    const { render, saves, drew } = saving(undefined);
+    expect(await savePage({ render }, saves, SITE_A, site("Now"), PAGE)).toEqual({
+      status: "canceled",
+    });
+    expect(saves.chooseFile).toHaveBeenCalledWith("Home", "png");
+    expect(drew).toEqual([]);
+    expect(saves.write).not.toHaveBeenCalled();
+  });
+
+  it("draws the page at its device width and writes it where chosen, named by its file only", async () => {
+    const { render, saves, drawn, drew } = saving("/Users/sam/Desktop/Home.png");
+    expect(await savePage({ render }, saves, SITE_A, site("Now"), PAGE)).toEqual({
+      status: "saved",
+      fileName: "Home.png",
+      cut: false,
+    });
+    expect(drew).toEqual([[SITE_A, "index.html"]]);
+    expect(saves.capture).toHaveBeenCalledWith("http://x/", 375, "png");
+    expect(saves.write).toHaveBeenCalledWith("/Users/sam/Desktop/Home.png", drawn.data);
+  });
+
+  it("says why a page wasn't saved: not drawn, or not written", async () => {
+    const { saves } = saving("/x/Home.png");
+    expect(
+      await savePage({ render: async () => undefined }, saves, SITE_A, site("Now"), PAGE),
+    ).toEqual({ status: "failed", reason: "draw" });
+    expect(saves.write).not.toHaveBeenCalled();
+    const failing = (code: string) => async () => {
+      throw Object.assign(new Error("No"), { code });
+    };
+    for (const [code, reason] of [
+      ["EACCES", "not-allowed"],
+      ["EPERM", "not-allowed"],
+      ["ENOSPC", "disk-full"],
+      ["EIO", "write"],
+    ] as const) {
+      const { render, saves: writing } = saving("/x/Home.png", failing(code));
+      expect(await savePage({ render }, writing, SITE_A, site("Now"), PAGE)).toEqual({
+        status: "failed",
+        reason,
+      });
+    }
+  });
+});
+
 describe("previewFeature (A12)", () => {
   it("handles the preview calls, and stops the preview when the site closes", () => {
     const close = vi.fn(async () => undefined);
     const preview = { close } as Partial<Preview> as Preview;
-    const feature = previewFeature(preview);
+    const feature = previewFeature(preview, PAGE_SAVES);
     const handle = vi.fn();
 
     feature.register?.({ handle }, () => true);
     feature.site?.closed?.();
 
-    expect(handle).toHaveBeenCalledTimes(6);
+    expect(handle).toHaveBeenCalledTimes(7);
     expect(close).toHaveBeenCalledOnce();
   });
 });

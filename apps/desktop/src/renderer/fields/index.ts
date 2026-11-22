@@ -9,7 +9,12 @@ export { classesFieldRenderer } from "./classes/ClassesField.js";
 export { useClassCatalogue } from "./classes/class-catalogue.js";
 export type { ClassCatalogue } from "./classes/class-match.js";
 export { codeField } from "./code/field.js";
-export { ColourField, colourRefName, shownRatio } from "./color/ColourField.js";
+export {
+  ColourField,
+  colourRefName,
+  type OneOffToOwn,
+  shownRatio,
+} from "./color/ColourField.js";
 export { colourField } from "./color/field.js";
 export { fieldRenderers, themeFieldRenderers } from "./field-renderers.js";
 export { addFontPreviews, previewFamily } from "./font/font-previews.js";
