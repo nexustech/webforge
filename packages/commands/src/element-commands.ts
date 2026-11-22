@@ -21,13 +21,19 @@ import {
 import { EXAMPLES_FIELD, examplesInput, knownFacts, markWritten } from "./examples.js";
 import { holds, type Location, locate, locationSchema, nodesAt } from "./locations.js";
 import { type Failure, fail, failed, type Plan, type PlanSummary } from "./plan.js";
-import { builtNode, confirmationOf, SLOT_DEPTH_MAX, SLOT_ITEMS_MAX } from "./slot-items.js";
+import {
+  builtNode,
+  confirmationOf,
+  SLOT_DEPTH_MAX,
+  SLOT_ITEMS_MAX,
+  SLOT_NODES_MAX,
+} from "./slot-items.js";
 
 /** The commands that add, change, move and remove sections and elements (F-AI-1). */
 export const ELEMENT_COMMANDS = {
   /** Adds a section to a page, or an element to a slot, with `values` over its defaults. */
   addNode: {
-    description: `Adds a section to a page (parentId null) or an element to a section's slot, of a type from the catalogue, with values over its defaults. Its slots' items may be given in values too, so one plan builds a page: a slot's name (a Features section's items, an FAQ's items, a Table's rows, a Section's content) with a list of { type, values, examples }, the types its slot takes, each item's values giving its own slots' items in turn, up to ${SLOT_DEPTH_MAX} levels and ${SLOT_ITEMS_MAX} items a slot. Those items replace the section's sample ones; a slot not given keeps its samples. Answers with the new element's id. One undo step. ${EXAMPLES_FIELD}`,
+    description: `Adds a section to a page (parentId null) or an element to a section's slot, of a type from the catalogue, with values over its defaults. Its slots' items may be given in values too, so one plan builds a page: a slot's name (a Features section's items, an FAQ's items, a Table's rows, a Section's content) with a list of { type, values, examples }, the types its slot takes, each item's values giving its own slots' items in turn, up to ${SLOT_DEPTH_MAX} levels, ${SLOT_ITEMS_MAX} items a slot and ${SLOT_NODES_MAX} in all. Those items replace the section's sample ones; a slot not given keeps its samples. Answers with the new element's id. One undo step. ${EXAMPLES_FIELD}`,
     input: z.strictObject({
       location: locationSchema,
       type: z.string().min(1).max(64),
