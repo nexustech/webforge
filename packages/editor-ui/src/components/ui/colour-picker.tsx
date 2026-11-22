@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { PipetteIcon } from "lucide-react";
 import { Popover as PopoverPrimitive } from "radix-ui";
-import { type KeyboardEvent, type PointerEvent, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type PointerEvent, useEffect, useId, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import {
   areaAt,
@@ -54,13 +54,24 @@ export type ColourPickerProps = {
    * one change, so one undo step. Nothing while it is being chosen, nor when Escape closes it.
    */
   onChoose(hex: string): void;
+  /**
+   * Each colour shown while it is being chosen, as it's dragged, typed or picked (5.30): for the
+   * page to show it at once, before it is chosen. Never a change: {@link onChoose} still makes that.
+   */
+  readonly onPreview?: ((hex: string) => void) | undefined;
+  /**
+   * The picker closed after {@link onPreview}: `chosen` if it was on another colour, given to
+   * {@link onChoose} just before; else (Escape, or back where it began) the page shows its own again.
+   */
+  readonly onPreviewEnd?: ((chosen: boolean) => void) | undefined;
 };
 
 /**
  * Webforge's own colour picker (5.26, OL-19): a swatch that opens a saturation and brightness area,
  * a hue slider, the hex code and, where the window has one, the eyedropper, the same on Windows and
  * macOS. Each works by keyboard and is named for a screen reader. The colour is chosen once, when
- * it closes; Escape leaves it as it was. A hex code that isn't one is refused, saying why.
+ * it closes; Escape leaves it as it was. A hex code that isn't one is refused, saying why. Where
+ * the page can show a colour at once, each one shown is offered to it while it's chosen (5.30).
  */
 export function ColourPicker({
   id,
@@ -73,6 +84,8 @@ export function ColourPicker({
   colours,
   onAddToColours,
   onChoose,
+  onPreview,
+  onPreviewEnd,
 }: ColourPickerProps) {
   const codeId = useId();
   const hexId = useId();
@@ -89,6 +102,19 @@ export function ColourPicker({
   // The colour it opened on, and whether the person went back to it with Escape.
   const opened = useRef(value);
   const cancelled = useRef(false);
+  // Whether a colour has been shown to `onPreview` since it opened.
+  const previewed = useRef(false);
+  // The latest `onPreviewEnd`, for a picker that goes away while it's open: its preview ends too.
+  const previewEnd = useRef(onPreviewEnd);
+  useEffect(() => {
+    previewEnd.current = onPreviewEnd;
+  });
+  useEffect(
+    () => () => {
+      if (previewed.current) previewEnd.current?.(false);
+    },
+    [],
+  );
   // While the eyedropper is out, a click on the screen picks a colour; it doesn't close the picker.
   const picking = useRef(false);
   const area = useRef<HTMLDivElement>(null);
@@ -101,12 +127,17 @@ export function ColourPicker({
     setHeld(next);
     setTyped(undefined);
     setRefused(false);
+    if (onPreview !== undefined) {
+      previewed.current = true;
+      onPreview(hsvToHex(next));
+    }
   };
 
   const onOpenChange = (next: boolean) => {
     if (next) {
       opened.current = value;
       cancelled.current = false;
+      previewed.current = false;
       setHeld(hsvFor(value, undefined));
       setTyped(undefined);
       setRefused(false);
@@ -116,7 +147,12 @@ export function ColourPicker({
     }
     setOpen(false);
     const chosen = shown();
-    if (!cancelled.current && chosen !== opened.current) onChoose(chosen);
+    const choosing = !cancelled.current && chosen !== opened.current;
+    if (choosing) onChoose(chosen);
+    if (previewed.current) {
+      previewed.current = false;
+      onPreviewEnd?.(choosing);
+    }
     setHeld(undefined);
     setTyped(undefined);
   };

@@ -36,6 +36,8 @@ import {
   switchPreset,
   textScaleOf,
   textScaleSizes,
+  withOwnColor,
+  withPaletteColor,
 } from "./theme-edits.js";
 
 /** A session on the starter site, the labels of its steps, and its theme now. */
@@ -831,6 +833,31 @@ describe("colorFieldsOf (#1218)", () => {
     expect(isColorField("Card", "items.label")).toBe(false);
     expect(isColorField("Card", "title.iconColor")).toBe(false);
     expect(isColorField("Unknown", "lookColor")).toBe(false);
+  });
+});
+
+describe("a colour being chosen, as its change would make the theme (5.30)", () => {
+  const RED = { l: 0.6, c: 0.2, h: 30 };
+
+  it("sets the page's colour as the change does, a brand colour's reversed one following, without touching the theme", () => {
+    const theme = structuredClone(DEFAULT_THEME);
+    theme.inverse = structuredClone(theme.colors);
+    const next = withPaletteColor(theme, "colors", "primary", RED);
+    expect(next.colors.primary).toEqual(RED);
+    expect(next.inverse?.primary).toMatchObject({ c: RED.c, h: RED.h });
+    expect(theme.colors.primary).toEqual(DEFAULT_THEME.colors.primary);
+  });
+
+  it("sets a reversed section's colour, and one of your colours", () => {
+    expect(
+      withPaletteColor(DEFAULT_THEME, "inverse", "base-100", RED).inverse?.["base-100"],
+    ).toEqual(RED);
+    const theme = {
+      ...DEFAULT_THEME,
+      ownColors: [{ id: "csky", name: "Sky", color: { l: 0.7, c: 0.12, h: 230 } }],
+    };
+    expect(withOwnColor(theme, "csky", RED).ownColors?.[0]?.color).toEqual(RED);
+    expect(theme.ownColors[0]?.color).toEqual({ l: 0.7, c: 0.12, h: 230 });
   });
 });
 

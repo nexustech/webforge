@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import { CLAUDE_CODE_KEY_VARIABLE, claudeCodeCommand, claudeCodeKeyCommand } from "../mcp-setup.js";
 import type { AiClient } from "./types.js";
 

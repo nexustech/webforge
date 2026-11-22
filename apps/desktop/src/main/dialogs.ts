@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import { DOCUMENT_EXTENSIONS, safeFileName } from "@webforge/model";
 import type { BaseWindow, Dialog, OpenDialogOptions, SaveDialogOptions } from "electron";
 import type { E2eDialog } from "./e2e-dialogs.js";

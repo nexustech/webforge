@@ -20,4 +20,4 @@ export {
 export { colourField } from "./color/field.js";
 export { fieldRenderers, themeFieldRenderers } from "./field-renderers.js";
 export { addFontPreviews, previewFamily } from "./font/font-previews.js";
-export { ThemeColorField } from "./theme-color/ThemeColorField.js";
+export { ThemeColorField, type ThemeColorPreview } from "./theme-color/ThemeColorField.js";

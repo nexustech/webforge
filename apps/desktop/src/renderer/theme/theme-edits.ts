@@ -513,16 +513,43 @@ export async function setPaletteColor(
       toast: (pages) =>
         plural(reversed ? "theme.changed.colorReversed" : "theme.changed.color", pages, { name }),
     },
-    (tokens) => {
-      if (!reversed) {
-        setPageColor(tokens, role, color);
-        return;
-      }
-      // Reversed sections' colours as the theme shows them, for a theme without its own.
-      tokens.inverse ??= JSON.parse(JSON.stringify(inverseColors(tokens))) as ThemeTokens["colors"];
-      tokens.inverse[role] = { ...color };
-    },
+    paletteColor(palette, role, color),
   );
+}
+
+/** Sets `palette`'s colour `role` to `color` in `tokens`: the change, or a preview of it (5.30). */
+const paletteColor =
+  (palette: "colors" | "inverse", role: ColorRole, color: Oklch) => (tokens: ThemeTokens) => {
+    if (palette === "colors") {
+      setPageColor(tokens, role, color);
+      return;
+    }
+    // Reversed sections' colours as the theme shows them, for a theme without its own.
+    tokens.inverse ??= JSON.parse(JSON.stringify(inverseColors(tokens))) as ThemeTokens["colors"];
+    tokens.inverse[role] = { ...color };
+  };
+
+/**
+ * The theme as it would be with `palette`'s colour `role` set to `color`, as {@link setPaletteColor}
+ * and {@link setColor} set it: what a colour being dragged shows before it's chosen (5.30, OL-18).
+ */
+export function withPaletteColor(
+  tokens: ThemeTokens,
+  palette: "colors" | "inverse",
+  role: ColorRole,
+  color: Oklch,
+): ThemeTokens {
+  const next = structuredClone(tokens);
+  paletteColor(palette, role, color)(next);
+  return next;
+}
+
+/** The theme as it would be with colour `id` of the person's own set to `color` (5.30). */
+export function withOwnColor(tokens: ThemeTokens, id: string, color: Oklch): ThemeTokens {
+  const next = structuredClone(tokens);
+  const colour = next.ownColors?.find((each) => each.id === id);
+  if (colour !== undefined) colour.color = { ...color };
+  return next;
 }
 
 /**

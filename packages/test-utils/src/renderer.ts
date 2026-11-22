@@ -96,6 +96,7 @@ export function createFakeEngine(options: { readonly unstyled?: boolean } = {}):
     onCanvasSize: () => () => undefined,
     setSiteCss: vi.fn(),
     setCustomCss: vi.fn(),
+    setThemePreviewCss: vi.fn(),
     setImages: vi.fn(),
     setSettings: vi.fn(),
     setNavigation: vi.fn(),

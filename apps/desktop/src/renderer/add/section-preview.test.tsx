@@ -5,6 +5,7 @@ import { renderNodesToHtml, siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { SITE_CSS_DEBOUNCE_MS } from "../editor/site-css.js";
+import { previewTheme, themePreviewOf } from "../editor/theme-preview.js";
 import {
   createItemPreviews,
   createSectionPreviews,
@@ -223,6 +224,39 @@ describe("createItemPreviews (3.13a)", () => {
     await wait(SITE_CSS_DEBOUNCE_MS + 20);
     expect(frame()?.getAttribute("srcdoc")).toContain("Call us");
     expect(compileCss).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows a colour being dragged in a frame once it has loaded, and none in one still loading (#1318)", async () => {
+    const { compileCss } = setUp();
+    const session = { history: {} };
+    const previews = createItemPreviews({
+      library: siteLibrary,
+      theme: () => theme,
+      compileCss,
+      themePreview: themePreviewOf(session),
+    });
+    const button: NodeDoc = { type: "Button", props: { id: "b", label: "Book now", link: "" } };
+    const { container } = render(previews(button, "mobile"));
+    await wait(0);
+    const frame = container.querySelector("iframe");
+    if (frame === null) throw new Error("no frame");
+
+    // A frame between documents: its document has no head yet. Dragging must not throw, which took
+    // the whole window down (#1318).
+    const loading = { head: null, body: null };
+    Object.defineProperty(frame, "contentDocument", { configurable: true, value: loading });
+    const dragged = { ...theme, colors: { ...theme.colors, primary: { l: 0.6, c: 0.2, h: 30 } } };
+    expect(() => act(() => previewTheme(session, dragged))).not.toThrow();
+
+    // Loaded: the colour shows over the drawing's CSS.
+    const loaded = document.implementation.createHTMLDocument();
+    Object.defineProperty(frame, "contentDocument", { configurable: true, value: loaded });
+    act(() => {
+      frame.dispatchEvent(new Event("load"));
+    });
+    expect(loaded.head.querySelector("style[data-webforge-theme-preview]")?.textContent).toContain(
+      "--color-primary",
+    );
   });
 
   it("draws both devices from one compile of the item as it is (3.13a review)", async () => {

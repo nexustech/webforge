@@ -10,6 +10,7 @@ import { t } from "@webforge/i18n/components";
 import {
   type ColorRole,
   fontRefSchema,
+  type Oklch,
   oklchSchema,
   TEXT_SIZES,
   TEXT_STYLES,
@@ -32,6 +33,7 @@ import type { FontsApi } from "../../shared/ipc/fonts.js";
 import type { OwnTheme } from "../../shared/ipc/themes.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { OwnThemes } from "../editor/own-themes.js";
+import { endThemePreview, previewTheme } from "../editor/theme-preview.js";
 import { useDocument } from "../editor/use-document.js";
 import { shownRatio, TEXT_PX, themeFieldRenderers } from "../fields/index.js";
 import { useOwnThemeList } from "./own-themes-list.js";
@@ -54,6 +56,7 @@ import {
   type ThemeSiteWide,
   textScaleOf,
   themeName,
+  withPaletteColor,
 } from "./theme-edits.js";
 import { named } from "./theme-words.js";
 
@@ -66,7 +69,22 @@ const OWN_PAIRING = "own";
 /** Simple mode's text size value of sizes set one by one, in Theme Studio or Advanced mode. */
 const OWN_SCALE = "own";
 
-const RENDERERS = themeFieldRenderers();
+/**
+ * What shows the Theme tab's colour `name` (`color.primary`) while it's dragged (5.30, OL-18): the
+ * theme with it, on the canvas, until the picker closes.
+ */
+const colourPreview = (session: EditorSession) => (name: string) => {
+  const role = QUICK_COLORS.find((each) => `color.${each}` === name);
+  if (role === undefined) return undefined;
+  return {
+    show: (color: Oklch) =>
+      previewTheme(
+        session,
+        withPaletteColor(session.history.document.getState().theme, "colors", role, color),
+      ),
+    end: (chosen: boolean) => endThemePreview(session, chosen),
+  };
+};
 
 /** The Theme tab's option groups before the tokens': the theme, its colours, fonts, text sizes. */
 const GROUPS = {
@@ -303,9 +321,7 @@ export function ThemePanel({
   advanced = false,
 }: ThemePanelProps) {
   const theme = useDocument(session, (site) => site.theme);
-  const [renderers] = useState(() =>
-    fonts === undefined ? RENDERERS : themeFieldRenderers(fonts),
-  );
+  const [renderers] = useState(() => themeFieldRenderers(fonts, colourPreview(session)));
   const root = useRef<HTMLDivElement>(null);
   const field = useStore(reveal ?? NO_REVEAL, (state) => state.field);
   useEffect(() => {

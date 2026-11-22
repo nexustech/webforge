@@ -32,6 +32,7 @@
     "scaffold": "node tools/src/scaffold.ts",
     "catalogue-data": "pnpm --filter @webforge/site-components exec vitest run src/catalogue-data.test.ts -u -t \"is the library\"",
     "app-icons": "node tools/src/build-app-icons.ts",
+    "main-strings": "pnpm --filter @webforge/desktop exec vitest run src/main/main-strings.test.ts -u -t \"are main's keys\"",
     "font-catalogue": "node tools/src/build-font-catalogue.ts && biome format --write packages/themes/src/fonts/catalogue.json",
     "ui-strings": "node tools/src/check-ui-strings.ts --catalogue packages/i18n/src/en --no-title apps/desktop/src/renderer --no-title packages/editor-ui/src --no-title-property packages/engine/src apps/desktop/src/renderer packages/editor-ui/src packages/engine/src packages/site-components/src",
     "help-check": "node tools/src/check-help.ts",

@@ -15,7 +15,7 @@ import {
   shadeOf,
 } from "@webforge/themes";
 import { type CSSProperties, useId } from "react";
-import { shownRatio, ThemeColorField } from "../../fields/index.js";
+import { shownRatio, ThemeColorField, type ThemeColorPreview } from "../../fields/index.js";
 import { ROLE_NAMES } from "../theme-edits.js";
 
 /** The palettes side by side (F-DS-7): the page's colours, and reversed sections'. */
@@ -93,12 +93,14 @@ function ColourRow({
   issues,
   headers,
   onChange,
+  preview,
 }: {
   readonly role: ColorRole;
   readonly theme: ThemeTokens;
   readonly issues: readonly ContrastIssue[];
   readonly headers: Readonly<Record<Palette, string>>;
   readonly onChange: (palette: Palette, role: ColorRole, color: Oklch) => void;
+  readonly preview?: ((palette: Palette, role: ColorRole) => ThemeColorPreview) | undefined;
 }) {
   const nameId = useId();
   const name = t(ROLE_NAMES[role]);
@@ -128,6 +130,7 @@ function ColourRow({
                   onChange(palette, role, next as Oklch);
                 }}
                 onCommit={() => undefined}
+                preview={preview?.(palette, role)}
               />
               {isShaded(role) ? <Shades name={name} color={color} /> : null}
             </div>
@@ -141,14 +144,17 @@ function ColourRow({
 /**
  * Theme Studio's colours (F-DS-7): every colour role, the page's and reversed sections' side by side,
  * each with its shades and what its contrast lacks below AA, in both. A change applies at once,
- * with a toast that offers Undo (LF-15).
+ * with a toast that offers Undo (LF-15); with `preview`, a colour shows while it's dragged (5.30).
  */
 export function StudioColours({
   theme,
   onChange,
+  preview,
 }: {
   readonly theme: ThemeTokens;
   readonly onChange: (palette: Palette, role: ColorRole, color: Oklch) => void;
+  /** What shows `palette`'s colour `role` while it's dragged in its picker (5.30). */
+  readonly preview?: ((palette: Palette, role: ColorRole) => ThemeColorPreview) | undefined;
 }) {
   const pageId = useId();
   const reversedId = useId();
@@ -177,6 +183,7 @@ export function StudioColours({
             issues={issues}
             headers={headers}
             onChange={onChange}
+            preview={preview}
           />
         ))}
       </tbody>

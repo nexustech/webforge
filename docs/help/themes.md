@@ -62,7 +62,7 @@ Clicking a colour's swatch opens {appName}'s colour picker, the same on Windows 
 - Click the eyedropper beside the code, then click a colour on your screen, such as your logo, to take it. Press Escape to stop without taking one.
 - With the keyboard, the arrow keys move in the square and along the strip; hold Shift to move further.
 
-The colour is chosen when the picker closes: click the swatch again, or anywhere outside it. Press Escape to close it and keep the colour you had. Each colour you choose is one step you can undo.
+While you drag, type or pick a theme colour, or one of [your colours](#your-colours), your pages show it straight away, on the canvas and in Theme Studio's sample page, so you can see it on your own site before you settle on it. The colour is chosen when the picker closes: click the swatch again, or anywhere outside it. Press Escape to close it and keep the colour you had: your pages show it again. Each colour you choose is one step you can undo, however long you dragged.
 
 ### In Advanced mode
 
