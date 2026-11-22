@@ -84,6 +84,19 @@ export const previewChannels = {
     response: z.enum(["opened", "failed"]),
   },
   /**
+   * The address of the page the preview opens next in the browser, for the opening `sessionId` (an
+   * AI app's openPreview, #1255): on this computer, with the preview's secret base. `null` if it
+   * doesn't open, or not within a while (the person may be asked first about code to trust).
+   */
+  previewNextOpened: {
+    channel: "preview:next-opened",
+    request: z.tuple([sessionIdSchema]),
+    response: z
+      .url({ protocol: /^http$/ })
+      .max(2048)
+      .nullable(),
+  },
+  /**
    * Opens a version's site, read as it was, at `page` in the default browser (Version History's
    * Preview, 4.6): apart from the live preview, which the editor's changes never reach it from.
    */
@@ -144,6 +157,8 @@ export const previewEvents = {
 export interface PreviewApi {
   /** Opens the preview of the site opened as `sessionId`, at `page`, in the default browser. */
   open(sessionId: string, site: SiteContent, page: PreviewPage): Promise<"opened" | "failed">;
+  /** The address of the page the preview opens next for `sessionId`; `null` if it doesn't. */
+  nextOpened(sessionId: string): Promise<string | null>;
   /** Opens version `site` of the site opened as `sessionId`, at `page`, in the default browser. */
   openVersion(
     sessionId: string,

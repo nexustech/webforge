@@ -18,8 +18,11 @@ export type AppToolsDeps = {
   readonly onNetlify?: (() => boolean) | undefined;
   /** What the person ignored in Site Check for this site. */
   readonly ignored: () => readonly string[];
-  /** Runs the window's own Preview command: the local preview, never the phone's. */
-  readonly openPreview: () => void;
+  /**
+   * Runs the window's own Preview command: the local preview, never the phone's. Resolves with the
+   * address of the page it opened (#1255), or `null` if it didn't open.
+   */
+  readonly openPreview: () => Promise<string | null>;
   readonly now?: () => number;
 };
 
@@ -80,11 +83,12 @@ const ruleTitle = (rule: string) => {
  * - **runSiteCheck:** the export's check, by rule id, title and level, and each finding's place by
  *   id, with its facts (#1253): numbers and listed names, such as a contrast finding's colours and
  *   ratios. Never a value that can hold the site's text ({@link factsOf}).
- * - **openPreview:** the Preview command, once in {@link PREVIEW_AGAIN_MS}.
+ * - **openPreview:** the Preview command, once in {@link PREVIEW_AGAIN_MS}, with the address of the
+ *   page it opened (#1255): on this computer only, for the app to look at its work.
  */
 export function createAppTools(deps: AppToolsDeps): {
   readonly runSiteCheck: () => AiResponse;
-  readonly openPreview: () => AiResponse;
+  readonly openPreview: () => AiResponse | Promise<AiResponse>;
 } {
   const now = deps.now ?? Date.now;
   let previewedAt = Number.NEGATIVE_INFINITY;
@@ -127,8 +131,17 @@ export function createAppTools(deps: AppToolsDeps): {
         return { status: "done", data: { opened: false, reason: "Opened a moment ago." } };
       }
       previewedAt = at;
-      deps.openPreview();
-      return { status: "done", data: { opened: true } };
+      // The page's address on this computer, for the app to look at its work (#1255).
+      return deps.openPreview().then(
+        (address): AiResponse =>
+          address === null
+            ? { status: "done", data: { opened: false, reason: "The preview didn't open." } }
+            : { status: "done", data: { opened: true, address } },
+        (): AiResponse => ({
+          status: "done",
+          data: { opened: false, reason: "The preview didn't open." },
+        }),
+      );
     },
   };
 }

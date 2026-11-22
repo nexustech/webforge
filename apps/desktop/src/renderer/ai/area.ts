@@ -54,8 +54,10 @@ export const aiRequestsArea: Area<WindowContext> = {
       allowListConfirmed: () => codeTrust.allowListConfirmed.getState(),
       onNetlify: () => onNetlify.getState(),
       ignored: () => siteCheckIgnored.initial,
+      // Asked for before the command runs, so the open it starts is the one told (#1255).
       openPreview: () => {
-        commands.run(COMMAND_IDS.preview);
+        const next = api.preview.nextOpened(siteSession());
+        return commands.run(COMMAND_IDS.preview) ? next.catch(() => null) : Promise.resolve(null);
       },
     });
 
