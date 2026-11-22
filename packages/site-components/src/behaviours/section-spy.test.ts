@@ -144,6 +144,23 @@ describe("the section-spy behaviour (5.10)", () => {
     expect(marked()).toEqual(["Prices", "Prices"]);
   });
 
+  it("measures the sections when the observer says none crosses, as Safari's may after a jump", () => {
+    const { window, section, marked } = page({ scrollPadding: "97px" });
+    // A jump to #prices brings its top to the line, half a pixel above it; the observer says nothing.
+    const at = (top: number, bottom: number) => () => ({ top, bottom }) as DOMRect;
+    section("services").getBoundingClientRect = at(-900, 96.5);
+    section("prices").getBoundingClientRect = at(96.5, 700);
+
+    window.dispatchEvent(new window.Event("hashchange"));
+    expect(marked()).toEqual(["Prices", "Prices"]);
+
+    // Above the line, it isn't: nothing is in view until the first section reaches it.
+    section("services").getBoundingClientRect = at(300, 900);
+    section("prices").getBoundingClientRect = at(900, 1500);
+    window.dispatchEvent(new window.Event("scroll"));
+    expect(marked()).toEqual([]);
+  });
+
   it("marks the last section at the bottom of the page, however short it is", () => {
     const { window, document, marked } = page();
     Object.defineProperty(document.documentElement, "scrollHeight", {

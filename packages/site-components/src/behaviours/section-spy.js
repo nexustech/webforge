@@ -77,6 +77,15 @@
     }
     // The last of them in the page's order: a short section inside a taller one is the nearer.
     const across = sections.filter((section) => crossing.has(section));
+    if (across.length === 0) {
+      // Measured too, when the observer has said none is: Safari's (WebKit's) doesn't always tell of
+      // a section a jump from the menu brings to the line, as it does of one scrolled to.
+      const line = lineAt();
+      for (const section of sections) {
+        const { top, bottom } = section.getBoundingClientRect();
+        if (top <= line + 1 && bottom > line) across.push(section);
+      }
+    }
     if (across.length > 0) {
       mark(across.at(-1));
     } else if (sections[0] !== undefined && sections[0].getBoundingClientRect().top > lineAt()) {
@@ -108,6 +117,7 @@
     for (const section of sections) observer.observe(section);
   };
   window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("hashchange", update);
   window.addEventListener("resize", watch);
   // A sticky header that shrinks moves the line (sticky.js sets the scroll padding).
   const header = document.querySelector(".site-header");
