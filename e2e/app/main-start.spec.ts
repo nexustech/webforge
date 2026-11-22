@@ -18,9 +18,12 @@ import { desktopDir } from "./launch.js";
  * it, in the English strings main holds from the start for `t()`, and the model's `hasLink`, in
  * the model's chunk main loads at start; again with 2% to spare. 1.65 MB with Help › Diagnostics…
  * (5.41): its IPC calls, which main registers as it starts, and its window's words, in the English
- * strings main holds for `t()`; what it does is loaded when first used, with 1% to spare.
+ * strings main holds for `t()`; what it does is loaded when first used, with 1% to spare. 1.68 MB
+ * with the Header's logo (5.37) and button (5.38): Site Settings' logo and site formats 18 and 19
+ * in the model's chunk main loads at start, and their words in the English strings main holds for
+ * `t()`; with 1% to spare.
  */
-const BUDGET_BYTES = 1_652_000;
+const BUDGET_BYTES = 1_680_000;
 
 /** Packages only the export worker, a publish, the MCP server or Site Check needs. */
 const NOT_AT_START = [

@@ -90,8 +90,11 @@
   const watch = () => {
     observer?.disconnect();
     crossing.clear();
-    const line = Math.round(lineAt());
-    // A band one pixel tall at the line: the sections across it.
+    // A band two pixels tall from the line, rounded down: the sections across it. A jump from the
+    // menu brings a section's top to the line, which a Header with a picture in it can put between
+    // two pixels; the page then scrolls to a whole one, so a band a pixel tall at the rounded line
+    // could miss it (Safari).
+    const line = Math.floor(lineAt());
     observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -100,7 +103,7 @@
         }
         update();
       },
-      { rootMargin: `-${line}px 0px -${Math.max(0, window.innerHeight - line - 1)}px 0px` },
+      { rootMargin: `-${line}px 0px -${Math.max(0, window.innerHeight - line - 2)}px 0px` },
     );
     for (const section of sections) observer.observe(section);
   };

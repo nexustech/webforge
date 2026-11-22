@@ -174,10 +174,17 @@ describe("the section-spy behaviour (5.10)", () => {
     );
   });
 
-  it("watches a band one pixel tall at the page's scroll padding, under a sticky header", () => {
+  it("watches a band two pixels tall at the page's scroll padding, under a sticky header", () => {
     const { watching } = page({ scrollPadding: "80px" });
 
-    expect(watching().options.rootMargin).toBe("-80px 0px -687px 0px");
+    expect(watching().options.rootMargin).toBe("-80px 0px -686px 0px");
+  });
+
+  it("starts the band at the whole pixel above a header's fractional height, which a jump lands on (Safari)", () => {
+    const { watching } = page({ scrollPadding: "97.6px" });
+
+    // The page scrolls to a whole pixel, so the section's top is at 97 or 98: both in the band.
+    expect(watching().options.rootMargin).toBe("-97px 0px -669px 0px");
   });
 
   it("knows its own page however its address is written: published at / or opened from disk", () => {
