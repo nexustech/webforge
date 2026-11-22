@@ -1,7 +1,8 @@
 import type { IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import type { z } from "zod";
-import { DIAGNOSTIC_COUNTS, DIAGNOSTIC_TIMINGS, diagnosticsSchema } from "../shared/diagnostics.js";
+import { DIAGNOSTIC_COUNTS, DIAGNOSTIC_TIMINGS } from "../shared/diagnostic-counts.js";
+import { diagnosticsSchema } from "../shared/diagnostics.js";
 import { flattenSummary } from "./diagnostics.js";
 import { registerDiagnosticsHandlers } from "./diagnostics-ipc.js";
 import {

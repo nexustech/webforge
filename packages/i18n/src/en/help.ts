@@ -18,6 +18,7 @@ export const help = {
   "diagnostics.computer":
     "{appName} {version} ({channel}) on {platform} {osVersion}, {arch}, {memory} GB of memory, display at {scale}%, in {language}",
   "diagnostics.none": "Nothing counted yet",
+  "diagnostics.counted": "What's counted",
   "diagnostics.row": "{words}: {count}",
   "diagnostics.byName": "{words} › {name}",
   "diagnostics.section.sites": "The path to a finished site",

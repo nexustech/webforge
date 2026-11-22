@@ -2,8 +2,8 @@ import {
   DIAGNOSTIC_COUNTS,
   DIAGNOSTIC_TIMINGS,
   type DiagnosticCount,
-  type Diagnostics,
-} from "../shared/diagnostics.js";
+} from "../shared/diagnostic-counts.js";
+import type { Diagnostics } from "../shared/diagnostics.js";
 import type { UsageSummaryData } from "./usage-summary.js";
 
 /**

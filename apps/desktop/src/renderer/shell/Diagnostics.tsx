@@ -17,7 +17,12 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { useEffect, useId, useState } from "react";
-import type { DiagnosticCount, Diagnostics } from "../../shared/diagnostics.js";
+import {
+  type DiagnosticCount,
+  isDiagnosticCount,
+  isDiagnosticTiming,
+} from "../../shared/diagnostic-counts.js";
+import type { Diagnostics } from "../../shared/diagnostics.js";
 import type { AppApi } from "../../shared/ipc/app.js";
 import { reportFailure } from "../log.js";
 import { useCommandRegistry } from "./command-context.js";
@@ -99,7 +104,13 @@ export function DiagnosticsDialog(props: DiagnosticsDialogProps) {
             <DialogTitle>{t("diagnostics.title")}</DialogTitle>
             <DialogDescription>{t("diagnostics.about")}</DialogDescription>
           </DialogHeader>
-          <div className="flex min-h-0 flex-col gap-3 overflow-y-auto text-sm">
+          {/* Its own scrolling part, which the keyboard reaches too (axe's scrollable-region-focusable). */}
+          <section
+            aria-label={t("diagnostics.counted")}
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrolling region reached by keyboard
+            tabIndex={0}
+            className="flex min-h-0 flex-col gap-3 overflow-y-auto rounded-sm text-sm focus-visible:outline-2 focus-visible:outline-ring"
+          >
             {diagnostics === undefined ? (
               <p className="m-0 text-muted-foreground">{t("diagnostics.loading")}</p>
             ) : diagnostics === null ? (
@@ -121,8 +132,11 @@ export function DiagnosticsDialog(props: DiagnosticsDialogProps) {
                   )}
                 </dl>
                 {SECTIONS.map((section) => {
-                  const rows = diagnostics.counts.filter(
-                    ({ field }) => sectionOf(field) === section,
+                  // Only the counts this build words: one from a later build's summary is left out.
+                  const rows = diagnostics.counts.flatMap((row) =>
+                    isDiagnosticCount(row.field) && sectionOf(row.field) === section
+                      ? [{ ...row, field: row.field }]
+                      : [],
                   );
                   return (
                     <section key={section} aria-labelledby={`${id}-${section}`}>
@@ -148,24 +162,27 @@ export function DiagnosticsDialog(props: DiagnosticsDialogProps) {
                     {t("diagnostics.section.timings")}
                   </h3>
                   <ul className="m-0 list-none p-0">
-                    {diagnostics.timings.map(({ field, samples, medianMs }) => (
-                      <li key={field}>
-                        {samples === 0
-                          ? t("diagnostics.timing.none", {
-                              words: t(`diagnostics.timing.${field}`),
-                            })
-                          : t("diagnostics.timing", {
-                              words: t(`diagnostics.timing.${field}`),
-                              samples,
-                              seconds: (medianMs / 1000).toFixed(1),
-                            })}
-                      </li>
-                    ))}
+                    {diagnostics.timings.map(({ field, samples, medianMs }) =>
+                      // Only the timings this build words.
+                      !isDiagnosticTiming(field) ? null : (
+                        <li key={field}>
+                          {samples === 0
+                            ? t("diagnostics.timing.none", {
+                                words: t(`diagnostics.timing.${field}`),
+                              })
+                            : t("diagnostics.timing", {
+                                words: t(`diagnostics.timing.${field}`),
+                                samples,
+                                seconds: (medianMs / 1000).toFixed(1),
+                              })}
+                        </li>
+                      ),
+                    )}
                   </ul>
                 </section>
               </>
             )}
-          </div>
+          </section>
           <p role="status" className="m-0 min-h-5 text-sm">
             {status === null ? "" : t(`diagnostics.status.${status}`)}
           </p>
