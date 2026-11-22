@@ -1063,7 +1063,7 @@
           "id": "menu-contact",
           "kind": "page",
           "pageId": "trades-contact",
-          "hidden": false
+          "hidden": true
         }
       ]
     },

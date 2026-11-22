@@ -231,13 +231,13 @@ describe("migrateSite", () => {
     expect(site.layout.header[0]?.props).toMatchObject({ variant: "split", button: true });
   });
 
-  it("gives the format 18 fixture's split Header the menu's last link as its button (HF-2)", () => {
+  it("moves the format 18 fixture's menu's last link into its split Header's button (HF-2)", () => {
     const site = migrateSite(v18Site);
 
-    // Its logo kept (HF-1), and the menu as it was: the Header leaves the link out beside it.
+    // Its logo kept (HF-1); the link hidden in the menu, as the menu editor hides one.
     expect(site).toEqual(v19Site);
     expect(site.settings.general.logo).toBe("logo0000000000aa");
-    expect(site.menu).toEqual(v18Site.menu);
+    expect(site.menu.items.map((item) => item.hidden)).toEqual([false, false, false, true]);
   });
 
   it("takes the menu's last link as the export showed it, and leaves other Headers alone (HF-2)", () => {
@@ -272,12 +272,19 @@ describe("migrateSite", () => {
     const buttonOf = (raw: ReturnType<typeof site>) =>
       (headerButtons(raw).layout as { header: { props: Record<string, unknown> }[] }).header[0]
         ?.props;
+    const hiddenIn = (raw: ReturnType<typeof site>) =>
+      (headerButtons(raw).menu as { items: { id: string; hidden: boolean }[] }).items
+        .filter((each) => each.hidden)
+        .map((each) => each.id);
 
-    // A page's navigation label, past those the navigation leaves out.
+    // A page's navigation label, past those the navigation leaves out; the menu, following the pages,
+    // still does, its item for the page hidden.
     const hiddenItem = item("home", { hidden: true });
-    expect(
-      buttonOf(site([item("home"), item("book"), item("hidden"), item("draft"), hiddenItem])),
-    ).toMatchObject({
+    const pages = site([item("home"), item("book"), item("hidden"), item("draft"), hiddenItem]);
+    pages.menu.follows = "pages";
+    expect(hiddenIn(pages)).toEqual(["m-book", "m-home"]);
+    expect((headerButtons(pages).menu as { follows: string }).follows).toBe("pages");
+    expect(buttonOf(pages)).toMatchObject({
       button: true,
       buttonLabel: "book label",
       buttonLink: { kind: "page", pageId: "book" },
@@ -294,7 +301,7 @@ describe("migrateSite", () => {
     expect(
       buttonOf(site([{ id: "w", hidden: false, kind: "button", label: "Book", link: web }, gone])),
     ).toMatchObject({ button: true, buttonLabel: "Book", buttonLink: web });
-    // A dropdown last, or no menu: no button, as before.
+    // A dropdown last, or no menu: no button, as before, and the menu as it was.
     const group = {
       id: "g",
       hidden: false,
@@ -303,10 +310,12 @@ describe("migrateSite", () => {
       children: [item("book")],
     };
     expect(buttonOf(site([item("home"), group]))).not.toHaveProperty("button");
+    expect(hiddenIn(site([item("home"), group]))).toEqual([]);
     // A Header that already says, or isn't split: as it was.
     expect(buttonOf(site([item("book")], [split({ button: false })]))).toMatchObject({
       button: false,
     });
+    expect(hiddenIn(site([item("book")], [split({ button: false })]))).toEqual([]);
     expect(buttonOf(site([item("book")], [{ type: "Header", props: { id: "h" } }]))).toEqual({
       id: "h",
     });
@@ -1068,8 +1077,8 @@ const LAYOUT_WIDTHS: Readonly<Record<string, Readonly<Record<string, string>>>> 
 
 /** Each step's inverse, keyed by the version it goes down *to*. */
 const DOWN: Readonly<Record<number, (site: Raw) => Raw>> = {
-  // 19 → 18: a Header had no button of its own; one a site has is kept, as format 19 reads it (the
-  // arbitrary sites have no split Header for format 19 to give one).
+  // 19 → 18: a Header had no button of its own; one a site has is kept, as format 19 reads it, and
+  // the menu as it is (the arbitrary sites have no split Header for format 19 to move a link from).
   18: (site) => ({ ...site, formatVersion: 18 }),
   // 18 → 17: Site Settings had no logo; a site with one keeps it, as format 18 reads it.
   17: (site) => ({ ...site, formatVersion: 17 }),

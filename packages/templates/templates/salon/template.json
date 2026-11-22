@@ -891,7 +891,7 @@
           "id": "menu-book",
           "kind": "page",
           "pageId": "salon-book",
-          "hidden": false
+          "hidden": true
         }
       ]
     },

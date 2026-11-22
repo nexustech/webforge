@@ -4,7 +4,7 @@ import { hasLink } from "@webforge/model";
 import type { ReactNode } from "react";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
-import { boundString, boundText, type ComponentDef, linkAttributes } from "../library.js";
+import { boundString, boundText, type ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
 import type { NavItem, NavLink, RenderContext } from "../schema.js";
@@ -100,8 +100,8 @@ function NavItems({ items }: { readonly items: readonly NavItem[] }) {
  *
  * The site's menu is drawn twice, once for each screen size: a closed `<details>` hides what it
  * holds, which CSS can't show again on wide screens. Both lists come from the same items through
- * {@link NavItems}, so they hold the same links (the split layout's button aside, which is drawn
- * beside the row); a test checks they can't drift apart.
+ * {@link NavItems}, so they hold the same links; the Header's own button (HF-2) is drawn beside
+ * the row, and last in the menu. A test checks they can't drift apart.
  */
 function HeaderNavigation({
   items,
@@ -232,8 +232,6 @@ const header = defineComponent({
     buttonLink: {
       kind: "link",
       label: t("field.buttonLink"),
-      // Said where it's chosen, so it isn't a rule to discover (HF-2).
-      help: t("field.headerButtonLink.help"),
       button: "buttonLabel",
       shownWhen: (values) => values.button === true,
     },
@@ -266,7 +264,7 @@ const header = defineComponent({
   render: ({ values, context }) => {
     const layout = values.variant;
     const items = context.navigation;
-    const { button, row, menuButton } = headerButton(values, context);
+    const { button, menuButton } = headerButton(values, context);
     const look = values.sticky
       ? `${STICKY_CLASSES[values.scrollStyle]} ${STICKY_OFFSET[layout]}`
       : "bg-base-100 shadow-sm";
@@ -306,7 +304,7 @@ const header = defineComponent({
           <div className="flex-1">{name}</div>
         )}
         <HeaderNavigation
-          items={row}
+          items={items}
           menuItems={items}
           menuButton={menuButton}
           menuOpen={context.previews?.mobileMenu === true}
@@ -320,46 +318,31 @@ const header = defineComponent({
 });
 
 /**
- * The Header's own button (HF-2), on the right on wide screens and last in the phone menu, with
- * what the row shows beside it. A menu link that goes where the button goes isn't shown twice: the
- * row leaves out the last such link, and the phone menu has it already, so the button isn't added
- * there. A site whose Header was _With a button_ keeps its button so, through format 19, exactly as
- * it was.
+ * The Header's own button (HF-2): on the right on wide screens, and last in the phone menu. Without
+ * its link the canvas greys it out with its hint, and the export leaves it out.
  */
 function headerButton(
   values: { readonly button: boolean; readonly buttonLabel: string; readonly buttonLink: unknown },
   context: RenderContext,
-): { button: ReactNode; row: readonly NavItem[]; menuButton: ReactNode } {
-  const items = context.navigation;
+): { button: ReactNode; menuButton: ReactNode } {
   const label = values.buttonLabel.trim();
-  if (!values.button || label === "") return { button: null, row: items, menuButton: null };
-  if (!hasLink(values.buttonLink)) {
-    // No link yet: the canvas says so on wide screens, and the export leaves it out.
-    const hint = (
-      <ButtonLink
-        label={label}
-        link={values.buttonLink}
-        context={context}
-        className="hidden md:inline-flex"
-      />
-    );
-    return { button: hint, row: items, menuButton: null };
-  }
-  const attributes = linkAttributes(values.buttonLink, context);
-  const same = (item: NavItem) => !("children" in item) && item.href === attributes.href;
-  // The last one, as _With a button_ took the menu's last link: only one is left out.
-  const inMenu = items.findLast(same);
-  const link: NavLink = {
-    label,
-    href: attributes.href,
-    current: inMenu !== undefined && !("children" in inMenu) && inMenu.current,
-    ...(attributes.target === undefined ? {} : { newTab: true }),
-    ...(attributes.download === undefined ? {} : { download: true }),
-  };
+  if (!values.button || label === "") return { button: null, menuButton: null };
+  const button = (
+    <ButtonLink
+      label={label}
+      link={values.buttonLink}
+      context={context}
+      className="hidden md:inline-flex"
+    />
+  );
+  if (!hasLink(values.buttonLink)) return { button, menuButton: null };
   return {
-    button: <NavAnchor link={link} className={`${BUTTON_CLASSES.primary} hidden md:inline-flex`} />,
-    row: inMenu === undefined ? items : items.filter((item) => item !== inMenu),
-    menuButton: inMenu === undefined ? <NavLinkItem link={{ ...link, button: true }} /> : null,
+    button,
+    menuButton: (
+      <li>
+        <ButtonLink label={label} link={values.buttonLink} context={context} kind="primarySmall" />
+      </li>
+    ),
   };
 }
 

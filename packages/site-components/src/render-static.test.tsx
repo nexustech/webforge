@@ -269,39 +269,7 @@ describe("renderNodesToHtml", () => {
     }
   });
 
-  it("draws the Header's button beside the row, not repeating a menu link that goes there (HF-2)", () => {
-    const [header] = starterLayout("Bakery").header;
-    if (header === undefined) throw new Error("No Header");
-    // As format 19 makes a split Header of before: its menu's last link as its own button.
-    const split: NodeDoc = {
-      ...header,
-      props: {
-        ...header.props,
-        variant: "split",
-        button: true,
-        buttonLabel: "Book now",
-        buttonLink: { kind: "page", pageId: "about" },
-      },
-    };
-
-    const html = renderNodesToHtml([split], siteLibrary, {
-      ...context,
-      navigation: [
-        { label: "Home", href: "index.html", current: false },
-        { label: "Book now", href: "about.html", current: true },
-      ],
-    });
-
-    // The button keeps saying it's the page you're on.
-    expect(html).toContain(
-      '<a href="about.html" aria-current="page" class="btn btn-primary hidden md:inline-flex">Book now</a>',
-    );
-    // Once beside the row and once in the menu on small screens: not in the row as well.
-    expect(html.match(/>Book now<\/a>/g)).toHaveLength(2);
-    expect(html.match(/>Home<\/a>/g)).toHaveLength(2);
-  });
-
-  it("puts the Header's button in any layout, and in the phone menu when no link there goes to it (HF-2)", () => {
+  it("puts the Header's button in any layout, beside the row and last in the phone menu (HF-2)", () => {
     const [header] = starterLayout("Bakery").header;
     if (header === undefined) throw new Error("No Header");
     const withButton = (props: Record<string, unknown>): NodeDoc[] => [
@@ -313,10 +281,10 @@ describe("renderNodesToHtml", () => {
       const html = renderNodesToHtml(withButton({ variant, ...call }), siteLibrary, context);
       // Beside the row on wide screens, and last in the phone menu.
       expect(html, variant).toContain(
-        '<a href="contact.html" class="btn btn-primary hidden md:inline-flex">Call us</a>',
+        '<a class="btn btn-primary hidden md:inline-flex" href="contact.html">Call us</a>',
       );
       expect(html, variant).toMatch(
-        /<a href="contact.html" class="[^"]*btn[^"]*">Call us<\/a><\/li><\/ul><\/details>/,
+        /<li><a class="btn btn-primary btn-sm" href="contact.html">Call us<\/a><\/li><\/ul><\/details>/,
       );
       // The menu's links all stay in the row.
       expect(html.match(/>About<\/a>/g), variant).toHaveLength(2);

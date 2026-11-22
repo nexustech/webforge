@@ -623,7 +623,7 @@
           "kind": "list",
           "collectionId": "blog000000000000"
         },
-        "hidden": false
+        "hidden": true
       }
     ]
   },
