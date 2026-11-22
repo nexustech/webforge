@@ -49,3 +49,11 @@ body:
         - It would be nice to have
     validations:
       required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics report
+      description: |
+        Added up with other testers', it shows us which parts of Webforge are used and which aren't. Choose **Help › Diagnostics…**, look through what it holds, click **Save Report…**, then drag the file it saves here. It holds what Webforge has counted on your computer, such as how many sites you exported: nothing of your sites, and nothing private, so it's safe here, where anyone can read it. See [What Webforge counts on your computer](https://github.com/nexustech/webforge/blob/main/docs/help/saving-and-backups.md#what-appname-counts-on-your-computer).
+    validations:
+      required: false

@@ -54,15 +54,14 @@ What helps most:
 - what you were trying to do, in your own words;
 - what you expected, and what happened instead;
 - the steps that led to it, if you remember them;
-- a screenshot.
+- a screenshot;
+- Webforge's diagnostics report: choose **Help › Diagnostics…**, look through what it holds, click **Save Report…**, and drag the file it saves into the form's _Diagnostics report_ box. Added up with other testers' reports, it shows us where people get stuck and what breaks.
 
-**Everything on GitHub can be read by anyone.** Leave out passwords, your customers' details and anything else private, and check a screenshot shows nothing private before adding it.
+**Everything on GitHub can be read by anyone.** Leave out passwords, your customers' details and anything else private, and check a screenshot shows nothing private before adding it. The diagnostics report is safe to attach: it holds counts and timings, never your sites' content, names or addresses.
 
 ## If Webforge closes unexpectedly
 
-Your work is saved as you go, so it's still there when you open Webforge again. Webforge also saves a crash report on your computer. It's never sent anywhere by itself, and it holds none of your site's content or personal details. Attaching it to your report helps us find the problem. [Sharing a crash report](../help/saving-and-backups.md#sharing-a-crash-report) says how.
-
-With any report, attach Webforge's diagnostics too: choose **Help › Diagnostics…**, look through what it holds, and click **Save Report…**. It saves one file with what Webforge has counted on your computer and your newest crash reports, and nothing of your sites. [What Webforge counts on your computer](../help/saving-and-backups.md#what-appname-counts-on-your-computer) says more.
+Your work is saved as you go, so it's still there when you open Webforge again. Webforge also saves a crash report on your computer. It's never sent anywhere by itself, and it holds none of your site's content or personal details. The diagnostics report holds your newest crash reports, so attaching it (see [Telling us what you found](#telling-us-what-you-found)) sends them too. **Save Report…** saves one file with what Webforge has counted on your computer and those crash reports, and nothing of your sites. [What Webforge counts on your computer](../help/saving-and-backups.md#what-appname-counts-on-your-computer) says more.
 
 ## What happens next
 
