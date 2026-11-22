@@ -100,6 +100,27 @@ describe("buildSite: the Header's logo (HF-1, 5.37)", () => {
   );
 });
 
+describe("buildSite: a logo deleted from Media (HF-1)", () => {
+  it(
+    "warns once for the site, not once for every page's Header, which shows the name",
+    async () => {
+      const out = await buildSite({ ...sampleSite(), logo: "gone" }, siteLibrary, {
+        ...resources,
+        imageCache,
+      });
+
+      // The sample site's Newsletter has no form address on purpose: the rest are the logo's.
+      expect(out.report.warnings.filter((each) => each.code !== "form-unset")).toEqual([
+        { code: "missing-logo", page: "", detail: "gone" },
+      ]);
+      expect(/<header[\s\S]*?<\/header>/.exec(text(out, "index.html"))?.[0]).toContain(
+        "Rosa&#x27;s Bakery</a>",
+      );
+    },
+    scaledTestTimeout(120_000),
+  );
+});
+
 describe("buildSite: the favicon set and share pictures (3.4)", () => {
   it("makes the favicon set from Site Settings' icon, and links it from every page", () => {
     expect(icoSizes(built.files.get("favicon.ico"))).toEqual([16, 32, 48]);

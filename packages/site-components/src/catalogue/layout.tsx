@@ -1,9 +1,8 @@
 import { t } from "@webforge/i18n/components";
 import type { SiteText } from "@webforge/i18n/site-text";
-import { bindingOf } from "@webforge/model";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
-import { boundText, type ComponentDef } from "../library.js";
+import { boundString, boundText, type ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
 import type { NavItem, NavLink } from "../schema.js";
@@ -255,9 +254,7 @@ const header = defineComponent({
     // no logo or its picture is gone from Media.
     const logo = context.logo === undefined ? null : context.image(context.logo);
     const beside = values.logoPlace === "beside";
-    const key = bindingOf(values.bindings, "siteName");
-    const own = typeof values.siteName === "string" ? values.siteName : undefined;
-    const named = (key === undefined ? own : context.setting(key))?.trim() ?? "";
+    const named = boundString(values, "siteName", context).trim();
     const name = (
       <a
         className={`font-heading text-xl font-bold${logo === null ? "" : " flex items-center gap-2"}`}
