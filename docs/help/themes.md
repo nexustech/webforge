@@ -108,7 +108,7 @@ Your colours are in every colour picker on the Edit panel, under **Your colours*
 - **Use That Colour** gives them another of your colours, chosen in the list, with the same shade and opacity.
 - **Keep Each as It Looks** keeps each one in the colour it has now, as a colour of its own that doesn't change with the theme.
 
-Adding, renaming, changing and deleting a colour are each one step you can undo. [AI apps](ai-apps.md) can use your colours too.
+Adding, renaming, changing and deleting a colour are each one step you can undo. [AI apps](ai-apps.md) can use your colours too, but can't remove one your site still uses: delete it here, where you choose what its uses become.
 
 ## Fonts
 
