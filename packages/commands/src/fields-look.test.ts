@@ -14,13 +14,30 @@ describe("the fields query, with the theme's looks (#670)", () => {
     const answer = createCommandApi(host).query("fields", {
       location: home(history),
       nodeId: "heading",
-    }) as { status: string; data: { fields: Record<string, { value: unknown; source?: string }> } };
+    }) as {
+      status: string;
+      data: {
+        fields: Record<string, { value: unknown; source?: string }>;
+        styleFields: Record<string, { value: unknown; source?: string }>;
+      };
+    };
 
     expect(answer.status).toBe("done");
-    const { fields } = answer.data;
+    const { fields, styleFields } = answer.data;
     expect(fields.text).toMatchObject({ value: "Welcome", source: "own" });
-    // The look's italics, which every Heading takes; this one sets its own underline.
-    expect(fields.lookItalic).toMatchObject({ value: true, source: "look" });
-    expect(fields.lookUnderline).toMatchObject({ value: false, source: "own" });
+    // The look's italics, which every Heading takes; this one sets its own underline. Shared
+    // styling fields, so by what they hold only (#1250).
+    expect(styleFields.lookItalic).toEqual({ value: true, source: "look" });
+    expect(styleFields.lookUnderline).toEqual({ value: false, source: "own" });
+    expect(fields.lookItalic).toBeUndefined();
+
+    // With styles, in full as the type's own are.
+    const full = createCommandApi(host).query("fields", {
+      location: home(history),
+      nodeId: "heading",
+      styles: true,
+    }) as { data: { fields: Record<string, { value: unknown; schema?: unknown }> } };
+    expect(full.data.fields.lookItalic).toMatchObject({ value: true, schema: expect.anything() });
+    expect(full.data).not.toHaveProperty("styleFields");
   });
 });

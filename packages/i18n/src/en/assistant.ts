@@ -130,6 +130,14 @@ export const assistant = {
   "assistant.messagePlaceholder": "Ask for a change, such as “Make the Hero's title shorter”",
   "assistant.send": "Send",
   "assistant.stop": "Stop",
+  // A message sent while a reply is under way (5.19, OL-4): held, and sent when it finishes.
+  "assistant.sendAfter": "Send After This Reply",
+  "assistant.waiting.label": "Message waiting to send",
+  "assistant.waiting.title": "Sends when this reply finishes",
+  // A reply that finished holding changes to review (6.9e): the message waits for them.
+  "assistant.waiting.afterChanges": "Sends once you apply or discard this reply's changes",
+  "assistant.waiting.edit": "Edit",
+  "assistant.waiting.remove": "Remove",
   // Settings › Assistant and its dialog (6.9c, AIA-6, AIA-8).
   "assistant.settings.title": "Assistant",
   "assistant.settings.line":

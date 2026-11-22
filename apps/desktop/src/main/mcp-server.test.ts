@@ -244,11 +244,14 @@ describe("the MCP server (4.9)", () => {
       expect.objectContaining({ uri: "webforge://catalogue", mimeType: "application/json" }),
     ]);
     const [content] = (await client.readResource({ uri: "webforge://catalogue" })).contents;
-    const catalogue = JSON.parse((content as { text: string }).text) as Record<
-      string,
-      { place: string; fields: Record<string, { kind: string }> }
-    >;
+    const resource = JSON.parse((content as { text: string }).text) as {
+      styleFields: Record<string, { kind: string }>;
+      components: Record<string, { place: string; fields: Record<string, { kind: string }> }>;
+    };
+    const catalogue = resource.components;
     expect(catalogue.Hero).toMatchObject({ place: "section" });
+    // The styling fields types share, once (#1250).
+    expect(resource.styleFields.lookFont).toMatchObject({ kind: expect.any(String) });
     // Not what AI apps can't add: the Header, the Footer and Custom Code.
     expect(catalogue.Header).toBeUndefined();
     expect(

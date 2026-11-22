@@ -62,6 +62,8 @@ What helps most:
 
 Your work is saved as you go, so it's still there when you open Webforge again. Webforge also saves a crash report on your computer. It's never sent anywhere by itself, and it holds none of your site's content or personal details. Attaching it to your report helps us find the problem. [Sharing a crash report](../help/saving-and-backups.md#sharing-a-crash-report) says how.
 
+With any report, attach Webforge's diagnostics too: choose **Help › Diagnostics…**, look through what it holds, and click **Save Report…**. It saves one file with what Webforge has counted on your computer and your newest crash reports, and nothing of your sites. [What Webforge counts on your computer](../help/saving-and-backups.md#what-appname-counts-on-your-computer) says more.
+
 ## What happens next
 
 We read every report each week and sort it by how much it stops people making their site. We reply on the report itself, and GitHub emails you when we do. When a fix is in a new beta version, we say so there.

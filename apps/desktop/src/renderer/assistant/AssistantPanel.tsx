@@ -2,7 +2,7 @@ import { Button } from "@webforge/editor-ui";
 import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { PlusIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "zustand";
 import type { ReplyStep } from "../../shared/ipc/assistant.js";
 import type { AssistantPanelModel } from "./assistant-state.js";
@@ -49,11 +49,19 @@ export type AssistantPanelProps = {
  */
 export function AssistantPanel(props: AssistantPanelProps) {
   const { model, history } = props;
-  const { status, site, turns, replying, refused, applying } = useStore(model.state);
+  const { status, site, turns, replying, refused, applying, waiting, returned } = useStore(
+    model.state,
+  );
   const position = useStore(history.state);
   const [kept, setKept] = useState<ReadonlySet<string>>(new Set());
   const [text, setText] = useState("");
   const [asking, setAsking] = useState(true);
+  // A held message given back, unsent (5.19): put in the box, before what's typed there now.
+  useEffect(() => {
+    if (returned === undefined) return;
+    setText((now) => (now.trim() === "" ? returned : `${returned}\n\n${now}`));
+    model.taken();
+  }, [returned, model]);
   if (status === undefined || site === undefined) {
     return <p className="m-0 p-3 text-sm text-muted-foreground">{t("assistant.loading")}</p>;
   }
@@ -99,7 +107,13 @@ export function AssistantPanel(props: AssistantPanelProps) {
     );
   }
   const send = () => {
-    if (text.trim() === "" || replying !== undefined) return;
+    if (text.trim() === "") return;
+    // While a reply is under way, held to send when it finishes (5.19, OL-4).
+    if (replying !== undefined) {
+      model.hold(text, props.context());
+      setText("");
+      return;
+    }
     // Cleared once main has taken it: a refused message stays, to send again (#1000 review).
     const sent = text;
     void model.send(sent, props.context()).then((taken) => {
@@ -185,6 +199,29 @@ export function AssistantPanel(props: AssistantPanelProps) {
           {t(errorKey(refused))}
         </p>
       )}
+      {waiting === undefined ? null : (
+        <section
+          aria-label={t("assistant.waiting.label")}
+          className="mx-2 mt-2 flex flex-col gap-1 rounded-md border border-border bg-muted p-2 text-sm"
+        >
+          <p className="m-0 text-xs font-semibold text-muted-foreground">
+            {t(
+              waiting.afterChanges === true
+                ? "assistant.waiting.afterChanges"
+                : "assistant.waiting.title",
+            )}
+          </p>
+          <p className="m-0 whitespace-pre-wrap [overflow-wrap:anywhere]">{waiting.text}</p>
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="ghost" onClick={() => model.removeWaiting()}>
+              {t("assistant.waiting.remove")}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => model.editWaiting()}>
+              {t("assistant.waiting.edit")}
+            </Button>
+          </div>
+        </section>
+      )}
       <form
         className="flex flex-col gap-2 border-t border-border p-2"
         onSubmit={(event) => {
@@ -215,9 +252,15 @@ export function AssistantPanel(props: AssistantPanelProps) {
               {t("assistant.send")}
             </Button>
           ) : (
-            <Button size="sm" variant="outline" type="button" onClick={() => void model.stop()}>
-              {t("assistant.stop")}
-            </Button>
+            <>
+              <Button size="sm" variant="outline" type="button" onClick={() => void model.stop()}>
+                {t("assistant.stop")}
+              </Button>
+              {/* Held, and sent by itself once this reply finishes (5.19, OL-4). */}
+              <Button size="sm" type="submit" disabled={text.trim() === ""}>
+                {t("assistant.sendAfter")}
+              </Button>
+            </>
           )}
         </div>
       </form>

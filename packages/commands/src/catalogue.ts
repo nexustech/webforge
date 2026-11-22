@@ -3,6 +3,7 @@ import {
   type CatalogueComponent,
   type CatalogueField,
   fieldValueSchema,
+  SHARED_STYLE_FIELDS,
 } from "@webforge/site-components/catalogue-data";
 import { z } from "zod";
 
@@ -30,12 +31,29 @@ type FieldDetail = {
   readonly takes?: readonly string[] | Place;
 };
 
-/** A component type in full: its fields, presets and defaults, as `addNode` takes them. */
+/**
+ * A component type in full: its fields, presets and defaults, as `addNode` takes them. Its own
+ * fields only, unless asked for its styles too: the styling fields it shares with others are named
+ * in `styleFields`, and `styleFields` (the query) or the catalogue resource defines them once
+ * (#1250).
+ */
 export type ComponentDetail = ComponentSummary & {
   readonly fields: Readonly<Record<string, FieldDetail>>;
+  /** The shared styling fields it has, by name, when they aren't in `fields`. */
+  readonly styleFields?: readonly string[];
   readonly presets?: readonly { readonly id: string; readonly label: string }[];
   readonly defaults: Readonly<Record<string, unknown>>;
 };
+
+/** Whether field `name` is one of the styling fields components share (#1250). */
+export const isSharedStyleField = (name: string) => Object.hasOwn(SHARED_STYLE_FIELDS, name);
+
+/** The styling fields components share, each once, as `fields` would give them (#1250). */
+export function styleFieldDetails(): Record<string, FieldDetail> {
+  return Object.fromEntries(
+    Object.entries(SHARED_STYLE_FIELDS).map(([name, field]) => [name, fieldDetail(field)]),
+  );
+}
 
 /** Whether AI apps keep away from `component`: Custom Code and Advanced mode's own (R10). */
 export const offLimits = (component: CatalogueComponent) =>
@@ -86,23 +104,33 @@ export function componentSummaries(place?: Place): ComponentSummary[] {
     .map(([type, component]) => summaryOf(type, component));
 }
 
-/** Component `type` in full, if AI apps may add it. */
-export function componentDetail(type: string): ComponentDetail | undefined {
+/**
+ * Component `type`, if AI apps may add it: its own fields in full, and the shared styling fields
+ * it has by name; with `styles`, those in full too, as before #1250.
+ */
+export function componentDetail(
+  type: string,
+  { styles = false }: { readonly styles?: boolean } = {},
+): ComponentDetail | undefined {
   const component = Object.hasOwn(CATALOGUE, type) ? CATALOGUE[type] : undefined;
   if (component === undefined || component.place === "layout" || offLimits(component)) {
     return undefined;
   }
+  const fields = Object.entries(component.fields).filter(([, field]) => field.kind !== "code");
+  const shared = styles ? [] : fields.filter(([name]) => isSharedStyleField(name));
+  const own = styles ? fields : fields.filter(([name]) => !isSharedStyleField(name));
   return {
     ...summaryOf(type, component),
-    fields: Object.fromEntries(
-      Object.entries(component.fields)
-        .filter(([, field]) => field.kind !== "code")
-        .map(([name, field]) => [name, fieldDetail(field)]),
-    ),
+    fields: Object.fromEntries(own.map(([name, field]) => [name, fieldDetail(field)])),
+    ...(shared.length === 0 ? {} : { styleFields: shared.map(([name]) => name) }),
     ...(component.presets === undefined
       ? {}
       : { presets: component.presets.map(({ id, label }) => ({ id, label })) }),
-    defaults: component.defaults,
+    defaults: styles
+      ? component.defaults
+      : Object.fromEntries(
+          Object.entries(component.defaults).filter(([name]) => !isSharedStyleField(name)),
+        ),
   };
 }
 
@@ -115,13 +143,16 @@ export const CATALOGUE_RESOURCE = {
   name: "catalogue",
   title: "The component catalogue",
   description:
-    "Every section and element type an AI app may add, by type: its place, label, category, fields (kind, label, help, JSON Schema of the value; a slot's types), presets and defaults, as addNode and updateFields take them.",
+    "Every section and element type an AI app may add, by type (components): its place, label, category, own fields (kind, label, help, JSON Schema of the value; a slot's types), the shared styling fields it has by name, presets and defaults, as addNode and updateFields take them. The shared styling fields are defined once, in styleFields.",
   mimeType: "application/json",
 } as const;
 
 /** {@link CATALOGUE_RESOURCE}'s content. */
 export function catalogueResourceText(): string {
-  return JSON.stringify(
-    Object.fromEntries(usableComponents().map(([type]) => [type, componentDetail(type)])),
-  );
+  return JSON.stringify({
+    styleFields: styleFieldDetails(),
+    components: Object.fromEntries(
+      usableComponents().map(([type]) => [type, componentDetail(type)]),
+    ),
+  });
 }

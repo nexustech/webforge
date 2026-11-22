@@ -311,13 +311,21 @@ describe("the command API's commands (4.8)", () => {
     const renamed = { location, nodeId: added.id, values: { icon: "triangle-alert" } };
     expect((await api.run("updateFields", renamed, app)).status).toBe("done");
 
-    // The icons query lists the names, all or by a part of them.
+    // The icons query lists the names, all or by a part of them, 200 at most at a time (#1250).
     const all = api.query("icons", {});
-    expect(all).toMatchObject({ status: "done", data: expect.arrayContaining(["phone", "star"]) });
+    if (all.status !== "done") throw new Error("no answer");
+    const listed = all.data as { count: number; names: string[] };
+    expect(listed.count).toBeGreaterThan(1000);
+    expect(listed.names).toHaveLength(200);
+    expect(listed.names).toEqual([...listed.names].sort());
+    const phones = api.query("icons", { search: "phone" });
+    expect(phones).toMatchObject({ data: { names: expect.arrayContaining(["phone"]) } });
     const arrows = api.query("icons", { search: "Arrow-Right" });
     if (arrows.status !== "done") throw new Error("no answer");
-    expect(arrows.data).toContain("arrow-right");
-    expect((arrows.data as string[]).every((icon) => icon.includes("arrow-right"))).toBe(true);
+    const right = arrows.data as { count: number; names: string[] };
+    expect(right.names).toContain("arrow-right");
+    expect(right.count).toBe(right.names.length);
+    expect(right.names.every((icon) => icon.includes("arrow-right"))).toBe(true);
     expect(api.query("icons", { search: "" })).toMatchObject({ status: "invalid" });
     // The field's own schema says so too.
     expect(api.query("fields", { location, nodeId: added.id })).toMatchObject({

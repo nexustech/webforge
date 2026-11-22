@@ -7,7 +7,7 @@ The command layer for AI apps (F-AI-1, plan item 4.8): typed queries that read t
 `src/index.ts` is the only entry point; import the package as `@webforge/commands`, never its internal files.
 
 - `createCommandApi(host)` → `CommandApi`
-  - `query(name, input)`: `outline`, `pageTree` (with linked copies of shared sections), `fields` (each field's kind, label, JSON Schema and value), `icons` (the names an icon field takes, #1251), `settings`, `theme`. Answers `{ status: "done", data }`, or `invalid` / `not-found` with a message.
+  - `query(name, input)`: `outline`, `pageTree` (with linked copies of shared sections), `fields` (each of an element's own fields' kind, label, JSON Schema and value, and the styling fields it shares by value, or in full with `styles`), `components` (the types AI apps may add, or one type's own fields with the styling fields it shares by name, #1250), `styleFields` (the styling fields types share, each once), `icons` (the names an icon field takes, 200 at most at a time, #1251), `settings`, `theme`. Answers `{ status: "done", data }`, or `invalid` / `not-found` with a message.
   - `run(name, input, { app })`: `addNode`, `updateFields`, `editText`, `moveNode`, `removeNode`, `addPage`, `setThemeTokens` (a group of tokens named in part, such as `{ fonts: { heading } }`, keeps the values it leaves out). Answers `{ status: "done", label, id? }`, or why nothing changed: `invalid`, `not-found`, `refused`, `busy` or `declined`.
 - `CommandHost`: what the commands run against. The renderer gives one over the editor session (`apps/desktop/src/renderer/ai/`); tests give their own.
 - `COMMANDS`, `QUERIES`: each one's zod input schema, and a `description` for AI apps.
