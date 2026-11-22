@@ -329,6 +329,48 @@ describe("addNode with its slots' items (#1249)", () => {
     expect(itemsOf(columns, "columns")).toHaveLength(4);
   });
 
+  it("reorders a full slot's items, and moves none in from elsewhere (Columns' four)", async () => {
+    const { host, history } = setup();
+    const api = createCommandApi(host);
+    const location = home(history);
+    const column = { type: "Column", values: {} };
+    await api.run(
+      "addNode",
+      {
+        location,
+        type: "Section",
+        values: {
+          content: [
+            { type: "Columns", values: { columns: Array(4).fill(column) } },
+            { type: "Columns", values: { columns: Array(2).fill(column) } },
+          ],
+        },
+      },
+      app,
+    );
+    const [full, other] = itemsOf(sections(history).at(-1), "content");
+    const ids = itemsOf(full, "columns").map((item) => item.props.id);
+    const move = (nodeId: unknown, index: number) =>
+      api.run(
+        "moveNode",
+        { location, nodeId, parentId: full?.props.id, slot: "columns", index },
+        app,
+      );
+
+    expect(await move(ids[1], 0)).toMatchObject({ status: "done" });
+    const [fullNow] = itemsOf(sections(history).at(-1), "content");
+    expect(itemsOf(fullNow, "columns").map((item) => item.props.id)).toEqual([
+      ids[1],
+      ids[0],
+      ids[2],
+      ids[3],
+    ]);
+    expect(await move(itemsOf(other, "columns")[0]?.props.id, 0)).toMatchObject({
+      status: "refused",
+      message: expect.stringContaining("columns takes 4 at most"),
+    });
+  });
+
   it("says an item's type is unknown, or one AI apps keep away from, as adding it alone would", async () => {
     const { host, history } = setup();
     const api = createCommandApi(host);

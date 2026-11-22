@@ -228,12 +228,16 @@ export function withNewIds(node: NodeDoc): NodeDoc {
   return { type: node.type, props: { ...props, id: newId("node") } };
 }
 
-/** Whether a node of `type` can go in `slot` of `parent`, or at the top level of `location`. */
+/**
+ * Whether a node of `type` can go in `slot` of `parent`, or at the top level of `location`.
+ * `moving` is the id of a node moved there, which a full slot it's already in still takes.
+ */
 export function canGo(
   type: string,
   location: Location,
   parent: NodeDoc | null,
   slot: string | null,
+  moving?: string,
 ): string | undefined {
   const component = CATALOGUE[type];
   const place = component?.place ?? "element";
@@ -248,9 +252,13 @@ export function canGo(
   const allowed =
     field.allow !== undefined ? field.allow.includes(type) : (field.accepts ?? "element") === place;
   if (!allowed) return `${component?.label ?? type} can't go in ${parent.type}'s ${slot}.`;
-  // A slot that takes so many (a Columns' four columns) takes no more, as the editor refuses.
+  // A slot that takes so many (a Columns' four columns) takes no more, as the editor refuses; a
+  // node reordered within it adds none.
   const held = parent.props[slot];
-  if (field.max !== undefined && Array.isArray(held) && held.length >= field.max) {
+  const others = Array.isArray(held)
+    ? held.filter((node) => !isNodeDoc(node) || node.props.id !== moving)
+    : [];
+  if (field.max !== undefined && others.length >= field.max) {
     return `${parent.type}'s ${slot} takes ${field.max} at most.`;
   }
   return undefined;

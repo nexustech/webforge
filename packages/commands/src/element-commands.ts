@@ -245,7 +245,7 @@ export const ELEMENT_COMMANDS = {
       ) {
         return fail("refused", "An element can't go inside itself.");
       }
-      const wrong = canGo(placed.node.type, input.location, parent, input.slot);
+      const wrong = canGo(placed.node.type, input.location, parent, input.slot, input.nodeId);
       if (wrong !== undefined) return fail("refused", wrong);
       const { location, nodeId: id, slot, index } = input;
       const label = CATALOGUE[placed.node.type]?.label ?? placed.node.type;
