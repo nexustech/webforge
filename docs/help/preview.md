@@ -2,9 +2,9 @@
 
 id: preview
 title: Preview
-summary: See your site in your web browser and on your phone, as visitors will, while you edit.
+summary: See your site in your web browser and on your phone, as visitors will, while you edit, and save a page as an image or a PDF.
 related: [export, site-check, custom-code, pages, layers]
-updated: 2026-11-16
+updated: 2026-11-22
 ---
 
 # Preview
@@ -36,6 +36,15 @@ Choose **File › Preview on Phone…**, then point your phone's camera at the c
 While it's on, the title bar shows **Phone preview on**, with a button to stop it. Anyone on your Wi-Fi who has the address can see the preview, so stop it when you're done. It also stops by itself after 10 minutes without use, or if your computer leaves the Wi-Fi.
 
 Phone preview needs a home or office Wi-Fi. It may not work on public Wi-Fi.
+
+## Saving a page as an image or a PDF
+
+To show someone a page before it's published, choose **File › Save Page as Image…** or **File › Save Page as PDF…**, then where to save it. The file is named after the page; change the name if you like.
+
+- **The page you're editing,** as the preview shows it, at the width of the device you're viewing it on in {appName}: choose **Mobile** first for a phone-sized page.
+- **An image is the whole page,** top to bottom, not only the part you can see. A very long page stops short at the end of what one image can hold, and {appName} says so: save a PDF to have all of it.
+- **A PDF keeps its backgrounds,** as wide as the device, and runs on to more pages if it's long.
+- Animations show as they end, and a slideshow shows its first slide. Nothing is put on the internet, and nothing is kept but the file you save.
 
 ## If {appName} asks about code
 

@@ -1,14 +1,22 @@
+import { writeFile } from "node:fs/promises";
+import { basename } from "node:path";
 import type { SiteSnapshot } from "@webforge/model";
 import type { IpcMain } from "electron";
 import type { PreviewJob, PreviewOutcome } from "../shared/export-worker-protocol.js";
-import type { PhoneAddress, PreviewPage } from "../shared/ipc/preview.js";
+import type { PhoneAddress, PreviewPage, SavePageResult } from "../shared/ipc/preview.js";
 import type { SiteContent } from "../shared/ipc/site.js";
 import type { AppFeature } from "./app-feature.js";
 import { snapshotOf } from "./export-ipc.js";
 import { registerIpcHandler } from "./ipc.js";
 import { log } from "./log.js";
+import type { CaptureKind, PageCapture } from "./page-capture.js";
 import type { PreviewBuilder } from "./preview-builder.js";
-import { type PreviewScope, type PreviewServer, VERSION_PATH } from "./preview-server.js";
+import {
+  CAPTURE_PATH,
+  type PreviewScope,
+  type PreviewServer,
+  VERSION_PATH,
+} from "./preview-server.js";
 import type { SessionSite } from "./project-session.js";
 import { recordUsage } from "./usage.js";
 
@@ -65,6 +73,17 @@ export type Preview = {
   phone(sessionId: string, site: SiteContent, page: PreviewPage): Promise<PhoneAddress>;
   /** Stops the phone's listener only (Stop Phone Preview); the desktop preview goes on. */
   stopPhone(): Promise<void>;
+  /**
+   * Draws `page` of `site` as it is now with `draw`, given the page's address (5.22): built once,
+   * by a builder of its own, as a version is, and served apart from the live preview while it's
+   * drawn. `undefined` when it couldn't be built or served; one drawing at a time.
+   */
+  render<T>(
+    sessionId: string,
+    site: SiteContent,
+    page: PreviewPage,
+    draw: (url: string) => Promise<T>,
+  ): Promise<T | undefined>;
   /** Stops the server and the builder: the site closed, or the app quits. */
   close(): Promise<void>;
 };
@@ -154,6 +173,25 @@ export function createPreview(deps: PreviewDeps): Preview {
     stale = true;
   };
 
+  /** `site` built once, by a builder of its own so the editor's builds never drop it. */
+  const buildOnce = async (sessionId: string, site: SiteContent) => {
+    const job = await deps.jobFor(snapshotOf(site));
+    const media = deps.site(sessionId);
+    return new Promise<PreviewOutcome>((resolve) => {
+      const builder = deps.startBuilder(
+        (outcome) => {
+          builder.close();
+          resolve(outcome);
+        },
+        (hash) => media.readMedia(hash),
+      );
+      builder.request(job);
+    });
+  };
+
+  // One drawing at a time: each takes the server's capture files while it's drawn.
+  let drawing: Promise<unknown> = Promise.resolve();
+
   const listen = async (sessionId: string, scope: PreviewScope, host?: string) => {
     const { server } = await start(sessionId);
     const port = await server.listen(scope, host);
@@ -183,18 +221,7 @@ export function createPreview(deps: PreviewDeps): Preview {
       try {
         if (running?.sessionId !== sessionId) await stop();
         const { server } = await start(sessionId);
-        const job = await deps.jobFor(snapshotOf(site));
-        const media = deps.site(sessionId);
-        const built = await new Promise<PreviewOutcome>((resolve) => {
-          const builder = deps.startBuilder(
-            (outcome) => {
-              builder.close();
-              resolve(outcome);
-            },
-            (hash) => media.readMedia(hash),
-          );
-          builder.request(job);
-        });
+        const built = await buildOnce(sessionId, site);
         if (built.type !== "previewed") {
           log.error("Webforge could not build a version's preview", { detail: built.detail });
           return "failed";
@@ -245,6 +272,36 @@ export function createPreview(deps: PreviewDeps): Preview {
       stopWatchingAddress();
       await running?.server.stop("network");
     },
+    render(sessionId, site, page, draw) {
+      const turn = drawing.then(async () => {
+        if (!current(sessionId)) return undefined;
+        try {
+          if (running?.sessionId !== sessionId) await stop();
+          const { server } = await start(sessionId);
+          const built = await buildOnce(sessionId, site);
+          if (built.type !== "previewed") {
+            log.error("Webforge could not build a page to draw", { detail: built.detail });
+            return undefined;
+          }
+          // The site closed, or another opened, while it built: its server has stopped.
+          if (running?.server !== server) return undefined;
+          server.showCapture(built);
+          try {
+            const port = await server.listen("local");
+            return await draw(pageUrl("127.0.0.1", port, `${server.base}${CAPTURE_PATH}`, page));
+          } finally {
+            server.showCapture(undefined);
+          }
+        } catch (error) {
+          log.error("Webforge could not draw a page", {
+            code: error instanceof Error && "code" in error ? String(error.code) : "unknown",
+          });
+          return undefined;
+        }
+      });
+      drawing = turn.catch(() => undefined);
+      return turn;
+    },
     close: stop,
   };
 }
@@ -281,11 +338,67 @@ async function timedPreview<R>(
   return result;
 }
 
+/** What saving a page as a picture or a PDF (5.22) reaches besides the preview. */
+export type PageSaves = {
+  /** Where to save page `name` as `kind`, as the person chooses; none when they cancel. */
+  readonly chooseFile: (name: string, kind: CaptureKind) => Promise<string | undefined>;
+  readonly capture: PageCapture;
+  /** Writes `data` to `path`, replacing a file there: the dialog has asked first. */
+  readonly write: (path: string, data: Uint8Array) => Promise<void>;
+};
+
+/** Why a file couldn't be written, as the person is told it. */
+function writeFailure(error: unknown): "not-allowed" | "disk-full" | "write" {
+  const code = error instanceof Error && "code" in error ? String(error.code) : undefined;
+  return code === "EACCES" || code === "EPERM" || code === "EROFS"
+    ? "not-allowed"
+    : code === "ENOSPC"
+      ? "disk-full"
+      : "write";
+}
+
+/**
+ * Saves a page as a picture or a PDF (5.22): asks where first, so a cancel draws and writes
+ * nothing; then draws the site as it is now and writes the file there. Failures are logged by
+ * code, never with the page or the path.
+ */
+export async function savePage(
+  preview: Pick<Preview, "render">,
+  saves: PageSaves,
+  sessionId: string,
+  site: SiteContent,
+  page: {
+    readonly page: PreviewPage;
+    readonly name: string;
+    readonly width: number;
+    readonly kind: CaptureKind;
+  },
+): Promise<SavePageResult> {
+  const path = await saves.chooseFile(page.name, page.kind);
+  if (path === undefined) return { status: "canceled" };
+  const drawn = await preview.render(sessionId, site, page.page, (url) =>
+    saves.capture(url, page.width, page.kind),
+  );
+  if (drawn === undefined) return { status: "failed", reason: "draw" };
+  try {
+    await saves.write(path, drawn.data);
+  } catch (error) {
+    const reason = writeFailure(error);
+    log.error("Webforge could not save a page", { reason });
+    return { status: "failed", reason };
+  }
+  return { status: "saved", fileName: basename(path), cut: drawn.cut };
+}
+
+/** Writes a saved page's file. */
+export const writePageFile = (path: string, data: Uint8Array) => writeFile(path, data);
+
 /** Registers the `preview` IPC calls (3.2) on the open site's preview. */
 export function registerPreviewHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
   preview: Preview,
+  saves?: PageSaves,
 ): void {
   registerIpcHandler(ipc, "previewOpen", isTrustedSender, (sessionId, site, page) =>
     timedPreview("computer", site, () => preview.open(sessionId, site, page)),
@@ -308,16 +421,21 @@ export function registerPreviewHandlers(
     await preview.stopPhone();
     return null;
   });
+  registerIpcHandler(ipc, "previewSavePage", isTrustedSender, (sessionId, site, page) =>
+    saves === undefined
+      ? Promise.resolve({ status: "failed", reason: "draw" } as const)
+      : savePage(preview, saves, sessionId, site, page),
+  );
 }
 
 /**
  * The preview as a feature (A12): its IPC calls, and its server and worker stopped when the site
  * closes, replaced by a hand-off or as Webforge quits.
  */
-export function previewFeature(preview: Preview): AppFeature {
+export function previewFeature(preview: Preview, saves?: PageSaves): AppFeature {
   return {
     register: (ipc, isTrustedSender) => {
-      registerPreviewHandlers(ipc, isTrustedSender, preview);
+      registerPreviewHandlers(ipc, isTrustedSender, preview, saves);
     },
     site: {
       closed: () => {

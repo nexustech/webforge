@@ -15,10 +15,13 @@ function setUp() {
     dialogs: {
       export: {} as SiteOutputDeps["dialogs"]["export"],
       publish: { chooseKeyFile: vi.fn() },
+      preview: { choosePageFileToSave: vi.fn() },
     },
     credentials: {} as SiteOutputDeps["credentials"],
     forkWorker,
-    shell: { openExternal: vi.fn(), openPath: vi.fn(), showItemInFolder: vi.fn() },
+    electron: {
+      shell: { openExternal: vi.fn(), openPath: vi.fn(), showItemInFolder: vi.fn() },
+    } as unknown as SiteOutputDeps["electron"],
     packaged: true,
     mainWindow: () => undefined,
     versionsKept: () => 10,
@@ -44,6 +47,7 @@ describe("siteOutput (#985)", () => {
     expect(channels).toEqual(
       expect.arrayContaining([
         "preview:open",
+        "preview:save-page",
         "site:export",
         "publish:destinations",
         "publish:publish",

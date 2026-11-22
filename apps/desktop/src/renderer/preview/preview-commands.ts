@@ -2,7 +2,12 @@ import { t } from "@webforge/i18n";
 import { type PageId, pagePath, type SiteDoc } from "@webforge/model";
 import { type ComponentLibrary, siteContentFor } from "@webforge/site-components";
 import type { StoreApi } from "zustand/vanilla";
-import type { PreviewApi, PreviewPage } from "../../shared/ipc/preview.js";
+import type {
+  PageFileKind,
+  PreviewApi,
+  PreviewPage,
+  SavePageResult,
+} from "../../shared/ipc/preview.js";
 import type { CodeDecision } from "../editor/code-trust.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { reportFailure } from "../log.js";
@@ -26,6 +31,10 @@ export type PreviewCommandsDeps = {
   readonly notify: (message: string) => void;
   /** Tells the person something worked: the preview opened in their browser (#1009). */
   readonly tell: (message: string) => void;
+  /** Tells the person a page was saved, with more on what was (5.22). */
+  readonly saved: (message: string, description: string) => void;
+  /** The width of the device the canvas shows, in CSS pixels: a page is saved at it (5.22). */
+  readonly width: () => number;
   /**
    * Asks about the site's code its owner hasn't written here or confirmed (#649), before a preview
    * runs it in their browser or on their phone.
@@ -44,10 +53,33 @@ export function previewPageOf(site: SiteDoc, pageId: PageId): PreviewPage {
   return page === undefined ? "index.html" : `${pagePath(page, site.homePageId)}.html`;
 }
 
+/** What the person is told once a page is saved as a picture or a PDF, or why it wasn't. */
+function savedWords(result: SavePageResult, width: number): readonly [string, string] | string {
+  switch (result.status) {
+    case "saved":
+      return [
+        t("preview.save.saved", { name: result.fileName }),
+        result.cut ? t("preview.save.cut") : t("preview.save.savedDescription", { width }),
+      ];
+    case "failed":
+      return result.reason === "not-allowed"
+        ? t("preview.save.notAllowed")
+        : result.reason === "disk-full"
+          ? t("preview.save.diskFull")
+          : result.reason === "write"
+            ? t("preview.save.writeFailed")
+            : t("preview.save.drawFailed");
+    default:
+      return "";
+  }
+}
+
 /**
  * Registers File → Preview (the title bar's Preview button, Ctrl/Cmd+I) and File → Preview on
- * Phone… (3.2, F-PV-1). Each first asks about code the owner hasn't written here or confirmed
- * (#649). Preview opens the site at the page shown in the default browser. Once
+ * Phone… (3.2, F-PV-1), and Save Page as Image… and Save Page as PDF… (5.22, OL-9), the page shown
+ * as Preview builds it at the canvas's device width. Each first asks about code the owner hasn't
+ * written here or confirmed (#649). Preview opens the site at the page shown in the default
+ * browser. Once
  * either has run, the preview follows the editor: each change of the site goes to it, at most one
  * every {@link PREVIEW_UPDATE_MS} (the first at once, so a lone change shows at once), and the page
  * shown, so the browser goes there. Returns a function that removes them and stops following.
@@ -140,7 +172,47 @@ export function registerPreviewCommands(
     };
   };
 
+  /** Saves the page shown as `kind`; both saves are off while one runs. */
+  const savePage = (kind: PageFileKind) =>
+    afterCode(() => {
+      const ids = [COMMAND_IDS.savePageImage, COMMAND_IDS.savePagePdf];
+      for (const id of ids) registry.update(id, { enabled: false });
+      const width = deps.width();
+      const { pageId } = session.ui.getState();
+      api
+        .savePage(sessionId(), content(), {
+          page: page(),
+          name: site().pages[pageId]?.title ?? "",
+          width,
+          kind,
+        })
+        .then((result) => {
+          const words = savedWords(result, width);
+          if (typeof words !== "string") deps.saved(...words);
+          else if (words !== "") notify(words);
+        })
+        .catch((error: unknown) => {
+          reportFailure("preview.savePage", error);
+          notify(t("preview.save.drawFailed"));
+        })
+        .finally(() => {
+          for (const id of ids) registry.update(id, { enabled: true });
+        });
+    });
+
   const removers = [
+    registry.register({
+      id: COMMAND_IDS.savePageImage,
+      label: t("command.savePageImage"),
+      menu: "file",
+      run: () => savePage("png"),
+    }),
+    registry.register({
+      id: COMMAND_IDS.savePagePdf,
+      label: t("command.savePagePdf"),
+      menu: "file",
+      run: () => savePage("pdf"),
+    }),
     registry.register({
       id: COMMAND_IDS.preview,
       label: t("command.preview"),

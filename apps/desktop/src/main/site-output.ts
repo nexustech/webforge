@@ -1,9 +1,10 @@
 import { networkInterfaces } from "node:os";
 import type { SiteSnapshot } from "@webforge/model";
-import type { Shell, WebContents } from "electron";
+import type { WebContents } from "electron";
 import { previewEvents } from "../shared/ipc/preview.js";
 import { publishEvents } from "../shared/ipc/publish.js";
 import { siteEvents } from "../shared/ipc/site.js";
+import type { AppElectron } from "./app-parts.js";
 import { type CodeTrust, withTrustedCode } from "./code-trust.js";
 import type { NativeDialogs } from "./dialogs.js";
 import { netlifyApiFor } from "./e2e-netlify.js";
@@ -11,8 +12,9 @@ import { createExportFeature } from "./export-feature.js";
 import { createNetlifySignIns } from "./netlify-auth.js";
 import { netlifyFeature } from "./netlify-ipc.js";
 import { hasAddress, phoneAddressFor } from "./network-address.js";
+import { createPageCapture, electronCaptureWindows } from "./page-capture.js";
 import { createPreviewBuilder } from "./preview-builder.js";
-import { createPreview, previewFeature } from "./preview-ipc.js";
+import { createPreview, previewFeature, writePageFile } from "./preview-ipc.js";
 import { createPreviewServer } from "./preview-server.js";
 import type { ProjectSession } from "./project-session.js";
 import { publishDestinationsFeature } from "./publish-destinations-ipc.js";
@@ -27,13 +29,16 @@ export type SiteOutputDeps = {
   readonly session: ProjectSession;
   readonly codeTrust: Pick<CodeTrust, "trusted">;
   readonly fonts: Pick<SiteFonts, "fontsOf" | "previewFontsOf">;
-  readonly dialogs: Pick<NativeDialogs, "export" | "publish">;
+  readonly dialogs: Pick<NativeDialogs, "export" | "publish" | "preview">;
   /** The keychain's store, for publish destinations' sign-ins only (#666, S2, S38). */
   readonly credentials: Parameters<typeof createPublishSecrets>[0];
   /** A worker of the export's script, whose crash becomes a local report (R3). */
   readonly forkWorker: (serviceName: string) => WorkerProcess;
-  /** Electron's `shell`, whose methods are looked up as they're called (the E2E tests replace them). */
-  readonly shell: Pick<Shell, "openExternal" | "openPath" | "showItemInFolder">;
+  /**
+   * Electron's `shell`, whose methods are looked up as they're called (the E2E tests replace them),
+   * and its windows and sessions, which draw a page as a picture or a PDF (5.22).
+   */
+  readonly electron: Pick<AppElectron, "shell" | "BrowserWindow" | "session">;
   readonly packaged: boolean;
   /** The editor's window, told of a preview's phone and of exports' and publishes' progress. */
   readonly mainWindow: () => { readonly webContents: Pick<WebContents, "send"> } | undefined;
@@ -66,7 +71,7 @@ export function siteOutput(deps: SiteOutputDeps) {
     // Only the preview's own address, which this process makes: never one from the renderer.
     openInBrowser: async (url) => {
       try {
-        await deps.shell.openExternal(url);
+        await deps.electron.shell.openExternal(url);
         return true;
       } catch {
         return false;
@@ -86,7 +91,7 @@ export function siteOutput(deps: SiteOutputDeps) {
       mainWindow()?.webContents.send(siteEvents.exportProgress.channel, operationId, progress),
     // The site each export call is for (#663): its Media and its export choices.
     site: (sessionId) => session.forSession(sessionId),
-    shell: deps.shell,
+    shell: deps.electron.shell,
   });
   // Publish passwords, keys and tokens (#666, 4.4a), in the keychain: never in a site file.
   const secrets = createPublishSecrets(deps.credentials);
@@ -94,7 +99,12 @@ export function siteOutput(deps: SiteOutputDeps) {
   const keys = createKeyFiles();
   return {
     export: exportFeature,
-    preview: previewFeature(preview),
+    // A page saved as a picture or a PDF (5.22), drawn from a build of its own.
+    preview: previewFeature(preview, {
+      chooseFile: deps.dialogs.preview.choosePageFileToSave,
+      capture: createPageCapture(electronCaptureWindows(deps.electron)),
+      write: writePageFile,
+    }),
     // The open site's publish destinations (4.4a): the list in its file, sign-ins in the keychain.
     destinations: publishDestinationsFeature({
       site: (sessionId) => session.site(sessionId),
@@ -118,7 +128,7 @@ export function siteOutput(deps: SiteOutputDeps) {
       flush: deps.flush,
       // So Clean up keeps what a publish under way reaches (4.6).
       holdManifest: (manifest) => session.holdManifest(manifest),
-      openExternal: (url) => deps.shell.openExternal(url),
+      openExternal: (url) => deps.electron.shell.openExternal(url),
       // Netlify's own API, or the E2E tests' mock in an unpackaged app (#70).
       netlifyApi: netlifyApiFor(deps.packaged),
     }),
@@ -131,7 +141,7 @@ export function siteOutput(deps: SiteOutputDeps) {
         clientId: import.meta.env.MAIN_VITE_NETLIFY_CLIENT_ID,
         // The E2E tests' stand-in for Netlify, in an app run from its build folder only.
         apiBase: netlifyApiFor(deps.packaged),
-        openExternal: (url) => deps.shell.openExternal(url),
+        openExternal: (url) => deps.electron.shell.openExternal(url),
       }),
       site: (sessionId) => session.site(sessionId),
       secrets,

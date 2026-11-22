@@ -191,7 +191,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     dialogs,
     credentials,
     forkWorker,
-    shell: electron.shell,
+    electron,
     packaged: app.isPackaged,
     mainWindow: () => lifecycle.mainWindow(),
     versionsKept,

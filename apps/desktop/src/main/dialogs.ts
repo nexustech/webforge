@@ -36,6 +36,10 @@ export type NativeDialogs = {
   readonly report: { chooseScreenshotToSave(): Promise<string | undefined> };
   /** Diagnostics' report (5.41, BD-2): the usage summary and crash reports, to attach. */
   readonly diagnostics: { chooseReportToSave(): Promise<string | undefined> };
+  /** A page saved as a picture or a PDF (5.22), named after it. */
+  readonly preview: {
+    choosePageFileToSave(pageName: string, kind: "png" | "pdf"): Promise<string | undefined>;
+  };
 };
 
 /** The native file dialogs, each modal to the focused window when there is one. */
@@ -160,6 +164,24 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
           title: t("diagnostics.save.title"),
           defaultPath: `${safeFileName(t("diagnostics.save.fileName"), "diagnostics")}.json`,
           filters: [{ name: t("diagnostics.save.fileType"), extensions: ["json"] }],
+        });
+        return result.canceled || result.filePath === "" ? undefined : result.filePath;
+      },
+    },
+    preview: {
+      choosePageFileToSave: async (pageName, kind) => {
+        const answer = await parts.testAnswer("save");
+        if (answer !== undefined) return answer.path;
+        // The system's dialog asks before replacing a file of that name.
+        const result = await save({
+          title: t(kind === "png" ? "preview.save.imageTitle" : "preview.save.pdfTitle"),
+          defaultPath: `${safeFileName(pageName, t("preview.save.untitled"))}.${kind}`,
+          filters: [
+            {
+              name: t(kind === "png" ? "preview.save.imageType" : "preview.save.pdfType"),
+              extensions: [kind],
+            },
+          ],
         });
         return result.canceled || result.filePath === "" ? undefined : result.filePath;
       },

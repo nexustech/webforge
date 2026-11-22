@@ -4,6 +4,7 @@ import { PREVIEW_STYLESHEET } from "@webforge/pipeline/light";
 import { THEME_VALUES_MARKER } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  CAPTURE_PATH,
   changedValues,
   createPreviewServer,
   type PreviewBuild,
@@ -198,6 +199,25 @@ describe("the preview server (3.2)", () => {
     // The live preview goes on as it was.
     expect((await get(port, preview.base)).body).toContain("Home");
     expect((await get(port, preview.base)).body).not.toContain("as it was");
+  });
+
+  it("serves the page drawn as a picture apart, as it is, on this computer only, until taken away (5.22)", async () => {
+    const { server: preview, port } = await started();
+    preview.update(FIRST);
+    preview.showCapture({
+      type: "previewed",
+      full: true,
+      changed: [{ path: "index.html", data: page("Home as it is now") }],
+      removed: [],
+    });
+
+    const drawn = await get(port, `${preview.base}${CAPTURE_PATH}index.html`);
+    expect(drawn).toMatchObject({ status: 200, type: "text/html; charset=utf-8" });
+    expect(drawn.body).toContain("Home as it is now");
+    expect(drawn.body).not.toContain("live.js");
+
+    preview.showCapture(undefined);
+    expect((await get(port, `${preview.base}${CAPTURE_PATH}index.html`)).status).toBe(404);
   });
 
   it("serves nothing but the build's files, and nothing without its base", async () => {

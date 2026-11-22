@@ -91,6 +91,20 @@ export const shell = {
   // Preview and Preview on Phone (3.2, F-PV-1).
   "preview.opened": "Opened in your browser",
   "preview.failed": "{appName} couldn't open the preview. Try again in a moment.",
+  // Save Page as Image… and Save Page as PDF… (5.22, OL-9).
+  "preview.save.imageTitle": "Save Page as Image",
+  "preview.save.pdfTitle": "Save Page as PDF",
+  "preview.save.imageType": "PNG image",
+  "preview.save.pdfType": "PDF document",
+  "preview.save.untitled": "Page",
+  "preview.save.saved": "Saved {name}",
+  "preview.save.savedDescription": "The page as Preview shows it, {width} pixels wide.",
+  "preview.save.cut":
+    "The page is longer than one picture can hold, so it stops short of the end. Save it as a PDF to have all of it.",
+  "preview.save.drawFailed": "{appName} couldn't draw the page. Try again in a moment.",
+  "preview.save.notAllowed": "{appName} isn't allowed to save there. Choose another folder.",
+  "preview.save.diskFull": "There isn't enough space on the disk to save the page.",
+  "preview.save.writeFailed": "{appName} couldn't save the file there. Try another folder.",
   "preview.phone.title": "Preview on Your Phone",
   "preview.phone.description":
     "Point your phone's camera at this code. Your phone needs to be on the same Wi-Fi as this computer.",
@@ -196,6 +210,9 @@ export const shell = {
   "command.preview": "Preview",
   "command.previewOnPhone": "Preview on Phone…",
   "command.stopPhonePreview": "Stop Phone Preview",
+  // A page as Preview draws it, saved as a picture or a PDF to show someone (5.22, OL-9).
+  "command.savePageImage": "Save Page as Image…",
+  "command.savePagePdf": "Save Page as PDF…",
   "command.publish": "Publish…",
   "command.commandBox": "Search Commands…",
   "command.nextRegion": "Next Part of the Window",
