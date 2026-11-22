@@ -257,6 +257,7 @@ No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `
 
   The scaffold refuses an area it can't place, rather than starting a second file for it.
 - **The site components' strings** (`packages/i18n/src/en/components/`: their fields, starter content and the site's labels) are a catalogue of their own, which main never loads (#1150). Code that uses their keys imports `t`, `template` and `plural` from `@webforge/i18n/components`, whose `t` takes every key; `@webforge/i18n`'s takes the app's own.
+- **Main's strings** (#1317, [ADR 0027](adr/0027-main-strings.md)) are a catalogue of their own too, so main's start-up loads only the words it shows. Main's code, and shared code main reads at start-up, imports `t` from `@webforge/i18n/main`, which takes main's keys only. After adding a string there, run `pnpm main-strings`, which copies main's keys from `en/` into `en/main.ts` (a test fails until it's run). A key built at run time also needs a builder and a line in `MAIN_RUNTIME_KEYS` (`apps/desktop/src/main/main-strings.ts`).
 - **`t(key, params)` is typed by the message:** its `{placeholders}` are the params it needs, checked when it compiles.
 - **Counts** use `plural(base, count)`, with `base.one` and `base.other` keys.
 - **Code that fills placeholders itself** (a script, Puck) uses `template(key)`.

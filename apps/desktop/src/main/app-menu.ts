@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import type { MenuItemConstructorOptions } from "electron";
 import type { NativeMenus } from "../shared/ipc/app.js";
 

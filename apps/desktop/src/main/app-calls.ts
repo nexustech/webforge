@@ -1,5 +1,5 @@
 import { dirname } from "node:path";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import type { App, BrowserWindow, Menu, Session, Shell, WebContents } from "electron";
 import { appEvents } from "../shared/ipc/app.js";
 import type { AppFeature } from "./app-feature.js";

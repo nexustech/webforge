@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import type {
   BrowserWindow,
   ContextMenuParams,

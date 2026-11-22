@@ -1,5 +1,5 @@
 import { dirname } from "node:path";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import type { ProjectResult } from "../shared/ipc-contract.js";
 import type { BackupInfo, Backups } from "./backups.js";
 import type { ProjectSession } from "./project-session.js";

@@ -1,4 +1,7 @@
 import { en } from "./en.js";
+import { lookups } from "./lookup.js";
+
+export { filled, lookups } from "./lookup.js";
 
 /**
  * A key of the English message catalogue: the app's own words. The site components' words are in
@@ -62,58 +65,6 @@ export type ParamsArg<K extends MessageKey> = ParamsArgIn<typeof en, K>;
 
 /** {@link PluralKeyIn} for the app's own catalogue. */
 export type PluralKey = PluralKeyIn<typeof en>;
-
-const PLACEHOLDER = /\{(\w+)\}/g;
-
-/**
- * `message` with every `{appName}` replaced by the app's name, `app.name`: the one place the name is
- * written (#450), so a rename changes it there, and `productName` for the installers, and nothing
- * else. `pnpm ui-strings` refuses a message that spells the name out.
- */
-const withAppName = (message: string) => message.replaceAll("{appName}", en["app.name"]);
-
-/**
- * `message` with its `{placeholder}`s replaced by `params`; one without a matching param is left
- * as is, so a missing value shows instead of silently disappearing.
- */
-export function filled(message: string, params: MessageParams | undefined): string {
-  if (params === undefined) {
-    return message;
-  }
-  return message.replace(PLACEHOLDER, (match, name: string) => {
-    const value = params[name];
-    return value === undefined ? match : String(value);
-  });
-}
-
-/** The plural categories a count can fall in, as `Intl.PluralRules` names them. */
-const CATEGORIES = ["zero", "one", "two", "few", "many", "other"] as const;
-
-/** English's plural rules: "1 page", "2 pages". The catalogue is English (Q8). */
-const RULES = new Intl.PluralRules("en");
-
-/**
- * The lookups over `catalogue`, untyped: each entry point (this one, and
- * `@webforge/i18n/components`) declares them with its own catalogue's keys.
- */
-export function lookups(catalogue: Catalogue) {
-  // A key the types allow is always there; the key itself, should one not be, shows where.
-  const message = (key: string) => withAppName(catalogue[key] ?? key);
-  const t = (key: string, params?: MessageParams) => filled(message(key), params);
-  return {
-    t,
-    template: message,
-    has: (key: string) => Object.hasOwn(catalogue, key),
-    plural: (base: string, count: number, params?: MessageParams) => {
-      const category = RULES.select(count);
-      const key =
-        CATEGORIES.includes(category) && Object.hasOwn(catalogue, `${base}.${category}`)
-          ? `${base}.${category}`
-          : `${base}.other`;
-      return t(key, { ...(params ?? {}), count });
-    },
-  };
-}
 
 const app = lookups(en);
 
