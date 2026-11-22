@@ -74,9 +74,10 @@ describe("mediaUsage", () => {
     expect(usage.get("cakes")).toBe(1);
   });
 
-  it("counts the site icon, the site's share image and files the menu links to on every page", () => {
+  it("counts the site icon, the logo, the share image and files the menu links to on every page", () => {
     const site = siteWith({ about: [] });
     site.settings.general.icon = "icon" as MediaId;
+    site.settings.general.logo = "brand" as MediaId;
     site.settings.social.shareImage = "share" as MediaId;
     site.menu.items.push({
       id: "group" as MenuItemId,
@@ -96,7 +97,7 @@ describe("mediaUsage", () => {
 
     const usage = mediaUsage(site, siteLibrary);
 
-    for (const id of ["icon", "share", "prices"]) {
+    for (const id of ["icon", "brand", "share", "prices"]) {
       expect(usage.get(id)).toBe(site.pageOrder.length);
     }
   });

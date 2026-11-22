@@ -45,6 +45,8 @@ export function connectCanvasSettings(
       emptySetting: emptySettingHint,
       openingHours: shown.contact.openingHours,
       socialProfiles: shown.social.profiles,
+      // The Header's logo (HF-1): resolved as any Media image the canvas shows.
+      logo: shown.general.logo,
       socialHint: () => hint(t("site.binding.socialHint")),
       language: shown.general.language,
       siteText: siteTextFor(shown.general.language, siteLabelsOf(shown)),

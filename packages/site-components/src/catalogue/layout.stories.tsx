@@ -30,6 +30,19 @@ export const HeaderCentred: Story = { args: { nodes: header({ variant: "centred"
 /** The Header split: the menu's last link as a button on the right (2.6). */
 export const HeaderSplit: Story = { args: { nodes: header({ variant: "split" }) } };
 
+/** The Header with the logo from Site Settings in place of the site's name (HF-1). */
+export const HeaderLogo: Story = {
+  args: { nodes: header({ logoPlace: "instead", logoSize: "medium" }), context: { logo: "logo" } },
+};
+
+/** The Header centred, the logo large beside the site's name (HF-1). */
+export const HeaderLogoBeside: Story = {
+  args: {
+    nodes: header({ variant: "centred", logoPlace: "beside", logoSize: "large" }),
+    context: { logo: "logo" },
+  },
+};
+
 /** A sticky Header (F-DS-6), as it is before the page scrolls: its shadow comes once it has. */
 export const HeaderSticky: Story = {
   args: { nodes: header({ sticky: true, scrollStyle: "shadow" }) },

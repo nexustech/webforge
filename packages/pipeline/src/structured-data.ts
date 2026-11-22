@@ -51,6 +51,7 @@ export const businessDataSchema = z.strictObject({
     )
     .optional(),
   image: z.url().optional(),
+  logo: z.url().optional(),
   sameAs: z.array(z.url()).optional(),
   priceRange: z.string().optional(),
   geo: z
@@ -175,6 +176,8 @@ type StructuredDataOptions = {
   readonly library: ComponentLibrary;
   /** The page's share image, as the export names it: the business's picture, with an address. */
   readonly shareImage: string | undefined;
+  /** The Header's logo (HF-1), as the export names its JPEG or PNG: the business's logo. */
+  readonly logo?: string | undefined;
 };
 
 /** The characters {@link jsonLd} writes as JSON escapes. */
@@ -246,6 +249,7 @@ export function structuredData({
   nodes,
   library,
   shareImage,
+  logo,
 }: StructuredDataOptions): string[] {
   // Every item is a Blog's post while the Blog is the only preset (a test checks it): another
   // preset must reach the snapshot and choose its own schema.org type here.
@@ -310,6 +314,7 @@ export function structuredData({
     ...(address === undefined || shareImage === undefined
       ? {}
       : { image: `${address}/${shareImage}` }),
+    ...(address === undefined || logo === undefined ? {} : { logo: `${address}/${logo}` }),
     ...(sameAs.length === 0 ? {} : { sameAs }),
     ...(site.business?.priceRange === undefined ? {} : { priceRange: site.business.priceRange }),
     ...(site.business?.geo === undefined

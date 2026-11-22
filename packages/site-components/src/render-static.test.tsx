@@ -346,6 +346,46 @@ describe("renderNodesToHtml", () => {
     );
   });
 
+  it("shows Site Settings' logo in place of the name, named by it, or beside it (HF-1)", () => {
+    const withLogo: RenderContext = { ...context, logo: "hero" };
+    const header = (props: Record<string, unknown>) =>
+      starterLayout("Bakery").header.map((node) => ({
+        ...node,
+        props: { ...node.props, ...props },
+      }));
+
+    const instead = renderNodesToHtml(header({}), siteLibrary, withLogo);
+    // In its place by default, medium, the site's name its description; the name isn't repeated.
+    expect(instead).toContain(
+      '<a class="font-heading text-xl font-bold flex items-center gap-2" href="index.html"><picture>',
+    );
+    expect(instead).toContain('alt="Rosa&#x27;s Bakery"');
+    expect(instead).toContain('class="h-10 md:h-12 w-auto max-w-48 object-contain md:max-w-64"');
+    // At once, but after the page's first picture, which goes first.
+    expect(instead).toContain('loading="eager"');
+    expect(instead).not.toContain("fetchpriority");
+    expect(instead).not.toContain("Rosa&#x27;s Bakery</a>");
+    // The export's WebP, with the fallback.
+    expect(instead).toContain('<source type="image/webp"');
+
+    const beside = renderNodesToHtml(
+      header({ logoPlace: "beside", logoSize: "large" }),
+      siteLibrary,
+      withLogo,
+    );
+    // Beside the name, the picture says nothing more: the name follows it.
+    expect(beside).toContain('alt=""');
+    expect(beside).toContain('class="h-10 md:h-16 w-auto max-w-48 object-contain md:max-w-64"');
+    expect(beside).toContain("Rosa&#x27;s Bakery</a>");
+
+    // A logo gone from Media, or none: the name, as before.
+    for (const without of [{ ...context, logo: "gone" }, context]) {
+      expect(renderNodesToHtml(header({}), siteLibrary, without)).toContain(
+        '<a class="font-heading text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>',
+      );
+    }
+  });
+
   it("shows a field's own text until it is bound, and leaves an empty binding out", () => {
     const footer = (props: Record<string, unknown>): NodeDoc[] => [
       { type: "Footer", props: { id: "footer", text: "Thanks for visiting.", ...props } },

@@ -42,6 +42,8 @@ export type SettingsForm = {
   readonly description: string;
   readonly language: string;
   readonly icon: MediaId | undefined;
+  /** The business's logo, which the Header shows (HF-1). */
+  readonly logo: MediaId | undefined;
   /** A back-to-top button on every page that doesn't hide it (F-CM-9). */
   readonly backToTop: boolean;
   /** The business type (SEO-9), or `""` for none chosen. */
@@ -111,6 +113,7 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     description: general.description ?? "",
     language: general.language,
     icon: general.icon,
+    logo: general.logo,
     backToTop: general.backToTop === true,
     businessType: general.businessType ?? "",
     businessKind: general.businessKind ?? "",
@@ -271,6 +274,7 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       ...optional("description", form.description),
       language: form.language.trim(),
       ...(form.icon === undefined ? {} : { icon: form.icon }),
+      ...(form.logo === undefined ? {} : { logo: form.logo }),
       // Absent when off, as in files from before it.
       ...(form.backToTop ? { backToTop: true } : {}),
       ...businessOf(form),

@@ -58,6 +58,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   14: listLinks,
   15: exampleMarks,
   16: ownColours,
+  17: headerLogo,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -428,6 +429,15 @@ function ownColours(site: RawSite): RawSite {
   const theme = site.theme;
   if (!isRecord(theme)) return { ...site, formatVersion: 17 };
   return { ...site, theme: { ...theme, ownColors: theme.ownColors ?? [] }, formatVersion: 17 };
+}
+
+/**
+ * Format 17 → 18 (HF-1, #1236): Site Settings may hold a logo, which the Header shows. No older
+ * site has one, so nothing changes but the version: a build that reads format 17 opens a site with
+ * a logo read-only rather than refusing it as invalid.
+ */
+function headerLogo(site: RawSite): RawSite {
+  return { ...site, formatVersion: 18 };
 }
 
 /** The Blog preset's Tags field, as format 14 gives a Blog that has none (in English, as it was). */

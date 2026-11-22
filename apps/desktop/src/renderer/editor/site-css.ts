@@ -55,10 +55,15 @@ const PLACEHOLDER_IMAGE: ResolvedImage = {
  * new Gallery image), so both are compiled before it does. With the editor's context alone, images
  * rendered nothing, so none of their classes were compiled. Only whether an image resolves changes
  * an element's classes, never which image or its alt text, so a change to Media collects nothing
- * again.
+ * again. The first has a logo too, for the Header's (HF-1), so choosing one collects nothing again.
  */
 const CLASS_CONTEXTS: readonly RenderContext[] = [
-  { ...EDITOR_RENDER_CONTEXT, image: () => PLACEHOLDER_IMAGE, emptyImage: () => "" },
+  {
+    ...EDITOR_RENDER_CONTEXT,
+    image: () => PLACEHOLDER_IMAGE,
+    emptyImage: () => "",
+    logo: "logo",
+  },
   { ...EDITOR_RENDER_CONTEXT, image: () => null, emptyImage: () => "" },
 ];
 
