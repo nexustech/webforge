@@ -7,20 +7,26 @@ import {
 import {
   type ColorRef,
   type ColorRole,
+  collectionItems,
   colorFieldsIn,
   copyTheme,
   countOwnColorUses,
   DEFAULT_THEME,
+  designAt,
   type FontRef,
   formatColorRef,
   type IsColorField,
   isNodeDoc,
+  isPageIn,
+  isSharedCopy,
   type NodeDoc,
   newId,
   newOwnColorId,
   type Oklch,
+  type OneOffUse,
   OWN_COLOR_NAME_MAX,
   OWN_COLORS_MAX,
+  oneOffUsesIn,
   rewriteOneOffUses,
   rewriteOwnColorUses,
   type SiteDoc,
@@ -933,7 +939,9 @@ export async function applyNearestOwnColor(
   const nearest = nearestColour(hexToOklch(hex), theme(session).ownColors ?? []);
   if (nearest === undefined) return undefined;
   const label = t("theme.history.oneOffToNearest", { name: nearest.name, hex });
-  const pages = pageCount(session);
+  const site = session.history.document.getState();
+  const uses = oneOffUsesIn(site, isColorField).find((each) => each.hex === hex.toLowerCase());
+  const pages = pagesShowing(site, uses?.uses ?? []);
   await asks?.siteWide?.beforeUnaskedChange?.({
     action: label,
     confirm: label,
@@ -948,6 +956,35 @@ export async function applyNearestOwnColor(
     { announce: plural("theme.changed.oneOffToNearest", pages, { name: nearest.name, hex }) },
   );
   return nearest.name;
+}
+
+/**
+ * How many pages show `uses` (PR 1324's review): a page's own, each once; every page that shows the
+ * Header or Footer, for theirs; each page with a copy of a shared section; each post of a design.
+ */
+export function pagesShowing(site: SiteDoc, uses: readonly OneOffUse[]): number {
+  const pages = new Set<string>();
+  const all = Object.entries(site.pages);
+  for (const { on } of uses) {
+    if (on === "header" || on === "footer") {
+      for (const [id, page] of all) {
+        if (!(on === "header" ? page.settings.hideHeader : page.settings.hideFooter)) pages.add(id);
+      }
+    } else if (isPageIn(site.pages, on)) {
+      pages.add(on);
+    } else {
+      const design = designAt(site, on);
+      if (design !== undefined) {
+        for (const post of collectionItems(site, design.id)) pages.add(post.id);
+      } else {
+        for (const [id, page] of all) {
+          const copies = page.doc.content.filter(isSharedCopy);
+          if (copies.some((copy) => copy.props.sharedSectionId === on)) pages.add(id);
+        }
+      }
+    }
+  }
+  return pages.size;
 }
 
 /** How many times colour `id` is used across the site: what deleting it asks about. */
