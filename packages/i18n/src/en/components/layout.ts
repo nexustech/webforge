@@ -21,6 +21,7 @@ export const layout = {
   // The Header's own button (HF-2, 5.38), in any layout.
   "field.headerButton": "Show a button",
   "field.headerButton.help": "A button such as “Book now”, on the right, and in the phone menu.",
+  "field.headerButtonLink.help": "A menu link to the same page isn't shown twice in the Header.",
   "starter.headerButton": "Book now",
   "field.footerLayout.centred": "Centred",
   "field.footerLayout.columns": "Columns",

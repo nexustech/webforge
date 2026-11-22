@@ -232,6 +232,8 @@ const header = defineComponent({
     buttonLink: {
       kind: "link",
       label: t("field.buttonLink"),
+      // Said where it's chosen, so it isn't a rule to discover (HF-2).
+      help: t("field.headerButtonLink.help"),
       button: "buttonLabel",
       shownWhen: (values) => values.button === true,
     },
@@ -321,8 +323,8 @@ const header = defineComponent({
  * The Header's own button (HF-2), on the right on wide screens and last in the phone menu, with
  * what the row shows beside it. A menu link that goes where the button goes isn't shown twice: the
  * row leaves out the last such link, and the phone menu has it already, so the button isn't added
- * there. A site
- * whose Header was _With a button_ keeps its button so, through format 19, exactly as it was.
+ * there. A site whose Header was _With a button_ keeps its button so, through format 19, exactly as
+ * it was.
  */
 function headerButton(
   values: { readonly button: boolean; readonly buttonLabel: string; readonly buttonLink: unknown },

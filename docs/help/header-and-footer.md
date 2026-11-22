@@ -20,7 +20,7 @@ The **Header**, at the top, and the **Footer**, at the bottom, are the same on e
 - **Logo** (once you choose one in [Site Settings](site-settings.md#general)): _In place of the name_ or _Beside the name_. In place of the name, your site's name is the logo's description for people who can't see it. Without a logo the Header shows the name.
 - **Logo size:** _Small_, _Medium_ or _Large_. On phones the logo stays no taller than the menu button, so the Header stays one line high.
 - **Layout:** _Name left, menu right_, _Centred_ or _Name left, menu centred_.
-- **Show a button:** a button such as "Book now" or "Get a quote", in any layout: on the right on a computer, and last in the menu on phones. Give it its **Button text** and **Button link**. If a link in your menu goes to the same place, the Header doesn't show it twice: that link stays in your menu and the Footer, and the Header shows the button instead.
+- **Show a button:** a button such as "Book now" or "Get a quote", in any layout: on the right on a computer, and last in the menu on phones. Give it its **Button text** and **Button link**. A menu link to the same page isn't shown twice in the Header: the Header shows the button in its place, and the link stays in your menu and in the Footer.
 - **Stay at the top when scrolling:** keeps the Header in view as visitors scroll.
 - **Change style when scrolling** (with _Stay at the top_ on): _Shadow_, _Shrink_, _Solid background_ or _None_.
 - **Highlight the section in view** (when your menu links to a section): as visitors scroll, the menu lights up the section they're looking at. On unless you turn it off. See [Menu links to sections](links.md#menu-links-to-sections).

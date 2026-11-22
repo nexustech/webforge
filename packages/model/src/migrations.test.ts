@@ -250,7 +250,7 @@ describe("migrateSite", () => {
       type: "Header",
       props: { id: "header", variant: "split", ...props },
     });
-    const site = (items: unknown[], header = [split()]) => ({
+    const site = (items: unknown[], header: unknown[] = [split()]) => ({
       formatVersion: 18,
       pages: {
         home: page("home"),

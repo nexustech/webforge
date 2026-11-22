@@ -1238,6 +1238,7 @@
         "buttonLink": {
           "kind": "link",
           "label": "Button link",
+          "help": "A menu link to the same page isn't shown twice in the Header.",
           "button": "buttonLabel"
         },
         "sticky": {
