@@ -29,6 +29,7 @@ const SITE_CHANNELS = [
   "site:bundle-file",
   "preview:open",
   "preview:next-opened",
+  "preview:cancel-next",
   "preview:update",
   "preview:phone",
   // Save Page as Image… and as PDF… (5.22): only this opening's site, with its Media.

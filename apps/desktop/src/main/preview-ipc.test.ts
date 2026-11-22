@@ -202,6 +202,10 @@ describe("createPreview (3.2)", () => {
     await preview.open(SITE_A, site("Bakery"), "index.html");
     expect(await failed).toBeNull();
     expect(await preview.nextOpened(SITE_A, 10)).toBeNull();
+    // No open follows (the code question declined): told at once, not after the minute.
+    const declined = preview.nextOpened(SITE_A);
+    preview.cancelNext(SITE_A);
+    expect(await declined).toBeNull();
   });
 
   it("previews a version apart: built once by a builder of its own, under its own path (4.6)", async () => {
@@ -600,7 +604,7 @@ describe("previewFeature (A12)", () => {
     feature.register?.({ handle }, () => true);
     feature.site?.closed?.();
 
-    expect(handle).toHaveBeenCalledTimes(8);
+    expect(handle).toHaveBeenCalledTimes(9);
     expect(close).toHaveBeenCalledOnce();
   });
 });

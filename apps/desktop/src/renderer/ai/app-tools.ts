@@ -71,6 +71,21 @@ function factsOf(
   );
 }
 
+/**
+ * Opens the preview and resolves with the address of the page it opened (#1255): main is asked for
+ * the next address (`next`) before the Preview command runs (`run`), so the open it starts is the
+ * one told; a command that can't run tells main at once that no open follows (`cancel`).
+ */
+export function openPreviewFor(preview: {
+  readonly next: () => Promise<string | null>;
+  readonly run: () => boolean;
+  readonly cancel: () => Promise<unknown>;
+}): Promise<string | null> {
+  const next = preview.next();
+  if (!preview.run()) void preview.cancel().catch(() => undefined);
+  return next.catch(() => null);
+}
+
 /** A Site Check rule's title, as the panel shows it; its id when there is none. */
 const ruleTitle = (rule: string) => {
   const key = `siteCheck.rule.${rule}`;

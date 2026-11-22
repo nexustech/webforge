@@ -2,6 +2,7 @@ import { type MessageKey, t } from "@webforge/i18n";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AiRequest } from "../shared/ipc/ai.js";
+import { PREVIEW_OPEN_WAIT_MS } from "../shared/ipc/preview.js";
 import { type AiWindow, exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
@@ -180,6 +181,23 @@ describe("registerAiHandlers", () => {
     const slow = ai.ask(addHero);
     await vi.advanceTimersByTimeAsync(2_000);
     expect((await slow).status).toBe("busy");
+  });
+
+  it("waits on openPreview as long as the preview may take to open, past a query's time (#1255)", async () => {
+    vi.useFakeTimers();
+    const { ai, invoke } = bridge();
+    await invoke("ai:listening", SESSION, true);
+    const opening = ai.ask({ kind: "query", name: "openPreview", input: {} });
+    // The person answers the question about code to trust, and the first build finishes.
+    await vi.advanceTimersByTimeAsync(PREVIEW_OPEN_WAIT_MS);
+    const address = "http://127.0.0.1:54321/0123456789abcdef/index.html";
+    await invoke("ai:answer", 1, { status: "done", data: { opened: true, address } });
+    expect(await opening).toEqual({ status: "done", data: { opened: true, address } });
+
+    // Still answered for, a while after the preview gives up.
+    const never = ai.ask({ kind: "query", name: "openPreview", input: {} });
+    await vi.advanceTimersByTimeAsync(PREVIEW_OPEN_WAIT_MS + 5_000);
+    expect(await never).toEqual(said("busy", "aiApps.answer.noAnswer"));
   });
 
   it("is on main's globals only in an unpackaged app the E2E tests launch", () => {

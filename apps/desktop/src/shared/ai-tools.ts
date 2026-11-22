@@ -1,6 +1,7 @@
 import type { ToolDef } from "@webforge/commands";
 import { z } from "zod";
 import { siteBriefSchema } from "./ipc/ai.js";
+import { PREVIEW_OPEN_WAIT_MS } from "./ipc/preview.js";
 
 /** `def`, its name kept as written, so a record of handlers can be keyed by it. */
 const tool = <const Name extends string, I extends z.ZodType>(
@@ -56,6 +57,8 @@ export const WINDOW_TOOLS = [
     savesVersionFirst: false,
     // It opens the browser: the assistant's answers stay in its panel.
     forAssistant: false,
+    // Longer than the preview waits to open, so the app hears how that went (#1255).
+    timeoutMs: PREVIEW_OPEN_WAIT_MS + 5_000,
   }),
   tool({
     name: "requestMedia",

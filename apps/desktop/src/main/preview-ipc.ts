@@ -3,7 +3,12 @@ import { basename } from "node:path";
 import type { SiteSnapshot } from "@webforge/model";
 import type { IpcMain } from "electron";
 import type { PreviewJob, PreviewOutcome } from "../shared/export-worker-protocol.js";
-import type { PhoneAddress, PreviewPage, SavePageResult } from "../shared/ipc/preview.js";
+import {
+  type PhoneAddress,
+  PREVIEW_OPEN_WAIT_MS,
+  type PreviewPage,
+  type SavePageResult,
+} from "../shared/ipc/preview.js";
 import type { SiteContent } from "../shared/ipc/site.js";
 import type { AppFeature } from "./app-feature.js";
 import { snapshotOf } from "./export-ipc.js";
@@ -58,12 +63,6 @@ const RENDER_MS = 180_000;
 const ADDRESS_CHECK_MS = 5_000;
 
 /**
- * How long `nextOpened` waits for the preview to open: the Preview command may first ask the
- * person about code to trust (#649), and a first build takes a few seconds.
- */
-const NEXT_OPENED_MS = 60_000;
-
-/**
  * The open site's preview (3.2): started by the first open, stopped when the site closes. Each
  * call that sends the site names the opening it is for (`sessionId`, #663).
  */
@@ -75,6 +74,8 @@ export type Preview = {
    * fails, or none comes within `timeoutMs`.
    */
   nextOpened(sessionId: string, timeoutMs?: number): Promise<string | null>;
+  /** Tells those waiting for `sessionId`'s next address that no open follows: `null`, at once. */
+  cancelNext(sessionId: string): void;
   /**
    * Opens a version's site (Version History's Preview, 4.6) at `page` in the default browser, as
    * it was: built once, by a builder of its own so the editor's builds never drop it, and served
@@ -289,7 +290,10 @@ export function createPreview(deps: PreviewDeps): Preview {
         return opened(sessionId, null);
       }
     },
-    nextOpened(sessionId, timeoutMs = NEXT_OPENED_MS) {
+    cancelNext(sessionId) {
+      opened(sessionId, null);
+    },
+    nextOpened(sessionId, timeoutMs = PREVIEW_OPEN_WAIT_MS) {
       return new Promise((resolve) => {
         const waiter = {
           sessionId,
@@ -486,6 +490,10 @@ export function registerPreviewHandlers(
   registerIpcHandler(ipc, "previewNextOpened", isTrustedSender, (sessionId) =>
     preview.nextOpened(sessionId),
   );
+  registerIpcHandler(ipc, "previewCancelNext", isTrustedSender, (sessionId) => {
+    preview.cancelNext(sessionId);
+    return null;
+  });
   registerIpcHandler(ipc, "previewVersion", isTrustedSender, (sessionId, site, page) =>
     preview.openVersion(sessionId, site, page),
   );

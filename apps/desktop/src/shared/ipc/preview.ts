@@ -7,6 +7,12 @@ import { type SiteContent, siteContentSchema } from "./site.js";
  * A page's file in the preview, as the build names it (`index.html`, `services/cakes.html`): never
  * absolute, never a step up, so it only ever names a page of the preview.
  */
+/**
+ * How long an AI app's openPreview waits for the preview to open (#1255): the Preview command may
+ * first ask the person about code to trust (#649), and a large site's first build takes a while.
+ */
+export const PREVIEW_OPEN_WAIT_MS = 60_000;
+
 const pagePathSchema = z
   .string()
   .min(6)
@@ -97,6 +103,15 @@ export const previewChannels = {
       .nullable(),
   },
   /**
+   * No open follows for `sessionId` after all (#1255): the Preview command didn't run, or the person
+   * declined its question about code to trust. Whoever waits for the next address is told `null`.
+   */
+  previewCancelNext: {
+    channel: "preview:cancel-next",
+    request: z.tuple([sessionIdSchema]),
+    response: z.null(),
+  },
+  /**
    * Opens a version's site, read as it was, at `page` in the default browser (Version History's
    * Preview, 4.6): apart from the live preview, which the editor's changes never reach it from.
    */
@@ -159,6 +174,8 @@ export interface PreviewApi {
   open(sessionId: string, site: SiteContent, page: PreviewPage): Promise<"opened" | "failed">;
   /** The address of the page the preview opens next for `sessionId`; `null` if it doesn't. */
   nextOpened(sessionId: string): Promise<string | null>;
+  /** Tells whoever waits for `sessionId`'s next address that no open follows. */
+  cancelNext(sessionId: string): Promise<null>;
   /** Opens version `site` of the site opened as `sessionId`, at `page`, in the default browser. */
   openVersion(
     sessionId: string,
