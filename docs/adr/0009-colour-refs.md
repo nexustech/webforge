@@ -52,4 +52,8 @@ The product owner's first request (option B of [product/18](../../research/produ
 4. **Everything that reads a reference reads the new base,** through `resolveColorRef`: the canvas, Preview, the export, the contrast warnings and Site Check. A reference to a colour the theme no longer has draws nothing and is measured as nothing.
    - The command API refuses one an AI app sets.
    - Site Check measures a colour where text or an icon uses it, as it measures any colour field's. Not on its own: a pale colour kept for backgrounds isn't hard to read until it's text. `ownColorIssues` measures each colour as the brand colours other than the main one are (3:1 on every surface, in both palettes), for Theme Studio's warnings in 5.28.
-5. **Not here:** Theme Studio's list of the colours and the picker's (5.28, TC-1b). Until then the colour field shows a colour in use by its name, and AI apps can add colours with `setThemeTokens`.
+5. **Theme Studio's list and the picker's (5.28, TC-1b, #1218).** Theme Studio › Colours lists the colours: add, rename, change and delete, each one undo step, and a search from six. Up to 200 (`OWN_COLORS_MAX`), which a theme's stylesheet keeps small. Each says under it where `ownColorIssues` finds it hard to read as text.
+   - A new colour's id is random letters (`newOwnColorId`), so a rename changes no reference.
+   - Deleting a colour in use asks: its uses go to another of the colours, shade and opacity kept, or each becomes a one-off hex colour as it looks now (`rewriteOwnColorUses`, in the same step). Nothing is left pointing at a colour that's gone.
+   - Every colour field's picker lists them under _Your colours_, with their shades and opacity, either end of a gradient included.
+   - A colour value's JSON Schema describes `own-<id>` for AI apps, which read the colours from the `theme` query and add them with `setThemeTokens`.

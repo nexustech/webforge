@@ -4,7 +4,7 @@ id: styling
 title: Styling
 summary: Change how a section or element looks, and give the same look to others like it.
 related: [edit-panel, themes, sections, elements]
-updated: 2026-11-21
+updated: 2026-11-22
 ---
 
 # Styling
@@ -28,7 +28,7 @@ _Same as theme_ means the item follows the theme. Every option except Font can b
 
 ## Colours
 
-Colour pickers list your theme's colours one to a row, each with its whole name, by their role: Brand, Accent, Second accent, Surface and Text, and Neutral for backgrounds. Some have lighter and darker **shades**, and you can make any colour see-through with **Opacity**. If a colour would be hard to read against what's behind it, the picker warns you. Icons and social logos need less contrast than text. On a picture, such as a section's background picture or a Hero's picture behind its text, it can't tell, so check that yourself.
+Colour pickers list your theme's colours one to a row, each with its whole name, by their role: Brand, Accent, Second accent, Surface and Text, and Neutral for backgrounds. Under them, **Your colours** lists the [colours you've added to your theme](themes.md#your-colours), by their names. Some have lighter and darker **shades**, as your colours do, and you can make any colour see-through with **Opacity**. If a colour would be hard to read against what's behind it, the picker warns you. Icons and social logos need less contrast than text. On a picture, such as a section's background picture or a Hero's picture behind its text, it can't tell, so check that yourself.
 
 In Advanced mode you can also choose a **Custom** colour, in the [colour picker](themes.md#the-colour-picker). It stays the same when you change the theme.
 
@@ -65,7 +65,7 @@ It offers more than the Style tab: gradients, a border on each side, each corner
 
 ### Gradients
 
-A gradient blends one colour into another across the background. To add one, choose a direction in **Gradient** under **Background**. It starts as **Brand** to **Accent**; change either colour in **Gradient starts with** and **Gradient ends with**, which show once the gradient has a direction. If you chose a colour before, it's kept. Choosing **None** turns the gradient off and keeps its colours, so choosing a direction again brings the same gradient back.
+A gradient blends one colour into another across the background. To add one, choose a direction in **Gradient** under **Background**. It starts as **Brand** to **Accent**; change either colour in **Gradient starts with** and **Gradient ends with**, which show once the gradient has a direction. Either end can be one of your colours. If you chose a colour before, it's kept. Choosing **None** turns the gradient off and keeps its colours, so choosing a direction again brings the same gradient back.
 
 Like the other choices here, a gradient can differ by device: choosing a direction while viewing Mobile adds it on Mobile only.
 

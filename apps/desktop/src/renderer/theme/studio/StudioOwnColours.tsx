@@ -11,10 +11,11 @@ import {
 } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n/components";
 import { type Oklch, OWN_COLOR_NAME_MAX, OWN_COLORS_MAX, type OwnColor } from "@webforge/model";
-import { hexOf, hexToOklch } from "@webforge/themes";
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { hexOf, hexToOklch, type OwnColorIssue } from "@webforge/themes";
+import { PlusIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react";
 import { useId, useState } from "react";
-import type { OwnColorUses } from "../theme-edits.js";
+import { shownRatio } from "../../fields/index.js";
+import { type OwnColorUses, ROLE_NAMES } from "../theme-edits.js";
 
 /** Props of {@link StudioOwnColours}. */
 export type StudioOwnColoursProps = {
@@ -27,7 +28,23 @@ export type StudioOwnColoursProps = {
   /** How many times colour `id` is used across the site. */
   readonly usesOf: (id: string) => number;
   readonly onDelete: (id: string, uses: OwnColorUses) => void;
+  /** The colours hard to read as text on a surface (`ownColorIssues`), each said under it. */
+  readonly issues?: readonly OwnColorIssue[] | undefined;
 };
+
+/** What colour `id`'s contrast lacks, as its row says it: the hardest surface to read it on. */
+function warningOf(issues: readonly OwnColorIssue[], id: string): string | undefined {
+  const [worst] = issues.filter((issue) => issue.id === id).sort((a, b) => a.ratio - b.ratio);
+  if (worst === undefined) return undefined;
+  const values = {
+    background: t(ROLE_NAMES[worst.background]),
+    ratio: shownRatio(worst.ratio),
+    needed: worst.required,
+  };
+  return worst.palette === "inverse"
+    ? t("theme.studio.own.hardToReadReversed", values)
+    : t("theme.studio.own.hardToRead", values);
+}
 
 /** How many colours the list shows before it offers its search. */
 const SEARCH_FROM = 6;
@@ -37,7 +54,8 @@ const SEARCH_FROM = 6;
  * beside the theme's roles, each with a name and its colour, to use in any colour field. Add,
  * rename, change and delete are each one step. A long list can be searched by name. Deleting a
  * colour in use asks what becomes of its uses: given to another of their colours, or each kept as a
- * one-off as it looks now. A colour is never lost silently.
+ * one-off as it looks now. A colour is never lost silently. A colour hard to read as text on a
+ * surface says so under it (TC-1a's `ownColorIssues`).
  */
 export function StudioOwnColours(props: StudioOwnColoursProps) {
   const id = useId();
@@ -97,47 +115,61 @@ export function StudioOwnColours(props: StudioOwnColoursProps) {
           aria-label={t("theme.studio.own.title")}
           className="m-0 flex max-h-72 list-none flex-col gap-1 overflow-y-auto p-0"
         >
-          {shown.map((colour) => (
-            <li key={colour.id} className="flex items-center gap-2">
-              <ColourPicker
-                value={hexOf(colour.color)}
-                aria-label={t("theme.studio.own.colour", { name: colour.name })}
-                onChoose={(hex) => props.onSetColor(colour.id, hexToOklch(hex))}
-              />
-              <input
-                // A new key once renamed elsewhere (undo): the field shows the name as it is.
-                key={colour.name}
-                aria-label={t("theme.studio.own.name", { name: colour.name })}
-                defaultValue={colour.name}
-                maxLength={OWN_COLOR_NAME_MAX}
-                className="h-7 min-w-0 flex-1 rounded-sm border border-border bg-input px-2 text-xs"
-                onBlur={(event) => {
-                  const name = event.currentTarget.value.trim();
-                  if (name !== "" && name !== colour.name) props.onRename(colour.id, name);
-                  else event.currentTarget.value = colour.name;
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") event.currentTarget.blur();
-                }}
-              />
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                aria-label={t("theme.studio.own.delete", { name: colour.name })}
-                onClick={() => {
-                  const uses = props.usesOf(colour.id);
-                  // Not used anywhere: nothing to ask, and Undo brings it back.
-                  if (uses === 0) props.onDelete(colour.id, { kind: "oneOff" });
-                  else {
-                    setReplacement(undefined);
-                    setDeleting({ id: colour.id, uses });
-                  }
-                }}
-              >
-                <Trash2Icon aria-hidden />
-              </Button>
-            </li>
-          ))}
+          {shown.map((colour) => {
+            const warning = warningOf(props.issues ?? [], colour.id);
+            return (
+              <li key={colour.id} className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <ColourPicker
+                    value={hexOf(colour.color)}
+                    aria-label={t("theme.studio.own.colour", { name: colour.name })}
+                    onChoose={(hex) => props.onSetColor(colour.id, hexToOklch(hex))}
+                  />
+                  <input
+                    // A new key once renamed elsewhere (undo): the field shows the name as it is.
+                    key={colour.name}
+                    aria-label={t("theme.studio.own.name", { name: colour.name })}
+                    defaultValue={colour.name}
+                    maxLength={OWN_COLOR_NAME_MAX}
+                    className="h-7 min-w-0 flex-1 rounded-sm border border-border bg-input px-2 text-xs"
+                    onBlur={(event) => {
+                      const name = event.currentTarget.value.trim();
+                      if (name !== "" && name !== colour.name) props.onRename(colour.id, name);
+                      else event.currentTarget.value = colour.name;
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") event.currentTarget.blur();
+                    }}
+                  />
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={t("theme.studio.own.delete", { name: colour.name })}
+                    onClick={() => {
+                      const uses = props.usesOf(colour.id);
+                      // Not used anywhere: nothing to ask, and Undo brings it back.
+                      if (uses === 0) props.onDelete(colour.id, { kind: "oneOff" });
+                      else {
+                        setReplacement(undefined);
+                        setDeleting({ id: colour.id, uses });
+                      }
+                    }}
+                  >
+                    <Trash2Icon aria-hidden />
+                  </Button>
+                </div>
+                {warning === undefined ? null : (
+                  <p className="m-0 flex items-start gap-1 text-xs">
+                    <TriangleAlertIcon
+                      aria-hidden
+                      className="mt-0.5 size-3.5 shrink-0 text-warning"
+                    />
+                    {warning}
+                  </p>
+                )}
+              </li>
+            );
+          })}
           {shown.length === 0 ? (
             <li className="text-xs text-muted-foreground">{t("theme.studio.own.noMatch")}</li>
           ) : null}

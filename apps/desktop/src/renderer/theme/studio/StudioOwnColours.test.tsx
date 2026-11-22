@@ -57,6 +57,30 @@ describe("Theme Studio's list of your colours (TC-1b, #1218)", () => {
     expect(props.onDelete).toHaveBeenCalledWith("csky", { kind: "oneOff" });
   });
 
+  it("says under a colour where it's hardest to read as text", () => {
+    const props: StudioOwnColoursProps = {
+      colors: [SKY, SEA],
+      startColor: SKY.color,
+      onAdd: vi.fn(),
+      onRename: vi.fn(),
+      onSetColor: vi.fn(),
+      usesOf: vi.fn(() => 0),
+      onDelete: vi.fn(),
+      issues: [
+        { palette: "colors", id: "csky", background: "base-200", ratio: 2.61, required: 3 },
+        { palette: "inverse", id: "csky", background: "base-100", ratio: 1.94, required: 3 },
+      ],
+    };
+    render(<StudioOwnColours {...props} />);
+    const items = within(screen.getByRole("list", { name: "Your colours" })).getAllByRole(
+      "listitem",
+    );
+    expect(items[0]?.textContent).toContain(
+      "As text, hard to read on Surface in reversed sections: 1.9:1, needs 3:1",
+    );
+    expect(items[1]?.textContent).not.toContain("hard to read");
+  });
+
   it("finds a colour by name in a long list", async () => {
     const colors = Array.from({ length: 8 }, (_, n) => ({
       ...SKY,

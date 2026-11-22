@@ -193,6 +193,12 @@ export const theme = {
   "theme.studio.own.replace": "Use That Colour",
   "theme.studio.own.keep": "Keep Each as It Looks",
   "theme.studio.own.cancel": "Cancel",
+  // A colour of theirs hard to read as text on a surface: worth knowing, not wrong, since a pale
+  // colour kept for backgrounds is fine until it's text.
+  "theme.studio.own.hardToRead":
+    "As text, hard to read on {background}: {ratio}:1, needs {needed}:1",
+  "theme.studio.own.hardToReadReversed":
+    "As text, hard to read on {background} in reversed sections: {ratio}:1, needs {needed}:1",
   "theme.studio.section.text": "Text",
   "theme.studio.section.styles": "Styles",
   "theme.studio.section.components": "Components",

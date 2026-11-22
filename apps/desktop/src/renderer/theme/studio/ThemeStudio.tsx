@@ -13,6 +13,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { ComponentLibrary } from "@webforge/site-components";
+import { ownColorIssues } from "@webforge/themes";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
@@ -346,6 +347,7 @@ export function ThemeStudio({
               <StudioOwnColours
                 colors={theme.ownColors ?? []}
                 startColor={theme.colors.primary}
+                issues={ownColorIssues(theme)}
                 onAdd={(name, color) => void addOwnColor(session, asks, name, color)}
                 onRename={(id, name) => void renameOwnColor(session, asks, id, name)}
                 onSetColor={(id, color) => void setOwnColor(session, asks, id, color)}
