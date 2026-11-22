@@ -17,6 +17,35 @@ import { eachElement } from "./site-elements.js";
  */
 export type IsColorField = (type: string, field: string) => boolean;
 
+/** What {@link colorFieldsIn} reads of a component: its fields' kinds, a list's items' too. */
+export type FieldKinds = {
+  readonly fields: Readonly<
+    Record<
+      string,
+      | {
+          readonly kind: string;
+          readonly fields?: Readonly<Record<string, { readonly kind: string } | undefined>>;
+        }
+      | undefined
+    >
+  >;
+};
+
+/**
+ * Which fields of `components` hold colours: a `color` field, or a list item's
+ * (`items.iconColor`), as the editor's library or the catalogue for AI apps has them (#1218).
+ */
+export const colorFieldsIn =
+  (components: Readonly<Record<string, FieldKinds | undefined>>): IsColorField =>
+  (type, field) => {
+    const fields = components[type]?.fields;
+    if (fields === undefined) return false;
+    const [name = "", item] = field.split(".");
+    const def = fields[name];
+    if (item === undefined) return def?.kind === "color";
+    return def?.kind === "list" && def.fields?.[item]?.kind === "color";
+  };
+
 /** The letters a new colour's id is made of: lower case, as the id's pattern takes them. */
 const ID_LETTERS = "abcdefghijklmnopqrstuvwxyz";
 

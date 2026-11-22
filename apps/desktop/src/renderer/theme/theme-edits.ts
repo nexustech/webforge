@@ -7,6 +7,7 @@ import {
 import {
   type ColorRef,
   type ColorRole,
+  colorFieldsIn,
   copyTheme,
   countOwnColorUses,
   DEFAULT_THEME,
@@ -865,13 +866,5 @@ export const ownColorUseCount = (
  * Which fields of `library`'s components hold colours: a `color` field, or a list item's
  * (`items.iconColor`). A deleted colour's uses are found in these only (#1218).
  */
-export const colorFieldsOf =
-  (library: ComponentLibrary): IsColorField =>
-  (type, field) => {
-    const fields = library.components[type]?.fields;
-    if (fields === undefined) return false;
-    const [name = "", item] = field.split(".");
-    const def = fields[name];
-    if (item === undefined) return def?.kind === "color";
-    return def?.kind === "list" && def.fields[item]?.kind === "color";
-  };
+export const colorFieldsOf = (library: ComponentLibrary): IsColorField =>
+  colorFieldsIn(library.components);
