@@ -105,6 +105,17 @@ export const shared = {
   "colour.darker": "Use a darker shade",
   "colour.lighter": "Use a lighter shade",
   "colour.hexCode": "hex code",
+  // A one-off made one of the person's colours (TC-3, #1221): offered once it's used twice.
+  "colour.addToColours": "Add to Your Colours…",
+  "colour.addUsed":
+    "This colour is used {count} times on your site. Add it to your colours to use it by name, and change it everywhere at once.",
+  "colour.addAbout":
+    "Add this colour to your colours to use it by name, and change it everywhere at once.",
+  "colour.addName": "Name",
+  "colour.addConfirm": "Add to Your Colours",
+  "colour.addLater": "Not Now",
+  "colour.addFull": "Your colours are full. Delete one in Theme Studio to make room for this one.",
+  "colour.newName": "Colour {n}",
   "colour.offTheme": "Off the theme: changing the theme leaves this colour as it is.",
   // One of the person's own colours (TC-1a) a field uses that the theme no longer has: it draws
   // nothing until another colour is chosen.

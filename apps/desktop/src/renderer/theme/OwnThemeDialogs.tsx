@@ -16,8 +16,8 @@ import { THEME_PRESETS } from "@webforge/themes";
 import { z } from "zod";
 import { useStore } from "zustand";
 import type { OwnTheme } from "../../shared/ipc/themes.js";
+import type { NewTheme, OwnThemes } from "../editor/own-themes.js";
 import { NameDialog } from "../shell/NameDialog.js";
-import type { NewTheme, OwnThemes } from "./own-themes.js";
 import { presetName, themeName } from "./theme-edits.js";
 
 /** The New theme form's values: what it starts from (`site`, a preset, `own:<id>`) and its name. */

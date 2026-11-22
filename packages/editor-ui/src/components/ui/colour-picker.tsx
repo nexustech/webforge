@@ -45,6 +45,11 @@ export type ColourPickerProps = {
    */
   readonly colours?: (() => readonly string[]) | undefined;
   /**
+   * Offers *Add to Your Colours…* (TC-3, #1221): the picker closes on the colour shown, chosen as
+   * any close chooses it, then gives it to this, to make it one of the person's colours.
+   */
+  readonly onAddToColours?: ((hex: string) => void) | undefined;
+  /**
    * The colour chosen, once, when the picker closes on a colour other than the one it opened on:
    * one change, so one undo step. Nothing while it is being chosen, nor when Escape closes it.
    */
@@ -66,6 +71,7 @@ export function ColourPicker({
   disabled = false,
   className,
   colours,
+  onAddToColours,
   onChoose,
 }: ColourPickerProps) {
   const codeId = useId();
@@ -109,11 +115,20 @@ export function ColourPicker({
       return;
     }
     setOpen(false);
-    // A code still in its box counts: a click away closes the picker before the box is left.
-    const chosen = (typed === undefined ? undefined : parseHex(typed)) ?? hex;
+    const chosen = shown();
     if (!cancelled.current && chosen !== opened.current) onChoose(chosen);
     setHeld(undefined);
     setTyped(undefined);
+  };
+
+  /** The colour shown: a code still in its box counts, as a click away closes before it's left. */
+  const shown = () => (typed === undefined ? undefined : parseHex(typed)) ?? hex;
+
+  /** Closes on the colour shown, choosing it, and offers it as one of the person's colours. */
+  const addToColours = (add: (hex: string) => void) => {
+    const chosen = shown();
+    onOpenChange(false);
+    add(chosen);
   };
 
   /** Uses what's typed in the hex box, or refuses it, saying why. */
@@ -369,6 +384,15 @@ export function ColourPicker({
                 ))}
               </ul>
             </div>
+          )}
+          {onAddToColours === undefined ? null : (
+            <button
+              type="button"
+              className={cn(fieldControlClass, "h-7 w-auto self-start px-2 text-xs")}
+              onClick={() => addToColours(onAddToColours)}
+            >
+              {t("ui.colourPicker.addToColours")}
+            </button>
           )}
         </PopoverPrimitive.Content>
       </PopoverPrimitive.Portal>

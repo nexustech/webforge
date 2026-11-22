@@ -5,9 +5,10 @@ import type { FieldSpec } from "@webforge/editor-ui";
 import { DEFAULT_THEME, type SiteDoc, type TextStyle } from "@webforge/model";
 import { contrastNeeded, contrastRatio, hexToOklch, type Surface } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createStore } from "zustand/vanilla";
 import { starterSite } from "../../../shared/starter-site.js";
 import { sessionWith } from "../../testing/fixtures.js";
-import { ColourField, colourRefName, shownRatio } from "./ColourField.js";
+import { ColourField, colourRefName, type OneOffToOwn, shownRatio } from "./ColourField.js";
 
 afterEach(cleanup);
 
@@ -31,6 +32,7 @@ function setUp(
     readonly name?: string;
     readonly site?: SiteDoc;
     readonly themeOnly?: boolean;
+    readonly toOwn?: OneOffToOwn;
   } = {},
 ) {
   const session = sessionWith(options.site);
@@ -49,6 +51,7 @@ function setUp(
         onCommit={onCommit}
         session={session}
         themeOnly={options.themeOnly}
+        toOwn={options.toOwn}
         textStyles={options.textStyles === undefined ? undefined : () => options.textStyles ?? []}
         surface={options.surface === undefined ? undefined : () => options.surface as Surface}
         graphic={options.graphic === undefined ? undefined : () => options.graphic === true}
@@ -393,5 +396,73 @@ describe("ColourField's Theme's choice (2.22)", () => {
     expect(again.onChange).toHaveBeenLastCalledWith("theme");
     expect(again.onCommit).toHaveBeenCalled();
     expect(onCommit).toHaveBeenCalled();
+  });
+});
+
+describe("ColourField: a one-off made one of your colours (TC-3, #1221)", () => {
+  /** A stand-in for the theme's edit: `uses` uses of every one-off, and what it was asked. */
+  const toOwnWith = (uses: number, added = true) => {
+    const add = vi.fn(async (_hex: string, _name: string) => added);
+    const toOwn: OneOffToOwn = {
+      uses: () => uses,
+      add,
+      declined: createStore<readonly string[]>(() => []),
+    };
+    return { toOwn, add };
+  };
+
+  it("offers it the second time it's used, named, and adds it under the name typed", async () => {
+    const { toOwn, add } = toOwnWith(2);
+    setUp("[#1f6feb]/50", { toOwn });
+    const offer = screen.getByRole("form", { name: /used 2 times on your site/ });
+    const name = screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement;
+    expect(offer.contains(name)).toBe(true);
+    expect(name.value).toBe("Colour 1");
+
+    const user = userEvent.setup({ delay: null });
+    await user.clear(name);
+    await user.type(name, "Ocean");
+    await user.click(screen.getByRole("button", { name: "Add to Your Colours" }));
+
+    expect(add).toHaveBeenCalledWith("#1f6feb", "Ocean");
+  });
+
+  it("offers nothing more after Not Now, for that colour, until asked again", async () => {
+    const { toOwn, add } = toOwnWith(3);
+    setUp("[#1f6feb]", { toOwn });
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole("button", { name: "Not Now" }));
+
+    expect(screen.queryByRole("form")).toBeNull();
+    expect(toOwn.declined.getState()).toEqual(["#1f6feb"]);
+    expect(add).not.toHaveBeenCalled();
+    // Asked for, it's offered again.
+    await user.click(screen.getByRole("button", { name: "Add to Your Colours…" }));
+    expect(screen.getByRole("form", { name: /used 3 times/ })).toBeDefined();
+  });
+
+  it("offers it for a colour used once only when asked, and says when the list is full", async () => {
+    const { toOwn } = toOwnWith(1, false);
+    setUp("[#1f6feb]", { toOwn });
+    expect(screen.queryByRole("form")).toBeNull();
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole("button", { name: "Add to Your Colours…" }));
+    await user.click(screen.getByRole("button", { name: "Add to Your Colours" }));
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Your colours are full/);
+  });
+
+  it("names a new colour after those the theme has", () => {
+    const site = starterSite();
+    site.theme.ownColors = [{ id: "csky", name: "Colour 2", color: { l: 0.62, c: 0.14, h: 240 } }];
+    setUp("[#1f6feb]", { toOwn: toOwnWith(2).toOwn, site });
+    expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe(
+      "Colour 3",
+    );
+  });
+
+  it("offers nothing where it can't be added: without the theme's edit", () => {
+    setUp("[#1f6feb]");
+    expect(screen.queryByRole("button", { name: /Add to Your Colours/ })).toBeNull();
   });
 });

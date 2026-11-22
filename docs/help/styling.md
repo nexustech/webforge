@@ -32,6 +32,8 @@ Colour pickers list your theme's colours one to a row, each with its whole name,
 
 Choose **Another colour…** for a colour that isn't in your theme, in the [colour picker](themes.md#the-colour-picker). The picker also offers the other colours like this your site already uses, so you can use one again without typing its code. Such a colour is marked _off the theme_: it stays the same when you change the theme. If it would be hard to read, **Use a darker shade** (or **Use a lighter shade**) picks the nearest shade of it that reads well. To go back to the theme, choose one of its colours.
 
+Once you use the same colour like this a second time, {appName} offers to **add it to your colours**. Give it a name and click **Add to Your Colours**: it joins [your colours](themes.md#your-colours), and everything on your site that uses it now uses that colour, each at its own opacity, so changing it in Theme Studio changes them all. It's one step you can undo. **Not Now** leaves them as they are. You can add any such colour at any time with **Add to Your Colours…**, under it or in the colour picker.
+
 A section's **Colours** option is _Page colours_ or _Reversed_. Reversed swaps the theme's light and dark colours, to make a dark band on a light page.
 
 ## Hover effects

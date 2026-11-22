@@ -125,6 +125,37 @@ test.describe("Edit panel", () => {
     await expect(steps().nth(1)).toHaveText("Changed Heading colour");
   });
 
+  test("makes a heading's one-off one of your colours, as one step, which undo reverses (TC-3)", async () => {
+    await selectHeading();
+    await panel().getByRole("tab", { name: "Style" }).click();
+    const heading = canvas().locator(".site-heading");
+    await headingColour().getByRole("radio", { name: "Another colour…" }).click();
+    await chooseColour(
+      page,
+      headingColour().getByRole("button", { name: "Another colour" }),
+      "#c0392b",
+    );
+    await expect(heading).toHaveClass(/text-\[#c0392b\]/);
+
+    // Used once: offered when asked for, named there and then (#1221).
+    await headingColour().getByRole("button", { name: "Add to Your Colours…" }).click();
+    const name = headingColour().getByRole("textbox", { name: "Name" });
+    await name.fill("Brick");
+    await headingColour().getByRole("button", { name: "Add to Your Colours", exact: true }).click();
+
+    await expect(headingColour().getByRole("radio", { name: "Brick" })).toBeChecked();
+    await expect(heading).not.toHaveClass(/text-\[#c0392b\]/);
+    // The same colour, as the theme writes its colours: #c0392b in OKLCH.
+    await expect
+      .poll(() => heading.evaluate((element) => getComputedStyle(element).color))
+      .toMatch(/^oklch\(0\.543\d* 0\.17\d* 29\.\d+\)$/);
+    await expect(steps().first()).toHaveText("Made 'Brick' one of your colours");
+
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(heading).toHaveClass(/text-\[#c0392b\]/);
+    await expect(headingColour().getByRole("radio", { name: "Brick" })).toHaveCount(0);
+  });
+
   test("copies a heading's style onto another heading, as one step (1.37, UX-14)", async () => {
     await selectHeading();
     await page.keyboard.press("ControlOrMeta+d");

@@ -17,6 +17,7 @@ import type { EditorSession } from "./editor-session.js";
 import type { EngineHandle } from "./engine-host.js";
 import type { ImagePickRequests } from "./image-picks.js";
 import type { Layer } from "./layers.js";
+import type { OwnThemes } from "./own-themes.js";
 import { makeServices, type Provision, type Service, type ServiceUse } from "./services.js";
 
 /** An item drawn on Desktop or Mobile (3.13a), in the site's theme or in `theme` (4.10). */
@@ -92,6 +93,8 @@ export type WindowContext = AreaContext &
     readonly appVersion: string;
     /** Dialogs the window draws once, whatever the panels show (Theme Studio, 2.3b). */
     readonly windowDialogs: WindowDialogRegistry;
+    /** My themes (2.23): the person's own themes, one list for the window's theme and fields. */
+    readonly ownThemes: OwnThemes;
   };
 
 /** What the editor gives the areas it registers, around its canvas (Editor). */
@@ -118,6 +121,11 @@ export type EditorContext = AreaContext & {
   readonly dialogs: EditorDialogs;
   /** Requests to open the Edit panel's image picker, from *Edit* on an image (F-ED-25). */
   readonly imagePicks: ImagePickRequests;
+  /**
+   * My themes (2.23), the window's: a colour field's change to a built-in theme makes it the
+   * person's own, as the Theme tab's does (TC-3). Without it, such a change happens at once.
+   */
+  readonly ownThemes?: OwnThemes | undefined;
 };
 
 /** The dialogs and panels the editor shows when an area asks. */

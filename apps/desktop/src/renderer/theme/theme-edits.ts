@@ -9,6 +9,7 @@ import {
   type ColorRole,
   colorFieldsIn,
   copyTheme,
+  countOneOffUses,
   countOwnColorUses,
   DEFAULT_THEME,
   type FontRef,
@@ -19,7 +20,9 @@ import {
   newId,
   newOwnColorId,
   type Oklch,
+  OWN_COLOR_NAME_MAX,
   OWN_COLORS_MAX,
+  rewriteOneOffUses,
   rewriteOwnColorUses,
   type SiteDoc,
   sameJson,
@@ -36,6 +39,7 @@ import {
   catalogueFont,
   fontRefOf,
   hexOf,
+  hexToOklch,
   inverseColors,
   shadeOf,
   themePreset,
@@ -854,6 +858,42 @@ export function deleteOwnColor(
     },
   );
 }
+
+/**
+ * Makes one-off colour `hex` one of the person's colours, `name` (TC-3, #1221): added to the
+ * theme's list, and every use of it across the site made a reference to it, each keeping its
+ * opacity, all in one step, which one undo reverses. Its new id, or undefined if the theme has as
+ * many colours as it takes. `isColorField` tells which fields hold colours.
+ */
+export async function addOneOffToOwnColors(
+  session: ThemeSession,
+  asks: ThemeAsks,
+  hex: string,
+  name: string,
+  isColorField: IsColorField,
+): Promise<string | undefined> {
+  const colors = theme(session).ownColors ?? [];
+  if (colors.length >= OWN_COLORS_MAX) return undefined;
+  const id = newOwnColorId(colors.map((each) => each.id));
+  const named = name.trim().slice(0, OWN_COLOR_NAME_MAX);
+  const added = await changeTheme(
+    session,
+    asks,
+    t("theme.history.ownFromOneOff", { name: named }),
+    undefined,
+    (tokens) => {
+      tokens.ownColors = [...(tokens.ownColors ?? []), { id, name: named, color: hexToOklch(hex) }];
+    },
+    (draft) => {
+      rewriteOneOffUses(draft, hex, isColorField, toOwnColor(id));
+    },
+  );
+  return added ? id : undefined;
+}
+
+/** How many times one-off colour `hex` is used across the site (TC-3): twice, and it's offered. */
+export const oneOffUseCount = (site: SiteDoc, hex: string, isColorField: IsColorField): number =>
+  countOneOffUses(site, hex, isColorField);
 
 /** How many times colour `id` is used across the site: what deleting it asks about. */
 export const ownColorUseCount = (

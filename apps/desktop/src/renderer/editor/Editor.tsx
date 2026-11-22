@@ -49,6 +49,7 @@ import {
 import { createEngineHost } from "./engine-host.js";
 import { createImagePickRequests } from "./image-picks.js";
 import type { Layer } from "./layers.js";
+import type { OwnThemes } from "./own-themes.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals } from "./shared-confirmations.js";
 import { canvasLayout } from "./shared-layout.js";
@@ -99,6 +100,8 @@ export type EditorProps = {
     SiteWideConfirm,
     "confirmSiteWide" | "current" | "busy" | "setBeforeSiteWideAction" | "beforeUnaskedChange"
   >;
+  /** My themes (2.23), the window's, for its areas: see {@link EditorContext}. */
+  readonly ownThemes?: OwnThemes | undefined;
 };
 
 /** The View menu's options as the canvas takes them (F-ED-25). */
@@ -154,6 +157,7 @@ export function Editor({
   canvasView,
   canvasPointer,
   siteWide,
+  ownThemes,
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const compileCss = useMemo<CompileCanvasCss>(
@@ -365,6 +369,7 @@ export function Editor({
         preferences,
         engine: host,
         ...(siteWide === undefined ? {} : { siteWide }),
+        ownThemes,
         compileCss,
         sectionPreviews,
         editPreviews,
@@ -381,6 +386,7 @@ export function Editor({
       preferences,
       host,
       siteWide,
+      ownThemes,
       compileCss,
       sectionPreviews,
       editPreviews,

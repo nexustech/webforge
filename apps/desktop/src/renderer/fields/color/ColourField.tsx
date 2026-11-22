@@ -1,4 +1,5 @@
 import {
+  Button,
   ColourPicker,
   cn,
   type FieldRenderer,
@@ -17,12 +18,14 @@ import {
   formatColorRef,
   type Oklch,
   OPACITY_STEPS,
+  OWN_COLOR_NAME_MAX,
   OWN_COLOR_PREFIX,
   oneOffColours,
   parseColorRef,
   SHADE_STEPS,
   SHADED_ROLES,
   type ShadeStep,
+  type SiteDoc,
   type TextStyle,
 } from "@webforge/model";
 import { TEXT_COLOUR_FIELDS } from "@webforge/site-components";
@@ -39,13 +42,35 @@ import {
   resolveColorRef,
   type Surface,
 } from "@webforge/themes";
-import { type CSSProperties, useId } from "react";
+import { type CSSProperties, type FormEvent, useId, useState } from "react";
+import { type StoreApi, useStore } from "zustand";
 import type { EditorSession } from "../../editor/editor-session.js";
 import { useDocument } from "../../editor/use-document.js";
+
+/**
+ * How a colour field makes a one-off colour one of the person's colours (TC-3, #1221): the theme's
+ * own edits, which the theme area makes it (`oneOffToOwn`).
+ */
+export type OneOffToOwn = {
+  /** How many times one-off `hex` is used across `site`, at any opacity. */
+  readonly uses: (site: SiteDoc, hex: string) => number;
+  /**
+   * Makes one-off `hex` the person's colour `name`, every use of it a reference to it, keeping
+   * its opacity: one step. False if it couldn't be: the theme has as many colours as it takes.
+   */
+  readonly add: (hex: string, name: string) => Promise<boolean>;
+  /** The one-offs the person said *Not Now* to, which aren't offered again while the window is open. */
+  readonly declined: StoreApi<readonly string[]>;
+};
 
 /** What the colour field needs besides its field's props. */
 export type ColourFieldContext = {
   readonly session: Pick<EditorSession, "history">;
+  /**
+   * Offers to make a one-off one of the person's colours (TC-3): the second time it's used, and
+   * from the picker for any one-off. None where it can't be (a look, *Style this ‹kind›…*).
+   */
+  readonly toOwn?: OneOffToOwn | undefined;
   /**
    * The theme's colours only, without _Another colour…_: a look's, which a one-off doesn't belong
    * to (ADR 0009).
@@ -181,6 +206,7 @@ export function ColourField({
   onChange,
   onCommit,
   session,
+  toOwn,
   themeOnly = false,
   textStyles,
   surface: surfaceOfField,
@@ -196,6 +222,18 @@ export function ColourField({
   const hex = ref !== undefined && "hex" in ref.base ? ref.base.hex : undefined;
   const role = ref !== undefined && "role" in ref.base ? ref.base.role : undefined;
   const own = ref !== undefined && "own" in ref.base ? ref.base.own : undefined;
+
+  // The one-off used twice or more is offered as one of the person's colours (TC-3); and any one-off
+  // the person asks to add, from the picker or the button.
+  const uses = useDocument(session, (site) =>
+    hex === undefined || toOwn === undefined ? 0 : toOwn.uses(site, hex),
+  );
+  const declined = useStore(toOwn?.declined ?? NONE_DECLINED);
+  const [asked, setAsked] = useState<string | undefined>(undefined);
+  const offering =
+    hex !== undefined &&
+    toOwn !== undefined &&
+    (asked === hex || (uses >= 2 && !declined.includes(hex)));
 
   /** One choice: the new colour, stored, and the end of the change. */
   const choose = (next: ColorRef) => {
@@ -328,6 +366,7 @@ export function ColourField({
             value={hex}
             colours={() => oneOffColours(session.history.document.getState())}
             onChoose={(next) => choose(withOpacity({ base: { hex: next } }))}
+            onAddToColours={toOwn === undefined ? undefined : setAsked}
           />
           {readable === undefined || readableHex === undefined ? null : (
             <button
@@ -347,6 +386,28 @@ export function ColourField({
             </button>
           )}
           <p className="m-0 text-xs text-muted-foreground">{t("colour.offTheme")}</p>
+          {toOwn === undefined ? null : offering ? (
+            <AddToColours
+              key={hex}
+              uses={uses}
+              initialName={newColourName(theme.ownColors ?? [])}
+              onAdd={(name) => toOwn.add(hex, name)}
+              onLater={() => {
+                setAsked(undefined);
+                if (!declined.includes(hex)) toOwn.declined.setState([...declined, hex], true);
+              }}
+            />
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="self-start"
+              onClick={() => setAsked(hex)}
+            >
+              {t("colour.addToColours")}
+            </Button>
+          )}
         </div>
       )}
       {shaded === undefined ? null : (
@@ -418,6 +479,90 @@ export function ColourField({
         </div>
       )}
     </div>
+  );
+}
+
+/** No colour declined: for a field that offers none. The same list each time it's read. */
+const NONE: readonly string[] = [];
+const NONE_DECLINED: StoreApi<readonly string[]> = {
+  getState: () => NONE,
+  getInitialState: () => NONE,
+  setState: () => undefined,
+  subscribe: () => () => undefined,
+};
+
+/** A new colour's name: "Colour 3", the first number no colour of the person's has (TC-3). */
+function newColourName(colours: readonly { readonly name: string }[]): string {
+  const taken = new Set(colours.map((each) => each.name));
+  for (let n = colours.length + 1; ; n++) {
+    const name = t("colour.newName", { n });
+    if (!taken.has(name)) return name;
+  }
+}
+
+/**
+ * The offer to make a one-off one of the person's colours (TC-3, #1221): why, its name, which can
+ * be changed there and then, *Add to Your Colours* and *Not Now*, which leaves it as it is. Says
+ * so when the theme has as many colours as it takes.
+ */
+function AddToColours({
+  uses,
+  initialName,
+  onAdd,
+  onLater,
+}: {
+  readonly uses: number;
+  readonly initialName: string;
+  readonly onAdd: (name: string) => Promise<boolean>;
+  readonly onLater: () => void;
+}) {
+  const nameId = useId();
+  const titleId = useId();
+  const [name, setName] = useState(initialName);
+  const [adding, setAdding] = useState(false);
+  const [full, setFull] = useState(false);
+  const add = (event: FormEvent) => {
+    event.preventDefault();
+    if (adding || name.trim() === "") return;
+    setAdding(true);
+    void onAdd(name).then((added) => {
+      setAdding(false);
+      setFull(!added);
+    });
+  };
+  return (
+    <form
+      aria-labelledby={titleId}
+      className="flex flex-col gap-1.5 rounded-sm border border-border bg-muted p-2 text-xs"
+      onSubmit={add}
+    >
+      <p id={titleId} className="m-0">
+        {uses >= 2 ? t("colour.addUsed", { count: uses }) : t("colour.addAbout")}
+      </p>
+      <label htmlFor={nameId} className="text-muted-foreground">
+        {t("colour.addName")}
+      </label>
+      <input
+        id={nameId}
+        className={fieldControlClass}
+        value={name}
+        maxLength={OWN_COLOR_NAME_MAX}
+        onChange={(event) => setName(event.currentTarget.value)}
+      />
+      {full ? (
+        <p role="alert" className="m-0 text-destructive-text">
+          {t("colour.addFull")}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap justify-end gap-1.5">
+        <Button type="button" size="sm" variant="ghost" onClick={onLater}>
+          {t("colour.addLater")}
+        </Button>
+        <Button type="submit" size="sm" disabled={adding || name.trim() === ""}>
+          {t("colour.addConfirm")}
+        </Button>
+      </div>
+    </form>
   );
 }
 

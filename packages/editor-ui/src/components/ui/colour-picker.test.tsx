@@ -165,6 +165,33 @@ describe("the colour picker (5.26, OL-19)", () => {
     expect(onChoose).toHaveBeenCalledWith("#c0392b");
   });
 
+  it("adds the colour shown to the person's colours: chosen as it closes, then offered (#1221)", async () => {
+    const onChoose = vi.fn();
+    const onAddToColours = vi.fn();
+    render(
+      <ColourPicker
+        value="#1f6feb"
+        aria-label="Brand"
+        onAddToColours={onAddToColours}
+        onChoose={onChoose}
+      />,
+    );
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole("button", { name: "Brand" }));
+    const code = screen.getByRole("textbox", { name: "Hex code" });
+    await user.clear(code);
+    await user.type(code, "c0392b");
+
+    await user.click(screen.getByRole("button", { name: "Add to Your Colours…" }));
+
+    expect(onChoose).toHaveBeenCalledWith("#c0392b");
+    expect(onAddToColours).toHaveBeenCalledWith("#c0392b");
+    expect(onChoose.mock.invocationCallOrder[0]).toBeLessThan(
+      onAddToColours.mock.invocationCallOrder[0] ?? 0,
+    );
+    expect(screen.queryByRole("button", { name: "Add to Your Colours…" })).toBeNull();
+  });
+
   it("offers no list when it has no colours to offer", async () => {
     const { swatch, user } = setUp();
     await user.click(swatch());
