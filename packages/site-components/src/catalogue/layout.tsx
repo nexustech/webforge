@@ -187,10 +187,10 @@ const HEADER_CLASSES: Readonly<Record<(typeof HEADER_LAYOUTS)[number], string>> 
 };
 
 /**
- * The shared Header (C5): the site name or its logo (HF-1), and the navigation, from the site's menu (F-ED-17), in one
- * of three layouts: the name left and the menu right, everything centred with the menu below, or
- * split with the menu's last link as a button on the right (2.6). It can stay at the top while the
- * page scrolls, changing its style once it has (F-DS-6).
+ * The shared Header (C5): the site name or its logo (HF-1), and the navigation, from the site's
+ * menu (F-ED-17), in one of three layouts: the name left and the menu right, everything centred
+ * with the menu below, or split with the menu's last link as a button on the right (2.6). It can
+ * stay at the top while the page scrolls, changing its style once it has (F-DS-6).
  */
 const header = defineComponent({
   label: t("layout.header"),
