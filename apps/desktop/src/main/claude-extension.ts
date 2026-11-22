@@ -1,6 +1,6 @@
 import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import { BRIDGE_ENV, type BridgeConfig } from "@webforge/mcp-bridge";
 import { strToU8, zipSync } from "fflate";
 

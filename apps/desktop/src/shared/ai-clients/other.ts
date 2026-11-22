@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import type { AiClient } from "./types.js";
 
 /** Any other app that connects to an MCP server at an address, such as Cursor (4.9, ADR 0021). */

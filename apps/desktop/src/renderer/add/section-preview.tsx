@@ -512,11 +512,15 @@ const PREVIEW_STYLE = "data-webforge-theme-preview";
 /**
  * Shows `preview` in an item preview's `document`: a colour being dragged, its theme's values after
  * the drawing's CSS; a chosen one is left as it is, until the item is drawn again with it; none
- * takes the values away.
+ * takes the values away. A frame still loading its drawing has no head yet (#1318): nothing to do,
+ * as the frame shows the preview once it has loaded.
  */
 function showPreview(document: Document, preview: ThemePreview): void {
   if (preview?.chosen === true) return;
-  let style = document.head.querySelector<HTMLStyleElement>(`style[${PREVIEW_STYLE}]`);
+  const head = document.head;
+  // `head` is null in a document still loading, though the DOM's types say otherwise.
+  if ((head as HTMLHeadElement | null) === null) return;
+  let style = head.querySelector<HTMLStyleElement>(`style[${PREVIEW_STYLE}]`);
   if (preview === undefined) {
     style?.remove();
     return;
@@ -524,7 +528,7 @@ function showPreview(document: Document, preview: ThemePreview): void {
   if (style === null) {
     style = document.createElement("style");
     style.setAttribute(PREVIEW_STYLE, "");
-    document.head.append(style);
+    head.append(style);
   }
   style.textContent = themeValuesCss(preview.theme);
 }

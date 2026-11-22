@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import type { ProjectFailureReason } from "./ipc-contract.js";
 
 /** What the user is told when a site can't be opened or created. */

@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import { BrowserWindow, dialog, type MessageBoxOptions, type OpenDialogOptions } from "electron";
 import { type RecoveryChoice, type RecoveryDialogs, recoveryMessage } from "./recovery.js";
 import { PROJECT_EXTENSION } from "./site-paths.js";
