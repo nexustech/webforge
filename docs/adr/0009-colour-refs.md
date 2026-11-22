@@ -22,10 +22,10 @@ The product owner chose the second on 2026-10-23.
    - `[#rrggbb][/<opacity>]` for a custom colour: exactly six hex digits, stored in lower case, with no shade. Nothing else is allowed inside the brackets (no CSS variables, functions or other arbitrary values), so a reference can't inject CSS.
    - `parseColorRef` and `formatColorRef` convert between the string and its parts.
 2. **A custom colour belongs to the field, not the theme.** **Amended (TC-1a, #1217):** the theme now has the person's own colours too, which a reference names by id (`own-<id>`), so a colour the business owns is the theme's. A one-off hex colour still belongs to the field, as below.
-   - Only Advanced mode's colour field can set one, through a _Custom_ choice. Theme Studio's "custom colour" means editing a role's own colour, which the theme tokens already allow.
+   - Only Advanced mode's colour field can set one, through a _Custom_ choice. Theme Studio's "custom colour" means editing a role's own colour, which the theme tokens already allow. **Amended (TC-2, #1219):** either mode's colour field can, through _Another colour…_; see the second amendment below.
    - It's exported as a Tailwind arbitrary class (for example `bg-[#1f6feb]`). The in-memory Tailwind compile picks it up from the document for both the canvas and the export, so no safelist is needed.
    - Theme changes don't restyle it, and the field marks it as off-theme. It's still contrast-checked.
-   - Simple mode offers theme colours only. A custom colour set in Advanced mode stays when the person switches to Simple mode, shown read-only, with a way to switch it to a theme colour.
+   - Simple mode offers theme colours only. A custom colour set in Advanced mode stays when the person switches to Simple mode, shown read-only, with a way to switch it to a theme colour. **Amended (TC-2, #1219):** Simple mode offers one-offs too.
 3. **The UI names the roles** with the glossary's words: **Brand** (`primary`), **Accent** (`secondary`), **Second accent** (`accent`), **Surface** (`base-100/200/300`) and **Text** (`base-content`). The model keeps daisyUI's names.
 4. **The contrast warning uses WCAG 2.x AA by text size:** 3:1 for large text (at least 24 px, or 18.66 px at weight 700 or more, at the theme's type scale; the smallest size if it differs by device), and 4.5:1 for everything else.
 
@@ -57,3 +57,12 @@ The product owner's first request (option B of [product/18](../../research/produ
    - Deleting a colour in use asks: its uses go to another of the colours, shade and opacity kept, or each becomes a one-off hex colour as it looks now (`rewriteOwnColorUses`, in the same step). Nothing is left pointing at a colour that's gone.
    - Every colour field's picker lists them under _Your colours_, with their shades and opacity, either end of a gradient included.
    - A colour value's JSON Schema describes `own-<id>` for AI apps, which read the colours from the `theme` query and add them with `setThemeTokens`.
+
+## Amendment, 22 Nov 2026 (TC-2, #1219)
+
+The product owner's decision (option B of [product/18](../../research/product/18-theme-colours-and-code-editing.md) §6, PH5-4): colour is not restricted to keep sites on-brand; the person is shown what a choice costs instead.
+
+1. **A one-off can be set in either mode,** through _Another colour…_ in every colour field, which opens the colour picker (5.26). It is stored as before (`[#rrggbb]`, with an optional opacity), so nothing in the model, the export or Site Check changes.
+2. **What it costs is shown beside it:** it is marked off the theme, and when it is hard to read on what it's drawn on, the contrast warning names it, with the nearest shade of it that reads one click away (`nearestReadable` in `@webforge/themes`, as the Theme tab suggests for a theme colour).
+3. **The picker offers the site's other one-offs,** read from the site itself (`oneOffColours` in `@webforge/model`), so a colour used before is used again without its code typed again. Nothing new is stored: a colour the business wants to reuse by name belongs in the theme (TC-1a, above).
+4. **The principle stops at colour:** spacing, sizes and corners stay design tokens in Simple mode (F-ED-4).

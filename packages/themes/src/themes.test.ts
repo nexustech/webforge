@@ -19,7 +19,7 @@ import {
   resolveColorRef,
   shadeOf,
 } from "./colors.js";
-import { AA_LARGE, AA_TEXT, contrastIssues, readableShade } from "./contrast.js";
+import { AA_LARGE, AA_TEXT, contrastIssues, nearestReadable, readableShade } from "./contrast.js";
 import { CURATED_BATCHES, CURATED_THEMES } from "./curated/index.js";
 import { FONT_CATALOGUE, FONT_PAIRINGS } from "./fonts/catalogue.js";
 import { THEME_PRESETS, themePreset } from "./presets.js";
@@ -129,6 +129,26 @@ describe("colour refs with a theme (2.1)", () => {
     expect(inverse["base-100"]).toEqual(DEFAULT_THEME.colors.neutral);
     expect(inverse["base-content"]).toEqual(DEFAULT_THEME.colors["neutral-content"]);
     expect(inverse.primary).toEqual(DEFAULT_THEME.colors.primary);
+  });
+});
+
+describe("nearestReadable (#1219)", () => {
+  const white = DEFAULT_THEME.colors["base-100"];
+  const readsOnWhite = (shade: Oklch) => contrastRatio(shade, white) >= AA_TEXT;
+
+  it("finds a one-off's nearest lightness that reads, in its own hue, and nothing if it reads", () => {
+    const pale: Oklch = { l: 0.82, c: 0.1, h: 30 };
+    const shade = nearestReadable(pale, readsOnWhite);
+    if (shade === undefined) throw new Error("no shade");
+
+    expect(readsOnWhite(shade)).toBe(true);
+    expect(shade.l).toBeLessThan(pale.l);
+    expect(Math.abs(shade.h - pale.h)).toBeLessThan(1);
+    expect(nearestReadable(shade, readsOnWhite)).toBeUndefined();
+  });
+
+  it("finds nothing when no lightness reads", () => {
+    expect(nearestReadable({ l: 0.5, c: 0, h: 0 }, () => false)).toBeUndefined();
   });
 });
 

@@ -91,23 +91,34 @@ export function moveInArea(colour: Hsv, key: string, shift: boolean): Hsv | unde
 }
 
 /**
+ * `hue` as the hue slider shows it, a whole degree from 0 to 359. A code's own hue can lie between
+ * 359 and 360 (`#ff0001` is 359.76), which is kept, so the code comes back the same; it shows, and
+ * steps, from 359.
+ */
+export function shownHue(hue: number): number {
+  return Math.min(359, Math.round(hue));
+}
+
+/**
  * `colour` after `key` on the hue slider: a degree a press, 10 with Shift or Page Up and Down,
- * Home and End to either end; `undefined` for a key it doesn't take.
+ * Home and End to either end; `undefined` for a key it doesn't take. Each step is from the hue
+ * shown ({@link shownHue}), so a press never moves it the other way.
  */
 export function moveHue(colour: Hsv, key: string, shift: boolean): Hsv | undefined {
   const step = shift ? 10 : 1;
+  const from = shownHue(colour.h);
   const at = (h: number) => ({ ...colour, h: clamp(h, 0, 359) });
   switch (key) {
     case "ArrowLeft":
     case "ArrowDown":
-      return at(colour.h - step);
+      return at(from - step);
     case "ArrowRight":
     case "ArrowUp":
-      return at(colour.h + step);
+      return at(from + step);
     case "PageDown":
-      return at(colour.h - 10);
+      return at(from - 10);
     case "PageUp":
-      return at(colour.h + 10);
+      return at(from + 10);
     case "Home":
       return at(0);
     case "End":

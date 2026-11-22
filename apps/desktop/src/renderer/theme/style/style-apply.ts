@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { type SiteDoc, sameJson } from "@webforge/model";
+import { componentLookSchema, type SiteDoc, sameJson } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { applyLookToAll, lookChange, lookFieldsOf } from "../../clipboard/index.js";
 import type { EditorSelection, EditorSession } from "../../editor/editor-session.js";
@@ -110,7 +110,9 @@ export async function applyStyle(
 
 /**
  * The item's own Appearance values as the theme's look for its kind, then taken off the item,
- * which follows the look again: false when the theme's change was declined.
+ * which follows the look again: false when the theme's change was declined. A colour off the theme
+ * stays on the item: it belongs to the one item it's set on, and a look holds the theme's colours
+ * only (ADR 0009, TC-2).
  */
 async function makeThemeLook(
   session: StyleSession,
@@ -120,7 +122,10 @@ async function makeThemeLook(
   const { node, component } = item;
   const own = Object.fromEntries(
     lookFieldsOf(component).flatMap((name) =>
-      node.props[name] === undefined ? [] : [[name, node.props[name]]],
+      node.props[name] === undefined ||
+      !componentLookSchema.safeParse({ [name]: node.props[name] }).success
+        ? []
+        : [[name, node.props[name]]],
     ),
   );
   if (Object.keys(own).length === 0) return true;

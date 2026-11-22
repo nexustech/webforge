@@ -1,6 +1,7 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
+import { chooseColour } from "./colour-picker.js";
 import { launchDesktopApp, newUserDataDir, removeWhenFree, waitForCanvas } from "./launch.js";
 import { chooseFromSubmenu } from "./menus.js";
 
@@ -100,6 +101,28 @@ test.describe("Edit panel", () => {
       .poll(() => heading.evaluate((element) => getComputedStyle(element).color))
       .not.toBe(plain);
     await expect(steps().first()).toHaveText("Changed Heading colour");
+  });
+
+  test("gives a heading another colour in Simple mode, from the picker, shown on the canvas (TC-2)", async () => {
+    await selectHeading();
+    await panel().getByRole("tab", { name: "Style" }).click();
+    const heading = canvas().locator(".site-heading");
+
+    // Simple mode, as the app starts: another colour is offered there too (#1219).
+    await headingColour().getByRole("radio", { name: "Another colour…" }).click();
+    await expect(steps().first()).toHaveText("Changed Heading colour");
+    await chooseColour(
+      page,
+      headingColour().getByRole("button", { name: "Another colour" }),
+      "#c0392b",
+    );
+
+    await expect(heading).toHaveClass(/text-\[#c0392b\]/);
+    await expect
+      .poll(() => heading.evaluate((element) => getComputedStyle(element).color))
+      .toBe("rgb(192, 57, 43)");
+    await expect(headingColour().getByText(/Off the theme/)).toBeVisible();
+    await expect(steps().nth(1)).toHaveText("Changed Heading colour");
   });
 
   test("copies a heading's style onto another heading, as one step (1.37, UX-14)", async () => {

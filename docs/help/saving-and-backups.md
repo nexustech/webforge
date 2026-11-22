@@ -4,7 +4,7 @@ id: saving-and-backups
 title: Saving, copies and backups
 summary: How {appName} saves your work, how to copy a site to another computer, and what happens if something goes wrong.
 related: [version-history, undo-and-history, export, getting-started]
-updated: 2026-11-21
+updated: 2026-11-22
 ---
 
 # Saving, copies and backups
@@ -81,3 +81,9 @@ A report says which version of {appName} you have, what kind of computer it runs
 {appName} also keeps a usage summary on your computer, beside the crash reports: how often you use its parts, what went wrong and how long things took. For example, how many sites you started, how many times you exported, and which kinds of sections you added. It holds only counts, times and the names {appName} gives its own parts, so none of your words, pictures, file names or web addresses can be in it, and nothing about you.
 
 {appName} never sends it. It helps the people testing {appName} tell us what to improve, if they choose to send it with their report.
+
+To see it, choose **Help › Diagnostics…**. It shows everything the summary holds, in words, such as _Sites exported: 2_. It also shows a random install number, which tells two reports from the same computer apart without saying whose they are, and your computer's details: its system, memory and display scale.
+
+- **Save Report…** saves one file, the summary and your newest crash reports, wherever you choose. Attach it to your report or email.
+- **Open the Folder** opens the folder that holds the summary and the crash reports.
+- **Clear…** asks first, then removes everything the summary holds and starts again with a new install number. Crash reports stay in their folder.

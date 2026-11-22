@@ -30,7 +30,7 @@ _Same as theme_ means the item follows the theme. Every option except Font can b
 
 Colour pickers list your theme's colours one to a row, each with its whole name, by their role: Brand, Accent, Second accent, Surface and Text, and Neutral for backgrounds. Under them, **Your colours** lists the [colours you've added to your theme](themes.md#your-colours), by their names. Some have lighter and darker **shades**, as your colours do, and you can make any colour see-through with **Opacity**. If a colour would be hard to read against what's behind it, the picker warns you. Icons and social logos need less contrast than text. On a picture, such as a section's background picture or a Hero's picture behind its text, it can't tell, so check that yourself.
 
-In Advanced mode you can also choose a **Custom** colour, in the [colour picker](themes.md#the-colour-picker). It stays the same when you change the theme.
+Choose **Another colour…** for a colour that isn't in your theme, in the [colour picker](themes.md#the-colour-picker). The picker also offers the other colours like this your site already uses, so you can use one again without typing its code. Such a colour is marked _off the theme_: it stays the same when you change the theme. If it would be hard to read, **Use a darker shade** (or **Use a lighter shade**) picks the nearest shade of it that reads well. To go back to the theme, choose one of its colours.
 
 A section's **Colours** option is _Page colours_ or _Reversed_. Reversed swaps the theme's light and dark colours, to make a dark band on a light page.
 

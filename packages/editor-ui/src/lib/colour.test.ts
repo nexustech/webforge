@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { areaAt, hexToHsv, hsvFor, hsvToHex, moveHue, moveInArea, parseHex } from "./colour.js";
+import {
+  areaAt,
+  hexToHsv,
+  hsvFor,
+  hsvToHex,
+  moveHue,
+  moveInArea,
+  parseHex,
+  shownHue,
+} from "./colour.js";
 
 describe("the colour picker's sums (5.26)", () => {
   it("reads a hex code of three or six digits, with or without its #, and nothing else", () => {
@@ -49,6 +58,17 @@ describe("the colour picker's sums (5.26)", () => {
     expect(moveHue(colour, "PageUp", false)?.h).toBe(15);
     expect(moveHue(colour, "End", false)?.h).toBe(359);
     expect(moveHue(colour, "Tab", false)).toBeUndefined();
+  });
+
+  it("shows a hue just under 360 as 359, and steps from there, never back past it (#1219)", () => {
+    const red = hexToHsv("#ff0001");
+    expect(red.h).toBeGreaterThan(359);
+    expect(hsvToHex(red)).toBe("#ff0001");
+    expect(shownHue(red.h)).toBe(359);
+    expect(shownHue(0.4)).toBe(0);
+    expect(moveHue(red, "ArrowRight", false)?.h).toBe(359);
+    expect(moveHue(red, "ArrowLeft", false)?.h).toBe(358);
+    expect(moveHue(red, "PageUp", false)?.h).toBe(359);
   });
 
   it("reads a point of the area as saturation across and brightness up", () => {

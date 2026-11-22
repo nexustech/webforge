@@ -130,13 +130,13 @@ describe("StyleDialog (3.13a, CT-2)", () => {
     expect(props("styled")?.lookShadow).toBeUndefined();
   });
 
-  it("offers the theme's colours only in Simple mode, and a colour of its own in Advanced (ST-6, ADR 0009)", () => {
+  it("offers the theme's colours and another colour of its own in either mode (ST-6, TC-2)", () => {
     setUp();
-    expect(screen.queryAllByRole("radio", { name: "Custom" })).toEqual([]);
+    expect(screen.getAllByRole("radio", { name: "Another colour…" }).length).toBeGreaterThan(0);
     cleanup();
 
     setUp("advanced");
-    expect(screen.getAllByRole("radio", { name: "Custom" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("radio", { name: "Another colour…" }).length).toBeGreaterThan(0);
   });
 
   it("has a CSS tab beside the groups in Advanced mode only (3.14)", async () => {

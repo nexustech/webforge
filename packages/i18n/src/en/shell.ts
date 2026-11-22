@@ -47,6 +47,7 @@ export const shell = {
   "ui.colourPicker.hex": "Hex code",
   "ui.colourPicker.hexRefused": "A hex code is 6 digits and letters from a to f, such as #1a7f5a",
   "ui.colourPicker.pick": "Pick a Colour from the Screen",
+  "ui.colourPicker.used": "Colours on this site",
   // A count: plural("ui.picker.match", n) picks one or other (B10).
   "ui.picker.match.one": "{count} match",
   "ui.picker.match.other": "{count} matches",
@@ -202,6 +203,8 @@ export const shell = {
   "command.about": "About {appName}",
   // Help › Report a Problem (5.23, OL-10).
   "command.reportProblem": "Report a Problem…",
+  // Help › Diagnostics… (5.41, BD-2).
+  "command.diagnostics": "Diagnostics…",
   "command.licences": "Open-Source Licences",
   // Help → Open-Source Licences (5.3): every package the app ships, with its licence.
   "licences.title": "Open-Source Licences",

@@ -192,7 +192,7 @@ export const canvas = {
   "editPanel.dot.clear": "{field}: set for {device} only. Use the Desktop value instead",
   "editPanel.source.here": "Set here",
   "editPanel.source.device": "Set on {device}",
-  "editPanel.source.custom": "Custom colour (Advanced)",
+  "editPanel.source.custom": "Off the theme",
   "editPanel.source.class": "Class (Advanced)",
   "editPanel.source.look": "Same as the theme's look for {item}",
   "editPanel.source.themeToken": "Same as theme ({token}: {value})",

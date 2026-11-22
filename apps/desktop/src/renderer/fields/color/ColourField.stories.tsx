@@ -1,12 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { DEFAULT_PREFERENCES } from "../../../shared/ipc/prefs.js";
 import { starterSite } from "../../../shared/starter-site.js";
-import { createPreferencesStore } from "../../shell/preferences-store.js";
 import { sessionWith } from "../../testing/fixtures.js";
 import { colourFieldRenderer } from "./ColourField.js";
 
 // The Edit panel's colour field (1.37, UX-25, 2.20 B5), as the app draws it: the theme's colours as
-// swatches, a shade and an opacity of the one chosen, and in Advanced mode a colour of its own.
+// swatches, a shade and an opacity of the one chosen, and another colour of its own, in either mode
+// (TC-2, #1219).
 
 const session = sessionWith();
 // A site with colours of its own in its theme (TC-1b), one of them chosen in a shade.
@@ -15,17 +14,8 @@ withOwn.theme.ownColors = [
   { id: "csky", name: "Harbour blue", color: { l: 0.62, c: 0.14, h: 240 } },
   { id: "cfern", name: "Fern", color: { l: 0.58, c: 0.13, h: 145 } },
 ];
-const OwnColours = colourFieldRenderer({
-  session: sessionWith(withOwn),
-  preferences: createPreferencesStore(),
-});
-const Simple = colourFieldRenderer({ session, preferences: createPreferencesStore() });
-const Advanced = colourFieldRenderer({
-  session,
-  preferences: createPreferencesStore({
-    preferences: { ...DEFAULT_PREFERENCES, editorLevel: "advanced" },
-  }),
-});
+const OwnColours = colourFieldRenderer({ session: sessionWith(withOwn) });
+const Simple = colourFieldRenderer({ session });
 
 const meta = {
   title: "Edit/Fields/Colour",
@@ -67,17 +57,11 @@ export const ThemeColour: Story = {};
 /** Nothing chosen: the element's own colour. */
 export const NoneChosen: Story = { args: { value: undefined } };
 
-/** In Advanced mode, which also offers a colour of the field's own. */
-export const AdvancedMode: Story = {
-  render: (args) => (
-    <div className="flex w-60 flex-col gap-1 border border-border-strong bg-panel p-2">
-      <span id="field-colour-label" className="text-xs text-muted-foreground">
-        Text colour
-      </span>
-      <Advanced {...args} />
-    </div>
-  ),
-};
+/**
+ * Another colour, in Simple mode (TC-2): a pale one-off, marked off the theme, hard to read on the
+ * page, with the nearest shade of it that reads one click away.
+ */
+export const AnotherColour: Story = { args: { value: "[#f5d0c5]" } };
 
 /** The person's own colours under *Your colours*, one chosen in a shade at an opacity (TC-1b). */
 export const YourColours: Story = {

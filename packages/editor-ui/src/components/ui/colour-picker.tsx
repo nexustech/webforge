@@ -11,6 +11,7 @@ import {
   moveHue,
   moveInArea,
   parseHex,
+  shownHue,
 } from "../../lib/colour.js";
 import { fieldControlClass } from "../edit/text-field.js";
 import { WithTooltip } from "./tooltip.js";
@@ -39,6 +40,11 @@ export type ColourPickerProps = {
   /** The swatch button's size and place ("h-7 w-9"). */
   readonly className?: string;
   /**
+   * Colours to offer as swatches, each a six-digit hex code: the site's one-off colours in a colour
+   * field (TC-2, #1219). Read each time it opens, so a colour used since is there.
+   */
+  readonly colours?: (() => readonly string[]) | undefined;
+  /**
    * The colour chosen, once, when the picker closes on a colour other than the one it opened on:
    * one change, so one undo step. Nothing while it is being chosen, nor when Escape closes it.
    */
@@ -59,17 +65,21 @@ export function ColourPicker({
   "aria-describedby": describedBy,
   disabled = false,
   className,
+  colours,
   onChoose,
 }: ColourPickerProps) {
   const codeId = useId();
   const hexId = useId();
   const errorId = useId();
+  const coloursId = useId();
   const [open, setOpen] = useState(false);
   // The colour being chosen, as the picker holds it: its hue kept on a grey.
   const [held, setHeld] = useState<Hsv | undefined>(undefined);
   // What's typed in the hex box, until it's used; refused with a reason when it isn't a code.
   const [typed, setTyped] = useState<string | undefined>(undefined);
   const [refused, setRefused] = useState(false);
+  // The colours offered, as they were when it opened.
+  const [offered, setOffered] = useState<readonly string[]>([]);
   // The colour it opened on, and whether the person went back to it with Escape.
   const opened = useRef(value);
   const cancelled = useRef(false);
@@ -94,6 +104,7 @@ export function ColourPicker({
       setHeld(hsvFor(value, undefined));
       setTyped(undefined);
       setRefused(false);
+      setOffered(colours?.() ?? []);
       setOpen(true);
       return;
     }
@@ -184,6 +195,7 @@ export function ColourPicker({
 
   const saturation = Math.round(colour.s * 100);
   const brightness = Math.round(colour.v * 100);
+  const hue = shownHue(colour.h);
   const thumb = "pointer-events-none absolute size-3.5 rounded-full border-2 border-white shadow";
   return (
     <PopoverPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -263,8 +275,8 @@ export function ColourPicker({
             aria-label={t("ui.colourPicker.hue")}
             aria-valuemin={0}
             aria-valuemax={359}
-            aria-valuenow={Math.round(colour.h)}
-            aria-valuetext={t("ui.colourPicker.hueValue", { degrees: Math.round(colour.h) })}
+            aria-valuenow={hue}
+            aria-valuetext={t("ui.colourPicker.hueValue", { degrees: hue })}
             data-slot="colour-picker-hue"
             className="relative h-3.5 w-full cursor-pointer touch-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
             style={{
@@ -278,7 +290,7 @@ export function ColourPicker({
             <span
               aria-hidden
               className={cn(thumb, "top-0 -translate-x-1/2")}
-              style={{ left: `${(colour.h / 359) * 100}%` }}
+              style={{ left: `${(hue / 359) * 100}%` }}
             />
           </div>
           <div className="flex items-start gap-1.5">
@@ -329,6 +341,35 @@ export function ColourPicker({
           >
             {refused ? t("ui.colourPicker.hexRefused") : ""}
           </p>
+          {offered.length === 0 ? null : (
+            <div className="flex flex-col gap-1">
+              <span id={coloursId} className="text-2xs text-muted-foreground">
+                {t("ui.colourPicker.used")}
+              </span>
+              <ul aria-labelledby={coloursId} className="m-0 flex list-none flex-wrap gap-1 p-0">
+                {offered.map((each) => (
+                  <li key={each}>
+                    <button
+                      type="button"
+                      aria-label={each}
+                      aria-pressed={each === hex}
+                      className={cn(
+                        fieldControlClass,
+                        "size-6 cursor-pointer p-0.5 aria-pressed:ring-2 aria-pressed:ring-ring",
+                      )}
+                      onClick={() => show(hsvFor(each, undefined))}
+                    >
+                      <span
+                        aria-hidden
+                        className="block size-full rounded-sm border border-border"
+                        style={{ backgroundColor: each }}
+                      />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </PopoverPrimitive.Content>
       </PopoverPrimitive.Portal>
     </PopoverPrimitive.Root>

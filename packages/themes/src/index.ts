@@ -15,6 +15,7 @@ export {
   AA_LARGE,
   AA_TEXT,
   contrastIssues,
+  nearestReadable,
   overlayContrast,
   overlayContrastIssue,
   ownColorIssues,

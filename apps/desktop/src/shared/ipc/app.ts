@@ -1,5 +1,6 @@
 import { languageTagSchema } from "@webforge/model";
 import { z } from "zod";
+import { type Diagnostics, diagnosticsSavedSchema, diagnosticsSchema } from "../diagnostics.js";
 import {
   type ErrorDetails,
   errorDetailsSchema,
@@ -229,6 +230,36 @@ export const appChannels = {
     request: z.tuple([editorUsageSchema]),
     response: z.null(),
   },
+  /**
+   * The usage summary for Help › Diagnostics… (5.41, BD-2), flattened for the window to put in
+   * words; `null` while it hasn't loaded, or couldn't be read.
+   */
+  getDiagnostics: {
+    channel: "app:get-diagnostics",
+    request: z.tuple([]),
+    response: diagnosticsSchema.nullable(),
+  },
+  /**
+   * Saves one file, the summary and the newest crash reports, where the person chooses (BD-2), for
+   * them to attach to a report. Nothing is sent.
+   */
+  saveDiagnostics: {
+    channel: "app:save-diagnostics",
+    request: z.tuple([]),
+    response: diagnosticsSavedSchema,
+  },
+  /** Opens the folder that holds the summary and the crash reports; `false` when it couldn't. */
+  openDiagnosticsFolder: {
+    channel: "app:open-diagnostics-folder",
+    request: z.tuple([]),
+    response: z.boolean(),
+  },
+  /** Clears the summary and makes a new install number (BD-2's Clear, BD-5); what it holds then. */
+  clearDiagnostics: {
+    channel: "app:clear-diagnostics",
+    request: z.tuple([]),
+    response: diagnosticsSchema.nullable(),
+  },
   /** Spell checks text in the site's language (F-ED-19); Windows only, macOS chooses itself. */
   setSpellCheckLanguage: {
     channel: "app:set-spellcheck-language",
@@ -314,6 +345,14 @@ export interface AppApi {
   openGuide(guide: Guide): Promise<boolean>;
   /** Spell checks text in `language`, the site's (a language tag such as `en-GB`). */
   setSpellCheckLanguage(language: string): Promise<null>;
+  /** The usage summary, flattened for Help › Diagnostics…; `null` while it can't be read. */
+  getDiagnostics(): Promise<Diagnostics | null>;
+  /** Saves the summary and the newest crash reports as one file, where the person chooses. */
+  saveDiagnostics(): Promise<"saved" | "cancelled" | "failed">;
+  /** Opens the folder of the summary and the crash reports; `false` when it couldn't. */
+  openDiagnosticsFolder(): Promise<boolean>;
+  /** Clears the summary, with a new install number; what it holds then. */
+  clearDiagnostics(): Promise<Diagnostics | null>;
   /** What Report a Problem sends with a report, and where it can (OL-10). */
   getReportInfo(): Promise<ReportInfo>;
   /** Opens a report of `text` as a new GitHub issue or an email, for the person to send. */
