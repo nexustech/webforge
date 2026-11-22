@@ -184,6 +184,7 @@ function fakeElectron(options: { primary?: boolean } = {}) {
       );
     }),
     watchWorker: <W>(worker: W) => worker,
+    count: () => 0,
     noticeAfterLaunch: vi.fn(async () => undefined),
   };
   const startCrashReports = vi.fn(() => crashReports);

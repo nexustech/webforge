@@ -6,6 +6,7 @@ import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
 import { themePreset } from "@webforge/themes";
 import { OPEN_WAIT } from "./budget.js";
+import { chooseColour } from "./colour-picker.js";
 import { launchDesktopApp, removeWhenFree, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import type { RendererWindow } from "./sites.js";
@@ -102,7 +103,7 @@ test("a colour hard to read says so under it at once, in words, with a shade tha
   await expect(theme.getByText(/\d\s?px\b/)).toHaveCount(0);
 
   // A pale brand colour, from the picker.
-  await brand.locator('input[type="color"]').fill("#d8d4ff");
+  await chooseColour(page, brand.getByRole("button", { name: "Brand" }), "#d8d4ff");
   // At once, nothing asked (LF-15): its toast says how far it reached, with Undo. A built-in
   // theme is read-only (2.23): the first change saves the person's own version, unasked.
   await expect(page.getByText(/^Brand colour changed on \d+ pages?$/)).toBeVisible();
@@ -186,6 +187,32 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
   await expect(page.locator(".undo-history__step").first()).toHaveText(
     "Changed brand colours from 'Shop front.jpg'",
   );
+});
+
+test("Theme Studio's colour picker chooses a colour in its dialog, and Escape leaves it (5.26)", async () => {
+  const page = await openTheme();
+  await chooseFromMenu(running(), page, "Site", "Theme Studio…");
+  const studio = page.getByRole("dialog", { name: "Theme Studio" });
+  await studio.getByRole("tab", { name: "Colours" }).click();
+  // In its table of colours: Brand's row, the page's column.
+  const brand = studio.getByRole("button", { name: "Brand Page", exact: true });
+
+  // Escape closes the picker only, and keeps the colour it had.
+  const before = (await themeOf(page)).colors.primary;
+  await brand.click();
+  const picker = page.getByRole("dialog", { name: "Colour picker" });
+  await picker.getByRole("slider", { name: "Hue" }).press("End");
+  await page.keyboard.press("Escape");
+  await expect(picker).toHaveCount(0);
+  await expect(studio).toBeVisible();
+  expect((await themeOf(page)).colors.primary).toEqual(before);
+
+  // A code typed in: chosen once the picker closes.
+  await chooseColour(page, brand, "#c0392b");
+  await expect(brand).toHaveAccessibleDescription(/#c0392b/);
+  await expect
+    .poll(async () => (await themeOf(page)).colors.primary, { timeout: OPEN_WAIT })
+    .not.toEqual(before);
 });
 
 test("a change to a built-in theme saves the person's own, which another site can use (2.23)", async () => {

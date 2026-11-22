@@ -20,6 +20,7 @@ import type { SessionSite } from "./project-session.js";
 import type { PublishSecrets } from "./publish-secrets.js";
 import type { SiteFonts } from "./site-fonts.js";
 import type { SiteStore } from "./site-store.js";
+import { type HOST_KINDS, recordUsage } from "./usage.js";
 
 /**
  * Remembers in the site's file that it went live `at` (4.5). The publish has happened whatever
@@ -182,150 +183,174 @@ export function registerPublishRun(
   const live = new Map<string, string>();
   const now = deps.now ?? (() => new Date());
 
+  /** One publish, as the `publishSite` call asks it; `noteHost` hears where it goes, once known. */
+  const publishOnce = async (
+    sessionId: string,
+    destinationId: string,
+    operationId: string,
+    {
+      replaceOtherSite,
+      versionId,
+    }: { readonly replaceOtherSite: boolean; readonly versionId?: string | undefined },
+    noteHost: (host: (typeof HOST_KINDS)[number]) => void,
+  ): Promise<PublishResult> => {
+    const site = deps.site(sessionId);
+    if (underWay.has(operationId)) return { status: "cancelled" };
+    const controller = new AbortController();
+    underWay.set(operationId, controller);
+    let release: (() => void) | undefined;
+    try {
+      // 1. What the person sees, saved (a saved version needs nothing saved); then all at once:
+      // `work` is synchronous, so nothing commits in between.
+      if (versionId === undefined) await deps.flush();
+      const read = await site.withStore<Read | Unread>(
+        "shared",
+        (store) => {
+          const built = readToPublish(store, versionId, (manifest) => {
+            release = deps.holdManifest(manifest);
+          });
+          if ("reason" in built) return built;
+          return {
+            ...built,
+            // Where the version republished last went live, if it did (4.6b).
+            publishedTo:
+              versionId === undefined
+                ? undefined
+                : store.listVersions().find(({ id }) => id === versionId)?.publishedTo,
+            destination: store.readPublishDestinations().find(({ id }) => id === destinationId),
+            projectId: store.info.projectId,
+          };
+        },
+        (reason) => ({ reason }),
+      );
+      if ("reason" in read) return { status: "failed", reason: read.reason };
+      const { destination, projectId, manifest } = read;
+      if (destination === undefined) return { status: "failed", reason: "no-destination" };
+      noteHost(destination.kind === "netlify" ? "netlify" : destination.settings.protocol);
+      // A version that went live on this Netlify destination: its deploy, if Netlify still has
+      // it, goes live again as it was rather than being built and sent (#70).
+      const restore =
+        destination.kind === "netlify" &&
+        read.publishedTo?.destinationId === destinationId &&
+        read.publishedTo.deploy !== undefined
+          ? read.publishedTo.deploy
+          : undefined;
+
+      // 2. Only the code its owner trusts goes in, and the gate checks what is left.
+      const trusted = await deps.trusted(projectId);
+      const kept = withKeptCode(read.site, trusted);
+      const allowed = kept.settings.allowedExternalUrls;
+      const allowListConfirmed = allowed.length === 0 || trusted(allowListText(allowed));
+      // Site Check's rules (and the site components they read) load with the first publish, not
+      // with main at start-up (#892).
+      const { publishGate } = await import("@webforge/site-check");
+      const mustFix = publishGate(kept, {
+        allowListConfirmed,
+        host: destination.kind === "netlify" ? "netlify" : undefined,
+      });
+      if (mustFix > 0) return { status: "must-fix", count: mustFix };
+
+      // 3. The sign-in, for this destination as the file names it now (S2).
+      const saved = await deps.secrets.signInFor(projectId, destination);
+      if (saved === undefined) return { status: "sign-in-needed" };
+      if (controller.signal.aborted) return { status: "cancelled" };
+      const outcome = await deps.runner.publish(
+        {
+          type: "publish",
+          site: kept,
+          destination,
+          signIn: saved.signIn,
+          trust: saved.trust,
+          target: {
+            site: { projectId, destinationId },
+            ...(replaceOtherSite ? { replaceOtherSite: true } : {}),
+          },
+          trustedCode: siteCodePieces(kept).map((piece) => hashOf(piece.text)),
+          ...(await deps.fontsOf(kept.theme)),
+          ...(destination.kind === "netlify" && deps.netlifyApi !== undefined
+            ? { netlifyApi: deps.netlifyApi }
+            : {}),
+          ...(restore === undefined ? {} : { restore }),
+        },
+        {
+          // A site replaced while it publishes cancels it, as Cancel would (#663).
+          readMedia: async (hash) => {
+            const blob = site.staleReason() === undefined ? await site.readMedia(hash) : undefined;
+            if (blob === undefined && site.staleReason() !== undefined) controller.abort();
+            return blob;
+          },
+          signal: controller.signal,
+          onProgress: (progress) => deps.sendProgress(operationId, progress),
+        },
+      );
+      if (outcome.type === "cancelled") return { status: "cancelled" };
+      if (outcome.type === "failed") return failedResult(outcome);
+
+      // 4. Live: when, kept apart from the versions, so the year Site Check says the site shows
+      // (F-CM-8) survives deleting one. Then the version it built, from the manifest read with
+      // it. Like every automatic version it has no name of its own: the list names it by its
+      // reason and time. A republished version is already saved: it records where it went.
+      const at = now();
+      await recordLive(site, at);
+      const publishedTo: VersionPublish = {
+        destinationId,
+        publishedAt: at.toISOString(),
+        check: outcome.check,
+        ...(outcome.version === undefined ? {} : { deploy: outcome.version }),
+      };
+      const versionSaved =
+        versionId === undefined
+          ? (
+              await site.saveVersion({
+                name: "",
+                reason: "on-publish",
+                thumbnail: undefined,
+                kept: deps.versionsKept(),
+                documents: manifest,
+                publishedTo,
+              })
+            ).status === "saved"
+          : await recordRepublish(site, versionId, publishedTo);
+      if (/^https?:\/\//.test(outcome.url)) {
+        live.set(operationId, outcome.url);
+        // The newest few only: an older publish's success screen has long closed.
+        for (const old of live.keys()) if (live.size > LIVE_KEPT) live.delete(old);
+      }
+      return {
+        status: "published",
+        url: outcome.url,
+        check: outcome.check,
+        uploaded: outcome.uploaded,
+        unchanged: outcome.unchanged,
+        removed: outcome.removed,
+        ...(outcome.restored === true ? { restored: true } : {}),
+        versionSaved,
+      };
+    } catch (error) {
+      logFailure("Webforge could not publish the site", error);
+      return { status: "failed", reason: "unknown" };
+    } finally {
+      release?.();
+      underWay.delete(operationId);
+    }
+  };
+
   registerIpcHandler(
     ipc,
     "publishSite",
     isTrustedSender,
-    async (sessionId, destinationId, operationId, { replaceOtherSite, versionId }) => {
-      const site = deps.site(sessionId);
-      if (underWay.has(operationId)) return { status: "cancelled" };
-      const controller = new AbortController();
-      underWay.set(operationId, controller);
-      let release: (() => void) | undefined;
-      try {
-        // 1. What the person sees, saved (a saved version needs nothing saved); then all at once:
-        // `work` is synchronous, so nothing commits in between.
-        if (versionId === undefined) await deps.flush();
-        const read = await site.withStore<Read | Unread>(
-          "shared",
-          (store) => {
-            const built = readToPublish(store, versionId, (manifest) => {
-              release = deps.holdManifest(manifest);
-            });
-            if ("reason" in built) return built;
-            return {
-              ...built,
-              // Where the version republished last went live, if it did (4.6b).
-              publishedTo:
-                versionId === undefined
-                  ? undefined
-                  : store.listVersions().find(({ id }) => id === versionId)?.publishedTo,
-              destination: store.readPublishDestinations().find(({ id }) => id === destinationId),
-              projectId: store.info.projectId,
-            };
-          },
-          (reason) => ({ reason }),
-        );
-        if ("reason" in read) return { status: "failed", reason: read.reason };
-        const { destination, projectId, manifest } = read;
-        if (destination === undefined) return { status: "failed", reason: "no-destination" };
-        // A version that went live on this Netlify destination: its deploy, if Netlify still has
-        // it, goes live again as it was rather than being built and sent (#70).
-        const restore =
-          destination.kind === "netlify" &&
-          read.publishedTo?.destinationId === destinationId &&
-          read.publishedTo.deploy !== undefined
-            ? read.publishedTo.deploy
-            : undefined;
-
-        // 2. Only the code its owner trusts goes in, and the gate checks what is left.
-        const trusted = await deps.trusted(projectId);
-        const kept = withKeptCode(read.site, trusted);
-        const allowed = kept.settings.allowedExternalUrls;
-        const allowListConfirmed = allowed.length === 0 || trusted(allowListText(allowed));
-        // Site Check's rules (and the site components they read) load with the first publish, not
-        // with main at start-up (#892).
-        const { publishGate } = await import("@webforge/site-check");
-        const mustFix = publishGate(kept, {
-          allowListConfirmed,
-          host: destination.kind === "netlify" ? "netlify" : undefined,
-        });
-        if (mustFix > 0) return { status: "must-fix", count: mustFix };
-
-        // 3. The sign-in, for this destination as the file names it now (S2).
-        const saved = await deps.secrets.signInFor(projectId, destination);
-        if (saved === undefined) return { status: "sign-in-needed" };
-        if (controller.signal.aborted) return { status: "cancelled" };
-        const outcome = await deps.runner.publish(
-          {
-            type: "publish",
-            site: kept,
-            destination,
-            signIn: saved.signIn,
-            trust: saved.trust,
-            target: {
-              site: { projectId, destinationId },
-              ...(replaceOtherSite ? { replaceOtherSite: true } : {}),
-            },
-            trustedCode: siteCodePieces(kept).map((piece) => hashOf(piece.text)),
-            ...(await deps.fontsOf(kept.theme)),
-            ...(destination.kind === "netlify" && deps.netlifyApi !== undefined
-              ? { netlifyApi: deps.netlifyApi }
-              : {}),
-            ...(restore === undefined ? {} : { restore }),
-          },
-          {
-            // A site replaced while it publishes cancels it, as Cancel would (#663).
-            readMedia: async (hash) => {
-              const blob =
-                site.staleReason() === undefined ? await site.readMedia(hash) : undefined;
-              if (blob === undefined && site.staleReason() !== undefined) controller.abort();
-              return blob;
-            },
-            signal: controller.signal,
-            onProgress: (progress) => deps.sendProgress(operationId, progress),
-          },
-        );
-        if (outcome.type === "cancelled") return { status: "cancelled" };
-        if (outcome.type === "failed") return failedResult(outcome);
-
-        // 4. Live: when, kept apart from the versions, so the year Site Check says the site shows
-        // (F-CM-8) survives deleting one. Then the version it built, from the manifest read with
-        // it. Like every automatic version it has no name of its own: the list names it by its
-        // reason and time. A republished version is already saved: it records where it went.
-        const at = now();
-        await recordLive(site, at);
-        const publishedTo: VersionPublish = {
-          destinationId,
-          publishedAt: at.toISOString(),
-          check: outcome.check,
-          ...(outcome.version === undefined ? {} : { deploy: outcome.version }),
-        };
-        const versionSaved =
-          versionId === undefined
-            ? (
-                await site.saveVersion({
-                  name: "",
-                  reason: "on-publish",
-                  thumbnail: undefined,
-                  kept: deps.versionsKept(),
-                  documents: manifest,
-                  publishedTo,
-                })
-              ).status === "saved"
-            : await recordRepublish(site, versionId, publishedTo);
-        if (/^https?:\/\//.test(outcome.url)) {
-          live.set(operationId, outcome.url);
-          // The newest few only: an older publish's success screen has long closed.
-          for (const old of live.keys()) if (live.size > LIVE_KEPT) live.delete(old);
-        }
-        return {
-          status: "published",
-          url: outcome.url,
-          check: outcome.check,
-          uploaded: outcome.uploaded,
-          unchanged: outcome.unchanged,
-          removed: outcome.removed,
-          ...(outcome.restored === true ? { restored: true } : {}),
-          versionSaved,
-        };
-      } catch (error) {
-        logFailure("Webforge could not publish the site", error);
-        return { status: "failed", reason: "unknown" };
-      } finally {
-        release?.();
-        underWay.delete(operationId);
+    async (sessionId, destinationId, operationId, choices) => {
+      let host: (typeof HOST_KINDS)[number] | undefined;
+      const result = await publishOnce(sessionId, destinationId, operationId, choices, (kind) => {
+        host = kind;
+      });
+      // Counted in the usage summary (5.40): where it went, or why it failed, by code only.
+      if (result.status === "published" && host !== undefined) {
+        recordUsage({ kind: "published", host });
+      } else if (result.status === "failed") {
+        recordUsage({ kind: "publishFailed", reason: result.reason });
       }
+      return result;
     },
   );
 

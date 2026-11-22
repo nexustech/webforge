@@ -1,5 +1,7 @@
 import { t } from "@webforge/i18n";
+import { usageCommandOf } from "../../shared/usage.js";
 import { reportFailure } from "../log.js";
+import { recordUsage } from "../usage.js";
 import { COMMAND_SHORTCUTS, platformKeys, type StandardShortcut } from "./shortcut-standard.js";
 
 /**
@@ -298,6 +300,9 @@ export function createCommandRegistry({
       if (command === undefined || command.enabled === false || pauses > 0) {
         return false;
       }
+      // Counted in the usage summary by its listed name (5.40); a site's id in it never is.
+      const counted = usageCommandOf(id);
+      if (counted !== undefined) recordUsage({ kind: "command", id: counted });
       const result = command.run();
       if (result instanceof Promise) {
         result.catch((error: unknown) => {

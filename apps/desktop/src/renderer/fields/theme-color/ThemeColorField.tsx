@@ -1,4 +1,4 @@
-import { cn, type FieldRendererProps, fieldControlClass } from "@webforge/editor-ui";
+import { ColourPicker, cn, type FieldRendererProps, fieldControlClass } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n/components";
 import { oklchSchema } from "@webforge/model";
 import { hexOf, hexToOklch } from "@webforge/themes";
@@ -9,9 +9,9 @@ import { useId, useState } from "react";
 const HEX = /^#?([0-9a-f]{6})$/i;
 
 /**
- * One of the theme's colours in the Theme tab (2.3a, F-DS-2): the system's colour picker and the
- * colour's hex code, each changing it once the person is done (the picker closed, Enter, or the box
- * left), and under them what its contrast with the colours it's used with lacks, below WCAG AA,
+ * One of the theme's colours in the Theme tab (2.3a, F-DS-2): Webforge's colour picker (5.26) and
+ * the colour's hex code, each changing it once the person is done (the picker closed, Enter, or the
+ * box left), and under them what its contrast with the colours it's used with lacks, below WCAG AA,
  * with a shade that reads, one click away (#1174). Simple mode's Theme tab leaves the code out
  * (LF-16).
  */
@@ -32,28 +32,14 @@ export function ThemeColorField({
   // What's typed in the hex box, until it's used; another colour starts it afresh.
   const [typed, setTyped] = useState<{ readonly from: string; readonly text: string } | null>(null);
   const text = typed?.from === hex ? typed.text : hex;
-  // Each colour offered: the picker starts afresh after it, showing the stored colour, also when the
-  // change was declined (D7) and the colour stayed as it was.
-  const [offers, setOffers] = useState(0);
 
   /** Uses `next`, a hex code, if it's another colour: one change. */
   const choose = (next: string) => {
     const digits = HEX.exec(next.trim())?.[1]?.toLowerCase();
     setTyped(null);
     if (digits === undefined || `#${digits}` === hex) return;
-    setOffers(offers + 1);
     onChange(hexToOklch(`#${digits}`));
     onCommit();
-  };
-  /**
-   * The picker's colour is used once it closes ("change"), not at every step of a drag ("input"),
-   * which React's onChange reports. Its listener follows each render's `choose`.
-   */
-  const listen = (input: HTMLInputElement | null) => {
-    if (input === null) return;
-    const done = () => choose(input.value);
-    input.addEventListener("change", done);
-    return () => input.removeEventListener("change", done);
   };
 
   const { warnings, code = true, suggestion } = field;
@@ -61,18 +47,15 @@ export function ThemeColorField({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex min-w-0 items-center gap-1.5">
-        <input
-          // Uncontrolled, so dragging in the picker moves freely; it starts again at a new colour,
-          // and after each colour offered.
-          key={`${hex} ${offers}`}
-          ref={listen}
+        {/* Its colour is used once it closes, not at every step of a drag; the stored colour
+            shows again when a change is declined (D7). */}
+        <ColourPicker
           id={id}
-          type="color"
+          value={hex}
           aria-labelledby={labelId}
           aria-describedby={warnings.length === 0 ? undefined : warningsId}
-          className={cn(fieldControlClass, "h-7 w-9 shrink-0 cursor-pointer p-0.5")}
-          defaultValue={hex}
           disabled={disabled}
+          onChoose={choose}
         />
         {code ? (
           <>
@@ -125,7 +108,6 @@ export function ThemeColorField({
           onClick={() => {
             // As it is: the colour whose contrast was checked, not one rebuilt from text.
             setTyped(null);
-            setOffers(offers + 1);
             onChange(suggested.data);
             onCommit();
           }}

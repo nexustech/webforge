@@ -17,6 +17,7 @@ import type { AssistantService } from "../assistant-ipc.js";
 import type { CredentialStore } from "../credential-store.js";
 import { createJsonStore, type JsonStoreFiles } from "../json-store.js";
 import { logFailure } from "../log.js";
+import { recordUsage } from "../usage.js";
 import type { HeldCall, ReplyOutcome, Selection, ToolClient } from "./assistant-loop.js";
 import { isLoopback, keySafeAt, streamChat } from "./chat-client.js";
 import {
@@ -444,7 +445,13 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
             turn.reply += delta;
             options.emit({ session, type: "text", replyId, delta });
           },
-          onTool: (call) => options.emit({ session, type: "tool", replyId, ...call }),
+          onTool: (call) => {
+            // How each tool call came out, by the tool's name, in the usage summary (5.40).
+            if (call.state !== "running") {
+              recordUsage({ kind: "assistantTool", tool: call.tool, state: call.state });
+            }
+            options.emit({ session, type: "tool", replyId, ...call });
+          },
         });
       } finally {
         await tools.close().catch(() => undefined);

@@ -6,6 +6,7 @@ import {
   type RendererErrorKind,
   rendererErrorKindSchema,
 } from "../error-details.js";
+import { type EditorUsage, editorUsageSchema } from "../usage.js";
 
 /** Information about the running app. */
 const appInfoSchema = z.object({
@@ -17,7 +18,7 @@ const appInfoSchema = z.object({
 export type AppInfo = z.infer<typeof appInfoSchema>;
 
 /** Where a handled failure happened, by area and action: `clipboard.paste`, `command.edit.undo`. */
-const failureContextSchema = z.string().regex(/^[a-z][a-zA-Z0-9.-]{0,63}$/);
+export const failureContextSchema = z.string().regex(/^[a-z][a-zA-Z0-9.-]{0,63}$/);
 
 /** An error as `errorCode` gives it: a name, and maybe a code (`Error ENOENT`), or a type. */
 const failureCodeSchema = z.string().regex(/^[A-Za-z0-9_.:-]{1,64}(?: [A-Za-z0-9_.:-]{1,64})?$/);
@@ -218,6 +219,16 @@ export const appChannels = {
     request: z.tuple([]),
     response: z.boolean(),
   },
+  /**
+   * Counts what the editor did in the usage summary (5.40, BD-1): a command run, an element added,
+   * Site Check run, the quick start's or the tour's end. Names from fixed lists only; kept on this
+   * computer, never sent.
+   */
+  recordUsage: {
+    channel: "app:record-usage",
+    request: z.tuple([editorUsageSchema]),
+    response: z.null(),
+  },
   /** Spell checks text in the site's language (F-ED-19); Windows only, macOS chooses itself. */
   setSpellCheckLanguage: {
     channel: "app:set-spellcheck-language",
@@ -293,6 +304,8 @@ export interface AppApi {
   reportError(kind: RendererErrorKind, error: ErrorDetails): Promise<null>;
   /** Logs a handled failure: where (`clipboard.paste`) and the error's name and code only. */
   logFailure(context: string, code: string): Promise<null>;
+  /** Counts what the editor did in the usage summary, on this computer only. */
+  recordUsage(usage: EditorUsage): Promise<null>;
   /** The packages the app ships and their licences. */
   listLicences(): Promise<LicencesResult>;
   /** Opens Chromium's licences in the default browser; `false` when it couldn't. */

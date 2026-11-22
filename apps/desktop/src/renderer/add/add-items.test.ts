@@ -7,10 +7,12 @@ import {
   type SiteDoc,
 } from "@webforge/model";
 import { type ComponentDef, type ComponentLibrary, siteLibrary } from "@webforge/site-components";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
+import type { EditorUsage } from "../../shared/usage.js";
 import { currentPage } from "../editor/editor-session.js";
 import { sessionWith } from "../testing/fixtures.js";
+import { setUsageLog } from "../usage.js";
 import {
   addComponent,
   addItems,
@@ -582,5 +584,24 @@ describe("the Suggested group (SP-12)", () => {
       slot: "columns",
       index: 1,
     });
+  });
+});
+
+describe("adds in the usage summary (5.40)", () => {
+  afterEach(() => {
+    setUsageLog(undefined);
+  });
+
+  it("counts a section or element added by its type, and nothing when nothing was added", () => {
+    const counted = vi.fn(async (_usage: EditorUsage) => null);
+    setUsageLog(counted);
+    const session = sessionWithContent([{ type: "Hero", props: { id: "hero" } }]);
+    session.select("hero");
+
+    expect(addComponent(session, "Heading")).toBe(false);
+    session.select(null);
+    expect(addComponent(session, "Hero")).toBe(true);
+
+    expect(counted.mock.calls.map(([usage]) => usage)).toEqual([{ kind: "added", type: "Hero" }]);
   });
 });

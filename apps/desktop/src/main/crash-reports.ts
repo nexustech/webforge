@@ -319,6 +319,8 @@ export function createCrashReports(options: {
 
   return {
     dir: options.dir,
+    /** How many reports the folder holds: the usage summary's count (5.40, BD-1). */
+    count: (): number => reports().length,
     /** Writes a report synchronously (the process may be about to exit) and prunes old ones. */
     write(report: CrashReport): string {
       mkdirSync(options.dir, { recursive: true });

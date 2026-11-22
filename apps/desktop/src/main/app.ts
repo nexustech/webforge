@@ -43,6 +43,7 @@ import { myThemesFeature } from "./themes-ipc.js";
 import { codeTrustFeature } from "./trust-ipc.js";
 import { updatesSupported } from "./updates.js";
 import { createUpdates } from "./updates-ipc.js";
+import { usageFeatureFor } from "./usage-feature.js";
 
 // The app's wiring (R13c): Electron comes in as a parameter, so app.test.ts runs all of it against
 // a fake one, and the E2E tests against the real one. The logic lives in the modules it wires.
@@ -70,8 +71,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     () => lifecycle.preferences,
     () => electron.nativeTheme.shouldUseDarkColors,
   );
-  // The editor's page only: on the dev server the Help page has the same origin, and it may make
-  // only its own calls (`help-ipc.ts`).
+  // The editor's page only: on the dev server Help shares its origin, with calls of its own.
   const isTrustedSender = (senderUrl: string) =>
     isAppUrl(senderUrl, appUrl) && !helpWindows.isHelpPage(senderUrl);
 
@@ -149,8 +149,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
 
   const fonts = siteFontsOf(app, electron.net);
 
-  // Copied elements, with their images' bytes kept in the user's data while the clipboard holds
-  // them (1.25, R13d).
+  // Copied elements, their images' bytes kept in the user's data while copied (1.25, R13d).
   const elementClipboard = createElementClipboard(
     systemClipboard(electron),
     join(app.getPath("userData"), "clipboard"),
@@ -298,6 +297,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     }),
     output.publishCalls,
     output.netlify,
+    usageFeatureFor(electron, crashReports, () => lifecycle.preferences?.get().updateChannel),
   ];
   for (const feature of features) {
     if (feature.site !== undefined) projectSession.listen(feature.site);

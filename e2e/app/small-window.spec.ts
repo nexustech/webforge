@@ -102,10 +102,7 @@ test("opens a site at a size to read, the left column a strip, Publish and Site 
 });
 
 test("shows the menus' titles again in a wide window, all of it fitting (#1166)", async () => {
-  await app.evaluate(({ BrowserWindow }) =>
-    BrowserWindow.getAllWindows()[0]?.setContentSize(1280, 900),
-  );
-  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(1280);
+  await sizeWindow(1280, 900, 1280);
   if (!nativeMenus) {
     const menuBar = page.getByRole("banner").getByRole("menubar", { name: "App menu" });
     await expect(menuBar.getByRole("menuitem")).toHaveText([
@@ -136,15 +133,33 @@ async function atTextSize(zoom: number, screen: number): Promise<number> {
     zoom,
   );
   const width = Math.min(Math.round(960 * zoom), screen);
-  await app.evaluate(({ BrowserWindow }, size) => {
-    const main = BrowserWindow.getAllWindows()[0];
-    main?.setMinimumSize(600, 400);
-    main?.setContentSize(size, 700);
-  }, width);
-  // The page's own width at that zoom, in CSS px.
+  // The page's own width at that zoom, in CSS px: once the window is that wide, not before. A
+  // window coming from a wider one is already at least as wide before it shrinks, and the app sets
+  // the window's least as the text size changes, maybe after this lowered it (#1293): so it's set
+  // again until the window is that wide.
   const css = Math.floor(width / zoom);
-  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBeGreaterThanOrEqual(css - 1);
+  await sizeWindow(width, 700, css);
   return css;
+}
+
+/**
+ * Sizes the window's content to `width` × `height` until its page is `css` CSS px wide, within a
+ * pixel (#1293): a resize can be undone by the app's own least for the text size, set as that
+ * changes, or not have landed yet, so it's set again until it holds.
+ */
+async function sizeWindow(width: number, height: number, css: number): Promise<void> {
+  await expect(async () => {
+    await app.evaluate(
+      ({ BrowserWindow }, size) => {
+        const main = BrowserWindow.getAllWindows()[0];
+        main?.setMinimumSize(600, 400);
+        main?.setContentSize(size.width, size.height);
+      },
+      { width, height },
+    );
+    const inner = await page.evaluate(() => window.innerWidth);
+    expect(Math.abs(inner - css)).toBeLessThanOrEqual(1);
+  }).toPass();
 }
 
 for (const [zoom, screen] of [

@@ -5,6 +5,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
+import type { EditorUsage } from "../../shared/usage.js";
+import { setUsageLog } from "../usage.js";
 import { QuickStartDialog, type QuickStartStep } from "./QuickStartDialog.js";
 
 const cafe: TemplateSummary = {
@@ -109,6 +111,21 @@ async function type(element: HTMLInputElement | HTMLTextAreaElement | undefined,
   });
 }
 
+/** Chooses `hex` in the colour picker named `name` (5.26): opens it, types the code, closes it. */
+async function pickColour(name: string, hex: string) {
+  const swatch = () =>
+    [...document.querySelectorAll<HTMLButtonElement>("button")].find(
+      (each) => each.getAttribute("aria-label") === name,
+    );
+  await act(async () => swatch()?.click());
+  const code = field(t("ui.colourPicker.hex"));
+  await type(code, hex);
+  await act(async () =>
+    code?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })),
+  );
+  await act(async () => swatch()?.click());
+}
+
 describe("QuickStartDialog (QS-1, 3.11b)", () => {
   it("makes the untitled Blank site from the first step, every step skipped", async () => {
     const { onCreate } = await render();
@@ -153,10 +170,7 @@ describe("QuickStartDialog (QS-1, 3.11b)", () => {
 
     // Colours and details.
     expect(shownStep()).toContain(t("quickStart.step.details"));
-    await type(
-      document.querySelector<HTMLInputElement>('input[type="color"]') ?? undefined,
-      "#c0392b",
-    );
+    await pickColour(t("quickStart.colours.colour"), "#c0392b");
     await type(field(t("site.settings.phone")), " +44 1234 567890 ");
     await type(field(t("site.settings.webAddress")), "https://rosas.example");
     expect(document.body.textContent).toContain(t("quickStart.searchNote"));
@@ -296,5 +310,29 @@ describe("QuickStartDialog (QS-1, 3.11b)", () => {
     expect(document.body.textContent).toContain(t("quickStart.blankPages"));
     await click(t("quickStart.back"));
     expect(shownStep()).toContain(t("quickStart.step.look"));
+  });
+});
+
+describe("the quick start in the usage summary (5.40)", () => {
+  afterEach(() => {
+    setUsageLog(undefined);
+  });
+
+  it("counts where it ended: a site made at a step, or put away at one", async () => {
+    const counted = vi.fn(async (_usage: EditorUsage) => null);
+    setUsageLog(counted);
+    const { onCancel } = await render();
+    await goTo(t("quickStart.step.pages"));
+    await click(t("quickStart.cancel"));
+    expect(onCancel).toHaveBeenCalled();
+    await act(async () => root.unmount());
+    root = createRoot(container);
+    await render({ initialStep: "look" });
+    await click(t("quickStart.create"));
+
+    expect(counted.mock.calls.map(([usage]) => usage)).toEqual([
+      { kind: "quickStart", outcome: "cancelled", step: "pages" },
+      { kind: "quickStart", outcome: "created", step: "look" },
+    ]);
   });
 });
