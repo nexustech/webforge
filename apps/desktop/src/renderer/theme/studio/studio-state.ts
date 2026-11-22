@@ -17,8 +17,13 @@ export type LookDraft = {
   readonly change: Readonly<Record<string, unknown>>;
 };
 
-/** What waits on the answer to apply or discard a draft: closing, or another kind (4.10). */
-export type DraftPending = { readonly close: true } | { readonly kind: string };
+/**
+ * What waits on the answer to apply or discard a draft: closing, and then what to do once closed
+ * (going to a colour's use on the canvas, TC-4), or another kind (4.10).
+ */
+export type DraftPending =
+  | { readonly close: true; readonly then?: (() => void) | undefined }
+  | { readonly kind: string };
 
 /**
  * Whether Theme Studio is open, the section it shows, the kind Components shows (a component

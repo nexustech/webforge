@@ -1,24 +1,9 @@
 import type { Oklch, ThemeTokens } from "@webforge/model";
-import { contrastRatio, rgbToOklch } from "./colors.js";
+import { contrastRatio, type Lab, labDistance, rgbToOklch, toLab, toOklch } from "./colors.js";
 import { AA_LARGE, AA_TEXT } from "./contrast.js";
 
 /** One of an image's main colours, and how much of the image it covers (0–1). */
 export type ImageColour = { readonly color: Oklch; readonly share: number };
-
-/** A colour in OKLab: lightness and the two colour axes, where distances are perceptual. */
-type Lab = { readonly l: number; readonly a: number; readonly b: number };
-
-const toLab = ({ l, c, h }: Oklch): Lab => {
-  const radians = (h * Math.PI) / 180;
-  return { l, a: c * Math.cos(radians), b: c * Math.sin(radians) };
-};
-
-const toOklch = ({ l, a, b }: Lab): Oklch => {
-  const h = (Math.atan2(b, a) * 180) / Math.PI;
-  return { l, c: Math.hypot(a, b), h: h < 0 ? h + 360 : h };
-};
-
-const distance = (x: Lab, y: Lab) => (x.l - y.l) ** 2 + (x.a - y.a) ** 2 + (x.b - y.b) ** 2;
 
 /** The rounds k-means takes; a downscaled image settles well within them. */
 const ROUNDS = 12;
@@ -43,7 +28,7 @@ export function imageColours(pixels: ArrayLike<number>, count = 6): ImageColour[
     let furthest: Lab | undefined;
     let best = 0;
     for (const point of points) {
-      const near = Math.min(...centres.map((centre) => distance(point, centre)));
+      const near = Math.min(...centres.map((centre) => labDistance(point, centre)));
       if (near > best) {
         best = near;
         furthest = point;
@@ -57,7 +42,8 @@ export function imageColours(pixels: ArrayLike<number>, count = 6): ImageColour[
     members = points.map((point) => {
       let nearest = 0;
       centres.forEach((centre, index) => {
-        if (distance(point, centre) < distance(point, centres[nearest] as Lab)) nearest = index;
+        if (labDistance(point, centre) < labDistance(point, centres[nearest] as Lab))
+          nearest = index;
       });
       return nearest;
     });
