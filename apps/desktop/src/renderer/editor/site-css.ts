@@ -266,7 +266,7 @@ export function connectSiteCss(
   let sent = 0;
   let shown = 0;
   let stopped = false;
-  /** The theme a preview began on, while one is shown on the canvas. */
+  /** The site's theme under the latest colour shown, while a preview is shown on the canvas. */
   let previewFrom: SiteDoc["theme"] | undefined;
   const previews = themePreviewOf(session);
   const endPreview = () => {
@@ -278,7 +278,8 @@ export function connectSiteCss(
     if (preview === undefined) {
       endPreview();
     } else if (!preview.chosen) {
-      previewFrom ??= session.history.document.getState().theme;
+      // The theme as it is now: an earlier choice's CSS, still compiling, doesn't end this one.
+      previewFrom = session.history.document.getState().theme;
       engine.setThemePreviewCss(themeValuesCss(preview.theme));
     }
     // Chosen: kept until the CSS compiled with the change is shown (below).

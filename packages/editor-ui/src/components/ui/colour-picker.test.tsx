@@ -152,6 +152,26 @@ describe("the colour picker (5.26, OL-19)", () => {
     expect(onPreviewEnd).toHaveBeenCalledExactlyOnceWith(false);
   });
 
+  it("ends the preview unchosen when it goes away while open (5.30)", async () => {
+    const onPreviewEnd = vi.fn();
+    const { unmount } = render(
+      <ColourPicker
+        value="#1f6feb"
+        aria-label="Brand"
+        onChoose={vi.fn()}
+        onPreview={vi.fn()}
+        onPreviewEnd={onPreviewEnd}
+      />,
+    );
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole("button", { name: "Brand" }));
+    screen.getByRole("slider", { name: "Hue" }).focus();
+    await user.keyboard("{End}");
+
+    unmount();
+    expect(onPreviewEnd).toHaveBeenCalledExactlyOnceWith(false);
+  });
+
   it("chooses nothing when it closes on the colour it opened on", async () => {
     const { onChoose, swatch, user } = setUp();
     await user.click(swatch());

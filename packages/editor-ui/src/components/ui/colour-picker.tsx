@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { PipetteIcon } from "lucide-react";
 import { Popover as PopoverPrimitive } from "radix-ui";
-import { type KeyboardEvent, type PointerEvent, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type PointerEvent, useEffect, useId, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import {
   areaAt,
@@ -98,6 +98,17 @@ export function ColourPicker({
   const cancelled = useRef(false);
   // Whether a colour has been shown to `onPreview` since it opened.
   const previewed = useRef(false);
+  // The latest `onPreviewEnd`, for a picker that goes away while it's open: its preview ends too.
+  const previewEnd = useRef(onPreviewEnd);
+  useEffect(() => {
+    previewEnd.current = onPreviewEnd;
+  });
+  useEffect(
+    () => () => {
+      if (previewed.current) previewEnd.current?.(false);
+    },
+    [],
+  );
   // While the eyedropper is out, a click on the screen picks a colour; it doesn't close the picker.
   const picking = useRef(false);
   const area = useRef<HTMLDivElement>(null);

@@ -270,6 +270,29 @@ describe("connectSiteCss", () => {
     expect(engine.setThemePreviewCss).toHaveBeenLastCalledWith("");
   });
 
+  it("keeps a second colour chosen while the first's CSS compiles, until its own is shown (5.30)", async () => {
+    const { session, engine, compile, reply, edit } = setup();
+    await reply(0);
+    const theme = session.history.document.getState().theme;
+    const choose = (h: number) => {
+      const chosen = { ...theme, colors: { ...theme.colors, primary: { l: 0.6, c: 0.2, h } } };
+      previewTheme(session, chosen);
+      endThemePreview(session, true);
+      edit("Changed brand colour", (draft) => {
+        draft.theme.colors.primary = { l: 0.6, c: 0.2, h };
+      });
+    };
+    choose(30);
+    choose(90);
+    expect(compile).toHaveBeenCalledTimes(3);
+
+    // The first choice's CSS: the second colour's preview stays over it.
+    await reply(1);
+    expect(engine.setThemePreviewCss).not.toHaveBeenLastCalledWith("");
+    await reply(2);
+    expect(engine.setThemePreviewCss).toHaveBeenLastCalledWith("");
+  });
+
   it("keeps the theme's variables custom.css reads, recompiling only when they change (6.8)", () => {
     const { compile, edit } = setup();
 
