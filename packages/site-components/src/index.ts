@@ -29,6 +29,13 @@ export { BELOW_THE_FOOTER } from "./catalogue/contact-buttons.js";
 export { serviceFormLabel } from "./catalogue/forms.js";
 export { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue/index.js";
 export { POSTS_PER_PAGE } from "./catalogue/latest-posts.js";
+export {
+  FOOTER_COLUMN_TYPES,
+  FOOTER_PRESETS,
+  type FooterPreset,
+  footerPreset,
+  MAX_FOOTER_COLUMNS,
+} from "./catalogue/layout.js";
 export { consentBannerHtml } from "./consent-banner.js";
 export type { ComponentSpec } from "./define.js";
 export { createLibrary, defineComponent } from "./define.js";

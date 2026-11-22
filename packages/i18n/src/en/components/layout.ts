@@ -40,4 +40,6 @@ export const layout = {
   "siteText.menu": "Menu",
   "siteText.footerNavigation": "Footer navigation",
   "starter.footer": "Thanks for visiting.",
+  // The title over the menu's links in a Footer started from *Full* (5.39).
+  "starter.footerLinksTitle": "Explore",
 } as const;

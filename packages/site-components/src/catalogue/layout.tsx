@@ -1,6 +1,6 @@
 import { t } from "@webforge/i18n/components";
 import type { SiteText } from "@webforge/i18n/site-text";
-import { bindingOf } from "@webforge/model";
+import { bindingOf, type NodeDoc } from "@webforge/model";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
 import { FooterColumnContext } from "../footer-column.js";
@@ -344,6 +344,52 @@ function CookieSettings({ siteText }: { readonly siteText: SiteText }) {
       {siteText("siteText.consent.settings")}
     </button>
   );
+}
+
+/** What the Footer can start from (HF-4, 5.39): its text alone, the menu's links beside it, or both and more. */
+export const FOOTER_PRESETS = ["simple", "columns", "full"] as const;
+export type FooterPreset = (typeof FOOTER_PRESETS)[number];
+
+/** A Footer column holding `content`, its id `id`. */
+const presetColumn = (id: string, content: readonly NodeDoc[]): NodeDoc => ({
+  type: "FooterColumn",
+  props: { id, content: [...content] },
+});
+
+/**
+ * What *Start from* gives the Footer (HF-4, 5.39): its layout and its columns, whose elements have
+ * only what differs from their defaults (the editor adds those) and ids to make the site's own.
+ * *Simple* is its text centred; *Columns* its text and the menu's links beside it, as today's two
+ * layouts are; *Full* the menu's links under a title, the business's contact details, and its
+ * social links over a newsletter signup.
+ */
+export function footerPreset(preset: FooterPreset): {
+  readonly variant: (typeof FOOTER_LAYOUTS)[number];
+  readonly columns: readonly NodeDoc[];
+} {
+  const menu: NodeDoc = { type: "MenuLinks", props: { id: "footer-menu" } };
+  if (preset === "simple") return { variant: "centred", columns: [] };
+  if (preset === "columns")
+    return { variant: "columns", columns: [presetColumn("footer-links", [menu])] };
+  return {
+    variant: "columns",
+    columns: [
+      presetColumn("footer-links", [
+        {
+          type: "Heading",
+          props: { id: "footer-links-title", text: t("starter.footerLinksTitle"), size: "small" },
+        },
+        menu,
+      ]),
+      presetColumn("footer-contact", [
+        { type: "ContactDetails", props: { id: "footer-contact-details" } },
+      ]),
+      presetColumn("footer-follow", [
+        { type: "SocialLinks", props: { id: "footer-social" } },
+        { type: "Newsletter", props: { id: "footer-newsletter" } },
+      ]),
+    ],
+  };
 }
 
 /**
