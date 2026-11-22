@@ -3,8 +3,8 @@ import { type UsageLists, type UsageSummaryData, usageSummarySchema } from "./us
 
 // The beta's reports added up (5.42, BD-3, research/product/22 §2): the usage summaries testers
 // attach to their issues, each checked against BD-1's schema, each install counted once, and the
-// totals for the note's five questions. `tools/src/report-totals.ts` runs it on a folder of
-// reports (`pnpm report-totals <folder>`); the triage notes say when.
+// totals for the note's five questions. `report-totals-cli.ts` runs it on a folder of reports
+// (`pnpm report-totals <folder>`); the triage notes say when.
 
 /** A report as received: Save Report…'s file (`{ summary, crashReports }`), or a summary alone. */
 export type ReceivedReport = { readonly name: string; readonly text: string };
@@ -60,8 +60,8 @@ export function readReports(reports: readonly ReceivedReport[], lists: UsageList
   return { summaries: [...newest.values()], refused, older };
 }
 
-/** Counts by name, added up across summaries. */
-type Counts = Readonly<Record<string, number>>;
+/** Counts by name, as the summary holds them: only those counted. */
+type Counts = Readonly<Partial<Record<string, number>>>;
 
 /** One timing across installs: its samples against architecture §10's budget. */
 export type TimingTotals = {
@@ -140,13 +140,14 @@ export const TIMING_BUDGETS_MS: Readonly<Record<keyof UsageSummaryData["timings"
 function addUp(counts: readonly Counts[]): Record<string, number> {
   const total: Record<string, number> = {};
   for (const each of counts) {
-    for (const [name, count] of Object.entries(each)) total[name] = (total[name] ?? 0) + count;
+    for (const [name, count = 0] of Object.entries(each)) total[name] = (total[name] ?? 0) + count;
   }
   return total;
 }
 
 /** The sum of a summary's counts by name. */
-const sum = (counts: Counts) => Object.values(counts).reduce((all, count) => all + count, 0);
+const sum = (counts: Counts) =>
+  Object.values(counts).reduce((all: number, count = 0) => all + count, 0);
 
 /** The value `share` of the way through `sorted` (0.5, the median), the nearest sample's. */
 function percentile(sorted: readonly number[], share: number): number {
@@ -252,7 +253,7 @@ const share = (count: number, of: number) =>
 /** Counts by name, most first, on one line: `none` when there are none. */
 function countsLine(counts: Counts): string {
   const entries = Object.entries(counts)
-    .filter(([, count]) => count > 0)
+    .flatMap(([name, count = 0]) => (count > 0 ? [[name, count] as const] : []))
     .sort(([a, x], [b, y]) => y - x || a.localeCompare(b));
   return entries.length === 0 ? "none" : entries.map(([name, n]) => `${name} ${n}`).join(", ");
 }

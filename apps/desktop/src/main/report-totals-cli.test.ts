@@ -6,9 +6,9 @@ import { afterAll, describe, expect, it } from "vitest";
 
 // `pnpm report-totals <folder>` (5.42, BD-3) as the triage notes run it: Node, with the import
 // hook that finds the desktop app's TypeScript, on a folder of reports. The adding up itself is
-// tested in `apps/desktop/src/main/report-totals.test.ts`.
+// tested in `report-totals.test.ts`.
 
-const ROOT = join(import.meta.dirname, "../..");
+const ROOT = join(import.meta.dirname, "../../../..");
 const folder = mkdtempSync(join(tmpdir(), "report-totals-"));
 afterAll(() => rmSync(folder, { recursive: true, force: true }));
 
@@ -53,7 +53,7 @@ describe("pnpm report-totals (5.42, BD-3)", () => {
         "--no-warnings",
         "--import",
         "./tools/src/ts-imports.ts",
-        "tools/src/report-totals.ts",
+        "apps/desktop/src/main/report-totals-cli.ts",
         folder,
       ],
       { cwd: ROOT, encoding: "utf8", timeout: 60_000 },
