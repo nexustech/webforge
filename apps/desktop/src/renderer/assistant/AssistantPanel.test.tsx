@@ -142,3 +142,29 @@ describe("the assistant's panel (6.9c)", () => {
     await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe(""));
   });
 });
+
+describe("a message typed while a reply runs (5.19, OL-4)", () => {
+  it("is held above the box, sent when the reply finishes, and can be taken back or removed", async () => {
+    const { send, user } = shown({ delayMs: 30 });
+    const box = await screen.findByRole("textbox", { name: "Message the assistant" });
+    await user.type(box, "Say we open on Saturdays{Enter}");
+    await screen.findByRole("button", { name: "Stop" });
+
+    // Typed during the reply: held, not sent, and the box is free again.
+    await user.type(box, "And on Sundays");
+    await user.click(screen.getByRole("button", { name: "Send After This Reply" }));
+    const waiting = screen.getByRole("region", { name: "Message waiting to send" });
+    expect(within(waiting).getByText("And on Sundays")).toBeDefined();
+    expect((box as HTMLTextAreaElement).value).toBe("");
+
+    // Taken back to edit: in the box, no longer waiting.
+    await user.click(within(waiting).getByRole("button", { name: "Edit" }));
+    expect((box as HTMLTextAreaElement).value).toBe("And on Sundays");
+    expect(screen.queryByRole("region", { name: "Message waiting to send" })).toBeNull();
+
+    // Held again, and sent by itself once the reply has finished.
+    await user.click(screen.getByRole("button", { name: "Send After This Reply" }));
+    await waitFor(() => expect(send).toHaveBeenCalledTimes(2), { timeout: 3000 });
+    expect(send).toHaveBeenLastCalledWith("site-1", "And on Sundays", expect.anything());
+  });
+});

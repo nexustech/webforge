@@ -212,6 +212,49 @@ describe("held changes in the panel (6.9e, Review before applying)", () => {
     panel.dispose();
   });
 
+  it("keeps a waiting message until the reply's changes are applied or discarded (5.19, PR 1304's review)", async () => {
+    const api = createFakeAssistant({ delayMs: 0 });
+    const send = vi.spyOn(api, "send");
+    const panel = createAssistantPanel(api, "site-1");
+    await vi.waitFor(() => expect(panel.state.getState().status).toBeDefined());
+    api.emit({ session: "site-1", type: "reply-started", replyId: REPLY, model: "m" });
+    panel.hold("And on Sundays", { pageId: "home" });
+    api.emit({
+      session: "site-1",
+      type: "reply-done",
+      replyId: REPLY,
+      stop: "end",
+      costUsd: 0.1,
+      month: MONTH,
+      steps: [],
+      links: [],
+      held,
+    });
+    await settle();
+    // Not sent, which would drop the changes unseen: still waiting, and the changes still held.
+    expect(send).not.toHaveBeenCalled();
+    expect(panel.state.getState().waiting).toMatchObject({
+      text: "And on Sundays",
+      afterChanges: true,
+    });
+    expect(turnOf(panel, REPLY)?.held).toEqual(held);
+
+    // Discarded (or applied): now it goes.
+    api.emit({
+      session: "site-1",
+      type: "held",
+      replyId: REPLY,
+      state: "discarded",
+      steps: [],
+      refused: [],
+    });
+    await vi.waitFor(() =>
+      expect(send).toHaveBeenCalledWith("site-1", "And on Sundays", { pageId: "home" }),
+    );
+    expect(panel.state.getState().waiting).toBeUndefined();
+    panel.dispose();
+  });
+
   it("says held changes were discarded, or dropped for a new message", async () => {
     const { api, panel } = await holding(REPLY);
     await panel.discardHeld(REPLY);
@@ -284,6 +327,73 @@ describe("held changes in the panel (6.9e, Review before applying)", () => {
     await panel.applyHeld(REPLY);
     expect(panel.state.getState().applying).toBeUndefined();
     expect(turnOf(panel, REPLY)?.held).toEqual(held);
+    panel.dispose();
+  });
+});
+
+describe("a message held while a reply is under way (5.19, OL-4)", () => {
+  it("is held, added to by another, and sent by itself when the reply finishes", async () => {
+    const api = createFakeAssistant({ delayMs: 5 });
+    const send = vi.spyOn(api, "send");
+    const panel = createAssistantPanel(api, "site-1");
+    await panel.send("Say we open on Saturdays", { pageId: "home" });
+    expect(panel.state.getState().replying).toBeDefined();
+
+    panel.hold("And on Sundays", { pageId: "about" });
+    panel.hold("Thanks", { pageId: "about" });
+    expect(panel.state.getState().waiting).toEqual({
+      text: "And on Sundays\n\nThanks",
+      context: { pageId: "about" },
+    });
+
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+    expect(send).toHaveBeenLastCalledWith("site-1", "And on Sundays\n\nThanks", {
+      pageId: "about",
+    });
+    expect(panel.state.getState().waiting).toBeUndefined();
+    await vi.waitFor(() => expect(panel.state.getState().turns).toHaveLength(2));
+    panel.dispose();
+  });
+
+  it("goes back to the box unsent when the reply is stopped or fails", async () => {
+    const api = createFakeAssistant({ delayMs: 5 });
+    const send = vi.spyOn(api, "send");
+    const stopped = createAssistantPanel(api, "site-1");
+    await stopped.send("First", {});
+    stopped.hold("Second", {});
+    await stopped.stop();
+    await vi.waitFor(() => expect(stopped.state.getState().returned).toBe("Second"));
+    expect(stopped.state.getState().waiting).toBeUndefined();
+    expect(send).toHaveBeenCalledOnce();
+    stopped.taken();
+    expect(stopped.state.getState().returned).toBeUndefined();
+    stopped.dispose();
+
+    const failing = createAssistantPanel(
+      createFakeAssistant({ delayMs: 5, reply: { fail: "provider-error" } }),
+      "site-2",
+    );
+    await failing.send("First", {});
+    failing.hold("Second", {});
+    await vi.waitFor(() => expect(failing.state.getState().returned).toBe("Second"));
+    failing.dispose();
+  });
+
+  it("can be taken back to edit, or removed, before it's sent", async () => {
+    const api = createFakeAssistant({ delayMs: 5 });
+    const send = vi.spyOn(api, "send");
+    const panel = createAssistantPanel(api, "site-1");
+    await panel.send("First", {});
+    panel.hold("Second", {});
+    panel.editWaiting();
+    expect(panel.state.getState()).toMatchObject({ waiting: undefined, returned: "Second" });
+
+    panel.hold("Third", {});
+    panel.removeWaiting();
+    expect(panel.state.getState().waiting).toBeUndefined();
+    await vi.waitFor(() => expect(panel.state.getState().replying).toBeUndefined());
+    await settle();
+    expect(send).toHaveBeenCalledOnce();
     panel.dispose();
   });
 });
