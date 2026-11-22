@@ -297,7 +297,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     }),
     output.publishCalls,
     output.netlify,
-    usageFeatureFor(electron, crashReports, () => lifecycle.preferences?.get().updateChannel),
+    usageFeatureFor(electron, crashReports, dialogs, lifecycle),
   ];
   for (const feature of features) {
     if (feature.site !== undefined) projectSession.listen(feature.site);

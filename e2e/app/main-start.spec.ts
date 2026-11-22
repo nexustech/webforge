@@ -16,9 +16,11 @@ import { desktopDir } from "./launch.js";
  * main registers as it starts. 1.57 MB once the site components' words left main's catalogue
  * (#1150), with 2% to spare. 1.60 MB with a button's missing link (#1256): Site Check's words for
  * it, in the English strings main holds from the start for `t()`, and the model's `hasLink`, in
- * the model's chunk main loads at start; again with 2% to spare.
+ * the model's chunk main loads at start; again with 2% to spare. 1.65 MB with Help › Diagnostics…
+ * (5.41): its IPC calls, which main registers as it starts, and its window's words, in the English
+ * strings main holds for `t()`; what it does is loaded when first used, with 1% to spare.
  */
-const BUDGET_BYTES = 1_635_000;
+const BUDGET_BYTES = 1_652_000;
 
 /** Packages only the export worker, a publish, the MCP server or Site Check needs. */
 const NOT_AT_START = [
