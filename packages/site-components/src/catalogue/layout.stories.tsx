@@ -27,8 +27,18 @@ export const Header: Story = { args: { nodes: header() } };
 /** The Header centred, its navigation under the site's name (2.6). */
 export const HeaderCentred: Story = { args: { nodes: header({ variant: "centred" }) } };
 
-/** The Header split: the menu's last link as a button on the right (2.6). */
-export const HeaderSplit: Story = { args: { nodes: header({ variant: "split" }) } };
+/** The Header split, the menu centred, with its own button on the right (2.6, HF-2). */
+export const HeaderSplit: Story = {
+  args: {
+    nodes: header({
+      variant: "split",
+      button: true,
+      buttonLabel: "Call us",
+      buttonLink: { kind: "phone", number: "+44 1234 567890" },
+    }),
+    context: { href: () => "tel:+441234567890" },
+  },
+};
 
 /** The Header with the logo from Site Settings in place of the site's name (HF-1). */
 export const HeaderLogo: Story = {

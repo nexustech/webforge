@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { siteLibrary } from "./catalogue/index.js";
 import {
   BOX_CLASS_SAFELIST,
+  boundString,
   boxClasses,
   boxTokenPixels,
   colorClass,
@@ -29,6 +30,35 @@ describe("library helpers", () => {
     expect(stringValue("about")).toBe("about");
     expect(stringValue(1)).toBe("");
     expect(stringValue(undefined)).toBe("");
+  });
+
+  it("boundString reads a field as plain text: its item's, its setting's, else its own (HF-1)", () => {
+    const context = {
+      ...EDITOR_RENDER_CONTEXT,
+      setting: (key: string) => (key === "general.name" ? "Rosa's Bakery" : undefined),
+    };
+    expect(boundString({ name: "Own" }, "name", context)).toBe("Own");
+    expect(boundString({ name: 3 }, "name", context)).toBe("");
+    expect(boundString({ name: "Own", bindings: { name: "general.name" } }, "name", context)).toBe(
+      "Rosa's Bakery",
+    );
+    // An empty binding is empty: the canvas's hint is no text.
+    expect(boundString({ name: "Own", bindings: { name: "contact.phone" } }, "name", context)).toBe(
+      "",
+    );
+    const post = {
+      ...context,
+      item: (field: string) =>
+        field === "title"
+          ? { kind: "text" as const, text: "Spring opening" }
+          : field === "date"
+            ? { kind: "date" as const, date: "2026-03-01" }
+            : undefined,
+    };
+    const bound = (field: string) => ({ name: "Own", bindings: { name: `item.${field}` } });
+    expect(boundString(bound("title"), "name", post)).toBe("Spring opening");
+    expect(boundString(bound("date"), "name", post)).toBe("2026-03-01");
+    expect(boundString(bound("picture"), "name", post)).toBe("");
   });
 
   it("optionValue falls back to the first option", () => {

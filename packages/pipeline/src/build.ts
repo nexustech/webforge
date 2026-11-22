@@ -445,6 +445,11 @@ export async function* buildEvents(
     }
     images.set(id, processed.image);
   }
+  // A logo gone from Media: one warning for the site, as the icon's, not one for every page's Header
+  // (`pageRender` leaves it out of each page's).
+  if (site.logo !== undefined && missing.has(site.logo)) {
+    warnings.push({ code: "missing-logo", page: "", detail: site.logo });
+  }
 
   // The favicon set from Site Settings' icon, and each page's share picture (3.4).
   const mediaById = new Map(site.media.map((item) => [item.id, item]));

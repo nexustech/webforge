@@ -93,6 +93,7 @@ export type ExportFailure = (typeof EXPORT_FAILURES)[number];
  * file that isn't there, or an image deleted from Media. `page` is the page's path ("" for the
  * whole site); `detail` what the link pointed at, or the image's id. `not-minified`: *Minify
  * output* left the page readable. `missing-icon`, `small-icon`: the site icon gave no favicon.
+ * `missing-logo`: the logo was deleted from Media, so the Header shows the site's name (HF-1).
  * `custom-script`: the site's `custom.js` has a mistake; `detail` is its line (3.9).
  */
 export const exportWarningSchema = z.strictObject({
@@ -101,6 +102,7 @@ export const exportWarningSchema = z.strictObject({
     "missing-image",
     "not-minified",
     "missing-icon",
+    "missing-logo",
     "small-icon",
     "form-unset",
     "custom-script",

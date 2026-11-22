@@ -1226,6 +1226,20 @@
             }
           ]
         },
+        "button": {
+          "kind": "toggle",
+          "label": "Show a button",
+          "help": "A button such as “Book now”, on the right, and in the phone menu."
+        },
+        "buttonLabel": {
+          "kind": "text",
+          "label": "Button text"
+        },
+        "buttonLink": {
+          "kind": "link",
+          "label": "Button link",
+          "button": "buttonLabel"
+        },
         "sticky": {
           "kind": "toggle",
           "label": "Stay at the top when scrolling"
@@ -1271,7 +1285,7 @@
               "value": "centred"
             },
             {
-              "label": "With a button",
+              "label": "Name left, menu centred",
               "value": "split"
             }
           ]
@@ -1282,6 +1296,8 @@
         "siteName": "My site",
         "logoPlace": "instead",
         "logoSize": "medium",
+        "button": false,
+        "buttonLabel": "Book now",
         "sticky": false,
         "scrollStyle": "shadow",
         "sectionHighlight": true
