@@ -3,7 +3,12 @@ import type { EditorMode, ViewOptions } from "../canvas-engine.js";
 import { keepElementsGroups } from "./element-roles.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
 import { NO_VIEW_OPTIONS } from "./engine-support.js";
-import { applyCustomCss, applySiteStyles, type SiteStyles } from "./site-styles.js";
+import {
+  applyCustomCss,
+  applySiteStyles,
+  applyThemePreviewCss,
+  type SiteStyles,
+} from "./site-styles.js";
 import { applyViewOptions } from "./view-options.js";
 
 /** What the canvas's document says it is (#465): the site's name as its title, and its language. */
@@ -28,6 +33,8 @@ export type CanvasFrame = {
   setSiteStyles(styles: SiteStyles): void;
   /** The site's own `custom.css` (6.8), after the site's CSS. */
   setCustomCss(css: string): void;
+  /** A theme being chosen (5.30), over the site's CSS and before `custom.css`; "" for none. */
+  setThemePreviewCss(css: string): void;
   setDocumentInfo(info: CanvasDocumentInfo): void;
   /** The canvas went away. */
   forget(): void;
@@ -49,6 +56,7 @@ export function createCanvasFrame(
   let viewOptions: ViewOptions = NO_VIEW_OPTIONS;
   let siteStyles: SiteStyles | null = null;
   let customCss = "";
+  let themePreviewCss = "";
   /** Stops keeping the canvas's elements enabled; set in Content mode (see `keepElementsEnabled`). */
   let stopKeepingEnabled: (() => void) | null = null;
   let stopViewOptions: (() => void) | null = null;
@@ -111,6 +119,9 @@ export function createCanvasFrame(
         tellStyled(document);
       }
       if (document !== undefined && customCss !== "") applyCustomCss(document, customCss);
+      if (document !== undefined && themePreviewCss !== "") {
+        applyThemePreviewCss(document, themePreviewCss);
+      }
       if (document !== undefined && documentInfo !== null)
         applyDocumentInfo(document, documentInfo);
       stopGroups?.();
@@ -145,6 +156,10 @@ export function createCanvasFrame(
     setCustomCss(css) {
       customCss = css;
       if (frameDocument !== null) applyCustomCss(frameDocument, css);
+    },
+    setThemePreviewCss(css) {
+      themePreviewCss = css;
+      if (frameDocument !== null) applyThemePreviewCss(frameDocument, css);
     },
     setDocumentInfo(info) {
       documentInfo = info;
