@@ -21,6 +21,9 @@ export const COMMAND_IDS = {
   preview: "site.preview",
   previewOnPhone: "site.previewOnPhone",
   stopPhonePreview: "site.stopPhonePreview",
+  // Save Page as Image… and as PDF… (5.22, OL-9).
+  savePageImage: "site.savePageImage",
+  savePagePdf: "site.savePagePdf",
   exportSite: "site.export",
   // The title bar's Site Check button (#1009): its panel, with what it found.
   siteCheck: "site.check",

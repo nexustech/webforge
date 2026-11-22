@@ -9,6 +9,7 @@ export const previewApi = (call: Call, subscribe: Subscribe): PreviewApi => ({
   show: (page) => call("previewShow", page),
   phone: (sessionId, site, page) => call("previewPhone", sessionId, site, page),
   stopPhone: () => call("previewStopPhone"),
+  savePage: (sessionId, site, page) => call("previewSavePage", sessionId, site, page),
   onPhoneStopped: (listener) =>
     subscribe(previewEvents.phoneStopped.channel, (...args) => {
       if (previewEvents.phoneStopped.args.safeParse(args).success) listener();

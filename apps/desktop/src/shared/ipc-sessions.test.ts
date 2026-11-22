@@ -30,6 +30,8 @@ const SITE_CHANNELS = [
   "preview:open",
   "preview:update",
   "preview:phone",
+  // Save Page as Image… and as PDF… (5.22): only this opening's site, with its Media.
+  "preview:save-page",
   "ai:listening",
   "trust:untrusted-code",
   "trust:trust-code",
