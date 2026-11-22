@@ -33,7 +33,8 @@ const story = (options: FakeAssistantOptions, message?: string): Story =>
       api,
       sessionId: "story",
       openSettings: () => undefined,
-    });
+      openExamples: () => undefined,
+    }).remove;
   });
 
 /** Not set up yet: Settings turns it on. */
@@ -46,3 +47,18 @@ export const SiteNotAsked: Story = story({ siteConsent: { asked: false, allowed:
 
 /** A reply that changed the site: its text, its cost and the review card. */
 export const Replied: Story = story({}, "Say we open on Saturdays");
+
+/**
+ * A message typed while a reply is under way (5.19, OL-4): held above the box, to be sent when the
+ * reply finishes, with Edit and Remove. The reply here doesn't finish, so it stays held.
+ */
+export const MessageWaiting: Story = {
+  ...story({ delayMs: 1_000_000 }),
+  play: async ({ canvas, userEvent }) => {
+    const box = await canvas.findByRole("textbox", { name: "Message the assistant" });
+    await userEvent.type(box, "Say we open on Saturdays{Enter}");
+    await userEvent.type(box, "And on Sundays, from 9am");
+    await userEvent.click(await canvas.findByRole("button", { name: "Send After This Reply" }));
+    await canvas.findByRole("region", { name: "Message waiting to send" });
+  },
+};

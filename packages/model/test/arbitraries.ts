@@ -61,6 +61,8 @@ const settings: fc.Arbitrary<SiteSettings> = fc.record({
       name: anyText(40).filter((name) => name.length > 0),
       description: anyText(60),
       language: fc.constantFrom("en", "en-GB", "de", "fr-CA"),
+      // A logo from Media (HF-1): an id the site's Media needn't hold, as an icon's needn't.
+      logo: fc.constant("logo0000000000aa" as MediaId),
       // Labels in the owner's words (6.12): wording as the schema keeps it, trimmed and not blank.
       labels: fc.dictionary(
         fc.constantFrom("siteText.menu", "siteText.backToTop"),

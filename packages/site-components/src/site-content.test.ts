@@ -53,6 +53,18 @@ describe("siteContentFor (ADR 0018 §3)", () => {
   });
 });
 
+describe("siteContentFor's logo (HF-1)", () => {
+  it("names the Header's logo from Site Settings among the images the site uses", () => {
+    const doc = site();
+    doc.settings.general.logo = unused.id;
+
+    expect(siteContentFor(doc, siteLibrary).media.map((image) => image.id)).toEqual([
+      icon.id,
+      unused.id,
+    ]);
+  });
+});
+
 describe("siteContentFor's draft pages (G37, #864)", () => {
   it("leaves them out, or for Preview keeps them out of the navigation only", () => {
     const doc = site();

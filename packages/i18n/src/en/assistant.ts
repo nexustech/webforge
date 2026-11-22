@@ -130,6 +130,54 @@ export const assistant = {
   "assistant.messagePlaceholder": "Ask for a change, such as “Make the Hero's title shorter”",
   "assistant.send": "Send",
   "assistant.stop": "Stop",
+  // Things You Can Ask (5.21, OL-8): example requests to try, each one the assistant's tools can
+  // carry out (`apps/desktop/src/renderer/assistant/assistant-examples.ts`).
+  "assistant.examples.open": "Things You Can Ask…",
+  "command.assistantExamples": "Things You Can Ask the Assistant…",
+  "assistant.examples.title": "Things You Can Ask",
+  "assistant.examples.description":
+    "Examples of what you can ask the assistant. Try one to put it in the assistant's box, where you can change it before you send it.",
+  "assistant.examples.search": "Search the examples",
+  "assistant.examples.none": "No examples have “{query}” in them.",
+  "assistant.examples.try": "Try It",
+  "assistant.examples.tryLabel": "Try “{example}”",
+  "assistant.examples.close": "Close",
+  "assistant.examples.topic.words": "Words",
+  "assistant.example.words.selected":
+    "Make the title of the section I've selected shorter and friendlier.",
+  "assistant.example.words.warmer":
+    "Rewrite the first paragraph on the About page so it sounds warmer.",
+  "assistant.example.words.spelling": "Fix any spelling mistakes on this page.",
+  "assistant.examples.topic.images": "Images",
+  "assistant.example.images.describe":
+    "Describe each image on this page for people who can't see it.",
+  "assistant.example.images.place": "Put the photo of our shop from Media in the Hero.",
+  "assistant.examples.topic.sections": "Sections",
+  "assistant.example.sections.hours": "Add a section with our opening hours to the Contact page.",
+  "assistant.example.sections.questions":
+    "Add a section of questions people often ask us, after the services.",
+  "assistant.example.sections.move": "Move the contact form above the map.",
+  "assistant.examples.topic.pages": "Pages",
+  "assistant.example.pages.add":
+    "Add a page called Prices, with a section for each of our services.",
+  "assistant.example.pages.rename": "Rename the Team page to About Us.",
+  "assistant.example.pages.order": "Move the Contact page to the end of the menu.",
+  "assistant.examples.topic.theme": "Theme",
+  "assistant.example.theme.warmer": "Make the site's colours warmer.",
+  "assistant.example.theme.font": "Use a friendlier font for the headings.",
+  "assistant.example.theme.corners": "Make the corners rounder.",
+  "assistant.examples.topic.search": "Search engines",
+  "assistant.example.search.descriptions": "Write a search description for every page.",
+  "assistant.example.search.title": "Give the Home page a title that says what we do and where.",
+  "assistant.example.search.hide": "Hide the Thank You page from search engines.",
+  // A message sent while a reply is under way (5.19, OL-4): held, and sent when it finishes.
+  "assistant.sendAfter": "Send After This Reply",
+  "assistant.waiting.label": "Message waiting to send",
+  "assistant.waiting.title": "Sends when this reply finishes",
+  // A reply that finished holding changes to review (6.9e): the message waits for them.
+  "assistant.waiting.afterChanges": "Sends once you apply or discard this reply's changes",
+  "assistant.waiting.edit": "Edit",
+  "assistant.waiting.remove": "Remove",
   // Settings › Assistant and its dialog (6.9c, AIA-6, AIA-8).
   "assistant.settings.title": "Assistant",
   "assistant.settings.line":

@@ -271,8 +271,8 @@ export type FieldsOptions = {
   /** The device the canvas shows, whose value a field set per device shows (F-ED-4). */
   readonly breakpoint: Breakpoint;
   /**
-   * What a field shown only on some sites asks of the site (5.10b): as a menu without sections when
-   * left out.
+   * What a field shown only on some sites asks of the site (5.10b, HF-1): as a menu without
+   * sections, and no logo, when left out.
    */
   readonly site?: FieldSite | undefined;
   /** Advanced mode's fields: classes, attributes and the anchor, with the anchors taken. */
@@ -304,6 +304,7 @@ export function fieldsFor(target: FieldTarget, options: FieldsOptions): EditPane
   // So do the element holding it, as its parent's values ask (a Table row's cells, 6.16c).
   const hidden = fieldsHiddenBy(component, values, {
     menuLinksToSections: site?.menuLinksToSections ?? false,
+    hasLogo: site?.hasLogo,
     parent: parentOf(target.parent, library, theme),
   });
   // What the Appearance group's words say its values come from (3.12, CT-3).

@@ -84,6 +84,8 @@ export function EditPanelHost({
   const theme = useDocument(session, (site) => site.theme);
   // Whether the Header offers *Highlight the section in view* (5.10b).
   const menuLinksToSections = useDocument(session, (site) => linksToSections(site.menu));
+  // Whether the Header offers its logo's place and size (HF-1).
+  const hasLogo = useDocument(session, (site) => site.settings.general.logo !== undefined);
   const breakpoint = breakpointOf(viewport);
 
   const controller = useMemo(() => createEditPanelController(session), [session]);
@@ -114,7 +116,7 @@ export function EditPanelHost({
     library,
     theme,
     breakpoint,
-    site: { menuLinksToSections },
+    site: { menuLinksToSections, hasLogo },
     advanced,
     anchors,
     appearanceOnly,

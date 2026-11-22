@@ -39,12 +39,15 @@ export type FieldOption = { readonly label: string; readonly value: string };
  */
 /**
  * What a field's `shownWhen` knows of the site besides the element's values: whether its menu links
- * to a section of a page (`menuLinksToSections`), for the Header's section highlight (5.10b), and
+ * to a section of a page (`menuLinksToSections`), for the Header's section highlight (5.10b),
+ * whether it has a logo (`hasLogo`, HF-1), for the Header's logo fields, and
  * the element holding it, if any (6.16c): its type and values, with its defaults. Only the one
  * holding it, never further out: a Table row's cells follow its Table's Columns.
  */
 export type FieldSite = {
   readonly menuLinksToSections: boolean;
+  /** Whether Site Settings hold a logo (HF-1, 5.37), for the Header's logo fields. */
+  readonly hasLogo?: boolean | undefined;
   readonly parent?: FieldParent | undefined;
 };
 
@@ -312,8 +315,8 @@ export type ResolvedImage = {
 /**
  * What elements show of Site Settings (1.17): the values text fields can be bound to, and the
  * structured ones sections list (2.8). The canvas gets them again whenever Site Settings change
- * (`CanvasEngine.setSettings`); the export from the site's snapshot. A structured setting to come
- * (social links, the logo) is a field here.
+ * (`CanvasEngine.setSettings`); the export from the site's snapshot. A structured setting is a
+ * field here, as the logo is.
  */
 export type SiteBindings = {
   /** A Site Settings value a field is bound to (1.17), or `undefined` while it is empty. */
@@ -322,6 +325,11 @@ export type SiteBindings = {
   readonly emptySetting?: (key: BindableSetting) => ReactNode;
   /** Site Settings' opening hours (2.8), for the Opening hours and contact section; none if left out. */
   readonly openingHours?: readonly OpeningHours[];
+  /**
+   * The Media id of Site Settings' logo (HF-1, 5.37), which the Header shows through `image`;
+   * none if left out.
+   */
+  readonly logo?: string | undefined;
   /** Site Settings' social profiles, for the Social links element (2.9b); none if left out. */
   readonly socialProfiles?: readonly SocialProfile[];
   /** What Social links show without any profiles: a hint on the canvas; nothing in the export. */

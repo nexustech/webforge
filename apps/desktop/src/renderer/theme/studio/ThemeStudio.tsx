@@ -12,30 +12,40 @@ import {
   toast,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import type { Oklch, ThemeTokens } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
+import { ownColorIssues } from "@webforge/themes";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
 import type { ItemPreviews } from "../../editor/areas.js";
 import type { EditorSession } from "../../editor/editor-session.js";
+import type { OwnThemes } from "../../editor/own-themes.js";
+import { endThemePreview, previewTheme } from "../../editor/theme-preview.js";
 import { useDocument } from "../../editor/use-document.js";
-import { addFontPreviews, ColourField } from "../../fields/index.js";
-
-import type { OwnThemes } from "../own-themes.js";
+import { addFontPreviews, ColourField, type ThemeColorPreview } from "../../fields/index.js";
 import { useOwnThemeList } from "../own-themes-list.js";
 import { PreviewStrip, StylingFrame } from "../StylingFrame.js";
 import { TOKEN_CONTROLS, tokenKey } from "../theme-controls.js";
 import {
+  addOwnColor,
+  colorFieldsOf,
   createOwnTheme,
+  deleteOwnColor,
+  ownColorUseCount,
+  renameOwnColor,
   renameOwnTheme,
   setBrandColours,
   setLook,
+  setOwnColor,
   setPaletteColor,
   setTextStep,
   setToken,
   switchPreset,
   type ThemeAsks,
   type ThemeSiteWide,
+  withOwnColor,
+  withPaletteColor,
 } from "../theme-edits.js";
 import { changeDraft, draftChange, draftChanges, themeWithDraft } from "./look-draft.js";
 import { StudioColours } from "./StudioColours.js";
@@ -49,6 +59,7 @@ import {
 } from "./StudioComponents.js";
 import { StudioDraftQuestion } from "./StudioDraftQuestion.js";
 import { StudioImagePalette } from "./StudioImagePalette.js";
+import { StudioOwnColours } from "./StudioOwnColours.js";
 import { StudioStyles } from "./StudioStyles.js";
 import { StudioText } from "./StudioText.js";
 import { StudioThemes } from "./StudioThemes.js";
@@ -97,6 +108,18 @@ export type ThemeStudioProps = {
 };
 
 /**
+ * What shows a colour while it's dragged in Theme Studio (5.30, OL-18): the theme as `change` makes
+ * it with that colour, on the canvas and the sample page, until the picker closes.
+ */
+const previewOf = (
+  change: (tokens: ThemeTokens, color: Oklch) => ThemeTokens,
+  session: EditorSession,
+): ThemeColorPreview => ({
+  show: (color) => previewTheme(session, change(session.history.document.getState().theme, color)),
+  end: (chosen) => endThemePreview(session, chosen),
+});
+
+/**
  * Theme Studio (F-DS-7, UI2): the site's theme in full, in a dialog that fills the window (not a
  * window of its own, decided 2026-10-23), in *Style this ‹kind›…*'s frame (CT-11). Its sections are
  * tabs in the bar at the top: the themes as cards, live in their own colours, fonts and corners;
@@ -121,9 +144,11 @@ export function ThemeStudio({
   itemPreviews,
 }: ThemeStudioProps) {
   const { open, section, kind, draft: kept, pending: asked } = useStore(studio);
-  // A look's colours are the theme's (ADR 0009): the colour field as Simple mode has it.
+  // A look's colours are the theme's (ADR 0009): the colour field without another colour.
   const [renderers] = useState<FieldRenderers>(() => ({
-    color: (props: FieldRendererProps<"color">) => <ColourField {...props} session={session} />,
+    color: (props: FieldRendererProps<"color">) => (
+      <ColourField {...props} session={session} themeOnly />
+    ),
   }));
   const theme = useDocument(session, (site) => site.theme);
   const media = useDocument(session, (site) => site.media);
@@ -336,10 +361,31 @@ export function ThemeStudio({
                   setBrandColours(session, asks, proposal, image.fileName)
                 }
               />
+              <StudioOwnColours
+                colors={theme.ownColors ?? []}
+                startColor={theme.colors.primary}
+                issues={ownColorIssues(theme)}
+                onAdd={(name, color) => void addOwnColor(session, asks, name, color)}
+                onRename={(id, name) => void renameOwnColor(session, asks, id, name)}
+                onSetColor={(id, color) => void setOwnColor(session, asks, id, color)}
+                usesOf={(id) => ownColorUseCount(session, id, colorFieldsOf(session.library))}
+                onDelete={(id, uses) =>
+                  void deleteOwnColor(session, asks, id, uses, colorFieldsOf(session.library))
+                }
+                preview={(id) =>
+                  previewOf((tokens, color) => withOwnColor(tokens, id, color), session)
+                }
+              />
               <StudioColours
                 theme={theme}
                 onChange={(palette, role, color) =>
                   void setPaletteColor(session, asks, palette, role, color)
+                }
+                preview={(palette, role) =>
+                  previewOf(
+                    (tokens, color) => withPaletteColor(tokens, palette, role, color),
+                    session,
+                  )
                 }
               />
             </TabsContent>

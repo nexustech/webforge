@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import { PREVIEW_STYLESHEET } from "@webforge/pipeline/light";
 import { THEME_VALUES_MARKER } from "@webforge/themes";
 import type { PreviewOutcome } from "../shared/export-worker-protocol.js";
@@ -49,6 +49,12 @@ export type PreviewServer = {
    * reach it, until another version's replaces it.
    */
   showVersion(build: PreviewBuild): void;
+  /**
+   * Takes the build a page is drawn from, as an image or a PDF (5.22): served on this computer
+   * under {@link CAPTURE_PATH}, as it is, without the live reload script, until it's taken away
+   * (`undefined`) or another replaces it.
+   */
+  showCapture(build: PreviewBuild | undefined): void;
   /** Takes the editor to `page` (`about.html`): the browsers showing another page go there. */
   show(page: string): void;
   /** A build failed: pages waiting for the first one are told it isn't ready, at once. */
@@ -66,6 +72,9 @@ export type PreviewServer = {
  * page of a site can be in.
  */
 export const VERSION_PATH = "__webforge/version/";
+
+/** Where the page drawn as an image or a PDF is served from (5.22), beside a version's. */
+export const CAPTURE_PATH = "__webforge/capture/";
 
 /** Content types by extension; anything else is served as bytes. */
 const CONTENT_TYPES: Readonly<Record<string, string>> = {
@@ -181,6 +190,8 @@ export function createPreviewServer(
   let files = new Map<string, Uint8Array>();
   /** The files of the version previewed last, if any (4.6). */
   let versionFiles = new Map<string, Uint8Array>();
+  /** The files of the site as a page of it is drawn, while it is (5.22). */
+  let captureFiles = new Map<string, Uint8Array>();
   // Each file's version, its ETag: a number that only ever goes up while the server runs.
   const versions = new Map<string, number>();
   let version = 0;
@@ -329,10 +340,15 @@ export function createPreviewServer(
       openStream(listener, request, response);
       return;
     }
-    if (path.startsWith(VERSION_PATH)) {
-      // A version is previewed on this computer only.
-      const file = pageFile(path.slice(VERSION_PATH.length));
-      const data = scope === "local" ? versionFiles.get(file) : undefined;
+    const held = path.startsWith(VERSION_PATH)
+      ? { prefix: VERSION_PATH, files: versionFiles }
+      : path.startsWith(CAPTURE_PATH)
+        ? { prefix: CAPTURE_PATH, files: captureFiles }
+        : undefined;
+    if (held !== undefined) {
+      // A version, or the page drawn, is served on this computer only.
+      const file = pageFile(path.slice(held.prefix.length));
+      const data = scope === "local" ? held.files.get(file) : undefined;
       if (data === undefined) {
         notFound(response);
         return;
@@ -446,6 +462,9 @@ export function createPreviewServer(
     },
     showVersion(build) {
       versionFiles = new Map(build.changed.map(({ path, data }) => [path, data]));
+    },
+    showCapture(build) {
+      captureFiles = new Map(build?.changed.map(({ path, data }) => [path, data]));
     },
     show(page) {
       send("show", { page });

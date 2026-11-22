@@ -124,8 +124,8 @@ function themeToken(input: ProvenanceInput, chosen: boolean): Provenance | undef
 
 /**
  * Where field `input.name`'s value comes from on the device shown (3.12, CT-3), in this order: the
- * element's own value for that device (*Set on Mobile*); its own (*Set here*, *Custom colour
- * (Advanced)* for a colour off the theme, or the theme's token where it chose the theme's); a CSS
+ * element's own value for that device (*Set on Mobile*); its own (*Set here*, *Off the theme* for
+ * a colour of its own, or the theme's token where it chose the theme's); a CSS
  * class of its own for the property (*Class (Advanced)*); its kind's look (*Theme's look for
  * Buttons*); else the theme's token where one decides it (*Theme's (Corners: Medium)*). Nothing
  * where the words would only repeat the control's *Theme's*, or where its default isn't the

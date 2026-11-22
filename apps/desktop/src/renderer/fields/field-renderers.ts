@@ -9,6 +9,7 @@ import { iconField } from "./icon/field.js";
 import { imageField } from "./image/field.js";
 import { linkField } from "./link/field.js";
 import { themeColorField } from "./theme-color/field.js";
+import type { ThemeColorPreview } from "./theme-color/ThemeColorField.js";
 
 /**
  * The Edit panel's renderers the app draws itself (R11, 2.20 B5), one per kind, each from its
@@ -28,9 +29,12 @@ export function fieldRenderers(context: FieldRendererContext): FieldRenderers {
 
 /**
  * The renderers of the Theme tab's own kinds (2.3a): a theme colour, with its contrast warnings,
- * and a font from the font picker, through `fonts` (the preload API's, #668). The Edit panel never
- * draws these kinds.
+ * shown while it's dragged through `preview` (5.30), and a font from the font picker, through
+ * `fonts` (the preload API's, #668). The Edit panel never draws these kinds.
  */
-export function themeFieldRenderers(fonts?: () => FontsApi): FieldRenderers {
-  return { themeColor: themeColorField(), font: fontField(fonts) };
+export function themeFieldRenderers(
+  fonts?: () => FontsApi,
+  preview?: (name: string) => ThemeColorPreview | undefined,
+): FieldRenderers {
+  return { themeColor: themeColorField(preview), font: fontField(fonts) };
 }

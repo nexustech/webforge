@@ -48,6 +48,11 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
     open: vi.fn<PreviewApi["open"]>(async () => "opened"),
     update: vi.fn<PreviewApi["update"]>(async () => null),
     show: vi.fn<PreviewApi["show"]>(async () => null),
+    savePage: vi.fn<PreviewApi["savePage"]>(async () => ({
+      status: "saved",
+      fileName: "About.png",
+      cut: false,
+    })),
     phone: vi.fn<PreviewApi["phone"]>(async () => phone),
     stopPhone: vi.fn<PreviewApi["stopPhone"]>(async () => null),
     openVersion: vi.fn<PreviewApi["openVersion"]>(async () => "opened"),
@@ -59,6 +64,7 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
   const phoneState = createStore<PhoneState>(() => ({ status: "closed" }));
   const notify = vi.fn();
   const tell = vi.fn();
+  const saved = vi.fn();
   const confirmCode = vi.fn(
     async (): Promise<CodeDecision> => ({ go: true, keeps: () => true, allowListConfirmed: true }),
   );
@@ -80,6 +86,8 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
     phone: phoneState,
     notify,
     tell,
+    saved,
+    width: () => 375,
   });
   /** An edit of the site, as any edit is: one step in the history. */
   const edit = (name: string) =>
@@ -93,6 +101,7 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
     phoneState,
     notify,
     tell,
+    saved,
     remove,
     edit,
     about,
@@ -168,6 +177,7 @@ describe("registerPreviewCommands: the site's code (#649)", () => {
       phone: vi.fn<PreviewApi["phone"]>(async () => ({ status: "offline" })),
       stopPhone: vi.fn<PreviewApi["stopPhone"]>(async () => null),
       openVersion: vi.fn<PreviewApi["openVersion"]>(async () => "opened"),
+      savePage: vi.fn<PreviewApi["savePage"]>(async () => ({ status: "canceled" })),
       onPhoneStopped: () => () => undefined,
     };
     const remove = registerPreviewCommands(registry, {
@@ -178,6 +188,8 @@ describe("registerPreviewCommands: the site's code (#649)", () => {
       phone: createStore<PhoneState>(() => ({ status: "closed" })),
       notify: vi.fn(),
       tell: vi.fn(),
+      saved: vi.fn(),
+      width: () => 1280,
       confirmCode: (site) => codeTrust.confirm(site),
       onCodeTrusted: (listener) => codeTrust.onTrusted(listener),
     });
@@ -235,6 +247,94 @@ describe("registerPreviewCommands (3.2)", () => {
       path: "services/about",
       hideFromNavigation: true,
     });
+  });
+
+  it("saves the page shown as an image or a PDF at the canvas's device width (5.22)", async () => {
+    const { session, registry, api, saved, about } = setUp();
+    session.showPage(about);
+
+    await runSettled(registry, COMMAND_IDS.savePageImage);
+    await vi.waitFor(() =>
+      expect(saved).toHaveBeenCalledWith(
+        "Saved About.png",
+        "The page as Preview shows it, 375 pixels wide.",
+      ),
+    );
+    const [sessionId, content, page] = api.savePage.mock.calls[0] ?? [];
+    expect(sessionId).toBe(SESSION);
+    expect(content?.snapshot.name).toBe(session.history.document.getState().settings.general.name);
+    expect(page).toEqual({
+      page: "services/about.html",
+      name: session.history.document.getState().pages[about]?.title,
+      width: 375,
+      kind: "png",
+    });
+    // Both are on again once it's done.
+    expect(registry.get(COMMAND_IDS.savePagePdf)?.enabled).not.toBe(false);
+
+    await runSettled(registry, COMMAND_IDS.savePagePdf);
+    await vi.waitFor(() => expect(api.savePage).toHaveBeenCalledTimes(2));
+    expect(api.savePage.mock.calls[1]?.[2].kind).toBe("pdf");
+  });
+
+  it("draws a Desktop wider than any device at the widest, and asks nothing about code (5.22)", async () => {
+    const { session, api, confirmCode, saved } = setUp();
+    const commands = createCommandRegistry();
+    const remove = registerPreviewCommands(commands, {
+      session,
+      library: siteLibrary,
+      api,
+      confirmCode,
+      onCodeTrusted: () => () => undefined,
+      sessionId: () => SESSION,
+      phone: createStore<PhoneState>(() => ({ status: "closed" })),
+      notify: vi.fn(),
+      tell: vi.fn(),
+      saved,
+      // An ultrawide screen's Desktop.
+      width: () => 3440,
+    });
+
+    await runSettled(commands, COMMAND_IDS.savePagePdf);
+    await vi.waitFor(() => expect(api.savePage).toHaveBeenCalledOnce());
+    expect(api.savePage.mock.calls[0]?.[2].width).toBe(2560);
+    await vi.waitFor(() =>
+      expect(saved).toHaveBeenCalledWith(
+        "Saved About.png",
+        "The page as Preview shows it, 2560 pixels wide.",
+      ),
+    );
+    // Nothing of the site's code runs where it's drawn.
+    expect(confirmCode).not.toHaveBeenCalled();
+    remove();
+  });
+
+  it("says when a picture stops short, and why a page wasn't saved; nothing when cancelled (5.22)", async () => {
+    const { registry, api, saved, notify } = setUp();
+    api.savePage.mockResolvedValueOnce({ status: "saved", fileName: "Home.png", cut: true });
+    await runSettled(registry, COMMAND_IDS.savePageImage);
+    await vi.waitFor(() =>
+      expect(saved).toHaveBeenCalledWith("Saved Home.png", expect.stringContaining("stops short")),
+    );
+
+    for (const [reason, words] of [
+      ["draw", "Webforge couldn't draw the page. Try again in a moment."],
+      ["not-allowed", "Webforge isn't allowed to save there. Choose another folder."],
+      ["disk-full", "There isn't enough space on the disk to save the page."],
+      ["write", "Webforge couldn't save the file there. Try another folder."],
+    ] as const) {
+      api.savePage.mockResolvedValueOnce({ status: "failed", reason });
+      await runSettled(registry, COMMAND_IDS.savePagePdf);
+      await vi.waitFor(() => expect(notify).toHaveBeenLastCalledWith(words));
+    }
+
+    notify.mockClear();
+    saved.mockClear();
+    api.savePage.mockResolvedValueOnce({ status: "canceled" });
+    await runSettled(registry, COMMAND_IDS.savePagePdf);
+    await vi.waitFor(() => expect(api.savePage).toHaveBeenCalledTimes(6));
+    expect(notify).not.toHaveBeenCalled();
+    expect(saved).not.toHaveBeenCalled();
   });
 
   it("says so when the preview couldn't open", async () => {

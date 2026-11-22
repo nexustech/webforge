@@ -2,15 +2,16 @@ import type { Session, WebContents, WebPreferences } from "electron";
 
 /**
  * Web preferences for every window that shows editor UI. The renderer is sandboxed and isolated
- * from Node and Electron; it reaches the main process only through the preload API.
+ * from Node and Electron; it reaches the main process only through the preload API. A window
+ * without one (`undefined`: a page drawn as a picture, 5.22) reaches nothing of the app's.
  */
 export function createSecureWebPreferences(
-  preloadPath: string,
+  preloadPath: string | undefined,
   /** Spell check in text fields (F-ED-19); only where the system's own checker is used. */
   spellcheck = false,
 ): WebPreferences {
   return {
-    preload: preloadPath,
+    ...(preloadPath === undefined ? {} : { preload: preloadPath }),
     spellcheck,
     contextIsolation: true,
     sandbox: true,

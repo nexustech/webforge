@@ -3,8 +3,8 @@ import { createItemPreviews } from "../add/index.js";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { whenClosed } from "../editor/first-tips.js";
 import { itemCssThrough } from "../editor/ItemCssView.js";
+import { themePreviewOf } from "../editor/theme-preview.js";
 import { TipPlaces } from "../editor/window-services.js";
-import { createOwnThemes } from "./own-themes.js";
 import { registerOwnThemes } from "./register-own-themes.js";
 import { registerThemePanel } from "./register-theme-panel.js";
 import { registerThemeStudio } from "./register-theme-studio.js";
@@ -21,7 +21,17 @@ import { registerThemeCommands } from "./theme-commands.js";
 export const themePanelArea: Area<WindowContext> = {
   id: "themePanel",
   uses: [TipPlaces],
-  register: ({ api, panels, commands, windowDialogs, session, preferences, siteWide, use }) => {
+  register: ({
+    api,
+    panels,
+    commands,
+    windowDialogs,
+    session,
+    preferences,
+    siteWide,
+    ownThemes,
+    use,
+  }) => {
     const tips = use(TipPlaces);
     // The previews at the top of *Style this ‹kind›…* and Theme Studio (3.13a, CT-11), drawn by the
     // canvas's CSS compiler, as the Add panel's are: made once, as the window's areas register once.
@@ -31,6 +41,8 @@ export const themePanelArea: Area<WindowContext> = {
       compileCss: (request) => api.canvas.compileCss(request),
       // A preview shown draws again as the theme changes (#613).
       subscribe: (listener: () => void) => session.history.document.subscribe(listener),
+      // A colour being dragged shows on the sample page at once (5.30).
+      themePreview: themePreviewOf(session),
     });
     const studio = createStudio();
     // The first Theme Studio's tip (OB-4), once it has closed.
@@ -39,9 +51,6 @@ export const themePanelArea: Area<WindowContext> = {
       () => studio.getState().open,
       () => tips.reached("themeStudio"),
     );
-    const ownThemes = createOwnThemes(() => api.themes, {
-      notify: (message) => toast.error(message),
-    });
     const removePanel = registerThemePanel(
       panels,
       session,

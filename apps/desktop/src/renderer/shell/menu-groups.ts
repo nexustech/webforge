@@ -45,6 +45,8 @@ export const MENU_GROUPS: Partial<Record<MenuId, readonly (readonly GroupItem[])
       COMMAND_IDS.preview,
       COMMAND_IDS.previewOnPhone,
       COMMAND_IDS.stopPhonePreview,
+      COMMAND_IDS.savePageImage,
+      COMMAND_IDS.savePagePdf,
       COMMAND_IDS.exportSite,
       COMMAND_IDS.publish,
     ],

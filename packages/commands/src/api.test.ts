@@ -271,6 +271,74 @@ describe("the command API's commands (4.8)", () => {
     expect(history.document.getState().theme.ownColors).toEqual([sky]);
   });
 
+  it("lists your colours by id and name, and says how a colour field names one (TC-1b)", async () => {
+    const { host } = setup();
+    const api = createCommandApi(host);
+    const sky = { id: "csky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } };
+    await api.run("setThemeTokens", { tokens: { ownColors: [sky] } }, app);
+    expect(api.query("theme", {})).toMatchObject({ status: "done", data: { ownColors: [sky] } });
+
+    const styles = api.query("styleFields", {});
+    if (styles.status !== "done") throw new Error("no styling fields");
+    const { lookColor } = styles.data as Record<string, { readonly schema?: unknown }>;
+    expect(JSON.stringify(lookColor?.schema)).toContain("own-<id>");
+  });
+
+  it("refuses to drop one of your colours still in use, and drops, renames or changes one otherwise (#1308)", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const location = home(history);
+    const sky = { id: "csky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } };
+    const sea = { id: "csea", name: "Sea", color: { l: 0.5, c: 0.1, h: 200 } };
+    await api.run("setThemeTokens", { tokens: { ownColors: [sky, sea] } }, app);
+    const used = { location, nodeId: "heading", values: { lookColor: "own-csky-300/50" } };
+    expect((await api.run("updateFields", used, app)).status).toBe("done");
+    const before = history.document.getState();
+    const steps = history.state.getState().entries.length;
+
+    // Sky is used once: dropping it is refused, naming it, and nothing changes.
+    const dropped = await api.run("setThemeTokens", { tokens: { ownColors: [sea] } }, app);
+    expect(dropped).toMatchObject({ status: "refused", message: expect.stringContaining('"Sky"') });
+    expect(history.document.getState()).toBe(before);
+    expect(history.state.getState().entries).toHaveLength(steps);
+
+    // Renamed and recoloured, it stays: allowed. Sea, unused, can go.
+    const renamed = { ...sky, name: "Harbour blue", color: { l: 0.6, c: 0.12, h: 235 } };
+    const kept = await api.run("setThemeTokens", { tokens: { ownColors: [renamed] } }, app);
+    expect(kept.status).toBe("done");
+    expect(history.document.getState().theme.ownColors).toEqual([renamed]);
+
+    // Once nothing uses it, it can be dropped too.
+    const elsewhere = { location, nodeId: "heading", values: { lookColor: "primary" } };
+    expect((await api.run("updateFields", elsewhere, app)).status).toBe("done");
+    const gone = await api.run("setThemeTokens", { tokens: { ownColors: [] } }, app);
+    expect(gone.status).toBe("done");
+    expect(history.document.getState().theme.ownColors).toEqual([]);
+  });
+
+  it("counts a look's use of a colour as the change leaves the looks, not as they were (#1308)", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const sky = { id: "csky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } };
+    const sea = { id: "csea", name: "Sea", color: { l: 0.5, c: 0.1, h: 200 } };
+    await api.run("setThemeTokens", { tokens: { ownColors: [sky, sea] } }, app);
+    const before = history.document.getState();
+
+    // A look moved onto Sky in the same call that drops it: every Heading would draw nothing.
+    const onto = { ownColors: [sea], looks: { Heading: { lookColor: "own-csky" } } };
+    const refused = await api.run("setThemeTokens", { tokens: onto }, app);
+    expect(refused).toMatchObject({ status: "refused", message: expect.stringContaining('"Sky"') });
+    expect(history.document.getState()).toBe(before);
+
+    // A look on Sky, moved off it in the same call that drops it: nothing uses Sky any more.
+    const lookOnSky = { looks: { Heading: { lookColor: "own-csky-700" } } };
+    expect((await api.run("setThemeTokens", { tokens: lookOnSky }, app)).status).toBe("done");
+    const off = { ownColors: [sea], looks: { Heading: { lookColor: "primary" } } };
+    expect((await api.run("setThemeTokens", { tokens: off }, app)).status).toBe("done");
+    expect(history.document.getState().theme.ownColors).toEqual([sea]);
+    expect(history.document.getState().theme.looks?.Heading).toEqual({ lookColor: "primary" });
+  });
+
   it("refuses an icon Webforge doesn't have, naming the field, and lists those it has (#1251)", async () => {
     const { history, host } = setup();
     const api = createCommandApi(host);
@@ -311,13 +379,21 @@ describe("the command API's commands (4.8)", () => {
     const renamed = { location, nodeId: added.id, values: { icon: "triangle-alert" } };
     expect((await api.run("updateFields", renamed, app)).status).toBe("done");
 
-    // The icons query lists the names, all or by a part of them.
+    // The icons query lists the names, all or by a part of them, 200 at most at a time (#1250).
     const all = api.query("icons", {});
-    expect(all).toMatchObject({ status: "done", data: expect.arrayContaining(["phone", "star"]) });
+    if (all.status !== "done") throw new Error("no answer");
+    const listed = all.data as { count: number; names: string[] };
+    expect(listed.count).toBeGreaterThan(1000);
+    expect(listed.names).toHaveLength(200);
+    expect(listed.names).toEqual([...listed.names].sort());
+    const phones = api.query("icons", { search: "phone" });
+    expect(phones).toMatchObject({ data: { names: expect.arrayContaining(["phone"]) } });
     const arrows = api.query("icons", { search: "Arrow-Right" });
     if (arrows.status !== "done") throw new Error("no answer");
-    expect(arrows.data).toContain("arrow-right");
-    expect((arrows.data as string[]).every((icon) => icon.includes("arrow-right"))).toBe(true);
+    const right = arrows.data as { count: number; names: string[] };
+    expect(right.names).toContain("arrow-right");
+    expect(right.count).toBe(right.names.length);
+    expect(right.names.every((icon) => icon.includes("arrow-right"))).toBe(true);
     expect(api.query("icons", { search: "" })).toMatchObject({ status: "invalid" });
     // The field's own schema says so too.
     expect(api.query("fields", { location, nodeId: added.id })).toMatchObject({

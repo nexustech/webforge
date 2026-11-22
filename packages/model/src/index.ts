@@ -249,6 +249,18 @@ export type {
 } from "./migrations.js";
 export { MIGRATIONS, migrateSite, migrateSiteWith, SiteFormatError } from "./migrations.js";
 export { findNode, findParent, removeNode } from "./node-tree.js";
+export { oneOffColours } from "./one-off-colours.js";
+export {
+  colorFieldsIn,
+  countOneOffUses,
+  countOwnColorUses,
+  type FieldKinds,
+  type IsColorField,
+  newOwnColorId,
+  rewriteOneOffUses,
+  rewriteOwnColorUses,
+  toOwnColor,
+} from "./own-colors.js";
 export {
   canDeletePage,
   deletePageFrom,

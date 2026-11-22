@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { release } from "node:os";
 import { join } from "node:path";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import { app, BrowserWindow, crashReporter, dialog, type IpcMain, shell } from "electron";
 import { installCrashHandlers, noticeAfterCrash } from "./crash-handlers.js";
 import { createCrashReports } from "./crash-reports.js";
@@ -61,6 +61,8 @@ export function startCrashReports(primary: boolean) {
     },
     /** How many crash reports the folder holds, for the usage summary (5.40). */
     count: () => reports.count(),
+    /** The newest reports, for Diagnostics' Save Report… (5.41, BD-2). */
+    newest: (most: number) => reports.newest(most),
     /** See `CrashReporting.watchWorker`: a worker's crash becomes a local report (R3). */
     watchWorker: handlers.watchWorker,
     /** See `CrashReporting.reportThread`: a worker thread's crash becomes a local report (R3). */

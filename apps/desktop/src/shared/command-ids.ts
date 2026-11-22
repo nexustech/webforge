@@ -21,6 +21,9 @@ export const COMMAND_IDS = {
   preview: "site.preview",
   previewOnPhone: "site.previewOnPhone",
   stopPhonePreview: "site.stopPhonePreview",
+  // Save Page as Image… and as PDF… (5.22, OL-9).
+  savePageImage: "site.savePageImage",
+  savePagePdf: "site.savePagePdf",
   exportSite: "site.export",
   // The title bar's Site Check button (#1009): its panel, with what it found.
   siteCheck: "site.check",
@@ -72,10 +75,14 @@ export const COMMAND_IDS = {
   helpForElement: "help.forElement",
   // Help › Take the Tour (5.4a, OB-1).
   tour: "help.tour",
+  // Help › Things You Can Ask the Assistant… (5.21, OL-8).
+  assistantExamples: "help.assistantExamples",
   shortcuts: "help.shortcuts",
   tryExample: "help.tryExample",
   licences: "help.licences",
   // Help › Report a Problem (5.23, OL-10).
   reportProblem: "help.reportProblem",
+  // Help › Diagnostics… (5.41, BD-2).
+  diagnostics: "help.diagnostics",
   about: "help.about",
 } as const;

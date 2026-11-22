@@ -2,6 +2,7 @@ import type { WebforgeApi } from "../../shared/webforge-api.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { ImagePickRequests } from "../media/index.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
+import type { OneOffToOwn } from "./color/ColourField.js";
 
 /** What the app's field renderers draw from (2.20, B5). */
 export type FieldRendererContext = {
@@ -12,4 +13,6 @@ export type FieldRendererContext = {
   readonly preferences: PreferencesStore;
   /** Requests to open the image picker from the canvas (*Edit* on an image, F-ED-25). */
   readonly imagePicks: ImagePickRequests;
+  /** How a colour field makes a one-off one of the person's colours (TC-3), where it can. */
+  readonly toOwn?: OneOffToOwn | undefined;
 };

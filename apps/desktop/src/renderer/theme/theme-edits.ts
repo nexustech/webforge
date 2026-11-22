@@ -5,27 +5,42 @@ import {
   t,
 } from "@webforge/i18n/components";
 import {
+  type ColorRef,
   type ColorRole,
+  colorFieldsIn,
   copyTheme,
+  countOwnColorUses,
   DEFAULT_THEME,
   type FontRef,
+  formatColorRef,
+  type IsColorField,
   isNodeDoc,
   type NodeDoc,
   newId,
+  newOwnColorId,
   type Oklch,
+  OWN_COLOR_NAME_MAX,
+  OWN_COLORS_MAX,
+  rewriteOneOffUses,
+  rewriteOwnColorUses,
   type SiteDoc,
   sameJson,
   TEXT_SIZES,
   TEXT_STYLES,
   type TextStyle,
   type ThemeTokens,
+  toOwnColor,
 } from "@webforge/model";
+import type { ComponentLibrary } from "@webforge/site-components";
 import type { BrandProposal, FontPairing } from "@webforge/themes";
 import {
   brandedTheme,
   catalogueFont,
   fontRefOf,
+  hexOf,
+  hexToOklch,
   inverseColors,
+  shadeOf,
   themePreset,
 } from "@webforge/themes";
 import type { OwnTheme } from "../../shared/ipc/themes.js";
@@ -240,6 +255,8 @@ async function changeTheme(
   label: string,
   reach: Reach,
   recipe: (tokens: ThemeTokens) => void,
+  /** What else the step changes in the site, beside its theme: a deleted colour's uses (#1218). */
+  site?: (draft: SiteDoc) => void,
 ): Promise<boolean> {
   if (reach?.question !== undefined && !(await confirmed(session, asks, reach.question))) {
     return false;
@@ -263,6 +280,7 @@ async function changeTheme(
     label,
     (draft) => {
       recipe(draft.theme);
+      site?.(draft);
       if (own !== undefined) draft.theme.own = { ...own };
     },
     reach?.toast === undefined ? undefined : { announce: reach.toast(pages) },
@@ -494,16 +512,43 @@ export async function setPaletteColor(
       toast: (pages) =>
         plural(reversed ? "theme.changed.colorReversed" : "theme.changed.color", pages, { name }),
     },
-    (tokens) => {
-      if (!reversed) {
-        setPageColor(tokens, role, color);
-        return;
-      }
-      // Reversed sections' colours as the theme shows them, for a theme without its own.
-      tokens.inverse ??= JSON.parse(JSON.stringify(inverseColors(tokens))) as ThemeTokens["colors"];
-      tokens.inverse[role] = { ...color };
-    },
+    paletteColor(palette, role, color),
   );
+}
+
+/** Sets `palette`'s colour `role` to `color` in `tokens`: the change, or a preview of it (5.30). */
+const paletteColor =
+  (palette: "colors" | "inverse", role: ColorRole, color: Oklch) => (tokens: ThemeTokens) => {
+    if (palette === "colors") {
+      setPageColor(tokens, role, color);
+      return;
+    }
+    // Reversed sections' colours as the theme shows them, for a theme without its own.
+    tokens.inverse ??= JSON.parse(JSON.stringify(inverseColors(tokens))) as ThemeTokens["colors"];
+    tokens.inverse[role] = { ...color };
+  };
+
+/**
+ * The theme as it would be with `palette`'s colour `role` set to `color`, as {@link setPaletteColor}
+ * and {@link setColor} set it: what a colour being dragged shows before it's chosen (5.30, OL-18).
+ */
+export function withPaletteColor(
+  tokens: ThemeTokens,
+  palette: "colors" | "inverse",
+  role: ColorRole,
+  color: Oklch,
+): ThemeTokens {
+  const next = structuredClone(tokens);
+  paletteColor(palette, role, color)(next);
+  return next;
+}
+
+/** The theme as it would be with colour `id` of the person's own set to `color` (5.30). */
+export function withOwnColor(tokens: ThemeTokens, id: string, color: Oklch): ThemeTokens {
+  const next = structuredClone(tokens);
+  const colour = next.ownColors?.find((each) => each.id === id);
+  if (colour !== undefined) colour.color = { ...color };
+  return next;
 }
 
 /**
@@ -722,3 +767,166 @@ export function renameOwnTheme(
   }
   keep({ ...copyTheme(own), own: { ...own.own, name } });
 }
+
+/**
+ * Adds one of the person's own colours, `name` and `color`, to the theme (TC-1b, #1218): one step.
+ * Its new id, which every use of it refers to, or undefined if the theme has as many as it takes.
+ */
+export async function addOwnColor(
+  session: ThemeSession,
+  asks: ThemeAsks,
+  name: string,
+  color: Oklch,
+): Promise<string | undefined> {
+  const colors = theme(session).ownColors ?? [];
+  if (colors.length >= OWN_COLORS_MAX) return undefined;
+  const id = newOwnColorId(colors.map((each) => each.id));
+  const added = await changeTheme(
+    session,
+    asks,
+    t("theme.history.ownAdded", { name }),
+    undefined,
+    (tokens) => {
+      tokens.ownColors = [...(tokens.ownColors ?? []), { id, name, color }];
+    },
+  );
+  return added ? id : undefined;
+}
+
+/** Renames colour `id` (TC-1b): one step. A use refers to its id, so none changes. */
+export function renameOwnColor(
+  session: ThemeSession,
+  asks: ThemeAsks,
+  id: string,
+  name: string,
+): Promise<boolean> {
+  const was = theme(session).ownColors?.find((each) => each.id === id);
+  if (was === undefined || was.name === name) return Promise.resolve(false);
+  return changeTheme(
+    session,
+    asks,
+    t("theme.history.ownRenamed", { from: was.name, name }),
+    undefined,
+    (tokens) => {
+      const colour = tokens.ownColors?.find((each) => each.id === id);
+      if (colour !== undefined) colour.name = name;
+    },
+  );
+}
+
+/** Changes colour `id`'s colour (TC-1b): one step, and every use of it follows. */
+export function setOwnColor(
+  session: ThemeSession,
+  asks: ThemeAsks,
+  id: string,
+  color: Oklch,
+): Promise<boolean> {
+  const was = theme(session).ownColors?.find((each) => each.id === id);
+  if (was === undefined || sameJson(was.color, color)) return Promise.resolve(false);
+  return changeTheme(
+    session,
+    asks,
+    t("theme.history.ownChanged", { name: was.name }),
+    undefined,
+    (tokens) => {
+      const colour = tokens.ownColors?.find((each) => each.id === id);
+      if (colour !== undefined) colour.color = color;
+    },
+  );
+}
+
+/**
+ * What becomes of a deleted colour's uses (TC-1b): each given to another of the person's colours,
+ * its shade and opacity kept; or each kept as a one-off colour of its own, as it looks now. A
+ * colour is never lost silently.
+ */
+export type OwnColorUses =
+  | { readonly kind: "replace"; readonly to: string }
+  | { readonly kind: "oneOff" };
+
+/**
+ * Deletes colour `id` (TC-1b): one step, with its uses as `uses` says, so none is left referring
+ * to a colour the theme no longer has. `isColorField` tells which fields hold colours.
+ */
+export function deleteOwnColor(
+  session: ThemeSession,
+  asks: ThemeAsks,
+  id: string,
+  uses: OwnColorUses,
+  isColorField: IsColorField,
+): Promise<boolean> {
+  const was = theme(session).ownColors?.find((each) => each.id === id);
+  if (was === undefined) return Promise.resolve(false);
+  if (uses.kind === "replace" && !theme(session).ownColors?.some((each) => each.id === uses.to)) {
+    return Promise.resolve(false);
+  }
+  const rewrite =
+    uses.kind === "replace"
+      ? toOwnColor(uses.to)
+      : (ref: ColorRef) =>
+          formatColorRef({
+            // As it looks now on the page: its shade worked out, the same everywhere from now on.
+            base: {
+              hex: hexOf(ref.shade === undefined ? was.color : shadeOf(was.color, ref.shade)),
+            },
+            ...(ref.opacity === undefined ? {} : { opacity: ref.opacity }),
+          });
+  return changeTheme(
+    session,
+    asks,
+    t("theme.history.ownDeleted", { name: was.name }),
+    undefined,
+    (tokens) => {
+      tokens.ownColors = (tokens.ownColors ?? []).filter((each) => each.id !== id);
+    },
+    (draft) => {
+      rewriteOwnColorUses(draft, id, isColorField, rewrite);
+    },
+  );
+}
+
+/**
+ * Makes one-off colour `hex` one of the person's colours, `name` (TC-3, #1221): added to the
+ * theme's list, and every use of it across the site made a reference to it, each keeping its
+ * opacity, all in one step, which one undo reverses. Its new id, or undefined if the theme has as
+ * many colours as it takes. `isColorField` tells which fields hold colours.
+ */
+export async function addOneOffToOwnColors(
+  session: ThemeSession,
+  asks: ThemeAsks,
+  hex: string,
+  name: string,
+  isColorField: IsColorField,
+): Promise<string | undefined> {
+  const colors = theme(session).ownColors ?? [];
+  if (colors.length >= OWN_COLORS_MAX) return undefined;
+  const id = newOwnColorId(colors.map((each) => each.id));
+  const named = name.trim().slice(0, OWN_COLOR_NAME_MAX);
+  const added = await changeTheme(
+    session,
+    asks,
+    t("theme.history.ownFromOneOff", { name: named }),
+    undefined,
+    (tokens) => {
+      tokens.ownColors = [...(tokens.ownColors ?? []), { id, name: named, color: hexToOklch(hex) }];
+    },
+    (draft) => {
+      rewriteOneOffUses(draft, hex, isColorField, toOwnColor(id));
+    },
+  );
+  return added ? id : undefined;
+}
+
+/** How many times colour `id` is used across the site: what deleting it asks about. */
+export const ownColorUseCount = (
+  session: ThemeSession,
+  id: string,
+  isColorField: IsColorField,
+): number => countOwnColorUses(session.history.document.getState(), id, isColorField);
+
+/**
+ * Which fields of `library`'s components hold colours: a `color` field, or a list item's
+ * (`items.iconColor`). A deleted colour's uses are found in these only (#1218).
+ */
+export const colorFieldsOf = (library: ComponentLibrary): IsColorField =>
+  colorFieldsIn(library.components);

@@ -100,15 +100,28 @@ export const shared = {
   "colour.role.secondAccent": "Second accent",
   "colour.role.surface": "Surface",
   "colour.role.text": "Text",
-  "colour.custom": "Custom",
-  "colour.customValue": "Custom colour {hex}, off the theme",
-  "colour.customHex": "Custom colour",
+  "colour.custom": "Another colour…",
+  "colour.customHex": "Another colour",
+  "colour.darker": "Use a darker shade",
+  "colour.lighter": "Use a lighter shade",
   "colour.hexCode": "hex code",
+  // A one-off made one of the person's colours (TC-3, #1221): offered once it's used twice.
+  "colour.addToColours": "Add to Your Colours…",
+  "colour.addUsed":
+    "This colour is used {count} times on your site. Add it to your colours to use it by name, and change it everywhere at once.",
+  "colour.addAbout":
+    "Add this colour to your colours to use it by name, and change it everywhere at once.",
+  "colour.addName": "Name",
+  "colour.addConfirm": "Add to Your Colours",
+  "colour.addLater": "Not Now",
+  "colour.addFull": "Your colours are full. Delete one in Theme Studio to make room for this one.",
+  "colour.addTaken": "You already have a colour called {name}. Choose another name.",
+  "colour.newName": "Colour {n}",
   "colour.offTheme": "Off the theme: changing the theme leaves this colour as it is.",
-  "colour.useTheme": "Use a theme colour",
   // One of the person's own colours (TC-1a) a field uses that the theme no longer has: it draws
   // nothing until another colour is chosen.
   "colour.ownGone": "A colour no longer in your theme",
+  "colour.yourColours": "Your colours",
   "colour.shade": "Shade",
   "colour.shadeStep": "Shade {step}",
   // A colour with its shade, in a sentence (CT-13): "Brand, shade 100".

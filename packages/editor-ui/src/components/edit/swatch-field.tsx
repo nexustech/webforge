@@ -1,5 +1,5 @@
 import { TriangleAlertIcon } from "lucide-react";
-import { type CSSProperties, useId } from "react";
+import { type CSSProperties, Fragment, useId } from "react";
 import { cn } from "../../lib/cn.js";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group.js";
 
@@ -10,6 +10,8 @@ export type SwatchOption = {
   readonly label: string;
   /** The colour as CSS, as the site shows it now; none for a choice that has no colour of its own. */
   readonly colour?: string;
+  /** A heading above it that starts a group of options, such as the person's own colours. */
+  readonly heading?: string;
 };
 
 /** Props of {@link SwatchField}. */
@@ -27,8 +29,9 @@ export type SwatchFieldProps = {
 /**
  * Colours to choose from (UX-25), each as a swatch in the site's own colour with its name, one to a
  * row so the whole name shows (#1007: two to a row cut "Surface 2" to "Sur…"): one click is one
- * change. A name still too long for the panel shows in full as its tooltip. Below them, a warning
- * about the colour chosen, read out when it appears.
+ * change. An option can start a group under a heading of its own (the person's own colours). A
+ * name still too long for the panel shows in full as its tooltip. Below them, a warning about the
+ * colour chosen, read out when it appears.
  */
 export function SwatchField({ id, labelId, options, value, onChoose, warning }: SwatchFieldProps) {
   const warningId = useId();
@@ -46,30 +49,36 @@ export function SwatchField({ id, labelId, options, value, onChoose, warning }: 
         }}
       >
         {options.map((option) => (
-          <ToggleGroupItem
-            key={option.value}
-            value={option.value}
-            tooltip={option.label}
-            tooltipWhenCut
-            className="h-7 justify-start gap-1.5 px-1.5 text-xs"
-          >
-            <span
-              aria-hidden
-              data-swatch
-              className={cn(
-                "size-4 shrink-0 rounded-full border",
-                option.colour === undefined
-                  ? "border-border-strong"
-                  : "border-transparent bg-(--swatch)",
-              )}
-              style={
-                option.colour === undefined
-                  ? undefined
-                  : ({ "--swatch": option.colour } as CSSProperties)
-              }
-            />
-            <span className="truncate">{option.label}</span>
-          </ToggleGroupItem>
+          <Fragment key={option.value}>
+            {option.heading === undefined ? null : (
+              <span className="px-1.5 pt-1.5 text-xs font-medium text-muted-foreground">
+                {option.heading}
+              </span>
+            )}
+            <ToggleGroupItem
+              value={option.value}
+              tooltip={option.label}
+              tooltipWhenCut
+              className="h-7 justify-start gap-1.5 px-1.5 text-xs"
+            >
+              <span
+                aria-hidden
+                data-swatch
+                className={cn(
+                  "size-4 shrink-0 rounded-full border",
+                  option.colour === undefined
+                    ? "border-border-strong"
+                    : "border-transparent bg-(--swatch)",
+                )}
+                style={
+                  option.colour === undefined
+                    ? undefined
+                    : ({ "--swatch": option.colour } as CSSProperties)
+                }
+              />
+              <span className="truncate">{option.label}</span>
+            </ToggleGroupItem>
+          </Fragment>
         ))}
       </ToggleGroup>
       <p

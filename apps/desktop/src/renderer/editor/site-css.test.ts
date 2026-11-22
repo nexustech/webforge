@@ -12,6 +12,7 @@ import {
   siteClasses,
   siteSelectors,
 } from "./site-css.js";
+import { endThemePreview, previewTheme } from "./theme-preview.js";
 
 /**
  * The canvas styled for `site`: the compiles it asks for, answered one by one with `reply`. Unless
@@ -227,6 +228,69 @@ describe("connectSiteCss", () => {
     expect(compile).toHaveBeenLastCalledWith(
       expect.objectContaining({ theme: expect.objectContaining({ preset: "dark" }) }),
     );
+  });
+
+  it("shows a theme colour being dragged over the canvas's CSS, with no compile (5.30)", async () => {
+    const { session, engine, compile, reply } = setup();
+    await reply(0);
+    const theme = session.history.document.getState().theme;
+    const dragged = { ...theme, colors: { ...theme.colors, primary: { l: 0.6, c: 0.2, h: 30 } } };
+
+    for (let step = 0; step < 5; step++) {
+      previewTheme(session, dragged);
+      vi.advanceTimersByTime(SITE_CSS_DEBOUNCE_MS);
+    }
+    const shown = vi.mocked(engine.setThemePreviewCss).mock.lastCall?.[0] ?? "";
+    expect(shown).toContain("--color-primary: oklch(60% 0.2 30)");
+    // Nothing compiled for the drag: the document hasn't changed.
+    expect(compile).toHaveBeenCalledTimes(1);
+
+    // Escape: the site's own CSS again, at once, and still nothing compiled.
+    endThemePreview(session, false);
+    expect(engine.setThemePreviewCss).toHaveBeenLastCalledWith("");
+    expect(compile).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a chosen colour's preview until the CSS compiled with it is shown (5.30)", async () => {
+    const { session, engine, compile, reply, edit } = setup();
+    await reply(0);
+    const theme = session.history.document.getState().theme;
+    const chosen = { ...theme, colors: { ...theme.colors, primary: { l: 0.6, c: 0.2, h: 30 } } };
+    previewTheme(session, chosen);
+    endThemePreview(session, true);
+    edit("Changed brand colour", (draft) => {
+      draft.theme.colors.primary = { l: 0.6, c: 0.2, h: 30 };
+    });
+    expect(compile).toHaveBeenCalledTimes(2);
+    // Until the change's CSS is shown, the preview stays: no flick back to the old colour.
+    expect(engine.setThemePreviewCss).not.toHaveBeenLastCalledWith("");
+
+    await reply(1);
+    expect(engine.setSiteCss).toHaveBeenLastCalledWith(".css1{}", "bg-base-100");
+    expect(engine.setThemePreviewCss).toHaveBeenLastCalledWith("");
+  });
+
+  it("keeps a second colour chosen while the first's CSS compiles, until its own is shown (5.30)", async () => {
+    const { session, engine, compile, reply, edit } = setup();
+    await reply(0);
+    const theme = session.history.document.getState().theme;
+    const choose = (h: number) => {
+      const chosen = { ...theme, colors: { ...theme.colors, primary: { l: 0.6, c: 0.2, h } } };
+      previewTheme(session, chosen);
+      endThemePreview(session, true);
+      edit("Changed brand colour", (draft) => {
+        draft.theme.colors.primary = { l: 0.6, c: 0.2, h };
+      });
+    };
+    choose(30);
+    choose(90);
+    expect(compile).toHaveBeenCalledTimes(3);
+
+    // The first choice's CSS: the second colour's preview stays over it.
+    await reply(1);
+    expect(engine.setThemePreviewCss).not.toHaveBeenLastCalledWith("");
+    await reply(2);
+    expect(engine.setThemePreviewCss).toHaveBeenLastCalledWith("");
   });
 
   it("keeps the theme's variables custom.css reads, recompiling only when they change (6.8)", () => {

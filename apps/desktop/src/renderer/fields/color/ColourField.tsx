@@ -1,5 +1,7 @@
 import {
   Button,
+  ColourPicker,
+  cn,
   type FieldRenderer,
   type FieldRendererProps,
   fieldControlClass,
@@ -8,19 +10,22 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@webforge/editor-ui";
-import type { ReadonlyStore } from "@webforge/history";
 import { type ComponentMessageKey, t } from "@webforge/i18n/components";
 import {
   COLOR_ROLES,
   type ColorRef,
   type ColorRole,
   formatColorRef,
+  type Oklch,
   OPACITY_STEPS,
+  OWN_COLOR_NAME_MAX,
   OWN_COLOR_PREFIX,
+  oneOffColours,
   parseColorRef,
   SHADE_STEPS,
   SHADED_ROLES,
   type ShadeStep,
+  type SiteDoc,
   type TextStyle,
 } from "@webforge/model";
 import { TEXT_COLOUR_FIELDS } from "@webforge/site-components";
@@ -30,24 +35,48 @@ import {
   contrastOn,
   contrastRatio,
   hexOf,
+  hexToOklch,
+  nearestReadable,
   oklchCss,
   readableTextColour,
   resolveColorRef,
   type Surface,
 } from "@webforge/themes";
-import { type CSSProperties, useId } from "react";
+import { type CSSProperties, type FormEvent, useId, useState } from "react";
+import { type StoreApi, useStore } from "zustand";
 import type { EditorSession } from "../../editor/editor-session.js";
 import { useDocument } from "../../editor/use-document.js";
-import { type EditorPreferences, usePreferences } from "../../shell/preferences-store.js";
+import { reportFailure } from "../../log.js";
+
+/**
+ * How a colour field makes a one-off colour one of the person's colours (TC-3, #1221): the theme's
+ * own edits, which the theme area makes it (`oneOffToOwn`).
+ */
+export type OneOffToOwn = {
+  /** How many times one-off `hex` is used across `site`, at any opacity. */
+  readonly uses: (site: SiteDoc, hex: string) => number;
+  /**
+   * Makes one-off `hex` the person's colour `name`, every use of it a reference to it, keeping
+   * its opacity: one step. False if it couldn't be: the theme has as many colours as it takes.
+   */
+  readonly add: (hex: string, name: string) => Promise<boolean>;
+  /** The one-offs the person said *Not Now* to, which aren't offered again while the window is open. */
+  readonly declined: StoreApi<readonly string[]>;
+};
 
 /** What the colour field needs besides its field's props. */
 export type ColourFieldContext = {
   readonly session: Pick<EditorSession, "history">;
   /**
-   * Advanced mode, where a field may have a colour of its own, off the theme (1.37, ADR 0009).
-   * Simple mode shows such a colour, and offers the theme's in its place.
+   * Offers to make a one-off one of the person's colours (TC-3): the second time it's used, and
+   * from the picker for any one-off. None where it can't be (a look, *Style this ‹kind›…*).
    */
-  readonly advanced?: boolean | undefined;
+  readonly toOwn?: OneOffToOwn | undefined;
+  /**
+   * The theme's colours only, without _Another colour…_: a look's, which a one-off doesn't belong
+   * to (ADR 0009).
+   */
+  readonly themeOnly?: boolean | undefined;
   /**
    * The text styles of the element being edited (a Heading's h2, a Text's body; one per device if
    * they differ), which set how much contrast it needs; the stricter 4.5:1 while none is known.
@@ -158,9 +187,12 @@ const swatchStyle = (colour: string): CSSProperties => ({ "--swatch": colour }) 
 
 /**
  * The Edit panel's colour field (1.37, UX-25, ADR 0009): the theme's colours as swatches, as this
- * site shows them, by their glossary names; then a shade of the one chosen, and its opacity. In
- * Advanced mode, a colour of the field's own (hex), marked off the theme, which theme changes leave
- * as it is. Below them, a warning when the colour is hard to read on the page (below what WCAG AA
+ * site shows them, by their glossary names, and under *Your colours* the person's own (TC-1b); then
+ * a shade of the one chosen, and its opacity. In
+ * either mode (TC-2, #1219), _Another colour…_: one of the field's own (hex), chosen in the colour
+ * picker, which offers the site's other one-off colours, marked off the theme, which theme changes
+ * leave as it is; a shade of it that reads is suggested when it doesn't. Below them, a warning
+ * when the colour is hard to read on the page (below what WCAG AA
  * asks of text of its size, `contrastNeeded`, or 3:1 of an icon or logo), measured on what the
  * text is drawn on: a Reversed section's colours or an Appearance background (#670); none over a
  * picture behind the content (a section's background image, a Hero's), whose colours can't be
@@ -175,7 +207,8 @@ export function ColourField({
   onChange,
   onCommit,
   session,
-  advanced = false,
+  toOwn,
+  themeOnly = false,
   textStyles,
   surface: surfaceOfField,
   graphic: isGraphic,
@@ -190,6 +223,21 @@ export function ColourField({
   const hex = ref !== undefined && "hex" in ref.base ? ref.base.hex : undefined;
   const role = ref !== undefined && "role" in ref.base ? ref.base.role : undefined;
   const own = ref !== undefined && "own" in ref.base ? ref.base.own : undefined;
+
+  // The one-off used twice or more is offered as one of the person's colours (TC-3); and any one-off
+  // the person asks to add, from the picker or the button.
+  const declined = useStore(toOwn?.declined ?? NONE_DECLINED);
+  const [asked, setAsked] = useState<string | undefined>(undefined);
+  // Counted only while the offer could show: not for a colour the person said Not Now to.
+  const uses = useDocument(session, (site) =>
+    hex === undefined || toOwn === undefined || (declined.includes(hex) && asked !== hex)
+      ? 0
+      : toOwn.uses(site, hex),
+  );
+  const offering =
+    hex !== undefined &&
+    toOwn !== undefined &&
+    (asked === hex || (uses >= 2 && !declined.includes(hex)));
 
   /** One choice: the new colour, stored, and the end of the change. */
   const choose = (next: ColorRef) => {
@@ -209,24 +257,37 @@ export function ColourField({
       colour: oklchCss(theme.colors[optionRole]),
     };
   });
-  // One of the person's own colours (TC-1a), by its name in the theme: shown, and chosen again.
-  // Theme Studio's list of them, and the picker's, come with 5.28 (#1218).
-  if (own !== undefined) {
-    const colour = theme.ownColors?.find((each) => each.id === own);
-    swatches.push({
-      value: `${OWN_COLOR_PREFIX}${own}`,
-      label: colour?.name ?? t("colour.ownGone"),
-      ...(colour === undefined ? {} : { colour: oklchCss(colour.color) }),
-    });
-  }
-  // Advanced mode offers a colour of the field's own; Simple mode shows one it already has.
-  if (advanced) {
+  // A colour of the field's own, in either mode (TC-2): what it costs is shown, not forbidden.
+  if (!themeOnly) {
     swatches.push({
       value: CUSTOM,
       label: t("colour.custom"),
       ...(hex === undefined ? {} : { colour: hex }),
     });
   }
+  // The person's own colours (TC-1b, #1218), under a heading of their own, by their names in the
+  // theme; one no longer in it shows as the field has it, to choose another.
+  const ownColors = theme.ownColors ?? [];
+  const ownColour = ownColors.find((each) => each.id === own);
+  const owns: SwatchOption[] = ownColors.map((each) => ({
+    value: `${OWN_COLOR_PREFIX}${each.id}`,
+    label: each.name,
+    colour: oklchCss(each.color),
+  }));
+  if (own !== undefined && ownColour === undefined) {
+    owns.push({ value: `${OWN_COLOR_PREFIX}${own}`, label: t("colour.ownGone") });
+  }
+  const [firstOwn, ...otherOwns] = owns;
+  if (firstOwn !== undefined) {
+    swatches.push({ ...firstOwn, heading: t("colour.yourColours") }, ...otherOwns);
+  }
+  // What a shade is of: a theme colour that has shades, or one of the person's own colours.
+  const shaded: ColorRef["base"] | undefined =
+    role !== undefined && isShaded(role)
+      ? { role }
+      : own !== undefined && ownColour !== undefined
+        ? { own }
+        : undefined;
 
   // On what the text is drawn on, in that surface's colours (#670).
   const surface = surfaceOfField?.() ?? { palette: "colors", background: theme.colors["base-100"] };
@@ -236,12 +297,12 @@ export function ColourField({
   // or a border on it, aren't text.
   const onGradient =
     surface.gradient !== undefined && name !== undefined && TEXT_COLOUR_FIELDS.has(name);
-  const ratio =
-    shown === undefined || surface.overPicture
-      ? undefined
-      : onGradient
-        ? contrastOn(surface, shown.color, shown.opacity)
-        : contrastRatio(shown.color, surface.background, shown.opacity);
+  /** `color`'s contrast with what it is drawn on, at the chosen opacity. */
+  const ratioOf = (color: Oklch) =>
+    onGradient
+      ? contrastOn(surface, color, shown?.opacity)
+      : contrastRatio(color, surface.background, shown?.opacity);
+  const ratio = shown === undefined || surface.overPicture ? undefined : ratioOf(shown.color);
   const graphic = isGraphic?.() ?? false;
   const needed = graphic ? AA_LARGE : contrastNeeded(theme, textStyles?.() ?? []);
   const warning = (() => {
@@ -258,28 +319,17 @@ export function ColourField({
           colour: colourRefName(suggested),
         });
   })();
+  // For a one-off that's hard to read, its nearest shade that reads (TC-2), as the Theme tab
+  // suggests for a theme colour (#1174).
+  const readable =
+    warning === undefined || hex === undefined
+      ? undefined
+      : nearestReadable(hexToOklch(hex), (shade) => ratioOf(shade) >= needed);
+  const readableHex = readable === undefined ? undefined : hexOf(readable);
+  const darker = readable !== undefined && hex !== undefined && readable.l < hexToOklch(hex).l;
 
   return (
     <div className="flex flex-col gap-2">
-      {hex !== undefined && !advanced ? (
-        // A colour of the field's own, from Advanced mode: shown, kept, and replaceable.
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <span
-            aria-hidden
-            className="size-4 shrink-0 rounded-full bg-(--swatch)"
-            style={swatchStyle(hex)}
-          />
-          <span>{t("colour.customValue", { hex })}</span>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => choose({ base: { role: "base-content" } })}
-          >
-            {t("colour.useTheme")}
-          </Button>
-        </div>
-      ) : null}
       <SwatchField
         id={id}
         labelId={labelId}
@@ -297,8 +347,9 @@ export function ColourField({
             choose(withOpacity({ base: { hex: start } }));
             return;
           }
-          if (own !== undefined && next === `${OWN_COLOR_PREFIX}${own}`) {
-            choose({ ...ref, base: { own } });
+          if (next.startsWith(OWN_COLOR_PREFIX)) {
+            // At its own colour, the opacity kept, as a theme colour's is.
+            choose(withOpacity({ base: { own: next.slice(OWN_COLOR_PREFIX.length) } }));
             return;
           }
           const nextRole = roleOfOption(next);
@@ -306,25 +357,70 @@ export function ColourField({
         }}
         warning={warning}
       />
-      {hex !== undefined && advanced ? (
+      {hex === undefined ? null : (
         <div className="flex flex-col gap-1">
           <label htmlFor={customId} className="text-xs text-muted-foreground">
             {t("colour.customHex")}
           </label>
-          <input
+          {/* One step, once the picker closes on another colour (5.26). It offers the site's
+              one-off colours, read from the site as it opens (TC-2). */}
+          <ColourPicker
             id={customId}
-            type="color"
-            className={`${fieldControlClass} h-7 w-16 p-0.5`}
+            className="w-16"
             value={hex}
-            onChange={(event) =>
-              onChange(storedRef(withOpacity({ base: { hex: event.target.value } }), options))
-            }
-            onBlur={onCommit}
+            colours={() => oneOffColours(session.history.document.getState())}
+            onChoose={(next) => choose(withOpacity({ base: { hex: next } }))}
+            onAddToColours={toOwn === undefined ? undefined : setAsked}
           />
+          {readable === undefined || readableHex === undefined ? null : (
+            <button
+              type="button"
+              className={cn(
+                fieldControlClass,
+                "flex h-7 w-auto items-center gap-1.5 self-start px-2 text-xs",
+              )}
+              onClick={() => choose(withOpacity({ base: { hex: readableHex } }))}
+            >
+              <span
+                aria-hidden
+                className="size-3.5 shrink-0 rounded-sm border border-border-strong bg-(--swatch)"
+                style={swatchStyle(readableHex)}
+              />
+              {t(darker ? "colour.darker" : "colour.lighter")}
+            </button>
+          )}
           <p className="m-0 text-xs text-muted-foreground">{t("colour.offTheme")}</p>
+          {toOwn === undefined ? null : offering ? (
+            <AddToColours
+              key={hex}
+              uses={uses}
+              initialName={newColourName(theme.ownColors ?? [])}
+              taken={(theme.ownColors ?? []).map((each) => each.name)}
+              onAdd={async (name) => {
+                const added = await toOwn.add(hex, name);
+                // Asked for this once: an undo back to the one-off doesn't open it again.
+                if (added) setAsked(undefined);
+                return added;
+              }}
+              onLater={() => {
+                setAsked(undefined);
+                if (!declined.includes(hex)) toOwn.declined.setState([...declined, hex], true);
+              }}
+            />
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="self-start"
+              onClick={() => setAsked(hex)}
+            >
+              {t("colour.addToColours")}
+            </Button>
+          )}
         </div>
-      ) : null}
-      {role !== undefined && isShaded(role) ? (
+      )}
+      {shaded === undefined ? null : (
         <div className="flex flex-col gap-1">
           <span id={shadeLabelId} className="text-xs text-muted-foreground">
             {t("colour.shade")}
@@ -337,7 +433,7 @@ export function ColourField({
             onValueChange={(next) => {
               const shade = next === "" ? undefined : (Number(next) as ShadeStep);
               choose({
-                base: { role },
+                base: shaded,
                 ...(shade === undefined ? {} : { shade }),
                 ...(ref?.opacity === undefined ? {} : { opacity: ref.opacity }),
               });
@@ -356,8 +452,8 @@ export function ColourField({
                   className="block size-full rounded-sm bg-(--swatch)"
                   style={swatchStyle(
                     oklchCss(
-                      resolveColorRef(theme, formatColorRef({ base: { role }, shade: step }))
-                        ?.color ?? theme.colors[role],
+                      resolveColorRef(theme, formatColorRef({ base: shaded, shade: step }))
+                        ?.color ?? theme.colors["base-content"],
                     ),
                   )}
                 />
@@ -365,9 +461,8 @@ export function ColourField({
             ))}
           </ToggleGroup>
         </div>
-      ) : null}
-      {/* A colour of its own is Advanced mode's to change, its opacity too (ADR 0009). */}
-      {ref === undefined || (hex !== undefined && !advanced) ? null : (
+      )}
+      {ref === undefined ? null : (
         <div className="flex items-center gap-2">
           <label htmlFor={opacityId} className="text-xs text-muted-foreground">
             {t("colour.opacity")}
@@ -397,21 +492,112 @@ export function ColourField({
   );
 }
 
+/** No colour declined: for a field that offers none. The same list each time it's read. */
+const NONE: readonly string[] = [];
+const NONE_DECLINED: StoreApi<readonly string[]> = {
+  getState: () => NONE,
+  getInitialState: () => NONE,
+  setState: () => undefined,
+  subscribe: () => () => undefined,
+};
+
+/** A new colour's name: "Colour 3", the first number no colour of the person's has (TC-3). */
+function newColourName(colours: readonly { readonly name: string }[]): string {
+  const taken = new Set(colours.map((each) => each.name));
+  for (let n = colours.length + 1; ; n++) {
+    const name = t("colour.newName", { n });
+    if (!taken.has(name)) return name;
+  }
+}
+
 /**
- * The Edit panel's renderer for colour fields (R11): {@link ColourField}, in Advanced mode while
- * `preferences` say so. Made once, it follows the editor level (R9).
+ * The offer to make a one-off one of the person's colours (TC-3, #1221): why, its name, which can
+ * be changed there and then, *Add to Your Colours* and *Not Now*, which leaves it as it is. Says
+ * so when the theme has as many colours as it takes.
  */
-export function colourFieldRenderer({
-  preferences,
-  ...context
-}: Omit<ColourFieldContext, "advanced"> & {
-  readonly preferences: ReadonlyStore<EditorPreferences>;
-}): FieldRenderer<"color"> {
+function AddToColours({
+  uses,
+  initialName,
+  taken,
+  onAdd,
+  onLater,
+}: {
+  readonly uses: number;
+  readonly initialName: string;
+  /** The names the person's colours have: a new one can't repeat one, whatever its case. */
+  readonly taken: readonly string[];
+  readonly onAdd: (name: string) => Promise<boolean>;
+  readonly onLater: () => void;
+}) {
+  const nameId = useId();
+  const titleId = useId();
+  const problemId = useId();
+  const [name, setName] = useState(initialName);
+  const [adding, setAdding] = useState(false);
+  const [problem, setProblem] = useState<"full" | "taken" | undefined>(undefined);
+  const add = (event: FormEvent) => {
+    event.preventDefault();
+    const wanted = name.trim();
+    if (adding || wanted === "") return;
+    if (taken.some((each) => each.trim().toLowerCase() === wanted.toLowerCase())) {
+      setProblem("taken");
+      return;
+    }
+    setAdding(true);
+    setProblem(undefined);
+    onAdd(wanted)
+      .then((added) => setProblem(added ? undefined : "full"))
+      .catch((error: unknown) => reportFailure("colour.addToColours", error))
+      // Whatever happened, the buttons work again.
+      .finally(() => setAdding(false));
+  };
+  return (
+    <form
+      aria-labelledby={titleId}
+      className="flex flex-col gap-1.5 rounded-sm border border-border bg-muted p-2 text-xs"
+      onSubmit={add}
+    >
+      <p id={titleId} className="m-0">
+        {uses >= 2 ? t("colour.addUsed", { count: uses }) : t("colour.addAbout")}
+      </p>
+      <label htmlFor={nameId} className="text-muted-foreground">
+        {t("colour.addName")}
+      </label>
+      <input
+        id={nameId}
+        className={fieldControlClass}
+        value={name}
+        maxLength={OWN_COLOR_NAME_MAX}
+        aria-invalid={problem === "taken" ? true : undefined}
+        aria-describedby={problem === undefined ? undefined : problemId}
+        onChange={(event) => {
+          setName(event.currentTarget.value);
+          if (problem === "taken") setProblem(undefined);
+        }}
+      />
+      {problem === undefined ? null : (
+        <p id={problemId} role="alert" className="m-0 text-destructive-text">
+          {problem === "full" ? t("colour.addFull") : t("colour.addTaken", { name: name.trim() })}
+        </p>
+      )}
+      <div className="flex flex-wrap justify-end gap-1.5">
+        <Button type="button" size="sm" variant="ghost" onClick={onLater}>
+          {t("colour.addLater")}
+        </Button>
+        <Button type="submit" size="sm" disabled={adding || name.trim() === ""}>
+          {t("colour.addConfirm")}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * The Edit panel's renderer for colour fields (R11): {@link ColourField}, the same in either mode
+ * (TC-2, #1219). Made once (R9).
+ */
+export function colourFieldRenderer(context: ColourFieldContext): FieldRenderer<"color"> {
   return function SessionColourField(props: FieldRendererProps<"color">) {
-    const advanced = usePreferences(
-      preferences,
-      (state) => state.preferences.editorLevel === "advanced",
-    );
-    return <ColourField {...props} {...context} advanced={advanced} />;
+    return <ColourField {...props} {...context} />;
   };
 }

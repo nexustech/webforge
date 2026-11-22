@@ -6,18 +6,18 @@ import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { starterSite } from "../../shared/starter-site.js";
+import { createOwnThemes } from "../editor/own-themes.js";
+import { themePreviewOf } from "../editor/theme-preview.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
 import { registriesForTest, sessionWith } from "../testing/fixtures.js";
-import { createOwnThemes } from "./own-themes.js";
 import { registerThemePanel } from "./register-theme-panel.js";
 import { createStudio } from "./studio/studio-state.js";
 import { ThemePanel } from "./ThemePanel.js";
 
 afterEach(cleanup);
 
-/** A colour's picker, by the colour's name. */
-const colourPicker = (name: string) =>
-  screen.getByLabelText(name, { selector: 'input[type="color"]' });
+/** A colour's picker (5.26): its swatch button, named by the colour. */
+const colourPicker = (name: string) => screen.getByRole("button", { name });
 
 const labels = (session: ReturnType<typeof sessionWith>) =>
   session.history.entries().map((entry) => entry.label);
@@ -142,7 +142,10 @@ describe("the Theme tab (2.3a)", () => {
 
     expect(screen.queryByRole("textbox", { name: /hex code/ })).toBeNull();
     expect(screen.queryByRole("combobox", { name: "Heading 1" })).toBeNull();
-    expect(container.textContent).not.toMatch(/#[0-9a-f]{6}|\d\s?px\b/i);
+    // None shown: a colour's swatch tells a screen reader its code, out of sight.
+    const shown = container.cloneNode(true) as HTMLElement;
+    for (const hidden of shown.querySelectorAll(".sr-only")) hidden.remove();
+    expect(shown.textContent).not.toMatch(/#[0-9a-f]{6}|\d\s?px\b/i);
     const size = screen.getByRole("combobox", { name: "Text size" }) as HTMLSelectElement;
     expect([...size.options].map((option) => option.text)).toEqual([
       "Smaller",
@@ -186,6 +189,48 @@ describe("the Theme tab (2.3a)", () => {
 
     await vi.waitFor(() => expect(labels(session)).toEqual(["Changed accent colour"]));
     expect(siteWide.confirmSiteWide).not.toHaveBeenCalled();
+  });
+
+  it("shows a colour while it's dragged, then makes it one step as the picker closes (5.30)", async () => {
+    const session = sessionWith();
+    const user = userEvent.setup({ delay: null });
+    render(<ThemePanel session={session} />);
+    const previews = themePreviewOf(session);
+    const before = session.history.document.getState().theme.colors.primary;
+
+    await user.click(colourPicker("Brand"));
+    screen.getByRole("slider", { name: "Hue" }).focus();
+    await user.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
+    // Shown, not changed: the theme as it would be, and no step yet.
+    const shown = previews.getState().preview;
+    expect(shown?.chosen).toBe(false);
+    expect(shown?.theme.colors.primary).not.toEqual(before);
+    expect(session.history.document.getState().theme.colors.primary).toEqual(before);
+    expect(labels(session)).toEqual([]);
+
+    await user.click(colourPicker("Brand"));
+    await vi.waitFor(() => expect(labels(session)).toEqual(["Changed brand colour"]));
+    expect(session.history.document.getState().theme.colors.primary).toEqual(
+      shown?.theme.colors.primary,
+    );
+    expect(previews.getState().preview?.chosen).toBe(true);
+  });
+
+  it("leaves the theme as it was when the picker is closed with Escape, with no step (5.30)", async () => {
+    const session = sessionWith();
+    const user = userEvent.setup({ delay: null });
+    render(<ThemePanel session={session} />);
+    const before = session.history.document.getState();
+
+    await user.click(colourPicker("Accent"));
+    screen.getByRole("slider", { name: "Hue" }).focus();
+    await user.keyboard("{End}");
+    expect(themePreviewOf(session).getState().preview).toBeDefined();
+    await user.keyboard("{Escape}");
+
+    expect(themePreviewOf(session).getState().preview).toBeUndefined();
+    expect(session.history.document.getState()).toBe(before);
+    expect(labels(session)).toEqual([]);
   });
 });
 

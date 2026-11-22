@@ -97,6 +97,27 @@ describe("createNativeDialogs", () => {
     ).resolves.toBeUndefined();
   });
 
+  it("saves a page as a picture or a PDF under its title (5.22)", async () => {
+    const { dialogs, dialog } = setUp({
+      save: { canceled: false, filePath: "/Desktop/About.png" },
+    });
+
+    await expect(dialogs.preview.choosePageFileToSave("About us", "png")).resolves.toBe(
+      "/Desktop/About.png",
+    );
+    await dialogs.preview.choosePageFileToSave("", "pdf");
+    expect(dialog.showSaveDialog.mock.calls[0]?.at(-1)).toMatchObject({
+      title: "Save Page as Image",
+      defaultPath: "About us.png",
+      filters: [{ name: "PNG image", extensions: ["png"] }],
+    });
+    expect(dialog.showSaveDialog.mock.calls[1]?.at(-1)).toMatchObject({
+      title: "Save Page as PDF",
+      defaultPath: "Page.pdf",
+      filters: [{ name: "PDF document", extensions: ["pdf"] }],
+    });
+  });
+
   it("saves a copy of a site as a ZIP under its name, and opens one ZIP (4.7)", async () => {
     const { dialogs, dialog } = setUp({
       save: { canceled: false, filePath: "/backups/Bakery.zip" },

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ImageMeta, MediaId, SiteDoc } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -45,7 +45,11 @@ describe("SiteSettingsDialog", () => {
     const name = screen.getByLabelText("Site name");
     await user.clear(name);
     await user.type(name, "Rosa's Bakery");
-    await user.click(screen.getByRole("radio", { name: "shop.jpg" }));
+    // The logo (HF-1) and the site icon each choose from Media.
+    for (const choice of ["Logo", "Site icon"]) {
+      const group = screen.getByRole("radiogroup", { name: choice });
+      await user.click(within(group).getByRole("radio", { name: "shop.jpg" }));
+    }
     const backToTop = screen.getByRole("checkbox", { name: "Show a back-to-top button" });
     // Only the published site shows it, which the option says.
     expect(backToTop.getAttribute("aria-describedby")).toBe(
@@ -64,7 +68,7 @@ describe("SiteSettingsDialog", () => {
 
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onSave.mock.calls[0]?.[0]).toMatchObject({
-      general: { name: "Rosa's Bakery", icon: "photo", backToTop: true },
+      general: { name: "Rosa's Bakery", icon: "photo", logo: "photo", backToTop: true },
       contact: {
         phone: "+44 1234 567890",
         openingHours: [{ days: ["tue"], opens: "09:00", closes: "17:00" }],

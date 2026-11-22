@@ -68,6 +68,38 @@ function withSiteImages(change: Partial<SiteSnapshot["media"][number]> = {}): Si
   };
 }
 
+describe("buildSite: the Header's logo (HF-1, 5.37)", () => {
+  it(
+    "writes Site Settings' logo as WebP with a fallback, though no page shows it, in every Header",
+    async () => {
+      const site = sampleSite();
+      const logoOnly: SiteSnapshot = {
+        ...site,
+        logo: "hero-photo",
+        settings: { ...site.settings, "address.url": "https://www.rosas.example" },
+        pages: site.pages.map((page) => ({ ...page, doc: { ...page.doc, content: [] } })),
+      };
+      const out = await buildSite(logoOnly, siteLibrary, { ...resources, imageCache });
+
+      const written = [...out.files.keys()].filter((path) => path.startsWith("assets/img/hero"));
+      expect(written.some((path) => path.endsWith(".webp"))).toBe(true);
+      expect(written.some((path) => /\.(jpg|png)$/.test(path))).toBe(true);
+      for (const page of ["index.html", "about.html"]) {
+        const header = /<header[\s\S]*?<\/header>/.exec(text(out, page))?.[0] ?? "";
+        expect(header).toContain('<source type="image/webp"');
+        // In place of the name, by default: the name is its description.
+        expect(header).toMatch(/<img [^>]*alt="[^"]+"/);
+      }
+      expect(out.report.warnings).toEqual([]);
+      // And search engines' structured data names it, by its JPEG's or PNG's address.
+      expect(text(out, "index.html")).toMatch(
+        /"logo": "https:\/\/www\.rosas\.example\/assets\/img\/hero[^"]*\.(jpg|png)"/,
+      );
+    },
+    scaledTestTimeout(120_000),
+  );
+});
+
 describe("buildSite: the favicon set and share pictures (3.4)", () => {
   it("makes the favicon set from Site Settings' icon, and links it from every page", () => {
     expect(icoSizes(built.files.get("favicon.ico"))).toEqual([16, 32, 48]);

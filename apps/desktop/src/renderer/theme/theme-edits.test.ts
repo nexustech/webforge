@@ -1,18 +1,31 @@
-import { DEFAULT_THEME, type SiteDoc, themeIdSchema } from "@webforge/model";
-import { contrastRatio, FONT_PAIRINGS, THEME_PRESETS, themePreset } from "@webforge/themes";
+import {
+  countOneOffUses,
+  DEFAULT_THEME,
+  OWN_COLORS_MAX,
+  type SiteDoc,
+  themeIdSchema,
+} from "@webforge/model";
+import { contrastRatio, FONT_PAIRINGS, hexOf, THEME_PRESETS, themePreset } from "@webforge/themes";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { TOKEN_CONTROLS, tokenKey } from "./theme-controls.js";
 import {
+  addOneOffToOwnColors,
+  addOwnColor,
+  colorFieldsOf,
   createOwnTheme,
+  deleteOwnColor,
   lookReach,
+  ownColorUseCount,
   ownCopyName,
+  renameOwnColor,
   renameOwnTheme,
   setBrandColours,
   setColor,
   setFont,
   setLook,
+  setOwnColor,
   setPairing,
   setPaletteColor,
   setTextScale,
@@ -22,6 +35,8 @@ import {
   switchPreset,
   textScaleOf,
   textScaleSizes,
+  withOwnColor,
+  withPaletteColor,
 } from "./theme-edits.js";
 
 /** A session on the starter site, the labels of its steps, and its theme now. */
@@ -712,5 +727,202 @@ describe("the theme's looks (3.12, CT-1)", () => {
       "Reset the theme's look for Button",
       "Reset the theme's look for Heading",
     ]);
+  });
+});
+
+describe("your colours (TC-1b, #1218)", () => {
+  const SKY = { l: 0.7, c: 0.12, h: 230 };
+  const SEA = { l: 0.5, c: 0.1, h: 200 };
+  /** A Section's background is a colour field; nothing else here is. */
+  const isColorField = (type: string, field: string) =>
+    type === "Section" && field === "lookBackground";
+  /** The first Section's background on the home page. */
+  const background = (session: ReturnType<typeof setUp>["session"]) => {
+    const site = session.history.document.getState();
+    const section = site.pages[site.homePageId]?.doc.content.find(
+      (node) => node.type === "Section",
+    );
+    return section?.props.lookBackground;
+  };
+  /** Uses `id` on the first Section's background, at a shade and opacity. */
+  const useOn = (session: ReturnType<typeof setUp>["session"], id: string) =>
+    session.edit("props", "Used a colour", (draft) => {
+      const section = draft.pages[draft.homePageId]?.doc.content.find(
+        (node) => node.type === "Section",
+      );
+      if (section !== undefined) section.props.lookBackground = `own-${id}-300/50`;
+    });
+
+  it("adds, renames and changes a colour, each one step, and a rename changes no use", async () => {
+    const { session, labels, theme } = setUp();
+    const sky = await addOwnColor(session, undefined, "Sky", SKY);
+    if (sky === undefined) throw new Error("not added");
+    useOn(session, sky);
+    expect(await renameOwnColor(session, undefined, sky, "Morning sky")).toBe(true);
+    expect(await setOwnColor(session, undefined, sky, SEA)).toBe(true);
+    expect(theme().ownColors).toEqual([{ id: sky, name: "Morning sky", color: SEA }]);
+    expect(background(session)).toBe(`own-${sky}-300/50`);
+    expect(labels()).toEqual([
+      "Added colour 'Sky'",
+      "Used a colour",
+      "Renamed colour 'Sky' to 'Morning sky'",
+      "Changed colour 'Morning sky'",
+    ]);
+    // Nothing changed: no step.
+    expect(await renameOwnColor(session, undefined, sky, "Morning sky")).toBe(false);
+  });
+
+  it("deletes a colour in use, giving its uses to another, in one step that undoes as one", async () => {
+    const { session, labels, theme } = setUp();
+    const sky = await addOwnColor(session, undefined, "Sky", SKY);
+    const sea = await addOwnColor(session, undefined, "Sea", SEA);
+    if (sky === undefined || sea === undefined) throw new Error("not added");
+    useOn(session, sky);
+    expect(ownColorUseCount(session, sky, isColorField)).toBe(1);
+
+    expect(
+      await deleteOwnColor(session, undefined, sky, { kind: "replace", to: sea }, isColorField),
+    ).toBe(true);
+    expect(theme().ownColors?.map(({ id }) => id)).toEqual([sea]);
+    expect(background(session)).toBe(`own-${sea}-300/50`);
+    expect(labels().at(-1)).toBe("Deleted colour 'Sky'");
+
+    session.history.undo();
+    expect(theme().ownColors?.map(({ id }) => id)).toEqual([sky, sea]);
+    expect(background(session)).toBe(`own-${sky}-300/50`);
+  });
+
+  it("deletes a colour in use, keeping each use as a one-off as it looks now", async () => {
+    const { session, theme } = setUp();
+    const sky = await addOwnColor(session, undefined, "Sky", SKY);
+    if (sky === undefined) throw new Error("not added");
+    useOn(session, sky);
+
+    expect(await deleteOwnColor(session, undefined, sky, { kind: "oneOff" }, isColorField)).toBe(
+      true,
+    );
+    expect(theme().ownColors).toEqual([]);
+    // Its shade worked out as a hex colour of its own, its opacity kept: no reference left.
+    expect(background(session)).toMatch(/^\[#[0-9a-f]{6}\]\/50$/);
+    expect(ownColorUseCount(session, sky, isColorField)).toBe(0);
+  });
+});
+
+describe("colorFieldsOf (#1218)", () => {
+  const library = {
+    components: {
+      Card: {
+        fields: {
+          lookColor: { kind: "color" },
+          title: { kind: "text" },
+          items: {
+            kind: "list",
+            fields: { iconColor: { kind: "color" }, label: { kind: "text" } },
+          },
+        },
+      },
+    },
+  } as unknown as Parameters<typeof colorFieldsOf>[0];
+  const isColorField = colorFieldsOf(library);
+
+  it("finds a type's colour fields, and a list item's as <list>.<field>", () => {
+    expect(isColorField("Card", "lookColor")).toBe(true);
+    expect(isColorField("Card", "items.iconColor")).toBe(true);
+    expect(isColorField("Card", "title")).toBe(false);
+    expect(isColorField("Card", "items.label")).toBe(false);
+    expect(isColorField("Card", "title.iconColor")).toBe(false);
+    expect(isColorField("Unknown", "lookColor")).toBe(false);
+  });
+});
+
+describe("a colour being chosen, as its change would make the theme (5.30)", () => {
+  const RED = { l: 0.6, c: 0.2, h: 30 };
+
+  it("sets the page's colour as the change does, a brand colour's reversed one following, without touching the theme", () => {
+    const theme = structuredClone(DEFAULT_THEME);
+    theme.inverse = structuredClone(theme.colors);
+    const next = withPaletteColor(theme, "colors", "primary", RED);
+    expect(next.colors.primary).toEqual(RED);
+    expect(next.inverse?.primary).toMatchObject({ c: RED.c, h: RED.h });
+    expect(theme.colors.primary).toEqual(DEFAULT_THEME.colors.primary);
+  });
+
+  it("sets a reversed section's colour, and one of your colours", () => {
+    expect(
+      withPaletteColor(DEFAULT_THEME, "inverse", "base-100", RED).inverse?.["base-100"],
+    ).toEqual(RED);
+    const theme = {
+      ...DEFAULT_THEME,
+      ownColors: [{ id: "csky", name: "Sky", color: { l: 0.7, c: 0.12, h: 230 } }],
+    };
+    expect(withOwnColor(theme, "csky", RED).ownColors?.[0]?.color).toEqual(RED);
+    expect(theme.ownColors[0]?.color).toEqual({ l: 0.7, c: 0.12, h: 230 });
+  });
+});
+
+describe("a one-off made one of your colours (TC-3, #1221)", () => {
+  /** A Section's background is a colour field; nothing else here is. */
+  const isColorField = (type: string, field: string) =>
+    type === "Section" && field === "lookBackground";
+  /** Two Sections on the home page, with one-off `#1f6feb` at half and at full opacity. */
+  const twoUses = (session: ReturnType<typeof setUp>["session"]) =>
+    session.edit("props", "Used a colour twice", (draft) => {
+      const home = draft.pages[draft.homePageId];
+      if (home === undefined) return;
+      home.doc.content.push(
+        { type: "Section", props: { id: "one", lookBackground: "[#1f6feb]/50", content: [] } },
+        { type: "Section", props: { id: "two", lookBackground: "[#1f6feb]", content: [] } },
+      );
+    });
+  const backgrounds = (session: ReturnType<typeof setUp>["session"]) => {
+    const site = session.history.document.getState();
+    return (site.pages[site.homePageId]?.doc.content ?? [])
+      .filter((node) => node.props.id === "one" || node.props.id === "two")
+      .map((node) => node.props.lookBackground);
+  };
+
+  it("adds it, named, and makes every use a reference, keeping opacity, in one step undo reverses", async () => {
+    const { session, labels, theme } = setUp();
+    twoUses(session);
+    const site = () => session.history.document.getState();
+    expect(countOneOffUses(site(), "#1f6feb", isColorField)).toBe(2);
+    const before = theme().ownColors ?? [];
+
+    const id = await addOneOffToOwnColors(session, undefined, "#1f6feb", " Ocean ", isColorField);
+    if (id === undefined) throw new Error("not added");
+
+    expect(theme().ownColors?.at(-1)).toMatchObject({ id, name: "Ocean" });
+    expect(backgrounds(session)).toEqual([`own-${id}/50`, `own-${id}`]);
+    expect(countOneOffUses(site(), "#1f6feb", isColorField)).toBe(0);
+    expect(labels()).toEqual(["Used a colour twice", "Made 'Ocean' one of your colours"]);
+
+    session.history.undo();
+    expect(theme().ownColors ?? []).toEqual(before);
+    expect(backgrounds(session)).toEqual(["[#1f6feb]/50", "[#1f6feb]"]);
+  });
+
+  it("keeps the colour as it looks: its code comes back from the colour added", async () => {
+    const { session, theme } = setUp();
+    twoUses(session);
+    const id = await addOneOffToOwnColors(session, undefined, "#1f6feb", "Ocean", isColorField);
+    const added = theme().ownColors?.find((each) => each.id === id);
+    if (added === undefined) throw new Error("not added");
+    expect(hexOf(added.color)).toBe("#1f6feb");
+  });
+
+  it("adds nothing when the theme has as many colours as it takes", async () => {
+    const { session, labels } = setUp();
+    session.edit("root", "Filled the list", (draft) => {
+      draft.theme.ownColors = Array.from({ length: OWN_COLORS_MAX }, (_, n) => ({
+        id: `c${String.fromCharCode(97 + (n % 26))}${String.fromCharCode(97 + Math.floor(n / 26))}`,
+        name: `Colour ${n + 1}`,
+        color: { l: 0.5, c: 0.1, h: 200 },
+      }));
+    });
+    twoUses(session);
+    expect(
+      await addOneOffToOwnColors(session, undefined, "#1f6feb", "Ocean", isColorField),
+    ).toBeUndefined();
+    expect(labels().at(-1)).toBe("Used a colour twice");
   });
 });

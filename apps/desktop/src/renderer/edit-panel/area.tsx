@@ -1,4 +1,4 @@
-import { FieldRenderersProvider } from "@webforge/editor-ui";
+import { FieldRenderersProvider, toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { SlidersHorizontalIcon } from "lucide-react";
 import type { EditPanelPreferences } from "../../shared/ipc/prefs.js";
@@ -11,7 +11,7 @@ import { HelpButton } from "../help/index.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { type PreferencesStore, usePreferences } from "../shell/preferences-store.js";
-import { THEME_PANEL_ID } from "../theme/index.js";
+import { oneOffToOwn, THEME_PANEL_ID } from "../theme/index.js";
 
 /** `preferences` with `closed` as the option groups closed for component `type` (UX-13). */
 function withClosedGroups(
@@ -118,10 +118,21 @@ function PreferredEditPanel({
  */
 export const editPanelArea: Area<EditorContext> = {
   id: "editPanel",
-  register: ({ api, session, panels, preferences, engine, imagePicks }) => {
+  register: ({ api, session, panels, preferences, engine, imagePicks, siteWide, ownThemes }) => {
     // Images, links, icons, and colours with the theme's own colours and a contrast warning (1.37,
-    // UX-25).
-    const renderers = fieldRenderers({ api, session, preferences, imagePicks });
+    // UX-25); a one-off colour offered as one of the person's colours, through the theme's edits,
+    // asking as the Theme tab does (TC-3).
+    const renderers = fieldRenderers({
+      api,
+      session,
+      preferences,
+      imagePicks,
+      toOwn: oneOffToOwn(session, {
+        siteWide,
+        names: ownThemes,
+        notify: (message) => toast(message),
+      }),
+    });
     const itemCss = itemCssThrough(api);
     function Edit() {
       return (

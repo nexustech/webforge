@@ -16,9 +16,12 @@ import { desktopDir } from "./launch.js";
  * main registers as it starts. 1.57 MB once the site components' words left main's catalogue
  * (#1150), with 2% to spare. 1.60 MB with a button's missing link (#1256): Site Check's words for
  * it, in the English strings main holds from the start for `t()`, and the model's `hasLink`, in
- * the model's chunk main loads at start; again with 2% to spare.
+ * the model's chunk main loads at start; again with 2% to spare. 1.65 MB with Help › Diagnostics…
+ * (5.41): its IPC calls, which main registers as it starts, and its window's words, in the English
+ * strings main holds for `t()`; what it does is loaded when first used, with 1% to spare. 1.46 MB
+ * once main reads its own strings only (#1317), not the editor's whole catalogue, with 2% to spare.
  */
-const BUDGET_BYTES = 1_635_000;
+const BUDGET_BYTES = 1_488_000;
 
 /** Packages only the export worker, a publish, the MCP server or Site Check needs. */
 const NOT_AT_START = [
@@ -46,6 +49,12 @@ const NOT_AT_START = [
  */
 const COMPONENT_STRING = /"field\.[\w.-]+"/;
 
+/**
+ * A key of the editor's own strings that main never shows: Theme Studio's. Main reads its own
+ * catalogue, `@webforge/i18n/main`, so its start-up loads none of them (#1317).
+ */
+const EDITOR_STRING = /"theme\.studio\.[\w.-]+"/;
+
 /** A static import's target, relative (a chunk) or bare (a package), at the start of a line. */
 const STATIC_IMPORT = /^import\s(?:[^;]*?\sfrom\s*)?"([^"]+)"/gm;
 
@@ -59,6 +68,8 @@ type StaticGraph = {
   readonly packages: ReadonlySet<string>;
   /** The first of the site components' own strings in those files, if any. */
   readonly componentString: string | undefined;
+  /** The first of the editor's own strings in those files, if any. */
+  readonly editorString: string | undefined;
 };
 
 /** `out/main/index.js` and every file it imports statically, with the packages in them. */
@@ -67,19 +78,21 @@ function staticGraph(): StaticGraph {
   const files = new Map<string, number>();
   const packages = new Set<string>();
   let componentString: string | undefined;
+  let editorString: string | undefined;
   const waiting = ["index.js"];
   for (let file = waiting.pop(); file !== undefined; file = waiting.pop()) {
     if (files.has(file)) continue;
     const code = readFileSync(join(root, file), "utf8");
     files.set(file, Buffer.byteLength(code));
     componentString ??= COMPONENT_STRING.exec(code)?.[0];
+    editorString ??= EDITOR_STRING.exec(code)?.[0];
     for (const [, target = ""] of code.matchAll(STATIC_IMPORT)) {
       if (target.startsWith(".")) waiting.push(normalize(join(dirname(file), target)));
       else if (!target.startsWith("node:")) packages.add(packageOf(target));
     }
     for (const [, name = ""] of code.matchAll(BUNDLED_MODULE)) packages.add(name);
   }
-  return { files, packages, componentString };
+  return { files, packages, componentString, editorString };
 }
 
 /** The package `specifier` names: `ssh2`, `@modelcontextprotocol/sdk`. */
@@ -89,11 +102,12 @@ function packageOf(specifier: string): string {
 }
 
 test("main's start-up loads none of the export's tools, within its budget (#892)", () => {
-  const { files, packages, componentString } = staticGraph();
+  const { files, packages, componentString, editorString } = staticGraph();
   const bytes = [...files.values()].reduce((sum, size) => sum + size, 0);
   console.log(`Main's static graph: ${files.size} files, ${bytes} bytes`);
 
   expect(NOT_AT_START.filter((name) => packages.has(name))).toEqual([]);
   expect(componentString, "the site components' strings, at main's start-up").toBeUndefined();
+  expect(editorString, "the editor's own strings, at main's start-up").toBeUndefined();
   expect(bytes).toBeLessThanOrEqual(BUDGET_BYTES);
 });

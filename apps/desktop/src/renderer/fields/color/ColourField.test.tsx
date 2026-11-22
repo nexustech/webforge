@@ -2,11 +2,13 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { FieldSpec } from "@webforge/editor-ui";
-import { DEFAULT_THEME, type TextStyle } from "@webforge/model";
+import { DEFAULT_THEME, type SiteDoc, type TextStyle } from "@webforge/model";
 import { contrastNeeded, contrastRatio, hexToOklch, type Surface } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createStore } from "zustand/vanilla";
+import { starterSite } from "../../../shared/starter-site.js";
 import { sessionWith } from "../../testing/fixtures.js";
-import { ColourField, colourRefName, shownRatio } from "./ColourField.js";
+import { ColourField, colourRefName, type OneOffToOwn, shownRatio } from "./ColourField.js";
 
 afterEach(cleanup);
 
@@ -24,14 +26,16 @@ const FIELD: FieldSpec<"color"> = {
 function setUp(
   value: string,
   options: {
-    readonly advanced?: boolean;
     readonly textStyles?: readonly TextStyle[];
     readonly surface?: Surface;
     readonly graphic?: boolean;
     readonly name?: string;
+    readonly site?: SiteDoc;
+    readonly themeOnly?: boolean;
+    readonly toOwn?: OneOffToOwn;
   } = {},
 ) {
-  const session = sessionWith();
+  const session = sessionWith(options.site);
   const onChange = vi.fn();
   const onCommit = vi.fn();
   render(
@@ -46,7 +50,8 @@ function setUp(
         onChange={onChange}
         onCommit={onCommit}
         session={session}
-        advanced={options.advanced}
+        themeOnly={options.themeOnly}
+        toOwn={options.toOwn}
         textStyles={options.textStyles === undefined ? undefined : () => options.textStyles ?? []}
         surface={options.surface === undefined ? undefined : () => options.surface as Surface}
         graphic={options.graphic === undefined ? undefined : () => options.graphic === true}
@@ -69,7 +74,7 @@ describe("ColourField (1.37, UX-25, ADR 0009)", () => {
   it("shows each theme colour in the site's own colour, by its glossary name", () => {
     const { session, swatch, names } = setUp("default");
 
-    expect(names()).toEqual(["Text", "Brand", "Accent", "Second accent"]);
+    expect(names()).toEqual(["Text", "Brand", "Accent", "Second accent", "Another colour…"]);
     expect(swatch("Brand")).toBe("oklch(45% 0.24 277.023)");
     act(() =>
       session.edit("root", "Changed theme colours", (draft) => {
@@ -109,35 +114,128 @@ describe("ColourField (1.37, UX-25, ADR 0009)", () => {
     expect(text.onChange).toHaveBeenLastCalledWith("default");
   });
 
-  it("offers a colour of the field's own in Advanced mode only, marked off the theme", async () => {
-    const simple = setUp("primary");
-    expect(screen.queryByRole("radio", { name: "Custom" })).toBeNull();
-    expect(simple.names()).not.toContain("Custom");
+  it("offers your colours under their own heading, with their shades and opacity (TC-1b)", async () => {
+    const { session, onChange, names, swatch } = setUp("primary/80");
+    act(() =>
+      session.edit("root", "Added colour 'Sky'", (draft) => {
+        draft.theme.ownColors = [
+          { id: "csky", name: "Sky", color: { l: 0.7, c: 0.12, h: 230 } },
+          { id: "csea", name: "Sea", color: { l: 0.5, c: 0.1, h: 200 } },
+        ];
+      }),
+    );
+    expect(names()).toEqual([
+      "Text",
+      "Brand",
+      "Accent",
+      "Second accent",
+      "Another colour…",
+      "Sky",
+      "Sea",
+    ]);
+    expect(screen.getByText("Your colours")).toBeDefined();
+    expect(swatch("Sky")).toBe("oklch(70% 0.12 230)");
+
+    // Chosen, it keeps the opacity; then a shade of it.
+    await userEvent.click(screen.getByRole("radio", { name: "Sky" }));
+    expect(onChange).toHaveBeenLastCalledWith("own-csky/80");
     cleanup();
 
+    const shaded = setUp("own-csky-300/80");
+    act(() =>
+      shaded.session.edit("root", "Added colour 'Sky'", (draft) => {
+        draft.theme.ownColors = [{ id: "csky", name: "Sky", color: { l: 0.7, c: 0.12, h: 230 } }];
+      }),
+    );
+    expect(screen.getByRole("radio", { name: "Sky" }).getAttribute("aria-checked")).toBe("true");
+    await userEvent.click(screen.getByRole("radio", { name: "Shade 700" }));
+    expect(shaded.onChange).toHaveBeenLastCalledWith("own-csky-700/80");
+  });
+
+  it("shows a colour no longer in the theme as the field has it, with no shades", () => {
+    const { names } = setUp("own-cgone-300");
+    expect(names()).toEqual([
+      "Text",
+      "Brand",
+      "Accent",
+      "Second accent",
+      "Another colour…",
+      "A colour no longer in your theme",
+    ]);
+    expect(screen.queryByRole("radio", { name: "Shade 300" })).toBeNull();
+  });
+
+  it("offers another colour in Simple mode too, marked off the theme (TC-2, #1219)", async () => {
     // It starts from the colour shown now: the brand colour, at the same opacity.
-    const { onChange } = setUp("primary/50", { advanced: true });
-    await userEvent.click(screen.getByRole("radio", { name: "Custom" }));
+    const { onChange } = setUp("primary/50");
+    await userEvent.click(screen.getByRole("radio", { name: "Another colour…" }));
     expect(onChange).toHaveBeenLastCalledWith(expect.stringMatching(/^\[#[0-9a-f]{6}\]\/50$/));
     expect(onChange).not.toHaveBeenLastCalledWith("[#000000]/50");
     cleanup();
 
-    const custom = setUp("[#1f6feb]", { advanced: true });
-    expect(custom.swatch("Custom")).toBe("#1f6feb");
+    const custom = setUp("[#1f6feb]/50");
+    expect(custom.swatch("Another colour…")).toBe("#1f6feb");
     expect(screen.getByText(/Off the theme/)).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Custom colour"), { target: { value: "#ff8800" } });
-    expect(custom.onChange).toHaveBeenLastCalledWith("[#ff8800]");
+    // Its opacity, as a theme colour's.
+    expect((screen.getByLabelText("Opacity") as HTMLSelectElement).value).toBe("50");
+    // Webforge's picker (5.26): one change, one step, once it closes.
+    await userEvent.click(screen.getByRole("button", { name: "Another colour" }));
+    const code = screen.getByRole("textbox", { name: "Hex code" });
+    await userEvent.clear(code);
+    await userEvent.type(code, "#ff8800{Enter}");
+    expect(custom.onChange).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Another colour" }));
+    expect(custom.onChange).toHaveBeenCalledOnce();
+    expect(custom.onChange).toHaveBeenLastCalledWith("[#ff8800]/50");
+    expect(custom.onCommit).toHaveBeenCalledOnce();
+    // And back to a theme colour, in one click.
+    await userEvent.click(screen.getByRole("radio", { name: "Brand" }));
+    expect(custom.onChange).toHaveBeenLastCalledWith("primary/50");
   });
 
-  it("keeps a custom colour in Simple mode, shown, with a way back to the theme", async () => {
-    const { onChange } = setUp("[#1f6feb]/50");
+  it("suggests the nearest shade of a one-off that reads, and takes it in one step (TC-2)", async () => {
+    // A pale pink, hard to read on the page's white.
+    const { onChange, onCommit } = setUp("[#f5d0c5]");
+    expect(screen.getByText(/Hard to read/)).toBeTruthy();
 
-    expect(screen.getByText("Custom colour #1f6feb, off the theme")).toBeTruthy();
-    // Its opacity is Advanced mode's to change too.
-    expect(screen.queryByLabelText("Opacity")).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Use a theme colour" }));
+    await userEvent.click(screen.getByRole("button", { name: "Use a darker shade" }));
 
-    expect(onChange).toHaveBeenLastCalledWith("default");
+    const stored = onChange.mock.lastCall?.[0] as string;
+    const hex = /^\[(#[0-9a-f]{6})\]$/.exec(stored)?.[1] ?? "";
+    expect(hex).not.toBe("");
+    expect(contrastRatio(hexToOklch(hex), DEFAULT_THEME.colors["base-100"])).toBeGreaterThanOrEqual(
+      4.5,
+    );
+    expect(onCommit).toHaveBeenCalledOnce();
+  });
+
+  it("suggests no shade for a one-off that reads", () => {
+    setUp("[#1a3d2e]");
+
+    expect(screen.queryByText(/Hard to read/)).toBeNull();
+    expect(screen.queryByRole("button", { name: /shade/ })).toBeNull();
+  });
+
+  it("offers the theme's colours only for a look, which holds no one-off (ADR 0009)", () => {
+    const { names } = setUp("primary", { themeOnly: true });
+
+    expect(names()).not.toContain("Another colour…");
+    expect(screen.queryByRole("button", { name: "Another colour" })).toBeNull();
+  });
+
+  it("offers the site's one-off colours in its picker, read from the site (TC-2)", async () => {
+    const site = starterSite();
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content.push({ type: "Heading", props: { id: "used", color: "[#c0392b]" } });
+    setUp("[#1f6feb]", { site });
+
+    await userEvent.click(screen.getByRole("button", { name: "Another colour" }));
+
+    const offered = screen.getByRole("list", { name: "Colours on this site" });
+    expect(
+      [...offered.querySelectorAll("button")].map((each) => each.getAttribute("aria-label")),
+    ).toEqual(["#c0392b"]);
   });
 
   it("warns when the colour is hard to read on the page, by the text's size", () => {
@@ -298,5 +396,104 @@ describe("ColourField's Theme's choice (2.22)", () => {
     expect(again.onChange).toHaveBeenLastCalledWith("theme");
     expect(again.onCommit).toHaveBeenCalled();
     expect(onCommit).toHaveBeenCalled();
+  });
+});
+
+describe("ColourField: a one-off made one of your colours (TC-3, #1221)", () => {
+  /** A stand-in for the theme's edit: `uses` uses of every one-off, and what it was asked. */
+  const toOwnWith = (uses: number, added = true) => {
+    const add = vi.fn(async (_hex: string, _name: string) => added);
+    const toOwn: OneOffToOwn = {
+      uses: () => uses,
+      add,
+      declined: createStore<readonly string[]>(() => []),
+    };
+    return { toOwn, add };
+  };
+
+  it("offers it the second time it's used, named, and adds it under the name typed", async () => {
+    const { toOwn, add } = toOwnWith(2);
+    setUp("[#1f6feb]/50", { toOwn });
+    const offer = screen.getByRole("form", { name: /used 2 times on your site/ });
+    const name = screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement;
+    expect(offer.contains(name)).toBe(true);
+    expect(name.value).toBe("Colour 1");
+
+    const user = userEvent.setup({ delay: null });
+    await user.clear(name);
+    await user.type(name, "Ocean");
+    await user.click(screen.getByRole("button", { name: "Add to Your Colours" }));
+
+    expect(add).toHaveBeenCalledWith("#1f6feb", "Ocean");
+  });
+
+  it("offers nothing more after Not Now, for that colour, until asked again", async () => {
+    const { toOwn, add } = toOwnWith(3);
+    setUp("[#1f6feb]", { toOwn });
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole("button", { name: "Not Now" }));
+
+    expect(screen.queryByRole("form")).toBeNull();
+    expect(toOwn.declined.getState()).toEqual(["#1f6feb"]);
+    expect(add).not.toHaveBeenCalled();
+    // Asked for, it's offered again.
+    await user.click(screen.getByRole("button", { name: "Add to Your Colours…" }));
+    expect(screen.getByRole("form", { name: /used 3 times/ })).toBeDefined();
+  });
+
+  it("offers it for a colour used once only when asked, and says when the list is full", async () => {
+    const { toOwn } = toOwnWith(1, false);
+    setUp("[#1f6feb]", { toOwn });
+    expect(screen.queryByRole("form")).toBeNull();
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole("button", { name: "Add to Your Colours…" }));
+    await user.click(screen.getByRole("button", { name: "Add to Your Colours" }));
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Your colours are full/);
+  });
+
+  it("refuses a name one of the person's colours has, whatever its case", async () => {
+    const site = starterSite();
+    site.theme.ownColors = [{ id: "cbrick", name: "Brick", color: { l: 0.5, c: 0.15, h: 30 } }];
+    const { toOwn, add } = toOwnWith(2);
+    setUp("[#1f6feb]", { toOwn, site });
+    const user = userEvent.setup({ delay: null });
+    const name = screen.getByRole("textbox", { name: "Name" });
+    await user.clear(name);
+    await user.type(name, " brick ");
+    await user.click(screen.getByRole("button", { name: "Add to Your Colours" }));
+
+    expect(add).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toBe(
+      "You already have a colour called brick. Choose another name.",
+    );
+    expect(name.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("works again after an add that failed", async () => {
+    const { toOwn, add } = toOwnWith(2);
+    add.mockRejectedValueOnce(new Error("No version saved"));
+    setUp("[#1f6feb]", { toOwn });
+    const user = userEvent.setup({ delay: null });
+    const button = screen.getByRole("button", { name: "Add to Your Colours" });
+    await user.click(button);
+
+    await vi.waitFor(() => expect(button.hasAttribute("disabled")).toBe(false));
+    await user.click(button);
+    expect(add).toHaveBeenCalledTimes(2);
+  });
+
+  it("names a new colour after those the theme has", () => {
+    const site = starterSite();
+    site.theme.ownColors = [{ id: "csky", name: "Colour 2", color: { l: 0.62, c: 0.14, h: 240 } }];
+    setUp("[#1f6feb]", { toOwn: toOwnWith(2).toOwn, site });
+    expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe(
+      "Colour 3",
+    );
+  });
+
+  it("offers nothing where it can't be added: without the theme's edit", () => {
+    setUp("[#1f6feb]");
+    expect(screen.queryByRole("button", { name: /Add to Your Colours/ })).toBeNull();
   });
 });

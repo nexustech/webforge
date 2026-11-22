@@ -1,4 +1,4 @@
-import { isMessageKey, t } from "@webforge/i18n";
+import { isMessageKey, t } from "@webforge/i18n/main";
 import { BUSINESS_KINDS, BUSINESS_TYPES, type BusinessType } from "@webforge/model";
 import { PAGE_RECIPES } from "@webforge/templates";
 import { CURATED_THEMES, THEME_PRESETS } from "@webforge/themes";
@@ -14,6 +14,7 @@ import {
 } from "../shared/ipc/ai.js";
 import type { AiWindow } from "./ai-ipc.js";
 import { registerIpcHandler } from "./ipc.js";
+import { businessKindKey, categoryKey, templateNameKey } from "./main-strings.js";
 
 /** How long a brief waits for the person to create the site or close the quick start. */
 const BRIEF_TIMEOUT_MS = 30 * 60_000;
@@ -42,16 +43,16 @@ export function siteChoices(templates: readonly BriefTemplate[]) {
   return {
     businessTypes: BUSINESS_TYPES.map((type) => ({
       type,
-      label: label(`template.category.${type}`) ?? type,
+      label: label(categoryKey(type)) ?? type,
       kinds: BUSINESS_KINDS[type].map((kind) => ({
         kind,
-        label: label(`site.settings.businessKind.${kind}`) ?? kind,
+        label: label(businessKindKey(kind)) ?? kind,
       })),
       templates: templates
         .filter((template) => template.category === type)
         .map(({ id, theme, pages }) => ({
           id,
-          name: label(`template.${id}.name`) ?? id,
+          name: label(templateNameKey(id)) ?? id,
           theme,
           pages,
         })),
