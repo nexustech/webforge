@@ -17,7 +17,7 @@ How a beta session differs from 5.4a's:
 
 **Keeping the notes:**
 
-- During the session, note by the person's number, never their name, as 5.4a says.
+- During the session, note by the person's number, never their name, as 5.4a says. Since they use their own business, leave out its name, web address and anything else that would identify it, in the notes, the table and every quote: the table and the issues are public.
 - Afterwards, add the session's row to the round's results table: _Published_, _Time to publish_, _Hints given_, _Tour_ and _Where they got stuck_.
 - Post the table as a comment on the round's pinned issue, _Beta round N: weekly totals_, once the three sessions are done. Quote what the person said or did, by number.
 - File each problem as an issue in the current milestone, labelled `beta` and as [the triage notes](triage.md#labels) say, quoting the session.
