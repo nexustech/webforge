@@ -3,7 +3,7 @@ import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { chooseColour } from "./colour-picker.js";
 import { launchDesktopApp, newUserDataDir, removeWhenFree, waitForCanvas } from "./launch.js";
-import { chooseFromSubmenu } from "./menus.js";
+import { chooseFromMenu, chooseFromSubmenu } from "./menus.js";
 
 // The Edit panel (1.14): the selected element's fields, each change one labelled undo step.
 
@@ -159,6 +159,36 @@ test.describe("Edit panel", () => {
     await expect(
       headingColour().getByRole("button", { name: "Add to Your Colours…" }),
     ).toBeVisible();
+  });
+
+  test("lists a one-off in Theme Studio, goes to its use, and adds it to your colours (TC-4)", async () => {
+    await selectHeading();
+    await panel().getByRole("tab", { name: "Style" }).click();
+    await headingColour().getByRole("radio", { name: "Another colour…" }).click();
+    await chooseColour(
+      page,
+      headingColour().getByRole("button", { name: "Another colour" }),
+      "#c0392b",
+    );
+    await page.keyboard.press("Escape");
+
+    // Colours outside your theme (#1222): the heading's colour, and where it is.
+    await chooseFromMenu(app, page, "Site", "Theme Studio…");
+    const studio = page.getByRole("dialog", { name: "Theme Studio" });
+    await studio.getByRole("tab", { name: "Colours" }).click();
+    const listed = studio.getByRole("listitem", { name: "#c0392b" });
+    await expect(listed.getByText("Used once")).toBeVisible();
+    await listed.getByRole("button", { name: /^Show Heading on / }).click();
+    await expect(studio).toHaveCount(0);
+    await expect(panel().getByRole("heading", { name: "Heading", exact: true })).toBeVisible();
+
+    await chooseFromMenu(app, page, "Site", "Theme Studio…");
+    await studio.getByRole("tab", { name: "Colours" }).click();
+    await listed.getByRole("button", { name: "Add to Your Colours…" }).click();
+    await listed.getByRole("textbox", { name: "Name" }).fill("Brick");
+    await listed.getByRole("button", { name: "Add to Your Colours", exact: true }).click();
+    await expect(studio.getByText("Your site uses only your theme's colours.")).toBeVisible();
+    await expect(steps().first()).toHaveText("Made 'Brick' one of your colours");
   });
 
   test("copies a heading's style onto another heading, as one step (1.37, UX-14)", async () => {

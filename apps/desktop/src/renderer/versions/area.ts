@@ -80,7 +80,7 @@ export const versionHistoryArea: Area<WindowContext> = {
     }
 
     const stops = [
-      windowDialogs.register({ id: "saveVersion", component: SaveVersion }),
+      windowDialogs.register({ id: "saveVersion", component: SaveVersion, close }),
       commands.register({
         id: COMMAND_IDS.saveVersion,
         label: t("versionHistory.save"),

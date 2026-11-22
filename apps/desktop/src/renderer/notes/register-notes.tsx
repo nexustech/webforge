@@ -61,7 +61,11 @@ export function registerNotes(
     );
   };
   const removers = [
-    dialogs.register({ id: "note", component: Note }),
+    dialogs.register({
+      id: "note",
+      component: Note,
+      close: () => state.setState({ editing: null }),
+    }),
     registry.register({
       id: COMMAND_IDS.note,
       label: t("notes.add"),

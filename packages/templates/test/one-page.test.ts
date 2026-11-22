@@ -100,7 +100,16 @@ describe("mergeIntoHome on the Trades template", () => {
     const labels = site.menu.items.slice(1).map((item) => item.label);
     const pages = trades.template.site.pageOrder.slice(1, -1);
     expect(labels).toEqual([...pages.map((id) => trades.template.site.pages[id]?.title), "FAQ"]);
-    expect(site.menu.items.filter((item) => item.hidden)).toEqual([]);
+    // Contact stays hidden, as the template hides it for its Header's button (HF-2), which goes to its
+    // section now.
+    expect(site.menu.items.filter((item) => item.hidden).map((item) => item.label)).toEqual([
+      "Contact",
+    ]);
+    expect(site.layout.header[0]?.props.buttonLink).toEqual({
+      kind: "page",
+      pageId: site.homePageId,
+      anchor: "contact",
+    });
     const anchors = home
       .map((node) => node.props.advanced?.anchorId)
       .filter((anchor) => anchor !== undefined);

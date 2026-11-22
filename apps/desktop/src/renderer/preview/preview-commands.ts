@@ -91,7 +91,7 @@ export function registerPreviewCommands(
 ): () => void {
   const { session, library, api, sessionId, phone, notify, tell, confirmCode, onCodeTrusted } =
     deps;
-  /** Runs `start` once code to trust is confirmed (#649); `notStarted` when the person declines it. */
+  /** Runs `start` once code to trust is confirmed (#649); `notStarted` when it's declined. */
   const afterCode = (start: () => void, notStarted?: () => void) => {
     confirmCode(site())
       .then((code) => {

@@ -67,3 +67,17 @@ describe("Your site is live, with what Site Check lists to fix (#1171)", () => {
     );
   });
 });
+
+describe("closing the publish's outcome (#1320)", () => {
+  it("answers no to replacing, and closes Your site is live", async () => {
+    const outcomes = createPublishOutcomes();
+    const replace = outcomes.askReplace("Rosa's Bakery");
+    outcomes.close();
+    await expect(replace).resolves.toBe(false);
+    expect(outcomes.state.getState().shown).toBeNull();
+
+    outcomes.showLive(LIVE);
+    outcomes.close();
+    expect(outcomes.state.getState().shown).toBeNull();
+  });
+});

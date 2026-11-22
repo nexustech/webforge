@@ -23,6 +23,7 @@ export const previewArea: Area<WindowContext> = {
     const removeDialog = windowDialogs.register({
       id: "phonePreview",
       component: () => createElement(PhonePreviewDialog, { state: phone }),
+      close: () => phone.setState({ status: "closed" }, true),
     });
     const removeCommands = registerPreviewCommands(commands, {
       session,

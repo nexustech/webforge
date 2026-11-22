@@ -64,6 +64,7 @@ export const codeTrustArea: Area<WindowContext> = {
           elementPlace: (piece) =>
             codeElementPlace(piece, session.history.document.getState(), siteLibrary),
         }),
+      close: () => codeTrust.question.getState().question?.answer("cancel"),
     });
     return () => {
       removeDialog();
