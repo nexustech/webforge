@@ -1,7 +1,6 @@
 import { t } from "@webforge/i18n";
 import {
   clearExample,
-  copiedNodeId,
   designAt,
   elementsAt,
   exampleFields,
@@ -15,7 +14,6 @@ import {
   type PageEntry,
   type PageId,
   pageTitle,
-  pageWithCopy,
   slugsInFolder,
   uniqueSlug,
 } from "@webforge/model";
@@ -23,7 +21,7 @@ import type { Finding, FindingPlace, SearchGuide } from "@webforge/site-check";
 import type { EditorSession } from "../editor/editor-session.js";
 import { quotedElementName } from "../editor/labels.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
-import { postShowingDesign } from "../editor/shared-layout.js";
+import { showElement } from "../editor/show-element.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -91,25 +89,9 @@ export function jumpTo(place: FindingPlace, actions: SiteCheckActions): void {
   switch (place.kind) {
     case "element": {
       const { on, nodeId } = place;
-      const design = designAt(site, on);
-      if (on === "header" || on === "footer") {
-        session.select(nodeId);
-      } else if (isPageIn(site.pages, on)) {
-        session.showPage(on);
-        session.select(nodeId);
-      } else if (design !== undefined) {
-        const post = postShowingDesign(site, design.id, session.ui.getState().pageId);
-        if (post === undefined) {
-          panels.show(SITE_PANEL_ID);
-          return;
-        }
-        session.showPage(post);
-        session.select(nodeId);
-      } else {
-        const holder = pageWithCopy(site, on, session.ui.getState().pageId);
-        if (holder === undefined) return;
-        session.showPage(holder.pageId);
-        session.select(copiedNodeId(holder.copyId, nodeId));
+      // A design with no posts to show it on: the Site panel, where its collection is.
+      if (!showElement(session, on, nodeId) && designAt(site, on) !== undefined) {
+        panels.show(SITE_PANEL_ID);
       }
       return;
     }

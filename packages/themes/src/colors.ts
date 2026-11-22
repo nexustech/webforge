@@ -211,3 +211,43 @@ export function hexOf(color: Oklch): string {
     )
     .join("")}`;
 }
+
+/** A colour in OKLab: lightness and the two colour axes, where distances are perceptual. */
+export type Lab = { readonly l: number; readonly a: number; readonly b: number };
+
+/** `color` in OKLab. */
+export const toLab = ({ l, c, h }: Oklch): Lab => {
+  const radians = (h * Math.PI) / 180;
+  return { l, a: c * Math.cos(radians), b: c * Math.sin(radians) };
+};
+
+/** An OKLab colour in OKLCH. */
+export const toOklch = ({ l, a, b }: Lab): Oklch => {
+  const h = (Math.atan2(b, a) * 180) / Math.PI;
+  return { l, c: Math.hypot(a, b), h: h < 0 ? h + 360 : h };
+};
+
+/** How far apart two OKLab colours look: the square of their distance, which orders alike. */
+export const labDistance = (x: Lab, y: Lab) =>
+  (x.l - y.l) ** 2 + (x.a - y.a) ** 2 + (x.b - y.b) ** 2;
+
+/**
+ * Of `among`, the one whose colour looks nearest `color` (TC-4, #1222), measured in OKLab; the
+ * first of those as near, and none of none.
+ */
+export function nearestColour<T extends { readonly color: Oklch }>(
+  color: Oklch,
+  among: readonly T[],
+): T | undefined {
+  const from = toLab(color);
+  let nearest: T | undefined;
+  let best = Number.POSITIVE_INFINITY;
+  for (const each of among) {
+    const far = labDistance(from, toLab(each.color));
+    if (far < best) {
+      best = far;
+      nearest = each;
+    }
+  }
+  return nearest;
+}

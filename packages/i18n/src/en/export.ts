@@ -48,6 +48,8 @@ export const exportSite = {
     "On “{page}”, a form has nowhere to send its messages. Choose a form service in Site Settings, or give the Newsletter its form address.",
   "export.report.missingIcon":
     "The site icon was deleted from Media, so pages have no icon in the browser tab. Choose another in Site Settings.",
+  "export.report.missingLogo":
+    "The logo was deleted from Media, so the Header shows the site's name. Choose another in Site Settings.",
   "export.report.smallIcon":
     "The site icon is smaller than 16 pixels, so pages have no icon in the browser tab. Choose a larger image in Site Settings.",
   "export.report.customScript":

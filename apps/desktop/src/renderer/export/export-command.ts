@@ -86,6 +86,7 @@ const WARNING_TEXTS = {
   "missing-image": "export.report.missingImage",
   "not-minified": "export.report.notMinified",
   "missing-icon": "export.report.missingIcon",
+  "missing-logo": "export.report.missingLogo",
   "small-icon": "export.report.smallIcon",
   "form-unset": "export.report.formUnset",
   "custom-script": "export.report.customScript",

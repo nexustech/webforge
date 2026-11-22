@@ -351,6 +351,12 @@
             "siteName": "Willow Hair & Beauty",
             "bindings": {
               "siteName": "general.name"
+            },
+            "button": true,
+            "buttonLabel": "Book now",
+            "buttonLink": {
+              "kind": "page",
+              "pageId": "salon-book"
             }
           }
         }
@@ -885,7 +891,7 @@
           "id": "menu-book",
           "kind": "page",
           "pageId": "salon-book",
-          "hidden": false
+          "hidden": true
         }
       ]
     },

@@ -346,6 +346,12 @@
             "siteName": "Brightside Electrical",
             "bindings": {
               "siteName": "general.name"
+            },
+            "button": true,
+            "buttonLabel": "Get a quote",
+            "buttonLink": {
+              "kind": "page",
+              "pageId": "trades-contact"
             }
           }
         }
@@ -1057,7 +1063,7 @@
           "id": "menu-contact",
           "kind": "page",
           "pageId": "trades-contact",
-          "hidden": false
+          "hidden": true
         }
       ]
     },

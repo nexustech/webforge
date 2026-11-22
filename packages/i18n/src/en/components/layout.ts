@@ -9,7 +9,7 @@ export const layout = {
   // The Header's and Footer's layouts (2.6).
   "field.headerLayout.left": "Name left, menu right",
   "field.headerLayout.centred": "Centred",
-  "field.headerLayout.split": "With a button",
+  "field.headerLayout.split": "Name left, menu centred",
   // The business's logo from Site Settings (HF-1, 5.37), and where and how big it shows.
   "field.logoPlace": "Logo",
   "field.logoPlace.instead": "In place of the name",
@@ -18,6 +18,10 @@ export const layout = {
   "field.logoSize.small": "Small",
   "field.logoSize.medium": "Medium",
   "field.logoSize.large": "Large",
+  // The Header's own button (HF-2, 5.38), in any layout.
+  "field.headerButton": "Show a button",
+  "field.headerButton.help": "A button such as “Book now”, on the right, and in the phone menu.",
+  "starter.headerButton": "Book now",
   "field.footerLayout.centred": "Centred",
   "field.footerLayout.columns": "Columns",
   // A sticky header (F-DS-6).

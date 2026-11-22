@@ -111,6 +111,16 @@ Your colours are in every colour picker on the Edit panel, under **Your colours*
 
 Adding, renaming, changing and deleting a colour are each one step you can undo. [AI apps](ai-apps.md) can use your colours too, but can't remove one your site still uses: delete it here, where you choose what its uses become.
 
+### Colours outside your theme
+
+Under your colours, **Colours outside your theme** lists every colour your site uses that isn't in your theme, such as one chosen with **Another colour…** ([Colours](styling.md#colours)), and how many times each is used. A setting that uses it on both Desktop and Mobile counts once. These colours stay the same when you change your theme.
+
+- Click a place under a colour, such as _Heading on Home_, to close Theme Studio and select that element on the page. A place marked _(not on any page)_ is in a shared section that isn't on any page yet, or in a blog design with no posts, so there's nothing to show.
+- **Add to Your Colours…** adds the colour to [your colours](#your-colours), named as you like, and everything that uses it uses your colour from then on, each at its own opacity.
+- **Use ‹name› Instead** gives everything that uses it the nearest of your colours, each at its own opacity, and a message says how many pages it changed, with **Undo**. It's offered once you have colours of your own.
+
+Each is one step you can undo. If your site uses only your theme's colours, the list says so.
+
 ## Fonts
 
 Choosing a font opens **Choose a Font**, which shows each font written in itself. Type your own sample text to try them.

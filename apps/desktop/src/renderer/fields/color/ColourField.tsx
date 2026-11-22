@@ -502,7 +502,7 @@ const NONE_DECLINED: StoreApi<readonly string[]> = {
 };
 
 /** A new colour's name: "Colour 3", the first number no colour of the person's has (TC-3). */
-function newColourName(colours: readonly { readonly name: string }[]): string {
+export function newColourName(colours: readonly { readonly name: string }[]): string {
   const taken = new Set(colours.map((each) => each.name));
   for (let n = colours.length + 1; ; n++) {
     const name = t("colour.newName", { n });
@@ -515,7 +515,7 @@ function newColourName(colours: readonly { readonly name: string }[]): string {
  * be changed there and then, *Add to Your Colours* and *Not Now*, which leaves it as it is. Says
  * so when the theme has as many colours as it takes.
  */
-function AddToColours({
+export function AddToColours({
   uses,
   initialName,
   taken,
