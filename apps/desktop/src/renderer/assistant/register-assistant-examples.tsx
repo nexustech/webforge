@@ -29,7 +29,11 @@ export function registerAssistantExamples(
     );
   }
   const stops = [
-    dialogs.register({ id: "assistantExamples", component: Dialog }),
+    dialogs.register({
+      id: "assistantExamples",
+      component: Dialog,
+      close: () => shown.setState(false, true),
+    }),
     commands.register({
       id: COMMAND_IDS.assistantExamples,
       label: t("command.assistantExamples"),

@@ -80,7 +80,11 @@ export function registerStyleDialog(
   const removers = [
     state.subscribe(follow),
     () => follow({ ...state.getState(), open: false }),
-    dialogs.register({ id: "styleThis", component: Style }),
+    dialogs.register({
+      id: "styleThis",
+      component: Style,
+      close: () => state.setState({ open: false }),
+    }),
     registry.register({
       id: COMMAND_IDS.styleThis,
       label: t("style.command.any"),

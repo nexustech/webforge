@@ -70,6 +70,7 @@ export const exportCommandArea: Area<WindowContext> = {
         onShowFolder: fromDisk((sessionId) => api.site.showExport(sessionId)),
         onSiteCheck: showSiteCheck,
       }),
+      close: dialogs.close,
     });
     const removeCommand = registerExportCommand(commands, {
       site: () => session.history.document.getState(),

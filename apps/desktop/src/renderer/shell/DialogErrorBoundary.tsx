@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 /**
  * Keeps an error inside one window dialog (#1320), as a panel's is kept in the panel (R3): the
  * dialog's place shows what happened, and the editor behind it keeps working. Closing it, with its
- * button or Escape, closes the dialog through `close`, so it can be opened again, and draws it anew.
+ * button or Escape, closes the dialog through `close`, so it's drawn anew when it's next opened.
  * The window's React root reports the error, as it does any an error boundary catches.
  */
 export function DialogErrorBoundary({
@@ -19,14 +19,14 @@ export function DialogErrorBoundary({
   close,
 }: {
   readonly children: ReactNode;
-  /** Closes the dialog in its area's state; without it, closing draws it again as it is. */
-  readonly close?: (() => void) | undefined;
+  /** Closes the dialog in its area's state, so it's drawn anew when it next opens. */
+  readonly close: () => void;
 }) {
   return (
     <ErrorBoundary
       fallback={(reset) => {
         const closed = () => {
-          close?.();
+          close();
           reset();
         };
         return (

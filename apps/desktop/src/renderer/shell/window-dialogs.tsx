@@ -10,10 +10,10 @@ type WindowDialog = {
   readonly id: string;
   readonly component: ComponentType;
   /**
-   * Closes it in its area's state, for its error's message to close (#1320); without it, closing
-   * the message draws the dialog again as its state is.
+   * Closes it in its area's state, cancelling a question it asks, as its own Cancel or Escape
+   * does: what its error's message does once closed (#1320), so its command opens it again.
    */
-  readonly close?: (() => void) | undefined;
+  readonly close: () => void;
 };
 
 /** The window's dialogs that areas register (2.3b): App draws each once, with {@link WindowDialogs}. */

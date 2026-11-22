@@ -50,6 +50,7 @@ export const siteCheckArea: Area<WindowContext> = {
     const removeDialog = windowDialogs.register({
       id: "bundleFile",
       component: () => createElement(BundleDialog, { state: question.state }),
+      close: () => question.state.getState().question?.answer(false),
     });
     const removePanel = registerSiteCheckPanel(panels, {
       session,

@@ -49,6 +49,8 @@ export type PublishOutcomes = {
    * it's still the one shown (4.4b, ADR 0006 decision 6).
    */
   markProtected(operationId: string): void;
+  /** Closes what's shown: whether to replace, answered no, or *Your site is live*. */
+  close(): void;
 };
 
 /** Creates the publish's dialogs, none shown. */
@@ -79,6 +81,11 @@ export function createPublishOutcomes(): PublishOutcomes {
       if (shown?.kind === "live" && shown.live.operationId === operationId) {
         state.setState({ shown: { ...shown, protected: true } });
       }
+    },
+    close: () => {
+      const { shown } = state.getState();
+      if (shown?.kind === "replace") shown.answer(false);
+      else state.setState({ shown: null });
     },
   };
 }

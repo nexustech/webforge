@@ -22,7 +22,12 @@ export function registerOwnThemes(
     const site = useDocument(session, (doc) => doc.theme);
     return <OwnThemeDialogs ownThemes={ownThemes} site={site} />;
   }
-  const removeDialogs = dialogs.register({ id: "ownThemes", component: Dialogs });
+  const removeDialogs = dialogs.register({
+    id: "ownThemes",
+    component: Dialogs,
+    // As Cancel: the question open is answered as cancelled.
+    close: () => ownThemes.answer(undefined),
+  });
   const stopKeeping = session.history.document.subscribe((doc, before) => {
     const theme = doc.theme;
     if (theme === before.theme) return;
