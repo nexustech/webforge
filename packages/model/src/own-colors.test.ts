@@ -4,6 +4,7 @@ import {
   countOwnColorUses,
   type IsColorField,
   newOwnColorId,
+  oneOffUsesIn,
   rewriteOneOffUses,
   rewriteOwnColorUses,
   toOwnColor,
@@ -132,5 +133,29 @@ describe("a one-off colour across a site (TC-3, #1221)", () => {
     expect(h?.props.lookBackground).toBe("[#1f6fec]");
     expect(t?.props.text).toBe("[#1f6feb]");
     expect(countOneOffUses(doc, "#1f6feb", isColorField)).toBe(0);
+  });
+});
+
+describe("the one-offs across a site, and where (TC-4, #1222)", () => {
+  it("lists each one-off with each field that has it, the most used first", () => {
+    const doc = siteWithOneOff();
+    const listed = oneOffUsesIn(doc, isColorField);
+    const home = doc.homePageId;
+    expect(listed).toEqual([
+      {
+        hex: "#1f6feb",
+        uses: [
+          { on: home, nodeId: "e", field: "lookBackground" },
+          { on: home, nodeId: "f", field: "lookBackground" },
+          { on: home, nodeId: "g", field: "items.iconColor" },
+        ],
+      },
+      { hex: "#000000", uses: [{ on: home, nodeId: "f", field: "lookBackground" }] },
+      { hex: "#1f6fec", uses: [{ on: home, nodeId: "h", field: "lookBackground" }] },
+    ]);
+  });
+
+  it("lists none for a site whose colours are all the theme's", () => {
+    expect(oneOffUsesIn(site(), isColorField)).toEqual([]);
   });
 });

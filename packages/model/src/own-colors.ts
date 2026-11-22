@@ -1,7 +1,7 @@
 import { type ColorRef, formatColorRef, parseColorRef } from "./color-ref.js";
 import type { NodeDoc } from "./documents.js";
 import type { SiteDoc } from "./site-doc.js";
-import { eachElement } from "./site-elements.js";
+import { type ElementPlace, eachElement } from "./site-elements.js";
 
 /**
  * The person's own colours in the theme (TC-1b, #1218): a new colour's id, and every use of one
@@ -212,3 +212,69 @@ export const toOwnColor =
   (to: string): Rewrite =>
   (ref) =>
     formatColorRef({ ...ref, base: { own: to } });
+
+/** A use of a one-off colour (TC-4): the element's place and id, and its colour field. */
+export type OneOffUse = {
+  readonly on: ElementPlace;
+  readonly nodeId: string;
+  /** The field: `lookBackground`, or a list item's as `<list>.<field>`. */
+  readonly field: string;
+};
+
+/** A one-off colour on the site, `#rrggbb`, and its uses: each field that has it, once. */
+export type OneOffInUse = { readonly hex: string; readonly uses: readonly OneOffUse[] };
+
+/** The one-off colours `value` holds, a colour field's: as it is, or for each device. */
+function oneOffsIn(value: unknown): Set<string> {
+  const found = new Set<string>();
+  const add = (each: unknown) => {
+    if (typeof each !== "string") return;
+    const ref = parseColorRef(each);
+    if (ref !== undefined && "hex" in ref.base) found.add(ref.base.hex);
+  };
+  if (typeof value === "object" && value !== null && "$responsive" in value) {
+    for (const each of Object.values(
+      (value as { $responsive: Record<string, unknown> }).$responsive,
+    )) {
+      add(each);
+    }
+  } else {
+    add(value);
+  }
+  return found;
+}
+
+/**
+ * Every one-off colour across `site` and where it's used (TC-4, #1222): each element's colour
+ * field, or list item's, that has it, at any opacity or device, once. The most used first, then
+ * by code. A look can't hold one (ADR 0009), so only elements have them.
+ */
+export function oneOffUsesIn(site: SiteDoc, isColorField: IsColorField): readonly OneOffInUse[] {
+  const uses = new Map<string, OneOffUse[]>();
+  const found = (hex: string, use: OneOffUse) => {
+    const list = uses.get(hex) ?? [];
+    list.push(use);
+    uses.set(hex, list);
+  };
+  eachElement(site, (node: NodeDoc, on) => {
+    const nodeId = node.props.id;
+    if (typeof nodeId !== "string") return;
+    for (const [field, value] of Object.entries(node.props)) {
+      if (isColorField(node.type, field)) {
+        for (const hex of oneOffsIn(value)) found(hex, { on, nodeId, field });
+      } else if (Array.isArray(value)) {
+        for (const item of value) {
+          if (typeof item !== "object" || item === null || "props" in item) continue;
+          for (const [name, each] of Object.entries(item as Record<string, unknown>)) {
+            if (!isColorField(node.type, `${field}.${name}`)) continue;
+            for (const hex of oneOffsIn(each))
+              found(hex, { on, nodeId, field: `${field}.${name}` });
+          }
+        }
+      }
+    }
+  });
+  return [...uses.entries()]
+    .map(([hex, list]) => ({ hex, uses: list }))
+    .sort((a, b) => b.uses.length - a.uses.length || a.hex.localeCompare(b.hex));
+}

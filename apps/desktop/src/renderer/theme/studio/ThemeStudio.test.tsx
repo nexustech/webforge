@@ -541,3 +541,50 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
     expect(labels()).toEqual(["Changed card style"]);
   });
 });
+
+describe("Theme Studio's colours outside your theme (5.32, TC-4)", () => {
+  /** Studio on Colours, with a Heading on the home page in one-off `#1f6feb`. */
+  function withOneOff() {
+    const site = starterSite();
+    site.pages[site.homePageId]?.doc.content.push({
+      type: "Heading",
+      props: { id: "blue-heading", text: "Blue", color: "[#1f6feb]" },
+    });
+    const session = sessionWith(site);
+    const studio = createStudio();
+    studio.setState({ open: true, section: "colors" });
+    render(<ThemeStudio session={session} studio={studio} />);
+    return { session, studio, user: userEvent.setup({ delay: null }) };
+  }
+
+  it("lists the site's one-offs and goes to a use: Studio closes, the element selected", async () => {
+    const { session, studio, user } = withOneOff();
+    const listed = screen.getByRole("listitem", { name: "#1f6feb" });
+    const use = within(listed).getByRole("button", { name: /^Show Heading on / });
+
+    await user.click(use);
+
+    expect(studio.getState().open).toBe(false);
+    expect(session.ui.getState().nodeId).toBe("blue-heading");
+  });
+
+  it("asks about a Components draft first, then goes to the use", async () => {
+    const { session, studio, user } = withOneOff();
+    act(() =>
+      studio.setState({
+        draft: { type: "Button", item: "Button", change: { lookCorners: "full" } },
+      }),
+    );
+    await user.click(
+      within(screen.getByRole("listitem", { name: "#1f6feb" })).getByRole("button", {
+        name: /^Show Heading on /,
+      }),
+    );
+    expect(studio.getState().open).toBe(true);
+    const ask = screen.getByRole("alertdialog", { name: "Apply Your Changes to Every Button?" });
+    await user.click(within(ask).getByRole("button", { name: "Discard Changes" }));
+
+    expect(studio.getState().open).toBe(false);
+    expect(session.ui.getState().nodeId).toBe("blue-heading");
+  });
+});

@@ -13,6 +13,7 @@ import { TOKEN_CONTROLS, tokenKey } from "./theme-controls.js";
 import {
   addOneOffToOwnColors,
   addOwnColor,
+  applyNearestOwnColor,
   colorFieldsOf,
   createOwnTheme,
   deleteOwnColor,
@@ -896,6 +897,48 @@ describe("a one-off made one of your colours (TC-3, #1221)", () => {
     expect(
       await addOneOffToOwnColors(session, undefined, "#1f6feb", "Ocean", isColorField),
     ).toBeUndefined();
+    expect(labels().at(-1)).toBe("Used a colour twice");
+  });
+});
+
+describe("a one-off given the nearest of your colours (TC-4, #1222)", () => {
+  const isColorField = (type: string, field: string) =>
+    type === "Section" && field === "lookBackground";
+  const twoUses = (session: ReturnType<typeof setUp>["session"]) =>
+    session.edit("props", "Used a colour twice", (draft) => {
+      draft.pages[draft.homePageId]?.doc.content.push(
+        { type: "Section", props: { id: "one", lookBackground: "[#1f6feb]/50", content: [] } },
+        { type: "Section", props: { id: "two", lookBackground: "[#1f6feb]", content: [] } },
+      );
+    });
+  const backgrounds = (session: ReturnType<typeof setUp>["session"]) => {
+    const site = session.history.document.getState();
+    return (site.pages[site.homePageId]?.doc.content ?? [])
+      .filter((node) => node.props.id === "one" || node.props.id === "two")
+      .map((node) => node.props.lookBackground);
+  };
+
+  it("gives every use the nearest, keeping opacity, in one step undo reverses", async () => {
+    const { session, labels, theme } = setUp();
+    const sky = await addOwnColor(session, undefined, "Sky", { l: 0.6, c: 0.17, h: 260 });
+    await addOwnColor(session, undefined, "Brick", { l: 0.5, c: 0.16, h: 30 });
+    twoUses(session);
+    const themeBefore = theme();
+
+    expect(await applyNearestOwnColor(session, undefined, "#1f6feb", isColorField)).toBe("Sky");
+    expect(backgrounds(session)).toEqual([`own-${sky}/50`, `own-${sky}`]);
+    expect(labels().at(-1)).toBe("Used 'Sky' in place of #1f6feb");
+    // Nothing in the theme changed.
+    expect(theme()).toEqual(themeBefore);
+
+    session.history.undo();
+    expect(backgrounds(session)).toEqual(["[#1f6feb]/50", "[#1f6feb]"]);
+  });
+
+  it("changes nothing while the person has none of their own colours", async () => {
+    const { session, labels } = setUp();
+    twoUses(session);
+    expect(await applyNearestOwnColor(session, undefined, "#1f6feb", isColorField)).toBeUndefined();
     expect(labels().at(-1)).toBe("Used a colour twice");
   });
 });

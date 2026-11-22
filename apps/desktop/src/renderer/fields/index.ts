@@ -10,8 +10,10 @@ export { useClassCatalogue } from "./classes/class-catalogue.js";
 export type { ClassCatalogue } from "./classes/class-match.js";
 export { codeField } from "./code/field.js";
 export {
+  AddToColours,
   ColourField,
   colourRefName,
+  newColourName,
   type OneOffToOwn,
   shownRatio,
 } from "./color/ColourField.js";

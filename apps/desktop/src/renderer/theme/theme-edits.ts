@@ -40,6 +40,7 @@ import {
   hexOf,
   hexToOklch,
   inverseColors,
+  nearestColour,
   shadeOf,
   themePreset,
 } from "@webforge/themes";
@@ -888,6 +889,31 @@ export async function addOneOffToOwnColors(
     },
   );
   return added ? id : undefined;
+}
+
+/**
+ * Gives every use of one-off colour `hex` the nearest of the person's colours (TC-4, #1222), each
+ * keeping its opacity: one step, named for both. The colour's name, or undefined while they have
+ * none. Nothing in the theme changes, so a built-in theme stays as it is.
+ */
+export async function applyNearestOwnColor(
+  session: ThemeSession,
+  asks: ThemeAsks,
+  hex: string,
+  isColorField: IsColorField,
+): Promise<string | undefined> {
+  const nearest = nearestColour(hexToOklch(hex), theme(session).ownColors ?? []);
+  if (nearest === undefined) return undefined;
+  const label = t("theme.history.oneOffToNearest", { name: nearest.name, hex });
+  await asks?.siteWide?.beforeUnaskedChange?.({
+    action: label,
+    confirm: label,
+    affectedPages: pageCount(session),
+  });
+  session.edit("props", label, (draft) => {
+    rewriteOneOffUses(draft, hex, isColorField, toOwnColor(nearest.id));
+  });
+  return nearest.name;
 }
 
 /** How many times colour `id` is used across the site: what deleting it asks about. */

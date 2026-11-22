@@ -12,21 +12,26 @@ import {
   toast,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import { type OneOffUse, oneOffUsesIn } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
-import { ownColorIssues } from "@webforge/themes";
+import { hexToOklch, nearestColour, ownColorIssues } from "@webforge/themes";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
 import type { ItemPreviews } from "../../editor/areas.js";
 import type { EditorSession } from "../../editor/editor-session.js";
+import { elementPlaceName } from "../../editor/element-place.js";
 import type { OwnThemes } from "../../editor/own-themes.js";
+import { showElement } from "../../editor/show-element.js";
 import { useDocument } from "../../editor/use-document.js";
 import { addFontPreviews, ColourField } from "../../fields/index.js";
 import { useOwnThemeList } from "../own-themes-list.js";
 import { PreviewStrip, StylingFrame } from "../StylingFrame.js";
 import { TOKEN_CONTROLS, tokenKey } from "../theme-controls.js";
 import {
+  addOneOffToOwnColors,
   addOwnColor,
+  applyNearestOwnColor,
   colorFieldsOf,
   createOwnTheme,
   deleteOwnColor,
@@ -55,6 +60,7 @@ import {
 } from "./StudioComponents.js";
 import { StudioDraftQuestion } from "./StudioDraftQuestion.js";
 import { StudioImagePalette } from "./StudioImagePalette.js";
+import { StudioOneOffColours } from "./StudioOneOffColours.js";
 import { StudioOwnColours } from "./StudioOwnColours.js";
 import { StudioStyles } from "./StudioStyles.js";
 import { StudioText } from "./StudioText.js";
@@ -172,9 +178,34 @@ export function ThemeStudio({
     return applied;
   };
   const discard = () => studio.setState({ draft: undefined });
-  /** Does what waited on the question: closes, or shows the other kind. */
-  const go = (after: DraftPending) =>
-    studio.setState("close" in after ? { open: false } : { kind: after.kind });
+  /** Does what waits on the question: closes, then what follows, or shows the other kind. */
+  const go = (after: DraftPending) => {
+    if (!("close" in after)) {
+      studio.setState({ kind: after.kind });
+      return;
+    }
+    studio.setState({ open: false });
+    after.then?.();
+  };
+  /** Closes, asking about a draft first, then does `then`: goes to a colour's use (TC-4). */
+  const closeThen = (then: () => void) => {
+    if (draft !== undefined) {
+      setPending({ close: true, then });
+      return;
+    }
+    studio.setState({ open: false });
+    then();
+  };
+  // Colours outside the theme (TC-4): every one-off on the site, with where it's used.
+  const isColorField = useMemo(() => colorFieldsOf(library), [library]);
+  // Read only while the Colours tab shows: Studio is drawn, closed, under every edit.
+  const listing = open && section === "colors";
+  const doc = useDocument(session, (site) => (listing ? site : undefined));
+  const oneOffs = useMemo(
+    () => (doc === undefined ? [] : oneOffUsesIn(doc, isColorField)),
+    [doc, isColorField],
+  );
+  const keyOfUse = (use: OneOffUse) => `${use.on} ${use.nodeId} ${use.field}`;
   /** Shows another kind; with a draft for this one, asks to apply or discard it first (4.10). */
   const chooseKind = (next: string) => {
     if (draft !== undefined && draft.type !== next) setPending({ kind: next });
@@ -356,6 +387,28 @@ export function ThemeStudio({
                 onDelete={(id, uses) =>
                   void deleteOwnColor(session, asks, id, uses, colorFieldsOf(session.library))
                 }
+              />
+              <StudioOneOffColours
+                colours={oneOffs.map(({ hex, uses }) => ({
+                  hex,
+                  uses: uses.map((use) => ({
+                    key: keyOfUse(use),
+                    where:
+                      doc === undefined ? "" : elementPlaceName(doc, library, use.on, use.nodeId),
+                  })),
+                }))}
+                own={theme.ownColors ?? []}
+                nearest={(hex) => nearestColour(hexToOklch(hex), theme.ownColors ?? [])}
+                onAdd={async (hex, name) =>
+                  (await addOneOffToOwnColors(session, asks, hex, name, isColorField)) !== undefined
+                }
+                onUseNearest={(hex) => void applyNearestOwnColor(session, asks, hex, isColorField)}
+                onShow={(hex, key) => {
+                  const use = oneOffs
+                    .find((each) => each.hex === hex)
+                    ?.uses.find((each) => keyOfUse(each) === key);
+                  if (use !== undefined) closeThen(() => showElement(session, use.on, use.nodeId));
+                }}
               />
               <StudioColours
                 theme={theme}

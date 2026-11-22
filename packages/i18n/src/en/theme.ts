@@ -197,6 +197,19 @@ export const theme = {
   // colour kept for backgrounds is fine until it's text.
   "theme.studio.own.hardToRead":
     "As text, hard to read on {background}: {ratio}:1, needs {needed}:1",
+  // Colours outside your theme (5.32, TC-4): every one-off the site uses, and where.
+  "theme.studio.oneOff.title": "Colours outside your theme",
+  "theme.studio.oneOff.about":
+    "Colours your site uses that aren't in your theme: they stay the same when you change it. Add one to your colours to change it everywhere at once, or use the nearest of your colours instead.",
+  "theme.studio.oneOff.none": "Your site uses only your theme's colours.",
+  "theme.studio.oneOff.uses.one": "Used once",
+  "theme.studio.oneOff.uses.other": "Used {count} times",
+  "theme.studio.oneOff.where": "Where {hex} is used",
+  "theme.studio.oneOff.show": "Show {where} on the page",
+  "theme.studio.oneOff.add": "Add to Your Colours…",
+  "theme.studio.oneOff.nearest": "Use {name} Instead",
+  "theme.studio.oneOff.nearestLabel":
+    "Use {name} Instead, the nearest of your colours, everywhere {hex} is used",
   "theme.studio.own.hardToReadReversed":
     "As text, hard to read on {background} in reversed sections: {ratio}:1, needs {needed}:1",
   "theme.studio.section.text": "Text",
@@ -294,6 +307,8 @@ export const theme = {
   "theme.history.ownAdded": "Added colour '{name}'",
   // A one-off colour made one of the person's colours, every use of it with it (TC-3, #1221).
   "theme.history.ownFromOneOff": "Made '{name}' one of your colours",
+  // Every use of a one-off given the nearest of the person's colours (TC-4, #1222).
+  "theme.history.oneOffToNearest": "Used '{name}' in place of {hex}",
   "theme.history.ownRenamed": "Renamed colour '{from}' to '{name}'",
   "theme.history.ownChanged": "Changed colour '{name}'",
   "theme.history.ownDeleted": "Deleted colour '{name}'",
