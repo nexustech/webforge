@@ -403,6 +403,38 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain("<form");
   });
 
+  it("migrates both layouts with the same text, links and Cookie settings (HF-4, 5.39)", () => {
+    const shown = { ...context, cookieSettings: true as const };
+    const footerOf = (variant: string) => {
+      const raw = {
+        formatVersion: 19,
+        layout: {
+          header: [],
+          footer: [{ type: "Footer", props: { id: "footer", text: "© Rosa's", variant } }],
+        },
+      };
+      const migrate = MIGRATIONS[19];
+      if (migrate === undefined) throw new Error("No migration from format 19");
+      return (migrate(raw) as unknown as typeof raw).layout.footer;
+    };
+
+    // Centred becomes Simple: drawn as before, byte for byte.
+    expect(renderNodesToHtml(footerOf("centred"), siteLibrary, shown)).toBe(
+      '<footer class="site-footer footer footer-center bg-base-200 p-8 text-base-content"><p>© Rosa&#x27;s</p><button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button></footer>',
+    );
+    // Columns stays Columns: its text and Cookie settings first, then the menu's links.
+    const columns = renderNodesToHtml(footerOf("columns"), siteLibrary, shown);
+    expect(columns).toContain(
+      '<aside><p>© Rosa&#x27;s</p><button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button></aside>',
+    );
+    expect(columns).toContain('<nav aria-label="Footer navigation" class="flex flex-col gap-2">');
+    for (const link of context.navigation.flatMap((item) =>
+      "children" in item ? item.children : [item],
+    )) {
+      expect(columns).toContain(`>${link.label}</a>`);
+    }
+  });
+
   it("draws a Footer with no columns as before them, with no empty grid (5.39)", () => {
     for (const columns of [[], undefined]) {
       const html = renderNodesToHtml(

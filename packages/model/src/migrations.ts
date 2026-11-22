@@ -60,6 +60,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   16: ownColours,
   17: headerLogo,
   18: headerButtons,
+  19: footerColumns,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -479,6 +480,36 @@ function headerButtons(site: RawSite): RawSite {
     menu: { ...menu, items },
     formatVersion: 19,
   };
+}
+
+/**
+ * Format 19 → 20 (HF-4, #1238): the Footer holds columns of elements beside its own text. A
+ * _Columns_ Footer showed the menu's links beside its text; it gets one column holding Menu links,
+ * which shows them the same way. A _Centred_ Footer had nothing beside its text and is left as it
+ * is: no columns means none. Its text, its layout and _Cookie settings_ stay as they were, and a
+ * Footer that already has columns is left alone.
+ */
+function footerColumns(site: RawSite): RawSite {
+  const layout = site.layout;
+  if (!isRecord(layout) || !Array.isArray(layout.footer)) return { ...site, formatVersion: 20 };
+  const footer = layout.footer.map((node: unknown) => {
+    if (
+      !isRecord(node) ||
+      node.type !== "Footer" ||
+      !isRecord(node.props) ||
+      node.props.variant !== "columns" ||
+      node.props.columns !== undefined
+    ) {
+      return node;
+    }
+    const id = typeof node.props.id === "string" ? node.props.id : "footer";
+    const links = {
+      type: "FooterColumn",
+      props: { id: `${id}-links`, content: [{ type: "MenuLinks", props: { id: `${id}-menu` } }] },
+    };
+    return { ...node, props: { ...node.props, columns: [links] } };
+  });
+  return { ...site, layout: { ...layout, footer }, formatVersion: 20 };
 }
 
 /**
