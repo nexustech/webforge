@@ -74,6 +74,78 @@ test("an AI app adds a section and changes the theme, each one undo step", async
   await expect(canvas().getByText("Fresh bread every morning")).toHaveCount(0);
 });
 
+test("an AI app builds a page in one plan: Features, an FAQ and a Table, with their items (#1249)", async () => {
+  const outline = (await ask({ kind: "query", name: "outline", input: {} })) as {
+    data: { homePageId: string };
+  };
+  const location = { kind: "page", pageId: outline.data.homePageId };
+  const plan = ask({
+    kind: "command",
+    name: "plan",
+    input: {
+      title: "Build the home page",
+      commands: [
+        {
+          name: "addNode",
+          input: {
+            location,
+            type: "Features",
+            values: {
+              items: [
+                { type: "Feature", values: { title: "Same-day repairs" } },
+                { type: "Feature", values: { title: "Guaranteed work" } },
+              ],
+            },
+          },
+        },
+        {
+          name: "addNode",
+          input: {
+            location,
+            type: "Faq",
+            values: {
+              items: [{ type: "FaqItem", values: { question: "Do you charge for a quote?" } }],
+            },
+          },
+        },
+        {
+          name: "addNode",
+          input: {
+            location,
+            type: "Section",
+            values: {
+              content: [
+                {
+                  type: "Table",
+                  values: {
+                    rows: [{ type: "TableRow", values: { cell1: "Tap washer", cell2: "£40" } }],
+                  },
+                },
+              ],
+            },
+          },
+        },
+      ],
+    },
+    app: "Claude",
+  });
+
+  // One question for the whole page, and one undo step.
+  await page.getByRole("alertdialog").getByRole("button", { name: "Allow" }).click();
+  expect(await plan).toMatchObject({ status: "done", label: "AI (Claude): Build the home page" });
+  await expect(step("AI (Claude): Build the home page")).toBeVisible();
+  for (const text of [
+    "Same-day repairs",
+    "Guaranteed work",
+    "Do you charge for a quote?",
+    "Tap washer",
+  ]) {
+    await expect(canvas().getByText(text).first()).toBeVisible();
+  }
+  // The app's items in place of the samples.
+  await expect(canvas().getByText("A good reason")).toHaveCount(0);
+});
+
 test("an AI app's request is busy while a question is open, and declined when cancelled", async () => {
   const theme = ask({
     kind: "command",
