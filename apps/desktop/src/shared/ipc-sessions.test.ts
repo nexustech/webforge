@@ -67,6 +67,7 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "app:open-crash-reports": "the app's crash reports folder",
   "app:report-error": "a renderer's error, kept locally without site content",
   "app:log-failure": "a failure's code, kept locally without site content",
+  "app:record-usage": "what the editor did, by listed names, counted locally without site content",
   "app:set-native-menus": "the menus macOS shows, made from the renderer's commands",
   "app:open-guide": "a guide page of the app's",
   "app:list-licences": "the app's own third-party notices",

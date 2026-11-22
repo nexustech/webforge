@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES, type OnboardingPreferences } from "../../shared/ipc/prefs.js";
+import type { EditorUsage } from "../../shared/usage.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
+import { setUsageLog } from "../usage.js";
 import { TOUR_STEPS } from "./tour-steps.js";
 import { createTour } from "./tour-store.js";
 
@@ -77,4 +79,30 @@ describe("the tour (OB-1…OB-3)", () => {
     closed.tour.skip();
     expect(closed.remembered()).toBe("new");
   });
+
+  it("counts in the usage summary how it ended: taken, turned down, finished or closed at a step", () => {
+    const counted = vi.fn(async (_usage: EditorUsage) => null);
+    setUsageLog(counted);
+    const offered = tourWith("offer");
+    offered.tour.skip();
+    const taken = tourWith("new");
+    taken.tour.start();
+    taken.tour.next();
+    taken.tour.skip();
+    const finished = tourWith("new");
+    finished.tour.start();
+    for (const _ of TOUR_STEPS) finished.tour.next();
+
+    expect(counted.mock.calls.map(([usage]) => usage)).toEqual([
+      { kind: "tour", outcome: "declined" },
+      { kind: "tour", outcome: "taken" },
+      { kind: "tour", outcome: "closed", step: 1 },
+      { kind: "tour", outcome: "taken" },
+      { kind: "tour", outcome: "finished" },
+    ]);
+  });
+});
+
+afterEach(() => {
+  setUsageLog(undefined);
 });

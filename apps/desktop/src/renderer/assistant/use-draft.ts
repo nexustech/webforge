@@ -47,7 +47,7 @@ export function useAssistantStatus(api: Pick<AssistantApi, "status" | "onEvent">
         (next) => {
           if (live) setStatus(next);
         },
-        (error: unknown) => reportFailure("assistant status", error),
+        (error: unknown) => reportFailure("assistant.status", error),
       );
     const stop = api.onEvent((event) => {
       if (event.type === "status") setStatus(event.status);
@@ -69,7 +69,7 @@ async function draftOrFailure(
   try {
     return await api.draft(sessionId, request);
   } catch (error) {
-    reportFailure("assistant draft", error);
+    reportFailure("assistant.draft", error);
     return { status: "failed" };
   }
 }
@@ -121,7 +121,7 @@ export function useDraft(
     if (away === null || away.kind === "this-computer") return write(request);
     setState({ step: "writing" });
     const consent = await api.siteConsent(sessionId).catch((error: unknown) => {
-      reportFailure("assistant site consent", error);
+      reportFailure("assistant.siteConsent", error);
       return { asked: false, allowed: false };
     });
     if (asking.current?.turn !== turn) return;
@@ -144,7 +144,7 @@ export function useDraft(
         else setState({ step: "denied" });
       },
       (error: unknown) => {
-        reportFailure("assistant site consent", error);
+        reportFailure("assistant.siteConsent", error);
         setState({ step: "failed", error: "failed" });
       },
     );

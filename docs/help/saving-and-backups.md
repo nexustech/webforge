@@ -75,3 +75,9 @@ Crash reports stay on your computer: {appName} never sends one. You choose wheth
 A report says which version of {appName} you have, what kind of computer it runs on, and where in {appName} the problem happened. It has no words or pictures from your sites, no file names from your computer, and nothing about you. It's a text file, so you can open it to see for yourself.
 
 {appName} keeps the last 20 reports for up to 30 days, and deletes older ones by itself.
+
+## What {appName} counts on your computer
+
+{appName} also keeps a usage summary on your computer, beside the crash reports: how often you use its parts, what went wrong and how long things took. For example, how many sites you started, how many times you exported, and which kinds of sections you added. It holds only counts, times and the names {appName} gives its own parts, so none of your words, pictures, file names or web addresses can be in it, and nothing about you.
+
+{appName} never sends it. It helps the people testing {appName} tell us what to improve, if they choose to send it with their report.

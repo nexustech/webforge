@@ -21,6 +21,7 @@ import type { AddItem } from "../editor/add-item.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor } from "../editor/labels.js";
 import { regionHidden } from "../editor/shared-layout.js";
+import { recordUsage } from "../usage.js";
 
 /**
  * The Add panel's catalogue (F-ED-1) and where a click adds to the page: sections between
@@ -411,6 +412,8 @@ export function addComponent(session: AddSession, key: string, point?: InsertPoi
     },
     { selectionAfter: { pageId, viewport, nodeId: id }, apply: true },
   );
+  // Counted in the usage summary by its type (5.40): "Hero", never what's in it.
+  recordUsage({ kind: "added", type });
   return true;
 }
 
@@ -484,5 +487,7 @@ export function addSharedCopy(
     },
     { selectionAfter: { pageId, viewport, nodeId }, apply: true },
   );
+  // A shared section's copy, counted as one, never by its name (5.40).
+  recordUsage({ kind: "added", type: "shared" });
   return true;
 }

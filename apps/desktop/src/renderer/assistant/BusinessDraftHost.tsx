@@ -46,7 +46,7 @@ export function BusinessDraftHost({ session, api, takeAbout, sessionId }: Busine
         (text) => {
           if (typeof text === "string") setAbout(text);
         },
-        (error: unknown) => reportFailure("assistant business", error),
+        (error: unknown) => reportFailure("assistant.business", error),
       );
   }, [takeAbout, sessionId]);
 

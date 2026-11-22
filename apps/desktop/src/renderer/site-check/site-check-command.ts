@@ -4,6 +4,7 @@ import type { CheckReport } from "@webforge/site-check";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
+import { recordUsage } from "../usage.js";
 import { countsByLevel, toFixCount } from "./counts.js";
 
 /**
@@ -42,7 +43,17 @@ export function registerSiteCheckCommand(
     // Site › Site Check too (#1165), beside Version History.
     menu: "site",
     ...siteCheckStatus(state.getState().report),
-    run: () => panels.show(panelId),
+    run: () => {
+      // Opened, and what it had found then, by rule and level (5.40): never where or what.
+      recordUsage({
+        kind: "siteCheck",
+        found: state
+          .getState()
+          .report.results.filter((result) => result.findings.length > 0)
+          .map(({ rule, level }) => ({ rule, level })),
+      });
+      panels.show(panelId);
+    },
   });
   const stop = state.subscribe(({ report }, before) => {
     if (report !== before.report) {
