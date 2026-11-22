@@ -485,9 +485,9 @@ function headerButtons(site: RawSite): RawSite {
 /**
  * Format 19 → 20 (HF-4, #1238): the Footer holds columns of elements beside its own text. A
  * _Columns_ Footer showed the menu's links beside its text; it gets one column holding Menu links,
- * which shows them the same way. A _Centred_ Footer had nothing beside its text and is left as it
- * is: no columns means none. Its text, its layout and _Cookie settings_ stay as they were, and a
- * Footer that already has columns is left alone.
+ * which shows them the same way. A _Centred_ Footer had nothing beside its text, and gets no
+ * columns. Its text, its layout and _Cookie settings_ stay as they were, and a Footer that already
+ * has columns is left alone.
  */
 function footerColumns(site: RawSite): RawSite {
   const layout = site.layout;
@@ -497,11 +497,11 @@ function footerColumns(site: RawSite): RawSite {
       !isRecord(node) ||
       node.type !== "Footer" ||
       !isRecord(node.props) ||
-      node.props.variant !== "columns" ||
       node.props.columns !== undefined
     ) {
       return node;
     }
+    if (node.props.variant !== "columns") return { ...node, props: { ...node.props, columns: [] } };
     const id = typeof node.props.id === "string" ? node.props.id : "footer";
     const links = {
       type: "FooterColumn",

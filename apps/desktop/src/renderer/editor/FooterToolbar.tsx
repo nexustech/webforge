@@ -63,7 +63,7 @@ function withDefaults(library: ComponentLibrary, node: NodeDoc): NodeDoc {
  * one "Started the Footer from …" step that selects it. Its own text stays. `flush` ends a canvas
  * text session first.
  */
-export function startFooterFrom(
+function startFooterFrom(
   session: Pick<EditorSession, "history" | "ui" | "edit" | "library">,
   flush: () => void,
   preset: FooterPreset,
@@ -95,7 +95,7 @@ export function startFooterFrom(
  * Adds an empty column at the end of the Footer, as one "Added shared Footer column" step that
  * selects it, while it has fewer than three.
  */
-export function addFooterColumn(
+function addFooterColumn(
   session: Pick<EditorSession, "history" | "ui" | "edit" | "library">,
   flush: () => void,
 ): void {
@@ -138,7 +138,7 @@ export function addFooterColumn(
  * Removes the Footer's last column with what's in it, as one step; the Footer is selected after it
  * if that column was.
  */
-export function removeFooterColumn(
+function removeFooterColumn(
   session: Pick<EditorSession, "history" | "ui" | "edit" | "library">,
   flush: () => void,
 ): void {

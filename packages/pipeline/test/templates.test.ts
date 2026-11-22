@@ -208,13 +208,16 @@ describe.each(readTemplates().map((folder) => [folder.template.id, folder] as co
         else expect(data.address, `${id}: address`).toBeUndefined();
 
         // The page with *Opening hours and contact* carries all of them: required wherever the
-        // template has one, found by what it shows, not by its structured data.
+        // template has one, found by what it shows, not by its structured data. Its section, not
+        // its column form in the Footer, which every page shows (HF-4, 5.39).
         const built = await build();
         const contactPage = [...built.files.keys()].find(
           (path) =>
             path.endsWith(".html") &&
             path !== "index.html" &&
-            /class="site-contact[ "]/.test(new TextDecoder().decode(built.files.get(path))),
+            /<section class="site-contact[ "]/.test(
+              new TextDecoder().decode(built.files.get(path)),
+            ),
         );
         const hasDetails =
           contact.phone !== undefined ||

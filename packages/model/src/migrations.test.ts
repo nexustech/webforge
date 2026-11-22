@@ -201,7 +201,35 @@ function atFormat16<T extends { formatVersion: number; theme: object }>(site: T)
   const { ownColors, ...theme } = site.theme as { ownColors?: unknown };
   expect(ownColors).toEqual([]);
   expect(site.formatVersion).toBe(20);
-  return { ...site, theme, formatVersion: 16 };
+  return { ...withoutFooterColumns(site), theme, formatVersion: 16 };
+}
+
+/**
+ * `site` without the empty columns format 20 gives a Centred Footer (HF-4): what it was before. A
+ * Footer with columns in it keeps them, so a test still sees them.
+ */
+function withoutFooterColumns<T>(site: T): T {
+  const layout = (site as { layout?: { footer?: unknown } }).layout;
+  if (layout === undefined || !Array.isArray(layout.footer)) return site;
+  const footer = layout.footer.map((node: { type: string; props: Record<string, unknown> }) => {
+    if (node.type !== "Footer" || !Array.isArray(node.props.columns)) return node;
+    if (node.props.columns.length > 0) return node;
+    const { columns: _columns, ...props } = node.props;
+    return { ...node, props };
+  });
+  return { ...site, layout: { ...layout, footer } };
+}
+
+/** `site` as format 20 opens it, its Centred Footer given no columns (HF-4). */
+function withFooterColumns<T>(site: T): T {
+  const layout = (site as { layout?: { footer?: unknown } }).layout;
+  if (layout === undefined || !Array.isArray(layout.footer)) return site;
+  const footer = layout.footer.map((node: { type: string; props: Record<string, unknown> }) =>
+    node.type === "Footer" && node.props.columns === undefined
+      ? { ...node, props: { ...node.props, columns: [] } }
+      : node,
+  );
+  return { ...site, layout: { ...layout, footer } };
 }
 
 /** `settings` without the publish destinations format 12 moved out of them (4.4a). */
@@ -245,8 +273,8 @@ describe("migrateSite", () => {
   it("opens the format 19 fixture as format 20, its Header with a button of its own (HF-2)", () => {
     const site = migrateSite(v19Site);
 
-    // Its Footer, Centred, as it was: no columns means none.
-    expect(site).toEqual({ ...v19Site, formatVersion: 20 });
+    // Its Footer, Centred, as it was, with no columns.
+    expect(site).toEqual(withFooterColumns({ ...v19Site, formatVersion: 20 }));
     expect(site.layout.header[0]?.props).toMatchObject({ variant: "split", button: true });
   });
 
@@ -271,13 +299,14 @@ describe("migrateSite", () => {
         },
       ],
     });
-    // Centred, or no layout (Centred), or columns already: as it was.
+    // Centred, or no layout (Centred): no columns. Columns already: as it was.
     expect(migrated(footer({ variant: "centred" }))).toEqual({
       id: "f",
       text: "©",
       variant: "centred",
+      columns: [],
     });
-    expect(migrated(footer({}))).toEqual({ id: "f", text: "©" });
+    expect(migrated(footer({}))).toEqual({ id: "f", text: "©", columns: [] });
     expect(migrated(footer({ variant: "columns", columns: [] }))).toEqual({
       id: "f",
       text: "©",
@@ -291,7 +320,7 @@ describe("migrateSite", () => {
     const site = migrateSite(v18Site);
 
     // Its logo kept (HF-1); the link hidden in the menu, as the menu editor hides one.
-    expect(site).toEqual({ ...v19Site, formatVersion: 20 });
+    expect(site).toEqual(withFooterColumns({ ...v19Site, formatVersion: 20 }));
     expect(site.settings.general.logo).toBe("logo0000000000aa");
     expect(site.menu.items.map((item) => item.hidden)).toEqual([false, false, false, true]);
   });
@@ -381,7 +410,7 @@ describe("migrateSite", () => {
   it("opens the format 17 fixture as format 20, as it was, with no logo (HF-1)", () => {
     const site = migrateSite(v17Site);
 
-    expect(site).toEqual({ ...v17Site, formatVersion: 20 });
+    expect(site).toEqual(withFooterColumns({ ...v17Site, formatVersion: 20 }));
     expect(headerLogo({ formatVersion: 17 })).toEqual({ formatVersion: 18 });
     expect(site.settings.general.logo).toBeUndefined();
     expect(site.theme.ownColors).toEqual([
@@ -393,7 +422,7 @@ describe("migrateSite", () => {
   it("opens the format 16 fixture as format 20, with an empty list of the person's own colours", () => {
     const site = migrateSite(v16Site);
 
-    expect(site).toEqual({
+    expect(withoutFooterColumns(site)).toEqual({
       ...v16Site,
       formatVersion: 20,
       theme: { ...v16Site.theme, ownColors: [] },
@@ -1133,9 +1162,10 @@ const LAYOUT_WIDTHS: Readonly<Record<string, Readonly<Record<string, string>>>> 
 
 /** Each step's inverse, keyed by the version it goes down *to*. */
 const DOWN: Readonly<Record<number, (site: Raw) => Raw>> = {
-  // 20 → 19: a Footer had no columns; a Columns Footer showed the menu's links beside its text, as
-  // its one column of Menu links does (the arbitrary sites' Footers are Centred, with none).
-  19: (site) => ({ ...site, formatVersion: 19 }),
+  // 20 → 19: a Footer had no columns; a Centred one's empty list goes, and a Columns Footer showed
+  // the menu's links beside its text, as its one column of Menu links does (the arbitrary sites'
+  // Footers are Centred, with none).
+  19: (site) => ({ ...withoutFooterColumns(site), formatVersion: 19 }),
   // 19 → 18: a Header had no button of its own; one a site has is kept, as format 19 reads it, and
   // the menu as it is (the arbitrary sites have no split Header for format 19 to move a link from).
   18: (site) => ({ ...site, formatVersion: 18 }),

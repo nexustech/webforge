@@ -326,7 +326,7 @@ function alongPath(
  * The Footer holding `selectedId` (HF-4, 5.39), if the selection is the Footer or in it: adding
  * then goes into its columns. Not Contact buttons, which sit after it on their own.
  */
-export function footerHolding(site: SiteDoc, selectedId: string | null): NodeDoc | undefined {
+function footerHolding(site: SiteDoc, selectedId: string | null): NodeDoc | undefined {
   if (selectedId === null) return undefined;
   const footer = site.layout.footer.find((node) => node.type === "Footer");
   return footer !== undefined && pathTo([footer], selectedId) !== undefined ? footer : undefined;
@@ -338,7 +338,7 @@ export function footerHolding(site: SiteDoc, selectedId: string | null): NodeDoc
  * takes it. Contact details and a Newsletter signup go in a column too. `undefined` when no column
  * takes it, or a new column when all three are there.
  */
-export function footerTarget(
+function footerTarget(
   library: ComponentLibrary,
   footer: NodeDoc,
   type: string,

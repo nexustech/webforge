@@ -1,6 +1,7 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
+import { drag, lowerHalf } from "./drag.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The shared Header and Footer (1.20, F-ED-7, C5): stored once, shown on every page; an edit on one
@@ -57,6 +58,54 @@ test("edits the Footer on one page, shows it on another, and undoes it everywher
   await expect(footer()).toHaveText("Thanks for visiting.");
   await showPage("My site");
   await expect(footer()).toHaveText("Thanks for visiting.");
+});
+
+test("starts the Footer from Full, adds to a column from the Add panel, on every page (HF-4, 5.39)", async () => {
+  await page.getByRole("radio", { name: "Design", exact: true }).click();
+  // Its edge, not its text: clicking the text edits it.
+  await clickOnCanvas(canvas().locator(".site-footer"), { position: { x: 4, y: 4 } });
+  const toolbar = page.getByRole("toolbar", { name: "Selected element" });
+  await toolbar
+    .getByRole("group", { name: "Start from" })
+    .getByRole("button", { name: "Full" })
+    .click();
+  const columns = canvas().locator(".site-footer-column");
+  await expect(columns).toHaveCount(3);
+  await expect(
+    columns.first().getByRole("navigation", { name: "Footer navigation" }),
+  ).toBeVisible();
+  await expect(steps().first()).toHaveText("Started the Footer from 'Full'");
+
+  // A Heading dragged from the Add panel onto the menu's links' lower edge, into their column.
+  const left = page.getByRole("region", { name: "Left panels" });
+  await left.getByRole("tab", { name: "Add" }).click();
+  await left.getByRole("tab", { name: "Elements" }).click();
+  // A section of the page selected first: with the Footer selected, the line saying a change
+  // reaches every page goes as the drag starts, and the canvas moves up under the pointer. The
+  // Footer is at the bottom of the page: in view first, so the pointer can reach it.
+  await clickOnCanvas(canvas().locator(".site-section").first(), { position: { x: 4, y: 4 } });
+  const links = columns.first().getByRole("navigation", { name: "Footer navigation" });
+  await links.scrollIntoViewIfNeeded();
+  await drag(
+    page,
+    left.getByRole("button", { name: "Heading", exact: true }),
+    await lowerHalf(links),
+  );
+  await expect(columns.first().locator(".site-heading")).toHaveCount(2);
+
+  // Opening hours and contact in the second column, in its column form: selected by its title,
+  // a Text goes in after it, by keyboard from the Add panel.
+  await clickOnCanvas(columns.nth(1).locator("h3").first());
+  // Under Suggested too, as what a Footer column takes (SP-12): the first of the two.
+  await left.getByRole("button", { name: "Text", exact: true }).first().focus();
+  await page.keyboard.press("Enter");
+  await expect(columns.nth(1).locator(".site-text")).toHaveCount(1);
+
+  await showPage("Page not found");
+  await expect(canvas().locator(".site-footer-column")).toHaveCount(3);
+  await expect(canvas().locator(".site-footer-column").nth(1).locator(".site-text")).toHaveCount(1);
+  await left.getByRole("tab", { name: "Undo History" }).click();
+  await expect(steps().first()).toHaveText("Added shared Text");
 });
 
 test("says how far a change reaches, edits the Footer in the Edit panel, and hides it on one page", async () => {
