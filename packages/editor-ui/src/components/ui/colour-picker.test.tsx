@@ -66,6 +66,18 @@ describe("the colour picker (5.26, OL-19)", () => {
     expect(hue.getAttribute("aria-valuetext")).toBe("21 degrees");
   });
 
+  it("says a hue just under 360 is 359 degrees, within its slider (#1219)", async () => {
+    const { swatch, user } = setUp("#ff0001");
+    await user.click(swatch());
+    const hue = screen.getByRole("slider", { name: "Hue" });
+
+    expect(hue.getAttribute("aria-valuenow")).toBe("359");
+    expect(hue.getAttribute("aria-valuetext")).toBe("359 degrees");
+    hue.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(hue.getAttribute("aria-valuenow")).toBe("359");
+  });
+
   it("leaves the colour as it was on Escape, showing it again", async () => {
     const { onChoose, swatch, user } = setUp();
     await user.click(swatch());
@@ -127,6 +139,37 @@ describe("the colour picker (5.26, OL-19)", () => {
     );
     await user.click(swatch());
     expect(onChoose).not.toHaveBeenCalled();
+  });
+
+  it("offers colours given to it, read as it opens, and takes one clicked (#1219)", async () => {
+    const colours = vi.fn(() => ["#c0392b", "#1f6feb"]);
+    const onChoose = vi.fn();
+    render(
+      <ColourPicker value="#1f6feb" aria-label="Brand" colours={colours} onChoose={onChoose} />,
+    );
+    expect(colours).not.toHaveBeenCalled();
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole("button", { name: "Brand" }));
+
+    const offered = screen.getByRole("list", { name: "Colours on this site" });
+    const red = screen.getByRole("button", { name: "#c0392b" });
+    expect(offered.contains(red)).toBe(true);
+    expect(screen.getByRole("button", { name: "#1f6feb" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+    await user.click(red);
+    expect(red.getAttribute("aria-pressed")).toBe("true");
+    await user.click(screen.getByRole("button", { name: "Brand" }));
+
+    expect(colours).toHaveBeenCalledOnce();
+    expect(onChoose).toHaveBeenCalledWith("#c0392b");
+  });
+
+  it("offers no list when it has no colours to offer", async () => {
+    const { swatch, user } = setUp();
+    await user.click(swatch());
+
+    expect(screen.queryByRole("list", { name: "Colours on this site" })).toBeNull();
   });
 
   it("offers the eyedropper only where the window has one, and takes the colour it picks", async () => {

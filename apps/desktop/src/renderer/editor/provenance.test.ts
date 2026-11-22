@@ -109,7 +109,7 @@ describe("provenanceOf (3.12, CT-3)", () => {
 
   it("says a colour off the theme is a custom one", () => {
     expect(textOf({ name: "lookBackground", label: "Background", own: "[#1f6feb]/80" })).toBe(
-      "Custom colour (Advanced)",
+      "Off the theme",
     );
     expect(textOf({ name: "lookBackground", label: "Background", own: "primary" })).toBe(
       "Set here",

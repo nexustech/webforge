@@ -100,12 +100,12 @@ export const shared = {
   "colour.role.secondAccent": "Second accent",
   "colour.role.surface": "Surface",
   "colour.role.text": "Text",
-  "colour.custom": "Custom",
-  "colour.customValue": "Custom colour {hex}, off the theme",
-  "colour.customHex": "Custom colour",
+  "colour.custom": "Another colour…",
+  "colour.customHex": "Another colour",
+  "colour.darker": "Use a darker shade",
+  "colour.lighter": "Use a lighter shade",
   "colour.hexCode": "hex code",
   "colour.offTheme": "Off the theme: changing the theme leaves this colour as it is.",
-  "colour.useTheme": "Use a theme colour",
   // One of the person's own colours (TC-1a) a field uses that the theme no longer has: it draws
   // nothing until another colour is chosen.
   "colour.ownGone": "A colour no longer in your theme",

@@ -5,7 +5,6 @@ import type { NodeDoc, SiteDoc } from "@webforge/model";
 import { afterEach, describe, expect, it } from "vitest";
 import { starterSite } from "../../../shared/starter-site.js";
 import { EditPanelHost } from "../../editor/EditPanelHost.js";
-import { createPreferencesStore } from "../../shell/preferences-store.js";
 import { sessionWith } from "../../testing/fixtures.js";
 import { StyleGroups } from "./StyleGroups.js";
 
@@ -67,7 +66,7 @@ describe("StyleGroups (3.13b, CT-2)", () => {
       lookGradientFrom: "primary",
       lookGradientTo: "accent",
     });
-    render(<StyleGroups session={session} preferences={createPreferencesStore()} />);
+    render(<StyleGroups session={session} />);
 
     const chip = document.querySelector('[data-field="lookBackground"] [data-source]');
     expect(chip?.textContent).toBe("Gradient (set under Background)");
@@ -94,7 +93,7 @@ describe("StyleGroups (3.13b, CT-2)", () => {
 
   it("shows an element's Appearance, then the deeper groups in order, with what each holds", () => {
     const { session } = setUp("button");
-    render(<StyleGroups session={session} preferences={createPreferencesStore()} />);
+    render(<StyleGroups session={session} />);
 
     expect(groups()).toEqual([
       "Appearance",
@@ -118,7 +117,7 @@ describe("StyleGroups (3.13b, CT-2)", () => {
 
   it("gives a titled section its Title group, and its background image and spacing their groups", () => {
     const { session } = setUp("hero");
-    render(<StyleGroups session={session} preferences={createPreferencesStore()} />);
+    render(<StyleGroups session={session} />);
 
     expect(groups()).toContain("Title");
     expect(screen.getByLabelText("Subtitle size")).toBeTruthy();
@@ -127,7 +126,7 @@ describe("StyleGroups (3.13b, CT-2)", () => {
 
   it("sets a deeper value as one labelled step, which the item draws", async () => {
     const { session, node, user } = setUp("button");
-    render(<StyleGroups session={session} preferences={createPreferencesStore()} />);
+    render(<StyleGroups session={session} />);
 
     await user.selectOptions(screen.getByLabelText("Bottom border"), "thick");
 

@@ -74,7 +74,17 @@ export function readableShade(tokens: ThemeTokens, role: ColorRole): Oklch | und
         contrastRatio(colors[foreground], colors[background]) >= required,
     );
   };
-  const color = tokens.colors[role];
+  return nearestReadable(tokens.colors[role], reads);
+}
+
+/**
+ * The shade of `color` nearest to it, darker or lighter, that `reads` (#1174): its hue and chroma
+ * (as much as a screen shows) at the nearest lightness that does. None when `color` reads already,
+ * or when no lightness does. Each shade is what a screen shows, through its hex code, as
+ * {@link readableShade} says. What the Theme tab suggests for a theme colour, and a colour field
+ * for a one-off (TC-2, #1219).
+ */
+export function nearestReadable(color: Oklch, reads: (shade: Oklch) => boolean): Oklch | undefined {
   if (reads(color)) return undefined;
   for (let moved = SHADE_STEP; moved <= 1; moved += SHADE_STEP) {
     for (const l of [color.l - moved, color.l + moved]) {

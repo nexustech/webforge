@@ -26,7 +26,7 @@ import type { StyleDialogState } from "./style-state.js";
 export type StyleDialogProps = {
   readonly session: EditorSession;
   readonly state: StoreApi<StyleDialogState>;
-  /** The colour field follows the editor level: Advanced mode adds a hex colour (ADR 0009). */
+  /** The editor level: Advanced mode adds the *CSS* tab (3.14). */
   readonly preferences: PreferencesStore;
   /** What applying asks with: D7 beyond the page, a theme's name. */
   readonly asks?: StyleAsks | undefined;
@@ -134,7 +134,7 @@ function OpenStyleDialog({
                 <TabsTrigger value="css">{t("itemCss.tab")}</TabsTrigger>
               </TabsList>
               <TabsContent value="style" className="min-h-0 overflow-hidden">
-                <StyleGroups session={session} preferences={preferences} />
+                <StyleGroups session={session} />
               </TabsContent>
               <TabsContent value="css" className="min-h-0 overflow-auto">
                 <ItemCss
@@ -146,7 +146,7 @@ function OpenStyleDialog({
               </TabsContent>
             </Tabs>
           ) : (
-            <StyleGroups session={session} preferences={preferences} />
+            <StyleGroups session={session} />
           )}
         </div>
       </StylingFrame>

@@ -249,6 +249,7 @@ export type {
 } from "./migrations.js";
 export { MIGRATIONS, migrateSite, migrateSiteWith, SiteFormatError } from "./migrations.js";
 export { findNode, findParent, removeNode } from "./node-tree.js";
+export { oneOffColours } from "./one-off-colours.js";
 export {
   canDeletePage,
   deletePageFrom,

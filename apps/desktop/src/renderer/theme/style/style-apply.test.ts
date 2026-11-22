@@ -1,4 +1,10 @@
-import { type NodeDoc, newId, type PageId, type SiteDoc } from "@webforge/model";
+import {
+  componentLookSchema,
+  type NodeDoc,
+  newId,
+  type PageId,
+  type SiteDoc,
+} from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../../shared/starter-site.js";
 import { COMMAND_IDS } from "../../shell/command-ids.js";
@@ -162,6 +168,23 @@ describe("Style this ‹kind›…: where its changes apply (3.13a)", () => {
     session.history.undo();
     expect(session.history.document.getState().theme.looks?.Button).toBeUndefined();
     expect(props(home, "styled")?.lookShadow).toBe(undefined);
+  });
+
+  it("leaves a colour off the theme on the item, which a look can't hold (ADR 0009, TC-2)", async () => {
+    const { session, home, props, style } = setUp();
+    const since = openStyle(session);
+    style("lookShadow", "large");
+    style("lookBackground", "[#c0392b]");
+
+    expect(
+      await applyStyle(session, since, "theme", { theme: { siteWide: confirmer(true) } }),
+    ).toBe(true);
+
+    const look = session.history.document.getState().theme.looks?.Button;
+    expect(look).toEqual({ lookShadow: "large" });
+    expect(componentLookSchema.safeParse(look).success).toBe(true);
+    expect(props(home, "styled")?.lookBackground).toBe("[#c0392b]");
+    expect(props(home, "styled")?.lookShadow).toBeUndefined();
   });
 
   it("is for one item with a look: not for several selected", () => {

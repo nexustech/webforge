@@ -121,9 +121,11 @@ export function ThemeStudio({
   itemPreviews,
 }: ThemeStudioProps) {
   const { open, section, kind, draft: kept, pending: asked } = useStore(studio);
-  // A look's colours are the theme's (ADR 0009): the colour field as Simple mode has it.
+  // A look's colours are the theme's (ADR 0009): the colour field without another colour.
   const [renderers] = useState<FieldRenderers>(() => ({
-    color: (props: FieldRendererProps<"color">) => <ColourField {...props} session={session} />,
+    color: (props: FieldRendererProps<"color">) => (
+      <ColourField {...props} session={session} themeOnly />
+    ),
   }));
   const theme = useDocument(session, (site) => site.theme);
   const media = useDocument(session, (site) => site.media);

@@ -1,6 +1,6 @@
 import {
-  Button,
   ColourPicker,
+  cn,
   type FieldRenderer,
   type FieldRendererProps,
   fieldControlClass,
@@ -9,15 +9,16 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@webforge/editor-ui";
-import type { ReadonlyStore } from "@webforge/history";
 import { type ComponentMessageKey, t } from "@webforge/i18n/components";
 import {
   COLOR_ROLES,
   type ColorRef,
   type ColorRole,
   formatColorRef,
+  type Oklch,
   OPACITY_STEPS,
   OWN_COLOR_PREFIX,
+  oneOffColours,
   parseColorRef,
   SHADE_STEPS,
   SHADED_ROLES,
@@ -31,6 +32,8 @@ import {
   contrastOn,
   contrastRatio,
   hexOf,
+  hexToOklch,
+  nearestReadable,
   oklchCss,
   readableTextColour,
   resolveColorRef,
@@ -39,16 +42,15 @@ import {
 import { type CSSProperties, useId } from "react";
 import type { EditorSession } from "../../editor/editor-session.js";
 import { useDocument } from "../../editor/use-document.js";
-import { type EditorPreferences, usePreferences } from "../../shell/preferences-store.js";
 
 /** What the colour field needs besides its field's props. */
 export type ColourFieldContext = {
   readonly session: Pick<EditorSession, "history">;
   /**
-   * Advanced mode, where a field may have a colour of its own, off the theme (1.37, ADR 0009).
-   * Simple mode shows such a colour, and offers the theme's in its place.
+   * The theme's colours only, without _Another colour…_: a look's, which a one-off doesn't belong
+   * to (ADR 0009).
    */
-  readonly advanced?: boolean | undefined;
+  readonly themeOnly?: boolean | undefined;
   /**
    * The text styles of the element being edited (a Heading's h2, a Text's body; one per device if
    * they differ), which set how much contrast it needs; the stricter 4.5:1 while none is known.
@@ -160,8 +162,10 @@ const swatchStyle = (colour: string): CSSProperties => ({ "--swatch": colour }) 
 /**
  * The Edit panel's colour field (1.37, UX-25, ADR 0009): the theme's colours as swatches, as this
  * site shows them, by their glossary names; then a shade of the one chosen, and its opacity. In
- * Advanced mode, a colour of the field's own (hex), marked off the theme, which theme changes leave
- * as it is. Below them, a warning when the colour is hard to read on the page (below what WCAG AA
+ * either mode (TC-2, #1219), _Another colour…_: one of the field's own (hex), chosen in the colour
+ * picker, which offers the site's other one-off colours, marked off the theme, which theme changes
+ * leave as it is; a shade of it that reads is suggested when it doesn't. Below them, a warning
+ * when the colour is hard to read on the page (below what WCAG AA
  * asks of text of its size, `contrastNeeded`, or 3:1 of an icon or logo), measured on what the
  * text is drawn on: a Reversed section's colours or an Appearance background (#670); none over a
  * picture behind the content (a section's background image, a Hero's), whose colours can't be
@@ -176,7 +180,7 @@ export function ColourField({
   onChange,
   onCommit,
   session,
-  advanced = false,
+  themeOnly = false,
   textStyles,
   surface: surfaceOfField,
   graphic: isGraphic,
@@ -220,8 +224,8 @@ export function ColourField({
       ...(colour === undefined ? {} : { colour: oklchCss(colour.color) }),
     });
   }
-  // Advanced mode offers a colour of the field's own; Simple mode shows one it already has.
-  if (advanced) {
+  // A colour of the field's own, in either mode (TC-2): what it costs is shown, not forbidden.
+  if (!themeOnly) {
     swatches.push({
       value: CUSTOM,
       label: t("colour.custom"),
@@ -237,12 +241,12 @@ export function ColourField({
   // or a border on it, aren't text.
   const onGradient =
     surface.gradient !== undefined && name !== undefined && TEXT_COLOUR_FIELDS.has(name);
-  const ratio =
-    shown === undefined || surface.overPicture
-      ? undefined
-      : onGradient
-        ? contrastOn(surface, shown.color, shown.opacity)
-        : contrastRatio(shown.color, surface.background, shown.opacity);
+  /** `color`'s contrast with what it is drawn on, at the chosen opacity. */
+  const ratioOf = (color: Oklch) =>
+    onGradient
+      ? contrastOn(surface, color, shown?.opacity)
+      : contrastRatio(color, surface.background, shown?.opacity);
+  const ratio = shown === undefined || surface.overPicture ? undefined : ratioOf(shown.color);
   const graphic = isGraphic?.() ?? false;
   const needed = graphic ? AA_LARGE : contrastNeeded(theme, textStyles?.() ?? []);
   const warning = (() => {
@@ -259,28 +263,17 @@ export function ColourField({
           colour: colourRefName(suggested),
         });
   })();
+  // For a one-off that's hard to read, its nearest shade that reads (TC-2), as the Theme tab
+  // suggests for a theme colour (#1174).
+  const readable =
+    warning === undefined || hex === undefined
+      ? undefined
+      : nearestReadable(hexToOklch(hex), (shade) => ratioOf(shade) >= needed);
+  const readableHex = readable === undefined ? undefined : hexOf(readable);
+  const darker = readable !== undefined && hex !== undefined && readable.l < hexToOklch(hex).l;
 
   return (
     <div className="flex flex-col gap-2">
-      {hex !== undefined && !advanced ? (
-        // A colour of the field's own, from Advanced mode: shown, kept, and replaceable.
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <span
-            aria-hidden
-            className="size-4 shrink-0 rounded-full bg-(--swatch)"
-            style={swatchStyle(hex)}
-          />
-          <span>{t("colour.customValue", { hex })}</span>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => choose({ base: { role: "base-content" } })}
-          >
-            {t("colour.useTheme")}
-          </Button>
-        </div>
-      ) : null}
       <SwatchField
         id={id}
         labelId={labelId}
@@ -307,24 +300,40 @@ export function ColourField({
         }}
         warning={warning}
       />
-      {hex !== undefined && advanced ? (
+      {hex === undefined ? null : (
         <div className="flex flex-col gap-1">
           <label htmlFor={customId} className="text-xs text-muted-foreground">
             {t("colour.customHex")}
           </label>
-          {/* One step, once the picker closes on another colour (5.26). */}
+          {/* One step, once the picker closes on another colour (5.26). It offers the site's
+              one-off colours, read from the site as it opens (TC-2). */}
           <ColourPicker
             id={customId}
             className="w-16"
             value={hex}
-            onChoose={(next) => {
-              onChange(storedRef(withOpacity({ base: { hex: next } }), options));
-              onCommit();
-            }}
+            colours={() => oneOffColours(session.history.document.getState())}
+            onChoose={(next) => choose(withOpacity({ base: { hex: next } }))}
           />
+          {readable === undefined || readableHex === undefined ? null : (
+            <button
+              type="button"
+              className={cn(
+                fieldControlClass,
+                "flex h-7 w-auto items-center gap-1.5 self-start px-2 text-xs",
+              )}
+              onClick={() => choose(withOpacity({ base: { hex: readableHex } }))}
+            >
+              <span
+                aria-hidden
+                className="size-3.5 shrink-0 rounded-sm border border-border-strong bg-(--swatch)"
+                style={swatchStyle(readableHex)}
+              />
+              {t(darker ? "colour.darker" : "colour.lighter")}
+            </button>
+          )}
           <p className="m-0 text-xs text-muted-foreground">{t("colour.offTheme")}</p>
         </div>
-      ) : null}
+      )}
       {role !== undefined && isShaded(role) ? (
         <div className="flex flex-col gap-1">
           <span id={shadeLabelId} className="text-xs text-muted-foreground">
@@ -367,8 +376,7 @@ export function ColourField({
           </ToggleGroup>
         </div>
       ) : null}
-      {/* A colour of its own is Advanced mode's to change, its opacity too (ADR 0009). */}
-      {ref === undefined || (hex !== undefined && !advanced) ? null : (
+      {ref === undefined ? null : (
         <div className="flex items-center gap-2">
           <label htmlFor={opacityId} className="text-xs text-muted-foreground">
             {t("colour.opacity")}
@@ -399,20 +407,11 @@ export function ColourField({
 }
 
 /**
- * The Edit panel's renderer for colour fields (R11): {@link ColourField}, in Advanced mode while
- * `preferences` say so. Made once, it follows the editor level (R9).
+ * The Edit panel's renderer for colour fields (R11): {@link ColourField}, the same in either mode
+ * (TC-2, #1219). Made once (R9).
  */
-export function colourFieldRenderer({
-  preferences,
-  ...context
-}: Omit<ColourFieldContext, "advanced"> & {
-  readonly preferences: ReadonlyStore<EditorPreferences>;
-}): FieldRenderer<"color"> {
+export function colourFieldRenderer(context: ColourFieldContext): FieldRenderer<"color"> {
   return function SessionColourField(props: FieldRendererProps<"color">) {
-    const advanced = usePreferences(
-      preferences,
-      (state) => state.preferences.editorLevel === "advanced",
-    );
-    return <ColourField {...props} {...context} advanced={advanced} />;
+    return <ColourField {...props} {...context} />;
   };
 }

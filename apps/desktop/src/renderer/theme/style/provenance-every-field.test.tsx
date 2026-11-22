@@ -5,7 +5,6 @@ import { type ComponentDef, type FieldDef, siteLibrary } from "@webforge/site-co
 import { afterEach, describe, expect, it } from "vitest";
 import { starterSite } from "../../../shared/starter-site.js";
 import { lookFieldsOf } from "../../clipboard/index.js";
-import { createPreferencesStore } from "../../shell/preferences-store.js";
 import { sessionWith } from "../../testing/fixtures.js";
 import { StyleGroups } from "./StyleGroups.js";
 
@@ -72,7 +71,7 @@ function sources(
   site.theme.looks = { [type]: look };
   const session = sessionWith(site);
   session.select("item");
-  render(<StyleGroups session={session} preferences={createPreferencesStore()} />);
+  render(<StyleGroups session={session} />);
   const shown = new Map<string, string | undefined>();
   for (const field of document.querySelectorAll("[data-field]")) {
     const name = field.getAttribute("data-field");

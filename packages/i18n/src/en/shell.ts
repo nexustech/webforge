@@ -47,6 +47,7 @@ export const shell = {
   "ui.colourPicker.hex": "Hex code",
   "ui.colourPicker.hexRefused": "A hex code is 6 digits and letters from a to f, such as #1a7f5a",
   "ui.colourPicker.pick": "Pick a Colour from the Screen",
+  "ui.colourPicker.used": "Colours on this site",
   // A count: plural("ui.picker.match", n) picks one or other (B10).
   "ui.picker.match.one": "{count} match",
   "ui.picker.match.other": "{count} matches",
