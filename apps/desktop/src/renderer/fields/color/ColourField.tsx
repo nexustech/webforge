@@ -161,7 +161,8 @@ const swatchStyle = (colour: string): CSSProperties => ({ "--swatch": colour }) 
 
 /**
  * The Edit panel's colour field (1.37, UX-25, ADR 0009): the theme's colours as swatches, as this
- * site shows them, by their glossary names; then a shade of the one chosen, and its opacity. In
+ * site shows them, by their glossary names, and under *Your colours* the person's own (TC-1b); then
+ * a shade of the one chosen, and its opacity. In
  * either mode (TC-2, #1219), _Another colour…_: one of the field's own (hex), chosen in the colour
  * picker, which offers the site's other one-off colours, marked off the theme, which theme changes
  * leave as it is; a shade of it that reads is suggested when it doesn't. Below them, a warning
@@ -214,16 +215,6 @@ export function ColourField({
       colour: oklchCss(theme.colors[optionRole]),
     };
   });
-  // One of the person's own colours (TC-1a), by its name in the theme: shown, and chosen again.
-  // Theme Studio's list of them, and the picker's, come with 5.28 (#1218).
-  if (own !== undefined) {
-    const colour = theme.ownColors?.find((each) => each.id === own);
-    swatches.push({
-      value: `${OWN_COLOR_PREFIX}${own}`,
-      label: colour?.name ?? t("colour.ownGone"),
-      ...(colour === undefined ? {} : { colour: oklchCss(colour.color) }),
-    });
-  }
   // A colour of the field's own, in either mode (TC-2): what it costs is shown, not forbidden.
   if (!themeOnly) {
     swatches.push({
@@ -232,6 +223,29 @@ export function ColourField({
       ...(hex === undefined ? {} : { colour: hex }),
     });
   }
+  // The person's own colours (TC-1b, #1218), under a heading of their own, by their names in the
+  // theme; one no longer in it shows as the field has it, to choose another.
+  const ownColors = theme.ownColors ?? [];
+  const ownColour = ownColors.find((each) => each.id === own);
+  const owns: SwatchOption[] = ownColors.map((each) => ({
+    value: `${OWN_COLOR_PREFIX}${each.id}`,
+    label: each.name,
+    colour: oklchCss(each.color),
+  }));
+  if (own !== undefined && ownColour === undefined) {
+    owns.push({ value: `${OWN_COLOR_PREFIX}${own}`, label: t("colour.ownGone") });
+  }
+  const [firstOwn, ...otherOwns] = owns;
+  if (firstOwn !== undefined) {
+    swatches.push({ ...firstOwn, heading: t("colour.yourColours") }, ...otherOwns);
+  }
+  // What a shade is of: a theme colour that has shades, or one of the person's own colours.
+  const shaded: ColorRef["base"] | undefined =
+    role !== undefined && isShaded(role)
+      ? { role }
+      : own !== undefined && ownColour !== undefined
+        ? { own }
+        : undefined;
 
   // On what the text is drawn on, in that surface's colours (#670).
   const surface = surfaceOfField?.() ?? { palette: "colors", background: theme.colors["base-100"] };
@@ -291,8 +305,9 @@ export function ColourField({
             choose(withOpacity({ base: { hex: start } }));
             return;
           }
-          if (own !== undefined && next === `${OWN_COLOR_PREFIX}${own}`) {
-            choose({ ...ref, base: { own } });
+          if (next.startsWith(OWN_COLOR_PREFIX)) {
+            // At its own colour, the opacity kept, as a theme colour's is.
+            choose(withOpacity({ base: { own: next.slice(OWN_COLOR_PREFIX.length) } }));
             return;
           }
           const nextRole = roleOfOption(next);
@@ -334,7 +349,7 @@ export function ColourField({
           <p className="m-0 text-xs text-muted-foreground">{t("colour.offTheme")}</p>
         </div>
       )}
-      {role !== undefined && isShaded(role) ? (
+      {shaded === undefined ? null : (
         <div className="flex flex-col gap-1">
           <span id={shadeLabelId} className="text-xs text-muted-foreground">
             {t("colour.shade")}
@@ -347,7 +362,7 @@ export function ColourField({
             onValueChange={(next) => {
               const shade = next === "" ? undefined : (Number(next) as ShadeStep);
               choose({
-                base: { role },
+                base: shaded,
                 ...(shade === undefined ? {} : { shade }),
                 ...(ref?.opacity === undefined ? {} : { opacity: ref.opacity }),
               });
@@ -366,8 +381,8 @@ export function ColourField({
                   className="block size-full rounded-sm bg-(--swatch)"
                   style={swatchStyle(
                     oklchCss(
-                      resolveColorRef(theme, formatColorRef({ base: { role }, shade: step }))
-                        ?.color ?? theme.colors[role],
+                      resolveColorRef(theme, formatColorRef({ base: shaded, shade: step }))
+                        ?.color ?? theme.colors["base-content"],
                     ),
                   )}
                 />
@@ -375,7 +390,7 @@ export function ColourField({
             ))}
           </ToggleGroup>
         </div>
-      ) : null}
+      )}
       {ref === undefined ? null : (
         <div className="flex items-center gap-2">
           <label htmlFor={opacityId} className="text-xs text-muted-foreground">

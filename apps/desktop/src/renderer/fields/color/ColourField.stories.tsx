@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { starterSite } from "../../../shared/starter-site.js";
 import { sessionWith } from "../../testing/fixtures.js";
 import { colourFieldRenderer } from "./ColourField.js";
 
@@ -7,6 +8,13 @@ import { colourFieldRenderer } from "./ColourField.js";
 // (TC-2, #1219).
 
 const session = sessionWith();
+// A site with colours of its own in its theme (TC-1b), one of them chosen in a shade.
+const withOwn = starterSite();
+withOwn.theme.ownColors = [
+  { id: "csky", name: "Harbour blue", color: { l: 0.62, c: 0.14, h: 240 } },
+  { id: "cfern", name: "Fern", color: { l: 0.58, c: 0.13, h: 145 } },
+];
+const OwnColours = colourFieldRenderer({ session: sessionWith(withOwn) });
 const Simple = colourFieldRenderer({ session });
 
 const meta = {
@@ -54,3 +62,16 @@ export const NoneChosen: Story = { args: { value: undefined } };
  * page, with the nearest shade of it that reads one click away.
  */
 export const AnotherColour: Story = { args: { value: "[#f5d0c5]" } };
+
+/** The person's own colours under *Your colours*, one chosen in a shade at an opacity (TC-1b). */
+export const YourColours: Story = {
+  args: { value: "own-csky-700/80" },
+  render: (args) => (
+    <div className="flex w-60 flex-col gap-1 border border-border-strong bg-panel p-2">
+      <span id="field-colour-label" className="text-xs text-muted-foreground">
+        Text colour
+      </span>
+      <OwnColours {...args} />
+    </div>
+  ),
+};
