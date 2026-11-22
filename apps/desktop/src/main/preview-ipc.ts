@@ -3,7 +3,12 @@ import { basename } from "node:path";
 import type { SiteSnapshot } from "@webforge/model";
 import type { IpcMain } from "electron";
 import type { PreviewJob, PreviewOutcome } from "../shared/export-worker-protocol.js";
-import type { PhoneAddress, PreviewPage, SavePageResult } from "../shared/ipc/preview.js";
+import {
+  type PhoneAddress,
+  PREVIEW_OPEN_WAIT_MS,
+  type PreviewPage,
+  type SavePageResult,
+} from "../shared/ipc/preview.js";
 import type { SiteContent } from "../shared/ipc/site.js";
 import type { AppFeature } from "./app-feature.js";
 import { snapshotOf } from "./export-ipc.js";
@@ -64,6 +69,14 @@ const ADDRESS_CHECK_MS = 5_000;
 export type Preview = {
   open(sessionId: string, site: SiteContent, page: PreviewPage): Promise<"opened" | "failed">;
   /**
+   * The address of the page the next `open` for `sessionId` opens in the browser (#1255): asked
+   * before the Preview command runs, so the open it starts is the one told. `null` if that open
+   * fails, or none comes within `timeoutMs`.
+   */
+  nextOpened(sessionId: string, timeoutMs?: number): Promise<string | null>;
+  /** Tells those waiting for `sessionId`'s next address that no open follows: `null`, at once. */
+  cancelNext(sessionId: string): void;
+  /**
    * Opens a version's site (Version History's Preview, 4.6) at `page` in the default browser, as
    * it was: built once, by a builder of its own so the editor's builds never drop it, and served
    * apart from the live preview, which never changes it.
@@ -113,6 +126,16 @@ export function createPreview(deps: PreviewDeps): Preview {
     | undefined;
   let latest: PreviewJob | undefined;
   let stale = false;
+  // Who waits for the address of the next page opened, by the opening it's for (#1255).
+  const waiting = new Set<{
+    readonly sessionId: string;
+    readonly tell: (url: string | null) => void;
+  }>();
+  /** Tells those waiting for `sessionId` the address opened, or `null`; answers `open` with it. */
+  const opened = (sessionId: string, url: string | null): "opened" | "failed" => {
+    for (const waiter of [...waiting]) if (waiter.sessionId === sessionId) waiter.tell(url);
+    return url === null ? "failed" : "opened";
+  };
   // While a phone can open the preview: the check that its address is still this computer's.
   let watchingAddress: ReturnType<typeof setInterval> | undefined;
   const stopWatchingAddress = () => {
@@ -253,20 +276,37 @@ export function createPreview(deps: PreviewDeps): Preview {
 
   return {
     async open(sessionId, site, page) {
-      if (!current(sessionId)) return "failed";
+      if (!current(sessionId)) return opened(sessionId, null);
       try {
         if (running?.sessionId !== sessionId) await stop();
         await take(site);
         const { port, base } = await listen(sessionId, "local");
-        return (await deps.openInBrowser(pageUrl("127.0.0.1", port, base, page)))
-          ? "opened"
-          : "failed";
+        const url = pageUrl("127.0.0.1", port, base, page);
+        return opened(sessionId, (await deps.openInBrowser(url)) ? url : null);
       } catch (error) {
         log.error("Webforge could not start the preview", {
           code: error instanceof Error && "code" in error ? String(error.code) : "unknown",
         });
-        return "failed";
+        return opened(sessionId, null);
       }
+    },
+    cancelNext(sessionId) {
+      opened(sessionId, null);
+    },
+    nextOpened(sessionId, timeoutMs = PREVIEW_OPEN_WAIT_MS) {
+      return new Promise((resolve) => {
+        const waiter = {
+          sessionId,
+          tell: (url: string | null) => {
+            clearTimeout(timer);
+            waiting.delete(waiter);
+            resolve(url);
+          },
+        };
+        const timer = setTimeout(() => waiter.tell(null), timeoutMs);
+        timer.unref?.();
+        waiting.add(waiter);
+      });
     },
     async openVersion(sessionId, site, page) {
       if (!current(sessionId)) return "failed";
@@ -447,6 +487,13 @@ export function registerPreviewHandlers(
   registerIpcHandler(ipc, "previewOpen", isTrustedSender, (sessionId, site, page) =>
     timedPreview("computer", site, () => preview.open(sessionId, site, page)),
   );
+  registerIpcHandler(ipc, "previewNextOpened", isTrustedSender, (sessionId) =>
+    preview.nextOpened(sessionId),
+  );
+  registerIpcHandler(ipc, "previewCancelNext", isTrustedSender, (sessionId) => {
+    preview.cancelNext(sessionId);
+    return null;
+  });
   registerIpcHandler(ipc, "previewVersion", isTrustedSender, (sessionId, site, page) =>
     preview.openVersion(sessionId, site, page),
   );

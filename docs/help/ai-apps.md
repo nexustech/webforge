@@ -4,7 +4,7 @@ id: ai-apps
 title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
 related: [undo-and-history, version-history, site-check]
-updated: 2026-11-21
+updated: 2026-11-22
 ---
 
 # AI apps
@@ -95,7 +95,7 @@ An app works on the site you have open in {appName}, and only that one. It can:
 - change the theme;
 - see what's in [Media](media.md), and place your pictures in elements;
 - ask you to add pictures or files (see [Pictures](#pictures));
-- run [Site Check](site-check.md) and open the [Preview](preview.md).
+- run [Site Check](site-check.md), and open the [Preview](preview.md) in your browser. The app is told the page's address, which works on this computer only, so it can look at its work: how the page looks at desktop and phone widths, and whether its pictures show. It sees the Preview only when it opens it in your browser, so you see it too.
 
 It can't change publishing, forms, analytics, Custom Code, search engines' verification codes or your site's icon: those stay yours. It never adds a picture or file itself.
 

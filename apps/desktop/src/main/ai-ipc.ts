@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n/main";
 import type { IpcMain } from "electron";
 import { z } from "zod";
+import { windowTool } from "../shared/ai-tools.js";
 import { type AiRequest, type AiResponse, aiEvents, aiRequestSchema } from "../shared/ipc/ai.js";
 import { registerIpcHandler } from "./ipc.js";
 
@@ -165,10 +166,12 @@ export function registerAiHandlers(
         return Promise.resolve(noSite());
       }
       if (tooMany(request)) return Promise.resolve(tooManyWaiting());
+      // A window tool that waits on the person or a build has a time of its own (#1255).
       const timeoutMs =
-        request.kind === "query"
+        windowTool(request.name)?.timeoutMs ??
+        (request.kind === "query"
           ? (timeouts.queryMs ?? QUERY_TIMEOUT_MS)
-          : (timeouts.commandMs ?? COMMAND_TIMEOUT_MS);
+          : (timeouts.commandMs ?? COMMAND_TIMEOUT_MS));
       const id = nextId++;
       return new Promise((resolve) => {
         const settle = (response: AiResponse) => {
