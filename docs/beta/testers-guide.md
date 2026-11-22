@@ -21,6 +21,8 @@ Make a real site for your business, or a copy of the one you have, and use Webfo
 
 You don't need to do it all at once. A little every week tells us more than one long go.
 
+We may also ask you, by email, for an hour of your time while one of us watches you use Webforge, in person or over a video call; and two weeks into each round we email everyone five short questions. Both are optional. Your screen and voice are never recorded without your written agreement, and your answers and the notes from a session are kept by number, never by your name or your business's.
+
 ## Keeping your work safe
 
 This is a test version, so keep a copy of anything you'd be sorry to lose:

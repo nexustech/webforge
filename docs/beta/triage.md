@@ -1,6 +1,6 @@
 # Beta triage
 
-How the team handles what beta testers send (5.7). Testers read [the testers' guide](testers-guide.md).
+How the team handles what beta testers send (5.7). Testers read [the testers' guide](testers-guide.md). Each round also has three watched sessions and a short survey, which say why people stop: [Watched sessions and a survey](sessions-and-survey.md) (5.43).
 
 ## Where reports come from
 
@@ -42,6 +42,8 @@ Each week of the beta, after triage:
    - what goes unused;
    - the timings against architecture §10's budgets.
 4. Paste the output, in a code block, as a comment on the beta round's pinned `beta` issue, _Beta round N: weekly totals_, with a line on what changed since last week. Open an issue for anything the totals show that no report has, labelled as above.
+
+Read the totals beside the round's watched sessions and survey, as [Watched sessions and a survey](sessions-and-survey.md#one-survey-two-weeks-into-each-round) describes.
 
 The totals are counts from many testers, never one tester's: they hold no install number, and nothing in a report names anyone.
 
