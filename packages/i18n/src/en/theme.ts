@@ -262,6 +262,11 @@ export const theme = {
   "theme.history.textStyle": "Changed text style for {style}",
   "theme.history.color": "Changed {name} colour",
   "theme.history.colorReversed": "Changed {name} colour in reversed sections",
+  // Your colours (TC-1b, #1218): each add, rename, change and delete one step.
+  "theme.history.ownAdded": "Added colour '{name}'",
+  "theme.history.ownRenamed": "Renamed colour '{from}' to '{name}'",
+  "theme.history.ownChanged": "Changed colour '{name}'",
+  "theme.history.ownDeleted": "Deleted colour '{name}'",
   "theme.history.image": "Changed brand colours from '{name}'",
   "theme.history.headings": "Changed heading style",
   "theme.history.buttons": "Changed button style",

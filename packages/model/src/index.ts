@@ -250,6 +250,13 @@ export type {
 export { MIGRATIONS, migrateSite, migrateSiteWith, SiteFormatError } from "./migrations.js";
 export { findNode, findParent, removeNode } from "./node-tree.js";
 export {
+  countOwnColorUses,
+  type IsColorField,
+  newOwnColorId,
+  rewriteOwnColorUses,
+  toOwnColor,
+} from "./own-colors.js";
+export {
   canDeletePage,
   deletePageFrom,
   insertPage,
