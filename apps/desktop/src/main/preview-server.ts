@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import { PREVIEW_STYLESHEET } from "@webforge/pipeline/light";
 import { THEME_VALUES_MARKER } from "@webforge/themes";
 import type { PreviewOutcome } from "../shared/export-worker-protocol.js";

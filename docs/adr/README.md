@@ -32,6 +32,7 @@ Decisions made **during implementation** are recorded here, one file per decisio
 | [0024](0024-update-feed-and-channels.md)       | Updates: GitHub Releases as the feed, with Beta and Stable channels                                        | Accepted                          |
 | [0025](0025-collections.md)                    | Collections: an item is a page, wrapped in its collection's shared design                                  | Accepted                          |
 | [0026](0026-assistant.md)                      | The assistant: one OpenAI-compatible client in main, OpenRouter sign-in, consent, and the panel's contract | Accepted                          |
+| [0027](0027-main-strings.md)                   | Main's strings: a catalogue of its own, made from the keys it names                                        | Accepted                          |
 
 ## Template
 

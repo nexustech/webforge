@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import type { App, Menu, Protocol, Session } from "electron";
 import { shownTheme } from "../shared/editor-theme.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";

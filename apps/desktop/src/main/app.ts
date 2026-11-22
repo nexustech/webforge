@@ -1,5 +1,5 @@
 import { join, resolve } from "node:path";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { updatesEvents } from "../shared/ipc/updates.js";
 import { updateChannelFor } from "../shared/update-channel.js";

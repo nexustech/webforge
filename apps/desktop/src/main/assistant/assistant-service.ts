@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import { z } from "zod";
 import { linkToOpen } from "../../shared/assistant-links.js";
 import {
