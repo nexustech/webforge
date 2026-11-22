@@ -23,7 +23,8 @@ import { siteTextOf } from "./site-text.js";
  * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, an
  * image deleted from Media that a page still places (that place is left out), a page *Minify
  * output* couldn't make smaller, as its HTML can't be read (it's written readable, 3.3), or a site
- * icon that gives no favicon (3.4): deleted from Media, or under 16 pixels once cut square; or a
+ * icon that gives no favicon (3.4): deleted from Media, or under 16 pixels once cut square; a logo
+ * deleted from Media (`missing-logo`, HF-1), once for the site, the Header showing the name; or a
  * form with nowhere to send (`form-unset`, 3.7: no form service, Netlify Forms before its
  * publisher, an address that isn't `https://`, or a Newsletter without its address; `detail` says
  * which), the site's `custom.js` with a mistake that stops browsers running it (`custom-script`,
@@ -36,6 +37,7 @@ export type BuildWarning = {
     | "missing-image"
     | "not-minified"
     | "missing-icon"
+    | "missing-logo"
     | "small-icon"
     | "form-unset"
     | "custom-script"
@@ -161,7 +163,10 @@ export function pageRender(
     image: (id) => {
       const image = images.get(id);
       if (image === undefined) {
-        if (missing.has(id)) warnings.push({ code: "missing-image", page: page.path, detail: id });
+        // The logo's is the site's one `missing-logo` (HF-1), not a warning on every page.
+        if (missing.has(id) && id !== site.logo) {
+          warnings.push({ code: "missing-image", page: page.path, detail: id });
+        }
         return null;
       }
       return imageAt(image, prefix);

@@ -11,7 +11,7 @@ import {
 /**
  * The whole English catalogue: the app's own words and the site components' (their fields,
  * starter content and the site's labels). The editor and the export worker read it; main reads
- * only the app's own (`@webforge/i18n`), so its start-up doesn't load these (#1150).
+ * only its own (`@webforge/i18n/main`), so its start-up doesn't load these (#1150, #1317).
  */
 const catalogue = { ...en, ...components };
 

@@ -92,12 +92,17 @@ export function registerPreviewCommands(
   const { session, library, api, sessionId, phone, notify, tell, confirmCode, onCodeTrusted } =
     deps;
   /** Runs `start` once the owner has said what to do with code they haven't confirmed (#649). */
-  const afterCode = (start: () => void) => {
+  /** Runs `start` once code to trust is confirmed; `notStarted` when the person declines it. */
+  const afterCode = (start: () => void, notStarted?: () => void) => {
     confirmCode(site())
       .then((code) => {
         if (code.go) start();
+        else notStarted?.();
       })
-      .catch((error: unknown) => reportFailure("preview.code", error));
+      .catch((error: unknown) => {
+        reportFailure("preview.code", error);
+        notStarted?.();
+      });
   };
   const site = () => session.history.document.getState();
   // Draft pages too (G37, #864), out of the menu: a draft is checked in a browser before it's
@@ -223,20 +228,24 @@ export function registerPreviewCommands(
       label: t("command.preview"),
       menu: "file",
       run: () =>
-        afterCode(() => {
-          follow();
-          api
-            .open(sessionId(), content(), page())
-            .then((opened) => {
-              // The browser may open behind the window: the app says it did (#1009).
-              if (opened === "opened") tell(t("preview.opened"));
-              else notify(t("preview.failed"));
-            })
-            .catch((error: unknown) => {
-              reportFailure("preview.open", error);
-              notify(t("preview.failed"));
-            });
-        }),
+        afterCode(
+          () => {
+            follow();
+            api
+              .open(sessionId(), content(), page())
+              .then((opened) => {
+                // The browser may open behind the window: the app says it did (#1009).
+                if (opened === "opened") tell(t("preview.opened"));
+                else notify(t("preview.failed"));
+              })
+              .catch((error: unknown) => {
+                reportFailure("preview.open", error);
+                notify(t("preview.failed"));
+              });
+            // Declined: no open follows, and an AI app waiting for its address hears so at once.
+          },
+          () => void api.cancelNext(sessionId()).catch(() => undefined),
+        ),
     }),
     registry.register({
       id: COMMAND_IDS.previewOnPhone,

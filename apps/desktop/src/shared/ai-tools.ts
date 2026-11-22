@@ -1,6 +1,7 @@
 import type { ToolDef } from "@webforge/commands";
 import { z } from "zod";
 import { siteBriefSchema } from "./ipc/ai.js";
+import { PREVIEW_OPEN_WAIT_MS } from "./ipc/preview.js";
 
 /** `def`, its name kept as written, so a record of handlers can be keyed by it. */
 const tool = <const Name extends string, I extends z.ZodType>(
@@ -47,12 +48,17 @@ export const WINDOW_TOOLS = [
     input: NOTHING,
     description:
       "Opens the open site's preview in the person's browser on this computer, as the Preview " +
-      "command does, showing the page shown in Webforge. It takes nothing, and never opens the " +
-      "phone preview. A second request within a few seconds opens nothing more.",
+      "command does, showing the page shown in Webforge, and answers with that page's address " +
+      "(on this computer only), so you can look at your work: its layout at desktop and phone " +
+      "widths, its pictures. It takes nothing, and never opens the phone preview. The person may " +
+      "be asked first about code to trust; if the preview doesn't open, it says so. A second " +
+      "request within a few seconds opens nothing more.",
     answeredBy: "window",
     savesVersionFirst: false,
     // It opens the browser: the assistant's answers stay in its panel.
     forAssistant: false,
+    // Longer than the preview waits to open, so the app hears how that went (#1255).
+    timeoutMs: PREVIEW_OPEN_WAIT_MS + 5_000,
   }),
   tool({
     name: "requestMedia",

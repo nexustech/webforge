@@ -8,6 +8,9 @@ import type { MessageParams, ParamsArgIn, PluralKeyIn, PluralParamsIn } from "./
  * main doesn't hold fails to compile; `pnpm main-strings` adds the keys main's files name.
  */
 
+/** Main's catalogue, the English messages it shows: what `pnpm main-strings` checks. */
+export { main as english } from "./en/main.js";
+
 /** A key of main's catalogue. */
 export type MainMessageKey = keyof typeof main;
 

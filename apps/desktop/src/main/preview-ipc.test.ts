@@ -186,6 +186,28 @@ describe("createPreview (3.2)", () => {
     expect(deps.startServer).toHaveBeenCalledOnce();
   });
 
+  it("tells who asked the address of the page it opens next, for that opening only (#1255)", async () => {
+    const { preview, deps } = previewOf();
+
+    // Asked before the open the Preview command starts, as the window asks.
+    const next = preview.nextOpened(SITE_A);
+    const other = preview.nextOpened(SITE_B, 50);
+    await preview.open(SITE_A, site("Bakery"), "index.html");
+
+    expect(await next).toBe(`http://127.0.0.1:5001${BASE}index.html`);
+    expect(await other).toBeNull();
+    // One that doesn't open is told so, as is one nothing opens for in time.
+    vi.mocked(deps.openInBrowser).mockResolvedValueOnce(false);
+    const failed = preview.nextOpened(SITE_A);
+    await preview.open(SITE_A, site("Bakery"), "index.html");
+    expect(await failed).toBeNull();
+    expect(await preview.nextOpened(SITE_A, 10)).toBeNull();
+    // No open follows (the code question declined): told at once, not after the minute.
+    const declined = preview.nextOpened(SITE_A);
+    preview.cancelNext(SITE_A);
+    expect(await declined).toBeNull();
+  });
+
   it("previews a version apart: built once by a builder of its own, under its own path (4.6)", async () => {
     const { preview, deps, server, builder, finish } = previewOf();
 
@@ -582,7 +604,7 @@ describe("previewFeature (A12)", () => {
     feature.register?.({ handle }, () => true);
     feature.site?.closed?.();
 
-    expect(handle).toHaveBeenCalledTimes(7);
+    expect(handle).toHaveBeenCalledTimes(9);
     expect(close).toHaveBeenCalledOnce();
   });
 });

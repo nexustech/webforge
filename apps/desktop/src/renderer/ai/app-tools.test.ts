@@ -1,7 +1,10 @@
 import type { ImageMeta, MediaId, SiteDoc } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { createAppTools, PREVIEW_AGAIN_MS } from "./app-tools.js";
+import { createAppTools, openPreviewFor, PREVIEW_AGAIN_MS } from "./app-tools.js";
+
+/** The address a preview opened at: on this computer, with its secret base. */
+const PAGE_ADDRESS = "http://127.0.0.1:54321/a1b2c3d4/index.html";
 
 /** Text that must never reach an AI app from Site Check: a file name, which a finding carries. */
 const MARKER = "zz-marker-4-9";
@@ -35,7 +38,7 @@ function siteWithBareImage(): SiteDoc {
 
 function setUp(site = siteWithBareImage()) {
   let time = 0;
-  const openPreview = vi.fn();
+  const openPreview = vi.fn(async (): Promise<string | null> => PAGE_ADDRESS);
   const tools = createAppTools({
     site: () => site,
     allowListConfirmed: () => false,
@@ -121,7 +124,7 @@ describe("the window's own AI tools (4.9)", () => {
         site: () => site,
         allowListConfirmed: () => false,
         ignored: () => [],
-        openPreview: () => {},
+        openPreview: async () => null,
         onNetlify: () => onNetlify,
       }).runSiteCheck();
       const data = answer?.status === "done" && "data" in answer ? answer.data : undefined;
@@ -138,20 +141,64 @@ describe("the window's own AI tools (4.9)", () => {
       site: () => site,
       allowListConfirmed: () => false,
       ignored: () => [`altText:${site.homePageId}/pic/image`],
-      openPreview: () => undefined,
+      openPreview: async () => null,
     }).runSiteCheck();
 
     expect(JSON.stringify(ignored)).not.toContain('"altText"');
   });
 
-  it("opens the Preview, once in a few seconds, never the phone's", () => {
+  it("opens the Preview, once in a few seconds, never the phone's, with its page's address", async () => {
     const { tools, openPreview, later } = setUp();
     const open = () => tools.openPreview();
 
-    expect(open()).toEqual({ status: "done", data: { opened: true } });
-    expect(open()).toMatchObject({ status: "done", data: { opened: false } });
+    // The page's address on this computer, for the app to look at its work (#1255).
+    expect(await open()).toEqual({
+      status: "done",
+      data: { opened: true, address: PAGE_ADDRESS },
+    });
+    expect(await open()).toMatchObject({ status: "done", data: { opened: false } });
     later(PREVIEW_AGAIN_MS);
-    expect(open()).toEqual({ status: "done", data: { opened: true } });
+    // One that doesn't open says so, with no address.
+    openPreview.mockResolvedValueOnce(null);
+    expect(await open()).toEqual({
+      status: "done",
+      data: { opened: false, reason: "The preview didn't open." },
+    });
     expect(openPreview).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("openPreviewFor (#1255)", () => {
+  it("asks for the next address before the command runs, and tells main when it can't run", async () => {
+    const order: string[] = [];
+    let tell: (address: string | null) => void = () => undefined;
+    const preview = (runs: boolean) => ({
+      next: () => {
+        order.push("next");
+        return new Promise<string | null>((resolve) => {
+          tell = resolve;
+        });
+      },
+      run: () => {
+        order.push("run");
+        return runs;
+      },
+      cancel: vi.fn(async () => {
+        tell(null);
+        return null;
+      }),
+    });
+
+    const ran = preview(true);
+    const opened = openPreviewFor(ran);
+    expect(order).toEqual(["next", "run"]);
+    tell(PAGE_ADDRESS);
+    expect(await opened).toBe(PAGE_ADDRESS);
+    expect(ran.cancel).not.toHaveBeenCalled();
+
+    // A command that can't run now: main's waiter is told at once that none follows.
+    const disabled = preview(false);
+    expect(await openPreviewFor(disabled)).toBeNull();
+    expect(disabled.cancel).toHaveBeenCalledOnce();
   });
 });

@@ -50,6 +50,11 @@ export type ToolDef<I extends z.ZodType = z.ZodType> = {
   readonly savesVersionFirst: boolean;
   /** Whether the in-app assistant has it too (AIA-9), beside AI apps. */
   readonly forAssistant: boolean;
+  /**
+   * How long its answer may take, when that is longer than its kind's: a window tool that waits on
+   * the person or a build (openPreview, #1255).
+   */
+  readonly timeoutMs?: number;
 };
 
 /** `schema`, an object schema, as JSON Schema of what a caller sends: defaults may be left out. */
