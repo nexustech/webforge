@@ -3,14 +3,11 @@ import { useState } from "react";
 import { EditPanelHost } from "../../editor/EditPanelHost.js";
 import type { EditorSession } from "../../editor/editor-session.js";
 import { colourField } from "../../fields/index.js";
-import type { PreferencesStore } from "../../shell/preferences-store.js";
 import { STYLE_DIALOG_GROUPS } from "./style-groups.js";
 
 /** Props of {@link StyleGroups}. */
 export type StyleGroupsProps = {
   readonly session: EditorSession;
-  /** The colour field follows the editor level: Advanced mode adds a hex colour (ADR 0009). */
-  readonly preferences: PreferencesStore;
 };
 
 /**
@@ -19,9 +16,9 @@ export type StyleGroupsProps = {
  * Spacing and When hovered, each with its provenance (3.12). The dialog around it (`StyleDialog`)
  * keeps the preview and where the changes apply.
  */
-export function StyleGroups({ session, preferences }: StyleGroupsProps) {
+export function StyleGroups({ session }: StyleGroupsProps) {
   const [renderers] = useState<FieldRenderers>(() => ({
-    color: colourField({ session, preferences }),
+    color: colourField({ session }),
   }));
   return (
     <FieldRenderersProvider renderers={renderers}>

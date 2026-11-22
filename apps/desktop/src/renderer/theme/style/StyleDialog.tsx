@@ -134,7 +134,7 @@ function OpenStyleDialog({
                 <TabsTrigger value="css">{t("itemCss.tab")}</TabsTrigger>
               </TabsList>
               <TabsContent value="style" className="min-h-0 overflow-hidden">
-                <StyleGroups session={session} preferences={preferences} />
+                <StyleGroups session={session} />
               </TabsContent>
               <TabsContent value="css" className="min-h-0 overflow-auto">
                 <ItemCss
@@ -146,7 +146,7 @@ function OpenStyleDialog({
               </TabsContent>
             </Tabs>
           ) : (
-            <StyleGroups session={session} preferences={preferences} />
+            <StyleGroups session={session} />
           )}
         </div>
       </StylingFrame>

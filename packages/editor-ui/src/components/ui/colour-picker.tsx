@@ -40,6 +40,11 @@ export type ColourPickerProps = {
   /** The swatch button's size and place ("h-7 w-9"). */
   readonly className?: string;
   /**
+   * Colours to offer as swatches, each a six-digit hex code: the site's one-off colours in a colour
+   * field (TC-2, #1219). Read each time it opens, so a colour used since is there.
+   */
+  readonly colours?: (() => readonly string[]) | undefined;
+  /**
    * The colour chosen, once, when the picker closes on a colour other than the one it opened on:
    * one change, so one undo step. Nothing while it is being chosen, nor when Escape closes it.
    */
@@ -60,17 +65,21 @@ export function ColourPicker({
   "aria-describedby": describedBy,
   disabled = false,
   className,
+  colours,
   onChoose,
 }: ColourPickerProps) {
   const codeId = useId();
   const hexId = useId();
   const errorId = useId();
+  const coloursId = useId();
   const [open, setOpen] = useState(false);
   // The colour being chosen, as the picker holds it: its hue kept on a grey.
   const [held, setHeld] = useState<Hsv | undefined>(undefined);
   // What's typed in the hex box, until it's used; refused with a reason when it isn't a code.
   const [typed, setTyped] = useState<string | undefined>(undefined);
   const [refused, setRefused] = useState(false);
+  // The colours offered, as they were when it opened.
+  const [offered, setOffered] = useState<readonly string[]>([]);
   // The colour it opened on, and whether the person went back to it with Escape.
   const opened = useRef(value);
   const cancelled = useRef(false);
@@ -95,6 +104,7 @@ export function ColourPicker({
       setHeld(hsvFor(value, undefined));
       setTyped(undefined);
       setRefused(false);
+      setOffered(colours?.() ?? []);
       setOpen(true);
       return;
     }
@@ -331,6 +341,35 @@ export function ColourPicker({
           >
             {refused ? t("ui.colourPicker.hexRefused") : ""}
           </p>
+          {offered.length === 0 ? null : (
+            <div className="flex flex-col gap-1">
+              <span id={coloursId} className="text-2xs text-muted-foreground">
+                {t("ui.colourPicker.used")}
+              </span>
+              <ul aria-labelledby={coloursId} className="m-0 flex list-none flex-wrap gap-1 p-0">
+                {offered.map((each) => (
+                  <li key={each}>
+                    <button
+                      type="button"
+                      aria-label={each}
+                      aria-pressed={each === hex}
+                      className={cn(
+                        fieldControlClass,
+                        "size-6 cursor-pointer p-0.5 aria-pressed:ring-2 aria-pressed:ring-ring",
+                      )}
+                      onClick={() => show(hsvFor(each, undefined))}
+                    >
+                      <span
+                        aria-hidden
+                        className="block size-full rounded-sm border border-border"
+                        style={{ backgroundColor: each }}
+                      />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </PopoverPrimitive.Content>
       </PopoverPrimitive.Portal>
     </PopoverPrimitive.Root>
