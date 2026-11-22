@@ -39,7 +39,8 @@ export function readReports(reports: readonly ReceivedReport[], lists: UsageList
   for (const { name, text } of reports) {
     let data: unknown;
     try {
-      data = JSON.parse(text);
+      // A report re-saved by an editor such as Notepad may start with a byte order mark.
+      data = JSON.parse(text.replace(/^\uFEFF/, ""));
     } catch {
       refused.push({ name, reason: "not JSON" });
       continue;
@@ -71,6 +72,10 @@ type TimingTotals = {
   /** The time nine samples in ten were within. */
   readonly p90Ms: number;
   readonly budgetMs: number;
+  /** The most pages a sample is held to the budget for; none for a timing of any size. */
+  readonly budgetPages?: number;
+  /** Samples held to the budget: those of a site no larger than its pages, or every one. */
+  readonly measured: number;
   readonly overBudget: number;
 };
 
@@ -136,6 +141,16 @@ export const TIMING_BUDGETS_MS: Readonly<Record<keyof UsageSummaryData["timings"
   preview: 5_000,
 };
 
+/**
+ * The largest site a budget is for, in pages, where §10 says (a 20-page export): a sample of a
+ * larger site isn't held to it, since a 60-page export in 7 s is no miss. A sample that doesn't
+ * say how many pages it had is held to it.
+ */
+const BUDGET_PAGES: Partial<Record<keyof UsageSummaryData["timings"], number>> = {
+  export: 20,
+  preview: 20,
+};
+
 /** `counts` added up, each name's total. */
 function addUp(counts: readonly Counts[]): Record<string, number> {
   const total: Record<string, number> = {};
@@ -162,15 +177,22 @@ function timingTotals(
   timing: keyof UsageSummaryData["timings"],
 ): TimingTotals {
   const budgetMs = TIMING_BUDGETS_MS[timing];
-  const each = summaries.map((summary) => summary.timings[timing].map(({ ms }) => ms));
-  const all = each.flat().sort((a, b) => a - b);
+  const budgetPages = BUDGET_PAGES[timing];
+  const each = summaries.map((summary) => summary.timings[timing]);
+  const samples = each.flat();
+  const all = samples.map(({ ms }) => ms).sort((a, b) => a - b);
+  const measured = samples.filter(
+    ({ pages }) => budgetPages === undefined || pages === undefined || pages <= budgetPages,
+  );
   return {
     samples: all.length,
-    installs: each.filter((samples) => samples.length > 0).length,
+    installs: each.filter((one) => one.length > 0).length,
     medianMs: percentile(all, 0.5),
     p90Ms: percentile(all, 0.9),
     budgetMs,
-    overBudget: all.filter((ms) => ms > budgetMs).length,
+    ...(budgetPages === undefined ? {} : { budgetPages }),
+    measured: measured.length,
+    overBudget: measured.filter(({ ms }) => ms > budgetMs).length,
   };
 }
 
@@ -307,12 +329,19 @@ export function formatTotals(read: ReadReports, totals: ReportTotals): string {
     `  Sections and elements no install added: ${namesLine(unused.components)}`,
     "",
     "5. Is it fast enough? (architecture §10's budgets)",
-    ...Object.entries(totals.timings).map(([timing, t]) =>
-      t.samples === 0
-        ? `  ${timing}: no samples; budget ${t.budgetMs} ms`
-        : `  ${timing}: ${t.samples} samples from ${t.installs} installs, median ${t.medianMs} ms, ` +
-          `90% within ${t.p90Ms} ms; budget ${t.budgetMs} ms, ${share(t.overBudget, t.samples)} over`,
-    ),
+    ...Object.entries(totals.timings).map(([timing, t]) => {
+      const budget =
+        t.budgetPages === undefined
+          ? `budget ${t.budgetMs} ms`
+          : `budget ${t.budgetMs} ms up to ${t.budgetPages} pages`;
+      if (t.samples === 0) return `  ${timing}: no samples; ${budget}`;
+      const larger = t.samples - t.measured;
+      return (
+        `  ${timing}: ${t.samples} samples from ${t.installs} installs, median ${t.medianMs} ms, ` +
+        `90% within ${t.p90Ms} ms; ${budget}, ${share(t.overBudget, t.measured)} over` +
+        (larger === 0 ? "" : ` (${larger} of a larger site left out)`)
+      );
+    }),
   ];
   return `${lines.join("\n")}\n`;
 }

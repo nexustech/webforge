@@ -61,7 +61,7 @@ What helps most:
 
 ## If Webforge closes unexpectedly
 
-Your work is saved as you go, so it's still there when you open Webforge again. Webforge also saves a crash report on your computer. It's never sent anywhere by itself, and it holds none of your site's content or personal details. The diagnostics report holds your newest crash reports, so attaching it (see [Telling us what you found](#telling-us-what-you-found)) sends them too. It saves one file with what Webforge has counted on your computer and those crash reports, and nothing of your sites. [What Webforge counts on your computer](../help/saving-and-backups.md#what-appname-counts-on-your-computer) says more.
+Your work is saved as you go, so it's still there when you open Webforge again. Webforge also saves a crash report on your computer. It's never sent anywhere by itself, and it holds none of your site's content or personal details. The diagnostics report holds your newest crash reports, so attaching it (see [Telling us what you found](#telling-us-what-you-found)) sends them too. **Save Report…** saves one file with what Webforge has counted on your computer and those crash reports, and nothing of your sites. [What Webforge counts on your computer](../help/saving-and-backups.md#what-appname-counts-on-your-computer) says more.
 
 ## What happens next
 

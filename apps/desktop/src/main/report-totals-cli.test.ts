@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { scaledTestTimeout } from "@webforge/test-utils/vitest";
@@ -10,6 +10,20 @@ import { afterAll, describe, expect, it } from "vitest";
 // tested in `report-totals.test.ts`.
 
 const ROOT = join(import.meta.dirname, "../../../..");
+
+/**
+ * The script as the root `package.json` has it, so this runs what `pnpm report-totals` runs: its
+ * program and its arguments, the folder to be added after them.
+ */
+function reportTotalsCommand(): { program: string; args: string[] } {
+  const scripts = (
+    JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as {
+      scripts: Record<string, string>;
+    }
+  ).scripts;
+  const [program = "", ...args] = (scripts["report-totals"] ?? "").split(/\s+/);
+  return { program, args };
+}
 const folder = mkdtempSync(join(tmpdir(), "report-totals-"));
 afterAll(() => rmSync(folder, { recursive: true, force: true }));
 
@@ -49,18 +63,14 @@ describe("pnpm report-totals (5.42, BD-3)", () => {
       writeFileSync(join(folder, "report.json"), JSON.stringify(REPORT));
       writeFileSync(join(folder, "notes.txt"), "Thanks!");
 
-      const run = spawnSync(
-        process.execPath,
-        [
-          "--experimental-transform-types",
-          "--no-warnings",
-          "--import",
-          "./tools/src/ts-imports.ts",
-          "apps/desktop/src/main/report-totals-cli.ts",
-          folder,
-        ],
-        { cwd: ROOT, encoding: "utf8", timeout: scaledTestTimeout(60_000) },
-      );
+      const { program, args } = reportTotalsCommand();
+      // `node`, run as this test's own Node.
+      expect(program).toBe("node");
+      const run = spawnSync(process.execPath, [...args, folder], {
+        cwd: ROOT,
+        encoding: "utf8",
+        timeout: scaledTestTimeout(60_000),
+      });
 
       expect(run.stderr).toBe("");
       expect(run.status).toBe(0);

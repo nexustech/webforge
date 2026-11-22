@@ -173,6 +173,7 @@ describe("the beta's reports added up (5.42, BD-3)", () => {
       medianMs: 2_000,
       p90Ms: 4_000,
       budgetMs: TIMING_BUDGETS_MS.startup,
+      measured: 3,
       overBudget: 1,
     });
     expect(totals.timings.preview.samples).toBe(0);
@@ -197,12 +198,43 @@ describe("the beta's reports added up (5.42, BD-3)", () => {
     for (const question of [1, 2, 3, 4, 5]) expect(text).toContain(`\n${question}. `);
   });
 
+  it("holds an export to its budget only for a site of up to 20 pages, saying how many it left out", () => {
+    const exports = summary(A, 1, (data) => {
+      data.timings.export = [
+        { at: 1, ms: 6_000, pages: 12 },
+        { at: 2, ms: 3_000, pages: 20 },
+        // A 60-page site in 7 s is no miss of a 20-page budget; one of unknown size is held to it.
+        { at: 3, ms: 7_000, pages: 60 },
+        { at: 4, ms: 5_500 },
+      ];
+    });
+    const totals = reportTotals([exports], LISTS);
+    expect(totals.timings.export).toMatchObject({
+      samples: 4,
+      budgetPages: 20,
+      measured: 3,
+      overBudget: 2,
+    });
+    const text = formatTotals({ summaries: [exports], refused: [], older: 0 }, totals);
+    expect(text).toContain(
+      "budget 5000 ms up to 20 pages, 2 of 3 (67%) over (1 of a larger site left out)",
+    );
+  });
+
+  it("reads a report re-saved with a byte order mark, as Notepad saves it", () => {
+    const [, later] = FIXTURES;
+    if (later === undefined) throw new Error("no fixtures");
+    const read = readReports([{ name: "notepad.json", text: `\uFEFF${later.text}` }], LISTS);
+    expect(read.refused).toEqual([]);
+    expect(read.summaries).toHaveLength(1);
+  });
+
   it("totals nothing from no reports, without dividing by none", () => {
     const totals = reportTotals([], LISTS);
     const text = formatTotals({ summaries: [], refused: [], older: 0 }, totals);
     expect(text).toContain("Reports: 0 installs\n");
     expect(text).toContain("  Published:        0 of 0");
     expect(totals.timings.export.medianMs).toBe(0);
-    expect(text).toContain("  export: no samples; budget 5000 ms");
+    expect(text).toContain("  export: no samples; budget 5000 ms up to 20 pages");
   });
 });
