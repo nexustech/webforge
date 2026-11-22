@@ -39,7 +39,7 @@ Switching theme changes the colours, fonts and styles on every page. Anything yo
 
 The Theme panel lists the theme's settings:
 
-- **Colours:** **Brand**, **Accent**, **Second accent**, **Surface** (backgrounds) and **Text**. Click a colour's swatch to choose another.
+- **Colours:** **Brand**, **Accent**, **Second accent**, **Surface** (backgrounds) and **Text**. Click a colour's swatch to choose another in the colour picker (see [The colour picker](#the-colour-picker)).
   - When a colour you choose would be hard to read with one it sits with, {appName} says so under it straight away, such as "Brand is hard to read on Surface". Site Check says the same.
   - **Use a darker shade** (or **Use a lighter shade**) picks the nearest shade of the same colour that reads well.
 - **Fonts:**
@@ -52,6 +52,17 @@ The Theme panel lists the theme's settings:
 - **Links:** underlined always, or only when pointed at.
 - **Corners** of boxes, buttons and fields, from _Square_ to _Round_.
 - **Photo corners**, **Card style**, **Section backgrounds** (all the same, or alternating), **Room around things**, **Shadows**, **Border width** and **Effects**.
+
+### The colour picker
+
+Clicking a colour's swatch opens {appName}'s colour picker, the same on Windows and on a Mac:
+
+- Drag in the large square to make the colour paler or richer (left and right) and lighter or darker (up and down). Drag the strip under it to change the colour itself.
+- Type a colour's code, such as #1a7f5a, in the box under them, and press Enter. If your brand colour has a code, this is the easiest way to use it, in Simple mode too. A code has 6 digits and letters from a to f; {appName} says so if what you typed isn't one.
+- Click the eyedropper beside the code, then click a colour on your screen, such as your logo, to take it. Press Escape to stop without taking one.
+- With the keyboard, the arrow keys move in the square and along the strip; hold Shift to move further.
+
+The colour is chosen when the picker closes: click the swatch again, or anywhere outside it. Press Escape to close it and keep the colour you had. Each colour you choose is one step you can undo.
 
 ### In Advanced mode
 

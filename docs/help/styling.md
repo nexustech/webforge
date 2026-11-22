@@ -4,7 +4,7 @@ id: styling
 title: Styling
 summary: Change how a section or element looks, and give the same look to others like it.
 related: [edit-panel, themes, sections, elements]
-updated: 2026-11-20
+updated: 2026-11-21
 ---
 
 # Styling
@@ -30,7 +30,7 @@ _Same as theme_ means the item follows the theme. Every option except Font can b
 
 Colour pickers list your theme's colours one to a row, each with its whole name, by their role: Brand, Accent, Second accent, Surface and Text, and Neutral for backgrounds. Some have lighter and darker **shades**, and you can make any colour see-through with **Opacity**. If a colour would be hard to read against what's behind it, the picker warns you. Icons and social logos need less contrast than text. On a picture, such as a section's background picture or a Hero's picture behind its text, it can't tell, so check that yourself.
 
-In Advanced mode you can also choose a **Custom** colour. It stays the same when you change the theme.
+In Advanced mode you can also choose a **Custom** colour, in the [colour picker](themes.md#the-colour-picker). It stays the same when you change the theme.
 
 A section's **Colours** option is _Page colours_ or _Reversed_. Reversed swaps the theme's light and dark colours, to make a dark band on a light page.
 
