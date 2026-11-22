@@ -203,6 +203,8 @@ export type SiteSnapshot = {
   readonly menu?: MenuDoc | undefined;
   /** The Media image the favicon and app icons are made from (Site Settings, 3.4). */
   readonly icon?: string | undefined;
+  /** The Media image the Header shows as the business's logo (Site Settings, HF-1, 5.37). */
+  readonly logo?: string | undefined;
   /**
    * Google Analytics (B4, 3.8), when Site Settings have a Measurement ID: whether the consent
    * banner asks visitors first (B7), and its own text if the person wrote one.
@@ -384,6 +386,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       backToTop: z.boolean().optional(),
       menu: menuDocSchema.optional(),
       icon: mediaRefSchema.optional(),
+      logo: mediaRefSchema.optional(),
       analytics: z
         .strictObject({
           measurementId: measurementIdSchema,

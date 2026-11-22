@@ -41,6 +41,11 @@ export type PictureProps = {
    * 3.15, SEO-4), instead of lazily.
    */
   readonly eager?: boolean;
+  /**
+   * Above the fold on every page, but never its main picture (the Header's logo, HF-1): loaded at
+   * once, without going before the picture that is.
+   */
+  readonly inView?: boolean;
   readonly className?: string;
   /**
    * Its classes cut it to a shape of their own (3.19), the crop's being `--picture-ratio`, where
@@ -60,6 +65,7 @@ export function Picture({
   alt,
   sizes,
   eager = false,
+  inView = false,
   className,
   shaped = false,
   id,
@@ -77,7 +83,7 @@ export function Picture({
         width={image.width}
         height={image.height}
         alt={alt}
-        loading={eager ? "eager" : "lazy"}
+        loading={eager || inView ? "eager" : "lazy"}
         {...(eager ? { fetchPriority: "high" } : {})}
         decoding="async"
         className={className}

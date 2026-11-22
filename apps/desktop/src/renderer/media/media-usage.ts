@@ -53,14 +53,15 @@ export function filesPlacedIn(nodes: readonly NodeDoc[], library: ComponentLibra
 }
 
 /**
- * Media used by the whole site, so on every page: the site icon, the site's share image, and files
+ * Media used by the whole site, so on every page: the site icon, the logo, the site's share image, and files
  * the navigation menu links to (menu items hidden in the menu editor included).
  */
 function usedSiteWide(site: SiteDoc): Set<string> {
   const used = new Set<string>();
-  const { icon } = site.settings.general;
+  const { icon, logo } = site.settings.general;
   const { shareImage } = site.settings.social;
   if (icon !== undefined) used.add(icon);
+  if (logo !== undefined) used.add(logo);
   if (shareImage !== undefined) used.add(shareImage);
   for (const id of menuFileLinks(site.menu)) used.add(id);
   return used;
@@ -70,7 +71,7 @@ function usedSiteWide(site: SiteDoc): Set<string> {
  * How many pages use each Media item (1.16): in their content (placed, or linked to as a document),
  * copies of shared sections included, in the Header or Footer they show, in a post's Blog design
  * or as its picture (6.10a),
- * as the image shown when they are shared, or site-wide (the site icon, the site's share image, a
+ * as the image shown when they are shared, or site-wide (the site icon, the logo, the site's share image, a
  * file the menu links to). Deleting an item that is used warns with this count.
  */
 export function mediaUsage(site: SiteDoc, library: ComponentLibrary): ReadonlyMap<string, number> {

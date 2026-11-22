@@ -168,6 +168,8 @@ export function pageRender(
     },
     // An empty binding has no emptySetting here: the export leaves it out (1.17).
     setting: (key) => site.settings?.[key],
+    // The Header's logo (HF-1), resolved through `image` as any other picture.
+    logo: site.logo,
     // A post's fields, which its Blog's design shows (6.10a); an empty one shows nothing.
     ...(page.item === undefined ? {} : { item: itemOf(page.item) }),
     // The page's whole address, which Share buttons share (6.17b): none without a web address.

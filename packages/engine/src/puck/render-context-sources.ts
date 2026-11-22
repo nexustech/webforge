@@ -54,6 +54,7 @@ export const RENDER_CONTEXT_SOURCES = {
   emptySetting: "setSettings",
   openingHours: "setSettings",
   socialProfiles: "setSettings",
+  logo: "setSettings",
   socialHint: "setSettings",
   language: "setSettings",
   siteText: "setSettings",

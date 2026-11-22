@@ -225,6 +225,11 @@ export const siteSettingsSchema = z.strictObject({
     /** Source image for the favicon and app icons. */
     icon: mediaIdSchema.optional(),
     /**
+     * The business's logo (HF-1, 5.37), a picture from Media: the Header shows it in place of the
+     * site's name or beside it. None when absent, as before format 18.
+     */
+    logo: mediaIdSchema.optional(),
+    /**
      * A back-to-top button on every page (F-CM-9, 2.9), shown once the visitor has scrolled down;
      * a page can leave it out (`hideBackToTop`). Off when absent, as in files from before it.
      */

@@ -1191,6 +1191,39 @@
           "bindable": [
             "general.name",
             "contact.businessName"
+          ],
+          "help": "To show your logo here, choose it in Site Settings, under General."
+        },
+        "logoPlace": {
+          "kind": "select",
+          "label": "Logo",
+          "options": [
+            {
+              "label": "In place of the name",
+              "value": "instead"
+            },
+            {
+              "label": "Beside the name",
+              "value": "beside"
+            }
+          ]
+        },
+        "logoSize": {
+          "kind": "select",
+          "label": "Logo size",
+          "options": [
+            {
+              "label": "Small",
+              "value": "small"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Large",
+              "value": "large"
+            }
           ]
         },
         "sticky": {
@@ -1247,6 +1280,8 @@
       "defaults": {
         "variant": "left",
         "siteName": "My site",
+        "logoPlace": "instead",
+        "logoSize": "medium",
         "sticky": false,
         "scrollStyle": "shadow",
         "sectionHighlight": true

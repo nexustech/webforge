@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { defaultSiteSettings, type SiteSettings } from "@webforge/model";
+import { defaultSiteSettings, type MediaId, type SiteSettings } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { sessionWith } from "../testing/fixtures.js";
 import {
@@ -29,6 +29,7 @@ const full: SiteSettings = {
     name: "Rosa's Bakery",
     description: "Fresh bread",
     language: "en-GB",
+    logo: "logo" as MediaId,
     backToTop: true,
     businessType: "food",
   },
@@ -61,6 +62,12 @@ describe("settings form", () => {
     for (const settings of [full, defaultSiteSettings("My site", "en")]) {
       expect(checkSettings(toSettingsForm(settings), settings)).toEqual({ ok: true, settings });
     }
+  });
+
+  it("sets and clears the logo, storing nothing while none is chosen (HF-1)", () => {
+    expect(toSettingsForm(full).logo).toBe("logo");
+    const none = checkSettings(edit(full, { logo: undefined }), full);
+    expect(none.ok && none.settings.general).not.toHaveProperty("logo");
   });
 
   it("turns the back-to-top button on and off, storing nothing when off (F-CM-9)", () => {

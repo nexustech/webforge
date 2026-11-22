@@ -111,6 +111,7 @@ export function siteToSnapshot(
     backToTop: site.settings.general.backToTop,
     menu: site.menu,
     ...(site.settings.general.icon === undefined ? {} : { icon: site.settings.general.icon }),
+    ...(site.settings.general.logo === undefined ? {} : { logo: site.settings.general.logo }),
     ...analyticsOf(site.settings.analytics),
     search: {
       allowIndexing: site.settings.search.allowIndexing,

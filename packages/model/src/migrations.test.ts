@@ -18,6 +18,7 @@ import v14Site from "../test/fixtures/v14/site.json" with { type: "json" };
 import v15Site from "../test/fixtures/v15/site.json" with { type: "json" };
 import v16Site from "../test/fixtures/v16/site.json" with { type: "json" };
 import v17Site from "../test/fixtures/v17/site.json" with { type: "json" };
+import v18Site from "../test/fixtures/v18/site.json" with { type: "json" };
 import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
 import type { PageId, SharedSectionId } from "./ids.js";
 import {
@@ -127,6 +128,13 @@ const ownColours =
     throw new Error("No migration from format 16");
   });
 
+/** Format 17 → 18 (`MIGRATIONS[17]`). */
+const headerLogo =
+  MIGRATIONS[17] ??
+  ((): never => {
+    throw new Error("No migration from format 17");
+  });
+
 /** Format 5 → 16, each step's own fixture tested below: what the later steps do to an older one. */
 function latest(site: Record<string, unknown> & { formatVersion: 5 }): unknown {
   return exampleMarks(
@@ -169,12 +177,13 @@ const asFormat16 = (site: Record<string, unknown>) =>
 
 /**
  * `site` as format 16 had it: format 17 gives its theme an empty list of the person's own colours
- * (TC-1a, #1217), and nothing else, so what the steps before made of it is compared as it was.
+ * (TC-1a, #1217), and format 18 changes nothing (HF-1), so what the steps before made of it is
+ * compared as it was.
  */
 function atFormat16<T extends { formatVersion: number; theme: object }>(site: T) {
   const { ownColors, ...theme } = site.theme as { ownColors?: unknown };
   expect(ownColors).toEqual([]);
-  expect(site.formatVersion).toBe(17);
+  expect(site.formatVersion).toBe(18);
   return { ...site, theme, formatVersion: 16 };
 }
 
@@ -206,23 +215,32 @@ function widthsOf(...nodes: { type: string; props: Record<string, unknown> }[]):
 }
 
 describe("migrateSite", () => {
-  it("opens the format 17 fixture unchanged, its own colour in the theme and a look (TC-1a)", () => {
+  it("opens the format 18 fixture unchanged, with its logo in Site Settings (HF-1)", () => {
+    const site = migrateSite(v18Site);
+
+    expect(site).toEqual(v18Site);
+    expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
+    expect(site.settings.general.logo).toBe("logo0000000000aa");
+  });
+
+  it("opens the format 17 fixture as format 18, as it was, with no logo (HF-1)", () => {
     const site = migrateSite(v17Site);
 
-    expect(site).toEqual(v17Site);
-    expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
+    expect(site).toEqual({ ...v17Site, formatVersion: 18 });
+    expect(headerLogo({ formatVersion: 17 })).toEqual({ formatVersion: 18 });
+    expect(site.settings.general.logo).toBeUndefined();
     expect(site.theme.ownColors).toEqual([
       { id: "sky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } },
     ]);
     expect(site.theme.looks?.CallToAction?.lookBackground).toBe("own-sky-300");
   });
 
-  it("opens the format 16 fixture as format 17, with an empty list of the person's own colours", () => {
+  it("opens the format 16 fixture as format 18, with an empty list of the person's own colours", () => {
     const site = migrateSite(v16Site);
 
     expect(site).toEqual({
       ...v16Site,
-      formatVersion: 17,
+      formatVersion: 18,
       theme: { ...v16Site.theme, ownColors: [] },
     });
     // A list already there is kept, and a theme that isn't a record is left for validation.
@@ -960,6 +978,8 @@ const LAYOUT_WIDTHS: Readonly<Record<string, Readonly<Record<string, string>>>> 
 
 /** Each step's inverse, keyed by the version it goes down *to*. */
 const DOWN: Readonly<Record<number, (site: Raw) => Raw>> = {
+  // 18 → 17: Site Settings had no logo; a site with one keeps it, as format 18 reads it.
+  17: (site) => ({ ...site, formatVersion: 17 }),
   // 17 → 16: a theme had no list of its own colours; a list with colours in it is kept, as format
   // 17 reads it.
   16: (site) => {

@@ -1,8 +1,10 @@
 import { t } from "@webforge/i18n/components";
 import type { SiteText } from "@webforge/i18n/site-text";
+import { bindingOf } from "@webforge/model";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
 import { boundText, type ComponentDef } from "../library.js";
+import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
 import type { NavItem, NavLink } from "../schema.js";
 import { BUTTON_CLASSES } from "../typography.js";
@@ -140,6 +142,18 @@ function HeaderNavigation({
 
 const HEADER_LAYOUTS = ["left", "centred", "split"] as const;
 const SCROLL_STYLES = ["shadow", "shrink", "solid", "none"] as const;
+const LOGO_PLACES = ["instead", "beside"] as const;
+const LOGO_SIZES = ["small", "medium", "large"] as const;
+
+/**
+ * The logo's height at each size (HF-1): on phones never above the menu's button, so the Header
+ * stays one line high there.
+ */
+const LOGO_HEIGHTS: Readonly<Record<(typeof LOGO_SIZES)[number], string>> = {
+  small: "h-8",
+  medium: "h-10 md:h-12",
+  large: "h-10 md:h-16",
+};
 
 /**
  * A sticky header's classes for its scroll style (F-DS-6), applied once the page has scrolled 80 px
@@ -173,10 +187,10 @@ const HEADER_CLASSES: Readonly<Record<(typeof HEADER_LAYOUTS)[number], string>> 
 };
 
 /**
- * The shared Header (C5): the site name and the navigation, from the site's menu (F-ED-17), in one
- * of three layouts: the name left and the menu right, everything centred with the menu below, or
- * split with the menu's last link as a button on the right (2.6). It can stay at the top while the
- * page scrolls, changing its style once it has (F-DS-6).
+ * The shared Header (C5): the site name or its logo (HF-1), and the navigation, from the site's
+ * menu (F-ED-17), in one of three layouts: the name left and the menu right, everything centred
+ * with the menu below, or split with the menu's last link as a button on the right (2.6). It can
+ * stay at the top while the page scrolls, changing its style once it has (F-DS-6).
  */
 const header = defineComponent({
   label: t("layout.header"),
@@ -188,6 +202,20 @@ const header = defineComponent({
       label: t("field.siteName"),
       inline: true,
       bindable: ["general.name", "contact.businessName"],
+      help: t("field.siteName.help"),
+    },
+    // The logo in Site Settings (HF-1, 5.37): offered once the site has one.
+    logoPlace: {
+      kind: "select",
+      label: t("field.logoPlace"),
+      options: LOGO_PLACES.map((value) => ({ label: t(`field.logoPlace.${value}`), value })),
+      shownWhen: (_values, site) => site.hasLogo === true,
+    },
+    logoSize: {
+      kind: "select",
+      label: t("field.logoSize"),
+      options: LOGO_SIZES.map((value) => ({ label: t(`field.logoSize.${value}`), value })),
+      shownWhen: (_values, site) => site.hasLogo === true,
     },
     sticky: { kind: "toggle", label: t("field.sticky") },
     scrollStyle: {
@@ -206,6 +234,8 @@ const header = defineComponent({
   },
   defaults: {
     siteName: t("site.untitledName"),
+    logoPlace: "instead",
+    logoSize: "medium",
     sticky: false,
     scrollStyle: "shadow",
     sectionHighlight: true,
@@ -221,9 +251,29 @@ const header = defineComponent({
     const look = values.sticky
       ? `${STICKY_CLASSES[values.scrollStyle]} ${STICKY_OFFSET[layout]}`
       : "bg-base-100 shadow-sm";
+    // The logo in Site Settings (HF-1), in place of the name or beside it; the name, while there's
+    // no logo or its picture is gone from Media.
+    const logo = context.logo === undefined ? null : context.image(context.logo);
+    const beside = values.logoPlace === "beside";
+    const key = bindingOf(values.bindings, "siteName");
+    const own = typeof values.siteName === "string" ? values.siteName : undefined;
+    const named = (key === undefined ? own : context.setting(key))?.trim() ?? "";
     const name = (
-      <a className="font-heading text-xl font-bold" href={context.link("index")}>
-        {boundText(values, "siteName", context)}
+      <a
+        className={`font-heading text-xl font-bold${logo === null ? "" : " flex items-center gap-2"}`}
+        href={context.link("index")}
+      >
+        {logo === null ? null : (
+          <Picture
+            image={logo}
+            // In its place, the logo is the name; beside it, the name says it already.
+            alt={beside ? "" : named || context.siteText("siteText.logo")}
+            sizes="320px"
+            inView
+            className={`${LOGO_HEIGHTS[values.logoSize]} w-auto max-w-48 object-contain md:max-w-64`}
+          />
+        )}
+        {logo === null || beside ? boundText(values, "siteName", context) : null}
       </a>
     );
     return (

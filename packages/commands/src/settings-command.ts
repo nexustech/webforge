@@ -13,7 +13,7 @@ type Part = (typeof PARTS)[number];
 const notTheirs = {
   error: (issue: { code?: string; keys?: readonly string[] }) =>
     issue.code === "unrecognized_keys"
-      ? `AI apps can't change ${(issue.keys ?? []).join(", ")}: only the business's name, description, language and type, its web address, contact details, opening hours, social profiles and search settings. Publishing, forms, analytics, code, search engines' verification codes, the icon and pictures stay the person's.`
+      ? `AI apps can't change ${(issue.keys ?? []).join(", ")}: only the business's name, description, language and type, its web address, contact details, opening hours, social profiles and search settings. Publishing, forms, analytics, code, search engines' verification codes, the icon, the logo and pictures stay the person's.`
       : undefined,
 };
 
@@ -172,7 +172,7 @@ function namedChanges(before: SiteSettings, after: SiteSettings): string[] {
  */
 export const updateSettings = {
   description:
-    "Changes Site Settings that say what the business is: general (name, description, language, businessType, businessKind), address (the web address), contact (business name, email, phone, postal address, opening hours, note, price range, map position), social (profiles, X handle) and search (allowIndexing, includeSitemap, readableByAi). Each as the settings query gives it; null clears an optional one, and what's left out stays. Never publishing, forms, analytics, code, search engines' verification codes, the icon or pictures. They show on every page, so it waits for the person to allow it. One undo step.",
+    "Changes Site Settings that say what the business is: general (name, description, language, businessType, businessKind), address (the web address), contact (business name, email, phone, postal address, opening hours, note, price range, map position), social (profiles, X handle) and search (allowIndexing, includeSitemap, readableByAi). Each as the settings query gives it; null clears an optional one, and what's left out stays. Never publishing, forms, analytics, code, search engines' verification codes, the icon, the logo or pictures. They show on every page, so it waits for the person to allow it. One undo step.",
   input: settingsChange,
   /** Nothing to count: its question names the settings it changes, first in a plan's (S30). */
   summarize() {},
