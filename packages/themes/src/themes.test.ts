@@ -15,6 +15,7 @@ import {
   hexOf,
   hexToOklch,
   inverseColors,
+  nearestColour,
   oklchToSrgb,
   resolveColorRef,
   shadeOf,
@@ -129,6 +130,28 @@ describe("colour refs with a theme (2.1)", () => {
     expect(inverse["base-100"]).toEqual(DEFAULT_THEME.colors.neutral);
     expect(inverse["base-content"]).toEqual(DEFAULT_THEME.colors["neutral-content"]);
     expect(inverse.primary).toEqual(DEFAULT_THEME.colors.primary);
+  });
+});
+
+describe("nearestColour (TC-4, #1222)", () => {
+  const sky = { id: "sky", color: { l: 0.7, c: 0.12, h: 230 } };
+  const brick = { id: "brick", color: { l: 0.5, c: 0.16, h: 30 } };
+  const fern = { id: "fern", color: { l: 0.58, c: 0.13, h: 145 } };
+
+  it("finds the one that looks nearest, by lightness and hue alike", () => {
+    expect(nearestColour(hexToOklch("#1f6feb"), [brick, sky, fern])?.id).toBe("sky");
+    expect(nearestColour(hexToOklch("#c0392b"), [sky, fern, brick])?.id).toBe("brick");
+    expect(nearestColour(hexToOklch("#2e8b57"), [sky, brick, fern])?.id).toBe("fern");
+  });
+
+  it("finds none among none, and the first of two alike", () => {
+    expect(nearestColour(sky.color, [])).toBeUndefined();
+    expect(
+      nearestColour(sky.color, [
+        { ...sky, id: "a" },
+        { ...sky, id: "b" },
+      ])?.id,
+    ).toBe("a");
   });
 });
 

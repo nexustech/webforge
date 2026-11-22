@@ -4,6 +4,7 @@ export {
   hexOf,
   hexToOklch,
   inverseColors,
+  nearestColour,
   oklchToSrgb,
   ownColorOf,
   resolveColorRef,

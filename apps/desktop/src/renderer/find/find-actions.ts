@@ -1,20 +1,18 @@
 import { plural, t } from "@webforge/i18n";
 import {
-  copiedNodeId,
   designAt,
   elementsAt,
   findNode,
-  isPageIn,
   isSharedCopy,
   type PageId,
   pageEntryOf,
-  pageWithCopy,
   type SiteDoc,
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
-import { inDesign, postShowingDesign } from "../editor/shared-layout.js";
+import { inDesign } from "../editor/shared-layout.js";
+import { showElement } from "../editor/show-element.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -120,27 +118,9 @@ function elementName(site: SiteDoc, spot: TextSpot & { kind: "element" }): strin
 export function showSpot(spot: TextSpot, { session, panels, settings, commands }: FindActions) {
   const site = session.history.document.getState();
   switch (spot.kind) {
-    case "element": {
-      const { on, nodeId } = spot;
-      const design = designAt(site, on);
-      if (on === "header" || on === "footer") {
-        session.select(nodeId);
-      } else if (isPageIn(site.pages, on)) {
-        session.showPage(on);
-        session.select(nodeId);
-      } else if (design !== undefined) {
-        const post = postShowingDesign(site, design.id, session.ui.getState().pageId);
-        if (post === undefined) return;
-        session.showPage(post);
-        session.select(nodeId);
-      } else {
-        const holder = pageWithCopy(site, on, session.ui.getState().pageId);
-        if (holder === undefined) return;
-        session.showPage(holder.pageId);
-        session.select(copiedNodeId(holder.copyId, nodeId));
-      }
+    case "element":
+      showElement(session, spot.on, spot.nodeId);
       return;
-    }
     case "page":
       if (site.pages[spot.pageId] === undefined) return;
       session.showPage(spot.pageId);
