@@ -76,6 +76,9 @@ export function formatColorRef(ref: ColorRef): string {
   return `${base}${shade}${opacity}`;
 }
 
+/** The theme's roles without shades: its surfaces and the colours on them. */
+const UNSHADED = COLOR_ROLES.filter((role) => !(SHADED_ROLES as readonly string[]).includes(role));
+
 /** Validates a colour ref ({@link parseColorRef}) and stores it with its hex in lower case. */
 export const colorRefSchema = z
   .string()
@@ -90,4 +93,12 @@ export const colorRefSchema = z
       return z.NEVER;
     }
     return formatColorRef(parsed);
-  });
+  })
+  // For AI apps, which read it as JSON Schema: its format, which a pattern can't say as plainly.
+  .describe(
+    `A colour: a theme role (${SHADED_ROLES.join(", ")}, with an optional shade such as ` +
+      `primary-300; or ${UNSHADED.join(", ")}); ` +
+      `one of the theme's own colours as ${OWN_COLOR_PREFIX}<id>, shades too (own-csky-700; the ` +
+      "theme query lists them by id and name); or a hex colour of its own, [#1f6feb]. Any of " +
+      `them with an optional opacity in percent: /${OPACITY_STEPS.join(", /")} (primary/80).`,
+  );
