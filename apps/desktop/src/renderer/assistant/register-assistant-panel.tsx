@@ -22,14 +22,27 @@ export type AssistantPanelOptions = {
   readonly sessionId: string;
   /** Opens the assistant's settings (*Settings › Assistant*). */
   readonly openSettings: () => void;
+  /** Opens *Things You Can Ask* (5.21, OL-8). */
+  readonly openExamples: () => void;
+};
+
+/** The panel, once registered. */
+export type AssistantPanelHandle = {
+  /** Removes the panel and stops following main's events. */
+  readonly remove: () => void;
+  /**
+   * Shows the panel with `text` in its box, unsent, and the box focused (5.21): or, while the
+   * assistant isn't set up or this site hasn't said yes, what the panel asks first, the example
+   * kept in the box behind it.
+   */
+  readonly tryExample: (text: string) => void;
 };
 
 /**
- * Puts the assistant's panel (6.9c, UX-28) in the left column, after Undo History and Version History: its conversation on this site
- * with main, through the `assistant` domain (ADR 0026 §7). Returns a function that removes it and
- * stops following main's events.
+ * Puts the assistant's panel (6.9c, UX-28) in the left column, after Undo History and Version
+ * History: its conversation on this site with main, through the `assistant` domain (ADR 0026 §7).
  */
-export function registerAssistantPanel(options: AssistantPanelOptions): () => void {
+export function registerAssistantPanel(options: AssistantPanelOptions): AssistantPanelHandle {
   const { panels, session, api } = options;
   const model = createAssistantPanel(api, options.sessionId);
   function Panel() {
@@ -49,6 +62,7 @@ export function registerAssistantPanel(options: AssistantPanelOptions): () => vo
             .catch((error: unknown) => reportFailure("assistant.enable", error))
         }
         onOpenSettings={options.openSettings}
+        onOpenExamples={options.openExamples}
         onOpenVersions={() => panels.show("versionHistory")}
         onShowStep={(step) => {
           // Only a page the site has: the id came from main.
@@ -86,8 +100,14 @@ export function registerAssistantPanel(options: AssistantPanelOptions): () => vo
     icon: SparklesIcon,
     component: Panel,
   });
-  return () => {
-    remove();
-    model.dispose();
+  return {
+    remove: () => {
+      remove();
+      model.dispose();
+    },
+    tryExample: (text) => {
+      model.tryExample(text);
+      panels.show(ASSISTANT_PANEL_ID);
+    },
   };
 }

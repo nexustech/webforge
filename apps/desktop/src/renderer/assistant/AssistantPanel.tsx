@@ -2,7 +2,7 @@ import { Button } from "@webforge/editor-ui";
 import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { PlusIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import type { ReplyStep } from "../../shared/ipc/assistant.js";
 import type { AssistantPanelModel } from "./assistant-state.js";
@@ -39,6 +39,8 @@ export type AssistantPanelProps = {
   readonly holdsExample?: ((step: ReplyStep) => boolean) | undefined;
   /** Opens a link from a reply in the browser: its address as the reply wrote it. */
   readonly onOpenLink: (href: string, replyId: string) => void;
+  /** Opens *Things You Can Ask* (5.21, OL-8): example requests to try. */
+  readonly onOpenExamples: () => void;
 };
 
 /**
@@ -49,7 +51,7 @@ export type AssistantPanelProps = {
  */
 export function AssistantPanel(props: AssistantPanelProps) {
   const { model, history } = props;
-  const { status, site, turns, replying, refused, applying, waiting, returned } = useStore(
+  const { status, site, turns, replying, refused, applying, waiting, returned, tried } = useStore(
     model.state,
   );
   const position = useStore(history.state);
@@ -62,6 +64,25 @@ export function AssistantPanel(props: AssistantPanelProps) {
     setText((now) => (now.trim() === "" ? returned : `${returned}\n\n${now}`));
     model.taken();
   }, [returned, model]);
+  // An example to try (5.21): in the box, before what's typed there now, and the box focused.
+  const box = useRef<HTMLTextAreaElement>(null);
+  const [focusing, setFocusing] = useState(false);
+  useEffect(() => {
+    if (tried === undefined) return;
+    setText((now) => (now.trim() === "" ? tried : `${tried}\n\n${now}`));
+    setFocusing(true);
+    model.tryTaken();
+  }, [tried, model]);
+  useEffect(() => {
+    if (!focusing) return;
+    const shown = box.current;
+    if (shown !== null) {
+      shown.focus();
+      // At the example's end, ready to change it.
+      shown.setSelectionRange(shown.value.length, shown.value.length);
+    }
+    setFocusing(false);
+  }, [focusing]);
   if (status === undefined || site === undefined) {
     return <p className="m-0 p-3 text-sm text-muted-foreground">{t("assistant.loading")}</p>;
   }
@@ -230,6 +251,7 @@ export function AssistantPanel(props: AssistantPanelProps) {
         }}
       >
         <textarea
+          ref={box}
           aria-label={t("assistant.message")}
           placeholder={t("assistant.messagePlaceholder")}
           value={text}
@@ -246,7 +268,17 @@ export function AssistantPanel(props: AssistantPanelProps) {
             }
           }}
         />
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {/* Example requests to try (5.21, OL-8). */}
+          <Button
+            size="sm"
+            variant="link"
+            type="button"
+            className="mr-auto px-0"
+            onClick={props.onOpenExamples}
+          >
+            {t("assistant.examples.open")}
+          </Button>
           {replying === undefined ? (
             <Button size="sm" type="submit" disabled={text.trim() === ""}>
               {t("assistant.send")}

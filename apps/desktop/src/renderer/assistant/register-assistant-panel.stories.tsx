@@ -33,7 +33,8 @@ const story = (options: FakeAssistantOptions, message?: string): Story =>
       api,
       sessionId: "story",
       openSettings: () => undefined,
-    });
+      openExamples: () => undefined,
+    }).remove;
   });
 
 /** Not set up yet: Settings turns it on. */
