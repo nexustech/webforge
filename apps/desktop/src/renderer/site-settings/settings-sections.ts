@@ -103,7 +103,7 @@ export type SettingsPage = {
 
 /** A choice of one of Media's images, or none: its hint, or how to add some while there are none. */
 function imageField(
-  name: "icon" | "shareImage",
+  name: "icon" | "logo" | "shareImage",
   label: string,
   hint: string,
   { images, imageUrl }: SettingsMedia,
@@ -283,6 +283,7 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           width: "md",
           options: languageOptions(values.language),
         },
+        imageField("logo", t("site.settings.logo"), t("site.settings.logoHint"), media),
         imageField("icon", t("site.settings.icon"), t("site.settings.iconHint"), media),
         {
           kind: "toggle",

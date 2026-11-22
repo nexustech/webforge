@@ -279,7 +279,8 @@ function themed(site: SiteSnapshot): SiteSnapshot {
 
 setup("export the fixture site from the app", async () => {
   rmSync(EXPORTED_SITE_DIR, { recursive: true, force: true });
-  // With its photo as the icon, the About page's share picture (3.4) and Images cut to shapes
+  // With its photo as the icon and, small beside the name, the Header's logo (HF-1), the About
+  // page's share picture (3.4) and Images cut to shapes
   // (3.19), a "Page not found" page with the home page's Hero, its photo and links (F-ED-20,
   // 3.5), and the About page's old address kept working (#862).
   const sample = withSharedSection(withShapedImages(withSectionBackground(sampleSite())));
@@ -293,6 +294,15 @@ setup("export the fixture site from the app", async () => {
   const site = {
     ...sample,
     icon: "hero-photo",
+    logo: "hero-photo",
+    layout: {
+      ...sample.layout,
+      header: sample.layout.header.map((node) =>
+        node.type === "Header"
+          ? { ...node, props: { ...node.props, logoPlace: "beside", logoSize: "small" } }
+          : node,
+      ),
+    },
     redirects: [{ from: "our-story.html", to: "about" }],
     pages: [
       ...sample.pages.map((page) =>

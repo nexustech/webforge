@@ -54,7 +54,12 @@ function site(change: Partial<SiteSnapshot> = {}): SiteSnapshot {
 }
 
 /** The JSON-LD objects `structuredData` writes for the page at `path`. */
-function dataOn(snapshot: SiteSnapshot, path: string, shareImage?: string): object[] {
+function dataOn(
+  snapshot: SiteSnapshot,
+  path: string,
+  shareImage?: string,
+  logo?: string,
+): object[] {
   const shown = snapshot.pages.find((each) => each.path === path);
   if (shown === undefined) throw new Error(`no page ${path}`);
   return structuredData({
@@ -63,6 +68,7 @@ function dataOn(snapshot: SiteSnapshot, path: string, shareImage?: string): obje
     nodes: shown.doc.content,
     library: siteLibrary,
     shareImage,
+    logo,
   }).map((tag) => {
     const json = /<script type="application\/ld\+json">\n([\s\S]*)\n<\/script>/.exec(tag)?.[1];
     return JSON.parse(json ?? "null") as object;
@@ -89,6 +95,16 @@ describe("structured data (3.15, SEO-1)", () => {
       sameAs: ["https://instagram.com/rosas"],
       priceRange: "££",
     });
+  });
+
+  it("gives the business's logo, by its address, once the site has one (HF-1)", () => {
+    const logo = "assets/img/logo-640.png";
+    expect(businessDataSchema.parse(dataOn(site(), "index", undefined, logo)[1])).toMatchObject({
+      logo: `${ADDRESS}/assets/img/logo-640.png`,
+    });
+    // Without a web address, no address to give.
+    expect(dataOn(site({ settings: {} }), "index", undefined, logo)[1]).not.toHaveProperty("logo");
+    expect(dataOn(site(), "index")[1]).not.toHaveProperty("logo");
   });
 
   it("gives the hours and contact details only where the page shows them", () => {

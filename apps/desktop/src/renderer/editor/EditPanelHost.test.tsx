@@ -1295,6 +1295,28 @@ describe("the Header's Highlight the section in view (5.10b, GA10-1)", () => {
   });
 });
 
+describe("the Header's logo (HF-1, 5.37)", () => {
+  it("offers its place and size once Site Settings hold a logo, and not after it's taken away", async () => {
+    const { session, user } = setup("header");
+    await user.click(screen.getByRole("tab", { name: "Style" }));
+    const fields = () =>
+      ["Logo", "Logo size"].map((label) => screen.queryByLabelText(label) !== null);
+    expect(fields()).toEqual([false, false]);
+
+    act(() => {
+      session.history.run("Changed Site Settings: General", (draft) => {
+        draft.settings.general.logo = "logo0000000000aa" as MediaId;
+      });
+    });
+    expect(fields()).toEqual([true, true]);
+
+    act(() => {
+      session.history.undo();
+    });
+    expect(fields()).toEqual([false, false]);
+  });
+});
+
 describe("the Custom Code element's code (#649)", () => {
   /** The Edit panel for Custom Code `theirs`, with another, `mine`, on the page. */
   function customCode() {

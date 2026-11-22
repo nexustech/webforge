@@ -384,6 +384,8 @@ export async function* buildEvents(
       behaviours = [...behaviours, "section-spy" as const].sort();
     }
     mediaIds = mediaUsedBy(allNodes(site), library);
+    // The Header's logo from Site Settings (HF-1), as any picture a page shows: WebP and a fallback.
+    if (site.logo !== undefined) mediaIds.add(site.logo);
     // The pictures of posts their Blog's design shows (6.10a).
     for (const id of site.pages.flatMap(itemPicturesShown)) mediaIds.add(id);
     // And every published post's picture, which Latest posts' cards and the Blog's own pages
@@ -716,6 +718,8 @@ export async function* buildEvents(
           ],
           library,
           shareImage: shareImages.get(entry.page.path),
+          // The logo's JPEG or PNG, which every reader of structured data takes (HF-1).
+          logo: site.logo === undefined ? undefined : images.get(site.logo)?.src,
         }),
       ],
     };

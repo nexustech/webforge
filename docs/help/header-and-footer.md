@@ -5,7 +5,7 @@ title: Header, Footer, announcements and shared sections
 summary: The parts that are the same on every page, an announcement bar above them, and sections you share between pages.
 components: [Header, Footer, AnnouncementBar]
 related: [pages, layers, add-panel, site-check]
-updated: 2026-11-20
+updated: 2026-11-22
 ---
 
 # Header, Footer, announcements and shared sections
@@ -17,6 +17,8 @@ The **Header**, at the top, and the **Footer**, at the bottom, are the same on e
 **Header** options:
 
 - **Site name:** comes from [Site Settings](site-settings.md#general).
+- **Logo** (once you choose one in [Site Settings](site-settings.md#general)): _In place of the name_ or _Beside the name_. In place of the name, your site's name is the logo's description for people who can't see it. Without a logo the Header shows the name.
+- **Logo size:** _Small_, _Medium_ or _Large_. On phones the logo stays no taller than the menu button, so the Header stays one line high.
 - **Layout:** _Name left, menu right_, _Centred_ or _With a button_.
 - **Stay at the top when scrolling:** keeps the Header in view as visitors scroll.
 - **Change style when scrolling** (with _Stay at the top_ on): _Shadow_, _Shrink_, _Solid background_ or _None_.

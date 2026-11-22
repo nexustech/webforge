@@ -262,6 +262,8 @@ export const site = {
     "Type your wording, or remove this label to keep the standard one.",
   "site.settings.error.labelTwice": "This label is changed above already. Remove one of them.",
   "site.settings.history.labels": "Changed Labels on your site",
+  "site.settings.logo": "Logo",
+  "site.settings.logoHint": "Shown in the Header, in place of the site's name or beside it.",
   "site.settings.icon": "Site icon",
   "site.settings.iconHint": "Shown in browser tabs and bookmarks.",
   "site.settings.backToTop": "Show a back-to-top button",

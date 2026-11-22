@@ -5,10 +5,19 @@ export const layout = {
   "layout.header": "Header",
   "layout.footer": "Footer",
   "field.siteName": "Site name",
+  "field.siteName.help": "To show your logo here, choose it in Site Settings, under General.",
   // The Header's and Footer's layouts (2.6).
   "field.headerLayout.left": "Name left, menu right",
   "field.headerLayout.centred": "Centred",
   "field.headerLayout.split": "With a button",
+  // The business's logo from Site Settings (HF-1, 5.37), and where and how big it shows.
+  "field.logoPlace": "Logo",
+  "field.logoPlace.instead": "In place of the name",
+  "field.logoPlace.beside": "Beside the name",
+  "field.logoSize": "Logo size",
+  "field.logoSize.small": "Small",
+  "field.logoSize.medium": "Medium",
+  "field.logoSize.large": "Large",
   "field.footerLayout.centred": "Centred",
   "field.footerLayout.columns": "Columns",
   // A sticky header (F-DS-6).

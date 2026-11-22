@@ -28,3 +28,24 @@ describe("the Header's Highlight the section in view (5.10b, GA10-1)", () => {
     expect(fieldsHiddenBy(header, values).has("sectionHighlight")).toBe(true);
   });
 });
+
+describe("the Header's logo (HF-1, 5.37)", () => {
+  const header = siteLibrary.components.Header;
+  if (header === undefined) throw new Error("no Header");
+
+  it("offers where and how big only once Site Settings hold a logo, in place of the name at first", () => {
+    expect(header.defaults).toMatchObject({ logoPlace: "instead", logoSize: "medium" });
+    const hidden = (hasLogo?: boolean) =>
+      fieldsHiddenBy(header, header.defaults, { menuLinksToSections: false, hasLogo });
+
+    for (const field of ["logoPlace", "logoSize"]) {
+      expect(hidden(true).has(field)).toBe(false);
+      expect(hidden(false).has(field)).toBe(true);
+      expect(hidden().has(field)).toBe(true);
+    }
+    // The site's name says where the logo is chosen.
+    expect(header.fields.siteName?.help).toBe(
+      "To show your logo here, choose it in Site Settings, under General.",
+    );
+  });
+});

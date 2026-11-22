@@ -52,8 +52,19 @@ function drawing(
   };
 }
 
-/** Pictures of either shape for the Image's shapes (3.19): `landscape` and `portrait`. */
+/**
+ * Pictures of either shape for the Image's shapes (3.19), `landscape` and `portrait`, and a
+ * business's `logo` for the Header's (HF-1).
+ */
 const DRAWINGS: Readonly<Record<string, ResolvedImage>> = {
+  // A loaf in a circle beside a wordmark's bars: wider than tall, as most logos are.
+  logo: drawing(
+    240,
+    80,
+    "50% 50%",
+    '<circle cx="40" cy="40" r="34" fill="#b5542c"/><ellipse cx="40" cy="44" rx="20" ry="12" fill="#f4e6d0"/><rect x="88" y="22" width="136" height="16" rx="4" fill="#3b2a1e"/><rect x="88" y="46" width="96" height="10" rx="3" fill="#b5542c"/>',
+    "Rosa's Bakery",
+  ),
   // A sun a quarter of the way across, over hills.
   landscape: drawing(
     640,

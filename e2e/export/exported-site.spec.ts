@@ -203,6 +203,30 @@ test.describe("exported site from disk", () => {
     expect(existsSync(join(EXPORTED_SITE_DIR, "assets", "img", "hero-share.jpg"))).toBe(true);
   });
 
+  test("shows Site Settings' logo beside the name, from the export folder, one line high on phones (HF-1)", async ({
+    page,
+  }) => {
+    await open(page, "about.html");
+
+    const home = page.locator("header.site-header a").first();
+    await expect(home).toHaveText("Rosa's Bakery");
+    await expect(home).toHaveAttribute("href", "index.html");
+    const logo = home.locator("img");
+    // Beside the name, it says nothing more to a screen reader.
+    await expect(logo).toHaveAttribute("alt", "");
+    await expect(logo).toHaveJSProperty("complete", true);
+    expect(await logo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+    // WebP, with a JPEG or PNG for a browser without it.
+    await expect(home.locator('source[type="image/webp"]')).toHaveCount(1);
+    expect(await logo.getAttribute("src")).toMatch(/^assets\/img\/.+\.(jpg|png)$/);
+
+    await page.setViewportSize({ width: 375, height: 700 });
+    const header = await page.locator("header.site-header").boundingBox();
+    const button = await page.locator("header.site-header .site-menu > summary").boundingBox();
+    // The logo no taller than the menu's button: the Header is the one row it was.
+    expect(header?.height ?? 0).toBeLessThanOrEqual((button?.height ?? 0) + 24);
+  });
+
   test("loads its styles, fonts, image and script from the export folder", async ({ page }) => {
     await open(page, "index.html");
 

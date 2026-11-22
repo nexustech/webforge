@@ -768,6 +768,15 @@
     }
     // The last of them in the page's order: a short section inside a taller one is the nearer.
     const across = sections.filter((section) => crossing.has(section));
+    if (across.length === 0) {
+      // Measured too, when the observer has said none is: Safari's (WebKit's) doesn't always tell of
+      // a section a jump from the menu brings to the line, as it does of one scrolled to.
+      const line = lineAt();
+      for (const section of sections) {
+        const { top, bottom } = section.getBoundingClientRect();
+        if (top <= line + 1 && bottom > line) across.push(section);
+      }
+    }
     if (across.length > 0) {
       mark(across.at(-1));
     } else if (sections[0] !== undefined && sections[0].getBoundingClientRect().top > lineAt()) {
@@ -781,8 +790,11 @@
   const watch = () => {
     observer?.disconnect();
     crossing.clear();
-    const line = Math.round(lineAt());
-    // A band one pixel tall at the line: the sections across it.
+    // A band two pixels tall from the line, rounded down: the sections across it. A jump from the
+    // menu brings a section's top to the line, which a Header with a picture in it can put between
+    // two pixels; the page then scrolls to a whole one, so a band a pixel tall at the rounded line
+    // could miss it (Safari).
+    const line = Math.floor(lineAt());
     observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -791,11 +803,12 @@
         }
         update();
       },
-      { rootMargin: `-${line}px 0px -${Math.max(0, window.innerHeight - line - 1)}px 0px` },
+      { rootMargin: `-${line}px 0px -${Math.max(0, window.innerHeight - line - 2)}px 0px` },
     );
     for (const section of sections) observer.observe(section);
   };
   window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("hashchange", update);
   window.addEventListener("resize", watch);
   // A sticky header that shrinks moves the line (sticky.js sets the scroll padding).
   const header = document.querySelector(".site-header");
