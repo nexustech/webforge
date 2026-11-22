@@ -32,8 +32,11 @@ export const WINDOW_TOOLS = [
     description:
       "Runs Site Check on the open site, as the person's Site Check panel does for an export: " +
       "each rule that found something, by its id, its title and its level (must, should or tip), " +
-      "with the places by id (a page, an element, a Media item, a menu item). It never gives a " +
-      "finding's text: read the place with pageTree or fields.",
+      "with the places by id (a page, an element, a Media item, a menu item, the theme), and " +
+      "facts, one for each place, where findings have them: numbers and listed names, such as " +
+      "a contrast finding's colours (background, foreground), palette (colors, or inverse for " +
+      "reversed sections), ratio and the ratio required, or an image's width, height and bytes. " +
+      "It never gives a finding's text: read the place with pageTree or fields.",
     answeredBy: "window",
     savesVersionFirst: false,
     forAssistant: true,
