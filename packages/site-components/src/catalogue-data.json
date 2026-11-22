@@ -1303,6 +1303,14 @@
             "contact.openingHoursNote"
           ]
         },
+        "columns": {
+          "kind": "slot",
+          "label": "Columns",
+          "allow": [
+            "FooterColumn"
+          ],
+          "max": 3
+        },
         "variant": {
           "kind": "select",
           "group": "style",
@@ -1321,8 +1329,38 @@
       },
       "defaults": {
         "variant": "centred",
-        "text": "Thanks for visiting."
+        "text": "Thanks for visiting.",
+        "columns": []
       }
+    },
+    "FooterColumn": {
+      "label": "Footer column",
+      "place": "child",
+      "fields": {
+        "content": {
+          "kind": "slot",
+          "label": "Content",
+          "allow": [
+            "Heading",
+            "Text",
+            "List",
+            "SocialLinks",
+            "Image",
+            "MenuLinks",
+            "ContactDetails",
+            "Newsletter"
+          ]
+        }
+      },
+      "defaults": {
+        "content": []
+      }
+    },
+    "MenuLinks": {
+      "label": "Menu links",
+      "place": "child",
+      "fields": {},
+      "defaults": {}
     },
     "Section": {
       "label": "Section",

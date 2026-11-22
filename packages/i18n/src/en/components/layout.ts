@@ -20,6 +20,10 @@ export const layout = {
   "field.logoSize.large": "Large",
   "field.footerLayout.centred": "Centred",
   "field.footerLayout.columns": "Columns",
+  // The Footer's columns of elements (HF-4, 5.39), and the menu's links in one.
+  "field.footerColumns": "Columns",
+  "element.footerColumn": "Footer column",
+  "element.menuLinks": "Menu links",
   // A sticky header (F-DS-6).
   "field.sticky": "Stay at the top when scrolling",
   "field.scrollStyle": "Change style when scrolling",
