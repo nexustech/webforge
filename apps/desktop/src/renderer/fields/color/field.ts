@@ -12,9 +12,11 @@ import { colourFieldRenderer } from "./ColourField.js";
  */
 export const colourField = ({
   session,
-}: Pick<FieldRendererContext, "session">): FieldRenderer<"color"> =>
+  toOwn,
+}: Pick<FieldRendererContext, "session" | "toOwn">): FieldRenderer<"color"> =>
   colourFieldRenderer({
     session,
+    toOwn,
     textStyles: () => {
       const { pageId, nodeId } = session.ui.getState();
       const site = session.history.document.getState();

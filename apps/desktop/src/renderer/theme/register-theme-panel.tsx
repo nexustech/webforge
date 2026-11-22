@@ -3,10 +3,9 @@ import { PaletteIcon } from "lucide-react";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import type { FontsApi } from "../../shared/ipc/fonts.js";
 import type { EditorSession } from "../editor/editor-session.js";
-
+import type { OwnThemes } from "../editor/own-themes.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { type PreferencesStore, usePreferences } from "../shell/preferences-store.js";
-import type { OwnThemes } from "./own-themes.js";
 import { draftChanges } from "./studio/look-draft.js";
 import type { StudioState } from "./studio/studio-state.js";
 import { ThemePanel } from "./ThemePanel.js";

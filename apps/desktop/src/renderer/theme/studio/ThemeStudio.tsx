@@ -19,10 +19,9 @@ import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
 import type { ItemPreviews } from "../../editor/areas.js";
 import type { EditorSession } from "../../editor/editor-session.js";
+import type { OwnThemes } from "../../editor/own-themes.js";
 import { useDocument } from "../../editor/use-document.js";
 import { addFontPreviews, ColourField } from "../../fields/index.js";
-
-import type { OwnThemes } from "../own-themes.js";
 import { useOwnThemeList } from "../own-themes-list.js";
 import { PreviewStrip, StylingFrame } from "../StylingFrame.js";
 import { TOKEN_CONTROLS, tokenKey } from "../theme-controls.js";

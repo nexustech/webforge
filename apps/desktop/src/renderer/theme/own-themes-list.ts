@@ -2,7 +2,7 @@ import type { ThemeTokens } from "@webforge/model";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 import type { OwnTheme } from "../../shared/ipc/themes.js";
-import type { OwnThemes, OwnThemesState } from "./own-themes.js";
+import type { OwnThemes, OwnThemesState } from "../editor/own-themes.js";
 
 /** No themes: for a Theme tab or Studio without My themes (stories, tests). */
 const NONE = createStore<OwnThemesState>()(() => ({ themes: [], question: null, deleted: [] }));

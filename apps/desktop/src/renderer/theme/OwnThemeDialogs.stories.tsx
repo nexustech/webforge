@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { t } from "@webforge/i18n";
+import { createOwnThemes, type OwnThemes } from "../editor/own-themes.js";
 import { dialogStory } from "../testing/stories.js";
 import { OwnThemeDialogs } from "./OwnThemeDialogs.js";
-import { createOwnThemes, type OwnThemes } from "./own-themes.js";
 
 // My themes' questions (2.23, PH2-17), each open, on a new site's theme.
 const meta = { title: "Dialogs/My themes" } satisfies Meta;

@@ -1,9 +1,9 @@
 import type { StoreApi } from "zustand/vanilla";
 import type { ItemPreviews } from "../editor/areas.js";
 import type { EditorSession } from "../editor/editor-session.js";
+import type { OwnThemes } from "../editor/own-themes.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { WindowDialogRegistry } from "../shell/window-dialogs.js";
-import type { OwnThemes } from "./own-themes.js";
 import type { StudioState } from "./studio/studio-state.js";
 import { ThemeStudio } from "./studio/ThemeStudio.js";
 
