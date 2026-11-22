@@ -344,10 +344,11 @@ test("a page with 200+ elements against the editing budgets", async () => {
   });
 
   await test.step("a theme colour dragged: shown on the canvas as it moves (5.30, OL-18)", async () => {
-    await page
-      .getByRole("region", { name: "Right panels" })
-      .getByRole("tab", { name: "Theme", exact: true })
-      .click();
+    const rightPanels = page.getByRole("region", { name: "Right panels" });
+    // The tab shown before, shown again after, so the steps after this one measure as before.
+    // The column's own tabs come first; a panel in it may have tabs of its own.
+    const shownTab = await rightPanels.getByRole("tab", { selected: true }).first().textContent();
+    await rightPanels.getByRole("tab", { name: "Theme", exact: true }).click();
     await page
       .locator('[data-field="color.primary"]')
       .getByRole("button", { name: "Brand" })
@@ -355,20 +356,27 @@ test("a page with 200+ elements against the editing budgets", async () => {
     const area = page.getByRole("slider", { name: "Saturation and brightness" });
     const box = await area.boundingBox();
     if (box === null) throw new Error("The colour picker's area isn't shown");
-    const preview = canvasFrame().locator("style[data-webforge-theme-preview]");
+    // A <style>'s text isn't drawn, so its textContent is read, not its text.
+    const preview = () =>
+      canvasFrame()
+        .locator("style[data-webforge-theme-preview]")
+        .evaluate((style) => style.textContent ?? "");
     await takeObserved();
 
     // Across the area and back, as a person tries colours: each step shown with no compile.
     await page.mouse.move(box.x + box.width * 0.1, box.y + box.height * 0.2);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.6, { steps: 30 });
-    await expect(preview).toHaveText(/--color-primary/);
+    await expect.poll(preview).toContain("--color-primary");
     await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.4, { steps: 30 });
     await page.mouse.up();
     const observed = await takeObserved();
     // Escape: the theme as it was, and no step.
     await page.keyboard.press("Escape");
-    await expect(preview).toHaveText("");
+    await expect.poll(preview).toBe("");
+    if (shownTab !== null) {
+      await rightPanels.getByRole("tab", { name: shownTab.trim(), exact: true }).click();
+    }
 
     const longestMs = Math.round(Math.max(0, ...observed.longTasks));
     results.themeColourDrag = { longestMs, ...observed };
