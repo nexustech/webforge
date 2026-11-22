@@ -30,6 +30,7 @@ function setUp(
     readonly graphic?: boolean;
     readonly name?: string;
     readonly site?: SiteDoc;
+    readonly themeOnly?: boolean;
   } = {},
 ) {
   const session = sessionWith(options.site);
@@ -47,6 +48,7 @@ function setUp(
         onChange={onChange}
         onCommit={onCommit}
         session={session}
+        themeOnly={options.themeOnly}
         textStyles={options.textStyles === undefined ? undefined : () => options.textStyles ?? []}
         surface={options.surface === undefined ? undefined : () => options.surface as Surface}
         graphic={options.graphic === undefined ? undefined : () => options.graphic === true}
@@ -158,6 +160,13 @@ describe("ColourField (1.37, UX-25, ADR 0009)", () => {
 
     expect(screen.queryByText(/Hard to read/)).toBeNull();
     expect(screen.queryByRole("button", { name: /shade/ })).toBeNull();
+  });
+
+  it("offers the theme's colours only for a look, which holds no one-off (ADR 0009)", () => {
+    const { names } = setUp("primary", { themeOnly: true });
+
+    expect(names()).not.toContain("Another colour…");
+    expect(screen.queryByRole("button", { name: "Another colour" })).toBeNull();
   });
 
   it("offers the site's one-off colours in its picker, read from the site (TC-2)", async () => {

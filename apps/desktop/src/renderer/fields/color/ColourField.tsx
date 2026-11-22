@@ -47,6 +47,11 @@ import { useDocument } from "../../editor/use-document.js";
 export type ColourFieldContext = {
   readonly session: Pick<EditorSession, "history">;
   /**
+   * The theme's colours only, without _Another colour…_: a look's, which a one-off doesn't belong
+   * to (ADR 0009).
+   */
+  readonly themeOnly?: boolean | undefined;
+  /**
    * The text styles of the element being edited (a Heading's h2, a Text's body; one per device if
    * they differ), which set how much contrast it needs; the stricter 4.5:1 while none is known.
    */
@@ -159,7 +164,8 @@ const swatchStyle = (colour: string): CSSProperties => ({ "--swatch": colour }) 
  * site shows them, by their glossary names; then a shade of the one chosen, and its opacity. In
  * either mode (TC-2, #1219), _Another colour…_: one of the field's own (hex), chosen in the colour
  * picker, which offers the site's other one-off colours, marked off the theme, which theme changes
- * leave as it is; a shade of it that reads is suggested when it doesn't. Below them, a warning when the colour is hard to read on the page (below what WCAG AA
+ * leave as it is; a shade of it that reads is suggested when it doesn't. Below them, a warning
+ * when the colour is hard to read on the page (below what WCAG AA
  * asks of text of its size, `contrastNeeded`, or 3:1 of an icon or logo), measured on what the
  * text is drawn on: a Reversed section's colours or an Appearance background (#670); none over a
  * picture behind the content (a section's background image, a Hero's), whose colours can't be
@@ -174,6 +180,7 @@ export function ColourField({
   onChange,
   onCommit,
   session,
+  themeOnly = false,
   textStyles,
   surface: surfaceOfField,
   graphic: isGraphic,
@@ -218,11 +225,13 @@ export function ColourField({
     });
   }
   // A colour of the field's own, in either mode (TC-2): what it costs is shown, not forbidden.
-  swatches.push({
-    value: CUSTOM,
-    label: t("colour.custom"),
-    ...(hex === undefined ? {} : { colour: hex }),
-  });
+  if (!themeOnly) {
+    swatches.push({
+      value: CUSTOM,
+      label: t("colour.custom"),
+      ...(hex === undefined ? {} : { colour: hex }),
+    });
+  }
 
   // On what the text is drawn on, in that surface's colours (#670).
   const surface = surfaceOfField?.() ?? { palette: "colors", background: theme.colors["base-100"] };
@@ -261,6 +270,7 @@ export function ColourField({
       ? undefined
       : nearestReadable(hexToOklch(hex), (shade) => ratioOf(shade) >= needed);
   const readableHex = readable === undefined ? undefined : hexOf(readable);
+  const darker = readable !== undefined && hex !== undefined && readable.l < hexToOklch(hex).l;
 
   return (
     <div className="flex flex-col gap-2">
@@ -318,7 +328,7 @@ export function ColourField({
                 className="size-3.5 shrink-0 rounded-sm border border-border-strong bg-(--swatch)"
                 style={swatchStyle(readableHex)}
               />
-              {t(readable.l < hexToOklch(hex).l ? "colour.darker" : "colour.lighter")}
+              {t(darker ? "colour.darker" : "colour.lighter")}
             </button>
           )}
           <p className="m-0 text-xs text-muted-foreground">{t("colour.offTheme")}</p>
