@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { applyCustomCss, applySiteStyles } from "./site-styles.js";
+import { applyCustomCss, applySiteStyles, applyThemePreviewCss } from "./site-styles.js";
 
 describe("applySiteStyles", () => {
   it("keeps one site <style> first in the head and updates it in place", () => {
@@ -47,7 +47,9 @@ describe("applyCustomCss (6.8)", () => {
         ? "site"
         : element.hasAttribute("data-webforge-custom-css")
           ? "custom"
-          : "puck",
+          : element.hasAttribute("data-webforge-theme-preview")
+            ? "preview"
+            : "puck",
     );
 
   it("keeps the site's own CSS right after its compiled CSS, whichever comes first", () => {
@@ -65,5 +67,21 @@ describe("applyCustomCss (6.8)", () => {
     expect(doc.head.querySelector("style[data-webforge-custom-css]")?.textContent).toBe(
       ".mine{color:red}",
     );
+  });
+
+  it("puts a theme being chosen between the site's CSS and its own, in whatever order they come (5.30)", () => {
+    const doc = document.implementation.createHTMLDocument();
+    const puck = doc.createElement("style");
+    doc.head.append(puck);
+
+    applyThemePreviewCss(doc, ":root{--color-primary:red}");
+    applyCustomCss(doc, ".mine{}");
+    applySiteStyles(doc, { css: ".a{}", bodyClass: "" });
+    expect(order(doc)).toEqual(["site", "preview", "custom", "puck"]);
+
+    applySiteStyles(doc, { css: ".b{}", bodyClass: "" });
+    applyThemePreviewCss(doc, "");
+    expect(order(doc)).toEqual(["site", "preview", "custom", "puck"]);
+    expect(doc.head.querySelector("style[data-webforge-theme-preview]")?.textContent).toBe("");
   });
 });
