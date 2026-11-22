@@ -62,7 +62,7 @@ Clicking a colour's swatch opens {appName}'s colour picker, the same on Windows 
 - Click the eyedropper beside the code, then click a colour on your screen, such as your logo, to take it. Press Escape to stop without taking one.
 - With the keyboard, the arrow keys move in the square and along the strip; hold Shift to move further.
 
-The colour is chosen when the picker closes: click the swatch again, or anywhere outside it. Press Escape to close it and keep the colour you had. Each colour you choose is one step you can undo.
+While you drag, type or pick a theme colour, or one of [your colours](#your-colours), your pages show it straight away, on the canvas and in Theme Studio's sample page, so you can see it on your own site before you settle on it. The colour is chosen when the picker closes: click the swatch again, or anywhere outside it. Press Escape to close it and keep the colour you had: your pages show it again. Each colour you choose is one step you can undo, however long you dragged.
 
 ### In Advanced mode
 
@@ -100,6 +100,7 @@ Besides the theme's five colours, you can keep your business's own colours in th
 - Type a new name in its box and press Enter. Renaming a colour changes nothing on your pages: everything that uses it keeps using it.
 - Once you have six or more, **Find a colour by name** narrows the list.
 - A theme can have up to 200 of your colours.
+- A colour your site already uses that isn't in your theme can be added from the Edit panel with **Add to Your Colours…**, and everything that uses it then uses your colour ([Colours](styling.md#colours)).
 
 Your colours are in every colour picker on the Edit panel, under **Your colours**, with their shades and opacity, and either end of a gradient can be one ([Colours](styling.md#colours)). Change one in Theme Studio and everything that uses it changes too.
 

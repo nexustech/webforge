@@ -14,7 +14,7 @@ import { type Oklch, OWN_COLOR_NAME_MAX, OWN_COLORS_MAX, type OwnColor } from "@
 import { hexOf, hexToOklch, type OwnColorIssue } from "@webforge/themes";
 import { PlusIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react";
 import { useId, useState } from "react";
-import { shownRatio } from "../../fields/index.js";
+import { shownRatio, type ThemeColorPreview } from "../../fields/index.js";
 import { type OwnColorUses, ROLE_NAMES } from "../theme-edits.js";
 
 /** Props of {@link StudioOwnColours}. */
@@ -28,6 +28,8 @@ export type StudioOwnColoursProps = {
   /** How many times colour `id` is used across the site. */
   readonly usesOf: (id: string) => number;
   readonly onDelete: (id: string, uses: OwnColorUses) => void;
+  /** What shows colour `id` while it's dragged in its picker (5.30). */
+  readonly preview?: ((id: string) => ThemeColorPreview) | undefined;
   /** The colours hard to read as text on a surface (`ownColorIssues`), each said under it. */
   readonly issues?: readonly OwnColorIssue[] | undefined;
 };
@@ -131,6 +133,8 @@ export function StudioOwnColours(props: StudioOwnColoursProps) {
                     value={hexOf(colour.color)}
                     aria-label={t("theme.studio.own.colour", { name: colour.name })}
                     onChoose={(hex) => props.onSetColor(colour.id, hexToOklch(hex))}
+                    onPreview={(hex) => props.preview?.(colour.id).show(hexToOklch(hex))}
+                    onPreviewEnd={(chosen) => props.preview?.(colour.id).end(chosen)}
                   />
                   <input
                     // A new key once renamed elsewhere (undo): the field shows the name as it is.

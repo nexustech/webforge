@@ -5,8 +5,8 @@ import { userEvent, within } from "storybook/test";
 import type { OwnTheme } from "../../../shared/ipc/themes.js";
 import { starterSite } from "../../../shared/starter-site.js";
 import type { ItemPreviews } from "../../editor/areas.js";
+import { createOwnThemes } from "../../editor/own-themes.js";
 import { dialogStory } from "../../testing/stories.js";
-import { createOwnThemes } from "../own-themes.js";
 import { createStudio, type StudioSection } from "./studio-state.js";
 import { ThemeStudio } from "./ThemeStudio.js";
 

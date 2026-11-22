@@ -12,6 +12,7 @@ import {
   type RenderContext,
   renderNodesToHtml,
 } from "@webforge/site-components";
+import { themeValuesCss } from "@webforge/themes";
 import {
   type ReactNode,
   type RefObject,
@@ -23,6 +24,7 @@ import {
 } from "react";
 import type { AddItem } from "../editor/add-item.js";
 import { type CompileCanvasCss, classesOfHtml, SITE_CSS_DEBOUNCE_MS } from "../editor/site-css.js";
+import type { ThemePreview, ThemePreviewStore } from "../editor/theme-preview.js";
 import { reportFailure } from "../log.js";
 
 /**
@@ -90,6 +92,11 @@ export type PreviewSource = {
    * or shared section has changed (#613); without it, only when drawn anew.
    */
   readonly subscribe?: ((listener: () => void) => () => void) | undefined;
+  /**
+   * A theme colour being dragged (5.30, OL-18), shown over each item preview's CSS with no compile:
+   * Theme Studio's sample page follows the drag as the canvas does.
+   */
+  readonly themePreview?: ThemePreviewStore | undefined;
 };
 
 /** A subscription that never calls: for a source without one. */
@@ -432,8 +439,26 @@ function useWidth(element: RefObject<HTMLElement | null>, fallback: number): num
  * scripts (an empty `sandbox` but for reading its height); the markup is the site library's static
  * HTML, as the export writes it.
  */
-function ItemFrame({ drawn, device }: { readonly drawn: Drawn; readonly device: ItemDevice }) {
+function ItemFrame({
+  drawn,
+  device,
+  themePreview,
+}: {
+  readonly drawn: Drawn;
+  readonly device: ItemDevice;
+  readonly themePreview?: ThemePreviewStore | undefined;
+}) {
   const frame = useRef<HTMLIFrameElement>(null);
+  const preview = useSyncExternalStore(
+    themePreview?.subscribe ?? NO_CHANGES,
+    () => themePreview?.getState().preview,
+  );
+  // A colour being dragged, over the drawing's CSS; once chosen, kept until the item is drawn again
+  // with it (a new frame), so it never flicks back.
+  useEffect(() => {
+    const document = frame.current?.contentDocument;
+    if (document !== null && document !== undefined) showPreview(document, preview);
+  }, [preview]);
   const place = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
   const width = ITEM_WIDTHS[device];
@@ -446,6 +471,10 @@ function ItemFrame({ drawn, device }: { readonly drawn: Drawn; readonly device: 
   ].join("");
   // Its height once drawn, and again once its fonts have loaded.
   const measure = () => {
+    const document = frame.current?.contentDocument;
+    if (document !== null && document !== undefined && preview?.chosen === false) {
+      showPreview(document, preview);
+    }
     const body = frame.current?.contentDocument?.body;
     if (body === undefined || body === null) return;
     setHeight(body.scrollHeight);
@@ -477,6 +506,29 @@ function ItemFrame({ drawn, device }: { readonly drawn: Drawn; readonly device: 
   );
 }
 
+/** Marks the `<style>` element an item preview shows a theme being chosen in (5.30). */
+const PREVIEW_STYLE = "data-webforge-theme-preview";
+
+/**
+ * Shows `preview` in an item preview's `document`: a colour being dragged, its theme's values after
+ * the drawing's CSS; a chosen one is left as it is, until the item is drawn again with it; none
+ * takes the values away.
+ */
+function showPreview(document: Document, preview: ThemePreview): void {
+  if (preview?.chosen === true) return;
+  let style = document.head.querySelector<HTMLStyleElement>(`style[${PREVIEW_STYLE}]`);
+  if (preview === undefined) {
+    style?.remove();
+    return;
+  }
+  if (style === null) {
+    style = document.createElement("style");
+    style.setAttribute(PREVIEW_STYLE, "");
+    document.head.append(style);
+  }
+  style.textContent = themeValuesCss(preview.theme);
+}
+
 /**
  * Draws an item, in `theme` when given (a draft look, 4.10), else the site's: the same drawing for
  * every device while the item and theme are the same.
@@ -492,11 +544,13 @@ function ItemPreview({
   node,
   device,
   theme,
+  themePreview,
 }: {
   readonly draw: ItemDrawer;
   readonly node: NodeDoc;
   readonly device: ItemDevice;
   readonly theme?: Theme | undefined;
+  readonly themePreview?: ThemePreviewStore | undefined;
 }) {
   const [drawn, setDrawn] = useState<Drawn | undefined>(undefined);
   const drawnOnce = useRef(false);
@@ -520,7 +574,7 @@ function ItemPreview({
   return drawn === undefined ? (
     <div aria-hidden className="w-full" style={{ height: ITEM_PLACEHOLDER_HEIGHT }} />
   ) : (
-    <ItemFrame drawn={drawn} device={device} />
+    <ItemFrame drawn={drawn} device={device} themePreview={themePreview} />
   );
 }
 
@@ -552,6 +606,12 @@ export function createItemPreviews(
     return drawing;
   };
   return (node, device, theme) => (
-    <ItemPreview draw={draw} node={node} device={device} theme={theme} />
+    <ItemPreview
+      draw={draw}
+      node={node}
+      device={device}
+      theme={theme}
+      themePreview={source.themePreview}
+    />
   );
 }

@@ -16,8 +16,10 @@ import {
   type ResolvedImage,
   renderNodesToHtml,
 } from "@webforge/site-components";
+import { themeValuesCss } from "@webforge/themes";
 import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
 import type { EditorSession } from "./editor-session.js";
+import { themePreviewOf } from "./theme-preview.js";
 
 /** Compiles canvas CSS; in the app, `window.webforge.canvas.compileCss`. */
 export type CompileCanvasCss = (request: CanvasCssRequest) => Promise<CanvasCssResult>;
@@ -241,6 +243,10 @@ function shownClasses(site: SiteDoc, session: EditorSession, pageId: PageId): st
  * what the canvas shows (the Header, the Footer and the shown page, again if another is shown
  * meanwhile), and the other pages' classes are collected one page at a time between the editor's
  * other work, then compiled with the rest, before the person is likely to show another page.
+ *
+ * A theme colour being dragged in a picker (5.30, OL-18) shows at once, its values laid over the
+ * compiled CSS with no compile; once chosen, they stay until the CSS compiled with the change is
+ * shown, so the canvas never flicks back to the colour it had.
  */
 export function connectSiteCss(
   engine: CanvasEngine,
@@ -265,6 +271,24 @@ export function connectSiteCss(
   let sent = 0;
   let shown = 0;
   let stopped = false;
+  /** The site's theme under the latest colour shown, while a preview is shown on the canvas. */
+  let previewFrom: SiteDoc["theme"] | undefined;
+  const previews = themePreviewOf(session);
+  const endPreview = () => {
+    if (previewFrom === undefined) return;
+    previewFrom = undefined;
+    engine.setThemePreviewCss("");
+  };
+  const stopPreview = previews.subscribe(({ preview }) => {
+    if (preview === undefined) {
+      endPreview();
+    } else if (!preview.chosen) {
+      // The theme as it is now: an earlier choice's CSS, still compiling, doesn't end this one.
+      previewFrom = session.history.document.getState().theme;
+      engine.setThemePreviewCss(themeValuesCss(preview.theme));
+    }
+    // Chosen: kept until the CSS compiled with the change is shown (below).
+  });
 
   /** Collects one more list's classes, from the latest document, then the next after a pause. */
   const collectNext = () => {
@@ -337,6 +361,8 @@ export function connectSiteCss(
         // The first styles needn't wait for the whole site's (#895), nor any for the latest edit's.
         shown = order;
         engine.setSiteCss(result.css, result.bodyClass);
+        // The chosen colour is in the site's CSS now: the preview over it can go.
+        if (previews.getState().preview?.chosen === true && key.theme !== previewFrom) endPreview();
       }
     }, failed);
   };
@@ -348,6 +374,7 @@ export function connectSiteCss(
   });
   return () => {
     stopped = true;
+    stopPreview();
     if (timer !== null) clearTimeout(timer);
     if (collecting !== null) clearTimeout(collecting);
     stopShown();

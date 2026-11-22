@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { createStore } from "zustand/vanilla";
 import { starterSite } from "../../../shared/starter-site.js";
 import { sessionWith } from "../../testing/fixtures.js";
 import { colourFieldRenderer } from "./ColourField.js";
@@ -15,6 +16,15 @@ withOwn.theme.ownColors = [
   { id: "cfern", name: "Fern", color: { l: 0.58, c: 0.13, h: 145 } },
 ];
 const OwnColours = colourFieldRenderer({ session: sessionWith(withOwn) });
+// A one-off used twice: offered as one of the person's colours (TC-3, #1221).
+const Offering = colourFieldRenderer({
+  session,
+  toOwn: {
+    uses: () => 2,
+    add: async () => true,
+    declined: createStore<readonly string[]>(() => []),
+  },
+});
 const Simple = colourFieldRenderer({ session });
 
 const meta = {
@@ -72,6 +82,22 @@ export const YourColours: Story = {
         Text colour
       </span>
       <OwnColours {...args} />
+    </div>
+  ),
+};
+
+/**
+ * A one-off used twice on the site, offered as one of the person's colours (TC-3, #1221): named
+ * there and then, or *Not Now*.
+ */
+export const AddToYourColours: Story = {
+  args: { value: "[#1f6feb]/50" },
+  render: (args) => (
+    <div className="flex w-60 flex-col gap-1 border border-border-strong bg-panel p-2">
+      <span id="field-colour-label" className="text-xs text-muted-foreground">
+        Text colour
+      </span>
+      <Offering {...args} />
     </div>
   ),
 };

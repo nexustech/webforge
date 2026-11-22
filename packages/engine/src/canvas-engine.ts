@@ -351,6 +351,12 @@ export interface CanvasEngine {
    */
   setCustomCss(css: string): void;
   /**
+   * Shows a theme being chosen (5.30, OL-18): `css`, the theme's values as `themeValuesCss` writes
+   * them, over the site's compiled CSS with no compile, as a colour is dragged in a picker; before
+   * `custom.css`. An empty string ends it, showing the site's CSS alone.
+   */
+  setThemePreviewCss(css: string): void;
+  /**
    * Shows the site's Media images on the canvas (1.16): `image` turns a placed image's media id
    * into an image to show, or `null`; `emptyImage` is what an Image element without its image shows
    * instead (2.9, a hint). Called again when Media changes; the elements whose image changed draw
