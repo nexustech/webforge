@@ -4,7 +4,7 @@ id: themes
 title: Themes, colours and fonts
 summary: Change your whole site's colours, fonts, corners and spacing at once, in the Theme panel or Theme Studio.
 related: [styling, templates, media]
-updated: 2026-11-21
+updated: 2026-11-22
 ---
 
 # Themes, colours and fonts
@@ -83,7 +83,7 @@ Built-in themes never change. The first time you change one, {appName} saves **y
 **Open Theme Studio**, at the top of the Theme panel (or **Site › Theme Studio…**), shows the whole theme in a window that fills {appName}'s window. Its parts are tabs at the top:
 
 - **Themes:** every theme drawn in its own colours and fonts, to compare. Create a **New Theme…** from any theme, and rename or delete your own.
-- **Colours:** every colour and its shades, for the page and for reversed sections side by side. **Colours from an Image…** suggests brand colours from your logo or a photo in Media.
+- **Colours:** every colour and its shades, for the page and for reversed sections side by side, and [your colours](#your-colours). **Colours from an Image…** suggests brand colours from your logo or a photo in Media.
 - **Text:** size, weight and line spacing for each kind of text.
 - **Styles:** corners, shadows and the other settings, drawn as examples.
 - **Components:** the look of every kind of section and element across the site, such as every Button or every card. Choose which kind from the list beside the tabs. A gradient is added as in **Style This…**: choose its direction, and it starts as Brand to Accent ([Gradients](styling.md#gradients)).
@@ -91,6 +91,24 @@ Built-in themes never change. The first time you change one, {appName} saves **y
 Above Colours, Text and Styles, a sample page shows your theme on Desktop and Mobile as you change it. It stays in view while you scroll the settings. To give it more room, drag the line under it, or select the line and use the arrow keys.
 
 In **Components**, the kind you chose is shown in the same place. Your changes stay a draft until you click **Apply Changes** in the bar at the bottom, or **Discard** them. **Theme now** and **With your changes** above the preview compare the look before and after.
+
+### Your colours
+
+Besides the theme's five colours, you can keep your business's own colours in the theme, such as the green of your shop sign, each with a name. They're listed under **Your colours** at the top of Theme Studio's **Colours** tab:
+
+- **Add a Colour** adds one, named "Colour 1", "Colour 2" and so on, starting as your Brand colour. Click its swatch to choose its colour in the [colour picker](#the-colour-picker).
+- Type a new name in its box and press Enter. Renaming a colour changes nothing on your pages: everything that uses it keeps using it.
+- Once you have six or more, **Find a colour by name** narrows the list.
+- A theme can have up to 200 of your colours.
+
+Your colours are in every colour picker on the Edit panel, under **Your colours**, with their shades and opacity, and either end of a gradient can be one ([Colours](styling.md#colours)). Change one in Theme Studio and everything that uses it changes too.
+
+**Delete** removes a colour. If nothing uses it, it goes straight away. If something does, {appName} says how many times, and asks what to do with them:
+
+- **Use That Colour** gives them another of your colours, chosen in the list, with the same shade and opacity.
+- **Keep Each as It Looks** keeps each one in the colour it has now, as a colour of its own that doesn't change with the theme.
+
+Adding, renaming, changing and deleting a colour are each one step you can undo. [AI apps](ai-apps.md) can use your colours too.
 
 ## Fonts
 

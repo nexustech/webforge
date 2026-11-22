@@ -50,10 +50,10 @@ body:
     validations:
       required: false
   - type: textarea
-    id: crash-report
+    id: diagnostics
     attributes:
-      label: Crash report (optional)
+      label: Diagnostics report
       description: |
-        If Webforge closed unexpectedly, it saved a crash report on your computer. Choose **Help › Open Crash Reports Folder** and drag the newest file here. A crash report holds no site content or personal details. See [Sharing a crash report](https://github.com/nexustech/webforge/blob/main/docs/help/saving-and-backups.md#sharing-a-crash-report).
+        It helps us most when it comes with every report, and it holds your newest crash reports too, so there's no need to attach those as well. Choose **Help › Diagnostics…**, look through what it holds, click **Save Report…**, then drag the file it saves here. It holds what Webforge has counted on your computer, such as how many sites you exported, and your newest crash reports: nothing of your sites, and nothing private, so it's safe here, where anyone can read it. See [What Webforge counts on your computer](https://github.com/nexustech/webforge/blob/main/docs/help/saving-and-backups.md#what-appname-counts-on-your-computer).
     validations:
       required: false

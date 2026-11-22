@@ -463,6 +463,28 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
     expect(labels()).toEqual(["Changed the theme's look for Button"]);
   });
 
+  it("offers your colours in a look's colour fields, but no one-off (TC-1b, ADR 0009)", async () => {
+    const { session, button, theme, user } = onButton();
+    act(() =>
+      session.edit("root", "Added colour 'Harbour blue'", (draft) => {
+        draft.theme.ownColors = [
+          { id: "csky", name: "Harbour blue", color: { l: 0.62, c: 0.14, h: 240 } },
+        ];
+      }),
+    );
+    // Every colour field of the look lists it under Your colours; none offers another colour.
+    const yours = button().getAllByRole("radio", { name: "Harbour blue" });
+    expect(yours.length).toBeGreaterThan(0);
+    expect(button().getAllByText("Your colours").length).toBe(yours.length);
+    expect(button().queryByRole("radio", { name: "Another colour…" })).toBeNull();
+
+    const [first] = yours;
+    if (first === undefined) throw new Error("no colour field");
+    await user.click(first);
+    await user.click(screen.getByRole("button", { name: "Apply Changes" }));
+    expect(JSON.stringify(theme().looks?.Button)).toContain('"own-csky"');
+  });
+
   it("applies only its own changes, keeping one made to the look since it began (review)", async () => {
     const { session, dialog, button, theme, user } = onButton();
     await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
