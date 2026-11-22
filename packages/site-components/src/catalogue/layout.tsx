@@ -105,16 +105,13 @@ function NavItems({ items }: { readonly items: readonly NavItem[] }) {
  */
 function HeaderNavigation({
   items,
-  menuItems,
   menuButton,
   menuOpen,
   className,
   siteText,
 }: {
-  /** The items in the row on wide screens. */
+  /** The menu's items: in the row on wide screens, and in the menu on small ones. */
   readonly items: readonly NavItem[];
-  /** The items in the menu on small screens. */
-  readonly menuItems: readonly NavItem[];
   /** The Header's own button, last in the small screens' menu (HF-2). */
   readonly menuButton?: ReactNode;
   /** Shows the small screens' menu open: the canvas's *Show mobile menu* preview (UX-26). */
@@ -137,7 +134,7 @@ function HeaderNavigation({
           <span className="sr-only">{siteText("siteText.menu")}</span>
         </summary>
         <ul className="menu absolute inset-x-0 top-full z-10 w-full bg-base-100 p-2 shadow">
-          <NavItems items={menuItems} />
+          <NavItems items={items} />
           {menuButton}
         </ul>
       </details>
@@ -305,7 +302,6 @@ const header = defineComponent({
         )}
         <HeaderNavigation
           items={items}
-          menuItems={items}
           menuButton={menuButton}
           menuOpen={context.previews?.mobileMenu === true}
           siteText={context.siteText}
