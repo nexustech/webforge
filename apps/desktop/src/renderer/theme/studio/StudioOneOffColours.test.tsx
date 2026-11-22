@@ -16,11 +16,11 @@ function shown(props: Partial<StudioOneOffColoursProps> = {}) {
       {
         hex: "#1f6feb",
         uses: [
-          { key: "a", where: "Heading on Home" },
-          { key: "b", where: "Button in the Header" },
+          { key: "a", where: "Heading on Home", canShow: true },
+          { key: "b", where: "Button in the Header", canShow: true },
         ],
       },
-      { hex: "#c0392b", uses: [{ key: "c", where: "Text on About" }] },
+      { hex: "#c0392b", uses: [{ key: "c", where: "Text on About", canShow: true }] },
     ],
     own: [SKY],
     nearest: () => SKY,
@@ -52,6 +52,29 @@ describe("StudioOneOffColours (5.32, TC-4)", () => {
       within(where).getByRole("button", { name: "Show Button in the Header on the page" }),
     );
     expect(onShow).toHaveBeenCalledWith("#1f6feb", "b");
+  });
+
+  it("shows a use that can't be gone to as text, saying why", () => {
+    shown({
+      colours: [
+        {
+          hex: "#1f6feb",
+          uses: [
+            { key: "a", where: "Heading on Home", canShow: true },
+            { key: "b", where: "Text in the shared section Hours", canShow: false },
+          ],
+        },
+      ],
+    });
+    const where = screen.getByRole("list", { name: "Where #1f6feb is used" });
+    expect(
+      within(where)
+        .getAllByRole("button")
+        .map((each) => each.textContent),
+    ).toEqual(["Heading on Home"]);
+    expect(within(where).getAllByRole("listitem")[1]?.textContent).toBe(
+      "Text in the shared section Hours (not on any page)",
+    );
   });
 
   it("uses the nearest of the person's colours instead, or offers none while they have none", async () => {

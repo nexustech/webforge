@@ -176,15 +176,14 @@ export function rewriteOwnColorUses(
 }
 
 /**
- * How many times one-off colour `hex` is used across `site` (TC-3, #1221), at any opacity: by
- * elements and list items. Its second use is when it's offered as one of the person's colours.
+ * How many times one-off colour `hex` is used across `site` (TC-3, #1221), at any opacity: each
+ * element's or list item's field that has it, once, however many devices it's set for, as Theme
+ * Studio's list counts them (TC-4). Its second use is when it's offered as one of the person's
+ * colours.
  */
 export function countOneOffUses(site: SiteDoc, hex: string, isColorField: IsColorField): number {
-  let uses = 0;
-  eachUseHolder(site, (props, type) => {
-    uses += rewriteProps(props, type, usesOneOff(hex), isColorField);
-  });
-  return uses;
+  const wanted = hex.toLowerCase();
+  return oneOffUsesIn(site, isColorField).find((each) => each.hex === wanted)?.uses.length ?? 0;
 }
 
 /**

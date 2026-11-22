@@ -22,7 +22,7 @@ import type { ItemPreviews } from "../../editor/areas.js";
 import type { EditorSession } from "../../editor/editor-session.js";
 import { elementPlaceName } from "../../editor/element-place.js";
 import type { OwnThemes } from "../../editor/own-themes.js";
-import { showElement } from "../../editor/show-element.js";
+import { canShowElement, showElement } from "../../editor/show-element.js";
 import { endThemePreview, previewTheme } from "../../editor/theme-preview.js";
 import { useDocument } from "../../editor/use-document.js";
 import { addFontPreviews, ColourField, type ThemeColorPreview } from "../../fields/index.js";
@@ -413,6 +413,7 @@ export function ThemeStudio({
                     key: keyOfUse(use),
                     where:
                       doc === undefined ? "" : elementPlaceName(doc, library, use.on, use.nodeId),
+                    canShow: canShowElement(session, use.on, use.nodeId),
                   })),
                 }))}
                 own={theme.ownColors ?? []}
@@ -425,7 +426,9 @@ export function ThemeStudio({
                   const use = oneOffs
                     .find((each) => each.hex === hex)
                     ?.uses.find((each) => keyOfUse(each) === key);
-                  if (use !== undefined) closeThen(() => showElement(session, use.on, use.nodeId));
+                  if (use !== undefined && canShowElement(session, use.on, use.nodeId)) {
+                    closeThen(() => showElement(session, use.on, use.nodeId));
+                  }
                 }}
               />
               <StudioColours

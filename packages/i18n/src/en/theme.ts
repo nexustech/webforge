@@ -206,6 +206,8 @@ export const theme = {
   "theme.studio.oneOff.uses.other": "Used {count} times",
   "theme.studio.oneOff.where": "Where {hex} is used",
   "theme.studio.oneOff.show": "Show {where} on the page",
+  // A use that can't be shown: in a shared section placed on no page, or a design with no posts.
+  "theme.studio.oneOff.notShown": "(not on any page)",
   "theme.studio.oneOff.add": "Add to Your Colours…",
   "theme.studio.oneOff.nearest": "Use {name} Instead",
   "theme.studio.oneOff.nearestLabel":
@@ -289,6 +291,9 @@ export const theme = {
   "theme.image.dismiss": "Not Now",
   "theme.changed.image.one": "Colours from '{name}' used on 1 page",
   "theme.changed.image.other": "Colours from '{name}' used on {count} pages",
+  // The nearest of the person's colours used for a one-off everywhere (TC-4, #1222).
+  "theme.changed.oneOffToNearest.one": "'{name}' used in place of {hex} on 1 page",
+  "theme.changed.oneOffToNearest.other": "'{name}' used in place of {hex} on {count} pages",
 
   // Undo steps (D2): one per change, named for what changed.
   "theme.history.preset": "Changed theme to '{name}'",

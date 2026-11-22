@@ -34,12 +34,12 @@ export const Some: Story = {
       {
         hex: "#1f6feb",
         uses: [
-          { key: "a", where: "Heading on Home" },
-          { key: "b", where: "Button in the Header" },
-          { key: "c", where: "Icon list in the shared section Opening hours" },
+          { key: "a", where: "Heading on Home", canShow: true },
+          { key: "b", where: "Button in the Header", canShow: true },
+          { key: "c", where: "Icon list in the shared section Opening hours", canShow: false },
         ],
       },
-      { hex: "#c0392b", uses: [{ key: "d", where: "Text on About" }] },
+      { hex: "#c0392b", uses: [{ key: "d", where: "Text on About", canShow: true }] },
     ],
   },
 };

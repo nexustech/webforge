@@ -947,6 +947,8 @@ describe("a one-off given the nearest of your colours (TC-4, #1222)", () => {
 
   it("gives every use the nearest, keeping opacity, in one step undo reverses", async () => {
     const { session, labels, theme } = setUp();
+    const said = toastsOf(session);
+    const pages = Object.keys(session.history.document.getState().pages).length;
     const sky = await addOwnColor(session, undefined, "Sky", { l: 0.6, c: 0.17, h: 260 });
     await addOwnColor(session, undefined, "Brick", { l: 0.5, c: 0.16, h: 30 });
     twoUses(session);
@@ -955,6 +957,8 @@ describe("a one-off given the nearest of your colours (TC-4, #1222)", () => {
     expect(await applyNearestOwnColor(session, undefined, "#1f6feb", isColorField)).toBe("Sky");
     expect(backgrounds(session)).toEqual([`own-${sky}/50`, `own-${sky}`]);
     expect(labels().at(-1)).toBe("Used 'Sky' in place of #1f6feb");
+    // Its toast says how far it reached, with Undo (LF-15).
+    expect(said.at(-1)).toBe(`'Sky' used in place of #1f6feb on ${pages} pages`);
     // Nothing in the theme changed.
     expect(theme()).toEqual(themeBefore);
 

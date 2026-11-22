@@ -121,6 +121,20 @@ describe("a one-off colour across a site (TC-3, #1221)", () => {
     expect(countOneOffUses(siteWithOneOff(), "#123456", isColorField)).toBe(0);
   });
 
+  it("counts a field once when more than one device has it, as Theme Studio's list does (TC-4)", () => {
+    const doc = siteWithOneOff();
+    doc.pages[doc.homePageId]?.doc.content.push({
+      type: "Section",
+      props: {
+        id: "both",
+        lookBackground: { $responsive: { desktop: "[#1f6feb]", mobile: "[#1f6feb]/50" } },
+        content: [],
+      },
+    });
+    expect(countOneOffUses(doc, "#1f6feb", isColorField)).toBe(4);
+    expect(oneOffUsesIn(doc, isColorField)[0]?.uses).toHaveLength(4);
+  });
+
   it("makes every use one of the person's colours, keeping its opacity, and nothing else", () => {
     const doc = siteWithOneOff();
     expect(rewriteOneOffUses(doc, "#1f6feb", isColorField, toOwnColor("cblue"))).toBe(3);

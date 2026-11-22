@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DEFAULT_THEME, type Theme, themeIdSchema } from "@webforge/model";
+import { DEFAULT_THEME, type SharedSectionId, type Theme, themeIdSchema } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { OwnTheme, ThemesApi } from "../../../shared/ipc/themes.js";
 import { starterSite } from "../../../shared/starter-site.js";
@@ -566,6 +566,32 @@ describe("Theme Studio's colours outside your theme (5.32, TC-4)", () => {
 
     expect(studio.getState().open).toBe(false);
     expect(session.ui.getState().nodeId).toBe("blue-heading");
+  });
+
+  it("lists a use it can't go to as text, and stays open: a shared section placed on no page", () => {
+    const site = starterSite();
+    const hours = "hours" as SharedSectionId;
+    site.sharedSections[hours] = {
+      id: hours,
+      name: "Hours",
+      section: {
+        type: "Section",
+        props: {
+          id: "s",
+          content: [{ type: "Heading", props: { id: "h", text: "Hours", color: "[#c0392b]" } }],
+        },
+      },
+    };
+    const studio = createStudio();
+    studio.setState({ open: true, section: "colors" });
+    render(<ThemeStudio session={sessionWith(site)} studio={studio} />);
+
+    const where = within(screen.getByRole("listitem", { name: "#c0392b" })).getByRole("list", {
+      name: "Where #c0392b is used",
+    });
+    expect(within(where).queryByRole("button")).toBeNull();
+    expect(where.textContent).toContain("(not on any page)");
+    expect(studio.getState().open).toBe(true);
   });
 
   it("asks about a Components draft first, then goes to the use", async () => {

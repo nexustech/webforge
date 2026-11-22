@@ -5,8 +5,11 @@ import { oklchCss } from "@webforge/themes";
 import { useId, useState } from "react";
 import { AddToColours, newColourName } from "../../fields/index.js";
 
-/** A use of a one-off, as the list shows it: where it is, in words, and how to go to it. */
-type ShownUse = { readonly key: string; readonly where: string };
+/**
+ * A use of a one-off, as the list shows it: where it is, in words, and whether it can be gone to:
+ * not one in a shared section placed on no page, nor in a design with no posts.
+ */
+type ShownUse = { readonly key: string; readonly where: string; readonly canShow: boolean };
 
 /** A one-off colour on the site (`#rrggbb`) and its uses. */
 type ShownOneOff = { readonly hex: string; readonly uses: readonly ShownUse[] };
@@ -23,7 +26,7 @@ export type StudioOneOffColoursProps = {
   readonly onAdd: (hex: string, name: string) => Promise<boolean>;
   /** Gives every use of `hex` the nearest of the person's colours. */
   readonly onUseNearest: (hex: string) => void;
-  /** Goes to a use on the canvas, selected: Theme Studio closes first. */
+  /** Goes to a use that can be shown on the canvas, selected: Theme Studio closes first. */
   readonly onShow: (hex: string, key: string) => void;
 };
 
@@ -112,14 +115,23 @@ export function StudioOneOffColours(props: StudioOneOffColoursProps) {
                 >
                   {uses.map((use) => (
                     <li key={use.key}>
-                      <button
-                        type="button"
-                        className="min-h-6 text-left [overflow-wrap:anywhere] hover:underline focus-visible:underline"
-                        aria-label={t("theme.studio.oneOff.show", { where: use.where })}
-                        onClick={() => props.onShow(hex, use.key)}
-                      >
-                        {use.where}
-                      </button>
+                      {use.canShow ? (
+                        <button
+                          type="button"
+                          className="min-h-6 text-left [overflow-wrap:anywhere] hover:underline focus-visible:underline"
+                          aria-label={t("theme.studio.oneOff.show", { where: use.where })}
+                          onClick={() => props.onShow(hex, use.key)}
+                        >
+                          {use.where}
+                        </button>
+                      ) : (
+                        <span className="inline-flex min-h-6 items-center [overflow-wrap:anywhere]">
+                          {use.where}{" "}
+                          <span className="ml-1 text-muted-foreground">
+                            {t("theme.studio.oneOff.notShown")}
+                          </span>
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
