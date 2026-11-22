@@ -58,11 +58,12 @@ const screenshot = z.object({ data: z.string().min(1) });
  * wide as the device. The window goes once it's drawn, or fails, or takes too long.
  */
 export function createPageCapture(
-  createWindow: (width: number, height: number) => CaptureWindow,
+  /** A window `width` by `height`, which loads nothing but from `origin`, the page's own. */
+  createWindow: (width: number, height: number, origin: string) => CaptureWindow,
   timeoutMs = CAPTURE_MS,
 ): PageCapture {
   return async (url, width, kind) => {
-    const window = createWindow(width, WINDOW_HEIGHT);
+    const window = createWindow(width, WINDOW_HEIGHT, new URL(url).origin);
     const { webContents } = window;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const draw = async (): Promise<Capture> => {
@@ -134,19 +135,14 @@ export function createPageCapture(
 const CAPTURE_PARTITION = "webforge-capture";
 
 /**
- * Whether a page drawn may load `url`: the preview's own server on this computer, and what a page
- * makes itself. Nothing from the internet: a script or picture a site's own code asks for there
- * isn't fetched for a picture of it.
+ * Whether a page drawn may load `url`: from `origin`, the preview server's own on this computer,
+ * and what a page makes itself. Nothing from the internet, nor any other server on this computer:
+ * a picture a site's own code asks for there isn't fetched for a picture of it.
  */
-export function mayCaptureLoad(url: string): boolean {
+export function mayCaptureLoad(url: string, origin: string): boolean {
   try {
-    const { protocol, hostname } = new URL(url);
-    return (
-      protocol === "about:" ||
-      protocol === "data:" ||
-      protocol === "blob:" ||
-      (protocol === "http:" && hostname === "127.0.0.1")
-    );
+    const target = new URL(url);
+    return target.protocol === "about:" || target.protocol === "data:" || target.origin === origin;
   } catch {
     return false;
   }
@@ -160,14 +156,17 @@ export function mayCaptureLoad(url: string): boolean {
  */
 export function electronCaptureWindows(
   electron: Pick<AppElectron, "BrowserWindow" | "session">,
-): (width: number, height: number) => CaptureWindow {
+): (width: number, height: number, origin: string) => CaptureWindow {
   let hardened = false;
-  return (width, height) => {
+  // The page drawn now's origin: one drawing at a time (`Preview.render`).
+  let allowed = "";
+  return (width, height, origin) => {
+    allowed = origin;
     if (!hardened) {
       const capture = electron.session.fromPartition(CAPTURE_PARTITION);
       hardenSession(capture);
       capture.webRequest.onBeforeRequest((details, callback) => {
-        callback({ cancel: !mayCaptureLoad(details.url) });
+        callback({ cancel: !mayCaptureLoad(details.url, allowed) });
       });
       hardened = true;
     }

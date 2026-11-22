@@ -56,7 +56,8 @@ describe("createPageCapture (5.22)", () => {
 
     const drawn = await createPageCapture(create)("http://127.0.0.1:5001/x/index.html", 375, "png");
 
-    expect(create).toHaveBeenCalledWith(375, WINDOW_HEIGHT);
+    // Its window loads from the page's own origin only.
+    expect(create).toHaveBeenCalledWith(375, WINDOW_HEIGHT, "http://127.0.0.1:5001");
     expect(Buffer.from(drawn.data).subarray(1, 4).toString()).toBe("PNG");
     expect(drawn.cut).toBe(false);
     // An empty page first, which the debugger needs; scripts off and motion reduced before the
@@ -131,24 +132,28 @@ describe("createPageCapture (5.22)", () => {
 });
 
 describe("mayCaptureLoad (5.22)", () => {
-  it("loads the preview's own server on this computer, and what a page makes, nothing else", () => {
+  it("loads from the preview server's own origin, and what a page makes, nothing else", () => {
+    const origin = "http://127.0.0.1:5001";
     for (const url of [
       "http://127.0.0.1:5001/0123/__webforge/capture/index.html",
       "about:blank",
       "data:image/png;base64,AA==",
       "blob:http://127.0.0.1:5001/3f2a",
     ]) {
-      expect(mayCaptureLoad(url)).toBe(true);
+      expect(mayCaptureLoad(url, origin)).toBe(true);
     }
     for (const url of [
       "https://cdn.example.com/script.js",
+      // Another server on this computer: a site's code can't reach it through a picture.
+      "http://127.0.0.1:8080/admin/delete",
+      "blob:http://127.0.0.1:8080/3f2a",
       "http://192.168.1.23:5002/x/index.html",
       "http://localhost:5001/x/",
       "file:///C:/Users/sam/secret.txt",
       "webforge-app://editor/index.html",
       "not a url",
     ]) {
-      expect(mayCaptureLoad(url)).toBe(false);
+      expect(mayCaptureLoad(url, origin)).toBe(false);
     }
   });
 });

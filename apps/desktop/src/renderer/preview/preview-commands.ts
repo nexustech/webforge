@@ -2,6 +2,7 @@ import { t } from "@webforge/i18n";
 import { type PageId, pagePath, type SiteDoc } from "@webforge/model";
 import { type ComponentLibrary, siteContentFor } from "@webforge/site-components";
 import type { StoreApi } from "zustand/vanilla";
+import { DEVICE_SIZE } from "../../shared/ipc/prefs.js";
 import type {
   PageFileKind,
   PreviewApi,
@@ -172,33 +173,37 @@ export function registerPreviewCommands(
     };
   };
 
-  /** Saves the page shown as `kind`; both saves are off while one runs. */
-  const savePage = (kind: PageFileKind) =>
-    afterCode(() => {
-      const ids = [COMMAND_IDS.savePageImage, COMMAND_IDS.savePagePdf];
-      for (const id of ids) registry.update(id, { enabled: false });
-      const width = deps.width();
-      const { pageId } = session.ui.getState();
-      api
-        .savePage(sessionId(), content(), {
-          page: page(),
-          name: site().pages[pageId]?.title ?? "",
-          width,
-          kind,
-        })
-        .then((result) => {
-          const words = savedWords(result, width);
-          if (typeof words !== "string") deps.saved(...words);
-          else if (words !== "") notify(words);
-        })
-        .catch((error: unknown) => {
-          reportFailure("preview.savePage", error);
-          notify(t("preview.save.drawFailed"));
-        })
-        .finally(() => {
-          for (const id of ids) registry.update(id, { enabled: true });
-        });
-    });
+  /**
+   * Saves the page shown as `kind`; both saves are off while one runs. No question about the
+   * site's code first (#649): none of it runs in the window that draws the page, which loads
+   * nothing but the preview's own server, and the build has only the code that's trusted.
+   */
+  const savePage = (kind: PageFileKind) => {
+    const ids = [COMMAND_IDS.savePageImage, COMMAND_IDS.savePagePdf];
+    for (const id of ids) registry.update(id, { enabled: false });
+    // A Desktop as wide as a very wide screen is drawn at the widest device a canvas offers.
+    const width = Math.min(DEVICE_SIZE.max, Math.max(DEVICE_SIZE.min, Math.round(deps.width())));
+    const { pageId } = session.ui.getState();
+    api
+      .savePage(sessionId(), content(), {
+        page: page(),
+        name: site().pages[pageId]?.title ?? "",
+        width,
+        kind,
+      })
+      .then((result) => {
+        const words = savedWords(result, width);
+        if (typeof words !== "string") deps.saved(...words);
+        else if (words !== "") notify(words);
+      })
+      .catch((error: unknown) => {
+        reportFailure("preview.savePage", error);
+        notify(t("preview.save.drawFailed"));
+      })
+      .finally(() => {
+        for (const id of ids) registry.update(id, { enabled: true });
+      });
+  };
 
   const removers = [
     registry.register({

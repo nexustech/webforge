@@ -12,7 +12,7 @@ import { createExportFeature } from "./export-feature.js";
 import { createNetlifySignIns } from "./netlify-auth.js";
 import { netlifyFeature } from "./netlify-ipc.js";
 import { hasAddress, phoneAddressFor } from "./network-address.js";
-import { createPageCapture, electronCaptureWindows } from "./page-capture.js";
+import type { PageCapture } from "./page-capture.js";
 import { createPreviewBuilder } from "./preview-builder.js";
 import { createPreview, previewFeature, writePageFile } from "./preview-ipc.js";
 import { createPreviewServer } from "./preview-server.js";
@@ -97,12 +97,20 @@ export function siteOutput(deps: SiteOutputDeps) {
   const secrets = createPublishSecrets(deps.credentials);
   // The key files the person chose (4.3), by handle: Test connection and saving read them.
   const keys = createKeyFiles();
+  // Pages drawn as pictures or PDFs (5.22), once the first is.
+  let capture: Promise<PageCapture> | undefined;
   return {
     export: exportFeature,
     // A page saved as a picture or a PDF (5.22), drawn from a build of its own.
     preview: previewFeature(preview, {
       chooseFile: deps.dialogs.preview.choosePageFileToSave,
-      capture: createPageCapture(electronCaptureWindows(deps.electron)),
+      // Loaded when first used: main never needs it to start (#892).
+      capture: async (url, width, kind) => {
+        capture ??= import("./page-capture.js").then((loaded) =>
+          loaded.createPageCapture(loaded.electronCaptureWindows(deps.electron)),
+        );
+        return (await capture)(url, width, kind);
+      },
       write: writePageFile,
     }),
     // The open site's publish destinations (4.4a): the list in its file, sign-ins in the keychain.

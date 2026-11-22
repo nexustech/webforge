@@ -47,7 +47,12 @@ export type PreviewDeps = {
   readonly hasAddress: (address: string) => boolean;
   /** Tells the window the phone's listener stopped by itself: unused, or its network gone (S9). */
   readonly phoneStopped: () => void;
+  /** How long a page has to be built and drawn (5.22); {@link RENDER_MS} unless a test says. */
+  readonly renderMs?: number | undefined;
 };
+
+/** How long a page has to be built and drawn as a picture or a PDF, all told (5.22). */
+const RENDER_MS = 180_000;
 
 /** How often the phone's address is checked for, while a phone can open the preview. */
 const ADDRESS_CHECK_MS = 5_000;
@@ -173,11 +178,14 @@ export function createPreview(deps: PreviewDeps): Preview {
     stale = true;
   };
 
-  /** `site` built once, by a builder of its own so the editor's builds never drop it. */
-  const buildOnce = async (sessionId: string, site: SiteContent) => {
+  /**
+   * `site` built once, by a builder of its own so the editor's builds never drop it; none once
+   * `stopped`, whose builder then closes.
+   */
+  const buildOnce = async (sessionId: string, site: SiteContent, stopped?: AbortSignal) => {
     const job = await deps.jobFor(snapshotOf(site));
     const media = deps.site(sessionId);
-    return new Promise<PreviewOutcome>((resolve) => {
+    return new Promise<PreviewOutcome | undefined>((resolve) => {
       const builder = deps.startBuilder(
         (outcome) => {
           builder.close();
@@ -185,9 +193,53 @@ export function createPreview(deps: PreviewDeps): Preview {
         },
         (hash) => media.readMedia(hash),
       );
+      stopped?.addEventListener(
+        "abort",
+        () => {
+          builder.close();
+          resolve(undefined);
+        },
+        { once: true },
+      );
       builder.request(job);
     });
   };
+
+  /** Builds `site` once and draws `page` of it with `draw` (5.22): see {@link Preview.render}. */
+  async function drawOnce<T>(
+    sessionId: string,
+    site: SiteContent,
+    page: PreviewPage,
+    draw: (url: string) => Promise<T>,
+    stopped: AbortSignal,
+  ): Promise<T | undefined> {
+    if (!current(sessionId)) return undefined;
+    try {
+      if (running?.sessionId !== sessionId) await stop();
+      const { server } = await start(sessionId);
+      const built = await buildOnce(sessionId, site, stopped);
+      if (built?.type !== "previewed") {
+        if (built !== undefined) {
+          log.error("Webforge could not build a page to draw", { detail: built.detail });
+        }
+        return undefined;
+      }
+      // The site closed, or another opened, while it built: its server has stopped.
+      if (running?.server !== server || stopped.aborted) return undefined;
+      server.showCapture(built);
+      try {
+        const port = await server.listen("local");
+        return await draw(pageUrl("127.0.0.1", port, `${server.base}${CAPTURE_PATH}`, page));
+      } finally {
+        server.showCapture(undefined);
+      }
+    } catch (error) {
+      log.error("Webforge could not draw a page", {
+        code: error instanceof Error && "code" in error ? String(error.code) : "unknown",
+      });
+      return undefined;
+    }
+  }
 
   // One drawing at a time: each takes the server's capture files while it's drawn.
   let drawing: Promise<unknown> = Promise.resolve();
@@ -222,8 +274,10 @@ export function createPreview(deps: PreviewDeps): Preview {
         if (running?.sessionId !== sessionId) await stop();
         const { server } = await start(sessionId);
         const built = await buildOnce(sessionId, site);
-        if (built.type !== "previewed") {
-          log.error("Webforge could not build a version's preview", { detail: built.detail });
+        if (built?.type !== "previewed") {
+          log.error("Webforge could not build a version's preview", {
+            detail: built?.detail ?? "stopped",
+          });
           return "failed";
         }
         // The site closed, or another opened, while it built: its server has stopped.
@@ -273,31 +327,21 @@ export function createPreview(deps: PreviewDeps): Preview {
       await running?.server.stop("network");
     },
     render(sessionId, site, page, draw) {
-      const turn = drawing.then(async () => {
-        if (!current(sessionId)) return undefined;
-        try {
-          if (running?.sessionId !== sessionId) await stop();
-          const { server } = await start(sessionId);
-          const built = await buildOnce(sessionId, site);
-          if (built.type !== "previewed") {
-            log.error("Webforge could not build a page to draw", { detail: built.detail });
-            return undefined;
-          }
-          // The site closed, or another opened, while it built: its server has stopped.
-          if (running?.server !== server) return undefined;
-          server.showCapture(built);
-          try {
-            const port = await server.listen("local");
-            return await draw(pageUrl("127.0.0.1", port, `${server.base}${CAPTURE_PATH}`, page));
-          } finally {
-            server.showCapture(undefined);
-          }
-        } catch (error) {
-          log.error("Webforge could not draw a page", {
-            code: error instanceof Error && "code" in error ? String(error.code) : "unknown",
-          });
-          return undefined;
-        }
+      const turn = drawing.then(() => {
+        // Built and drawn within a time, all told: a build that never answers mustn't keep the
+        // saves off, nor hold every later one behind it. Its builder closes when time's up.
+        const stopped = new AbortController();
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const late = new Promise<undefined>((resolve) => {
+          timer = setTimeout(() => {
+            log.error("Webforge took too long to draw a page");
+            stopped.abort();
+            resolve(undefined);
+          }, deps.renderMs ?? RENDER_MS);
+        });
+        return Promise.race([drawOnce(sessionId, site, page, draw, stopped.signal), late]).finally(
+          () => clearTimeout(timer),
+        );
       });
       drawing = turn.catch(() => undefined);
       return turn;
@@ -398,7 +442,7 @@ export function registerPreviewHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
   preview: Preview,
-  saves?: PageSaves,
+  saves: PageSaves,
 ): void {
   registerIpcHandler(ipc, "previewOpen", isTrustedSender, (sessionId, site, page) =>
     timedPreview("computer", site, () => preview.open(sessionId, site, page)),
@@ -422,9 +466,7 @@ export function registerPreviewHandlers(
     return null;
   });
   registerIpcHandler(ipc, "previewSavePage", isTrustedSender, (sessionId, site, page) =>
-    saves === undefined
-      ? Promise.resolve({ status: "failed", reason: "draw" } as const)
-      : savePage(preview, saves, sessionId, site, page),
+    savePage(preview, saves, sessionId, site, page),
   );
 }
 
@@ -432,7 +474,7 @@ export function registerPreviewHandlers(
  * The preview as a feature (A12): its IPC calls, and its server and worker stopped when the site
  * closes, replaced by a hand-off or as Webforge quits.
  */
-export function previewFeature(preview: Preview, saves?: PageSaves): AppFeature {
+export function previewFeature(preview: Preview, saves: PageSaves): AppFeature {
   return {
     register: (ipc, isTrustedSender) => {
       registerPreviewHandlers(ipc, isTrustedSender, preview, saves);

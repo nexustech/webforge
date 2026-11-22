@@ -277,6 +277,38 @@ describe("registerPreviewCommands (3.2)", () => {
     expect(api.savePage.mock.calls[1]?.[2].kind).toBe("pdf");
   });
 
+  it("draws a Desktop wider than any device at the widest, and asks nothing about code (5.22)", async () => {
+    const { session, api, confirmCode, saved } = setUp();
+    const commands = createCommandRegistry();
+    const remove = registerPreviewCommands(commands, {
+      session,
+      library: siteLibrary,
+      api,
+      confirmCode,
+      onCodeTrusted: () => () => undefined,
+      sessionId: () => SESSION,
+      phone: createStore<PhoneState>(() => ({ status: "closed" })),
+      notify: vi.fn(),
+      tell: vi.fn(),
+      saved,
+      // An ultrawide screen's Desktop.
+      width: () => 3440,
+    });
+
+    await runSettled(commands, COMMAND_IDS.savePagePdf);
+    await vi.waitFor(() => expect(api.savePage).toHaveBeenCalledOnce());
+    expect(api.savePage.mock.calls[0]?.[2].width).toBe(2560);
+    await vi.waitFor(() =>
+      expect(saved).toHaveBeenCalledWith(
+        "Saved About.png",
+        "The page as Preview shows it, 2560 pixels wide.",
+      ),
+    );
+    // Nothing of the site's code runs where it's drawn.
+    expect(confirmCode).not.toHaveBeenCalled();
+    remove();
+  });
+
   it("says when a picture stops short, and why a page wasn't saved; nothing when cancelled (5.22)", async () => {
     const { registry, api, saved, notify } = setUp();
     api.savePage.mockResolvedValueOnce({ status: "saved", fileName: "Home.png", cut: true });

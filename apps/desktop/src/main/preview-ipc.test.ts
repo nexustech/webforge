@@ -41,6 +41,13 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/** Page saves that are never asked for. */
+const PAGE_SAVES: PageSaves = {
+  chooseFile: async () => undefined,
+  capture: async () => ({ data: new Uint8Array(), cut: false }),
+  write: async () => undefined,
+};
+
 /** The opening of the site the window was loaded for, and the one a hand-off opens (#663). */
 const SITE_A = "11111111-1111-4111-8111-111111111111";
 const SITE_B = "22222222-2222-4222-8222-222222222222";
@@ -243,6 +250,22 @@ describe("createPreview (3.2)", () => {
     expect(draw).not.toHaveBeenCalled();
   });
 
+  it("gives up on a page that takes too long to build, closing its builder, and draws the next (5.22)", async () => {
+    const { preview, builder, finish } = previewOf({ renderMs: 200 });
+    const draw = vi.fn(async () => "drawn");
+
+    // Its build never answers.
+    expect(await preview.render(SITE_A, site("Now"), "index.html", draw)).toBeUndefined();
+    expect(builder.close).toHaveBeenCalledOnce();
+    expect(draw).not.toHaveBeenCalled();
+
+    // The next isn't held behind it.
+    const next = preview.render(SITE_A, site("Next"), "index.html", draw);
+    await vi.waitFor(() => expect(builder.request).toHaveBeenCalledTimes(2));
+    finish({ type: "previewed", full: true, changed: [], removed: [] });
+    expect(await next).toBe("drawn");
+  });
+
   it("previews no version whose build failed, nor one for another opening", async () => {
     const { preview, deps, server, builder, finish, opened } = previewOf();
     const opening = preview.openVersion(SITE_A, site("Before"), "index.html");
@@ -443,7 +466,7 @@ describe("registerPreviewHandlers (3.2)", () => {
       handle: (name: string, handler: Handler) => registered.set(name, handler),
     } as unknown as Pick<IpcMain, "handle">;
     const made = previewOf();
-    registerPreviewHandlers(ipc, () => trusted, made.preview);
+    registerPreviewHandlers(ipc, () => trusted, made.preview, PAGE_SAVES);
     return {
       ...made,
       call: (...args: unknown[]) =>
@@ -553,7 +576,7 @@ describe("previewFeature (A12)", () => {
   it("handles the preview calls, and stops the preview when the site closes", () => {
     const close = vi.fn(async () => undefined);
     const preview = { close } as Partial<Preview> as Preview;
-    const feature = previewFeature(preview);
+    const feature = previewFeature(preview, PAGE_SAVES);
     const handle = vi.fn();
 
     feature.register?.({ handle }, () => true);
