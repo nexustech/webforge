@@ -282,6 +282,28 @@ export function boundText<Values extends Readonly<Record<string, unknown>>>(
 }
 
 /**
+ * {@link boundText} as plain text, for an attribute such as alt text: the item's field it is bound
+ * to (a date as stored), the Site Settings value, else its own text; "" for none, an empty binding
+ * included.
+ */
+export function boundString<Values extends Readonly<Record<string, unknown>>>(
+  values: Values,
+  name: keyof Values & string,
+  context: RenderContext,
+): string {
+  const field = itemBindingOf(values.bindings, name);
+  if (field !== undefined && context.item !== undefined) {
+    const value = context.item(field);
+    if (value?.kind === "text") return value.text;
+    if (value?.kind === "date") return value.date;
+    if (value?.kind === "tags") return value.tags.map((tag) => tag.name).join(", ");
+    return "";
+  }
+  const key = bindingOf(values.bindings, name);
+  return key === undefined ? stringValue(values[name]) : (context.setting(key) ?? "");
+}
+
+/**
  * An image field's picture: the item's it is bound to (6.10a), else its own. On a page that isn't
  * an item, the own one; on an item without that picture, none, so the context's empty image shows.
  */
