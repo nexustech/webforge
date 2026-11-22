@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { afterAll, describe, expect, it } from "vitest";
 
 // `pnpm report-totals <folder>` (5.42, BD-3) as the triage notes run it: Node, with the import
@@ -42,28 +43,32 @@ const REPORT = {
 };
 
 describe("pnpm report-totals (5.42, BD-3)", () => {
-  it("prints the totals of a folder of reports, naming the one it refuses", () => {
-    writeFileSync(join(folder, "report.json"), JSON.stringify(REPORT));
-    writeFileSync(join(folder, "notes.txt"), "Thanks!");
+  it(
+    "prints the totals of a folder of reports, naming the one it refuses",
+    () => {
+      writeFileSync(join(folder, "report.json"), JSON.stringify(REPORT));
+      writeFileSync(join(folder, "notes.txt"), "Thanks!");
 
-    const run = spawnSync(
-      process.execPath,
-      [
-        "--experimental-transform-types",
-        "--no-warnings",
-        "--import",
-        "./tools/src/ts-imports.ts",
-        "apps/desktop/src/main/report-totals-cli.ts",
-        folder,
-      ],
-      { cwd: ROOT, encoding: "utf8", timeout: 60_000 },
-    );
+      const run = spawnSync(
+        process.execPath,
+        [
+          "--experimental-transform-types",
+          "--no-warnings",
+          "--import",
+          "./tools/src/ts-imports.ts",
+          "apps/desktop/src/main/report-totals-cli.ts",
+          folder,
+        ],
+        { cwd: ROOT, encoding: "utf8", timeout: scaledTestTimeout(60_000) },
+      );
 
-    expect(run.stderr).toBe("");
-    expect(run.status).toBe(0);
-    expect(run.stdout).toContain("Reports: 1 installs, 1 refused");
-    expect(run.stdout).toContain("  Refused notes.txt: not JSON");
-    expect(run.stdout).toContain("  Started a site:   1 of 1 (100%)");
-    expect(run.stdout).toContain("  startup: 1 samples from 1 installs, median 2100 ms");
-  }, 90_000);
+      expect(run.stderr).toBe("");
+      expect(run.status).toBe(0);
+      expect(run.stdout).toContain("Reports: 1 installs, 1 refused");
+      expect(run.stdout).toContain("  Refused notes.txt: not JSON");
+      expect(run.stdout).toContain("  Started a site:   1 of 1 (100%)");
+      expect(run.stdout).toContain("  startup: 1 samples from 1 installs, median 2100 ms");
+    },
+    scaledTestTimeout(90_000),
+  );
 });
