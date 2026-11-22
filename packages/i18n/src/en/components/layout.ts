@@ -9,7 +9,7 @@ export const layout = {
   // The Header's and Footer's layouts (2.6).
   "field.headerLayout.left": "Name left, menu right",
   "field.headerLayout.centred": "Centred",
-  "field.headerLayout.split": "With a button",
+  "field.headerLayout.split": "Name left, menu centred",
   // The business's logo from Site Settings (HF-1, 5.37), and where and how big it shows.
   "field.logoPlace": "Logo",
   "field.logoPlace.instead": "In place of the name",

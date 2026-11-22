@@ -19,6 +19,7 @@ import v15Site from "../test/fixtures/v15/site.json" with { type: "json" };
 import v16Site from "../test/fixtures/v16/site.json" with { type: "json" };
 import v17Site from "../test/fixtures/v17/site.json" with { type: "json" };
 import v18Site from "../test/fixtures/v18/site.json" with { type: "json" };
+import v19Site from "../test/fixtures/v19/site.json" with { type: "json" };
 import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
 import type { PageId, SharedSectionId } from "./ids.js";
 import {
@@ -135,6 +136,13 @@ const headerLogo =
     throw new Error("No migration from format 17");
   });
 
+/** Format 18 → 19 (`MIGRATIONS[18]`). */
+const headerButtons =
+  MIGRATIONS[18] ??
+  ((): never => {
+    throw new Error("No migration from format 18");
+  });
+
 /** Format 5 → 16, each step's own fixture tested below: what the later steps do to an older one. */
 function latest(site: Record<string, unknown> & { formatVersion: 5 }): unknown {
   return exampleMarks(
@@ -177,13 +185,13 @@ const asFormat16 = (site: Record<string, unknown>) =>
 
 /**
  * `site` as format 16 had it: format 17 gives its theme an empty list of the person's own colours
- * (TC-1a, #1217), and format 18 changes nothing (HF-1), so what the steps before made of it is
- * compared as it was.
+ * (TC-1a, #1217), and formats 18 and 19 change nothing a site without a split Header has (HF-1,
+ * HF-2), so what the steps before made of it is compared as it was.
  */
 function atFormat16<T extends { formatVersion: number; theme: object }>(site: T) {
   const { ownColors, ...theme } = site.theme as { ownColors?: unknown };
   expect(ownColors).toEqual([]);
-  expect(site.formatVersion).toBe(18);
+  expect(site.formatVersion).toBe(19);
   return { ...site, theme, formatVersion: 16 };
 }
 
@@ -215,18 +223,100 @@ function widthsOf(...nodes: { type: string; props: Record<string, unknown> }[]):
 }
 
 describe("migrateSite", () => {
-  it("opens the format 18 fixture unchanged, with its logo in Site Settings (HF-1)", () => {
-    const site = migrateSite(v18Site);
+  it("opens the format 19 fixture unchanged, its Header with a button of its own (HF-2)", () => {
+    const site = migrateSite(v19Site);
 
-    expect(site).toEqual(v18Site);
+    expect(site).toEqual(v19Site);
     expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
-    expect(site.settings.general.logo).toBe("logo0000000000aa");
+    expect(site.layout.header[0]?.props).toMatchObject({ variant: "split", button: true });
   });
 
-  it("opens the format 17 fixture as format 18, as it was, with no logo (HF-1)", () => {
+  it("gives the format 18 fixture's split Header the menu's last link as its button (HF-2)", () => {
+    const site = migrateSite(v18Site);
+
+    // Its logo kept (HF-1), and the menu as it was: the Header leaves the link out beside it.
+    expect(site).toEqual(v19Site);
+    expect(site.settings.general.logo).toBe("logo0000000000aa");
+    expect(site.menu).toEqual(v18Site.menu);
+  });
+
+  it("takes the menu's last link as the export showed it, and leaves other Headers alone (HF-2)", () => {
+    const page = (id: string, settings: Record<string, unknown> = {}) => ({
+      title: `${id} title`,
+      navLabel: `${id} label`,
+      settings: { hideFromNavigation: false, ...settings },
+    });
+    const split = (props: Record<string, unknown> = {}) => ({
+      type: "Header",
+      props: { id: "header", variant: "split", ...props },
+    });
+    const site = (items: unknown[], header = [split()]) => ({
+      formatVersion: 18,
+      pages: {
+        home: page("home"),
+        book: page("book"),
+        hidden: page("hidden", { hideFromNavigation: true }),
+        draft: page("draft", { draft: true }),
+      },
+      media: {},
+      menu: { follows: "custom", items },
+      layout: { header, footer: [] },
+    });
+    const item = (pageId: string, extra: Record<string, unknown> = {}) => ({
+      id: `m-${pageId}`,
+      hidden: false,
+      kind: "page",
+      pageId,
+      ...extra,
+    });
+    const buttonOf = (raw: ReturnType<typeof site>) =>
+      (headerButtons(raw).layout as { header: { props: Record<string, unknown> }[] }).header[0]
+        ?.props;
+
+    // A page's navigation label, past those the navigation leaves out.
+    const hiddenItem = item("home", { hidden: true });
+    expect(
+      buttonOf(site([item("home"), item("book"), item("hidden"), item("draft"), hiddenItem])),
+    ).toMatchObject({
+      button: true,
+      buttonLabel: "book label",
+      buttonLink: { kind: "page", pageId: "book" },
+    });
+    // A file gone from Media is left out too; a link's own label and link, its newTab kept.
+    const gone = {
+      id: "f",
+      hidden: false,
+      kind: "link",
+      label: "Prices",
+      link: { kind: "file", mediaId: "x" },
+    };
+    const web = { kind: "url", href: "https://example.com/book", newTab: true };
+    expect(
+      buttonOf(site([{ id: "w", hidden: false, kind: "button", label: "Book", link: web }, gone])),
+    ).toMatchObject({ button: true, buttonLabel: "Book", buttonLink: web });
+    // A dropdown last, or no menu: no button, as before.
+    const group = {
+      id: "g",
+      hidden: false,
+      kind: "group",
+      label: "More",
+      children: [item("book")],
+    };
+    expect(buttonOf(site([item("home"), group]))).not.toHaveProperty("button");
+    // A Header that already says, or isn't split: as it was.
+    expect(buttonOf(site([item("book")], [split({ button: false })]))).toMatchObject({
+      button: false,
+    });
+    expect(buttonOf(site([item("book")], [{ type: "Header", props: { id: "h" } }]))).toEqual({
+      id: "h",
+    });
+    expect(headerButtons({ formatVersion: 18 })).toEqual({ formatVersion: 19 });
+  });
+
+  it("opens the format 17 fixture as format 19, as it was, with no logo (HF-1)", () => {
     const site = migrateSite(v17Site);
 
-    expect(site).toEqual({ ...v17Site, formatVersion: 18 });
+    expect(site).toEqual({ ...v17Site, formatVersion: 19 });
     expect(headerLogo({ formatVersion: 17 })).toEqual({ formatVersion: 18 });
     expect(site.settings.general.logo).toBeUndefined();
     expect(site.theme.ownColors).toEqual([
@@ -235,12 +325,12 @@ describe("migrateSite", () => {
     expect(site.theme.looks?.CallToAction?.lookBackground).toBe("own-sky-300");
   });
 
-  it("opens the format 16 fixture as format 18, with an empty list of the person's own colours", () => {
+  it("opens the format 16 fixture as format 19, with an empty list of the person's own colours", () => {
     const site = migrateSite(v16Site);
 
     expect(site).toEqual({
       ...v16Site,
-      formatVersion: 18,
+      formatVersion: 19,
       theme: { ...v16Site.theme, ownColors: [] },
     });
     // A list already there is kept, and a theme that isn't a record is left for validation.
@@ -978,6 +1068,9 @@ const LAYOUT_WIDTHS: Readonly<Record<string, Readonly<Record<string, string>>>> 
 
 /** Each step's inverse, keyed by the version it goes down *to*. */
 const DOWN: Readonly<Record<number, (site: Raw) => Raw>> = {
+  // 19 → 18: a Header had no button of its own; one a site has is kept, as format 19 reads it (the
+  // arbitrary sites have no split Header for format 19 to give one).
+  18: (site) => ({ ...site, formatVersion: 18 }),
   // 18 → 17: Site Settings had no logo; a site with one keeps it, as format 18 reads it.
   17: (site) => ({ ...site, formatVersion: 17 }),
   // 17 → 16: a theme had no list of its own colours; a list with colours in it is kept, as format

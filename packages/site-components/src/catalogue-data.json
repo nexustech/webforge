@@ -1285,7 +1285,7 @@
               "value": "centred"
             },
             {
-              "label": "With a button",
+              "label": "Name left, menu centred",
               "value": "split"
             }
           ]

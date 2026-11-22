@@ -59,6 +59,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   15: exampleMarks,
   16: ownColours,
   17: headerLogo,
+  18: headerButtons,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -438,6 +439,80 @@ function ownColours(site: RawSite): RawSite {
  */
 function headerLogo(site: RawSite): RawSite {
   return { ...site, formatVersion: 18 };
+}
+
+/**
+ * Format 18 → 19 (HF-2, #1237): the Header has a button of its own, in any layout, where _With a
+ * button_ (`split`) took the menu's last link for it. A split Header gets that link as its own
+ * button, its label and link, and shows it as before: the menu keeps the link, which the Header
+ * leaves out of its row beside the button, so the Header and Footer export as they did. The last
+ * link is the export's: not hidden, not a draft's or a page hidden from navigation, and a dropdown
+ * last means no button, as before. A Header that already says whether it has one is left alone.
+ */
+function headerButtons(site: RawSite): RawSite {
+  const layout = site.layout;
+  if (!isRecord(layout) || !Array.isArray(layout.header)) return { ...site, formatVersion: 19 };
+  const button = lastMenuLink(site);
+  const header = layout.header.map((node: unknown) =>
+    button === undefined ||
+    !isRecord(node) ||
+    node.type !== "Header" ||
+    !isRecord(node.props) ||
+    node.props.variant !== "split" ||
+    node.props.button !== undefined
+      ? node
+      : {
+          ...node,
+          props: {
+            ...node.props,
+            button: true,
+            buttonLabel: button.label,
+            buttonLink: button.link,
+          },
+        },
+  );
+  return { ...site, layout: { ...layout, header }, formatVersion: 19 };
+}
+
+/** The menu's last item the export shows, as format 18 built its navigation, if it is a link. */
+function lastMenuLink(site: RawSite): { label: unknown; link: unknown } | undefined {
+  const menu = site.menu;
+  if (!isRecord(menu) || !Array.isArray(menu.items)) return undefined;
+  const pages = isRecord(site.pages) ? site.pages : {};
+  /** Page `id` if the navigation shows it: there, not hidden from it, and no draft. */
+  const shownPage = (id: unknown) => {
+    const page = typeof id === "string" && Object.hasOwn(pages, id) ? pages[id] : undefined;
+    return isRecord(page) &&
+      isRecord(page.settings) &&
+      page.settings.hideFromNavigation !== true &&
+      page.settings.draft !== true
+      ? page
+      : undefined;
+  };
+  const media = isRecord(site.media) ? site.media : {};
+  /** Whether `link` goes somewhere the export has: a page shown, a file still in Media. */
+  const goes = (link: unknown) =>
+    isRecord(link) &&
+    (link.kind !== "page" || shownPage(link.pageId) !== undefined) &&
+    (link.kind !== "file" ||
+      (typeof link.mediaId === "string" && Object.hasOwn(media, link.mediaId)));
+  const shownLeaf = (item: unknown) =>
+    isRecord(item) &&
+    item.hidden !== true &&
+    (item.kind === "page" ? shownPage(item.pageId) !== undefined : goes(item.link));
+  const shown = menu.items.filter((item: unknown) =>
+    isRecord(item) && item.kind === "group"
+      ? item.hidden !== true && Array.isArray(item.children) && item.children.some(shownLeaf)
+      : shownLeaf(item),
+  );
+  const last: unknown = shown.at(-1);
+  if (!isRecord(last) || last.kind === "group") return undefined;
+  if (last.kind !== "page") return { label: last.label, link: last.link };
+  const page = shownPage(last.pageId);
+  return {
+    label: last.label ?? page?.navLabel ?? page?.title,
+    link: { kind: "page", pageId: last.pageId },
+  };
 }
 
 /** The Blog preset's Tags field, as format 14 gives a Blog that has none (in English, as it was). */
