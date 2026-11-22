@@ -72,6 +72,8 @@ export const COMMAND_IDS = {
   helpForElement: "help.forElement",
   // Help › Take the Tour (5.4a, OB-1).
   tour: "help.tour",
+  // Help › Things You Can Ask the Assistant… (5.21, OL-8).
+  assistantExamples: "help.assistantExamples",
   shortcuts: "help.shortcuts",
   tryExample: "help.tryExample",
   licences: "help.licences",

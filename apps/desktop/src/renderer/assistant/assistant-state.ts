@@ -63,6 +63,11 @@ type AssistantPanelState = {
    * chose to edit it. The panel puts it in the box, then takes it ({@link AssistantPanelModel.taken}).
    */
   readonly returned: string | undefined;
+  /**
+   * An example request to try (5.21, OL-8), from *Things You Can Ask*: the panel puts it in the
+   * box, unsent, and focuses the box, then takes it ({@link AssistantPanelModel.tryTaken}).
+   */
+  readonly tried: string | undefined;
 };
 
 /** A reply the conversation keeps, as the panel shows it: its steps are its tool calls that changed something. */
@@ -94,6 +99,10 @@ export type AssistantPanelModel = {
   readonly removeWaiting: () => void;
   /** The panel has put `returned` in the box. */
   readonly taken: () => void;
+  /** Puts an example request in the box to try (`tried`), unsent (5.21). */
+  readonly tryExample: (text: string) => void;
+  /** The panel has put `tried` in the box. */
+  readonly tryTaken: () => void;
   readonly newConversation: () => Promise<void>;
   /** This site's yes or no (ADR 0026 §4), kept on this computer by main. */
   readonly answerSite: (allowed: boolean) => Promise<void>;
@@ -126,6 +135,7 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
     applying: undefined,
     waiting: undefined,
     returned: undefined,
+    tried: undefined,
   }));
   /** The replies whose held changes the person discarded: others' were dropped for a newer one. */
   const discarding = new Set<string>();
@@ -367,6 +377,8 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
     editWaiting: () => releaseWaiting(false),
     removeWaiting: () => state.setState({ waiting: undefined }),
     taken: () => state.setState({ returned: undefined }),
+    tryExample: (text) => state.setState({ tried: text }),
+    tryTaken: () => state.setState({ tried: undefined }),
     stop: async () => {
       const replyId = state.getState().replying;
       if (replyId !== undefined) await api.stop(replyId).catch(failed("assistant.stop"));
