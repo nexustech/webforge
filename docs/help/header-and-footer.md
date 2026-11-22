@@ -3,7 +3,7 @@
 id: header-and-footer
 title: Header, Footer, announcements and shared sections
 summary: The parts that are the same on every page, an announcement bar above them, and sections you share between pages.
-components: [Header, Footer, AnnouncementBar]
+components: [Header, Footer, FooterColumn, MenuLinks, AnnouncementBar]
 related: [pages, layers, add-panel, site-check]
 updated: 2026-11-22
 ---
@@ -29,7 +29,12 @@ The Header's menu lists your pages. Change it in the [Site panel's Menu](pages.m
 
 On phones the menu folds into a button. To see and edit it open, view Mobile, select the Header and turn on **Show mobile menu**.
 
-The **Footer** has a **Text** and a layout, _Centred_ or _Columns_. Type `{year}` in its text, or in any text, and your website shows the year it was exported or published in, such as "© {year} Rosie's Café". Export or publish again in the new year to update it: once your site is published, [Site Check](site-check.md#tips) reminds you.
+The **Footer** has its own **Text**, a layout, and up to three columns of elements. Type `{year}` in its text, or in any text, and your website shows the year it was exported or published in, such as "© {year} Rosie's Café". Export or publish again in the new year to update it: once your site is published, [Site Check](site-check.md#tips) reminds you.
+
+- **Layout:** _Centred_ puts its text under its columns; _Columns_ makes its text the first of up to four columns side by side. On phones the columns go one under another, in the same order.
+- **Start from:** select the Footer and choose _Simple_ (its text alone), _Columns_ (your menu's links beside it) or _Full_ (your menu's links, your opening hours and contact details, your social links and a newsletter signup) in the toolbar under the canvas, in Design mode. It replaces the Footer's columns, on every page, and asks first if they hold anything. Your Footer text stays. **Add column** and **Remove last column** are there too.
+
+A **Footer column** holds a **Heading**, **Text**, a **List**, **Social links**, an **Image**, **Menu links**, **Opening hours and contact** and a **Newsletter signup**. Select a column, or something in it, and click one in the [Add panel](add-panel.md), or drag it into the column. **Menu links** lists your menu's links and changes when your menu does. Opening hours and contact, and a Newsletter signup, fit the column: they show without their section's background and spacing, with their title as the column's title.
 
 You can't move, duplicate or delete the Header or Footer. To leave one off a page, use the page's [Page Settings](pages.md#page-settings) (_Hide the Header on this page_), or click its eye in [Layers](layers.md).
 

@@ -4,7 +4,7 @@ id: editing-on-the-page
 title: Editing on the page
 summary: Select, type, move, copy and delete sections and elements right on the page.
 related: [the-editor, edit-panel, layers, styling, links, keyboard-shortcuts]
-updated: 2026-11-21
+updated: 2026-11-22
 ---
 
 # Editing on the page
@@ -113,3 +113,4 @@ A row under the canvas toolbar offers extra buttons for the selected item:
 - **List:** **Add item** before or after the selected item, or at the end.
 - **Columns:** **Add column**, **Remove last column**, the **Column widths** on the device you're viewing, and **Show column outlines**.
 - **Header:** in the Mobile view, **Show mobile menu**, to see and edit the menu as it opens on a phone.
+- **Footer** and its columns: **Start from** _Simple_, _Columns_ or _Full_, **Add column** and **Remove last column**. See [Header and Footer](header-and-footer.md#header-and-footer).

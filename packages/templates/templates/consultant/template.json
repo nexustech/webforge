@@ -342,7 +342,32 @@
           "type": "Footer",
           "props": {
             "id": "footer",
-            "text": "Hartley Advisory · Business advice for small firms"
+            "text": "Hartley Advisory · Business advice for small firms",
+            "variant": "columns",
+            "columns": [
+              {
+                "type": "FooterColumn",
+                "props": {
+                  "id": "footer-links",
+                  "content": [
+                    {
+                      "type": "Heading",
+                      "props": {
+                        "id": "footer-links-title",
+                        "text": "Explore",
+                        "size": "small"
+                      }
+                    },
+                    {
+                      "type": "MenuLinks",
+                      "props": {
+                        "id": "footer-menu"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
           }
         }
       ]
