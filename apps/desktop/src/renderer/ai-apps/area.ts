@@ -40,7 +40,7 @@ export const aiAppsArea: Area<WindowContext> = {
       });
     }
 
-    const removeDialog = windowDialogs.register({ id: "aiApps", component: AiApps });
+    const removeDialog = windowDialogs.register({ id: "aiApps", component: AiApps, close });
     const removeCommand = commands.register({
       id: COMMAND_IDS.aiApps,
       label: t("aiApps.command"),

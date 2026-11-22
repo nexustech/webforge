@@ -175,7 +175,7 @@ export const publishArea: Area<WindowContext> = {
       });
     }
 
-    const removeDialog = windowDialogs.register({ id: "publish", component: Publish });
+    const removeDialog = windowDialogs.register({ id: "publish", component: Publish, close });
     const removeOutcomes = windowDialogs.register({ id: "publishOutcome", component: Outcomes });
     const removeCommand = commands.register({
       id: COMMAND_IDS.publish,

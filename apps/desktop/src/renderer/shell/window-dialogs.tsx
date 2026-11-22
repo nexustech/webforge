@@ -1,4 +1,5 @@
 import { type ComponentType, useSyncExternalStore } from "react";
+import { DialogErrorBoundary } from "./DialogErrorBoundary.js";
 
 /**
  * A dialog an area draws in the window (Theme Studio): drawn once, open or closed by the area's own
@@ -8,6 +9,11 @@ type WindowDialog = {
   /** Unique: "themeStudio". */
   readonly id: string;
   readonly component: ComponentType;
+  /**
+   * Closes it in its area's state, for its error's message to close (#1320); without it, closing
+   * the message draws the dialog again as its state is.
+   */
+  readonly close?: (() => void) | undefined;
 };
 
 /** The window's dialogs that areas register (2.3b): App draws each once, with {@link WindowDialogs}. */
@@ -50,8 +56,15 @@ export function createWindowDialogs(): WindowDialogRegistry {
   };
 }
 
-/** Draws every dialog registered in `registry`, once each (App). */
+/**
+ * Draws every dialog registered in `registry`, once each (App), each inside its own error boundary
+ * (#1320): an error in one shows in its place, and the editor keeps working.
+ */
 export function WindowDialogs({ registry }: { readonly registry: WindowDialogRegistry }) {
   const dialogs = useSyncExternalStore(registry.subscribe, registry.list, registry.list);
-  return dialogs.map(({ id, component: Dialog }) => <Dialog key={id} />);
+  return dialogs.map(({ id, component: Dialog, close }) => (
+    <DialogErrorBoundary key={id} close={close}>
+      <Dialog />
+    </DialogErrorBoundary>
+  ));
 }

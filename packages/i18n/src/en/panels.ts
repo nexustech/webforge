@@ -19,6 +19,10 @@ export const panels = {
   // A panel that ran into an error (R3): the rest of the editor keeps working.
   "panels.error.message": "Something went wrong in this panel. Your work is saved.",
   "panels.error.reload": "Reload Panel",
+  // A window dialog that ran into an error (#1320): the editor behind it keeps working.
+  "panels.dialogError.title": "This window couldn't be shown",
+  "panels.dialogError.message": "Something went wrong in it. Your work is saved.",
+  "panels.dialogError.close": "Close",
   "panels.resizeLeft": "Resize the left panels",
   "panels.resizeRight": "Resize the right panels",
   "panels.resizeDrawer": "Resize the bottom panel",
