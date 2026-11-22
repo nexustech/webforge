@@ -78,6 +78,7 @@ export {
   AlertDialogTrigger,
 } from "./components/ui/alert-dialog.js";
 export { Button, type ButtonProps, buttonVariants } from "./components/ui/button.js";
+export { ColourPicker, type ColourPickerProps } from "./components/ui/colour-picker.js";
 export {
   Command,
   CommandEmpty,
