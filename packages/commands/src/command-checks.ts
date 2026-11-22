@@ -1,11 +1,14 @@
 import { t } from "@webforge/i18n";
 import {
+  colorFieldsIn,
+  countOwnColorUses,
   isNodeDoc,
   isPageIn,
   isResponsiveValue,
   linkValueSchema,
   type NodeDoc,
   newId,
+  type OwnColor,
   type PageEntry,
   pageEntryOf,
   parseColorRef,
@@ -180,6 +183,33 @@ function missingOwnColour(
       if (parsed !== undefined && "own" in parsed.base && !ids.has(parsed.base.own)) {
         return `The theme has no colour "${parsed.base.own}" of its own: the theme query lists them.`;
       }
+    }
+  }
+  return undefined;
+}
+
+/** Which catalogue fields hold colours: a `color` field, or a list item's (#1308). */
+const isCatalogueColorField = colorFieldsIn(CATALOGUE);
+
+/**
+ * The first of the person's own colours (TC-1a) that `kept`, a theme's new list, leaves out while
+ * the site still uses it, as a message; undefined if none. Dropping it would leave each use drawing
+ * nothing (#1308): Theme Studio's Delete asks what its uses become instead.
+ */
+export function droppedOwnColourInUse(
+  site: SiteDoc,
+  kept: readonly OwnColor[],
+): string | undefined {
+  const ids = new Set(kept.map(({ id }) => id));
+  for (const { id, name } of site.theme.ownColors ?? []) {
+    if (ids.has(id)) continue;
+    const uses = countOwnColorUses(site, id, isCatalogueColorField);
+    if (uses > 0) {
+      return (
+        `The theme's colour "${name}" (${id}) is used ${uses === 1 ? "once" : `${uses} times`}: ` +
+        "change those fields to another colour first, or ask the person to delete it in Theme " +
+        "Studio, which asks what its uses become."
+      );
     }
   }
   return undefined;

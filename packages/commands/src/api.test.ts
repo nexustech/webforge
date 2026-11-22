@@ -284,6 +284,38 @@ describe("the command API's commands (4.8)", () => {
     expect(JSON.stringify(lookColor?.schema)).toContain("own-<id>");
   });
 
+  it("refuses to drop one of your colours still in use, and drops, renames or changes one otherwise (#1308)", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const location = home(history);
+    const sky = { id: "csky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } };
+    const sea = { id: "csea", name: "Sea", color: { l: 0.5, c: 0.1, h: 200 } };
+    await api.run("setThemeTokens", { tokens: { ownColors: [sky, sea] } }, app);
+    const used = { location, nodeId: "heading", values: { lookColor: "own-csky-300/50" } };
+    expect((await api.run("updateFields", used, app)).status).toBe("done");
+    const before = history.document.getState();
+    const steps = history.state.getState().entries.length;
+
+    // Sky is used once: dropping it is refused, naming it, and nothing changes.
+    const dropped = await api.run("setThemeTokens", { tokens: { ownColors: [sea] } }, app);
+    expect(dropped).toMatchObject({ status: "refused", message: expect.stringContaining('"Sky"') });
+    expect(history.document.getState()).toBe(before);
+    expect(history.state.getState().entries).toHaveLength(steps);
+
+    // Renamed and recoloured, it stays: allowed. Sea, unused, can go.
+    const renamed = { ...sky, name: "Harbour blue", color: { l: 0.6, c: 0.12, h: 235 } };
+    const kept = await api.run("setThemeTokens", { tokens: { ownColors: [renamed] } }, app);
+    expect(kept.status).toBe("done");
+    expect(history.document.getState().theme.ownColors).toEqual([renamed]);
+
+    // Once nothing uses it, it can be dropped too.
+    const elsewhere = { location, nodeId: "heading", values: { lookColor: "primary" } };
+    expect((await api.run("updateFields", elsewhere, app)).status).toBe("done");
+    const gone = await api.run("setThemeTokens", { tokens: { ownColors: [] } }, app);
+    expect(gone.status).toBe("done");
+    expect(history.document.getState().theme.ownColors).toEqual([]);
+  });
+
   it("refuses an icon Webforge doesn't have, naming the field, and lists those it has (#1251)", async () => {
     const { history, host } = setup();
     const api = createCommandApi(host);

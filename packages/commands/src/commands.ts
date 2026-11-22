@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { type SiteDoc, themeTokensSchema } from "@webforge/model";
 import { z } from "zod";
+import { droppedOwnColourInUse } from "./command-checks.js";
 import { ELEMENT_COMMANDS } from "./element-commands.js";
 import { PAGE_COMMANDS } from "./page-commands.js";
 import { type Failure, fail, type Plan, type PlanSummary } from "./plan.js";
@@ -18,7 +19,7 @@ const STEPS = {
    */
   setThemeTokens: {
     description:
-      "Sets theme tokens, as theme gives them. It changes every page, so it waits for the person to allow it. A group named in part keeps the values it doesn't name.",
+      "Sets theme tokens, as theme gives them. It changes every page, so it waits for the person to allow it. A group named in part keeps the values it doesn't name. ownColors is the whole list: one the site still uses can't be left out, so change its uses first.",
     input: z.strictObject({
       tokens: z
         .record(z.string(), z.unknown())
@@ -34,6 +35,9 @@ const STEPS = {
       const theme = themeTokensSchema.safeParse(withTokens(site.theme, input.tokens));
       if (!theme.success) return fail("invalid", z.prettifyError(theme.error));
       const next = theme.data;
+      // One of the person's colours still in use stays: its uses would draw nothing (#1308).
+      const dropped = droppedOwnColourInUse(site, next.ownColors ?? []);
+      if (dropped !== undefined) return fail("refused", dropped);
       return {
         action: t("ai.history.theme"),
         structural: true,
