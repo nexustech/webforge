@@ -26,10 +26,16 @@ import { useOwnThemeList } from "../own-themes-list.js";
 import { PreviewStrip, StylingFrame } from "../StylingFrame.js";
 import { TOKEN_CONTROLS, tokenKey } from "../theme-controls.js";
 import {
+  addOwnColor,
+  colorFieldsOf,
   createOwnTheme,
+  deleteOwnColor,
+  ownColorUseCount,
+  renameOwnColor,
   renameOwnTheme,
   setBrandColours,
   setLook,
+  setOwnColor,
   setPaletteColor,
   setTextStep,
   setToken,
@@ -49,6 +55,7 @@ import {
 } from "./StudioComponents.js";
 import { StudioDraftQuestion } from "./StudioDraftQuestion.js";
 import { StudioImagePalette } from "./StudioImagePalette.js";
+import { StudioOwnColours } from "./StudioOwnColours.js";
 import { StudioStyles } from "./StudioStyles.js";
 import { StudioText } from "./StudioText.js";
 import { StudioThemes } from "./StudioThemes.js";
@@ -334,6 +341,17 @@ export function ThemeStudio({
                 theme={theme}
                 onUse={(proposal, image) =>
                   setBrandColours(session, asks, proposal, image.fileName)
+                }
+              />
+              <StudioOwnColours
+                colors={theme.ownColors ?? []}
+                startColor={theme.colors.primary}
+                onAdd={(name, color) => void addOwnColor(session, asks, name, color)}
+                onRename={(id, name) => void renameOwnColor(session, asks, id, name)}
+                onSetColor={(id, color) => void setOwnColor(session, asks, id, color)}
+                usesOf={(id) => ownColorUseCount(session, id, colorFieldsOf(session.library))}
+                onDelete={(id, uses) =>
+                  void deleteOwnColor(session, asks, id, uses, colorFieldsOf(session.library))
                 }
               />
               <StudioColours

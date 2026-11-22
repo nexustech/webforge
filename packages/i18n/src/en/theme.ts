@@ -171,6 +171,28 @@ export const theme = {
   "theme.studio.sections": "Theme Studio sections",
   "theme.studio.section.themes": "Themes",
   "theme.studio.section.colors": "Colours",
+  // Your colours (TC-1b, #1218): the business's own, beside the theme's.
+  "theme.studio.own.title": "Your colours",
+  "theme.studio.own.about":
+    "Your business's own colours, beside the theme's. Use them in any colour field, with their shades.",
+  "theme.studio.own.none":
+    "Add your business's own colours, to use in any colour field beside the theme's.",
+  "theme.studio.own.full":
+    "A theme can have {count} colours of your own. Delete one to add another.",
+  "theme.studio.own.add": "Add a Colour",
+  "theme.studio.own.newName": "Colour {n}",
+  "theme.studio.own.search": "Find a colour by name",
+  "theme.studio.own.noMatch": "No colour has that name",
+  "theme.studio.own.colour": "{name}: its colour",
+  "theme.studio.own.name": "{name}: its name",
+  "theme.studio.own.delete": "Delete {name}",
+  "theme.studio.own.deleteTitle": "Delete '{name}'?",
+  "theme.studio.own.used.one": "It's used once on your site. What should it become?",
+  "theme.studio.own.used.other": "It's used {count} times on your site. What should it become?",
+  "theme.studio.own.replaceWith": "Another of your colours:",
+  "theme.studio.own.replace": "Use That Colour",
+  "theme.studio.own.keep": "Keep Each as It Looks",
+  "theme.studio.own.cancel": "Cancel",
   "theme.studio.section.text": "Text",
   "theme.studio.section.styles": "Styles",
   "theme.studio.section.components": "Components",

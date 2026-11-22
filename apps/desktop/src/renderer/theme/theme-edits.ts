@@ -28,6 +28,7 @@ import {
   type ThemeTokens,
   toOwnColor,
 } from "@webforge/model";
+import type { ComponentLibrary } from "@webforge/site-components";
 import type { BrandProposal, FontPairing } from "@webforge/themes";
 import {
   brandedTheme,
@@ -859,3 +860,18 @@ export const ownColorUseCount = (
   id: string,
   isColorField: IsColorField,
 ): number => countOwnColorUses(session.history.document.getState(), id, isColorField);
+
+/**
+ * Which fields of `library`'s components hold colours: a `color` field, or a list item's
+ * (`items.iconColor`). A deleted colour's uses are found in these only (#1218).
+ */
+export const colorFieldsOf =
+  (library: ComponentLibrary): IsColorField =>
+  (type, field) => {
+    const fields = library.components[type]?.fields;
+    if (fields === undefined) return false;
+    const [name = "", item] = field.split(".");
+    const def = fields[name];
+    if (item === undefined) return def?.kind === "color";
+    return def?.kind === "list" && def.fields[item]?.kind === "color";
+  };
