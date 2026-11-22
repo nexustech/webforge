@@ -34,8 +34,8 @@ export const onboardingArea: Area<WindowContext> = {
         menu: "help",
         run: tour.start,
       }),
-      windowDialogs.register({ id: "tour", component: Cards }),
-      windowDialogs.register({ id: "tip", component: Tip }),
+      windowDialogs.register({ id: "tour", component: Cards, close: tour.skip }),
+      windowDialogs.register({ id: "tip", component: Tip, close: tips.dismiss }),
       // A tip closes once the person moves on, so it never covers what they do next: a change, a
       // selection, or Design or Content mode.
       session.history.document.subscribe(() => {

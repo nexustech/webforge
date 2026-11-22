@@ -45,7 +45,7 @@ export type ExportDialogs = {
   /** The person's choices for this export, starting from `initial`; `undefined` if cancelled. */
   chooseOptions(initial: ExportChoices, advanced: boolean): Promise<ExportChoices | undefined>;
   showReport(report: ExportReport): void;
-  /** Closes the report. */
+  /** Closes what's shown: a question as cancelled, or the report. */
   close(): void;
 };
 
@@ -88,6 +88,10 @@ export function createExportDialogs(): ExportDialogs {
         }),
       ),
     showReport: (report) => show({ kind: "report", report }),
-    close: () => show(null),
+    close: () => {
+      if (shown?.kind === "web-address") shown.answer("cancel");
+      else if (shown?.kind === "options") shown.answer(undefined);
+      else show(null);
+    },
   };
 }

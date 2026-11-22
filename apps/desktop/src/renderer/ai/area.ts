@@ -98,7 +98,12 @@ export const aiRequestsArea: Area<WindowContext> = {
         onAnswer: (addFiles) => current?.answer(addFiles),
       });
     }
-    const removeDialog = windowDialogs.register({ id: "aiMediaRequest", component: MediaRequest });
+    const removeDialog = windowDialogs.register({
+      id: "aiMediaRequest",
+      component: MediaRequest,
+      // As its Not Now: nothing is added.
+      close: () => asking.getState().current?.answer(false),
+    });
     const windowTools: WindowToolHandlers = {
       ...appTools,
       requestMedia: mediaRequests.requestMedia,

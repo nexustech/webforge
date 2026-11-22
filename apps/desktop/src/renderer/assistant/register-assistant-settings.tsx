@@ -48,7 +48,11 @@ export function registerAssistantSettings(
     );
   }
   const stops = [
-    dialogs.register({ id: "assistantSettings", component: Dialog }),
+    dialogs.register({
+      id: "assistantSettings",
+      component: Dialog,
+      close: () => shown.setState(false, true),
+    }),
     settings.register({
       id: "assistant",
       heading: "app",

@@ -37,5 +37,10 @@ export function registerThemeStudio(
       />
     );
   }
-  return dialogs.register({ id: "themeStudio", component: Studio });
+  return dialogs.register({
+    id: "themeStudio",
+    component: Studio,
+    // An error's message closes it, so the Site menu opens it again (#1320).
+    close: () => studio.setState({ open: false }),
+  });
 }
