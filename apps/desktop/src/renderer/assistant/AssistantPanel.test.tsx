@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -15,22 +15,35 @@ function shown(options: FakeAssistantOptions = {}) {
   const send = vi.spyOn(api, "send");
   const session = sessionWith();
   const openSettings = vi.fn();
+  const openExamples = vi.fn();
+  const show = vi.fn();
   let Panel: () => ReactNode = () => null;
-  const remove = registerAssistantPanel({
+  const { remove, tryExample } = registerAssistantPanel({
     panels: {
       register: (panel) => {
         Panel = panel.component as () => ReactNode;
         return () => undefined;
       },
-      show: vi.fn(),
+      show,
     },
     session,
     api,
     sessionId: "site-1",
     openSettings,
+    openExamples,
   });
   render(<Panel />);
-  return { api, send, session, openSettings, remove, user: userEvent.setup({ delay: null }) };
+  return {
+    api,
+    send,
+    session,
+    openSettings,
+    openExamples,
+    show,
+    remove,
+    tryExample,
+    user: userEvent.setup({ delay: null }),
+  };
 }
 
 describe("the assistant's panel (6.9c)", () => {
@@ -71,6 +84,39 @@ describe("the assistant's panel (6.9c)", () => {
 
     expect(open).toHaveBeenCalledWith("site-1", expect.any(String), "HTTPS://Bakery.example/hours");
     expect(await open.mock.results[0]?.value).toEqual({ status: "opened" });
+  });
+
+  it("puts an example tried in the box, unsent and focused, and shows the panel (5.21)", async () => {
+    const { send, show, tryExample, user } = shown();
+    const box = await screen.findByRole("textbox", { name: "Message the assistant" });
+    await user.type(box, "Also this");
+
+    act(() => tryExample("Make the corners rounder."));
+
+    expect(show).toHaveBeenCalledWith("assistant");
+    await waitFor(() => expect(document.activeElement).toBe(box));
+    // Before what was typed there, which stays.
+    expect((box as HTMLTextAreaElement).value).toBe("Make the corners rounder.\n\nAlso this");
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("opens Things You Can Ask from its link (5.21)", async () => {
+    const { openExamples, user } = shown();
+    await user.click(await screen.findByRole("button", { name: "Things You Can Ask…" }));
+    expect(openExamples).toHaveBeenCalledOnce();
+  });
+
+  it("keeps an example tried before it's set up behind what it asks first (5.21)", async () => {
+    const { show, tryExample } = shown({
+      status: { ...FAKE_STATUS, enabled: false, consentVersion: null },
+    });
+    await screen.findByRole("button", { name: "Set Up the Assistant…" });
+
+    act(() => tryExample("Make the corners rounder."));
+
+    expect(show).toHaveBeenCalledWith("assistant");
+    expect(screen.queryByRole("textbox", { name: "Message the assistant" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Set Up the Assistant…" })).toBeDefined();
   });
 
   it("is off until set up in Settings, and asks again when its provider is new", async () => {

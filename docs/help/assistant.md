@@ -4,7 +4,7 @@ id: assistant
 title: The assistant
 summary: Ask {appName}'s built-in assistant to change your site, and check, keep or undo what it changed.
 related: [settings, undo-and-history, version-history, ai-apps]
-updated: 2026-11-21
+updated: 2026-11-22
 status: partial
 ---
 
@@ -81,6 +81,8 @@ The **Assistant** panel is a tab in the left column, after **Version History**: 
 1. Select the section or element you mean, if there is one: the assistant is told what's selected and which page you're on.
 2. Type what you'd like in **Message the assistant**, and press Enter or click **Send**. Shift+Enter starts a new line.
 3. The reply appears as it's written, with what it changed. Click **Stop** to stop it: changes it has made stay, and can be undone. A question it's waiting on closes, as if you'd clicked **Cancel**.
+
+Not sure what to ask? Click **Things You Can Ask…** under the box, or choose **Help › Things You Can Ask the Assistant…**: examples by topic (words, images, sections, pages, the theme and search engines), with a box to search them. **Try It** puts an example in the assistant's box without sending it, so you can change it first. If the assistant isn't set up yet, the panel asks for that first.
 
 While a reply is being written, you can type your next message. Press Enter or click **Send After This Reply**: it waits above the box, under _Sends when this reply finishes_, and is sent by itself when the reply is done. Type another and it's added to the one waiting. Click **Edit** to take it back into the box, or **Remove** to drop it. If you stop the reply, or it fails or reaches your monthly limit, the waiting message goes back into the box, unsent. If the reply holds changes for you to review (see [Reviewing changes first](#reviewing-changes-first)), the message waits until you apply or discard them, under _Sends once you apply or discard this reply's changes_.
 
