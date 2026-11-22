@@ -225,13 +225,17 @@ describe("buildSiteCss", () => {
       ownColors: [{ id: "sky", name: "Sky", color: { l: 0.62, c: 0.14, h: 240 } }],
     };
     const candidates = classCandidates(
-      '<h2 class="text-own-sky-300/50"></h2><div class="bg-own-sky"></div><p class="text-own-moss"></p>',
+      '<h2 class="text-own-sky-300/50"></h2><div class="bg-own-sky"></div><p class="text-own-moss"></p>' +
+        '<div class="bg-linear-to-r from-own-sky to-own-sky-700"></div>',
     );
     const css = await buildSiteCss(resources, { theme, candidates, fontsUrl: "../fonts/" });
 
     // As CSS escapes the class names: each reads its variable, which the theme declares.
     expect(css).toContain(String.raw`.text-own-sky-300\/50`);
     expect(css).toContain(".bg-own-sky");
+    // Either end of a gradient (TC-1b).
+    expect(css).toContain(".from-own-sky");
+    expect(css).toContain(".to-own-sky-700");
     expect(css).toContain("--wf-color-own-sky-300:");
     // A colour the theme doesn't have makes no class: it draws nothing.
     expect(css).not.toContain(".text-own-moss");

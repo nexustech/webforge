@@ -109,6 +109,48 @@ describe("ColourField (1.37, UX-25, ADR 0009)", () => {
     expect(text.onChange).toHaveBeenLastCalledWith("default");
   });
 
+  it("offers your colours under their own heading, with their shades and opacity (TC-1b)", async () => {
+    const { session, onChange, names, swatch } = setUp("primary/80");
+    act(() =>
+      session.edit("root", "Added colour 'Sky'", (draft) => {
+        draft.theme.ownColors = [
+          { id: "csky", name: "Sky", color: { l: 0.7, c: 0.12, h: 230 } },
+          { id: "csea", name: "Sea", color: { l: 0.5, c: 0.1, h: 200 } },
+        ];
+      }),
+    );
+    expect(names()).toEqual(["Text", "Brand", "Accent", "Second accent", "Sky", "Sea"]);
+    expect(screen.getByText("Your colours")).toBeDefined();
+    expect(swatch("Sky")).toBe("oklch(70% 0.12 230)");
+
+    // Chosen, it keeps the opacity; then a shade of it.
+    await userEvent.click(screen.getByRole("radio", { name: "Sky" }));
+    expect(onChange).toHaveBeenLastCalledWith("own-csky/80");
+    cleanup();
+
+    const shaded = setUp("own-csky-300/80");
+    act(() =>
+      shaded.session.edit("root", "Added colour 'Sky'", (draft) => {
+        draft.theme.ownColors = [{ id: "csky", name: "Sky", color: { l: 0.7, c: 0.12, h: 230 } }];
+      }),
+    );
+    expect(screen.getByRole("radio", { name: "Sky" }).getAttribute("aria-checked")).toBe("true");
+    await userEvent.click(screen.getByRole("radio", { name: "Shade 700" }));
+    expect(shaded.onChange).toHaveBeenLastCalledWith("own-csky-700/80");
+  });
+
+  it("shows a colour no longer in the theme as the field has it, with no shades", () => {
+    const { names } = setUp("own-cgone-300");
+    expect(names()).toEqual([
+      "Text",
+      "Brand",
+      "Accent",
+      "Second accent",
+      "A colour no longer in your theme",
+    ]);
+    expect(screen.queryByRole("radio", { name: "Shade 300" })).toBeNull();
+  });
+
   it("offers a colour of the field's own in Advanced mode only, marked off the theme", async () => {
     const simple = setUp("primary");
     expect(screen.queryByRole("radio", { name: "Custom" })).toBeNull();
