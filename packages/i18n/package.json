@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./components": "./src/components.ts",
-    "./site-text": "./src/site-text.ts"
+    "./site-text": "./src/site-text.ts",
+    "./main": "./src/main.ts"
   },
   "devDependencies": {
     "vitest": "catalog:"

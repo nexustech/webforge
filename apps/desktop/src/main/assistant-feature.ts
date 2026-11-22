@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import type { Net, Shell } from "electron";
 import { ASSISTANT_APP_ID } from "../shared/ipc/ai.js";
 import { type AssistantEvent, assistantEvents } from "../shared/ipc/assistant.js";

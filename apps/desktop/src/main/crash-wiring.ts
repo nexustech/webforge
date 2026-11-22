@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { release } from "node:os";
 import { join } from "node:path";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import { app, BrowserWindow, crashReporter, dialog, type IpcMain, shell } from "electron";
 import { installCrashHandlers, noticeAfterCrash } from "./crash-handlers.js";
 import { createCrashReports } from "./crash-reports.js";

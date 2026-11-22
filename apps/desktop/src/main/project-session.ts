@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { basename, extname } from "node:path";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import {
   type ExportChoices,
   type MediaMeta,

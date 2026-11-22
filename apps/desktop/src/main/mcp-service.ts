@@ -1,6 +1,6 @@
 import { randomInt } from "node:crypto";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { t } from "@webforge/i18n";
+import { t } from "@webforge/i18n/main";
 import { isMainTool, type MainToolName } from "../shared/ai-tools.js";
 import type { AiRequest, AiResponse } from "../shared/ipc/ai.js";
 import type { AiApps, AppKind, PairedApp, Pairing } from "./ai-apps.js";
