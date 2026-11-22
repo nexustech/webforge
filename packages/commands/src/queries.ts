@@ -14,11 +14,10 @@ import {
   styleFieldDetails,
   usableComponents,
 } from "./catalogue.js";
+import { isSlot, type Location, locate, locationSchema, nodesAt } from "./locations.js";
 
 /** The most icon names one answer lists: a search narrows them (#1250). */
 const ICONS_LISTED = 200;
-
-import { isSlot, type Location, locate, locationSchema, nodesAt } from "./locations.js";
 
 /** A node in a page tree: what it is, and what its slots hold. */
 type TreeNode = {
