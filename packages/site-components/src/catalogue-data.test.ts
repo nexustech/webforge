@@ -167,6 +167,7 @@ describe("the catalogue as data (4.8)", () => {
     expect(buttons.map(({ type, name }) => `${type}.${name}`).sort()).toEqual([
       "Button.link",
       "CallToAction.buttonLink",
+      "Header.buttonLink",
       "Hero.buttonLink",
       "PricingPlan.link",
     ]);

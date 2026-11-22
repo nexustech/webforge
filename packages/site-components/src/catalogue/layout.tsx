@@ -1,12 +1,14 @@
 import { t } from "@webforge/i18n/components";
 import type { SiteText } from "@webforge/i18n/site-text";
+import { hasLink } from "@webforge/model";
+import type { ReactNode } from "react";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
-import { boundString, boundText, type ComponentDef } from "../library.js";
+import { boundString, boundText, type ComponentDef, linkAttributes } from "../library.js";
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
-import type { NavItem, NavLink } from "../schema.js";
-import { BUTTON_CLASSES } from "../typography.js";
+import type { NavItem, NavLink, RenderContext } from "../schema.js";
+import { BUTTON_CLASSES, ButtonLink } from "../typography.js";
 
 /** Three-line menu icon, drawn inline so the site needs no icon font (C8). */
 function MenuIcon() {
@@ -104,6 +106,7 @@ function NavItems({ items }: { readonly items: readonly NavItem[] }) {
 function HeaderNavigation({
   items,
   menuItems,
+  menuButton,
   menuOpen,
   className,
   siteText,
@@ -112,6 +115,8 @@ function HeaderNavigation({
   readonly items: readonly NavItem[];
   /** The items in the menu on small screens. */
   readonly menuItems: readonly NavItem[];
+  /** The Header's own button, last in the small screens' menu (HF-2). */
+  readonly menuButton?: ReactNode;
   /** Shows the small screens' menu open: the canvas's *Show mobile menu* preview (UX-26). */
   readonly menuOpen: boolean;
   readonly className?: string;
@@ -133,6 +138,7 @@ function HeaderNavigation({
         </summary>
         <ul className="menu absolute inset-x-0 top-full z-10 w-full bg-base-100 p-2 shadow">
           <NavItems items={menuItems} />
+          {menuButton}
         </ul>
       </details>
     </nav>
@@ -216,6 +222,19 @@ const header = defineComponent({
       options: LOGO_SIZES.map((value) => ({ label: t(`field.logoSize.${value}`), value })),
       shownWhen: (_values, site) => site.hasLogo === true,
     },
+    // The Header's own button (HF-2, 5.38), in any layout.
+    button: { kind: "toggle", label: t("field.headerButton"), help: t("field.headerButton.help") },
+    buttonLabel: {
+      kind: "text",
+      label: t("field.buttonLabel"),
+      shownWhen: (values) => values.button === true,
+    },
+    buttonLink: {
+      kind: "link",
+      label: t("field.buttonLink"),
+      button: "buttonLabel",
+      shownWhen: (values) => values.button === true,
+    },
     sticky: { kind: "toggle", label: t("field.sticky") },
     scrollStyle: {
       kind: "select",
@@ -235,6 +254,8 @@ const header = defineComponent({
     siteName: t("site.untitledName"),
     logoPlace: "instead",
     logoSize: "medium",
+    button: false,
+    buttonLabel: t("starter.headerButton"),
     sticky: false,
     scrollStyle: "shadow",
     sectionHighlight: true,
@@ -243,10 +264,7 @@ const header = defineComponent({
   render: ({ values, context }) => {
     const layout = values.variant;
     const items = context.navigation;
-    // Split: the menu's last link becomes the button on the right on wide screens.
-    const last = items.at(-1);
-    const button = layout === "split" && last !== undefined && !("children" in last) ? last : null;
-    const row = button === null ? items : items.slice(0, -1);
+    const { button, row, menuButton } = headerButton(values, context);
     const look = values.sticky
       ? `${STICKY_CLASSES[values.scrollStyle]} ${STICKY_OFFSET[layout]}`
       : "bg-base-100 shadow-sm";
@@ -288,17 +306,60 @@ const header = defineComponent({
         <HeaderNavigation
           items={row}
           menuItems={items}
+          menuButton={menuButton}
           menuOpen={context.previews?.mobileMenu === true}
           siteText={context.siteText}
           {...(layout === "left" ? {} : { className: "md:flex md:flex-1 md:justify-center" })}
         />
-        {button === null ? null : (
-          <NavAnchor link={button} className={`${BUTTON_CLASSES.primary} hidden md:inline-flex`} />
-        )}
+        {button}
       </header>
     );
   },
 });
+
+/**
+ * The Header's own button (HF-2), on the right on wide screens and last in the phone menu, with
+ * what the row shows beside it. A menu link that goes where the button goes isn't shown twice: the
+ * row leaves out the last such link, and the phone menu has it already, so the button isn't added
+ * there. A site
+ * whose Header was _With a button_ keeps its button so, through format 19, exactly as it was.
+ */
+function headerButton(
+  values: { readonly button: boolean; readonly buttonLabel: string; readonly buttonLink: unknown },
+  context: RenderContext,
+): { button: ReactNode; row: readonly NavItem[]; menuButton: ReactNode } {
+  const items = context.navigation;
+  const label = values.buttonLabel.trim();
+  if (!values.button || label === "") return { button: null, row: items, menuButton: null };
+  if (!hasLink(values.buttonLink)) {
+    // No link yet: the canvas says so on wide screens, and the export leaves it out.
+    const hint = (
+      <ButtonLink
+        label={label}
+        link={values.buttonLink}
+        context={context}
+        className="hidden md:inline-flex"
+      />
+    );
+    return { button: hint, row: items, menuButton: null };
+  }
+  const attributes = linkAttributes(values.buttonLink, context);
+  const same = (item: NavItem) => !("children" in item) && item.href === attributes.href;
+  // The last one, as _With a button_ took the menu's last link: only one is left out.
+  const inMenu = items.findLast(same);
+  const link: NavLink = {
+    label,
+    href: attributes.href,
+    current: inMenu !== undefined && !("children" in inMenu) && inMenu.current,
+    ...(attributes.target === undefined ? {} : { newTab: true }),
+    ...(attributes.download === undefined ? {} : { download: true }),
+  };
+  return {
+    button: <NavAnchor link={link} className={`${BUTTON_CLASSES.primary} hidden md:inline-flex`} />,
+    row: inMenu === undefined ? items : items.filter((item) => item !== inMenu),
+    menuButton: inMenu === undefined ? <NavLinkItem link={{ ...link, button: true }} /> : null,
+  };
+}
 
 const FOOTER_LAYOUTS = ["centred", "columns"] as const;
 

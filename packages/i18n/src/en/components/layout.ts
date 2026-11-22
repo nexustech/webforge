@@ -18,6 +18,10 @@ export const layout = {
   "field.logoSize.small": "Small",
   "field.logoSize.medium": "Medium",
   "field.logoSize.large": "Large",
+  // The Header's own button (HF-2, 5.38), in any layout.
+  "field.headerButton": "Show a button",
+  "field.headerButton.help": "A button such as “Book now”, on the right, and in the phone menu.",
+  "starter.headerButton": "Book now",
   "field.footerLayout.centred": "Centred",
   "field.footerLayout.columns": "Columns",
   // A sticky header (F-DS-6).

@@ -269,10 +269,20 @@ describe("renderNodesToHtml", () => {
     }
   });
 
-  it("draws the split Header's last link as a button beside the row, still in the menu (2.6)", () => {
+  it("draws the Header's button beside the row, not repeating a menu link that goes there (HF-2)", () => {
     const [header] = starterLayout("Bakery").header;
     if (header === undefined) throw new Error("No Header");
-    const split: NodeDoc = { ...header, props: { ...header.props, variant: "split" } };
+    // As format 19 makes a split Header of before: its menu's last link as its own button.
+    const split: NodeDoc = {
+      ...header,
+      props: {
+        ...header.props,
+        variant: "split",
+        button: true,
+        buttonLabel: "Book now",
+        buttonLink: { kind: "page", pageId: "about" },
+      },
+    };
 
     const html = renderNodesToHtml([split], siteLibrary, {
       ...context,
@@ -289,6 +299,33 @@ describe("renderNodesToHtml", () => {
     // Once beside the row and once in the menu on small screens: not in the row as well.
     expect(html.match(/>Book now<\/a>/g)).toHaveLength(2);
     expect(html.match(/>Home<\/a>/g)).toHaveLength(2);
+  });
+
+  it("puts the Header's button in any layout, and in the phone menu when no link there goes to it (HF-2)", () => {
+    const [header] = starterLayout("Bakery").header;
+    if (header === undefined) throw new Error("No Header");
+    const withButton = (props: Record<string, unknown>): NodeDoc[] => [
+      { ...header, props: { ...header.props, button: true, buttonLabel: "Call us", ...props } },
+    ];
+    const call = { buttonLink: { kind: "page", pageId: "contact" } };
+
+    for (const variant of ["left", "centred", "split"]) {
+      const html = renderNodesToHtml(withButton({ variant, ...call }), siteLibrary, context);
+      // Beside the row on wide screens, and last in the phone menu.
+      expect(html, variant).toContain(
+        '<a href="contact.html" class="btn btn-primary hidden md:inline-flex">Call us</a>',
+      );
+      expect(html, variant).toMatch(
+        /<a href="contact.html" class="[^"]*btn[^"]*">Call us<\/a><\/li><\/ul><\/details>/,
+      );
+      // The menu's links all stay in the row.
+      expect(html.match(/>About<\/a>/g), variant).toHaveLength(2);
+    }
+
+    // Off, or without its text: no button. Without its link: none in the export.
+    for (const props of [{ button: false, ...call }, { buttonLabel: " ", ...call }, {}]) {
+      expect(renderNodesToHtml(withButton(props), siteLibrary, context)).not.toContain("Call us");
+    }
   });
 
   it("puts the centred Header's site name above its menu, with no wrapper (2.6)", () => {
