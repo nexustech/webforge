@@ -47,7 +47,17 @@ type AssistantPanelState = {
    * A message sent while a reply was under way (5.19, OL-4): held, and sent by itself when the
    * reply finishes, with what was selected when it was written.
    */
-  readonly waiting: { readonly text: string; readonly context: MessageContext } | undefined;
+  readonly waiting:
+    | {
+        readonly text: string;
+        readonly context: MessageContext;
+        /**
+         * The reply finished holding changes for the person to review (6.9e): the message waits
+         * until they're applied or discarded, as sending it would drop them unseen.
+         */
+        readonly afterChanges?: true;
+      }
+    | undefined;
   /**
    * A held message given back to the box, unsent: the reply failed or was stopped, or the person
    * chose to edit it. The panel puts it in the box, then takes it ({@link AssistantPanelModel.taken}).
@@ -231,8 +241,16 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
             ? {}
             : { status: { ...status, month: { ...status.month, ...event.month } } }),
         }));
-        // Stopped, or out of the month's budget: not finished, so its held message isn't sent.
-        releaseWaiting(event.stop !== "stopped" && event.stop !== "limit-reached");
+        if ((event.held ?? []).length > 0) {
+          // Holding changes to review (6.9e): a new message would replace them, unseen, so the
+          // waiting one goes once they're applied or discarded.
+          state.setState(({ waiting }) =>
+            waiting === undefined ? {} : { waiting: { ...waiting, afterChanges: true } },
+          );
+        } else {
+          // Stopped, or out of the month's budget: not finished, so its held message isn't sent.
+          releaseWaiting(event.stop !== "stopped" && event.stop !== "limit-reached");
+        }
         return;
       case "held":
         turn(event.replyId, (each) =>
@@ -251,6 +269,8 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
         state.setState(({ applying }) => ({
           applying: applying === event.replyId ? undefined : applying,
         }));
+        // The changes it waited on have been applied or discarded: now it goes.
+        if (state.getState().waiting?.afterChanges === true) releaseWaiting(true);
         return;
       case "reply-failed":
         turn(event.replyId, (each) => ({
@@ -340,6 +360,7 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
         waiting: {
           text: waiting === undefined ? text : `${waiting.text}\n\n${text}`,
           context,
+          ...(waiting?.afterChanges === true ? { afterChanges: true as const } : {}),
         },
       }));
     },

@@ -134,6 +134,8 @@ export const assistant = {
   "assistant.sendAfter": "Send After This Reply",
   "assistant.waiting.label": "Message waiting to send",
   "assistant.waiting.title": "Sends when this reply finishes",
+  // A reply that finished holding changes to review (6.9e): the message waits for them.
+  "assistant.waiting.afterChanges": "Sends once you apply or discard this reply's changes",
   "assistant.waiting.edit": "Edit",
   "assistant.waiting.remove": "Remove",
   // Settings › Assistant and its dialog (6.9c, AIA-6, AIA-8).

@@ -82,7 +82,7 @@ The **Assistant** panel is a tab in the left column, after **Version History**: 
 2. Type what you'd like in **Message the assistant**, and press Enter or click **Send**. Shift+Enter starts a new line.
 3. The reply appears as it's written, with what it changed. Click **Stop** to stop it: changes it has made stay, and can be undone. A question it's waiting on closes, as if you'd clicked **Cancel**.
 
-While a reply is being written, you can type your next message. Press Enter or click **Send After This Reply**: it waits above the box, under _Sends when this reply finishes_, and is sent by itself when the reply is done. Type another and it's added to the one waiting. Click **Edit** to take it back into the box, or **Remove** to drop it. If you stop the reply, or it fails or reaches your monthly limit, the waiting message goes back into the box, unsent.
+While a reply is being written, you can type your next message. Press Enter or click **Send After This Reply**: it waits above the box, under _Sends when this reply finishes_, and is sent by itself when the reply is done. Type another and it's added to the one waiting. Click **Edit** to take it back into the box, or **Remove** to drop it. If you stop the reply, or it fails or reaches your monthly limit, the waiting message goes back into the box, unsent. If the reply holds changes for you to review (see [Reviewing changes first](#reviewing-changes-first)), the message waits until you apply or discard them, under _Sends once you apply or discard this reply's changes_.
 
 Each reply says what it cost, and the top of the panel shows this month's spend against your limit. **New Conversation** starts again.
 

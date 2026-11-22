@@ -212,6 +212,49 @@ describe("held changes in the panel (6.9e, Review before applying)", () => {
     panel.dispose();
   });
 
+  it("keeps a waiting message until the reply's changes are applied or discarded (5.19, PR 1304's review)", async () => {
+    const api = createFakeAssistant({ delayMs: 0 });
+    const send = vi.spyOn(api, "send");
+    const panel = createAssistantPanel(api, "site-1");
+    await vi.waitFor(() => expect(panel.state.getState().status).toBeDefined());
+    api.emit({ session: "site-1", type: "reply-started", replyId: REPLY, model: "m" });
+    panel.hold("And on Sundays", { pageId: "home" });
+    api.emit({
+      session: "site-1",
+      type: "reply-done",
+      replyId: REPLY,
+      stop: "end",
+      costUsd: 0.1,
+      month: MONTH,
+      steps: [],
+      links: [],
+      held,
+    });
+    await settle();
+    // Not sent, which would drop the changes unseen: still waiting, and the changes still held.
+    expect(send).not.toHaveBeenCalled();
+    expect(panel.state.getState().waiting).toMatchObject({
+      text: "And on Sundays",
+      afterChanges: true,
+    });
+    expect(turnOf(panel, REPLY)?.held).toEqual(held);
+
+    // Discarded (or applied): now it goes.
+    api.emit({
+      session: "site-1",
+      type: "held",
+      replyId: REPLY,
+      state: "discarded",
+      steps: [],
+      refused: [],
+    });
+    await vi.waitFor(() =>
+      expect(send).toHaveBeenCalledWith("site-1", "And on Sundays", { pageId: "home" }),
+    );
+    expect(panel.state.getState().waiting).toBeUndefined();
+    panel.dispose();
+  });
+
   it("says held changes were discarded, or dropped for a new message", async () => {
     const { api, panel } = await holding(REPLY);
     await panel.discardHeld(REPLY);

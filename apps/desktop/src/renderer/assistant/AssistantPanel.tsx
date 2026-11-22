@@ -205,7 +205,11 @@ export function AssistantPanel(props: AssistantPanelProps) {
           className="mx-2 mt-2 flex flex-col gap-1 rounded-md border border-border bg-muted p-2 text-sm"
         >
           <p className="m-0 text-xs font-semibold text-muted-foreground">
-            {t("assistant.waiting.title")}
+            {t(
+              waiting.afterChanges === true
+                ? "assistant.waiting.afterChanges"
+                : "assistant.waiting.title",
+            )}
           </p>
           <p className="m-0 whitespace-pre-wrap [overflow-wrap:anywhere]">{waiting.text}</p>
           <div className="flex justify-end gap-2">
