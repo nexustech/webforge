@@ -64,7 +64,7 @@ export function readReports(reports: readonly ReceivedReport[], lists: UsageList
 type Counts = Readonly<Partial<Record<string, number>>>;
 
 /** One timing across installs: its samples against architecture §10's budget. */
-export type TimingTotals = {
+type TimingTotals = {
   readonly samples: number;
   readonly installs: number;
   readonly medianMs: number;
