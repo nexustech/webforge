@@ -8,7 +8,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { escapeRegExp } from "@webforge/model";
 import { z } from "zod";
 import { type ErrorDetails, isStackFrame, MAX_FRAMES } from "../shared/error-details.js";
@@ -321,6 +321,23 @@ export function createCrashReports(options: {
     dir: options.dir,
     /** How many reports the folder holds: the usage summary's count (5.40, BD-1). */
     count: (): number => reports().length,
+    /**
+     * The newest `most` reports, newest first, each by its file's name and as it was written: for
+     * Diagnostics' Save Report… (5.41, BD-2). A report that can't be read or isn't JSON is left out.
+     */
+    newest(most: number): { readonly name: string; readonly report: unknown }[] {
+      return reports()
+        .slice(0, most)
+        .flatMap(({ path }) => {
+          try {
+            return [
+              { name: basename(path), report: JSON.parse(readFileSync(path, "utf8")) as unknown },
+            ];
+          } catch {
+            return [];
+          }
+        });
+    },
     /** Writes a report synchronously (the process may be about to exit) and prunes old ones. */
     write(report: CrashReport): string {
       mkdirSync(options.dir, { recursive: true });

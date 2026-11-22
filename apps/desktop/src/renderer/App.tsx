@@ -32,6 +32,7 @@ import {
 } from "./shell/confirm-site-wide.js";
 import { ContextualToolbarsProvider } from "./shell/contextual-toolbar-context.js";
 import { createContextualToolbars } from "./shell/contextual-toolbars.js";
+import { DiagnosticsWindow } from "./shell/Diagnostics.js";
 import { ModeToggle } from "./shell/ModeToggle.js";
 import { OpenSourceLicences } from "./shell/OpenSourceLicences.js";
 import { PanelsMenu } from "./shell/PanelsMenu.js";
@@ -298,6 +299,7 @@ export function App({
                 copyText={(text) => api.clipboard.copyText(text)}
                 preferences={preferences}
               />
+              <DiagnosticsWindow api={api.app} />
               <AboutDialog info={info} />
               <OpenSourceLicences licences={api.app} />
               <ShortcutSheet />

@@ -1,6 +1,10 @@
+import { writeFile } from "node:fs/promises";
 import type { UpdateChannel } from "../shared/update-channel.js";
 import type { AppFeature } from "./app-feature.js";
 import type { AppElectron } from "./app-parts.js";
+import type { CrashReports } from "./crash-reports.js";
+import { type DiagnosticsParts, registerDiagnosticsHandlers } from "./diagnostics-ipc.js";
+import type { NativeDialogs } from "./dialogs.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
 import { startupTimes } from "./startup-timing.js";
@@ -20,6 +24,7 @@ const WAITING_MAX = 500;
 export function usageFeature(
   make: () => Promise<UsageSummary>,
   startupMs: () => number | undefined,
+  diagnostics?: Omit<DiagnosticsParts, "summary">,
 ): AppFeature {
   const waiting: UsageEvent[] = [];
   let summary: UsageSummary | undefined;
@@ -36,6 +41,13 @@ export function usageFeature(
         recordUsage(usage);
         return null;
       });
+      // Help › Diagnostics… (5.41, BD-2): the summary once it has loaded.
+      if (diagnostics !== undefined) {
+        registerDiagnosticsHandlers(ipc, isTrustedSender, {
+          ...diagnostics,
+          summary: async () => (made === undefined ? undefined : made),
+        });
+      }
     },
     started: () => {
       const ms = startupMs();
@@ -74,10 +86,17 @@ export function usageFeature(
  * chose (`chosen`), and how many crash reports the folder holds.
  */
 export function usageFeatureFor(
-  { app, screen }: Pick<AppElectron, "app" | "screen">,
-  crashReports: { count(): number },
-  chosen: () => UpdateChannel | undefined,
+  { app, screen, shell }: Pick<AppElectron, "app" | "screen" | "shell">,
+  crashReports: Pick<CrashReports, "count" | "newest">,
+  dialogs: Pick<NativeDialogs, "diagnostics">,
+  /** The app's lifecycle: the update channel the person chose, in their preferences. */
+  lifecycle: {
+    readonly preferences:
+      | { get(): { readonly updateChannel?: UpdateChannel | undefined } }
+      | undefined;
+  },
 ): AppFeature {
+  const chosen = () => lifecycle.preferences?.get().updateChannel;
   return usageFeature(
     async () => {
       const [{ release, totalmem }, { updateChannelFor }, usage] = await Promise.all([
@@ -103,5 +122,13 @@ export function usageFeatureFor(
       });
     },
     () => startupTimes()["window-created"],
+    {
+      crashReports: (most) => crashReports.newest(most),
+      // The user data, beside the crash reports' own folder, which holds the summary.
+      folder: app.getPath("userData"),
+      openPath: (path) => shell.openPath(path),
+      chooseFile: () => dialogs.diagnostics.chooseReportToSave(),
+      writeFile: (path, text) => writeFile(path, text),
+    },
   );
 }

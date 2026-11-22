@@ -77,5 +77,7 @@ export const COMMAND_IDS = {
   licences: "help.licences",
   // Help › Report a Problem (5.23, OL-10).
   reportProblem: "help.reportProblem",
+  // Help › Diagnostics… (5.41, BD-2).
+  diagnostics: "help.diagnostics",
   about: "help.about",
 } as const;
