@@ -1,7 +1,15 @@
 import type { NodeDoc, SiteDoc } from "@webforge/model";
 import type { CatalogueComponent } from "@webforge/site-components/catalogue-data";
 import { z } from "zod";
-import { componentOf, confirmationFor, storedValues, values } from "./command-checks.js";
+import {
+  canGo,
+  componentOf,
+  type DestinationChange,
+  destinationChanges,
+  destinationConfirmation,
+  storedValues,
+  values,
+} from "./command-checks.js";
 import { examplesInput, knownFacts, markWritten } from "./examples.js";
 import type { Location } from "./locations.js";
 import { type Failure, fail, failed, type Plan } from "./plan.js";
@@ -32,23 +40,12 @@ const itemSchema = z.strictObject({
 /** A slot's items, as `addNode`'s values give them. */
 const itemsSchema = z.array(itemSchema).max(SLOT_ITEMS_MAX);
 
-/** A node built from what an app gave, with the confirmation each part of it needs. */
+/** A node built from what an app gave, with what it changes about where visitors' money goes. */
 type Built = {
   readonly node: NodeDoc;
-  /** Each part's confirmation, the node's first, then its items' in order. */
-  readonly confirms: readonly Plan["confirm"][];
+  /** Each part's changes to where visitors' money or details go (S18), the node's first. */
+  readonly changes: readonly DestinationChange[];
 };
-
-/** Whether `type` may go in `slot`, a slot field of `parent`, as `canGo` judges a placement. */
-function allowedIn(parent: CatalogueComponent, slot: string, type: string): boolean {
-  const field = parent.fields[slot];
-  if (field?.kind !== "slot") return false;
-  const component = componentOf(type);
-  if (failed(component)) return false;
-  return field.allow !== undefined
-    ? field.allow.includes(type)
-    : (field.accepts ?? "element") === component.place;
-}
 
 /**
  * A node of `component`'s type with `given` over its defaults, as `addNode` adds it: its own values
@@ -80,8 +77,8 @@ export function builtNode(
     ...stored.values,
     id: "",
   };
-  const confirms: Plan["confirm"][] = [
-    confirmationFor(site, location, component, component.defaults, stored.values),
+  const changes: DestinationChange[] = [
+    ...destinationChanges(component, component.defaults, stored.values),
   ];
   for (const [slot, value] of Object.entries(given).filter(([name]) => isSlotField(name))) {
     if (depth + 1 >= SLOT_DEPTH_MAX) {
@@ -97,18 +94,27 @@ export function builtNode(
         `"${slot}" takes a list of items, each { type, values }: ${z.prettifyError(items.error)}`,
       );
     }
+    const field = component.fields[slot];
+    const most = field?.kind === "slot" ? field.max : undefined;
+    if (most !== undefined && items.data.length > most) {
+      return fail("invalid", `${component.label}'s "${slot}" takes ${most} at most.`);
+    }
     const children: NodeDoc[] = [];
+    // Placed as `addNode` places an element: in this slot, empty so far (its count checked above).
+    const parent: NodeDoc = { type, props: { id: "", [slot]: [] } };
     for (const [at, item] of items.data.entries()) {
-      if (!allowedIn(component, slot, item.type)) {
-        const field = component.fields[slot];
+      // An unknown type, or one AI apps keep away from (Custom Code), says so (S19).
+      const child = componentOf(item.type);
+      if (failed(child))
+        return { ...child, message: `Item ${at + 1} of "${slot}": ${child.message}` };
+      const wrong = canGo(item.type, location, parent, slot);
+      if (wrong !== undefined) {
         const takes = field?.kind === "slot" ? field.allow?.join(", ") : undefined;
         return fail(
           "invalid",
-          `Item ${at + 1} of "${slot}": ${item.type} can't go in ${component.label}'s ${slot}.${takes === undefined ? "" : ` It takes ${takes}.`}`,
+          `Item ${at + 1} of "${slot}": ${wrong}${takes === undefined ? "" : ` It takes ${takes}.`}`,
         );
       }
-      const child = componentOf(item.type);
-      if (failed(child)) return child;
       const built = builtNode(
         site,
         location,
@@ -123,7 +129,7 @@ export function builtNode(
         return { ...built, message: `Item ${at + 1} of "${slot}": ${built.message}` };
       }
       children.push(built.node);
-      confirms.push(...built.confirms);
+      changes.push(...built.changes);
     }
     // The app's items in place of the samples.
     props[slot] = children;
@@ -131,14 +137,14 @@ export function builtNode(
   const node: NodeDoc = { type, props };
   // What it wrote that holds an example is marked as one (#1228, WN-3).
   markWritten(node, component.fields, stored.values, examples, knownFacts(site));
-  return { node, confirms };
+  return { node, changes };
 }
 
 /**
- * The question adding a built node asks (D7, S18): a part's that changes where visitors' money or
- * details go, if any part does, which is always asked; else the node's own, as `addNode` asked.
+ * The question adding `built` at `location` asks (D7, S18): every change its parts make to where
+ * visitors' money or details go, all in one question, which is always asked; else as adding an
+ * element there asks.
  */
-export function confirmationOf(confirms: readonly Plan["confirm"][]): Plan["confirm"] {
-  const asked = confirms.find((confirm) => confirm?.("")?.first === true);
-  return asked ?? confirms[0];
+export function confirmationOf(site: SiteDoc, location: Location, built: Built): Plan["confirm"] {
+  return destinationConfirmation(site, location, built.changes);
 }

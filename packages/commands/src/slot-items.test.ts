@@ -128,7 +128,7 @@ describe("addNode with its slots' items (#1249)", () => {
     );
     expect(wrongType).toMatchObject({
       status: "invalid",
-      message: expect.stringContaining('Item 1 of "items": FaqItem can\'t go in'),
+      message: expect.stringContaining('Item 1 of "items": Question can\'t go in'),
     });
     const wrongField = await api.run(
       "addNode",
@@ -273,5 +273,79 @@ describe("addNode with its slots' items (#1249)", () => {
     expect(result).toMatchObject({ status: "done" });
     expect(confirm).toHaveBeenCalledOnce();
     expect(confirm.mock.calls[0]?.[0]?.description).toContain("pay.example.com");
+  });
+
+  it("names every item's new address in its one question, not only the first's (S18)", async () => {
+    const { host, history, confirm } = setup();
+    const api = createCommandApi(host);
+
+    await api.run(
+      "addNode",
+      {
+        location: home(history),
+        type: "Section",
+        values: {
+          content: [
+            { type: "BuyButton", values: { label: "Buy", link: "https://pay.example.com/one" } },
+            { type: "BuyButton", values: { label: "Buy", link: "https://shop.example.org/two" } },
+          ],
+        },
+      },
+      app,
+    );
+
+    expect(confirm).toHaveBeenCalledOnce();
+    const description = confirm.mock.calls[0]?.[0]?.description ?? "";
+    expect(description).toContain("pay.example.com");
+    expect(description).toContain("shop.example.org");
+  });
+
+  it("takes no more items than a slot holds, adding them or one at a time (Columns' four)", async () => {
+    const { host, history } = setup();
+    const api = createCommandApi(host);
+    const location = home(history);
+    const column = { type: "Column", values: {} };
+    const columnsWith = (count: number) => ({
+      location,
+      type: "Section",
+      values: { content: [{ type: "Columns", values: { columns: Array(count).fill(column) } }] },
+    });
+
+    expect(await api.run("addNode", columnsWith(5), app)).toMatchObject({
+      status: "invalid",
+      message: expect.stringContaining('"columns" takes 4 at most'),
+    });
+    expect(await api.run("addNode", columnsWith(4), app)).toMatchObject({ status: "done" });
+    const [columns] = itemsOf(sections(history).at(-1), "content");
+    const one = await api.run(
+      "addNode",
+      { location, type: "Column", parentId: columns?.props.id, slot: "columns" },
+      app,
+    );
+    expect(one).toMatchObject({
+      status: "refused",
+      message: expect.stringContaining("columns takes 4 at most"),
+    });
+    expect(itemsOf(columns, "columns")).toHaveLength(4);
+  });
+
+  it("says an item's type is unknown, or one AI apps keep away from, as adding it alone would", async () => {
+    const { host, history } = setup();
+    const api = createCommandApi(host);
+    const location = home(history);
+    const inSection = (type: string) => ({
+      location,
+      type: "Section",
+      values: { content: [{ type, values: {} }] },
+    });
+
+    expect(await api.run("addNode", inSection("Marquee"), app)).toMatchObject({
+      status: "invalid",
+      message: expect.stringContaining('Item 1 of "content": There is no component "Marquee"'),
+    });
+    expect(await api.run("addNode", inSection("CustomCode"), app)).toMatchObject({
+      status: "refused",
+      message: expect.stringContaining("AI apps can't add or edit"),
+    });
   });
 });

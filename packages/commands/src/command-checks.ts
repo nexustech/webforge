@@ -248,6 +248,11 @@ export function canGo(
   const allowed =
     field.allow !== undefined ? field.allow.includes(type) : (field.accepts ?? "element") === place;
   if (!allowed) return `${component?.label ?? type} can't go in ${parent.type}'s ${slot}.`;
+  // A slot that takes so many (a Columns' four columns) takes no more, as the editor refuses.
+  const held = parent.props[slot];
+  if (field.max !== undefined && Array.isArray(held) && held.length >= field.max) {
+    return `${parent.type}'s ${slot} takes ${field.max} at most.`;
+  }
   return undefined;
 }
 
@@ -346,10 +351,59 @@ function fromTo(before: string, after: string): { readonly from: string; readonl
     : { from: shown(before), to: shown(after) };
 }
 
+/** A change to where visitors' money or details go (S18): the element, its field, from and to. */
+export type DestinationChange = {
+  readonly item: string;
+  readonly field: string;
+  readonly from: string;
+  readonly to: string;
+};
+
+/**
+ * What setting `values` on an element of `component` that has `before` changes about where
+ * visitors' money or details go (S18): each field marked `sensitive` whose address changes.
+ */
+export function destinationChanges(
+  component: CatalogueComponent,
+  before: Readonly<Record<string, unknown>>,
+  values: Readonly<Record<string, unknown>>,
+): DestinationChange[] {
+  return Object.entries(values).flatMap(([name, value]) => {
+    const field = component.fields[name];
+    const [was, now] = [addressOf(before[name]), addressOf(value)];
+    return field?.sensitive === true && was !== now
+      ? [{ item: component.label, field: field.label, ...fromTo(was, now) }]
+      : [];
+  });
+}
+
+/**
+ * The confirmation `changes` need at `location` (D7): asked always when any changes where visitors'
+ * money or details go (S18), naming where each goes now and would go, all of them in one question;
+ * otherwise as {@link confirmationAt} says.
+ */
+export function destinationConfirmation(
+  site: SiteDoc,
+  location: Location,
+  changes: readonly DestinationChange[],
+): Plan["confirm"] {
+  const [first] = changes;
+  if (first === undefined) return confirmationAt(site, location);
+  const pages = pagesShowing(site, location);
+  return (app) => ({
+    action: t("ai.confirm.destination", { app, item: first.item, field: first.field }),
+    description: changes
+      .map(({ field, from, to }) => t("ai.confirm.destinationFromTo", { field, from, to }))
+      .join(" "),
+    confirm: t("ai.confirm.allow"),
+    affectedPages: pages,
+    first: true,
+  });
+}
+
 /**
  * The confirmation setting `values` on an element of `component` that has `before` needs at
- * `location` (D7): asked always when a field saying where visitors' money or details go changes
- * (S18), naming where it goes now and would go; otherwise as {@link confirmationAt} says.
+ * `location` (D7), as {@link destinationConfirmation} says for its {@link destinationChanges}.
  */
 export function confirmationFor(
   site: SiteDoc,
@@ -358,23 +412,7 @@ export function confirmationFor(
   before: Readonly<Record<string, unknown>>,
   values: Readonly<Record<string, unknown>>,
 ): Plan["confirm"] {
-  const changed = Object.entries(values).flatMap(([name, value]) => {
-    const field = component.fields[name];
-    const [was, now] = [addressOf(before[name]), addressOf(value)];
-    return field?.sensitive === true && was !== now
-      ? [{ field: field.label, ...fromTo(was, now) }]
-      : [];
-  });
-  const [first] = changed;
-  if (first === undefined) return confirmationAt(site, location);
-  const pages = pagesShowing(site, location);
-  return (app) => ({
-    action: t("ai.confirm.destination", { app, item: component.label, field: first.field }),
-    description: changed.map((change) => t("ai.confirm.destinationFromTo", change)).join(" "),
-    confirm: t("ai.confirm.allow"),
-    affectedPages: pages,
-    first: true,
-  });
+  return destinationConfirmation(site, location, destinationChanges(component, before, values));
 }
 
 /** Page `pageId` of `site`, or why it isn't there. */

@@ -85,7 +85,7 @@ export const ELEMENT_COMMANDS = {
         action: t("history.added", { item: component.label }),
         structural: true,
         kind: "insert",
-        confirm: confirmationOf(built.confirms),
+        confirm: confirmationOf(site, input.location, built),
         id: node.props.id,
         recipe: (draft) => {
           const top = nodesAt(draft, location);
