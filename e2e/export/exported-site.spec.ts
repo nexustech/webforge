@@ -222,7 +222,7 @@ test.describe("exported site from disk", () => {
 
     await page.setViewportSize({ width: 375, height: 700 });
     const header = await page.locator("header.site-header").boundingBox();
-    const button = await page.locator("header.site-header summary").boundingBox();
+    const button = await page.locator("header.site-header .site-menu > summary").boundingBox();
     // The logo no taller than the menu's button: the Header is the one row it was.
     expect(header?.height ?? 0).toBeLessThanOrEqual((button?.height ?? 0) + 24);
   });
