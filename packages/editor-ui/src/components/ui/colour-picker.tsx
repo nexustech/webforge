@@ -11,6 +11,7 @@ import {
   moveHue,
   moveInArea,
   parseHex,
+  shownHue,
 } from "../../lib/colour.js";
 import { fieldControlClass } from "../edit/text-field.js";
 import { WithTooltip } from "./tooltip.js";
@@ -184,6 +185,7 @@ export function ColourPicker({
 
   const saturation = Math.round(colour.s * 100);
   const brightness = Math.round(colour.v * 100);
+  const hue = shownHue(colour.h);
   const thumb = "pointer-events-none absolute size-3.5 rounded-full border-2 border-white shadow";
   return (
     <PopoverPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -263,8 +265,8 @@ export function ColourPicker({
             aria-label={t("ui.colourPicker.hue")}
             aria-valuemin={0}
             aria-valuemax={359}
-            aria-valuenow={Math.round(colour.h)}
-            aria-valuetext={t("ui.colourPicker.hueValue", { degrees: Math.round(colour.h) })}
+            aria-valuenow={hue}
+            aria-valuetext={t("ui.colourPicker.hueValue", { degrees: hue })}
             data-slot="colour-picker-hue"
             className="relative h-3.5 w-full cursor-pointer touch-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
             style={{
@@ -278,7 +280,7 @@ export function ColourPicker({
             <span
               aria-hidden
               className={cn(thumb, "top-0 -translate-x-1/2")}
-              style={{ left: `${(colour.h / 359) * 100}%` }}
+              style={{ left: `${(hue / 359) * 100}%` }}
             />
           </div>
           <div className="flex items-start gap-1.5">

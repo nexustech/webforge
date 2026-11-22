@@ -66,6 +66,18 @@ describe("the colour picker (5.26, OL-19)", () => {
     expect(hue.getAttribute("aria-valuetext")).toBe("21 degrees");
   });
 
+  it("says a hue just under 360 is 359 degrees, within its slider (#1219)", async () => {
+    const { swatch, user } = setUp("#ff0001");
+    await user.click(swatch());
+    const hue = screen.getByRole("slider", { name: "Hue" });
+
+    expect(hue.getAttribute("aria-valuenow")).toBe("359");
+    expect(hue.getAttribute("aria-valuetext")).toBe("359 degrees");
+    hue.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(hue.getAttribute("aria-valuenow")).toBe("359");
+  });
+
   it("leaves the colour as it was on Escape, showing it again", async () => {
     const { onChoose, swatch, user } = setUp();
     await user.click(swatch());
