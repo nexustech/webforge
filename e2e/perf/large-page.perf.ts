@@ -343,6 +343,41 @@ test("a page with 200+ elements against the editing budgets", async () => {
       .toBeLessThan(200);
   });
 
+  await test.step("a theme colour dragged: shown on the canvas as it moves (5.30, OL-18)", async () => {
+    await page
+      .getByRole("region", { name: "Right panels" })
+      .getByRole("tab", { name: "Theme", exact: true })
+      .click();
+    await page
+      .locator('[data-field="color.primary"]')
+      .getByRole("button", { name: "Brand" })
+      .click();
+    const area = page.getByRole("slider", { name: "Saturation and brightness" });
+    const box = await area.boundingBox();
+    if (box === null) throw new Error("The colour picker's area isn't shown");
+    const preview = canvasFrame().locator("style[data-webforge-theme-preview]");
+    await takeObserved();
+
+    // Across the area and back, as a person tries colours: each step shown with no compile.
+    await page.mouse.move(box.x + box.width * 0.1, box.y + box.height * 0.2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.6, { steps: 30 });
+    await expect(preview).toHaveText(/--color-primary/);
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.4, { steps: 30 });
+    await page.mouse.up();
+    const observed = await takeObserved();
+    // Escape: the theme as it was, and no step.
+    await page.keyboard.press("Escape");
+    await expect(preview).toHaveText("");
+
+    const longestMs = Math.round(Math.max(0, ...observed.longTasks));
+    results.themeColourDrag = { longestMs, ...observed };
+    // Held to typing's budget (ADR 0007): what a person does continuously, frame by frame.
+    expect
+      .soft(longestMs, "the longest task while dragging a theme colour (ms)")
+      .toBeLessThan(TYPING_LONGEST_TASK_MS);
+  });
+
   await test.step("undo, redo and jumps: instant (U7)", async () => {
     const before = await page.locator(".undo-history__step").count();
     await page.evaluate(

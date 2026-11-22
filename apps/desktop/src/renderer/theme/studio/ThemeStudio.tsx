@@ -12,6 +12,7 @@ import {
   toast,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import type { Oklch, ThemeTokens } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { ownColorIssues } from "@webforge/themes";
 import { Fragment, useEffect, useMemo, useState } from "react";
@@ -19,8 +20,9 @@ import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
 import type { ItemPreviews } from "../../editor/areas.js";
 import type { EditorSession } from "../../editor/editor-session.js";
+import { endThemePreview, previewTheme } from "../../editor/theme-preview.js";
 import { useDocument } from "../../editor/use-document.js";
-import { addFontPreviews, ColourField } from "../../fields/index.js";
+import { addFontPreviews, ColourField, type ThemeColorPreview } from "../../fields/index.js";
 
 import type { OwnThemes } from "../own-themes.js";
 import { useOwnThemeList } from "../own-themes-list.js";
@@ -43,6 +45,8 @@ import {
   switchPreset,
   type ThemeAsks,
   type ThemeSiteWide,
+  withOwnColor,
+  withPaletteColor,
 } from "../theme-edits.js";
 import { changeDraft, draftChange, draftChanges, themeWithDraft } from "./look-draft.js";
 import { StudioColours } from "./StudioColours.js";
@@ -103,6 +107,18 @@ export type ThemeStudioProps = {
    */
   readonly itemPreviews?: ItemPreviews | undefined;
 };
+
+/**
+ * What shows a colour while it's dragged in Theme Studio (5.30, OL-18): the theme as `change` makes
+ * it with that colour, on the canvas and the sample page, until the picker closes.
+ */
+const previewOf = (
+  change: (tokens: ThemeTokens, color: Oklch) => ThemeTokens,
+  session: EditorSession,
+): ThemeColorPreview => ({
+  show: (color) => previewTheme(session, change(session.history.document.getState().theme, color)),
+  end: (chosen) => endThemePreview(session, chosen),
+});
 
 /**
  * Theme Studio (F-DS-7, UI2): the site's theme in full, in a dialog that fills the window (not a
@@ -357,11 +373,20 @@ export function ThemeStudio({
                 onDelete={(id, uses) =>
                   void deleteOwnColor(session, asks, id, uses, colorFieldsOf(session.library))
                 }
+                preview={(id) =>
+                  previewOf((tokens, color) => withOwnColor(tokens, id, color), session)
+                }
               />
               <StudioColours
                 theme={theme}
                 onChange={(palette, role, color) =>
                   void setPaletteColor(session, asks, palette, role, color)
+                }
+                preview={(palette, role) =>
+                  previewOf(
+                    (tokens, color) => withPaletteColor(tokens, palette, role, color),
+                    session,
+                  )
                 }
               />
             </TabsContent>

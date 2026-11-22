@@ -92,6 +92,66 @@ describe("the colour picker (5.26, OL-19)", () => {
     expect(document.getElementById(code)?.textContent).toBe("#1f6feb");
   });
 
+  it("offers each colour while it's chosen, then says it was chosen, after choosing it (5.30)", async () => {
+    const onChoose = vi.fn();
+    const onPreview = vi.fn();
+    const onPreviewEnd = vi.fn();
+    render(
+      <ColourPicker
+        value="#808080"
+        aria-label="Brand"
+        onChoose={onChoose}
+        onPreview={onPreview}
+        onPreviewEnd={onPreviewEnd}
+      />,
+    );
+    const user = userEvent.setup({ delay: null });
+    const swatch = screen.getByRole("button", { name: "Brand" });
+    await user.click(swatch);
+    // Opening shows nothing new: no preview yet.
+    expect(onPreview).not.toHaveBeenCalled();
+
+    screen.getByRole("slider", { name: "Saturation and brightness" }).focus();
+    await user.keyboard("{ArrowRight}{ArrowRight}");
+    expect(onPreview).toHaveBeenCalledTimes(2);
+    const last = onPreview.mock.lastCall?.[0] as string;
+    expect(onChoose).not.toHaveBeenCalled();
+
+    await user.click(swatch);
+    expect(onChoose).toHaveBeenCalledWith(last);
+    expect(onPreviewEnd).toHaveBeenCalledExactlyOnceWith(true);
+    // Chosen first, so the page has its change before the preview ends.
+    expect(onChoose.mock.invocationCallOrder[0]).toBeLessThan(
+      onPreviewEnd.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it("ends the preview unchosen on Escape, and says nothing when nothing was previewed (5.30)", async () => {
+    const onChoose = vi.fn();
+    const onPreviewEnd = vi.fn();
+    render(
+      <ColourPicker
+        value="#1f6feb"
+        aria-label="Brand"
+        onChoose={onChoose}
+        onPreview={vi.fn()}
+        onPreviewEnd={onPreviewEnd}
+      />,
+    );
+    const user = userEvent.setup({ delay: null });
+    const swatch = screen.getByRole("button", { name: "Brand" });
+    await user.click(swatch);
+    await user.click(swatch);
+    expect(onPreviewEnd).not.toHaveBeenCalled();
+
+    await user.click(swatch);
+    screen.getByRole("slider", { name: "Hue" }).focus();
+    await user.keyboard("{End}");
+    await user.keyboard("{Escape}");
+    expect(onChoose).not.toHaveBeenCalled();
+    expect(onPreviewEnd).toHaveBeenCalledExactlyOnceWith(false);
+  });
+
   it("chooses nothing when it closes on the colour it opened on", async () => {
     const { onChoose, swatch, user } = setUp();
     await user.click(swatch());

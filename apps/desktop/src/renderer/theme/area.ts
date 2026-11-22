@@ -3,6 +3,7 @@ import { createItemPreviews } from "../add/index.js";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { whenClosed } from "../editor/first-tips.js";
 import { itemCssThrough } from "../editor/ItemCssView.js";
+import { themePreviewOf } from "../editor/theme-preview.js";
 import { TipPlaces } from "../editor/window-services.js";
 import { createOwnThemes } from "./own-themes.js";
 import { registerOwnThemes } from "./register-own-themes.js";
@@ -31,6 +32,8 @@ export const themePanelArea: Area<WindowContext> = {
       compileCss: (request) => api.canvas.compileCss(request),
       // A preview shown draws again as the theme changes (#613).
       subscribe: (listener: () => void) => session.history.document.subscribe(listener),
+      // A colour being dragged shows on the sample page at once (5.30).
+      themePreview: themePreviewOf(session),
     });
     const studio = createStudio();
     // The first Theme Studio's tip (OB-4), once it has closed.
