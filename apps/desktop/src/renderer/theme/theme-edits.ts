@@ -9,7 +9,6 @@ import {
   type ColorRole,
   colorFieldsIn,
   copyTheme,
-  countOneOffUses,
   countOwnColorUses,
   DEFAULT_THEME,
   type FontRef,
@@ -890,10 +889,6 @@ export async function addOneOffToOwnColors(
   );
   return added ? id : undefined;
 }
-
-/** How many times one-off colour `hex` is used across the site (TC-3): twice, and it's offered. */
-export const oneOffUseCount = (site: SiteDoc, hex: string, isColorField: IsColorField): number =>
-  countOneOffUses(site, hex, isColorField);
 
 /** How many times colour `id` is used across the site: what deleting it asks about. */
 export const ownColorUseCount = (

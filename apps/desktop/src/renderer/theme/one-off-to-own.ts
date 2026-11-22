@@ -1,12 +1,8 @@
+import { countOneOffUses } from "@webforge/model";
 import { createStore } from "zustand/vanilla";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { OneOffToOwn } from "../fields/index.js";
-import {
-  addOneOffToOwnColors,
-  colorFieldsOf,
-  oneOffUseCount,
-  type ThemeAsks,
-} from "./theme-edits.js";
+import { addOneOffToOwnColors, colorFieldsOf, type ThemeAsks } from "./theme-edits.js";
 
 /**
  * How a colour field makes a one-off colour one of the person's colours (TC-3, #1221), through the
@@ -17,7 +13,7 @@ import {
 export function oneOffToOwn(session: EditorSession, asks: ThemeAsks): OneOffToOwn {
   const isColorField = colorFieldsOf(session.library);
   return {
-    uses: (site, hex) => oneOffUseCount(site, hex, isColorField),
+    uses: (site, hex) => countOneOffUses(site, hex, isColorField),
     add: async (hex, name) =>
       (await addOneOffToOwnColors(session, asks, hex, name, isColorField)) !== undefined,
     declined: createStore<readonly string[]>(() => []),

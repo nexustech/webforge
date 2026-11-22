@@ -124,8 +124,15 @@ export function ColourPicker({
   /** The colour shown: a code still in its box counts, as a click away closes before it's left. */
   const shown = () => (typed === undefined ? undefined : parseHex(typed)) ?? hex;
 
-  /** Closes on the colour shown, choosing it, and offers it as one of the person's colours. */
+  /**
+   * Closes on the colour shown, choosing it, and offers it as one of the person's colours: not a
+   * code in its box that isn't one, which is refused, saying why, as Enter refuses it.
+   */
   const addToColours = (add: (hex: string) => void) => {
+    if (typed !== undefined && parseHex(typed) === undefined) {
+      setRefused(true);
+      return;
+    }
     const chosen = shown();
     onOpenChange(false);
     add(chosen);

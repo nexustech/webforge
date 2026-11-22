@@ -452,6 +452,37 @@ describe("ColourField: a one-off made one of your colours (TC-3, #1221)", () => 
     expect((await screen.findByRole("alert")).textContent).toMatch(/Your colours are full/);
   });
 
+  it("refuses a name one of the person's colours has, whatever its case", async () => {
+    const site = starterSite();
+    site.theme.ownColors = [{ id: "cbrick", name: "Brick", color: { l: 0.5, c: 0.15, h: 30 } }];
+    const { toOwn, add } = toOwnWith(2);
+    setUp("[#1f6feb]", { toOwn, site });
+    const user = userEvent.setup({ delay: null });
+    const name = screen.getByRole("textbox", { name: "Name" });
+    await user.clear(name);
+    await user.type(name, " brick ");
+    await user.click(screen.getByRole("button", { name: "Add to Your Colours" }));
+
+    expect(add).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toBe(
+      "You already have a colour called brick. Choose another name.",
+    );
+    expect(name.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("works again after an add that failed", async () => {
+    const { toOwn, add } = toOwnWith(2);
+    add.mockRejectedValueOnce(new Error("No version saved"));
+    setUp("[#1f6feb]", { toOwn });
+    const user = userEvent.setup({ delay: null });
+    const button = screen.getByRole("button", { name: "Add to Your Colours" });
+    await user.click(button);
+
+    await vi.waitFor(() => expect(button.hasAttribute("disabled")).toBe(false));
+    await user.click(button);
+    expect(add).toHaveBeenCalledTimes(2);
+  });
+
   it("names a new colour after those the theme has", () => {
     const site = starterSite();
     site.theme.ownColors = [{ id: "csky", name: "Colour 2", color: { l: 0.62, c: 0.14, h: 240 } }];

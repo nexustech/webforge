@@ -115,6 +115,7 @@ export const shared = {
   "colour.addConfirm": "Add to Your Colours",
   "colour.addLater": "Not Now",
   "colour.addFull": "Your colours are full. Delete one in Theme Studio to make room for this one.",
+  "colour.addTaken": "You already have a colour called {name}. Choose another name.",
   "colour.newName": "Colour {n}",
   "colour.offTheme": "Off the theme: changing the theme leaves this colour as it is.",
   // One of the person's own colours (TC-1a) a field uses that the theme no longer has: it draws

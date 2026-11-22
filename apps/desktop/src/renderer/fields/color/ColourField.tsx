@@ -46,6 +46,7 @@ import { type CSSProperties, type FormEvent, useId, useState } from "react";
 import { type StoreApi, useStore } from "zustand";
 import type { EditorSession } from "../../editor/editor-session.js";
 import { useDocument } from "../../editor/use-document.js";
+import { reportFailure } from "../../log.js";
 
 /**
  * How a colour field makes a one-off colour one of the person's colours (TC-3, #1221): the theme's
@@ -225,11 +226,14 @@ export function ColourField({
 
   // The one-off used twice or more is offered as one of the person's colours (TC-3); and any one-off
   // the person asks to add, from the picker or the button.
-  const uses = useDocument(session, (site) =>
-    hex === undefined || toOwn === undefined ? 0 : toOwn.uses(site, hex),
-  );
   const declined = useStore(toOwn?.declined ?? NONE_DECLINED);
   const [asked, setAsked] = useState<string | undefined>(undefined);
+  // Counted only while the offer could show: not for a colour the person said Not Now to.
+  const uses = useDocument(session, (site) =>
+    hex === undefined || toOwn === undefined || (declined.includes(hex) && asked !== hex)
+      ? 0
+      : toOwn.uses(site, hex),
+  );
   const offering =
     hex !== undefined &&
     toOwn !== undefined &&
@@ -391,7 +395,13 @@ export function ColourField({
               key={hex}
               uses={uses}
               initialName={newColourName(theme.ownColors ?? [])}
-              onAdd={(name) => toOwn.add(hex, name)}
+              taken={(theme.ownColors ?? []).map((each) => each.name)}
+              onAdd={async (name) => {
+                const added = await toOwn.add(hex, name);
+                // Asked for this once: an undo back to the one-off doesn't open it again.
+                if (added) setAsked(undefined);
+                return added;
+              }}
               onLater={() => {
                 setAsked(undefined);
                 if (!declined.includes(hex)) toOwn.declined.setState([...declined, hex], true);
@@ -508,27 +518,38 @@ function newColourName(colours: readonly { readonly name: string }[]): string {
 function AddToColours({
   uses,
   initialName,
+  taken,
   onAdd,
   onLater,
 }: {
   readonly uses: number;
   readonly initialName: string;
+  /** The names the person's colours have: a new one can't repeat one, whatever its case. */
+  readonly taken: readonly string[];
   readonly onAdd: (name: string) => Promise<boolean>;
   readonly onLater: () => void;
 }) {
   const nameId = useId();
   const titleId = useId();
+  const problemId = useId();
   const [name, setName] = useState(initialName);
   const [adding, setAdding] = useState(false);
-  const [full, setFull] = useState(false);
+  const [problem, setProblem] = useState<"full" | "taken" | undefined>(undefined);
   const add = (event: FormEvent) => {
     event.preventDefault();
-    if (adding || name.trim() === "") return;
+    const wanted = name.trim();
+    if (adding || wanted === "") return;
+    if (taken.some((each) => each.trim().toLowerCase() === wanted.toLowerCase())) {
+      setProblem("taken");
+      return;
+    }
     setAdding(true);
-    void onAdd(name).then((added) => {
-      setAdding(false);
-      setFull(!added);
-    });
+    setProblem(undefined);
+    onAdd(wanted)
+      .then((added) => setProblem(added ? undefined : "full"))
+      .catch((error: unknown) => reportFailure("colour.addToColours", error))
+      // Whatever happened, the buttons work again.
+      .finally(() => setAdding(false));
   };
   return (
     <form
@@ -547,13 +568,18 @@ function AddToColours({
         className={fieldControlClass}
         value={name}
         maxLength={OWN_COLOR_NAME_MAX}
-        onChange={(event) => setName(event.currentTarget.value)}
+        aria-invalid={problem === "taken" ? true : undefined}
+        aria-describedby={problem === undefined ? undefined : problemId}
+        onChange={(event) => {
+          setName(event.currentTarget.value);
+          if (problem === "taken") setProblem(undefined);
+        }}
       />
-      {full ? (
-        <p role="alert" className="m-0 text-destructive-text">
-          {t("colour.addFull")}
+      {problem === undefined ? null : (
+        <p id={problemId} role="alert" className="m-0 text-destructive-text">
+          {problem === "full" ? t("colour.addFull") : t("colour.addTaken", { name: name.trim() })}
         </p>
-      ) : null}
+      )}
       <div className="flex flex-wrap justify-end gap-1.5">
         <Button type="button" size="sm" variant="ghost" onClick={onLater}>
           {t("colour.addLater")}

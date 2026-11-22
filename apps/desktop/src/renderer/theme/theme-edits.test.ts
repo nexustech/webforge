@@ -1,4 +1,10 @@
-import { DEFAULT_THEME, OWN_COLORS_MAX, type SiteDoc, themeIdSchema } from "@webforge/model";
+import {
+  countOneOffUses,
+  DEFAULT_THEME,
+  OWN_COLORS_MAX,
+  type SiteDoc,
+  themeIdSchema,
+} from "@webforge/model";
 import { contrastRatio, FONT_PAIRINGS, hexOf, THEME_PRESETS, themePreset } from "@webforge/themes";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
@@ -11,7 +17,6 @@ import {
   createOwnTheme,
   deleteOwnColor,
   lookReach,
-  oneOffUseCount,
   ownColorUseCount,
   ownCopyName,
   renameOwnColor,
@@ -853,7 +858,7 @@ describe("a one-off made one of your colours (TC-3, #1221)", () => {
     const { session, labels, theme } = setUp();
     twoUses(session);
     const site = () => session.history.document.getState();
-    expect(oneOffUseCount(site(), "#1f6feb", isColorField)).toBe(2);
+    expect(countOneOffUses(site(), "#1f6feb", isColorField)).toBe(2);
     const before = theme().ownColors ?? [];
 
     const id = await addOneOffToOwnColors(session, undefined, "#1f6feb", " Ocean ", isColorField);
@@ -861,7 +866,7 @@ describe("a one-off made one of your colours (TC-3, #1221)", () => {
 
     expect(theme().ownColors?.at(-1)).toMatchObject({ id, name: "Ocean" });
     expect(backgrounds(session)).toEqual([`own-${id}/50`, `own-${id}`]);
-    expect(oneOffUseCount(site(), "#1f6feb", isColorField)).toBe(0);
+    expect(countOneOffUses(site(), "#1f6feb", isColorField)).toBe(0);
     expect(labels()).toEqual(["Used a colour twice", "Made 'Ocean' one of your colours"]);
 
     session.history.undo();

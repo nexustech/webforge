@@ -154,6 +154,11 @@ test.describe("Edit panel", () => {
     await page.keyboard.press("ControlOrMeta+z");
     await expect(heading).toHaveClass(/text-\[#c0392b\]/);
     await expect(headingColour().getByRole("radio", { name: "Brick" })).toHaveCount(0);
+    // Back on the one-off, used once: not offered again until asked.
+    await expect(headingColour().getByRole("form")).toHaveCount(0);
+    await expect(
+      headingColour().getByRole("button", { name: "Add to Your Colours…" }),
+    ).toBeVisible();
   });
 
   test("copies a heading's style onto another heading, as one step (1.37, UX-14)", async () => {
