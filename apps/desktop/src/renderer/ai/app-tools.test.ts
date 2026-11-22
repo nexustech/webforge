@@ -54,7 +54,7 @@ function setUp(site = siteWithBareImage()) {
 }
 
 describe("the window's own AI tools (4.9)", () => {
-  it("runs Site Check, with each finding's place by id and never its text", () => {
+  it("runs Site Check, with each finding's place by id and its facts, never its text", () => {
     const { site, tools } = setUp();
 
     const answer = tools.runSiteCheck();
@@ -67,7 +67,48 @@ describe("the window's own AI tools (4.9)", () => {
       title: expect.any(String),
       level: "should",
       places: [{ kind: "element", on: site.homePageId, nodeId: "pic" }],
+      // The Media item it shows, by id; never its file name (#1253).
+      facts: [{ mediaId: "bare" }],
     });
+    expect(JSON.stringify(answer)).not.toContain(MARKER);
+  });
+
+  it("says which colours a theme contrast finding is about, and its ratios (#1253)", () => {
+    const site = siteWithBareImage();
+    // Text nearly the page's own colour: hard to read on every surface.
+    site.theme = {
+      ...site.theme,
+      colors: { ...site.theme.colors, "base-content": { l: 0.93, c: 0, h: 0 } },
+    };
+    // A page named with the marker: its title is never a fact.
+    const home = site.pages[site.homePageId];
+    if (home !== undefined) home.title = MARKER;
+    const { tools } = setUp(site);
+
+    const answer = tools.runSiteCheck();
+    const data = answer?.status === "done" && "data" in answer ? answer.data : undefined;
+    const found = (
+      data as {
+        found: { rule: string; places: { kind: string }[]; facts?: Record<string, unknown>[] }[];
+      }
+    ).found;
+    const contrast = found.find((each) => each.rule === "contrast");
+
+    expect(contrast?.places).toContainEqual({ kind: "theme" });
+    const atTheme = contrast?.places.flatMap((place, at) =>
+      place.kind === "theme" ? [contrast.facts?.[at]] : [],
+    );
+    expect(atTheme).toContainEqual({
+      palette: "colors",
+      background: "base-100",
+      foreground: "base-content",
+      ratio: expect.any(Number),
+      required: 4.5,
+    });
+    for (const facts of atTheme ?? []) {
+      expect(facts?.ratio as number).toBeLessThan(facts?.required as number);
+    }
+    // Facts are numbers and listed names: never the site's own text.
     expect(JSON.stringify(answer)).not.toContain(MARKER);
   });
 

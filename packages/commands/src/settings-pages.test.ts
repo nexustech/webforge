@@ -1,4 +1,5 @@
 import { keptAddressesOf, type PageId, type SiteDoc } from "@webforge/model";
+import { CATALOGUE, SHARED_STYLE_FIELDS } from "@webforge/site-components/catalogue-data";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createCommandApi } from "./api.js";
@@ -101,6 +102,20 @@ describe("the catalogue, offered (4.11, AIB-1)", () => {
       (api.query("components", { type: "Hero" }) as { data: unknown }).data,
     );
     expect(resource.styleFields).toEqual((api.query("styleFields", {}) as { data: unknown }).data);
+  });
+
+  it("names a field as shared only where it is the shared one, word for word (#1250)", () => {
+    // A type's own field under a shared name, with other options, would be hidden behind the
+    // shared definition: any such field fails here.
+    const differing = Object.entries(CATALOGUE).flatMap(([type, component]) =>
+      Object.entries(component.fields).flatMap(([name, field]) =>
+        Object.hasOwn(SHARED_STYLE_FIELDS, name) &&
+        JSON.stringify(field) !== JSON.stringify(SHARED_STYLE_FIELDS[name])
+          ? [`${type}.${name}`]
+          : [],
+      ),
+    );
+    expect(differing).toEqual([]);
   });
 
   it("answers a type with its own fields, naming the styling fields it shares (#1250)", () => {
