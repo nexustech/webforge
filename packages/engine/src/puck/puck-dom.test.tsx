@@ -25,6 +25,7 @@ import {
   DRAGGING,
   DRAWER_ITEM,
   DROP_PREVIEW,
+  EMPTY_TABLE_BODY,
   elementOf,
   HOVERED_COMPONENT,
   INLINE_TEXT,
@@ -431,11 +432,24 @@ describe("a table's rows on the canvas (6.16c)", () => {
     );
   });
 
+  it("knows a table's body with no rows by Puck's class, not by what's in it (#1338)", async () => {
+    const body = () => element.querySelector("table > tbody");
+    expect(body()?.matches(EMPTY_TABLE_BODY)).toBe(false);
+    await act(async () => {
+      engine.loadPage(
+        { root: { props: {} }, content: [{ type: "Rows", props: { id: "table", rows: [] } }] },
+        { header: [], footer: [] },
+      );
+    });
+    await settle(50);
+    expect(body()?.matches(EMPTY_TABLE_BODY)).toBe(true);
+  });
+
   it("measures a row by its wrapper while the row has no box of its own, other elements by theirs", () => {
     const tr = element.querySelector(`${componentSelector("r1")} > tr`) as HTMLElement | null;
     if (tr === null) throw new Error("no row");
     // As the canvas styles draw it, its wrapper the row. Set here by hand: happy-dom doesn't apply
-    // the canvas's :has() rule, which the Table's E2E (e2e/app/table.spec.ts) checks in Electron.
+    // the canvas's rule, which the Table's E2E (e2e/app/table.spec.ts) checks in Electron.
     tr.style.display = "contents";
 
     // What the hover size, the keyboard's menu and the spacing view measure.

@@ -140,6 +140,22 @@ The examples are the ones the reviews gave; most have been fixed since, and they
 - **Instead:** the `@webforge/editor-ui` component (`Button`, the form engine, `FormDialog`); where one is missing, add it there and use it everywhere.
 - **Found by:** UI/UX audit §9.5, §10; UX/UI review F12; extensibility review ext E3, E5.
 
+## Tests
+
+### 19. Measuring once what the app or the platform settles a moment later
+
+- **Looks like:** the title bar's fit was measured once after a resize, while on Linux the window controls' overlay reports the room for the size before it for a moment (`small-window.spec.ts`, fixed in #1341). The canvas's tooltips were hovered before the canvas was ready (#1125). Theme Studio's accent radio was read while the studio was still laying out (#1277).
+- **Why it hurts:** the test passes on a fast machine and fails at random on a busy CI runner, often on one OS only. Each failure costs a fix and a full re-run, and the merge queue holds every PR behind it: races like these were among the most common causes of the 32% of PR runs that failed in the week of 16 Nov 2026.
+- **Instead:** wait for the condition itself, with `expect.poll` or `toPass` around the measurement, never a fixed sleep or a longer timeout. A failure on one OS only is a real bug until shown otherwise.
+- **Found by:** #1347's survey of the CI failures of 9–23 Nov 2026.
+
+### 20. A poll whose failure doesn't say what it saw
+
+- **Looks like:** `table.spec.ts`'s outline poll returned `true` or `false`. After 30 s on macOS CI, all it said was "Expected: true, Received: false", the trace keeps no measurements, and no run here reproduced it (#1347).
+- **Why it hurts:** a failure seen only in CI can't be diagnosed, so it gets a longer timeout instead of a fix.
+- **Instead:** poll for a value that says what was measured, such as `"fits"` or the two boxes, and compare it with the one wanted, so the error holds the evidence.
+- **Found by:** #1347.
+
 ## Now checked
 
 These were found by reviews too, and a check now catches each. They are listed so nobody adds them above.
