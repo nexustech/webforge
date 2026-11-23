@@ -1,12 +1,13 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { appNameIn, checkHelp, HELP_PATHS, main } from "./check-help.js";
 
 const made: string[] = [];
 afterEach(() => {
-  for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of made.splice(0)) rmSync(dir, TEST_DIR_REMOVAL);
   vi.restoreAllMocks();
   process.exitCode = undefined;
 });

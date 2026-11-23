@@ -44,7 +44,12 @@ function setUp(answer?: boolean, site: SiteDoc = footerSite()) {
         if (answer !== undefined) settle(answer);
       }),
   );
-  const siteWide = { confirmSiteWide, busy: () => asking };
+  const siteWide = {
+    confirmSiteWide,
+    busy: () => asking,
+    current: () => (asking ? (confirmSiteWide.mock.lastCall?.[0] ?? null) : null),
+    afterChange: (action: () => void) => action(),
+  };
   connectEngine(confirmSharedRemovals(engine, session, siteWide), session);
   const removeHeading = () => {
     const { layout } = session.history.document.getState();
@@ -115,7 +120,7 @@ describe("confirmSharedRemovals (D7, F-ED-7)", () => {
     expect(footer().map((props) => props.id)).toEqual(["footer", "fh", "fh2"]);
   });
 
-  it("ignores the canvas's undo until the confirmed removal has its version, so undo never lands first (4.6)", async () => {
+  it("holds the canvas's undo until the confirmed removal has its version, then undoes the removal (4.6, #1344)", async () => {
     const site = footerSite();
     const session = sessionWith(site);
     const engine = createFakeEngine();
@@ -147,25 +152,36 @@ describe("confirmSharedRemovals (D7, F-ED-7)", () => {
     });
 
     // Answered, the question has closed, but the removal waits for its version: Ctrl/Cmd+Z on the
-    // canvas then would undo the edit before it, and the removal would land after.
+    // canvas then must neither undo the edit before it (the removal would land after) nor be lost,
+    // as it was on macOS' slower runner (#1344). It's held, and taken.
     siteWide.answer(true);
     expect(siteWide.current()).toBeNull();
-    expect(engine.command("undo")).toBe(false);
+    expect(engine.command("undo")).toBe(true);
     expect(labels()).toEqual(["Edited shared Heading text"]);
-
-    saved();
-    await vi.waitFor(() =>
-      expect(labels()).toEqual(["Edited shared Heading text", "Deleted shared Heading"]),
-    );
-    // Undo then undoes the removal, not the edit before it.
     const footerIds = () =>
       session.history.document.getState().layout.footer.map((n) => n.props.id);
-    expect(footerIds()).toEqual(["footer", "fh2"]);
-    expect(engine.command("undo")).toBe(true);
     expect(footerIds()).toEqual(["footer", "fh", "fh2"]);
+
+    // Once the removal is recorded, the Undo held undoes it, not the edit before it.
+    saved();
+    // Recorded, and then undone: the Heading back, the step there to redo.
+    await vi.waitFor(() => {
+      expect(labels()).toEqual(["Edited shared Heading text", "Deleted shared Heading"]);
+      expect(footerIds()).toEqual(["footer", "fh", "fh2"]);
+    });
     expect(session.history.document.getState().layout.footer[2]?.props.text).toBe(
       "Closed on Mondays",
     );
+    expect(session.history.redo()).toBe(true);
+    expect(footerIds()).toEqual(["footer", "fh2"]);
+  });
+
+  it("does nothing with the canvas's undo while the question is open", () => {
+    const { engine, labels, footerIds, removeHeading } = setUp();
+    removeHeading();
+    expect(engine.command("undo")).toBe(false);
+    expect(labels()).toEqual([]);
+    expect(footerIds()).toEqual(["footer", "fh", "fh2"]);
   });
 
   it("puts the canvas back, recording nothing, when cancelled", async () => {

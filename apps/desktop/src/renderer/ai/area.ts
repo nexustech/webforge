@@ -11,6 +11,7 @@ import {
   PublishedYear,
   SiteCheckIgnored,
   TrustedCode,
+  VersionHistory,
 } from "../editor/window-services.js";
 import { reportFailure } from "../log.js";
 import { addMedia, importItems } from "../media/index.js";
@@ -21,6 +22,7 @@ import { answerRequest, commandHost } from "./command-host.js";
 import { MediaRequestDialog } from "./MediaRequestDialog.js";
 import { createMediaRequests, type MediaAsk } from "./media-request.js";
 import { createStages } from "./stages.js";
+import { registerWhileAway } from "./while-away-area.js";
 import { answerWindowTool, type WindowToolHandlers } from "./window-tools.js";
 
 /** The question an AI app's `requestMedia` shows, and who waits for its answer. */
@@ -34,12 +36,26 @@ type Asking = { readonly asked: MediaAsk; readonly answer: (addFiles: boolean) =
  */
 export const aiRequestsArea: Area<WindowContext> = {
   id: "aiRequests",
-  uses: [PublishedYear, OnNetlify, TrustedCode, SiteCheckIgnored],
+  uses: [PublishedYear, OnNetlify, TrustedCode, SiteCheckIgnored, VersionHistory],
   register: ({ api, session, preferences, siteWide, commands, windowDialogs, use }) => {
     const publishedYear = use(PublishedYear);
     const onNetlify = use(OnNetlify);
     const codeTrust = use(TrustedCode);
     const siteCheckIgnored = use(SiteCheckIgnored);
+    const versionHistory = use(VersionHistory);
+    // What an app working without asking changed while the person was away (5.36, UA-3).
+    const whileAway = registerWhileAway({
+      windowDialogs,
+      session,
+      listVersions: () => api.versions.list(siteSession()),
+      restore: (version) => versionHistory.actions.restore(version),
+      notify: (message) => toast.error(message),
+      present: () => document.hasFocus(),
+      onReturn: (listener) => {
+        window.addEventListener("focus", listener);
+        return () => window.removeEventListener("focus", listener);
+      },
+    });
     // A page an AI app renames keeps its old address once the site has been published (#925), as
     // the Pages panel's rename does: the same record of the last publish.
     const host = commandHost(
@@ -127,14 +143,17 @@ export const aiRequestsArea: Area<WindowContext> = {
       if (request.stage !== undefined) return stages.answer({ ...request, stage: request.stage });
       // A question for the person waits for its answer: main lifts its time limit (5.34). One a
       // paired app asks offers to let it work without asking, as long as AI apps says (5.35).
-      return answerRequest(commandApi, request, cancel.signal, asking, (appId) => {
+      const response = await answerRequest(commandApi, request, cancel.signal, asking, (appId) => {
         api.mcp
           .setUnasked(appId, DEFAULT_UNASKED_MINUTES)
           .catch((error: unknown) => reportFailure("aiApps.unasked", error));
       });
+      whileAway.heard(request, response);
+      return response;
     });
     return () => {
       stopAnswering();
+      whileAway.remove();
       removeDialog();
       // A question still open closes with the site: nothing is added.
       asking.getState().current?.answer(false);

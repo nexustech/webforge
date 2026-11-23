@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { describe, expect, it } from "vitest";
 import { behavioursModule, readBehaviours } from "./build-behaviours.js";
 
@@ -32,7 +33,7 @@ describe("the behaviours module (R7)", () => {
 
       expect(readBehaviours(folder)).toEqual({ menu: "menu();\n" });
     } finally {
-      rmSync(folder, { recursive: true, force: true });
+      rmSync(folder, TEST_DIR_REMOVAL);
     }
   });
 });

@@ -55,7 +55,8 @@ export const TEST_TLS: { readonly key: string; readonly cert: string } | undefin
   } catch {
     return undefined;
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    // Tried again, as Windows can refuse a moment while a file is open (#1353).
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 })();
 

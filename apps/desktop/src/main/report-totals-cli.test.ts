@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { scaledTestTimeout } from "@webforge/test-utils/vitest";
+import { scaledTestTimeout, TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterAll, describe, expect, it } from "vitest";
 
 // `pnpm report-totals <folder>` (5.42, BD-3) as the triage notes run it: Node, with the import
@@ -25,7 +25,7 @@ function reportTotalsCommand(): { program: string; args: string[] } {
   return { program, args };
 }
 const folder = mkdtempSync(join(tmpdir(), "report-totals-"));
-afterAll(() => rmSync(folder, { recursive: true, force: true }));
+afterAll(() => rmSync(folder, TEST_DIR_REMOVAL));
 
 /** A usage summary with nothing counted but one start-up, as Save Report… writes it. */
 const REPORT = {

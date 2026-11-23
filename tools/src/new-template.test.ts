@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   businessTypesIn,
@@ -35,7 +36,7 @@ const FILES = [
 
 let made: string | undefined;
 afterEach(() => {
-  if (made !== undefined) rmSync(made, { recursive: true, force: true });
+  if (made !== undefined) rmSync(made, TEST_DIR_REMOVAL);
   made = undefined;
   process.exitCode = undefined;
   vi.restoreAllMocks();

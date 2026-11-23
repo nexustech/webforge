@@ -2,10 +2,9 @@ import { t } from "@webforge/i18n";
 import { ArchiveRestoreIcon } from "lucide-react";
 import { useEffect } from "react";
 import { useStore } from "zustand";
+import type { VersionActions, VersionList } from "../editor/version-history.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { VersionHistoryPanel } from "./VersionHistoryPanel.js";
-import type { VersionActions } from "./version-actions.js";
-import type { VersionList } from "./version-list.js";
 
 /** Version History's panel id: Site › Version History shows it (#1165). */
 export const VERSION_HISTORY_PANEL_ID = "versionHistory";

@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { changedDocuments, type SiteDoc } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { describe, test } from "vitest";
 import { measure } from "./measure.js";
 import { homeOf, largeSite, PAGES } from "./sites.js";
@@ -37,7 +38,7 @@ describe(`autosave, a site of ${PAGES} large pages (§10)`, () => {
       );
     } finally {
       store.close();
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(dir, TEST_DIR_REMOVAL);
     }
   });
 });

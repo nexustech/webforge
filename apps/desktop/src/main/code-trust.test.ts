@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sampleSite } from "@webforge/test-utils";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCodeTrust, withTrustedCode } from "./code-trust.js";
 
@@ -9,7 +10,7 @@ let dir: string;
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "webforge-code-trust-"));
 });
-afterEach(() => rmSync(dir, { recursive: true, force: true }));
+afterEach(() => rmSync(dir, TEST_DIR_REMOVAL));
 
 const SITE = "8f7c2a9e-1b3d-4e5f-9a7b-2c4d6e8f0a1b";
 const OTHER = "1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d";

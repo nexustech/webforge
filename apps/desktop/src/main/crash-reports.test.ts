@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildCrashReport,
@@ -156,7 +157,7 @@ describe("createCrashReports", () => {
   });
 
   afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, TEST_DIR_REMOVAL);
   });
 
   const report = (process: "main" | "renderer" = "main") =>

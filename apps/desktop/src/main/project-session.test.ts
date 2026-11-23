@@ -30,6 +30,7 @@ import {
 } from "@webforge/storage";
 import { TEMPLATES_DIR } from "@webforge/templates/node";
 import { heroPhoto } from "@webforge/test-utils";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import type { IpcMain } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createWriterJobs } from "../worker/writer-jobs.js";
@@ -66,7 +67,7 @@ beforeEach(() => {
 afterEach(async () => {
   await session.close();
   vi.restoreAllMocks();
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(dir, TEST_DIR_REMOVAL);
 });
 
 describe("ProjectSession", () => {

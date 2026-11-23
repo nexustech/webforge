@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createBackups } from "./backups.js";
 
@@ -38,7 +39,7 @@ beforeEach(() => {
 
 afterEach(() => {
   store.close();
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(dir, TEST_DIR_REMOVAL);
 });
 
 function backups(keep?: number) {
