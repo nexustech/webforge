@@ -496,6 +496,10 @@ export function inFooterColumn(nodes: readonly NodeDoc[], id: string, inside = f
 const footerColumn = defineComponent({
   label: t("element.footerColumn"),
   place: "child",
+  // The Footer never writes the page's main heading (product owner, 23 Nov): a large Heading in
+  // it is an `<h2>` at the same size, and the page's own heading, or its first section title, is
+  // still its `<h1>`.
+  noMainHeading: true,
   fields: {
     content: { kind: "slot", label: t("field.content"), allow: [...FOOTER_COLUMN_TYPES] },
   },

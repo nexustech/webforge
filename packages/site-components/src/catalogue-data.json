@@ -1373,7 +1373,8 @@
       },
       "defaults": {
         "content": []
-      }
+      },
+      "noMainHeading": true
     },
     "MenuLinks": {
       "label": "Menu links",

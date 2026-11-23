@@ -149,7 +149,7 @@ Every section and element has the same _Appearance_ group (2.22, ST-1), first in
 
 Code outside the catalogue never names a component type (#982), so a new component is counted and shown as its definition says:
 
-- **`mainHeading`:** a component that writes the page's main heading, `<h1>`, says how, by its own fields. Site Check counts one per page by it (`mainHeadingsOf`). `pnpm catalogue-data` carries it into the catalogue as data.
+- **`mainHeading`:** a component that writes the page's main heading, `<h1>`, says how, by its own fields. Site Check counts one per page by it (`mainHeadingsOf`). `pnpm catalogue-data` carries it into the catalogue as data. A component whose contents never write it sets `noMainHeading` (a Footer column), and `pageHeadings` counts nothing in it; what it holds draws a lower level there, as a large Heading draws `<h2>` in `FooterColumnContext`.
   - The text in `field` is the heading while the fields in `when` have those values: `{ field: "text", when: { size: "large" } }` on the Heading, `{ field: "title" }` on the Hero.
   - With `html: true`, each `<h1>` in `field`'s own HTML counts: `{ field: "code", html: true }` on Custom Code.
 

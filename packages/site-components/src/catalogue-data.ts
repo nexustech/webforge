@@ -180,6 +180,8 @@ export const catalogueComponentSchema = z.strictObject({
    * its own (#1173), as `pageHeadings` decides.
    */
   titleField: z.string().optional(),
+  /** Nothing in it writes the page's main heading, as `pageHeadings` counts (a Footer column's). */
+  noMainHeading: z.literal(true).optional(),
 });
 
 /** See {@link catalogueComponentSchema}. */

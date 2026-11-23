@@ -153,6 +153,12 @@ export type ComponentDef = {
    */
   readonly titleField?: string;
   /**
+   * Nothing in it writes the page's main heading (`pageHeadings`): a Footer column (5.39), whose
+   * large Heading is an `<h2>` at the same size. What it holds draws so through
+   * `FooterColumnContext`.
+   */
+  readonly noMainHeading?: true;
+  /**
    * Props over its `defaults` that a preview of it draws (the Add panel's, #1175), never placed on
    * a page: what it shows once filled in where its defaults leave it empty, such as a Gallery's
    * images. Each slot's nodes need ids of their own.
