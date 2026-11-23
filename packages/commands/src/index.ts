@@ -14,5 +14,6 @@ export type {
   CommandHost,
   CommandResult,
   Confirmation,
+  ConfirmOptions,
   Refusal,
 } from "./types.js";

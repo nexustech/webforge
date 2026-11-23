@@ -26,6 +26,21 @@ export type Confirmation = {
    * before anything else, set apart, however long the plan (S30, #795).
    */
   readonly first?: true;
+  /**
+   * Asked even of an app the person lets work without asking (5.35, UA-2): where visitors' money or
+   * details go (S18), and Site Settings it names from what they were to what they'd be (a web
+   * address, a phone, an email, a social profile, search engines' permission).
+   */
+  readonly alwaysAsk?: true;
+};
+
+/**
+ * How a change is to be allowed (5.35, UA-2): `unasked`, made without a question, as the app works
+ * without asking; else asked, offering with `offerUnasked` to let the app work without asking.
+ */
+export type ConfirmOptions = {
+  readonly unasked?: boolean;
+  readonly offerUnasked?: (() => void) | undefined;
 };
 
 /**
@@ -60,9 +75,14 @@ export type CommandHost = {
   readonly published: () => boolean;
   /**
    * Shows `confirmation` in Webforge and resolves with whether the person allowed the change.
-   * `signal` aborts when the question has waited too long: the dialog closes, and it's declined.
+   * `signal` aborts when the asker gives up: the question closes. Made `unasked` (5.35), it resolves
+   * true once what goes before a site-wide change has run, with no question.
    */
-  readonly confirm: (confirmation: Confirmation, signal: AbortSignal) => Promise<boolean>;
+  readonly confirm: (
+    confirmation: Confirmation,
+    signal: AbortSignal,
+    options?: ConfirmOptions,
+  ) => Promise<boolean>;
 };
 
 /** What kind of change a command makes, in the editor's words for its own (`EditKind`). */
@@ -78,6 +98,13 @@ export type Actor = {
   readonly signal?: AbortSignal | undefined;
   /** Called as the command asks the person, and waits on their answer with no time limit (5.34). */
   readonly onAsking?: (() => void) | undefined;
+  /**
+   * The person lets this app work without asking (5.35, UA-2): a change that only reaches every
+   * page (D7) is made unasked; one that {@link Confirmation.alwaysAsk} is still asked.
+   */
+  readonly unasked?: boolean | undefined;
+  /** Lets this app work without asking, offered in a question it asks (5.35). */
+  readonly offerUnasked?: (() => void) | undefined;
 };
 
 /** Why a command changed nothing, for the AI app to read. */
