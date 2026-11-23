@@ -11,6 +11,7 @@ import {
 } from "@playwright/test";
 import { OPEN_WAIT } from "../app/budget.js";
 import { launchDesktopApp, waitForCanvas } from "../app/launch.js";
+import { chooseFromMenu } from "../app/menus.js";
 
 // The preview's targets (architecture §10, 3.2): a change to the styles alone reaches the browser
 // in under 100 ms, a changed page in under 200 ms, each timed from the edit's last action in the
@@ -90,7 +91,7 @@ const brand = () =>
 
 /**
  * Sets the theme's brand colour to `hex` in the Theme tab: at once on Enter, nothing asked (LF-15).
- * `starting` runs just before Enter.
+ * `starting` runs just before Enter. The hex codes are Advanced mode's (#1269, LF-16).
  */
 async function brandColour(hex: string, starting: () => void = () => undefined) {
   const field = page.getByRole("textbox", { name: "Brand hex code" });
@@ -101,10 +102,12 @@ async function brandColour(hex: string, starting: () => void = () => undefined) 
 }
 
 test("a colour of the theme reaches the browser in under 100 ms", async () => {
-  await page
-    .getByRole("region", { name: "Right panels" })
-    .getByRole("tab", { name: "Theme", exact: true })
-    .click();
+  // A colour's hex code, which Simple mode doesn't show (#1269): typed, the change is made on Enter
+  // alone, so the time is the change's, not a picker's drag (#1337).
+  await chooseFromMenu(app, page, "View", "Use Advanced Mode");
+  // Site › Theme…: the Theme tab wherever the panels put it, as a strip of icons on a smaller
+  // screen (#1166).
+  await chooseFromMenu(app, page, "Site", "Theme…");
   // The first change saves the person's own theme; the one timed is the second, once the first
   // has reached the browser.
   const initial = await brand();
