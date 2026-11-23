@@ -1,6 +1,7 @@
 import {
   type NodeDoc,
   type PageId,
+  richTextPageLinks,
   SHARED_COPY_TYPE,
   type SharedSectionId,
   type SiteDoc,
@@ -1553,6 +1554,60 @@ describe("every command (4.8, property)", () => {
         }
       }),
       { numRuns: 60 },
+    );
+  });
+});
+
+describe("links in an app's text to the site's own pages (#1374)", () => {
+  /** The home page's Text, and its first Section with the anchor "team". */
+  const withText = (doc: SiteDoc) => {
+    const home = doc.pages[doc.homePageId]?.doc.content;
+    home?.push({ type: "Text", props: { id: "text", text: "<p>Hello</p>" } });
+    const section = home?.[0];
+    if (section !== undefined) section.props.advanced = { anchorId: "team" };
+  };
+
+  it("keeps a link to a page, or a section on one, as a page link by its id", async () => {
+    const { history, host } = setup(true, withText);
+    const api = createCommandApi(host);
+    const doc = history.document.getState();
+    const about = doc.pageOrder.find((id) => doc.pages[id]?.title === "About") ?? "";
+    const write = (text: string) =>
+      api.run("editText", { location: home(history), nodeId: "text", field: "text", text }, app);
+    const stored = () => content(history).find((node) => node.props.id === "text")?.props.text;
+
+    const page = `<p>See <a href="webforge:page/${about}">About</a>.</p>`;
+    expect((await write(page)).status).toBe("done");
+    expect(stored()).toBe(page);
+    expect(richTextPageLinks(String(stored()))).toEqual([{ pageId: about }]);
+    const section = `<p>Meet <a href="webforge:page/${doc.homePageId}#team">the team</a>.</p>`;
+    expect((await write(section)).status).toBe("done");
+    expect(richTextPageLinks(String(stored()))).toEqual([
+      { pageId: doc.homePageId, anchor: "team" },
+    ]);
+    // A page the site doesn't have is refused, as a person couldn't link to it either.
+    expect(await write('<p><a href="webforge:page/gone">Gone</a></p>')).toMatchObject({
+      status: "not-found",
+    });
+  });
+
+  it("says how in the fields' schemas, and gives each section's anchor in the page tree", () => {
+    const { history, host } = setup(true, withText);
+    const api = createCommandApi(host);
+
+    expect(api.query("fields", { location: home(history), nodeId: "text" })).toMatchObject({
+      data: {
+        fields: {
+          text: { schema: { description: expect.stringContaining("webforge:page/<pageId>") } },
+        },
+      },
+    });
+    expect(api.query("pageTree", { location: home(history) })).toMatchObject({
+      data: [{ id: "section", anchor: "team" }, { id: "hero" }, { id: "text" }],
+    });
+    const tree = api.query("pageTree", { location: home(history) });
+    expect((tree.status === "done" ? (tree.data as { anchor?: string }[]) : [])[1]?.anchor).toBe(
+      undefined,
     );
   });
 });
