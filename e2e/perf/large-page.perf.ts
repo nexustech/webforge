@@ -347,9 +347,12 @@ test("a page with 200+ elements against the editing budgets", async () => {
   await test.step("a theme colour dragged: shown on the canvas as it moves (5.30, OL-18)", async () => {
     const rightPanels = page.getByRole("region", { name: "Right panels" });
     // The tab shown before, shown again after, so the steps after this one measure as before.
-    // The column's own tabs come first; a panel in it may have tabs of its own.
-    const shownTab = await rightPanels.getByRole("tab", { selected: true }).first().textContent();
-    await rightPanels.getByRole("tab", { name: "Theme", exact: true }).click();
+    // The column's own tabs come first; a panel in it may have tabs of its own. None when the
+    // column is a strip of icons, as on macOS' smaller screen (#1166, #1337).
+    const selected = rightPanels.getByRole("tab", { selected: true }).first();
+    const shownTab = (await selected.count()) > 0 ? await selected.textContent() : null;
+    // Site › Theme…: the Theme tab wherever the panels put it.
+    await chooseFromMenu(app, page, "Site", "Theme…");
     await page
       .locator('[data-field="color.primary"]')
       .getByRole("button", { name: "Brand" })

@@ -105,10 +105,9 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
   // A colour's hex code, which Simple mode doesn't show (#1269): typed, the change is made on Enter
   // alone, so the time is the change's, not a picker's drag (#1337).
   await chooseFromMenu(app, page, "View", "Use Advanced Mode");
-  await page
-    .getByRole("region", { name: "Right panels" })
-    .getByRole("tab", { name: "Theme", exact: true })
-    .click();
+  // Site › Theme…: the Theme tab wherever the panels put it, as a strip of icons on a smaller
+  // screen (#1166).
+  await chooseFromMenu(app, page, "Site", "Theme…");
   // The first change saves the person's own theme; the one timed is the second, once the first
   // has reached the browser.
   const initial = await brand();
