@@ -33,6 +33,7 @@ const story = (options: FakeAssistantOptions, message?: string): Story =>
       api,
       sessionId: "story",
       openSettings: () => undefined,
+      openCredits: () => undefined,
       openExamples: () => undefined,
     }).remove;
   });
@@ -47,6 +48,12 @@ export const SiteNotAsked: Story = story({ siteConsent: { asked: false, allowed:
 
 /** A reply that changed the site: its text, its cost and the review card. */
 export const Replied: Story = story({}, "Say we open on Saturdays");
+
+/** A reply that failed: why, and what the person can do about it (5.20, OL-5). */
+export const ReplyFailed: Story = story(
+  { reply: { text: "Let me look at your opening hours.", fail: "no-credit" } },
+  "Say we open on Saturdays",
+);
 
 /**
  * A message typed while a reply is under way (5.19, OL-4): held above the box, to be sent when the

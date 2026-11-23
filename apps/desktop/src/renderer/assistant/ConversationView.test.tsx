@@ -1,9 +1,7 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { isMessageKey } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ASSISTANT_ERRORS } from "../../shared/ipc/assistant.js";
-import { ConversationView, errorKey, type TurnView } from "./ConversationView.js";
+import { ConversationView, type TurnView } from "./ConversationView.js";
 
 afterEach(cleanup);
 
@@ -98,13 +96,18 @@ describe("ConversationView (6.9c)", () => {
       "Your OpenRouter account has run out of credit.",
       "Something went wrong. Try again.",
     ]);
-    expect(errorKey("offline")).toBe("assistant.error.offline");
   });
 
-  it("words every error code main can send", () => {
-    for (const code of ASSISTANT_ERRORS) {
-      expect(isMessageKey(`assistant.error.${code}`), code).toBe(true);
-      expect(errorKey(code)).toBe(`assistant.error.${code}`);
-    }
+  it("words a server's refusal as the server's, not OpenRouter's (5.20)", () => {
+    render(
+      <ConversationView
+        turns={[turn({ state: "failed", error: "unauthorized" })]}
+        onOpenLink={() => undefined}
+        provider="server"
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toBe(
+      "The server didn't accept your key. Check it in Settings › Assistant.",
+    );
   });
 });
