@@ -175,9 +175,13 @@ export async function ensureGitleaks(dir: string, install: Install): Promise<str
   return binary;
 }
 
+/** How long the download may take before the push stops and says so. */
+const DOWNLOAD_TIMEOUT_MS = 60_000;
+
 /** Downloads `url`, following GitHub's redirect to its storage. */
 async function download(url: string): Promise<Uint8Array> {
-  const response = await fetch(url);
+  console.error(`Downloading Gitleaks ${GITLEAKS_VERSION} (first push only)…`);
+  const response = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return new Uint8Array(await response.arrayBuffer());
 }
@@ -194,8 +198,26 @@ function extract(archive: string, into: string, zip: boolean): void {
   execFileSync(tar, ["-xf", archive, "-C", into, zip ? "gitleaks.exe" : "gitleaks"]);
 }
 
-/** Scans the commits `logOpts` names (all of them, with none); whether any holds a secret. */
-function scan(binary: string, repo: string, logOpts: string | undefined): boolean {
+/** Gitleaks's exit status for a finding: 1 is its own for an error, such as a broken config. */
+const LEAKED = 2;
+
+/** Runs Gitleaks with `args`, its output shown; throws with `status` when it exits non-zero. */
+type Run = (binary: string, args: readonly string[]) => void;
+
+const run: Run = (binary, args) => {
+  execFileSync(binary, args, { stdio: "inherit" });
+};
+
+/**
+ * Scans the commits `logOpts` names (all of them, with none); whether any holds a secret. Gitleaks
+ * failing to scan, as with a broken `.gitleaks.toml`, stops the push as that, never as a finding.
+ */
+export function scan(
+  binary: string,
+  repo: string,
+  logOpts: string | undefined,
+  runGitleaks: Run = run,
+): boolean {
   const args = [
     "git",
     repo,
@@ -205,17 +227,17 @@ function scan(binary: string, repo: string, logOpts: string | undefined): boolea
     "--no-banner",
     "--verbose",
     "--exit-code",
-    "1",
+    String(LEAKED),
     ...(logOpts === undefined ? [] : ["--log-opts", logOpts]),
   ];
   try {
-    execFileSync(binary, args, { stdio: "inherit" });
+    runGitleaks(binary, args);
     return false;
   } catch (error) {
     const status = (error as { status?: unknown }).status;
-    if (status === 1) return true;
+    if (status === LEAKED) return true;
     throw new GitleaksError(
-      `Gitleaks couldn't scan the commits (exit ${String(status)}), so the push stopped.`,
+      `Gitleaks couldn't scan the commits (exit ${String(status)}; its message is above), so the push stopped. Check .gitleaks.toml.`,
     );
   }
 }
@@ -248,6 +270,15 @@ async function main(args: readonly string[]): Promise<number> {
         }
       });
   if (ranges.length === 0) return 0;
+  // Gitleaks scans nothing, and passes, for a range git can't read: so each is read first.
+  for (const range of ranges) {
+    if (range === undefined) continue;
+    try {
+      git("rev-list", "--count", ...range.split(" "));
+    } catch {
+      throw new GitleaksError(`git couldn't read the commits ${range}, so the push stopped.`);
+    }
+  }
   const dir = join(resolve(repo, git("rev-parse", "--git-common-dir")), "gitleaks");
   const binary = await ensureGitleaks(dir, {
     platform: process.platform,

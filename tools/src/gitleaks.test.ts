@@ -18,6 +18,7 @@ import {
   GITLEAKS_VERSION,
   GitleaksError,
   rangesToScan,
+  scan,
 } from "./gitleaks.js";
 
 const sha256 = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
@@ -139,5 +140,26 @@ describe("ensureGitleaks (5.24)", () => {
     writeFileSync(binary, "");
     await expect(ensureGitleaks(dir, options)).resolves.toBe(binary);
     expect(download).not.toHaveBeenCalled();
+  });
+});
+
+describe("scan (5.24, PR 1346's review)", () => {
+  /** Gitleaks as if it exited with `status`. */
+  const exits = (status: number) => (_binary: string, args: readonly string[]) => {
+    expect(args).toEqual(expect.arrayContaining(["--exit-code", "2", "--redact"]));
+    if (status !== 0) throw Object.assign(new Error(`exit ${status}`), { status });
+  };
+
+  it("finds nothing when Gitleaks passes, and a secret when it exits 2", () => {
+    expect(scan("gitleaks", "/repo", "a..b", exits(0))).toBe(false);
+    expect(scan("gitleaks", "/repo", "a..b", exits(2))).toBe(true);
+  });
+
+  it("stops as an error, not a finding, when Gitleaks can't scan, as with a broken .gitleaks.toml", () => {
+    // Gitleaks exits 1 for a config it can't read.
+    expect(() => scan("gitleaks", "/repo", undefined, exits(1))).toThrow(GitleaksError);
+    expect(() => scan("gitleaks", "/repo", undefined, exits(1))).toThrow(
+      /couldn't scan the commits \(exit 1[\s\S]*\.gitleaks\.toml/,
+    );
   });
 });
