@@ -7,9 +7,9 @@ import type { ChatMessage } from "./chat-client.js";
  * loop runs Site Check itself before the model's next call, so what the model writes next, its
  * closing message included, has seen what its changes left. Only the pages changed since the last
  * check are reported, or the whole site once such a change wasn't on one page: the earlier checks
- * are in the model's messages already, and a page that hasn't changed since has nothing new. The check runs on this computer,
- * as the window's Run Site Check does, and adds no model call: the model is called again after
- * its tool calls anyway.
+ * are in the model's messages already, and a page that hasn't changed since has nothing new. The
+ * check runs on this computer, as the window's Run Site Check does, and adds no model call: the
+ * model is called again after its tool calls anyway.
  */
 
 /** The window's tool the check runs (4.9, `WINDOW_TOOLS`). */
