@@ -65,6 +65,7 @@ A desktop builder for non-technical small-business owners that produces self-con
 
 ## Workflow
 
+- **No secrets in a push:** lefthook's `pre-push` hook runs Gitleaks over the commits being pushed (`tools/src/gitleaks.ts`; the first push downloads the pinned release and checks its SHA-256). A made-up value a test needs goes in `.gitleaks.toml` with a reason; a real secret comes out of every commit that holds it. `pnpm secrets-check` scans the whole history.
 - Conventional Commits (`feat(history): …`), enforced by commitlint in a lefthook `commit-msg` hook. The subject's first character is lower-case: `docs(research): screenshot pass of Bootstrap Studio` passes, `docs(research): Bootstrap Studio screenshot pass` fails.
 - Short-lived branches, PRs into `main`, squash merge.
 - **Closing keywords close issues on merge.** GitHub reads `Closes`, `Fixes` or `Resolves` (and their other forms) followed by `#N` anywhere in a PR description, even inside quotation marks, and closes that issue on merge. Don't count on code formatting to hide one.

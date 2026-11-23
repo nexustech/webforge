@@ -72,6 +72,7 @@ jobs:
       transfer: ${{ steps.decide.outputs.transfer }}
       help: ${{ steps.decide.outputs.help }}
       bench: ${{ steps.decide.outputs.bench }}
+      secrets: ${{ steps.decide.outputs.secrets }}
     steps:
       - name: Decide which jobs to run
         id: decide
@@ -84,7 +85,7 @@ jobs:
         run: |
           set -euo pipefail
           everything() {
-            for output in run e2e all-browsers storybook audit transfer help bench; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
+            for output in run e2e all-browsers storybook audit transfer help bench secrets; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
             exit 0
           }
           case "$EVENT" in
@@ -139,10 +140,14 @@ jobs:
           # What the benchmarks measure (bench/, 5.1): the history, storage, pipeline and Site Check,
           # and what they're built from. Their unit tests change nothing measured.
           bench='^(bench/|packages/(history|model|storage|pipeline|site-check|site-components|themes|test-utils)/src/)'
+          # The pre-push hook's secret scan (5.24): its script, its allow-list and lefthook's config.
+          secrets='^(tools/src/gitleaks(\.test)?\.ts|\.gitleaks\.toml|lefthook\.yml)$'
           echo "run=true" >> "$GITHUB_OUTPUT"
           # Code can change what the help pages are checked against: the catalogue, the strings.
           echo "help=true" >> "$GITHUB_OUTPUT"
           if matches "$deps"; then audit=true; else audit=false; fi
+          if matches "$secrets"; then secrets=true; else secrets=false; fi
+          echo "secrets=$secrets" >> "$GITHUB_OUTPUT"
           if matches "$shared" || matches "$transfer"; then transfer=true; else transfer=false; fi
           if matches "$shared" || grep -Evq "$unit_only" <<< "$files"; then e2e=true; else e2e=false; fi
           measured=$(grep -Ev '(\.test\.tsx?|\.test-helper\.ts|\.stories\.tsx)$' <<< "$files" || true)
@@ -207,6 +212,36 @@ jobs:
 
       - name: Help pages (pnpm help-check)
         run: pnpm help-check
+
+  secrets:
+    # The pre-push hook's secret scan (5.24, OL-13) on each OS: the pinned Gitleaks downloaded and
+    # checked against its SHA-256, then every commit scanned with .gitleaks.toml, so the hook works
+    # on each and `main`'s history stays clean. Nightly, and on a PR that changes the hook. The
+    # script uses Node's built-ins only, so nothing is installed.
+    name: Secrets (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.secrets == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows and macOS while FULL_CI_ENABLED is true.
+        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          # Every commit, as the scan reads them all.
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Every commit scanned for secrets (pnpm secrets-check)
+        run: node tools/src/gitleaks.ts --history
 
   check:
     name: Check (${{ matrix.os }})
@@ -986,6 +1021,7 @@ jobs:
         changes,
         audit,
         help,
+        secrets,
         check,
         bench,
         e2e-linux,
