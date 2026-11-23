@@ -14,12 +14,12 @@ export const DRAW_TIMEOUT_MS = 4_000;
 export const SITE_PICTURE_SELECTOR = "[data-site-picture]";
 
 /**
- * A picture of one colour is taken again, every 50 ms for up to half a second (#1323). The renderer
- * says it has drawn the home page once its frame has been committed, but the window can still show
- * the frame before it, the stage's white box without the page, for a moment after that on a slow
- * computer: a blank picture in the Recent list. A home page of one colour keeps the last picture.
+ * A capture in one colour is taken again every 50 ms for up to half a second, then refused
+ * (#1300, #1323). The renderer says it has drawn the home page once its frame has been committed,
+ * but on a slow computer the window can still show the frame before it for a moment: the stage's
+ * white box without the page. Refused, it's no picture, and the Recent list keeps the one it had.
  */
-export const WHILE_ONE_COLOUR = { retries: 10, everyMs: 50 } as const;
+export const REFUSE_ONE_COLOUR = { retries: 10, everyMs: 50 } as const;
 
 /** A window whose site's picture is taken; a fake in tests. */
 export type PicturedWindow = CapturedWindow & {
@@ -32,9 +32,9 @@ export type PicturedWindow = CapturedWindow & {
  * Pictures of sites for the start screen's Recent list (1.8, #1175): the home page as the export
  * draws it, never the editor. The renderer is asked to draw the home page (`app:site-picture`,
  * `draw`) and answers once it's drawn, or that it can't (`project:site-picture-drawn`); that is
- * captured, taken again while it's one colour ({@link WHILE_ONE_COLOUR}), and the renderer takes
- * the drawing away (`done`). A renderer that doesn't answer within {@link DRAW_TIMEOUT_MS} gives no
- * picture, and the Recent list keeps the one it had.
+ * captured, and the renderer takes the drawing away (`done`). A renderer that doesn't answer within
+ * {@link DRAW_TIMEOUT_MS} gives no picture, nor does a capture still in one colour after
+ * {@link REFUSE_ONE_COLOUR}'s retakes, of nothing drawn: the Recent list keeps the one it had.
  */
 export function createSitePicture(
   ipc: Pick<IpcMain, "handle">,
@@ -72,7 +72,7 @@ export function createSitePicture(
       const id = nextId++;
       try {
         return (await draw(window, id))
-          ? await captureArea(window, SITE_PICTURE_SELECTOR, WHILE_ONE_COLOUR)
+          ? await captureArea(window, SITE_PICTURE_SELECTOR, { refuseOneColour: REFUSE_ONE_COLOUR })
           : undefined;
       } finally {
         if (!window.isDestroyed()) {

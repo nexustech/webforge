@@ -70,7 +70,7 @@ const after = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
 /**
  * Resolves once the browser has drawn what's on screen now: committed it, that is, as the window
  * can show it a moment later on a slow computer (#1323), which the main process allows for by
- * taking a picture of one colour again (`WHILE_ONE_COLOUR`).
+ * taking a picture of one colour again (`REFUSE_ONE_COLOUR`).
  */
 const painted = () =>
   new Promise<void>((resolve) =>
@@ -79,13 +79,17 @@ const painted = () =>
 
 /**
  * `html` in a frame in the middle of the window, on the panels' colour, 1280 × 800 scaled down to
- * fit the window, for the main process to capture (`[data-site-picture]`). `onDrawn` once its
- * fonts and the images in view have loaded, or {@link SETTLE_TIMEOUT_MS} has passed. The frame runs no scripts (an empty
- * `sandbox` but for reading what loaded); the markup is the site library's static HTML.
+ * fit the window, for the main process to capture (`[data-site-picture]`). `onDrawn` once the
+ * page's document has loaded, and its fonts and the images in view, or {@link SETTLE_TIMEOUT_MS}
+ * after it loaded. The frame runs no scripts (an empty `sandbox` but for reading what loaded); the
+ * markup is the site library's static HTML.
  */
 function PictureFrame({ html, onDrawn }: { readonly html: string; readonly onDrawn: () => void }) {
   const scale = Math.min(1, window.innerWidth / PICTURE.width, window.innerHeight / PICTURE.height);
   const settle = (frame: HTMLIFrameElement) => {
+    // The frame's first, empty document can load before the page's (#1300): only a load with the
+    // page's markup in its body is the page's, and the next load is waited for otherwise.
+    if ((frame.contentDocument?.body?.childElementCount ?? 0) === 0) return;
     // Its fonts and the images in view, waited for as they load; pictured as it is after that.
     const loaded = async () => {
       const page = frame.contentDocument;

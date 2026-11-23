@@ -1,4 +1,4 @@
-import type { BrowserWindow, NativeImage, Rectangle, WebContents } from "electron";
+import type { BrowserWindow, Rectangle, WebContents } from "electron";
 import { z } from "zod";
 
 const areaSchema = z.object({
@@ -28,22 +28,21 @@ export type CapturedWindow = Pick<BrowserWindow, "isDestroyed"> & {
   readonly webContents: Pick<WebContents, "isCrashed" | "executeJavaScript" | "capturePage">;
 };
 
-/**
- * How many times a picture of one colour is taken again, and how long apart: a window can show a
- * drawing a little after the renderer has drawn it (#1323).
- */
-export type WhileOneColour = { readonly retries: number; readonly everyMs: number };
-
-/** Whether every pixel of `image` is the same colour: nothing on it, or not yet. */
-export function isOneColour(image: Pick<NativeImage, "toBitmap">): boolean {
-  const bitmap = image.toBitmap();
-  for (let at = 4; at < bitmap.length; at += 4) {
-    for (let channel = 0; channel < 4; channel++) {
-      if (bitmap[at + channel] !== bitmap[channel]) return false;
+/** Whether every pixel of `bitmap` (four bytes each, as `toBitmap` gives them) is one colour. */
+function oneColour(bitmap: Uint8Array): boolean {
+  for (let at = 4; at + 3 < bitmap.length; at += 4) {
+    if (bitmap[at] !== bitmap[0] || bitmap[at + 1] !== bitmap[1] || bitmap[at + 2] !== bitmap[2]) {
+      return false;
     }
   }
   return true;
 }
+
+/**
+ * A picture in one colour, refused: taken again up to `retries` times, `everyMs` apart, in case the
+ * window doesn't show the drawing yet (#1323), then refused as of nothing drawn (#1300).
+ */
+export type RefuseOneColour = { readonly retries: number; readonly everyMs: number };
 
 const live = (window: CapturedWindow) => !window.isDestroyed() && !window.webContents.isCrashed();
 
@@ -53,15 +52,13 @@ const after = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
 /**
  * The element `selector` finds, as the window shows it, as a 480-pixel-wide JPEG: for the site's
  * picture in the Recent list (1.8, #1175). `undefined` without a window, with a crashed renderer,
- * without the element (never the whole window, editor and all), or for an empty image.
- *
- * With `whileOneColour`, a picture of one colour is taken again until it isn't, up to its
- * `retries`; the last is kept, for an element that is one colour.
+ * without the element (never the whole window, editor and all), or for an empty image; with
+ * `refuseOneColour`, also for an image in one colour, after taking it again as that says.
  */
 export async function captureArea(
   window: CapturedWindow | undefined,
   selector: string,
-  whileOneColour?: WhileOneColour,
+  options: { readonly refuseOneColour?: RefuseOneColour } = {},
 ): Promise<Uint8Array | undefined> {
   if (window === undefined || !live(window)) return undefined;
   const area = await areaOf(window.webContents, selector);
@@ -70,10 +67,12 @@ export async function captureArea(
     const image = await window.webContents.capturePage(area);
     return image.isEmpty() ? undefined : image.resize({ width: 480 });
   };
-  const { retries, everyMs } = whileOneColour ?? { retries: 0, everyMs: 0 };
   let picture = await take();
-  for (let retry = 0; retry < retries && picture !== undefined && isOneColour(picture); retry++) {
-    await after(everyMs);
+  const refuse = options.refuseOneColour;
+  for (let retry = 0; refuse !== undefined && picture !== undefined; retry++) {
+    if (!oneColour(picture.toBitmap())) break;
+    if (retry === refuse.retries) return undefined;
+    await after(refuse.everyMs);
     if (!live(window)) return undefined;
     picture = await take();
   }

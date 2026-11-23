@@ -4,8 +4,8 @@ import {
   createSitePicture,
   DRAW_TIMEOUT_MS,
   type PicturedWindow,
+  REFUSE_ONE_COLOUR,
   SITE_PICTURE_SELECTOR,
-  WHILE_ONE_COLOUR,
 } from "./site-picture.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
@@ -15,7 +15,17 @@ const APP_URL = "file:///app/index.html";
 /** The renderer's answer to a draw request, as the preload sends it. */
 type Answer = (id: number, drawn: boolean, senderUrl?: string) => void;
 
-function setUp(renderer: (id: number, answer: Answer) => void, crashed = false) {
+/** A drawn page's pixels, four bytes each: white and the theme's colour. */
+const DRAWN = new Uint8Array([255, 255, 255, 255, 30, 60, 90, 255]);
+
+/** The window's pixels at each capture, the last kept: the page drawn, unless a test says not. */
+function setUp(
+  renderer: (id: number, answer: Answer) => void,
+  crashed = false,
+  bitmaps: readonly Uint8Array[] = [DRAWN],
+) {
+  const shown = [...bitmaps];
+  const bitmap = () => (shown.length > 1 ? shown.shift() : shown[0]);
   const handlers = new Map<string, Handler>();
   const ipc = {
     handle: (channel: string, handler: Handler) => handlers.set(channel, handler),
@@ -32,12 +42,9 @@ function setUp(renderer: (id: number, answer: Answer) => void, crashed = false) 
       .catch(() => undefined);
   const sent: unknown[][] = [];
   const jpeg = new Uint8Array([0xff, 0xd8]);
-  // The home page drawn: more than one colour, unless a test says otherwise.
-  const bitmaps: Buffer[] = [];
-  const bitmap = () => bitmaps.shift() ?? Buffer.from([255, 255, 255, 255, 0, 0, 0, 255]);
   const image = {
     isEmpty: () => false,
-    resize: () => ({ toJPEG: () => jpeg, toBitmap: () => bitmap() }),
+    resize: () => ({ toJPEG: () => jpeg, toBitmap: bitmap }),
   } as unknown as NativeImage;
   const executeJavaScript = vi.fn(async (_code: string) => ({
     x: 0,
@@ -59,7 +66,7 @@ function setUp(renderer: (id: number, answer: Answer) => void, crashed = false) 
       },
     } as unknown as PicturedWindow["webContents"],
   };
-  return { pictures, window, sent, jpeg, capturePage, executeJavaScript, bitmaps };
+  return { pictures, window, sent, jpeg, capturePage, executeJavaScript };
 }
 
 describe("createSitePicture (#1175)", () => {
@@ -95,21 +102,35 @@ describe("createSitePicture (#1175)", () => {
     expect(DRAW_TIMEOUT_MS).toBeGreaterThanOrEqual(3_500);
   });
 
-  it("takes the picture again while the window still shows the stage's white box (#1323)", async () => {
-    const { pictures, window, sent, jpeg, capturePage, bitmaps } = setUp((id, answer) =>
-      answer(id, true),
-    );
-    const white = Buffer.from([255, 255, 255, 255, 255, 255, 255, 255]);
-    bitmaps.push(white, white);
+  it("takes no picture of a page in one colour, nothing drawn, so the Recent list keeps its own (#1300)", async () => {
+    const white = new Uint8Array(480 * 300 * 4).fill(255);
+    const { pictures, window, sent, capturePage } = setUp((id, answer) => answer(id, true), false, [
+      white,
+    ]);
 
     const taken = pictures.capture(window);
-    await vi.advanceTimersByTimeAsync(2 * WHILE_ONE_COLOUR.everyMs);
+    await vi.advanceTimersByTimeAsync(REFUSE_ONE_COLOUR.retries * REFUSE_ONE_COLOUR.everyMs);
+    expect(await taken).toBeUndefined();
+    // Taken again for half a second first, well within the 8 s the renderer keeps its drawing for.
+    expect(capturePage).toHaveBeenCalledTimes(REFUSE_ONE_COLOUR.retries + 1);
+    expect(REFUSE_ONE_COLOUR.retries * REFUSE_ONE_COLOUR.everyMs).toBeLessThanOrEqual(500);
+    expect(sent.at(-1)).toEqual(["app:site-picture", 1, "done"]);
+  });
+
+  it("takes the picture again while the window still shows the stage's white box (#1323)", async () => {
+    const white = new Uint8Array(480 * 300 * 4).fill(255);
+    const { pictures, window, sent, jpeg, capturePage } = setUp(
+      (id, answer) => answer(id, true),
+      false,
+      [white, white, DRAWN],
+    );
+
+    const taken = pictures.capture(window);
+    await vi.advanceTimersByTimeAsync(2 * REFUSE_ONE_COLOUR.everyMs);
     expect(await taken).toBe(jpeg);
     expect(capturePage).toHaveBeenCalledTimes(3);
     // The drawing stays until the last picture is taken.
     expect(sent.at(-1)).toEqual(["app:site-picture", 1, "done"]);
-    // Half a second at most, well within the 8 s the renderer keeps its drawing for.
-    expect(WHILE_ONE_COLOUR.retries * WHILE_ONE_COLOUR.everyMs).toBeLessThanOrEqual(500);
   });
 
   it("takes no picture when the renderer can't draw the page, and still has it tidy up", async () => {
