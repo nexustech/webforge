@@ -25,7 +25,8 @@ export type PicturedWindow = CapturedWindow & {
  * draws it, never the editor. The renderer is asked to draw the home page (`app:site-picture`,
  * `draw`) and answers once it's drawn, or that it can't (`project:site-picture-drawn`); that is
  * captured, and the renderer takes the drawing away (`done`). A renderer that doesn't answer within
- * {@link DRAW_TIMEOUT_MS} gives no picture, and the Recent list keeps the one it had.
+ * {@link DRAW_TIMEOUT_MS} gives no picture, nor does a capture in one colour, of nothing drawn
+ * (#1300): the Recent list keeps the one it had.
  */
 export function createSitePicture(
   ipc: Pick<IpcMain, "handle">,
@@ -63,7 +64,7 @@ export function createSitePicture(
       const id = nextId++;
       try {
         return (await draw(window, id))
-          ? await captureArea(window, SITE_PICTURE_SELECTOR)
+          ? await captureArea(window, SITE_PICTURE_SELECTOR, { refuseOneColour: true })
           : undefined;
       } finally {
         if (!window.isDestroyed()) {
