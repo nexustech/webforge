@@ -12,6 +12,8 @@ import {
   type AssistantStatus,
   type ConversationTurn,
   MONTHLY_LIMIT_DEFAULT_USD,
+  type QuestionAnswer,
+  type ReplyQuestion,
 } from "../../shared/ipc/assistant.js";
 import type { AssistantService } from "../assistant-ipc.js";
 import type { CredentialStore } from "../credential-store.js";
@@ -286,6 +288,33 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
   /** The replies under way, by their id: Stop aborts one. A site has one at a time. */
   const replies = new Map<string, { readonly project: string; readonly stop: AbortController }>();
   /**
+   * The question each reply waits on (5.16), by the reply's id: the site it's for, the call that
+   * asked it, and how the answer continues the reply. Gone once answered or the reply ends.
+   */
+  const waiting = new Map<
+    string,
+    {
+      readonly project: string;
+      readonly callId: string;
+      readonly answer: (answer: QuestionAnswer) => void;
+    }
+  >();
+
+  /** Puts `question` to the person (5.16): kept in the turn, told to the panel, waited on. */
+  const askPerson = (
+    run: { readonly session: string; readonly project: string; readonly turn: ConversationTurn },
+    question: ReplyQuestion,
+  ) => {
+    const { session, project, turn } = run;
+    turn.questions = [...(turn.questions ?? []), question];
+    // Waited on before the panel hears of it, so its answer always finds it.
+    const answered = new Promise<QuestionAnswer>((answer) => {
+      waiting.set(turn.replyId, { project, callId: question.callId, answer });
+    });
+    options.emit({ session, type: "question", replyId: turn.replyId, ...question });
+    return answered;
+  };
+  /**
    * Each conversation's safety version (S20), by project id, saved before its first change. One
    * that failed is forgotten, so the next change tries again.
    */
@@ -440,6 +469,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
           signal: run.signal,
           stillOpen,
           staged: run.staged,
+          ask: (question) => askPerson(run, question),
           addCost: async (usd) => (await service.addCost(usd)).reached,
           onText: (delta) => {
             turn.reply += delta;
@@ -729,7 +759,11 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
         staged,
       })
         .catch((error: unknown) => logFailure("assistant reply", error))
-        .finally(() => replies.delete(replyId));
+        .finally(() => {
+          replies.delete(replyId);
+          // Its question, if one still waits, can't be answered now.
+          waiting.delete(replyId);
+        });
       return { status: "sending", replyId };
     },
     draft: async (session, request) => {
@@ -825,6 +859,21 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       // A panel opened again never shows held changes it can't apply.
       const project = dropStale(session);
       return project === undefined ? [] : structuredClone(conversations.get(project) ?? []);
+    },
+    answer: async (session, replyId, callId, answer) => {
+      const asked = waiting.get(replyId);
+      // Only for the question that reply waits on, from the site it's for.
+      if (asked === undefined || asked.callId !== callId) return { status: "not-asked" };
+      if (options.projectOf(session) !== asked.project) return { status: "not-asked" };
+      waiting.delete(replyId);
+      const turn = conversations.get(asked.project)?.find((each) => each.replyId === replyId);
+      if (turn !== undefined) {
+        turn.questions = (turn.questions ?? []).map((each) =>
+          each.callId === callId ? { ...each, answer } : each,
+        );
+      }
+      asked.answer(answer);
+      return { status: "answered" };
     },
     openLink: async (session, replyId, href) => {
       const project = options.projectOf(session);

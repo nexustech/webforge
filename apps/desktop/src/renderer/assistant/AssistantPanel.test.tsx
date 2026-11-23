@@ -214,3 +214,124 @@ describe("a message typed while a reply runs (5.19, OL-4)", () => {
     expect(send).toHaveBeenLastCalledWith("site-1", "And on Sundays", expect.anything());
   });
 });
+
+describe("a question before acting (5.16, OL-1)", () => {
+  const ASKING: FakeAssistantOptions["reply"] = {
+    text: "Before I change anything:",
+    question: {
+      question: "Which look would you like?",
+      answers: ["Calm and modern", "Bold and bright", "Classic"],
+    },
+    steps: [
+      {
+        entryId: "fake-entry-1",
+        label: "AI (Assistant): Edited theme",
+        target: { pageId: "home" },
+      },
+    ],
+  };
+
+  it("asks with one-tap answers, the recommended one first, and goes on with the one chosen", async () => {
+    const { api, user } = shown({ reply: ASKING });
+    const answer = vi.spyOn(api, "answer");
+    await user.type(
+      await screen.findByRole("textbox", { name: "Message the assistant" }),
+      "Make it look more professional{Enter}",
+    );
+
+    const card = await screen.findByRole("region", { name: /The assistant asks/ });
+    expect(within(card).getByText("Which look would you like?")).toBeDefined();
+    // Said once to a screen reader, outside the conversation, which is busy while it runs.
+    expect(screen.getByRole("status", { name: "" }).textContent).toBe(
+      "The assistant asks: Which look would you like?",
+    );
+    const answers = within(card).getAllByRole("button");
+    expect(answers.map((button) => button.textContent)).toEqual([
+      "Calm and modernRecommended",
+      "Bold and bright",
+      "Classic",
+    ]);
+    // Nothing changes while it waits.
+    expect(screen.queryByRole("list", { name: "Changes" })).toBeNull();
+
+    await user.type(
+      within(card).getByRole("textbox", { name: "Add a note (optional)" }),
+      "Keep the logo",
+    );
+    await user.click(answers[1] as HTMLElement);
+
+    expect(answer).toHaveBeenCalledWith("site-1", expect.any(String), "question-1", {
+      answer: "Bold and bright",
+      note: "Keep the logo",
+    });
+    // The same reply goes on, and the card keeps the answer given.
+    expect(await screen.findByText("This reply made 1 change")).toBeDefined();
+    expect(within(card).getByText("Bold and bright")).toBeDefined();
+    expect(within(card).getByText("Keep the logo")).toBeDefined();
+    expect(within(card).queryByRole("button")).toBeNull();
+  });
+
+  it("takes a message typed in the box as the answer, and works by keyboard alone", async () => {
+    const { api, send, user } = shown({ reply: ASKING });
+    const answer = vi.spyOn(api, "answer");
+    const box = await screen.findByRole("textbox", { name: "Message the assistant" });
+    await user.type(box, "Make it look more professional{Enter}");
+    const card = await screen.findByRole("region", { name: /The assistant asks/ });
+
+    expect(screen.getByRole("button", { name: "Send as Your Answer" })).toBeDefined();
+    // A note written on the card goes with the answer typed in the box (PR 1332's review).
+    await user.type(
+      within(card).getByRole("textbox", { name: "Add a note (optional)" }),
+      "Keep the logo",
+    );
+    await user.type(box, "Something friendly, with green{Enter}");
+
+    expect(answer).toHaveBeenCalledWith("site-1", expect.any(String), "question-1", {
+      answer: "Something friendly, with green",
+      note: "Keep the logo",
+    });
+    expect(send).toHaveBeenCalledOnce();
+    await screen.findByText("This reply made 1 change");
+    expect((box as HTMLTextAreaElement).value).toBe("");
+  });
+
+  it("chooses an answer from the keyboard: Tab between the answers and the note, then Enter", async () => {
+    const { api, user } = shown({ reply: ASKING });
+    const answer = vi.spyOn(api, "answer");
+    await user.type(
+      await screen.findByRole("textbox", { name: "Message the assistant" }),
+      "Make it look more professional{Enter}",
+    );
+    const card = await screen.findByRole("region", { name: /The assistant asks/ });
+    const [recommended, , classic] = within(card).getAllByRole("button");
+    const note = within(card).getByRole("textbox", { name: "Add a note (optional)" });
+    recommended?.focus();
+    await user.tab();
+    await user.tab();
+    expect(document.activeElement).toBe(classic);
+    await user.tab();
+    expect(document.activeElement).toBe(note);
+    await user.keyboard("Plain fonts");
+    await user.tab({ shift: true });
+    await user.keyboard("{Enter}");
+
+    expect(answer).toHaveBeenCalledWith("site-1", expect.any(String), "question-1", {
+      answer: "Classic",
+      note: "Plain fonts",
+    });
+  });
+
+  it("says a question wasn't answered once Stop ends the reply", async () => {
+    const { user } = shown({ reply: ASKING });
+    await user.type(
+      await screen.findByRole("textbox", { name: "Message the assistant" }),
+      "Make it look more professional{Enter}",
+    );
+    const card = await screen.findByRole("region", { name: /The assistant asks/ });
+    await user.click(screen.getByRole("button", { name: "Stop" }));
+
+    expect(await within(card).findByText("Not answered.")).toBeDefined();
+    expect(within(card).queryByRole("button")).toBeNull();
+    expect(screen.getByRole("button", { name: "Send" })).toBeDefined();
+  });
+});

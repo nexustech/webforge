@@ -30,6 +30,8 @@ export const assistantApi = (call: Call, subscribe: Subscribe): AssistantApi => 
   discardHeld: async (session, replyId) => {
     await call("assistantDiscardHeld", session, replyId);
   },
+  answer: (session, replyId, callId, answer) =>
+    call("assistantAnswer", session, replyId, callId, answer),
   openLink: (session, replyId, href) => call("assistantOpenLink", session, replyId, href),
   onEvent: (listener) =>
     subscribe(assistantEvents.event.channel, (...args) => {

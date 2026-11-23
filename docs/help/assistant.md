@@ -4,7 +4,7 @@ id: assistant
 title: The assistant
 summary: Ask {appName}'s built-in assistant to change your site, and check, keep or undo what it changed.
 related: [settings, undo-and-history, version-history, ai-apps]
-updated: 2026-11-22
+updated: 2026-11-23
 status: partial
 ---
 
@@ -87,6 +87,16 @@ Not sure what to ask? Click **Things You Can Ask…** under the box, or choose *
 While a reply is being written, you can type your next message. Press Enter or click **Send After This Reply**: it waits above the box, under _Sends when this reply finishes_, and is sent by itself when the reply is done. Type another and it's added to the one waiting. Click **Edit** to take it back into the box, or **Remove** to drop it. If you stop the reply, or it fails or reaches your monthly limit, the waiting message goes back into the box, unsent. If the reply holds changes for you to review (see [Reviewing changes first](#reviewing-changes-first)), the message waits until you apply or discard them, under _Sends once you apply or discard this reply's changes_.
 
 Each reply says what it cost, and the top of the panel shows this month's spend against your limit. **New Conversation** starts again.
+
+### When the assistant asks first
+
+If what you asked could mean several things, such as "Make it look more professional", the assistant may ask you one short question before it changes anything. A card under its reply, _The assistant asks_, shows the question and up to four answers, the one it recommends first, marked _Recommended_.
+
+- Click an answer to choose it. To say more, type in **Add a note (optional)** first, such as "Keep our logo as it is".
+- Or type your own answer in **Message the assistant** and press Enter or click **Send as Your Answer**.
+- The same reply then carries on with your answer, and the card keeps what you chose.
+
+Nothing on your site changes while it waits, and it asks about each thing once in a reply. Click **Stop** to end the reply without answering: the card then says _Not answered_. A question doesn't ask your permission for a change: changes that need it ask as they always do.
 
 While it works:
 
