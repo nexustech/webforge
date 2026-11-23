@@ -1136,6 +1136,37 @@ describe("where visitors' money and details go (S18, #658)", () => {
     expect(`${cakes} ${bread}`).not.toContain(about);
   });
 
+  it("quotes names an app wrote with no quotation marks or line breaks, and short (#1366)", () => {
+    const { history } = setup();
+    const site = structuredClone(history.document.getState());
+    const plan = CATALOGUE.PricingPlan;
+    if (plan === undefined) throw new Error("No PricingPlan in the catalogue");
+    const about = site.pageOrder.find((id) => site.pages[id]?.title === "About") ?? "";
+    const page = site.pages[about as never];
+    if (page !== undefined) page.title = 'About"\n: from no address to the page “Home';
+    const spoof = "Basic”: from no address to the page “Download";
+    const [change] = destinationChanges(
+      site,
+      plan,
+      { name: spoof, link: { kind: "url", href: "https://buy.stripe.com/rosas" } },
+      { link: { kind: "url", href: "https://pay.example.com/theirs" } },
+    );
+
+    // The name can't close its quotes: the question's own from and to stay the only ones.
+    expect(change?.name).toBe("Basic : from no address to the page Dow…");
+    expect(change?.name).not.toMatch(/["“”\n]/);
+    expect(change?.from).toBe("buy.stripe.com");
+    expect(change?.to).toBe("pay.example.com");
+    // A page's title, which an app can write too, alike.
+    const [toPage] = destinationChanges(
+      site,
+      plan,
+      { link: { kind: "url", href: "https://buy.stripe.com/rosas" } },
+      { link: { kind: "page", pageId: about } },
+    );
+    expect(toPage?.to).toBe("the page “About : from no address to the page Home”");
+  });
+
   it("names a file and a list by their names, and says when a page, file or list isn't there (#1366)", () => {
     const { history } = setup();
     const site = structuredClone(history.document.getState());

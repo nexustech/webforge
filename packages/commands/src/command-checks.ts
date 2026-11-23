@@ -330,12 +330,22 @@ function addressOf(value: unknown): string {
 }
 
 /** The most of an element's name, or of a page, file or list's, a confirmation shows. */
-const NAME_MAX_CHARS = 80;
+const NAME_MAX_CHARS = 40;
 
-/** `name` trimmed, cut short past {@link NAME_MAX_CHARS}. */
+/**
+ * Quotation marks, which a confirmation puts around a name, and line breaks: an app writes the
+ * names, so one could close the quotes and write a "from … to …" of its own (#1366 review).
+ */
+const NAME_SPOOFS = /["“”„‟‘’‚‛'`«»‹›\r\n\u2028\u2029]/g;
+
+/**
+ * `name` as a confirmation quotes it: with no quotation marks or line breaks, its spaces run
+ * together, cut short past {@link NAME_MAX_CHARS}. Names an app writes (an element's, a page's
+ * title, a file's or a list's) can't then read as part of the question around them.
+ */
 function shortName(name: string): string {
-  const trimmed = name.trim();
-  return trimmed.length <= NAME_MAX_CHARS ? trimmed : `${trimmed.slice(0, NAME_MAX_CHARS - 1)}…`;
+  const plain = name.replace(NAME_SPOOFS, " ").replace(/\s+/g, " ").trim();
+  return plain.length <= NAME_MAX_CHARS ? plain : `${plain.slice(0, NAME_MAX_CHARS - 1)}…`;
 }
 
 /**
