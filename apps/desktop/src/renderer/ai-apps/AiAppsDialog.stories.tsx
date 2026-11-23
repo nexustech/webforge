@@ -14,12 +14,14 @@ const ON: McpStatus = {
       name: "Claude Desktop",
       claimed: true,
       connected: true,
+      unaskedUntil: null,
     },
     {
       id: "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5",
       name: "Cursor",
       claimed: false,
       connected: false,
+      unaskedUntil: null,
     },
   ],
 };
@@ -30,6 +32,7 @@ const mcpWith = (status: McpStatus): McpApi => ({
   setEnabled: async (enabled) => ({ ...status, enabled }),
   add: async () => ({ status: "name-taken" }),
   seenMoved: async () => undefined,
+  setUnasked: async () => status,
   install: async () => ({ status: "opened" }),
   remove: async () => status,
 });
@@ -59,6 +62,26 @@ export const Off: Story = {
   args: { mcp: mcpWith({ enabled: false, address: null, moved: false, apps: [] }) },
 };
 
+/** The time the stories show: 14:00 on a fixed day, so its screenshots don't change. */
+const STORY_NOW = Date.UTC(2026, 10, 23, 14, 0);
+
+/**
+ * In a site's window (5.35, UA-2): each app's *Work without asking*, Claude Desktop's on until an
+ * hour from now, Cursor's asking first.
+ */
+export const WorkingWithoutAsking: Story = {
+  args: {
+    siteOpen: true,
+    now: () => STORY_NOW,
+    mcp: mcpWith({
+      ...ON,
+      apps: ON.apps.map((app, at) =>
+        at === 0 ? { ...app, unaskedUntil: STORY_NOW + 3_600_000 } : app,
+      ),
+    }),
+  },
+};
+
 /** The remembered address was taken: the apps have to be added again. */
 export const Moved: Story = { args: { mcp: mcpWith({ ...ON, moved: true }) } };
 
@@ -80,6 +103,7 @@ const pairing = (then: Then = "waiting"): McpApi => {
         name,
         claimed: then === "connected",
         connected: then === "connected",
+        unaskedUntil: null,
       };
       if (then !== "expired") status = { ...ON, apps: [...ON.apps, app] };
       return {

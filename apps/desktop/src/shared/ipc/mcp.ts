@@ -10,6 +10,15 @@ export const UNCLAIMED_KEY_MS = 5 * 60_000;
 /** The longest name the person can give an AI app (the AI contract's limit). */
 export const AI_APP_NAME_MAX = 80;
 
+/**
+ * How long the person can let an app work without asking (5.35, UA-2), in minutes: until the site
+ * closes, or for this long, whichever comes first.
+ */
+export const UNASKED_MINUTES = [30, 60, 120, 240] as const;
+
+/** How long the question's *Allow, and don't ask again* lets an app work without asking (UA-2). */
+export const DEFAULT_UNASKED_MINUTES = 60;
+
 /** A paired AI app, as AI apps lists it: never its key. */
 const pairedAppSchema = z.strictObject({
   id: z.uuid(),
@@ -18,6 +27,11 @@ const pairedAppSchema = z.strictObject({
   claimed: z.boolean(),
   /** Whether it has a connection now. */
   connected: z.boolean(),
+  /**
+   * When it stops working without asking on the site open now (5.35, UA-2), in ms since the epoch;
+   * null while it asks, as it does by default.
+   */
+  unaskedUntil: z.number().int().nonnegative().nullable(),
 });
 
 /** AI apps as the window shows them (4.9, ADR 0021). */
@@ -77,6 +91,22 @@ export const mcpChannels = {
     request: z.tuple([z.boolean()]),
     response: statusSchema,
   },
+  /**
+   * Lets paired app `id` work without asking on the site open now for `minutes`, or no longer
+   * (null): kept in Webforge until the site closes, never with the site (5.35, UA-2).
+   */
+  mcpSetUnasked: {
+    channel: "mcp:set-unasked",
+    request: z.tuple([
+      z.uuid(),
+      z
+        .int()
+        .min(1)
+        .max(Math.max(...UNASKED_MINUTES))
+        .nullable(),
+    ]),
+    response: statusSchema,
+  },
   /** Pairs an app by the name the person gives it; only while *AI apps* is on. */
   mcpAdd: {
     channel: "mcp:add",
@@ -111,6 +141,8 @@ export const mcpChannels = {
 export interface McpApi {
   status(): Promise<McpStatus>;
   setEnabled(enabled: boolean): Promise<McpStatus>;
+  /** Lets paired app `id` work without asking for `minutes`, or no longer (null) (5.35). */
+  setUnasked(id: string, minutes: number | null): Promise<McpStatus>;
   /** Pairs an app of kind `kind` (`AI_CLIENTS`). */
   add(name: string, kind: AiClientId): Promise<McpAddResult>;
   seenMoved(): Promise<void>;

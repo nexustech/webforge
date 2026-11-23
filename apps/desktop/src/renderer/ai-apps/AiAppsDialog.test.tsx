@@ -16,6 +16,7 @@ const CLAUDE = {
   name: "Claude",
   claimed: true,
   connected: false,
+  unaskedUntil: null,
 };
 const KEY = "k".repeat(43);
 const ADDRESS = "http://127.0.0.1:51234/mcp";
@@ -36,12 +37,21 @@ function fakeMcp(start: Partial<McpStatus> = {}) {
       return status;
     }),
     seenMoved: vi.fn<McpApi["seenMoved"]>(async () => undefined),
+    setUnasked: vi.fn(async (id: string, minutes: number | null) => {
+      const until = minutes === null ? null : 1_000_000 + minutes * 60_000;
+      status = {
+        ...status,
+        apps: status.apps.map((app) => (app.id === id ? { ...app, unaskedUntil: until } : app)),
+      };
+      return status;
+    }),
     add: vi.fn<McpApi["add"]>(async (name) => {
       const app = {
         id: "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5",
         name,
         claimed: false,
         connected: false,
+        unaskedUntil: null,
       };
       status = { ...status, apps: [...status.apps, app] };
       return { status: "paired", app, key: KEY, address: ADDRESS };
@@ -65,7 +75,11 @@ function fakeMcp(start: Partial<McpStatus> = {}) {
 
 function setUp(
   start: Partial<McpStatus> = {},
-  extra: { readonly shell?: ShellKind; readonly now?: () => number } = {},
+  extra: {
+    readonly shell?: ShellKind;
+    readonly now?: () => number;
+    readonly siteOpen?: boolean;
+  } = {},
 ) {
   const fake = fakeMcp(start);
   const copyText = vi.fn(async () => null);
@@ -85,6 +99,37 @@ function setUp(
   const dialog = () => within(screen.getByRole("dialog", { name: "AI Apps" }));
   return { ...fake, copyText, copySecret, notify, dialog, user: userEvent.setup({ delay: null }) };
 }
+
+describe("an app working without asking, in AI apps (5.35, UA-2)", () => {
+  it("lets an app work without asking for a while, by keyboard, says until when, and ends it", async () => {
+    const { mcp, dialog, user } = setUp({}, { siteOpen: true, now: () => 1_000_000 });
+    const choice = await waitFor(() =>
+      dialog().getByRole("combobox", { name: "Work without asking: Claude" }),
+    );
+    expect((choice as HTMLSelectElement).value).toBe("asks");
+
+    choice.focus();
+    await user.selectOptions(choice, "For an hour");
+    expect(mcp.setUnasked).toHaveBeenCalledWith(CLAUDE.id, 60);
+    const until = new Intl.DateTimeFormat(undefined, { timeStyle: "short" }).format(
+      new Date(1_000_000 + 3_600_000),
+    );
+    await waitFor(() =>
+      expect(dialog().getByRole("option", { name: `Yes, until ${until}` })).toBeTruthy(),
+    );
+    expect((choice as HTMLSelectElement).value).toBe("on");
+
+    await user.selectOptions(choice, "No, ask first");
+    expect(mcp.setUnasked).toHaveBeenLastCalledWith(CLAUDE.id, null);
+    await waitFor(() => expect((choice as HTMLSelectElement).value).toBe("asks"));
+  });
+
+  it("offers no such choice with no site open, as from the start screen", async () => {
+    const { dialog } = setUp();
+    await waitFor(() => expect(dialog().getByText("Claude")).toBeTruthy());
+    expect(dialog().queryByRole("combobox", { name: /Work without asking/ })).toBeNull();
+  });
+});
 
 describe("AI apps (4.9)", () => {
   it("lists each paired app with whether it's connected, and shows it connecting live", async () => {

@@ -1,0 +1,27 @@
+# Gitleaks before every push (5.24, OL-13): `tools/src/gitleaks.ts` runs it from lefthook's pre-push
+# hook, and `pnpm secrets-check` over the whole history. Gitleaks's own rules, with the values this
+# repository holds on purpose allowed below, each with its reason. Allow a value, or a path for one
+# rule, never a whole folder for every rule.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "A made-up Web3Forms access key (Microsoft's documentation example GUID) that the form tests and the exported fixture site send to no one."
+targetRules = ["generic-api-key"]
+regexes = ['''^0f8fad5b-d9cb-469f-a165-70867728950e$''']
+
+[[allowlists]]
+description = "A made-up key handle in the publish destinations' tests: the id of a keychain entry, not a secret."
+targetRules = ["generic-api-key"]
+regexes = ['''^6e7f8091-2b3c-4d4e-9f50-6b7c8d9e0f1a$''']
+
+[[allowlists]]
+description = "The SFTP publisher's patterns for an OpenSSH or PEM key's header, which tell whether a key file is encrypted: no key."
+targetRules = ["private-key"]
+paths = ['''^packages/publish/src/sftp\.ts$''']
+
+[[allowlists]]
+description = "Vitest snapshots: a site's page and element ids are 16 random characters, which look like keys."
+targetRules = ["generic-api-key"]
+paths = ['''(^|/)__snapshots__/[^/]+\.snap$''']

@@ -39,6 +39,31 @@ describe("confirmSiteWide (D7)", () => {
     expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
+  it("offers an AI app's question to let it work without asking, by keyboard too (5.35)", async () => {
+    const confirm = createSiteWideConfirm();
+    render(<SiteWideConfirmDialog confirm={confirm} />);
+    const allowAlways = vi.fn();
+
+    let answer: Promise<boolean> | undefined;
+    act(() => {
+      answer = confirm.confirmSiteWide({ ...deletePage(6), allowAlways });
+    });
+    const offer = screen.getByRole("button", { name: "Allow, and Don't Ask Again for an Hour" });
+    offer.focus();
+    await userEvent.keyboard("{Enter}");
+
+    await expect(answer).resolves.toBe(true);
+    expect(allowAlways).toHaveBeenCalledOnce();
+
+    // A question without it, such as the person's own, offers nothing more.
+    act(() => {
+      void confirm.confirmSiteWide(deletePage(6));
+    });
+    expect(
+      screen.queryByRole("button", { name: "Allow, and Don't Ask Again for an Hour" }),
+    ).toBeNull();
+  });
+
   it("resolves false when cancelled, without the hook; one page is said so", async () => {
     const confirm = createSiteWideConfirm();
     const before = vi.fn();

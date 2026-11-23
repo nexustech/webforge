@@ -2,7 +2,7 @@ import { randomInt } from "node:crypto";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { t } from "@webforge/i18n/main";
 import { isMainTool, type MainToolName } from "../shared/ai-tools.js";
-import type { AiRequest, AiResponse } from "../shared/ipc/ai.js";
+import { type AiRequest, type AiResponse, ASSISTANT_APP_ID } from "../shared/ipc/ai.js";
 import type { AiApps, AppKind, PairedApp, Pairing } from "./ai-apps.js";
 import type { AiBridge } from "./ai-ipc.js";
 import { logFailure } from "./log.js";
@@ -31,6 +31,11 @@ export type McpServiceStatus = {
   readonly moved: boolean;
   /** The ids of the apps with a connection now. */
   readonly connected: readonly string[];
+  /**
+   * The apps working without asking on the site open now (5.35, UA-2), by id, each with when that
+   * ends, in ms since the epoch.
+   */
+  readonly unasked: ReadonlyMap<string, number>;
 };
 
 /** The MCP server as Webforge runs it (4.9, ADR 0021). */
@@ -45,6 +50,12 @@ export type McpService = {
   seenMoved(): Promise<void>;
   /** Removes an app, ending its connections at once. */
   remove(id: string): Promise<void>;
+  /**
+   * Lets app `id` work without asking on the site open now (5.35, UA-2) for `minutes`, or no longer
+   * (null). Kept here, for that opening of the site only: closing it, or opening it again, ends it.
+   * Nothing with no site open.
+   */
+  setUnasked(id: string, minutes: number | null): void;
   list(): Promise<readonly PairedApp[]>;
   /** The server proof of paired app `id`, which its Claude Desktop extension holds; or `null`. */
   proofOf(id: string): Promise<string | null>;
@@ -88,6 +99,7 @@ export type McpServiceOptions = {
   readonly briefs: Pick<SiteBriefs, "ask" | "choices" | "status">;
   readonly listen?: (options: McpListenerOptions) => Promise<McpListener>;
   readonly drawPort?: () => number;
+  readonly now?: () => number;
 };
 
 /** What main answers each of its own tools with (4.12a): a tool without one fails typecheck (#978). */
@@ -191,12 +203,34 @@ export function createMcpService(options: McpServiceOptions): McpService {
     return askWith(app, versionFirst);
   };
 
+  const now = options.now ?? Date.now;
+  /** Each app working without asking (5.35): for which opening of the site, and until when. */
+  const unasked = new Map<string, { readonly opening: string; readonly until: number }>();
+  /** When app `id` stops working without asking on the site open now; undefined if it asks. */
+  const unaskedUntil = (id: string): number | undefined => {
+    const each = unasked.get(id);
+    if (each === undefined) return undefined;
+    if (each.opening === options.opening() && now() < each.until) return each.until;
+    // Its site closed, or its time ran out: it asks again.
+    unasked.delete(id);
+    return undefined;
+  };
+
   /**
    * `asked` of the window for `app`. The app giving up on a command (its cancel, or its connection
    * closing) closes a question the command waits on, unanswered: no one is left to hear the
    * person's answer (5.34).
    */
-  const askWindow = (app: McpApp, asked: AiRequest, signal: AbortSignal | undefined) => {
+  const askWindow = (app: McpApp, request: AiRequest, signal: AbortSignal | undefined) => {
+    // A paired app's command names it, and says whether it works without asking (5.35, UA-2).
+    const asked: AiRequest =
+      request.kind === "command" && app.id !== ASSISTANT_APP_ID
+        ? {
+            ...request,
+            appId: app.id,
+            ...(unaskedUntil(app.id) === undefined ? {} : { unasked: true as const }),
+          }
+        : request;
     const answer = options.ask(asked, app.id);
     if (signal === undefined || asked.kind !== "command") return answer;
     const giveUp = () => options.cancel?.(app.id);
@@ -310,8 +344,17 @@ export function createMcpService(options: McpServiceOptions): McpService {
     seenMoved: () => apps.seenMoved(),
     async remove(id) {
       await apps.remove(id);
+      unasked.delete(id);
       limits.forget(id);
       await listener?.disconnect(id);
+    },
+    setUnasked(id, minutes) {
+      const opening = options.opening();
+      if (minutes === null || opening === undefined) {
+        unasked.delete(id);
+        return;
+      }
+      unasked.set(id, { opening, until: now() + minutes * 60_000 });
     },
     list: () => apps.list(),
     proofOf,
@@ -321,6 +364,12 @@ export function createMcpService(options: McpServiceOptions): McpService {
         port: listener?.port ?? null,
         moved: await apps.moved(),
         connected: listener?.connectedApps() ?? [],
+        unasked: new Map(
+          [...unasked.keys()].flatMap((id) => {
+            const until = unaskedUntil(id);
+            return until === undefined ? [] : [[id, until] as const];
+          }),
+        ),
       };
     },
     async connectAssistant(beforeCommand, stage) {

@@ -199,6 +199,8 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         asksFirst: [],
       };
       let structural = false;
+      // Whether any of its commands would ask even an app working without asking (5.35).
+      let alwaysAsk = false;
       for (const [at, step] of input.commands.entries()) {
         const command = commands[step.name];
         if (command === undefined) return fail("invalid", `There is no command "${step.name}".`);
@@ -216,6 +218,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         if (asked !== undefined) {
           const ask = [asked.action, asked.description].filter(Boolean).join(" ");
           (asked.first === true ? summary.asksFirst : summary.asks).push(ask);
+          alwaysAsk ||= asked.alwaysAsk === true;
         }
         structural ||= planned.structural;
         if (planned.removesPages !== undefined) removesPages.push(...planned.removesPages);
@@ -245,6 +248,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
           affectedPages: site.pageOrder.length,
           // The one version before the plan, saved once it's allowed (S26).
           version: t("ai.version.beforePlan", { app, title: input.title }),
+          ...(alwaysAsk ? { alwaysAsk: true as const } : {}),
         }),
         ...(removesPages.length === 0 ? {} : { removesPages }),
         recipe: (draft) => {

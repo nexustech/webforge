@@ -24,6 +24,11 @@ export type SiteWideAction = {
   readonly affectedPages: number;
   /** The version's name, saved once confirmed, if not "Before: {confirm}" (an AI app's plan). */
   readonly version?: string;
+  /**
+   * An AI app's question offers to let it work without asking (5.35, UA-2): chosen, this is called,
+   * and the change is allowed.
+   */
+  readonly allowAlways?: () => void;
 };
 
 /**
@@ -209,6 +214,18 @@ export function SiteWideConfirmDialog({ confirm }: { readonly confirm: SiteWideC
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t("confirm.siteWide.cancel")}</AlertDialogCancel>
+          {action?.allowAlways === undefined ? null : (
+            <AlertDialogAction
+              // Quieter than Allow: the change asked about is the one to weigh (5.35).
+              variant="outline"
+              onClick={() => {
+                action.allowAlways?.();
+                confirm.answer(true);
+              }}
+            >
+              {t("confirm.siteWide.allowAlways")}
+            </AlertDialogAction>
+          )}
           <AlertDialogAction variant="destructive" onClick={() => confirm.answer(true)}>
             {action?.confirm}
           </AlertDialogAction>

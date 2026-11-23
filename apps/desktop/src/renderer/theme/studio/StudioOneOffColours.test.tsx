@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { OwnColor } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -102,7 +102,8 @@ describe("StudioOneOffColours (5.32, TC-4)", () => {
     await user.click(within(blue).getByRole("button", { name: "Add to Your Colours" }));
 
     expect(onAdd).toHaveBeenCalledWith("#1f6feb", "Ocean");
-    expect(within(blue).queryByRole("textbox", { name: "Name" })).toBeNull();
+    // Closed on the next render, which a loaded run can draw a moment later.
+    await waitFor(() => expect(within(blue).queryByRole("textbox", { name: "Name" })).toBeNull());
   });
 
   it("says when the site uses its theme's colours only", () => {

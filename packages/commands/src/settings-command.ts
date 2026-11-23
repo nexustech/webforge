@@ -195,6 +195,8 @@ export const updateSettings = {
         confirm: t("ai.confirm.allow"),
         affectedPages: site.pageOrder.length,
         first: true,
+        // A changed address, contact or search permission, named from and to, always asks (5.35).
+        ...(lines.length === 0 ? {} : { alwaysAsk: true as const }),
       }),
       recipe: (draft) => {
         draft.settings = structuredClone(after);

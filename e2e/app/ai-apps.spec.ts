@@ -687,7 +687,8 @@ test("Rapidfix: an AI app builds a garage's site from a brief and one plan, with
     await expect(allow).toContainText(
       "Sections and elements: 1 added, 3 changed, 0 moved, 3 removed.",
     );
-    await allow.getByRole("button", { name: "Allow" }).click();
+    // Allow alone: a paired app's question also offers to let it work without asking (5.35).
+    await allow.getByRole("button", { name: "Allow", exact: true }).click();
     expect(answer(await build)).toEqual({
       status: "done",
       label: "AI (Test client): Build the Rapidfix site",
