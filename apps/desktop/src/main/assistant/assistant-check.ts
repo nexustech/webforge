@@ -5,8 +5,9 @@ import type { ChatMessage } from "./chat-client.js";
 /**
  * The check of a reply's work (5.18, OL-3): once a model call's tool calls changed the site, the
  * loop runs Site Check itself before the model's next call, so what the model writes next, its
- * closing message included, has seen what its changes left. Only the pages the reply changed are
- * reported, or the whole site once a change wasn't on one page. The check runs on this computer,
+ * closing message included, has seen what its changes left. Only the pages changed since the last
+ * check are reported, or the whole site once such a change wasn't on one page: the earlier checks
+ * are in the model's messages already, and a page that hasn't changed since has nothing new. The check runs on this computer,
  * as the window's Run Site Check does, and adds no model call: the model is called again after
  * its tool calls anyway.
  */
@@ -54,7 +55,7 @@ const onPages = (place: unknown, pages: ReadonlySet<string>) => {
 
 /** What the model is told with the check's result. */
 const ABOUT = [
-  "Webforge ran Site Check after your changes, on this computer.",
+  "Site Check ran after your changes, on this computer, on what changed since its last run.",
   "In your closing message, say what you changed and what this check found,",
   "naming each must or should problem on the places you changed.",
   "Never say something worked unless a result showed it.",

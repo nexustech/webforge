@@ -815,6 +815,8 @@ describe("the assistant checks its work (5.18, OL-3)", () => {
       ],
     });
     expect(checkIn(bodies[1]).about).toMatch(/closing message/);
+    // The app's name is never in what the model may repeat to the person: it can be renamed.
+    expect(JSON.stringify(bodies[1]?.messages)).not.toContain("Webforge");
   });
 
   it("makes no check and no extra model call for a reply that changed nothing", async () => {
@@ -829,7 +831,7 @@ describe("the assistant checks its work (5.18, OL-3)", () => {
     expect(roles).toEqual(["system", "user", "assistant", "tool"]);
   });
 
-  it("checks once a model call's changes, each check covering the reply's pages so far", async () => {
+  it("checks once a model call's changes, each check covering what changed since the last", async () => {
     const { called, bodies } = await reply(
       [
         {
@@ -855,8 +857,34 @@ describe("the assistant checks its work (5.18, OL-3)", () => {
       "runSiteCheck",
     ]);
     expect(checkIn(bodies[1]).pages).toEqual(["home"]);
-    expect(checkIn(bodies[2])).toMatchObject({ pages: ["home", "about"] });
-    expect(checkIn(bodies[2]).found[0].places).toHaveLength(2);
+    // Home's findings are in the model's messages already: only About's are new.
+    expect(checkIn(bodies[2])).toMatchObject({
+      pages: ["about"],
+      found: [{ rule: "altText", places: [{ kind: "element", on: "about", nodeId: "team" }] }],
+    });
+  });
+
+  it("sends the whole site's findings once for a site-wide change, then a page's own again", async () => {
+    const { bodies } = await reply(
+      [
+        { tools: [{ name: "setThemeTokens", args: {} }] },
+        { tools: [{ name: "editText", args: {} }] },
+        { text: "Done." },
+      ],
+      {
+        setThemeTokens: () => ({
+          status: "done",
+          label: "AI (Assistant): Changed the theme",
+          entryId: "t1",
+        }),
+        editText: () => changed("Edited text", "about"),
+        runSiteCheck: () => REPORT,
+      },
+    );
+
+    expect(checkIn(bodies[1])).toMatchObject({ checked: "site" });
+    expect(checkIn(bodies[2])).toMatchObject({ checked: "pages", pages: ["about"] });
+    expect(checkIn(bodies[2]).found).toHaveLength(1);
   });
 
   it("gives the whole site's problems after a change on no one page, such as the theme", async () => {
