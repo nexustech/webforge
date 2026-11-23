@@ -12,6 +12,12 @@ import type {
   ReplyStop,
 } from "../../shared/ipc/assistant.js";
 import { ASK_TOOL, ASK_TOOL_DEFINITION, createAsking } from "./assistant-question.js";
+import {
+  SUGGEST_TOOL,
+  SUGGEST_TOOL_DEFINITION,
+  SUGGESTED,
+  suggestionsOf,
+} from "./assistant-suggest.js";
 import { type ChatEndpoint, type ChatMessage, type ChatTool, streamChat } from "./chat-client.js";
 import { labelledSiteText } from "./site-text.js";
 
@@ -70,6 +76,8 @@ const SYSTEM_TEXT = [
   "If something can't be done, or the person declined a change, say so and don't try another way round.",
   // One short question rather than a wrong guess (5.16, OL-1).
   `If a request is too vague to act on well, ask the person one short question with ${ASK_TOOL}, rather than guess.`,
+  // What to ask next, after a change (5.17, OL-2): tappable, so only what the tools can do.
+  `After a reply that changed the site, call ${SUGGEST_TOOL} with your last words: two or three short requests the person might make next, each something your tools can do.`,
   // Facts the person didn't give: an example, flagged, never passed off as real (#1228, WN-3).
   `${EXAMPLES_RULE} Flag it with the tools' examples or example input.`,
   "Reply briefly, in the person's language, as plain text with simple Markdown: no images and no HTML.",
@@ -154,6 +162,11 @@ export type ReplyOutcome =
       readonly steps: readonly ReplyStep[];
       readonly held: readonly HeldCall[];
       readonly links: readonly ReplyLink[];
+      /**
+       * What the person might ask next (5.17, OL-2): none unless the reply ended as the model
+       * meant it to and changed the site, or holds changes for the person to apply.
+       */
+      readonly suggestions: readonly string[];
     }
   | {
       readonly status: "failed";
@@ -276,6 +289,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
   const held: HeldCall[] = [];
   const links = new Map<string, ReplyLink>();
   let costUsd: number | null = null;
+  let suggestions: readonly string[] = [];
   const done = (stop: ReplyStop): ReplyOutcome => ({
     status: "done",
     stop,
@@ -283,6 +297,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
     steps,
     held,
     links: [...links.values()],
+    suggestions: stop === "end" && (steps.length > 0 || held.length > 0) ? suggestions : [],
   });
   const failed = (error: AssistantErrorCode): ReplyOutcome => ({
     status: "failed",
@@ -306,6 +321,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
     return failed("failed");
   }
   if (options.ask !== undefined) tools.push(ASK_TOOL_DEFINITION);
+  tools.push(SUGGEST_TOOL_DEFINITION);
   const asking = createAsking();
 
   const messages = opening(options);
@@ -383,6 +399,12 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
         answeredHere = check.status === "ask";
         continue;
       }
+      // What to ask next (5.17): kept for the reply's end, the latest call's.
+      if (name === SUGGEST_TOOL) {
+        suggestions = suggestionsOf(asked.function.arguments);
+        messages.push({ role: "tool", tool_call_id: asked.id, content: SUGGESTED });
+        continue;
+      }
       options.onTool({ callId, tool, state: "running" });
       const answered = await callTool(options, name, asked.function.arguments);
       if (answered.step !== undefined) steps.push(answered.step);
@@ -399,6 +421,9 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
       });
       messages.push({ role: "tool", tool_call_id: asked.id, content: answered.text });
     }
+    // Suggestions were all the call asked for: they come with the last words, so the reply has
+    // ended, with no model call more to say so (5.17).
+    if (result.toolCalls.every((each) => each.function.name === SUGGEST_TOOL)) return done("end");
   }
 }
 

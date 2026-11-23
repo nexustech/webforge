@@ -236,6 +236,18 @@ const questionAnswerSchema = z.strictObject({
 /** See {@link questionAnswerSchema}. */
 export type QuestionAnswer = z.infer<typeof questionAnswerSchema>;
 
+/** The most "what next" suggestions a reply offers, and the longest one (5.17, OL-2). */
+export const SUGGESTIONS_MAX = 3;
+export const SUGGESTION_MAX_CHARS = 80;
+
+/**
+ * What the person might ask next, after a reply that changed the site (5.17, OL-2): short requests
+ * the assistant's tools can carry out, each sent as the person's next message when tapped.
+ */
+const suggestionsSchema = z
+  .array(z.string().trim().min(1).max(SUGGESTION_MAX_CHARS))
+  .max(SUGGESTIONS_MAX);
+
 /** A change one tool call made: one undo step (§1). */
 const stepSchema = z.strictObject({
   /** The `HistoryManager` entry, for *Undo these changes*. */
@@ -315,6 +327,8 @@ const turnSchema = z.strictObject({
     .array(questionSchema.extend({ answer: questionAnswerSchema.optional() }))
     .max(QUESTIONS_MAX)
     .optional(),
+  /** What the person might ask next (5.17), after a reply that changed the site. */
+  suggestions: suggestionsSchema.optional(),
 });
 
 /** See {@link turnSchema}. */
@@ -471,6 +485,8 @@ const eventSchema = z.discriminatedUnion("type", [
     links: z.array(linkSchema),
     /** The changes it holds for the person to apply (6.9e); none when they apply at once. */
     held: z.array(heldSchema).max(HELD_MAX).optional(),
+    /** What the person might ask next (5.17): none unless the reply changed the site. */
+    suggestions: suggestionsSchema.optional(),
   }),
   /**
    * A reply's held changes, applied (each now a step) or discarded (6.9e). Applied ones the site
