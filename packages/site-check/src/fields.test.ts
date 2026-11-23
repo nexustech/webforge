@@ -41,4 +41,40 @@ describe("eachFieldValue (#628)", () => {
     eachFieldValue({ site, catalogue }, ["media"], (placed) => media.push(placed.field));
     expect(media).toEqual(["image"]);
   });
+
+  it("leaves out a section's frame fields in a Footer column, which its column form doesn't draw (#1334)", () => {
+    const withColumn = {
+      Band: {
+        label: "Band",
+        place: "section",
+        fields: {
+          title: { kind: "text", label: "Title" },
+          backgroundImage: { kind: "media", label: "Background image" },
+        },
+        defaults: {},
+        columnHides: ["backgroundImage"],
+      },
+      FooterColumn: {
+        label: "Column",
+        place: "child",
+        fields: { content: { kind: "slot", label: "Content" } },
+        defaults: { content: [] },
+      },
+    } as unknown as Catalogue;
+    const band = (id: string) => ({
+      type: "Band",
+      props: { id, title: id, backgroundImage: { mediaId: id } },
+    });
+    const site = siteWith([
+      band("on-page"),
+      { type: "FooterColumn", props: { id: "column", content: [band("in-column")] } },
+    ]);
+    const seen: string[] = [];
+
+    eachFieldValue({ site, catalogue: withColumn }, ["text", "media"], (placed) =>
+      seen.push(`${placed.node.props.id} ${placed.field}`),
+    );
+
+    expect(seen).toEqual(["on-page title", "on-page backgroundImage", "in-column title"]);
+  });
 });

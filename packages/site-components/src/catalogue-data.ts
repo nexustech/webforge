@@ -19,7 +19,12 @@ import data from "./catalogue-data.json" with { type: "json" };
 export { fieldValueSchema, ICON_NAMES_TAKEN } from "./field-values.js";
 // The fields a component's layout or values leave unused, as the Edit panel hides them (#670).
 export { secondOfOne } from "./held-once.js";
-export { hiddenFieldsOf, hideableFieldsOf } from "./hidden-fields.js";
+export {
+  FOOTER_COLUMN,
+  type HidingParent,
+  hiddenFieldsOf,
+  hideableFieldsOf,
+} from "./hidden-fields.js";
 export { mainHeadingsOf, pageHeadings } from "./main-heading.js";
 export { drawsPictureBehind } from "./picture-behind.js";
 // Rich text from outside the editor is cleaned as the editor's is (4.8).
@@ -143,6 +148,11 @@ export const catalogueComponentSchema = z.strictObject({
     .optional(),
   /** The fields each layout doesn't use (#311): its pictures aren't exported, nor checked (#670). */
   variantHides: z.record(z.string(), z.array(z.string())).optional(),
+  /**
+   * The fields its column form doesn't use (HF-4, 5.39): a section's frame and its layout, hidden
+   * while it is in a Footer column, whose type is `FooterColumn` (#1334). Not exported, nor checked.
+   */
+  columnHides: z.array(z.string()).optional(),
   /**
    * The fields shown only while a number field, its own or its parent's, is at least some number
    * (6.16c): a Table's headings and its rows' cells past its Columns. Not exported, nor checked.

@@ -4,7 +4,7 @@ import { DIALOG_FIELDS, DIALOG_TITLE_FIELDS, SECTION_APPEARANCE_ORDER } from "./
 import { siteLibrary } from "./catalogue/index.js";
 import { defineComponent } from "./define.js";
 import { COLORS_FIELD, defineSection, PADDING_FIELD } from "./frame.js";
-import { EDITOR_RENDER_CONTEXT } from "./library.js";
+import { EDITOR_RENDER_CONTEXT, fieldsHiddenBy } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
 import type { RenderContext } from "./schema.js";
 import {
@@ -168,6 +168,40 @@ describe("the section frame (2.19)", () => {
     expect(html).toBe(
       '<section class="site-band bg-base-200 px-4 py-16 mt-4" data-band=""><p>Inside</p></section>',
     );
+  });
+
+  it("hides a section's frame and layout in a Footer column, where it draws its column form (#1334)", () => {
+    const spec = {
+      label: "Band",
+      name: "band",
+      fields: { title: { kind: "text", label: "Title" } },
+      variants: [
+        { label: "Left", value: "left" },
+        { label: "Centred", value: "centred" },
+      ],
+      defaults: { contentWidth: "wide", title: "Hi" },
+      render: () => <p>Inside</p>,
+    } as const;
+    const band = defineSection({ ...spec, column: () => <p>In a column</p> });
+    const values = { ...band.defaults };
+    const inColumn = fieldsHiddenBy(band, values, {
+      menuLinksToSections: false,
+      parent: { type: "FooterColumn", values: {} },
+    });
+
+    // Every field the frame adds, and its layout: its own fields stay.
+    const frame = Object.keys(band.fields).filter((name) => name !== "title");
+    expect(frame).toContain("variant");
+    expect([...inColumn].sort()).toEqual(frame.sort());
+    // Anywhere else, as on a page or in a Section, they show, but for those its values hide (a
+    // border's colour with no border).
+    const onPage = [...fieldsHiddenBy(band, values)];
+    expect(onPage).not.toContain("padding");
+    expect(onPage).not.toContain("variant");
+    const inSection = { menuLinksToSections: false, parent: { type: "Section", values: {} } };
+    expect([...fieldsHiddenBy(band, values, inSection)]).toEqual(onPage);
+    // A section without a column form has nothing to hide.
+    expect(defineSection(spec).columnHides).toBeUndefined();
   });
 
   it("puts a section with reversed colours on the theme's reversed colours (2.4, F-DS-3)", () => {

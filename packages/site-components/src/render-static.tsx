@@ -72,33 +72,58 @@ const keeps =
       : node.props.hidden !== true;
 
 /**
- * Calls `visit` for every node in `nodes` and their slots, in document order. Hidden nodes and
- * everything in them are skipped unless `options.includeHidden`, so by default their media and
- * behaviours aren't exported.
+ * Calls `visit` for every node in `nodes` and their slots, in document order, with the node holding
+ * it (`parent`, none at the top). Hidden nodes and everything in them are skipped unless
+ * `options.includeHidden`, so by default their media and behaviours aren't exported.
  */
 export function walkNodes(
   nodes: readonly NodeDoc[],
   library: ComponentLibrary,
-  visit: (node: NodeDoc, def: ComponentDef) => void,
+  visit: (node: NodeDoc, def: ComponentDef, parent?: NodeDoc) => void,
   options: NodeListOptions = {},
+  parent?: NodeDoc,
 ): void {
   for (const node of nodes.filter(keeps(options, library))) {
     const def = definitionOf(library, node);
-    visit(node, def);
+    visit(node, def, parent);
     for (const [name, field] of Object.entries(def.fields)) {
       if (field.kind === "slot") {
-        walkNodes(childrenIn(node.props[name]), library, visit, options);
+        walkNodes(childrenIn(node.props[name]), library, visit, options, node);
       }
     }
   }
 }
 
+/**
+ * The fields of `node` the export doesn't draw where it is, in `parent` (#670): its layout's
+ * unused ones, those its values or its parent's leave unused, and a section's frame in a Footer
+ * column (#1334). Their pictures, files and behaviours aren't exported.
+ */
+function undrawn(
+  node: NodeDoc,
+  def: ComponentDef,
+  parent: NodeDoc | undefined,
+  library: ComponentLibrary,
+): ReadonlySet<string> {
+  const held = parent === undefined ? undefined : library.components[parent.type];
+  return fieldsHiddenBy(
+    def,
+    { ...def.defaults, ...node.props },
+    {
+      menuLinksToSections: false,
+      ...(parent === undefined
+        ? {}
+        : { parent: { type: parent.type, values: { ...held?.defaults, ...parent.props } } }),
+    },
+  );
+}
+
 /** The media ids that `nodes` use in `media` fields (image values). */
 export function mediaUsedBy(nodes: readonly NodeDoc[], library: ComponentLibrary): Set<string> {
   const ids = new Set<string>();
-  walkNodes(nodes, library, (node, def) => {
+  walkNodes(nodes, library, (node, def, parent) => {
     // A field the layout doesn't use isn't drawn: its picture isn't exported (#670).
-    const hidden = fieldsHiddenBy(def, { ...def.defaults, ...node.props });
+    const hidden = undrawn(node, def, parent, library);
     for (const [name, field] of Object.entries(def.fields)) {
       if (hidden.has(name)) continue;
       const placed = field.kind === "media" ? imageValueSchema.safeParse(node.props[name]) : null;
@@ -119,8 +144,8 @@ export function documentsLinkedBy(
   library: ComponentLibrary,
 ): Set<string> {
   const ids = new Set<string>();
-  walkNodes(nodes, library, (node, def) => {
-    const hidden = fieldsHiddenBy(def, { ...def.defaults, ...node.props });
+  walkNodes(nodes, library, (node, def, parent) => {
+    const hidden = undrawn(node, def, parent, library);
     for (const [name, field] of Object.entries(def.fields)) {
       if (hidden.has(name)) continue;
       const value = node.props[name];
@@ -142,11 +167,15 @@ export function behavioursUsedBy(
   library: ComponentLibrary,
 ): BehaviourName[] {
   const names = new Set<BehaviourName>();
-  walkNodes(nodes, library, (node, def) => {
+  walkNodes(nodes, library, (node, def, parent) => {
+    // A field it doesn't draw where it is asks for nothing: a section's entrance in a Footer
+    // column, which draws its column form without it (#1334).
+    const hidden = undrawn(node, def, parent, library);
+    const values = Object.fromEntries(
+      Object.entries({ ...def.defaults, ...node.props }).filter(([name]) => !hidden.has(name)),
+    );
     const needed =
-      typeof def.behaviours === "function"
-        ? def.behaviours({ ...def.defaults, ...node.props })
-        : (def.behaviours ?? []);
+      typeof def.behaviours === "function" ? def.behaviours(values) : (def.behaviours ?? []);
     for (const name of needed) names.add(name);
   });
   return [...names].sort();

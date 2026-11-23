@@ -5,7 +5,7 @@ title: Sections
 summary: Every section you can add to a page, what it's for and what you can change.
 components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat, Steps, Step, ContactButtons, Menu, MenuItem]
 related: [elements, add-panel, edit-panel, forms, header-and-footer]
-updated: 2026-11-22
+updated: 2026-11-23
 ---
 
 # Sections
@@ -126,7 +126,7 @@ Your opening hours, address, phone number and email, taken from [Site Settings](
 - Turn **Show opening hours** and **Show contact details** on or off.
 - Anything left empty in Site Settings is left out.
 - **Layouts:** _Side by side_ or _One above the other_.
-- It can go in a column of the [Footer](header-and-footer.md#header-and-footer) too, where it shows without its background and spacing, its title as the column's.
+- It can go in a column of the [Footer](header-and-footer.md#header-and-footer) too, where it shows without its background and spacing, its title as the column's. There, its **Style** tab offers only what shows in the column: **Show opening hours** and **Show contact details**.
 
 ## Contact form
 
@@ -140,7 +140,7 @@ An email signup for a newsletter service you already use. {appName} doesn't incl
 
 This section sends sign-ups straight to that service, not to the form service in Site Settings.
 
-It can go in a column of the [Footer](header-and-footer.md#header-and-footer) too, where it shows without its background and spacing, its title as the column's.
+It can go in a column of the [Footer](header-and-footer.md#header-and-footer) too, where it shows without its background and spacing, its title as the column's. There, it has no layout, colours, spacing or entrance to set: the column draws none of them.
 
 ## Section
 
