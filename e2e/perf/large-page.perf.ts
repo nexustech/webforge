@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { countNodes, largePage } from "@webforge/test-utils";
 import { launchDesktopApp, waitForCanvas } from "../app/launch.js";
+import { chooseFromMenu } from "../app/menus.js";
 
 // Large-page performance check (spec/04 item 0.4, ADR 0007). Runs against a `--mode perf` build:
 // `pnpm e2e:perf` from the repository root. Budgets: architecture §10 (keystroke and drag to canvas
@@ -204,11 +205,11 @@ test.beforeAll(async () => {
   await page.waitForFunction(() => (window as PerfWindow).__webforgePerf !== undefined, null, {
     timeout: 10_000,
   });
-  // The drag and history steps read the Undo History panel, a tab of the left panels (1.25).
-  await page
-    .getByRole("region", { name: "Left panels" })
-    .getByRole("tab", { name: "Undo History" })
-    .click();
+  // The drag and history steps read the Undo History panel (1.25), opened as a person does, from
+  // the View menu (#1165): wherever the panels put it, as the left column can be a strip of icons
+  // on a smaller screen (#1166), as on macOS' runner (#1337).
+  await chooseFromMenu(app, page, "View", "Undo History");
+  await expect(page.getByRole("list", { name: "Undo History" })).toBeVisible();
 });
 
 test.afterAll(async () => {
