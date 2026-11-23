@@ -103,6 +103,12 @@ export type ComponentDef = {
    */
   readonly shownAtLeast?: Readonly<Record<string, ShownAtLeast>>;
   /**
+   * The fields its column form doesn't use (HF-4, 5.39): a section's frame and its layout, which a
+   * section drawn in a Footer column leaves out ({@link defineSection} sets them). Hidden there,
+   * they keep their values ({@link fieldsHiddenBy}).
+   */
+  readonly columnHides?: readonly string[];
+  /**
    * The text colour a section's frame draws by itself, from its values (#544): a colour ref, such
    * as a Call to action Banner's `neutral-content`, or `undefined` for the page's own. The check of
    * its text over a background image's overlay (2.26) reads it against that.
@@ -233,14 +239,14 @@ export { drawsPictureBehind } from "./picture-behind.js";
  * section; without its `parent`, a field shown by its parent's values shows.
  */
 export function fieldsHiddenBy(
-  def: Pick<ComponentDef, "variantHides" | "shownAtLeast"> & {
+  def: Pick<ComponentDef, "variantHides" | "shownAtLeast" | "columnHides"> & {
     readonly fields?: ComponentDef["fields"];
   },
   values: Readonly<Record<string, unknown>>,
   site: FieldSite = { menuLinksToSections: false },
 ): ReadonlySet<string> {
   // The rule Site Check and the catalogue as data read too (#670).
-  const hidden = hiddenFieldsOf(def, values, site.parent?.values);
+  const hidden = hiddenFieldsOf(def, values, site.parent);
   // A field shown only with some values (3.19), an Image's Height, or on some sites (5.10b).
   for (const [name, field] of Object.entries(def.fields ?? {})) {
     if (field.shownWhen?.(values, site) === false) hidden.add(name);

@@ -484,6 +484,34 @@ describe("renderNodesToHtml", () => {
     );
   });
 
+  it("exports no entrance and no background picture for a section in a Footer column (#1334)", () => {
+    // Its column form draws neither: they're its frame's, which it leaves out there.
+    const contact: NodeDoc = {
+      type: "ContactDetails",
+      props: { id: "c", entrance: "fade", backgroundImage: { mediaId: "bg" } },
+    };
+    const footer: NodeDoc = {
+      type: "Footer",
+      props: {
+        id: "footer",
+        text: "Thanks.",
+        columns: [{ type: "FooterColumn", props: { id: "a", content: [contact] } }],
+      },
+    };
+
+    expect(behavioursUsedBy([footer], siteLibrary)).toEqual([]);
+    expect([...mediaUsedBy([footer], siteLibrary)]).toEqual([]);
+    // On a page, its frame draws both.
+    expect(behavioursUsedBy([contact], siteLibrary)).toEqual(["animate"]);
+    expect([...mediaUsedBy([contact], siteLibrary)]).toEqual(["bg"]);
+    // Each element is visited with the element holding it.
+    const parents: string[] = [];
+    walkNodes([footer], siteLibrary, (node, _def, parent) =>
+      parents.push(`${node.props.id} in ${parent?.props.id ?? "nothing"}`),
+    );
+    expect(parents).toEqual(["footer in nothing", "a in footer", "c in a"]);
+  });
+
   it("migrates both layouts with the same text, links and Cookie settings (HF-4, 5.39)", () => {
     const shown = { ...context, cookieSettings: true as const };
     const footerOf = (variant: string) => {

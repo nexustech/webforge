@@ -111,6 +111,25 @@ describe("layersOf (F-ED-12)", () => {
       ["still", undefined],
     ]);
   });
+
+  it("doesn't mark a section in a Footer column, which draws no entrance there (#1334)", () => {
+    const contact = { type: "ContactDetails", props: { id: "c", entrance: "fade" } };
+    const [footer] = layersOf(
+      [
+        {
+          type: "Footer",
+          props: {
+            id: "footer",
+            columns: [{ type: "FooterColumn", props: { id: "column", content: [contact] } }],
+          },
+        },
+      ],
+      siteLibrary,
+    );
+
+    expect(footer?.children[0]?.children[0]?.animated).toBeUndefined();
+    expect(layersOf([contact], siteLibrary)[0]?.animated).toBe(true);
+  });
 });
 
 describe("Layers changes, one undo step each", () => {
