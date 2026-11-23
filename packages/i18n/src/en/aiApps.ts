@@ -93,6 +93,14 @@ export const aiApps = {
   "aiApps.client.claudeCode.enterKey": "Enter",
   "aiApps.client.claudeCode.step3":
     "Start Claude Code in that terminal before the key runs out. In Claude Code, /mcp lists webforge once it's connected.",
+  // On Windows, the same steps in PowerShell: its commands are PowerShell's, and cmd.exe splits the
+  // add command's header at its spaces (#1367).
+  "aiApps.client.claudeCode.step1PowerShell":
+    "Add {appName} to Claude Code: run this command in PowerShell. It adds {appName} for all your projects.",
+  "aiApps.client.claudeCode.step2PowerShell":
+    "In the same PowerShell window, give it the key: run this command, then copy the key, paste it when PowerShell waits for it, and press {key}. The key doesn't show as you paste it.",
+  "aiApps.client.claudeCode.step3PowerShell":
+    "Start Claude Code in that PowerShell window before the key runs out. In Claude Code, /mcp lists webforge once it's connected.",
   "aiApps.client.claudeCode.keyWhere":
     "Why the key isn't in the commands: Claude Code reads it from {variable} as it connects, so it isn't in your terminal's history or in Claude Code's settings. {variable} lasts as long as that terminal.",
   "aiApps.client.claudeCode.copyCommand": "Copy the add command",
