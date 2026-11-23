@@ -20,6 +20,7 @@
     "@types/babel__core": "7.20.5",
     "@types/node": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
+    "@webforge/test-utils": "workspace:*",
     "vitest": "catalog:"
   }
 }

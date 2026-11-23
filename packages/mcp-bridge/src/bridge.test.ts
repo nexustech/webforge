@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { PassThrough } from "node:stream";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { scaledTestTimeout } from "@webforge/test-utils/vitest";
+import { scaledTestTimeout, TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, describe, expect, it } from "vitest";
 import { runBridge } from "./bridge.js";
 import { buildBridge } from "./build.js";
@@ -99,7 +99,7 @@ describe("the bridge (ADR 0021)", () => {
     async () => {
       const server = await serve();
       const dir = mkdtempSync(join(tmpdir(), "webforge-bridge-"));
-      cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
+      cleanups.push(() => rmSync(dir, TEST_DIR_REMOVAL));
       const file = join(dir, "index.mjs");
       await buildBridge(file);
 

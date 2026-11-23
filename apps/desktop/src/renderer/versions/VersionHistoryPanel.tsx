@@ -22,10 +22,9 @@ import { BrushCleaningIcon, HistoryIcon, MoreHorizontalIcon, SaveIcon } from "lu
 import { useState } from "react";
 import { mediaImageUrl } from "../../shared/ipc/media.js";
 import type { VersionSummary } from "../../shared/ipc/versions.js";
+import type { VersionActions, VersionListState } from "../editor/version-history.js";
 import { reportFailure } from "../log.js";
 import { fileSizeLabel } from "../media/index.js";
-import type { VersionActions } from "./version-actions.js";
-import type { VersionListState } from "./version-list.js";
 import { versionDate, versionName, versionPublished } from "./version-words.js";
 
 /** Props of {@link VersionHistoryPanel}. */

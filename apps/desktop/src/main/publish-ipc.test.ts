@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterAll, describe, expect, it } from "vitest";
 import {
@@ -36,7 +37,7 @@ function invoker(
 }
 
 const folder = mkdtempSync(join(tmpdir(), "webforge-keys-"));
-afterAll(() => rmSync(folder, { recursive: true, force: true }));
+afterAll(() => rmSync(folder, TEST_DIR_REMOVAL));
 
 /** A file in the test's folder holding `text`. */
 function file(name: string, text: string): string {

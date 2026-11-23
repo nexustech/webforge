@@ -1,6 +1,7 @@
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { unzipSync } from "fflate";
 import { afterEach, describe, expect, it } from "vitest";
 import { fitsInZip, writeZipAtomically, ZIP_MAX_ENTRIES } from "../src/zip-writer.js";
@@ -9,7 +10,7 @@ import { fitsInZip, writeZipAtomically, ZIP_MAX_ENTRIES } from "../src/zip-write
 
 let dir: string | undefined;
 afterEach(() => {
-  if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
+  if (dir !== undefined) rmSync(dir, TEST_DIR_REMOVAL);
   dir = undefined;
 });
 

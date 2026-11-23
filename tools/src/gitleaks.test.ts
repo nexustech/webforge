@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildFor,
@@ -96,7 +97,7 @@ describe("ensureGitleaks (5.24)", () => {
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "gitleaks-test-"));
   });
-  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+  afterEach(() => rmSync(dir, TEST_DIR_REMOVAL));
 
   const BINARY = new TextEncoder().encode("a made-up archive");
   /** Installs on Linux x64 from what `download` gives, its archive holding just those bytes. */

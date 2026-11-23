@@ -112,6 +112,10 @@ Deleting a page asks as **Delete Page** does, and says how many pages change: li
 
 The question waits for your answer, however long you're away: walking away isn't a no. The app is told it's still waiting, and **Allow** makes the change when you come back. If the app gives up first, or you close the site, the question closes and nothing changes. Only **Cancel** is a no, and after one the app waits a little before it asks you again.
 
+In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings. It can still see Media and ask you for pictures.
+
+Before an app's first change after you open your site, {appName} saves a version of it, _Before app's changes_, in [Version History](version-history.md). It saves one for each app, however often the app reconnects, until you open the site again.
+
 ### Working without asking
 
 To let an app get on while you're away, let it work without asking. It then makes changes that reach every page, such as the theme, a new page in the menu or the Header, without a question. Either:
@@ -131,9 +135,15 @@ Some changes ask whatever you chose:
 
 In Content mode, an app still can't change what Content mode doesn't allow.
 
-In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings. It can still see Media and ask you for pictures.
+### While you were away
 
-Before an app's first change after you open your site, {appName} saves a version of it, _Before app's changes_, in [Version History](version-history.md). It saves one for each app, however often the app reconnects, until you open the site again.
+When you come back to {appName} after an app has worked without asking, **While You Were Away** shows what it changed while you were gone, app by app and page by page. Changes that reach every page, such as the theme, are listed under **Every page**.
+
+- Click **Show** and a page's name to go to that page.
+- **Undo All of** the app's **Changes** puts your site back as it was before the first of those changes, from the last version [Version History](version-history.md) saved before it. Any other change made since is taken back too, so another app's changes listed after it go from the list. It's one step in [Undo History](undo-and-history.md), so **Undo** brings the changes back, and {appName} saves your site as it was just before, in Version History.
+- **Keep** closes it, and keeps the changes.
+
+It shows only what an app changed without asking while {appName} wasn't the window in front.
 
 ### Many changes at once
 

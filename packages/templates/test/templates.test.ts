@@ -24,6 +24,7 @@ import {
 import { checkSite } from "@webforge/site-check";
 import { isIconName, sectionOverlay, siteLibrary, walkNodes } from "@webforge/site-components";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { overlayContrastIssue, THEME_PRESETS } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
 import { businessDetailsSchema } from "../src/business.js";
@@ -327,7 +328,7 @@ describe("readTemplate (2.14a)", () => {
       writeFileSync(join(dir, "other", "template.json"), JSON.stringify({ id: "cafe" }));
       expect(() => readTemplate("other", dir)).toThrow();
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(dir, TEST_DIR_REMOVAL);
     }
   });
 });

@@ -1,7 +1,9 @@
 // Security review S11 (docs/reviews/2026-10-30-security-review.md), restored by #654.
+
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, describe, expect, it } from "vitest";
 import { createFontLibrary, type FontFetch } from "./font-library.js";
 
@@ -15,7 +17,7 @@ const CHUNK = 1024 * 1024;
 
 const dirs: string[] = [];
 afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of dirs.splice(0)) rmSync(dir, TEST_DIR_REMOVAL);
 });
 
 describe("font downloads (security)", () => {
