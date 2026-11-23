@@ -357,22 +357,38 @@ function footerTarget(
 }
 
 /**
- * Where a click adds `type` in the Footer's columns (5.39): when no point is given and the Footer,
- * or an element in it, is selected, and a column takes it, but not a second of what the Footer
- * holds one of (its Menu links).
+ * Where `type` goes in the Footer's columns of `site` with `selectedId` selected (5.39), as the Add
+ * panel and Paste put it (#1335): when the Footer, or an element in it, is selected, and a column
+ * takes it, but not a second of what the Footer holds one of (its Menu links). `undefined`
+ * otherwise: it goes on the page.
  */
-function inFooter(session: AddSession, type: string, point?: InsertPoint): AddTarget | undefined {
-  const selectedId = session.ui.getState().nodeId;
-  if (point !== undefined || selectedId === null) return undefined;
-  const footer = footerHolding(session.history.document.getState(), selectedId);
+export function footerTargetFor(
+  library: ComponentLibrary,
+  site: SiteDoc,
+  selectedId: string | null,
+  type: string,
+): AddTarget | undefined {
+  if (selectedId === null) return undefined;
+  const footer = footerHolding(site, selectedId);
   if (footer === undefined) return undefined;
-  const target = footerTarget(session.library, footer, type, selectedId);
-  const fieldsOf = (kind: string) => session.library.components[kind]?.fields;
+  const target = footerTarget(library, footer, type, selectedId);
+  const fieldsOf = (kind: string) => library.components[kind]?.fields;
   if (target === undefined || target.parentId === null) return target;
   const adding = { type, props: { id: "" } };
   return secondOfOne(fieldsOf, [footer], target.parentId, adding) === undefined
     ? target
     : undefined;
+}
+
+/** Where a click adds `type` in the Footer's columns (5.39): never at a + button's `point`. */
+function inFooter(session: AddSession, type: string, point?: InsertPoint): AddTarget | undefined {
+  if (point !== undefined) return undefined;
+  return footerTargetFor(
+    session.library,
+    session.history.document.getState(),
+    session.ui.getState().nodeId,
+    type,
+  );
 }
 
 /**

@@ -3,9 +3,11 @@ import {
   type CopiedElements,
   copiedNodeId,
   type ImageMeta,
+  insertPage,
   type MediaId,
   type MediaMeta,
   type NodeDoc,
+  newId,
   SHARED_COPY_TYPE,
 } from "@webforge/model";
 import { type ComponentLibrary, MAX_COLUMNS, siteLibrary } from "@webforge/site-components";
@@ -768,6 +770,128 @@ describe("copy and paste (1.25)", () => {
       expect(sectionContent(session).at(-1)?.props.text).toBe("Closed Monday");
       expect(bannerContent(session)).toHaveLength(1);
     });
+  });
+});
+
+describe("pasting into the Footer's columns (#1335, 5.39)", () => {
+  /** The starter site with a Footer column holding a Text, and Menu links in a second. */
+  function withColumns() {
+    const site = starterSite();
+    const footer = site.layout.footer.find((node) => node.type === "Footer");
+    if (footer === undefined) throw new Error("no Footer");
+    footer.props.columns = [
+      {
+        type: "FooterColumn",
+        props: { id: "col", content: [{ type: "Text", props: { id: "t", text: "<p>Hi</p>" } }] },
+      },
+      {
+        type: "FooterColumn",
+        props: { id: "col-2", content: [{ type: "MenuLinks", props: { id: "menu" } }] },
+      },
+    ];
+    const session = sessionWith(site);
+    const columnTypes = (id: string) =>
+      (
+        ((
+          session.history.document.getState().layout.footer.find((node) => node.type === "Footer")
+            ?.props.columns as NodeDoc[] | undefined
+        )?.find((column) => column.props.id === id)?.props.content ?? []) as NodeDoc[]
+      ).map((node) => node.type);
+    return { session, footerId: String(footer.props.id), columnTypes };
+  }
+
+  it("pastes beside the selected element in its column, on every page, as one shared step", async () => {
+    const { session, columnTypes } = withColumns();
+    const clipboard = fakeClipboard();
+    // A Text from the page, copied.
+    select(session, sectionContent(session).find((node) => node.type === "Text")?.props.id ?? null);
+    await copySelected(session, clipboard, vi.fn());
+    const before = sectionContent(session).length;
+    const steps = labels(session).length;
+
+    select(session, "t");
+    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+
+    expect(columnTypes("col")).toEqual(["Text", "Text"]);
+    expect(sectionContent(session)).toHaveLength(before);
+    expect(labels(session).slice(steps)).toEqual(["Pasted shared Text"]);
+    session.history.undo();
+    expect(columnTypes("col")).toEqual(["Text"]);
+  });
+
+  it("pastes at the end of the last column that takes it with the Footer itself selected", async () => {
+    const { session, footerId, columnTypes } = withColumns();
+    const clipboard = fakeClipboard();
+    select(session, sectionContent(session).find((node) => node.type === "Text")?.props.id ?? null);
+    await copySelected(session, clipboard, vi.fn());
+
+    select(session, footerId);
+    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+    expect(columnTypes("col-2")).toEqual(["MenuLinks", "Text"]);
+    expect(columnTypes("col")).toEqual(["Text"]);
+  });
+
+  it("never repeats in the Footer an anchor another page that shows it uses (#1358's review)", async () => {
+    const { session } = withColumns();
+    const home = session.ui.getState().pageId;
+    // Home's Heading, anchored "contact".
+    const heading = sectionContent(session).find((node) => node.type === "Heading");
+    if (heading === undefined) throw new Error("no Heading");
+    session.edit("props", "Anchored the heading", (draft) => {
+      const node = draft.pages[home]?.doc.content[0]?.props.content as NodeDoc[] | undefined;
+      const found = node?.find((each) => each.props.id === heading.props.id);
+      if (found !== undefined) found.props.advanced = { anchorId: "contact" };
+    });
+    const clipboard = fakeClipboard();
+    select(session, String(heading.props.id));
+    await copySelected(session, clipboard, vi.fn());
+    // Pasted into the Footer on another page: Home shows the Footer, with its "contact" too.
+    const about = newId("page");
+    session.edit("insert", "Added page 'About'", (draft) => insertPage(draft, about, "About"));
+    session.showPage(about);
+    select(session, "t");
+    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+
+    const footer = session.history.document
+      .getState()
+      .layout.footer.find((node) => node.type === "Footer");
+    const column = (footer?.props.columns as NodeDoc[] | undefined)?.[0];
+    const pasted = (column?.props.content as NodeDoc[] | undefined)?.at(-1);
+    expect(pasted?.type).toBe("Heading");
+    expect(pasted?.props.advanced?.anchorId).not.toBe("contact");
+  });
+
+  it("puts a picture pasted from another app in the selected column (#1358's review)", async () => {
+    const { session, columnTypes } = withColumns();
+    const before = sectionContent(session).length;
+    select(session, "t");
+    const clipboard = fakeClipboard({ status: "media", items: [photo], rejected: [] });
+
+    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+    expect(columnTypes("col")).toEqual(["Text", "Image"]);
+    expect(sectionContent(session)).toHaveLength(before);
+    expect(session.history.document.getState().media[photo.id]).toBeDefined();
+  });
+
+  it("puts on the page what no column takes, and never a second Menu links in the Footer", async () => {
+    const { session, footerId, columnTypes } = withColumns();
+    const clipboard = fakeClipboard();
+    // A Section: no column takes one, so it goes on the page, as with nothing selected.
+    select(session, content(session)[0]?.props.id ?? null);
+    await copySelected(session, clipboard, vi.fn());
+    const sections = content(session).length;
+    select(session, footerId);
+    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+    expect(content(session)).toHaveLength(sections + 1);
+
+    // The Footer holds one Menu links already: a second isn't pasted into it.
+    select(session, "menu");
+    await copySelected(session, clipboard, vi.fn());
+    select(session, "t");
+    await pasteElements(session, clipboard, vi.fn());
+    expect(
+      [...columnTypes("col"), ...columnTypes("col-2")].filter((type) => type === "MenuLinks"),
+    ).toHaveLength(1);
   });
 });
 

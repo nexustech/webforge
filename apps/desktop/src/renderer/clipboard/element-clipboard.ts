@@ -12,6 +12,7 @@ import {
   pageAnchors,
   pastedCopies,
   removeNode,
+  type SiteDoc,
 } from "@webforge/model";
 import {
   type ComponentLibrary,
@@ -26,11 +27,12 @@ import type {
   ClipboardWriteResult,
 } from "../../shared/ipc/clipboard.js";
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
-import { type AddTarget, addTarget, insertAt } from "../add/index.js";
+import { type AddTarget, addTarget, footerTargetFor, insertAt } from "../add/index.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor, quotedElementName } from "../editor/labels.js";
 import type { SharedPlace } from "../editor/shared-confirmations.js";
 import {
+  pagesThatShow,
   type SharedRegion,
   sharedHomeOf,
   sharedRegionOf,
@@ -224,10 +226,57 @@ export function pasteTarget(
 }
 
 /**
+ * Where pasted `nodes` go in the Footer's columns, with the Footer or an element in it selected
+ * (#1335): where the Add panel would add the first one (5.39), if that place takes them all, as
+ * {@link pasteTarget} says for a page. `undefined` when no column does: they then go on the page.
+ */
+function footerPasteTarget(
+  library: ClipboardSession["library"],
+  site: SiteDoc,
+  nodes: readonly NodeDoc[],
+  selectedId: string | null,
+): AddTarget | undefined {
+  const [first, ...rest] = nodes;
+  if (first === undefined) return undefined;
+  const target = footerTargetFor(library, site, selectedId, first.type);
+  if (target === undefined) return undefined;
+  const footer = site.layout.footer;
+  const after = structuredClone(footer) as NodeDoc[];
+  insertAt(after, target, nodes);
+  if (overfillsSlots(library, footer, after)) return undefined;
+  const sameTarget = (node: NodeDoc) => {
+    const other = footerTargetFor(library, site, selectedId, node.type);
+    return (
+      other?.parentId === target.parentId &&
+      other.slot === target.slot &&
+      other.index === target.index
+    );
+  };
+  return rest.every(sameTarget) ? target : undefined;
+}
+
+/**
+ * The anchors an element pasted into the Footer may not repeat (#1335): those of every page that
+ * shows it, each with its linked copies', the Header's and the Footer's, as the Edit panel takes
+ * them for an element of the Footer.
+ */
+function footerAnchors(site: SiteDoc): Set<string> {
+  const taken = pageAnchors([], site.sharedSections, site.layout);
+  for (const page of pagesThatShow(site, "footer")) {
+    const shown = shownLayout(site, page.id);
+    for (const anchor of pageAnchors(page.doc.content, site.sharedSections, shown)) {
+      taken.add(anchor);
+    }
+  }
+  return taken;
+}
+
+/**
  * The element a paste goes beside or into, as the Add panel's place for it (1.13): the selected
  * one on the page, or the linked copy holding it (F-ED-23). Nothing for one in the shared Header or
- * Footer: pasting goes into the page, never into them (F-ED-7), so the page takes it as with
- * nothing selected. The Header and Footer as this page shows them, as when copying.
+ * Footer: what the Footer's columns don't take goes into the page (#1335), and nothing goes in the
+ * Header (F-ED-7), so the page takes it as with nothing selected. The Header and Footer as this
+ * page shows them, as when copying.
  */
 function pasteSelection(session: ClipboardSession): string | null {
   const ui = session.ui.getState();
@@ -334,7 +383,13 @@ export async function pasteElements(
   }
   const site = session.history.document.getState();
   const layout = shownLayout(site, ui.pageId);
-  const target = pasteTarget(session.library, page.doc.content, nodes, pasteSelection(session));
+  // With the Footer or an element in it selected, into its columns, on every page, where they fit
+  // (#1335); a linked copy goes on a page only.
+  const footerTarget = linked
+    ? undefined
+    : footerPasteTarget(session.library, site, nodes, ui.nodeId);
+  const target =
+    footerTarget ?? pasteTarget(session.library, page.doc.content, nodes, pasteSelection(session));
   if (target === undefined) {
     // Over the limit itself (a Columns of five, from an old file), no place takes it (#384).
     notify(
@@ -368,22 +423,30 @@ export async function pasteElements(
     );
     return true;
   }
-  // The page's own anchors, its copies' and the shared Header's and Footer's are taken. Any
-  // program can put rich text on the clipboard: it is cleaned as the editor's is (S23).
-  const copies = withCleanRichText(
-    pastedCopies(nodes, pageAnchors(page.doc.content, site.sharedSections, layout)),
-    session.library,
-  );
+  // The page's own anchors, its copies' and the shared Header's and Footer's are taken; in the
+  // Footer, every page's that shows it (#1335). Any program can put rich text on the clipboard: it
+  // is cleaned as the editor's is (S23).
+  const taken =
+    footerTarget === undefined
+      ? pageAnchors(page.doc.content, site.sharedSections, layout)
+      : footerAnchors(site);
+  const copies = withCleanRichText(pastedCopies(nodes, taken), session.library);
   const firstId = copies[0]?.props.id ?? null;
+  // In the Footer, "Pasted shared Text", as the other steps there name it (F-ED-7).
+  const item =
+    footerTarget === undefined
+      ? itemName(session, first)
+      : t("history.sharedItem", { item: itemName(session, first) });
   const label =
     copies.length === 1
-      ? t("site.clipboard.history.pasted", { item: itemName(session, first) })
+      ? t("site.clipboard.history.pasted", { item })
       : t("site.clipboard.history.pastedMany", { count: copies.length });
   session.edit(
     "insert",
     label,
     (draft) => {
-      const content = draft.pages[ui.pageId]?.doc.content;
+      const content =
+        footerTarget === undefined ? draft.pages[ui.pageId]?.doc.content : draft.layout.footer;
       if (content === undefined) return;
       // An image this site already has stays as it is; the others join its Media.
       putInMedia(
@@ -454,8 +517,18 @@ function pasteAsImage(session: ClipboardSession, items: readonly MediaMeta[]): b
   const defaults = session.library.components.Image?.defaults;
   const page = currentPage(session)?.doc.content;
   const ui = session.ui.getState();
+  // In the Footer's column the selection is in, where a column takes one (#1335); else the page.
+  const inFooter = footerTargetFor(
+    session.library,
+    session.history.document.getState(),
+    ui.nodeId,
+    "Image",
+  );
   const target =
-    page === undefined ? undefined : addTarget(session.library, page, "Image", ui.nodeId);
+    inFooter ??
+    (page === undefined
+      ? undefined
+      : addTarget(session.library, page, "Image", pasteSelection(session)));
   if (
     items.length !== 1 ||
     item?.kind !== "image" ||
@@ -475,7 +548,8 @@ function pasteAsImage(session: ClipboardSession, items: readonly MediaMeta[]): b
       name: t("history.namedItem", { name: item.fileName }),
     }),
     (draft) => {
-      const content = draft.pages[ui.pageId]?.doc.content;
+      const content =
+        inFooter === undefined ? draft.pages[ui.pageId]?.doc.content : draft.layout.footer;
       if (content === undefined) return;
       putInMedia(draft, [item]);
       insertAt(content, target, [node]);
