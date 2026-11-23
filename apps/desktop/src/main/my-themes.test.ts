@@ -3,6 +3,7 @@ import * as fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OwnTheme } from "../shared/ipc/themes.js";
 import { createMyThemes } from "./my-themes.js";
@@ -11,7 +12,7 @@ let dir: string;
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "webforge-my-themes-"));
 });
-afterEach(() => rmSync(dir, { recursive: true, force: true }));
+afterEach(() => rmSync(dir, TEST_DIR_REMOVAL));
 
 /** One of the person's own themes, `name`d, with id `id`. */
 const own = (id: string, name: string): OwnTheme => ({
@@ -81,7 +82,7 @@ describe("My themes (2.23)", () => {
       "{ not json",
       JSON.stringify({ version: 2, themes: [{ from: "a newer version" }] }),
     ]) {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(dir, TEST_DIR_REMOVAL);
       mkdirSync(dir);
       writeFileSync(join(dir, "themes.json"), unreadable);
       const themes = createMyThemes({ dir, now: at });

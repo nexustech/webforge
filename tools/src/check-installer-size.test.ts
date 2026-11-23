@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   checkFromArgs,
@@ -13,7 +14,7 @@ let dir: string;
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "webforge-installers-"));
 });
-afterEach(() => rmSync(dir, { recursive: true, force: true }));
+afterEach(() => rmSync(dir, TEST_DIR_REMOVAL));
 
 describe("the installers' size (§10, 5.1)", () => {
   it("finds the installers electron-builder wrote, not the unpacked app's programs", () => {

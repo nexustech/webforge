@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   addEntry,
@@ -95,7 +96,7 @@ function copyOfRepo(files: readonly string[]): string {
 }
 
 afterEach(() => {
-  for (const root of temporary.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const root of temporary.splice(0)) rmSync(root, TEST_DIR_REMOVAL);
   process.exitCode = undefined;
   vi.restoreAllMocks();
 });

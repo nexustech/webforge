@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { checkHelp, HELP_PATHS } from "./check-help.js";
 import {
@@ -174,7 +175,7 @@ describe("new-component's registration", () => {
 describe("newComponent", () => {
   let root = "";
   afterEach(() => {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, TEST_DIR_REMOVAL);
   });
 
   /**
@@ -337,7 +338,7 @@ describe("newComponent", () => {
 describe("pnpm new-component", () => {
   let root = "";
   afterEach(() => {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, TEST_DIR_REMOVAL);
     process.exitCode = undefined;
     vi.restoreAllMocks();
   });
@@ -411,7 +412,7 @@ describe("pnpm new-component", () => {
 describe("new-component's output passes help-check (#979)", () => {
   let root = "";
   afterEach(() => {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, TEST_DIR_REMOVAL);
   });
 
   it("leaves the repository's help pages in order, for a section, an element and a child", () => {

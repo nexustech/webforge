@@ -16,6 +16,7 @@
     "@webforge/site-check": "workspace:*",
     "@webforge/site-components": "workspace:*",
     "@webforge/themes": "workspace:*",
+    "@webforge/test-utils": "workspace:*",
     "vitest": "catalog:"
   }
 }

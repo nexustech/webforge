@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AiRequest, AiResponse } from "../../shared/ipc/ai.js";
 import { ASSISTANT_CONSENT_VERSION, type AssistantEvent } from "../../shared/ipc/assistant.js";
@@ -59,7 +60,7 @@ function streamed(turn: Turn, call: number): Response {
 
 const dirs: string[] = [];
 afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of dirs.splice(0)) rmSync(dir, TEST_DIR_REMOVAL);
 });
 
 /**

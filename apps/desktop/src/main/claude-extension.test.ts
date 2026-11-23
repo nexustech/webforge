@@ -13,7 +13,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { BRIDGE_ENV } from "@webforge/mcp-bridge";
 import { buildBridge } from "@webforge/mcp-bridge/build";
-import { scaledTestTimeout } from "@webforge/test-utils/vitest";
+import { scaledTestTimeout, TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { Ajv } from "ajv";
 import { unzipSync } from "fflate";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -43,7 +43,7 @@ beforeAll(async () => {
   await buildBridge(bridgeFile);
   // Bundling the bridge takes a few seconds when the run is busy.
 }, scaledTestTimeout(60_000));
-afterAll(() => rmSync(dir, { recursive: true, force: true }));
+afterAll(() => rmSync(dir, TEST_DIR_REMOVAL));
 
 const cleanups: (() => Promise<void> | void)[] = [];
 afterEach(async () => {

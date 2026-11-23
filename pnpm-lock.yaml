@@ -1250,6 +1250,9 @@ importers:
       '@webforge/site-components':
         specifier: workspace:*
         version: link:../site-components
+      '@webforge/test-utils':
+        specifier: workspace:*
+        version: link:../test-utils
       '@webforge/themes':
         specifier: workspace:*
         version: link:../themes
@@ -1322,6 +1325,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
+      '@webforge/test-utils':
+        specifier: workspace:*
+        version: link:../packages/test-utils
       babel-plugin-react-compiler:
         specifier: 'catalog:'
         version: 1.0.0

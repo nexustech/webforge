@@ -1,12 +1,13 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { areaCycles, areaCyclesIn, areaGraph, main } from "./check-area-cycles.js";
 
 const folders: string[] = [];
 afterEach(() => {
-  for (const folder of folders.splice(0)) rmSync(folder, { recursive: true, force: true });
+  for (const folder of folders.splice(0)) rmSync(folder, TEST_DIR_REMOVAL);
 });
 
 /** A renderer folder on disk with `files` (path → text). */

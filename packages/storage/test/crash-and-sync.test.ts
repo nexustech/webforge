@@ -71,16 +71,24 @@ describe("crash safety", () => {
     // As support/site-file-writer.ts makes them.
     const blobOf = (seq: number) => new Uint8Array(2 * 1024 * 1024).fill(seq % 251);
     const hash = (seq: number) => createHash("sha256").update(blobOf(seq)).digest("hex");
-    const delays = [0, 20, 60];
-    let killedMidTransaction = 0;
-    for (let round = 0; round < 12 && (round < 3 || killedMidTransaction === 0); round += 1) {
+    // The first round kills the writer inside an import's transaction by design (#1355): the
+    // writer stops there, its bytes written and its asset not, and says so. The others kill it at
+    // whatever moment a delay gives, between imports or inside one, as a crash would.
+    const rounds = [
+      { hold: true, delayMs: 0 },
+      ...[0, 60].map((delayMs) => ({ hold: false, delayMs })),
+    ];
+    for (const { hold, delayMs } of rounds) {
       const path = createProject();
-      const writer = startChildWriter(path, TYPESCRIPT_HOOK, "imports");
+      const writer = startChildWriter(path, TYPESCRIPT_HOOK, "imports", hold ? 3 : undefined);
       await writer.waitForCommits(2);
-      await new Promise((resolve) => setTimeout(resolve, delays[round % delays.length]));
+      if (hold) await writer.waitForHold();
+      else await new Promise((resolve) => setTimeout(resolve, delayMs));
       await writer.kill();
-      if (existsSync(`${path}-journal`)) {
-        killedMidTransaction += 1;
+      // The kill left a transaction for SQLite to roll back.
+      if (hold) {
+        expect(writer.lastAcknowledged()).toBe(2);
+        expect(existsSync(`${path}-journal`)).toBe(true);
       }
 
       // Opens (the half-written import rolled back, the fingerprint matching), with every import
@@ -90,13 +98,17 @@ describe("crash safety", () => {
         expect(store.readAsset(`photo-${seq}`)?.hash, `import ${seq}`).toBe(hash(seq));
         expect(store.hasBlob(hash(seq)), `import ${seq}`).toBe(true);
       }
+      if (hold) {
+        // The import killed inside its transaction left nothing: its bytes were rolled back too.
+        expect(store.readAsset("photo-3")).toBeUndefined();
+        expect(store.hasBlob(hash(3))).toBe(false);
+      }
       // No page names them, so garbage collection removes them all, and the file still opens.
       store.collectGarbage();
       expect(store.hasBlob(hash(1))).toBe(false);
       store.close();
       ProjectStore.open(path).close();
     }
-    expect(killedMidTransaction).toBeGreaterThan(0);
   }, 120_000);
 });
 
