@@ -168,14 +168,17 @@ export function behavioursUsedBy(
 ): BehaviourName[] {
   const names = new Set<BehaviourName>();
   walkNodes(nodes, library, (node, def, parent) => {
+    if (typeof def.behaviours !== "function") {
+      for (const name of def.behaviours ?? []) names.add(name);
+      return;
+    }
     // A field it doesn't draw where it is asks for nothing: a section's entrance in a Footer
     // column, which draws its column form without it (#1334).
     const hidden = undrawn(node, def, parent, library);
     const values = Object.fromEntries(
       Object.entries({ ...def.defaults, ...node.props }).filter(([name]) => !hidden.has(name)),
     );
-    const needed =
-      typeof def.behaviours === "function" ? def.behaviours(values) : (def.behaviours ?? []);
+    const needed = def.behaviours(values);
     for (const name of needed) names.add(name);
   });
   return [...names].sort();
