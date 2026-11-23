@@ -434,6 +434,25 @@ describe("renderNodesToHtml", () => {
     ]);
     expect(none).not.toContain("site-footer-columns");
     expect(none).toBe(footerWith([]));
+
+    // A migrated Columns Footer on a site with no menu: its Menu links show nothing.
+    const noMenu = { ...context, navigation: [] };
+    const links = renderNodesToHtml(
+      [
+        {
+          type: "Footer",
+          props: {
+            id: "footer",
+            text: "Thanks.",
+            variant: "columns",
+            columns: [column("links", [{ type: "MenuLinks", props: { id: "m" } }])],
+          },
+        },
+      ],
+      siteLibrary,
+      noMenu,
+    );
+    expect(links).not.toContain("site-footer-column");
   });
 
   it("puts a section's anchor and Advanced options on its <section>, or its column form's root", () => {

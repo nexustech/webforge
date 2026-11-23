@@ -45,6 +45,7 @@ export { videoEmbed } from "./embed.js";
 export type { FieldValueShape } from "./field-values.js";
 export { acceptsFieldValue, fieldValueSchema, MAX_TEXT_LENGTH } from "./field-values.js";
 export { PADDED_COLUMN_CLASS } from "./frame.js";
+export { secondOfOne } from "./held-once.js";
 export { ICON_NAMES, iconNameOf, isIconName, LucideIcon } from "./icons.js";
 export type {
   ComponentDef,

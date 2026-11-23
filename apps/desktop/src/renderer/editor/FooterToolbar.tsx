@@ -1,6 +1,13 @@
 import { Button } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n/components";
-import { isNodeDoc, type NodeDoc, newId, pastedCopies, type SiteDoc } from "@webforge/model";
+import {
+  findNode,
+  isNodeDoc,
+  type NodeDoc,
+  newId,
+  pastedCopies,
+  type SiteDoc,
+} from "@webforge/model";
 import {
   type ComponentLibrary,
   FOOTER_PRESETS,
@@ -132,7 +139,7 @@ function addFooterColumn(
 
 /**
  * Removes the Footer's last column with what's in it, as one step; the Footer is selected after it
- * if that column was.
+ * if that column, or anything in it, was.
  */
 function removeFooterColumn(
   session: Pick<EditorSession, "history" | "ui" | "edit" | "library">,
@@ -169,7 +176,10 @@ function removeFooterColumn(
       selectionAfter: {
         pageId,
         viewport,
-        nodeId: selected === last.props.id ? footer.props.id : selected,
+        nodeId:
+          selected !== null && findNode([last], (node) => node.props.id === selected) !== undefined
+            ? footer.props.id
+            : selected,
       },
       apply: true,
     },

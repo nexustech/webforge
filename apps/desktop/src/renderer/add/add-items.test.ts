@@ -609,6 +609,18 @@ describe("adding to the Footer's columns (HF-4, 5.39)", () => {
     expect(addTargetFor(session, "FooterColumn")).toBeUndefined();
   });
 
+  it("adds one Menu links to the Footer, and refuses a second (5.39)", () => {
+    const { session, columns, typesIn } = withColumn();
+    session.select("t");
+    expect(addComponent(session, "MenuLinks")).toBe(true);
+    expect(typesIn(columns()[0])).toEqual(["Text", "MenuLinks"]);
+
+    session.select("t");
+    expect(addTargetFor(session, "MenuLinks")).toBeUndefined();
+    expect(addComponent(session, "MenuLinks")).toBe(false);
+    expect(typesIn(columns()[0])).toEqual(["Text", "MenuLinks"]);
+  });
+
   it("suggests what a Footer column takes, Menu links among them", () => {
     const { session } = withColumn();
     const footer = session.history.document.getState().layout.footer;

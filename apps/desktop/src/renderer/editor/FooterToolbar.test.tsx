@@ -109,7 +109,7 @@ describe("the Footer's toolbar (HF-4, 5.39)", () => {
   });
 
   it("adds columns up to three and removes the last, each a step of its own", async () => {
-    const { shown, labels, user } = setUp();
+    const { session, footerId, shown, labels, user } = setUp();
     // Each new column is selected, and the toolbar shows for it too: found again each time.
     const add = () => screen.getByRole("button", { name: "Add column" });
     const remove = screen.getByRole("button", { name: "Remove last column" });
@@ -125,8 +125,11 @@ describe("the Footer's toolbar (HF-4, 5.39)", () => {
       true,
     );
 
+    // The last column, just added, is selected: removing it selects the Footer.
+    expect(session.ui.getState().nodeId).toBe(String(shown()[2]?.props.id));
     await user.click(screen.getByRole("button", { name: "Remove last column" }));
     expect(shown()).toHaveLength(2);
+    expect(session.ui.getState().nodeId).toBe(footerId);
     expect(labels()).toHaveLength(4);
     expect(labels()[0]).toBe("Added shared Footer column");
   });

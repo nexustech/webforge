@@ -461,16 +461,19 @@ const menuLinks = defineComponent({
 });
 
 /**
- * One column of the Footer (HF-4, 5.39): elements one under another. Contact details and a
- * Newsletter signup in it draw their column forms.
+ * Whether a column's slot value shows anything: on the canvas (a component) always, there to drop
+ * into; in the export, a list with an element that isn't hidden, Menu links only with links to
+ * show (a site with no menu draws none).
  */
-/**
- * Whether a slot's value shows anything: on the canvas (a component) always, there to drop into;
- * in the export, a list with an element that isn't hidden.
- */
-const holdsShown = (slot: unknown): boolean =>
+const holdsShown = (slot: unknown, context: RenderContext): boolean =>
   typeof slot === "function" ||
-  (Array.isArray(slot) && slot.some((node) => isNodeDoc(node) && node.props.hidden !== true));
+  (Array.isArray(slot) &&
+    slot.some(
+      (node) =>
+        isNodeDoc(node) &&
+        node.props.hidden !== true &&
+        (node.type !== "MenuLinks" || linksOf(context.navigation).length > 0),
+    ));
 
 /**
  * Whether element `id` among `nodes` is in a Footer column (5.39), where a section draws its
@@ -486,6 +489,10 @@ export function inFooterColumn(nodes: readonly NodeDoc[], id: string, inside = f
   });
 }
 
+/**
+ * One column of the Footer (HF-4, 5.39): elements one under another. Contact details and a
+ * Newsletter signup in it draw their column forms.
+ */
 const footerColumn = defineComponent({
   label: t("element.footerColumn"),
   place: "child",
@@ -493,10 +500,10 @@ const footerColumn = defineComponent({
     content: { kind: "slot", label: t("field.content"), allow: [...FOOTER_COLUMN_TYPES] },
   },
   defaults: { content: [] },
-  render: ({ values, slots }) => {
+  render: ({ values, slots, context }) => {
     // The export leaves out a column with nothing shown in it, so it takes no room beside the
     // others. On the canvas the slot is a component, there to drop into.
-    if (!holdsShown((values as Readonly<Record<string, unknown>>).content)) return null;
+    if (!holdsShown((values as Readonly<Record<string, unknown>>).content, context)) return null;
     const Content = slots.content;
     return (
       <div className="site-footer-column min-w-0">
@@ -535,6 +542,8 @@ const footer = defineComponent({
       label: t("field.footerColumns"),
       allow: ["FooterColumn"],
       max: MAX_FOOTER_COLUMNS,
+      // One Menu links: two would write two "Footer navigation" landmarks.
+      once: ["MenuLinks"],
     },
   },
   defaults: { text: t("starter.footer"), columns: [] },
@@ -552,7 +561,9 @@ const footer = defineComponent({
       (Array.isArray(stored) &&
         stored.some(
           (column) =>
-            isNodeDoc(column) && column.props.hidden !== true && holdsShown(column.props.content),
+            isNodeDoc(column) &&
+            column.props.hidden !== true &&
+            holdsShown(column.props.content, context),
         ));
     const Columns = slots.columns;
     const columns = shown ? (

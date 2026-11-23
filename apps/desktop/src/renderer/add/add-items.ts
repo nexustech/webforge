@@ -16,6 +16,7 @@ import {
   ABOVE_THE_HEADER,
   BELOW_THE_FOOTER,
   type ComponentLibrary,
+  secondOfOne,
 } from "@webforge/site-components";
 import type { AddItem } from "../editor/add-item.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
@@ -357,13 +358,21 @@ function footerTarget(
 
 /**
  * Where a click adds `type` in the Footer's columns (5.39): when no point is given and the Footer,
- * or an element in it, is selected, and a column takes it.
+ * or an element in it, is selected, and a column takes it, but not a second of what the Footer
+ * holds one of (its Menu links).
  */
 function inFooter(session: AddSession, type: string, point?: InsertPoint): AddTarget | undefined {
   const selectedId = session.ui.getState().nodeId;
   if (point !== undefined || selectedId === null) return undefined;
   const footer = footerHolding(session.history.document.getState(), selectedId);
-  return footer === undefined ? undefined : footerTarget(session.library, footer, type, selectedId);
+  if (footer === undefined) return undefined;
+  const target = footerTarget(session.library, footer, type, selectedId);
+  const fieldsOf = (kind: string) => session.library.components[kind]?.fields;
+  if (target === undefined || target.parentId === null) return target;
+  const adding = { type, props: { id: "" } };
+  return secondOfOne(fieldsOf, [footer], target.parentId, adding) === undefined
+    ? target
+    : undefined;
 }
 
 /**

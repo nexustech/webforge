@@ -770,6 +770,22 @@ describe("the command API's commands on shared parts (4.8)", () => {
     // Only what a Footer column takes.
     expect((await into("Button")).status).toBe("refused");
     expect((await into("Hero")).status).toBe("refused");
+    // One Menu links per Footer: a second, or a column bringing one, is refused, saying why.
+    const second = await into("MenuLinks");
+    expect(second).toMatchObject({ status: "refused" });
+    expect(JSON.stringify(second)).toContain("There's a Menu links there already");
+    const bringing = await api.run(
+      "addNode",
+      {
+        location: footer,
+        type: "FooterColumn",
+        parentId: "footer",
+        slot: "columns",
+        values: { content: [{ type: "MenuLinks" }] },
+      },
+      app,
+    );
+    expect(bringing.status).toBe("refused");
 
     const node = history.document.getState().layout.footer.find((each) => each.type === "Footer");
     const [placed] = (node?.props.columns ?? []) as NodeDoc[];

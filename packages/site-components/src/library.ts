@@ -26,6 +26,7 @@ import {
 import { cloneElement, createElement, isValidElement, type ReactNode } from "react";
 import { hasElementRoot } from "./column-form.js";
 import { isDocumentPath } from "./document-path.js";
+import { countOfType } from "./held-once.js";
 import { hiddenFieldsOf, type ShownAtLeast } from "./hidden-fields.js";
 import type { MainHeading } from "./main-heading.js";
 import type { PictureBehind } from "./picture-behind.js";
@@ -560,7 +561,10 @@ export function boxClasses(
   return parts.join(" ");
 }
 
-/** How many elements each slot with a `max` holds in `nodes` and below, by `<node id> <slot>`. */
+/**
+ * How many elements each slot with a `max` holds in `nodes` and below, by `<node id> <slot>`, and,
+ * past one, how many of each type its `once` names it holds, by `<node id> <slot> <type>`.
+ */
 function slotCounts(
   library: ComponentLibrary,
   nodes: readonly NodeDoc[],
@@ -574,6 +578,10 @@ function slotCounts(
       if (field.max !== undefined && children.length > field.max) {
         const key = `${String(node.props.id)} ${name}`;
         counts.set(key, Math.max(counts.get(key) ?? 0, children.length));
+      }
+      for (const type of field.once ?? []) {
+        const held = countOfType(children, type);
+        if (held > 1) counts.set(`${String(node.props.id)} ${name} ${type}`, held);
       }
       slotCounts(library, children, counts);
     }

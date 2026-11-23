@@ -18,6 +18,7 @@ import data from "./catalogue-data.json" with { type: "json" };
 // What a field may hold (#667), the rule the editor uses too, and the icon names it takes (#1251).
 export { fieldValueSchema, ICON_NAMES_TAKEN } from "./field-values.js";
 // The fields a component's layout or values leave unused, as the Edit panel hides them (#670).
+export { secondOfOne } from "./held-once.js";
 export { hiddenFieldsOf, hideableFieldsOf } from "./hidden-fields.js";
 export { mainHeadingsOf, pageHeadings } from "./main-heading.js";
 export { drawsPictureBehind } from "./picture-behind.js";
@@ -88,6 +89,7 @@ export const catalogueFieldSchema = z.discriminatedUnion("kind", [
     allow: z.array(z.string()).optional(),
     accepts: z.enum(["section", "element", "layout", "child"]).optional(),
     max: z.int().positive().optional(),
+    once: z.array(z.string()).optional(),
   }),
   z.strictObject({
     ...common,
