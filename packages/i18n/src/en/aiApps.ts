@@ -127,6 +127,11 @@ export const aiApps = {
   "aiApps.answer.reloaded":
     "{appName} reloaded the site before it answered: ask again once it has.",
   "aiApps.answer.noAnswer": "{appName} didn't answer in time: try again.",
+  // A question still waiting when its site closed or the window went (5.34): no refusal.
+  "aiApps.answer.siteClosed":
+    "The site closed in {appName} before the person answered, so nothing changed.",
+  // Said with each progress report while a request waits, which the app may show (5.34).
+  "aiApps.answer.stillWaiting": "Still waiting for {appName}: it may be asking the person.",
   "aiApps.answer.tooMany":
     "{appName} is still answering earlier requests: wait for their answers, then ask again.",
   "aiApps.cancel": "Cancel",

@@ -7,7 +7,7 @@ import {
 } from "@webforge/model";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CONFIRM_TIMEOUT_MS, createCommandApi } from "./api.js";
+import { createCommandApi } from "./api.js";
 import { app, content, home, type Setup, setup } from "./api.test-helper.js";
 import type { Confirmation } from "./types.js";
 
@@ -575,7 +575,7 @@ describe("the command API's commands (4.8)", () => {
     expect(history.document.getState().theme).toEqual(theme);
   });
 
-  it("waits for the person to allow a change to more than one page (D7), declined after a minute", async () => {
+  it("waits for the person to allow a change to more than one page (D7), however long it takes (5.34)", async () => {
     vi.useFakeTimers();
     const allowed = setup(true);
     const tokens = { tokens: { spacing: "roomy" } };
@@ -594,14 +594,36 @@ describe("the command API's commands (4.8)", () => {
       "declined",
     );
 
-    const unanswered = setup("never");
-    const waiting = createCommandApi(unanswered.host).run("setThemeTokens", tokens, app);
-    await vi.advanceTimersByTimeAsync(CONFIRM_TIMEOUT_MS);
-    expect((await waiting).status).toBe("declined");
-    expect(unanswered.confirm.mock.calls[0]?.[1].aborted).toBe(true);
-    expect(unanswered.history.state.getState().entries).toEqual([]);
+    // Unanswered for an hour, it still waits (UA-1): walking away is no refusal. Allow then applies.
+    const later = setup(true);
+    let allow: (yes: boolean) => void = () => undefined;
+    later.confirm.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          allow = resolve;
+        }),
+    );
+    const onAsking = vi.fn();
+    let settled = false;
+    const waiting = createCommandApi(later.host)
+      .run("setThemeTokens", tokens, { ...app, onAsking })
+      .finally(() => {
+        settled = true;
+      });
+    await vi.advanceTimersByTimeAsync(60 * 60_000);
+    expect(settled).toBe(false);
+    expect(later.confirm.mock.calls[0]?.[1].aborted).toBe(false);
+    // Whoever asked heard it waits on the person.
+    expect(onAsking).toHaveBeenCalledOnce();
+    allow(true);
+    expect(await waiting).toMatchObject({
+      status: "done",
+      label: "AI (Claude): Changed the theme",
+    });
+    expect(later.history.state.getState().entries).toHaveLength(1);
 
-    // The asker gives up (the assistant's Stop, 6.9b): the question closes, declined at once.
+    // The asker gives up (an app's cancel, the assistant's Stop): the question closes unanswered,
+    // which is no decline.
     const stopped = setup("never");
     const stop = new AbortController();
     const asking = createCommandApi(stopped.host).run("setThemeTokens", tokens, {
@@ -610,10 +632,13 @@ describe("the command API's commands (4.8)", () => {
     });
     await vi.advanceTimersByTimeAsync(10);
     stop.abort();
-    expect((await asking).status).toBe("declined");
+    expect(await asking).toMatchObject({
+      status: "busy",
+      message: expect.stringMatching(/closed before the person answered/),
+    });
     expect(stopped.confirm.mock.calls[0]?.[1].aborted).toBe(true);
     expect(stopped.history.state.getState().entries).toEqual([]);
-    // Given up before it's asked: no question at all.
+    // Given up before it's asked: no question at all, and no decline.
     const gone = setup("never");
     expect(
       (
@@ -622,7 +647,7 @@ describe("the command API's commands (4.8)", () => {
           signal: stop.signal,
         })
       ).status,
-    ).toBe("declined");
+    ).toBe("busy");
     expect(gone.confirm).not.toHaveBeenCalled();
 
     // The Header is on every page; the home page's own elements aren't.
@@ -750,6 +775,51 @@ describe("the command API's commands on shared parts (4.8)", () => {
         )
       ).status,
     ).toBe("refused");
+  });
+
+  it("adds a Footer column and elements in it, as it adds to a section (HF-4, 5.39)", async () => {
+    const { host, history } = setup(true);
+    const api = createCommandApi(host);
+    const footer = { kind: "layout", part: "footer" } as const;
+    const column = await api.run(
+      "addNode",
+      { location: footer, type: "FooterColumn", parentId: "footer", slot: "columns" },
+      app,
+    );
+    if (column.status !== "done" || column.id === undefined) throw new Error("no column");
+    const into = (type: string) =>
+      api.run("addNode", { location: footer, type, parentId: column.id, slot: "content" }, app);
+    for (const type of ["Heading", "MenuLinks", "ContactDetails", "Newsletter"]) {
+      expect((await into(type)).status, type).toBe("done");
+    }
+    // Only what a Footer column takes.
+    expect((await into("Button")).status).toBe("refused");
+    expect((await into("Hero")).status).toBe("refused");
+    // One Menu links per Footer: a second, or a column bringing one, is refused, saying why.
+    const second = await into("MenuLinks");
+    expect(second).toMatchObject({ status: "refused" });
+    expect(JSON.stringify(second)).toContain("There's a Menu links there already");
+    const bringing = await api.run(
+      "addNode",
+      {
+        location: footer,
+        type: "FooterColumn",
+        parentId: "footer",
+        slot: "columns",
+        values: { content: [{ type: "MenuLinks" }] },
+      },
+      app,
+    );
+    expect(bringing.status).toBe("refused");
+
+    const node = history.document.getState().layout.footer.find((each) => each.type === "Footer");
+    const [placed] = (node?.props.columns ?? []) as NodeDoc[];
+    expect(((placed?.props.content ?? []) as NodeDoc[]).map((each) => each.type)).toEqual([
+      "Heading",
+      "MenuLinks",
+      "ContactDetails",
+      "Newsletter",
+    ]);
   });
 
   it("plans again once the person allows a change, and is busy if they started editing", async () => {

@@ -52,7 +52,21 @@ export function sampleSite(): SiteSnapshot {
       footer: [
         {
           type: "Footer",
-          props: { id: "footer", text: "© Rosa's Bakery, Hightown", variant: "columns" },
+          props: {
+            id: "footer",
+            text: "© Rosa's Bakery, Hightown",
+            variant: "columns",
+            // The menu's links beside its text (HF-4, 5.39).
+            columns: [
+              {
+                type: "FooterColumn",
+                props: {
+                  id: "footer-links",
+                  content: [{ type: "MenuLinks", props: { id: "footer-menu" } }],
+                },
+              },
+            ],
+          },
         },
       ],
     },

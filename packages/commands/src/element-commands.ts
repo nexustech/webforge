@@ -77,7 +77,10 @@ export const ELEMENT_COMMANDS = {
         input.examples,
       );
       if (failed(built)) return built;
-      const wrong = canGo(input.type, input.location, parent, input.slot);
+      const wrong = canGo(input.type, input.location, parent, input.slot, undefined, {
+        nodes,
+        node: built.node,
+      });
       if (wrong !== undefined) return fail("refused", wrong);
       const node = withNewIds(built.node);
       const { location, slot, index } = input;
@@ -245,7 +248,10 @@ export const ELEMENT_COMMANDS = {
       ) {
         return fail("refused", "An element can't go inside itself.");
       }
-      const wrong = canGo(placed.node.type, input.location, parent, input.slot, input.nodeId);
+      const wrong = canGo(placed.node.type, input.location, parent, input.slot, input.nodeId, {
+        nodes,
+        node: placed.node,
+      });
       if (wrong !== undefined) return fail("refused", wrong);
       const { location, nodeId: id, slot, index } = input;
       const label = CATALOGUE[placed.node.type]?.label ?? placed.node.type;

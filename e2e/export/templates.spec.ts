@@ -143,6 +143,21 @@ for (const { template } of readTemplates()) {
           page.getByRole("navigation", { name: "Main navigation" }).getByRole("link").first(),
         ).toBeVisible();
       }
+      // The Footer's text and columns one under another, in reading order (HF-4, 5.39).
+      const columns = await page
+        .locator(".site-footer > aside, .site-footer > p, .site-footer-column")
+        .evaluateAll((parts) =>
+          parts
+            .map((part) => part.getBoundingClientRect())
+            .filter(({ height }) => height > 0)
+            .map(({ top, bottom }) => ({ top, bottom })),
+        );
+      for (const [index, part] of columns.entries()) {
+        const before = columns[index - 1];
+        if (before !== undefined) {
+          expect(part.top, `${path}'s Footer on a phone`).toBeGreaterThanOrEqual(before.bottom - 1);
+        }
+      }
     }
 
     expect(errors, "script errors").toEqual([]);

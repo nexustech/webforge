@@ -18,6 +18,7 @@ import {
   backgroundClasses,
   SectionBackground,
 } from "./background.js";
+import { FramedOrColumn } from "./column-form.js";
 import { type ComponentSpec, defineFramedSection } from "./define.js";
 import { boxClasses, type ComponentDef } from "./library.js";
 import {
@@ -230,6 +231,11 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
   readonly paddedColumn?: (values: ValuesOf<F & FrameFields, Variant>) => boolean;
   /** The inside of the frame. */
   readonly render: (props: RenderPropsOf<F & FrameFields, Variant>) => ReactNode;
+  /**
+   * Its column form (HF-4, 5.39): what it draws in a column of the Footer, without the frame, its
+   * title as the column's. Only a section the Footer's columns take has one.
+   */
+  readonly column?: (props: RenderPropsOf<F & FrameFields, Variant>) => ReactNode;
 };
 
 /**
@@ -264,6 +270,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
     frameAttributes,
     paddedColumn,
     render,
+    column,
     fields,
     behaviours,
     titled,
@@ -351,7 +358,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
         backgroundClasses(stored),
       ].filter((part) => part !== "");
       const theme = stored.colors === "inverse" ? { "data-theme": INVERSE_THEME } : {};
-      return (
+      const framed = (
         <section
           className={classes.join(" ")}
           {...(frameAttributes?.(values, props.context) ?? {})}
@@ -376,6 +383,12 @@ export function defineSection<const F extends Fields, const Variant extends stri
             </SectionSubtitleAppearance.Provider>
           </SectionTitleAppearance.Provider>
         </section>
+      );
+      // In a Footer column, its column form instead (5.39).
+      return column === undefined ? (
+        framed
+      ) : (
+        <FramedOrColumn framed={framed} column={column(props)} />
       );
     },
   });

@@ -10,6 +10,8 @@ export const main = {
   "aiApps.answer.noSite": "No site is open in {appName}.",
   "aiApps.answer.reloaded":
     "{appName} reloaded the site before it answered: ask again once it has.",
+  "aiApps.answer.siteClosed":
+    "The site closed in {appName} before the person answered, so nothing changed.",
   "aiApps.answer.tooMany":
     "{appName} is still answering earlier requests: wait for their answers, then ask again.",
   "aiApps.bridge.failed": "{appName} couldn't answer. Try again.",

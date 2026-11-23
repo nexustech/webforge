@@ -12,6 +12,7 @@ import {
   customCssArea,
   elementCommandsArea,
   fieldDragsArea,
+  footerToolbarArea,
   headerToolbarArea,
   siteCssArea,
   textToolbarsArea,
@@ -75,6 +76,7 @@ export const EDITOR_AREAS: readonly Area<EditorContext>[] = [
   textToolbarsArea,
   headerToolbarArea,
   columnsToolbarArea,
+  footerToolbarArea,
 ];
 
 /** The areas the window registers (App), in order. */

@@ -16,6 +16,7 @@ import {
   ABOVE_THE_HEADER,
   BELOW_THE_FOOTER,
   type ComponentLibrary,
+  secondOfOne,
 } from "@webforge/site-components";
 import type { AddItem } from "../editor/add-item.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
@@ -275,7 +276,30 @@ export function addTarget(
   }
   const id = ownId(content, selectedId);
   const path = id === null ? undefined : pathTo(content, id);
-  for (const step of [...(path ?? [])].reverse()) {
+  const along = alongPath(library, path ?? [], type);
+  if (along !== undefined) return along;
+  const top = path?.[0]?.node;
+  const from = top === undefined ? content.length - 1 : content.indexOf(top);
+  const nearest = [...content.slice(0, from + 1).reverse(), ...content.slice(from + 1)];
+  for (const node of nearest) {
+    const [inside] = slotsFor(library, node, type);
+    if (inside !== undefined) {
+      return { parentId: node.props.id, slot: inside, index: childrenOf(node, inside).length };
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Where `type` goes near the end of `path`: into its last node if that takes it (at its end), else
+ * after it, else the same for the nodes holding it, nearest first.
+ */
+function alongPath(
+  library: ComponentLibrary,
+  path: readonly Step[],
+  type: string,
+): AddTarget | undefined {
+  for (const step of [...path].reverse()) {
     const [inside] = slotsFor(library, step.node, type);
     if (inside !== undefined) {
       return {
@@ -296,16 +320,59 @@ export function addTarget(
       };
     }
   }
-  const top = path?.[0]?.node;
-  const from = top === undefined ? content.length - 1 : content.indexOf(top);
-  const nearest = [...content.slice(0, from + 1).reverse(), ...content.slice(from + 1)];
-  for (const node of nearest) {
-    const [inside] = slotsFor(library, node, type);
+  return undefined;
+}
+
+/**
+ * The Footer holding `selectedId` (HF-4, 5.39), if the selection is the Footer or in it: adding
+ * then goes into its columns. Not Contact buttons, which sit after it on their own.
+ */
+function footerHolding(site: SiteDoc, selectedId: string | null): NodeDoc | undefined {
+  if (selectedId === null) return undefined;
+  const footer = site.layout.footer.find((node) => node.type === "Footer");
+  return footer !== undefined && pathTo([footer], selectedId) !== undefined ? footer : undefined;
+}
+
+/**
+ * Where a click adds `type` to the Footer whose element `selectedId` is (HF-4, 5.39): into the
+ * selection or beside it, as on a page ({@link addTarget}), else at the end of its last column that
+ * takes it. Contact details and a Newsletter signup go in a column too. `undefined` when no column
+ * takes it: it then goes on the page.
+ */
+function footerTarget(
+  library: ComponentLibrary,
+  footer: NodeDoc,
+  type: string,
+  selectedId: string,
+): AddTarget | undefined {
+  const along = alongPath(library, pathTo([footer], selectedId) ?? [], type);
+  if (along !== undefined) return along;
+  for (const column of [...childrenOf(footer, "columns")].reverse()) {
+    const [inside] = slotsFor(library, column, type);
     if (inside !== undefined) {
-      return { parentId: node.props.id, slot: inside, index: childrenOf(node, inside).length };
+      return { parentId: column.props.id, slot: inside, index: childrenOf(column, inside).length };
     }
   }
   return undefined;
+}
+
+/**
+ * Where a click adds `type` in the Footer's columns (5.39): when no point is given and the Footer,
+ * or an element in it, is selected, and a column takes it, but not a second of what the Footer
+ * holds one of (its Menu links).
+ */
+function inFooter(session: AddSession, type: string, point?: InsertPoint): AddTarget | undefined {
+  const selectedId = session.ui.getState().nodeId;
+  if (point !== undefined || selectedId === null) return undefined;
+  const footer = footerHolding(session.history.document.getState(), selectedId);
+  if (footer === undefined) return undefined;
+  const target = footerTarget(session.library, footer, type, selectedId);
+  const fieldsOf = (kind: string) => session.library.components[kind]?.fields;
+  if (target === undefined || target.parentId === null) return target;
+  const adding = { type, props: { id: "" } };
+  return secondOfOne(fieldsOf, [footer], target.parentId, adding) === undefined
+    ? target
+    : undefined;
 }
 
 /**
@@ -342,8 +409,18 @@ export function addTargetFor(
 ): AddTarget | undefined {
   const component = placed(session.library, type)?.type;
   if (component === undefined) return undefined;
+  // With the Footer or one of its elements selected, into its columns (5.39).
+  const footer = inFooter(session, component, point);
+  if (footer !== undefined) return footer;
+  // What no column takes goes on the page, as with nothing selected there: Contact buttons, or a
+  // section the Footer doesn't take.
+  const selectedId = session.ui.getState().nodeId;
+  const onPage =
+    footerHolding(session.history.document.getState(), selectedId) === undefined
+      ? selectedId
+      : null;
   const content = currentPage(session)?.doc.content ?? [];
-  return addTarget(session.library, content, component, session.ui.getState().nodeId, point);
+  return addTarget(session.library, content, component, onPage, point);
 }
 
 /**
@@ -367,6 +444,8 @@ export function addComponent(session: AddSession, key: string, point?: InsertPoi
   }
   const { pageId, viewport } = session.ui.getState();
   const site = session.history.document.getState();
+  // Into the Footer's columns, on every page, when the selection is there (5.39).
+  const toFooter = inFooter(session, type, point) !== undefined;
   // A click puts it above the Header (6.4), or after the Footer (6.16d), once, on every page; a
   // second click shows the one there. A page that hides that region shows none of it: there it
   // goes on the page, as a drop does.
@@ -388,15 +467,26 @@ export function addComponent(session: AddSession, key: string, point?: InsertPoi
   }
   const id = newId("node");
   const label = labelFor(
-    { kind: "insert", nodeId: id, componentType: type, field: null, page, selection: id },
+    {
+      kind: "insert",
+      nodeId: id,
+      componentType: type,
+      field: null,
+      page,
+      selection: id,
+      ...(toFooter ? { shared: true } : {}),
+    },
     session.library,
   );
   session.edit(
     "insert",
     label,
     (draft) => {
-      const content =
-        toRegion === undefined ? draft.pages[pageId]?.doc.content : draft.layout[toRegion];
+      const content = toFooter
+        ? draft.layout.footer
+        : toRegion === undefined
+          ? draft.pages[pageId]?.doc.content
+          : draft.layout[toRegion];
       if (content === undefined) return;
       // Every element in its defaults (a Columns' columns) gets an id of its own too.
       const ids = [id];

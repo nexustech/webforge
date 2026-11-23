@@ -366,7 +366,50 @@
           "type": "Footer",
           "props": {
             "id": "footer",
-            "text": "Willow Hair & Beauty · Hair, nails, brows and lashes"
+            "text": "Willow Hair & Beauty · Hair, nails, brows and lashes",
+            "variant": "columns",
+            "columns": [
+              {
+                "type": "FooterColumn",
+                "props": {
+                  "id": "footer-links",
+                  "content": [
+                    {
+                      "type": "Heading",
+                      "props": {
+                        "id": "footer-links-title",
+                        "text": "Explore",
+                        "size": "small"
+                      }
+                    },
+                    {
+                      "type": "MenuLinks",
+                      "props": {
+                        "id": "footer-menu"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "FooterColumn",
+                "props": {
+                  "id": "footer-contact",
+                  "content": [
+                    {
+                      "type": "ContactDetails",
+                      "props": {
+                        "id": "footer-contact-details",
+                        "title": "Visit us",
+                        "text": "<p>Book online, or call us.</p>",
+                        "showHours": true,
+                        "showContact": true
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
           }
         }
       ]

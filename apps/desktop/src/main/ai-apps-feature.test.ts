@@ -17,6 +17,24 @@ vi.mock("./mcp-service.js", () => ({
     return { start: mcp.start, close: mcp.close, connectAssistant: mcp.connectAssistant };
   },
 }));
+/** What the bridge was asked, by whom: the real bridge's ask, watched. */
+const bridge = vi.hoisted(() => ({ asked: [] as unknown[][] }));
+vi.mock("./ai-ipc.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./ai-ipc.js")>();
+  return {
+    ...actual,
+    registerAiHandlers: (...args: Parameters<typeof actual.registerAiHandlers>) => {
+      const real = actual.registerAiHandlers(...args);
+      return {
+        ...real,
+        ask: (...asked: Parameters<typeof real.ask>) => {
+          bridge.asked.push(asked);
+          return real.ask(...asked);
+        },
+      };
+    },
+  };
+});
 const sweep = vi.hoisted(() => vi.fn(async () => undefined));
 vi.mock("./claude-extension.js", () => ({
   createClaudeExtensions: () => ({ sweep, install: vi.fn(), remove: vi.fn() }),
@@ -51,6 +69,7 @@ function setUp(open: boolean, saved: SaveVersionResult = { status: "skipped" }) 
 
 beforeEach(() => {
   mcp.options = undefined;
+  bridge.asked = [];
   vi.clearAllMocks();
 });
 
@@ -83,6 +102,17 @@ describe("aiAppsFeature (4.9, #985)", () => {
     expect(mcp.start).toHaveBeenCalledOnce();
     expect(sweep).toHaveBeenCalledOnce();
     expect(mcp.options?.opening()).toBe(OPENING);
+  });
+
+  it("asks the window with the app's id, which a cancel finds its question by (5.34)", async () => {
+    const { feature, ipc } = setUp(true);
+    feature.register?.(ipc, () => true);
+    const request = { kind: "command", name: "setThemeTokens", input: {}, app: "Claude" } as const;
+
+    // No window here: the answer is that no site is open, but the bridge heard who asked.
+    await mcp.options?.ask(request, "app-1");
+
+    expect(bridge.asked).toEqual([[request, "app-1"]]);
   });
 
   it("gives the assistant the MCP server's tools, and closes the server when asked", async () => {

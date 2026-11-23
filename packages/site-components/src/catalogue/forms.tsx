@@ -3,6 +3,7 @@ import { type SiteText, siteTextFor } from "@webforge/i18n/site-text";
 import { httpsAddress, type NodeDoc, newsletterUnset } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
+import { FooterColumnTitle } from "../footer-column.js";
 import {
   addressTarget,
   FORM_FIELD_KINDS,
@@ -27,7 +28,7 @@ import {
   entranceBehaviours,
   entranceClasses,
 } from "../motion.js";
-import type { FormUnset } from "../schema.js";
+import type { FormUnset, RenderContext } from "../schema.js";
 import { SectionIntro, SectionTitle } from "../typography.js";
 
 const FORM_LAYOUTS = ["stacked", "split"] as const;
@@ -199,6 +200,57 @@ const contactForm = defineSection({
  * the newsletter service gives its own signup form. No service is built in (GA3); the honeypot
  * comes with it. An address that isn't `https://` posts nowhere.
  */
+/** What a Newsletter signup's form is drawn from: its own fields. */
+type NewsletterValues = {
+  readonly action: unknown;
+  readonly buttonLabel: unknown;
+  readonly askName: boolean;
+  readonly emailName: unknown;
+};
+
+/**
+ * A Newsletter signup's form: an email address, and a name if it asks for one. The same in its
+ * section and in a Footer column (5.39).
+ */
+function NewsletterForm({
+  id,
+  values,
+  context,
+}: {
+  readonly id: string;
+  readonly values: NewsletterValues;
+  readonly context: RenderContext;
+}) {
+  return (
+    <SiteForm
+      target={newsletterTarget(values.action)}
+      hint={context.formHint}
+      siteText={context.siteText}
+      label={context.siteText("siteText.form.newsletter")}
+      submitLabel={plainText(values.buttonLabel) ?? t("starter.newsletterButton")}
+    >
+      {values.askName && (
+        <FormField
+          kind="text"
+          name="name"
+          siteText={context.siteText}
+          label={context.siteText("siteText.form.name")}
+          id={`${id}-name`}
+          autoComplete="name"
+        />
+      )}
+      <FormField
+        kind="email"
+        name={emailFieldName(values.emailName)}
+        siteText={context.siteText}
+        label={context.siteText("siteText.form.email")}
+        id={`${id}-email`}
+        required
+      />
+    </SiteForm>
+  );
+}
+
 const newsletter = defineSection({
   label: t("section.newsletter"),
   name: "newsletter",
@@ -232,40 +284,21 @@ const newsletter = defineSection({
     contentWidth: "wide",
   },
   frame: () => "bg-base-200",
+  // In a Footer column (5.39): its title, text and form one under another, without its frame.
+  column: ({ id, values, context }) => (
+    <div className="site-newsletter space-y-4">
+      <FooterColumnTitle>{values.title}</FooterColumnTitle>
+      <SectionIntro className="text-sm">{values.text}</SectionIntro>
+      <NewsletterForm id={id} values={values} context={context} />
+    </div>
+  ),
   render: ({ id, values, context }) => (
     <FormSection
       layout={values.variant}
       width={values.contentWidth}
       title={values.title}
       text={values.text}
-      form={
-        <SiteForm
-          target={newsletterTarget(values.action)}
-          hint={context.formHint}
-          siteText={context.siteText}
-          label={context.siteText("siteText.form.newsletter")}
-          submitLabel={plainText(values.buttonLabel) ?? t("starter.newsletterButton")}
-        >
-          {values.askName && (
-            <FormField
-              kind="text"
-              name="name"
-              siteText={context.siteText}
-              label={context.siteText("siteText.form.name")}
-              id={`${id}-name`}
-              autoComplete="name"
-            />
-          )}
-          <FormField
-            kind="email"
-            name={emailFieldName(values.emailName)}
-            siteText={context.siteText}
-            label={context.siteText("siteText.form.email")}
-            id={`${id}-email`}
-            required
-          />
-        </SiteForm>
-      }
+      form={<NewsletterForm id={id} values={values} context={context} />}
     />
   ),
 });

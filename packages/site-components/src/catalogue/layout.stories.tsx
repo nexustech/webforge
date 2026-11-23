@@ -65,13 +65,73 @@ export const Footer: Story = {
   },
 };
 
-/** The Footer in columns: its text, and the site's menu as links beside it (2.6). */
+/** A Footer column of `content`, with `id`. */
+const column = (id: string, content: readonly Record<string, unknown>[]) => ({
+  type: "FooterColumn",
+  props: { id, content },
+});
+
+/** The Footer in columns: its text, and the site's menu as links beside it (2.6, 5.39). */
 export const FooterColumns: Story = {
   args: {
     nodes: [
       {
         type: "Footer",
-        props: { id: "footer", text: "© Rosa's Bakery, Hightown", variant: "columns" },
+        props: {
+          id: "footer",
+          text: "© Rosa's Bakery, Hightown",
+          variant: "columns",
+          columns: [column("links", [{ type: "MenuLinks", props: { id: "menu" } }])],
+        },
+      },
+    ],
+  },
+};
+
+/**
+ * The Footer as *Full* starts it (HF-4, 5.39): its text, then the menu's links, the business's
+ * contact details, and its social links over a newsletter signup, in columns that stack on phones.
+ */
+export const FooterFull: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Footer",
+        props: {
+          id: "footer",
+          text: "© Rosa's Bakery, Hightown",
+          variant: "columns",
+          columns: [
+            column("links", [
+              { type: "Heading", props: { id: "links-title", text: "Explore", size: "small" } },
+              { type: "MenuLinks", props: { id: "menu" } },
+            ]),
+            column("contact", [
+              {
+                type: "ContactDetails",
+                props: {
+                  id: "contact",
+                  title: "Visit us",
+                  text: "",
+                  showHours: true,
+                  showContact: true,
+                },
+              },
+            ]),
+            column("follow", [
+              { type: "SocialLinks", props: { id: "social" } },
+              {
+                type: "Newsletter",
+                props: {
+                  id: "news",
+                  title: "Fresh from the oven",
+                  text: "<p>News of our seasonal bakes, once a month.</p>",
+                  buttonLabel: "Sign up",
+                },
+              },
+            ]),
+          ],
+        },
       },
     ],
   },

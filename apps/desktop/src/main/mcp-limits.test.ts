@@ -55,6 +55,21 @@ describe("each AI app's limits (S20, ADR 0021)", () => {
     expect((await limits.ask("claude", command)).status).toBe("done");
   });
 
+  it("backs off after no question that went unanswered, only after the person's own decline (5.34)", async () => {
+    // Closed unanswered as the app gave up, or as its site closed: neither is a decline.
+    for (const unanswered of [
+      { status: "busy", message: "The question closed before the person answered it." },
+      { status: "not-found", message: "The site closed before the person answered." },
+    ] as const) {
+      const { limits, ask } = setUp(unanswered);
+      expect((await limits.ask("claude", command)).status).toBe(unanswered.status);
+      // The app's next request goes straight to the window, not delayed.
+      ask.mockResolvedValue({ status: "done", label: "Added" });
+      expect((await limits.ask("claude", command)).status).toBe("done");
+      expect(ask).toHaveBeenCalledTimes(2);
+    }
+  });
+
   it("runs what comes first only for a request it lets through (S20's version)", async () => {
     const { limits } = setUp();
     const before = vi.fn(async () => undefined);

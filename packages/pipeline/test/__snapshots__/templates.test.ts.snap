@@ -20,7 +20,7 @@ exports[`the cafe template's export > writes the reviewed pages and files 1`] = 
 [
   "404.html",
   "about.html",
-  "assets/css/site.fd1d7e86d8.css",
+  "assets/css/site.152de37c8f.css",
   "assets/fonts/playfair-display-latin-ext-wght-normal.woff2",
   "assets/fonts/playfair-display-latin-wght-normal.woff2",
   "assets/fonts/source-sans-3-latin-ext-wght-italic.woff2",
@@ -71,7 +71,7 @@ exports[`the consultant template's export > writes the reviewed pages and files 
 [
   "404.html",
   "about.html",
-  "assets/css/site.5939027fe0.css",
+  "assets/css/site.3ff673924c.css",
   "assets/fonts/lora-latin-ext-wght-normal.woff2",
   "assets/fonts/lora-latin-wght-normal.woff2",
   "assets/fonts/work-sans-latin-ext-wght-italic.woff2",
@@ -153,7 +153,7 @@ exports[`the photographer template's export > writes the reviewed pages and file
 [
   "404.html",
   "about.html",
-  "assets/css/site.af1411b5c4.css",
+  "assets/css/site.975cc70c52.css",
   "assets/fonts/figtree-latin-ext-wght-italic.woff2",
   "assets/fonts/figtree-latin-ext-wght-normal.woff2",
   "assets/fonts/figtree-latin-wght-italic.woff2",
@@ -215,7 +215,7 @@ exports[`the salon template's export > writes the reviewed pages and files 1`] =
 [
   "404.html",
   "about.html",
-  "assets/css/site.2f02c06cf0.css",
+  "assets/css/site.cfd76317a3.css",
   "assets/fonts/montserrat-latin-ext-wght-normal.woff2",
   "assets/fonts/montserrat-latin-wght-normal.woff2",
   "assets/fonts/open-sans-latin-ext-wght-italic.woff2",
@@ -270,7 +270,7 @@ exports[`the shop template's export > writes the reviewed pages and files 1`] = 
 [
   "404.html",
   "about.html",
-  "assets/css/site.d3fb7a4540.css",
+  "assets/css/site.1709e5bba9.css",
   "assets/fonts/caveat-latin-ext-wght-normal.woff2",
   "assets/fonts/caveat-latin-wght-normal.woff2",
   "assets/fonts/rubik-latin-ext-wght-italic.woff2",
@@ -331,7 +331,7 @@ exports[`the trades template's export > writes the reviewed pages and files 1`] 
 [
   "404.html",
   "about.html",
-  "assets/css/site.d27c0df660.css",
+  "assets/css/site.8fa002abe1.css",
   "assets/fonts/bebas-neue-latin-400-normal.woff2",
   "assets/fonts/bebas-neue-latin-ext-400-normal.woff2",
   "assets/fonts/roboto-latin-ext-wght-italic.woff2",

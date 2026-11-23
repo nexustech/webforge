@@ -167,7 +167,9 @@ export function registerAddPanel(
     | { key: string; from: readonly AddItem[]; elements: readonly AddItem[] }
     | undefined;
   const withSuggested = (elements: readonly AddItem[]) => {
-    const types = suggestedTypes(library, content(), ui.getState().nodeId);
+    // The Footer's elements too, whose columns suggest what they take (5.39).
+    const footer = session.history.document.getState().layout.footer;
+    const types = suggestedTypes(library, [...content(), ...footer], ui.getState().nodeId);
     const key = types.join(",");
     if (suggested?.key !== key || suggested.from !== elements) {
       suggested = {

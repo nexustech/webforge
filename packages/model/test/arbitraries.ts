@@ -302,7 +302,10 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
             ownColors,
             ...(themeLooks === undefined ? {} : { looks: themeLooks }),
           },
-          layout: { header: [], footer: [{ type: "Footer", props: { id: "footer", text: "©" } }] },
+          layout: {
+            header: [],
+            footer: [{ type: "Footer", props: { id: "footer", text: "©", columns: [] } }],
+          },
           // A post is in the blog's folder; distinct slugs keep every path unique.
           pages: Object.fromEntries(
             entries.map((entry, index) => [

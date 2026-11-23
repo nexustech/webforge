@@ -13,6 +13,7 @@ import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   type FieldDef,
+  hasElementRoot,
   type RenderContext,
   withAdvanced,
   withLook,
@@ -21,7 +22,6 @@ import {
   type ComponentType,
   cloneElement,
   Fragment,
-  isValidElement,
   type ReactNode,
   useState,
   useSyncExternalStore,
@@ -197,7 +197,7 @@ function markedHidden(output: ReactNode): ReactNode {
  * still its wrapper's first, which the canvas measures.
  */
 function markedExample(output: ReactNode): ReactNode {
-  if (isValidElement(output) && typeof output.type === "string") {
+  if (hasElementRoot(output)) {
     return markedWith(output, EXAMPLE_ATTRIBUTE);
   }
   return (
@@ -210,7 +210,7 @@ function markedExample(output: ReactNode): ReactNode {
 
 /** `output` with the empty attribute `attribute`, if its root is an HTML element. */
 function markedWith(output: ReactNode, attribute: string): ReactNode {
-  return isValidElement(output) && typeof output.type === "string"
+  return hasElementRoot(output)
     ? cloneElement(output, { [attribute]: "" } as Record<string, unknown>)
     : output;
 }

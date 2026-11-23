@@ -124,6 +124,27 @@ describe("editFromAction", () => {
     });
   });
 
+  it("reports a text edit when Puck gives the element's slots new lists of the same (5.39)", () => {
+    const inner = heading("i");
+    const old: NodeDoc = { type: "Section", props: { id: "s", text: "a", content: [inner] } };
+    const empty: NodeDoc = { type: "Section", props: { id: "e", text: "a", content: [] } };
+    const changed: NodeDoc = { type: "Section", props: { id: "s", text: "b", content: [inner] } };
+    const blank: NodeDoc = { type: "Section", props: { id: "e", text: "b", content: [] } };
+    const replace = (data: NodeDoc, index: number): PuckAction => ({
+      type: "replace",
+      destinationIndex: index,
+      destinationZone: ROOT,
+      data,
+    });
+
+    expect(
+      editFromAction(replace(changed, 0), state([changed, empty]), state([old, empty]), library),
+    ).toMatchObject({ field: "text", patch: { nodeId: "s", field: "text", value: "b" } });
+    expect(
+      editFromAction(replace(blank, 1), state([old, blank]), state([old, empty]), library),
+    ).toMatchObject({ field: "text", patch: { nodeId: "e", field: "text", value: "b" } });
+  });
+
   it("reports other changed fields as property edits", () => {
     const changed: NodeDoc = { type: "Heading", props: { id: "a", text: "a", size: "large" } };
     const next = state([changed, heading("b")]);

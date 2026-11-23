@@ -18,9 +18,14 @@ export const aiApi = (call: Call, subscribe: Subscribe): AiApi => ({
       const [id, request] = parsed.data;
       const cancelled = new Set<() => void>();
       answering.set(id, cancelled);
-      void answer(request, (listener) => {
-        cancelled.add(listener);
-      })
+      void answer(
+        request,
+        (listener) => {
+          cancelled.add(listener);
+        },
+        // It waits on the person now: main lifts its time limit (5.34).
+        () => void call("aiAsking", id).catch(() => undefined),
+      )
         .catch(() => FAILED)
         .then((response) => call("aiAnswer", id, response))
         .catch(() => undefined)

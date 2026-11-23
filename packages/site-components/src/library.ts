@@ -24,7 +24,9 @@ import {
   valuesWithLook,
 } from "@webforge/model";
 import { cloneElement, createElement, isValidElement, type ReactNode } from "react";
+import { hasElementRoot } from "./column-form.js";
 import { isDocumentPath } from "./document-path.js";
+import { countOfType } from "./held-once.js";
 import { hiddenFieldsOf, type ShownAtLeast } from "./hidden-fields.js";
 import type { MainHeading } from "./main-heading.js";
 import type { PictureBehind } from "./picture-behind.js";
@@ -150,6 +152,12 @@ export type ComponentDef = {
    * with a main heading of its own (a Hero).
    */
   readonly titleField?: string;
+  /**
+   * Nothing in it writes the page's main heading (`pageHeadings`): a Footer column (5.39), whose
+   * large Heading is an `<h2>` at the same size. What it holds draws so through
+   * `FooterColumnContext`.
+   */
+  readonly noMainHeading?: true;
   /**
    * Props over its `defaults` that a preview of it draws (the Add panel's, #1175), never placed on
    * a page: what it shows once filled in where its defaults leave it empty, such as a Gallery's
@@ -559,7 +567,10 @@ export function boxClasses(
   return parts.join(" ");
 }
 
-/** How many elements each slot with a `max` holds in `nodes` and below, by `<node id> <slot>`. */
+/**
+ * How many elements each slot with a `max` holds in `nodes` and below, by `<node id> <slot>`, and,
+ * past one, how many of each type its `once` names it holds, by `<node id> <slot> <type>`.
+ */
 function slotCounts(
   library: ComponentLibrary,
   nodes: readonly NodeDoc[],
@@ -573,6 +584,10 @@ function slotCounts(
       if (field.max !== undefined && children.length > field.max) {
         const key = `${String(node.props.id)} ${name}`;
         counts.set(key, Math.max(counts.get(key) ?? 0, children.length));
+      }
+      for (const type of field.once ?? []) {
+        const held = countOfType(children, type);
+        if (held > 1) counts.set(`${String(node.props.id)} ${name} ${type}`, held);
       }
       slotCounts(library, children, counts);
     }
@@ -652,7 +667,7 @@ const REACT_ATTRIBUTE_NAMES: Readonly<Record<string, string>> = { tabindex: "tab
  * a Carousel's `data-interval`. Output whose root isn't an HTML element is left as it is.
  */
 export function withAdvanced(output: ReactNode, advanced: unknown): ReactNode {
-  if (advanced === undefined || !isValidElement(output) || typeof output.type !== "string") {
+  if (advanced === undefined || !hasElementRoot(output)) {
     return output;
   }
   // As a file has them: an attribute only the export writes is left out (#650).
