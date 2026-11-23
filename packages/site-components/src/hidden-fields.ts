@@ -28,9 +28,22 @@ export type ShownAtLeast = {
   readonly of?: "parent" | undefined;
 };
 
+/**
+ * The type of a column of the Footer (HF-4, 5.39), where a section draws its column form: see
+ * `columnHides`.
+ */
+export const FOOTER_COLUMN = "FooterColumn";
+
+/** The element holding another, as {@link hiddenFieldsOf} reads it: its type and its values. */
+export type HidingParent = {
+  readonly type: string;
+  readonly values: Readonly<Record<string, unknown>>;
+};
+
 /** What {@link hiddenFieldsOf} reads of a component: its layouts' hidden fields, and its fields. */
 type Hiding = {
   readonly variantHides?: Readonly<Record<string, readonly string[]>> | undefined;
+  readonly columnHides?: readonly string[] | undefined;
   readonly shownAtLeast?: Readonly<Record<string, ShownAtLeast>> | undefined;
   readonly fields?: Readonly<Record<string, unknown>> | undefined;
   readonly pictureBehind?: readonly PictureBehind[] | undefined;
@@ -60,6 +73,7 @@ export function hideableFieldsOf(component: Hiding): Set<string> {
   const names = new Set([
     ...Object.values(component.variantHides ?? {}).flat(),
     ...Object.keys(component.shownAtLeast ?? {}),
+    ...(component.columnHides ?? []),
   ]);
   const fields = component.fields ?? {};
   for (const name of HIDDEN_BY_VALUES) {
@@ -70,23 +84,28 @@ export function hideableFieldsOf(component: Hiding): Set<string> {
 
 /**
  * The fields `component`'s chosen layout doesn't use (#311), or that its values leave unused, from
- * its `values` (with its defaults), or its parent's `parentValues` (with theirs) leave unused: the
- * Edit panel hides them, the export leaves their pictures and files out, and Site Check doesn't
- * read them (#670). React-free, so Site Check and the catalogue as data read it as the library
- * does. Without `parentValues`, a field shown by its parent's values shows.
+ * its `values` (with its defaults), or its `parent` (its type, and its values with their defaults)
+ * leaves unused: the Edit panel hides them, the export leaves their pictures, files and behaviours
+ * out, and Site Check doesn't read them (#670). React-free, so Site Check and the catalogue as data
+ * read it as the library does. Without `parent`, a field shown by its parent's values shows, and
+ * a section's frame fields show, as out of a Footer column.
  */
 export function hiddenFieldsOf(
   component: Hiding,
   values: Readonly<Record<string, unknown>>,
-  parentValues?: Readonly<Record<string, unknown>>,
+  parent?: HidingParent,
 ): Set<string> {
   const variant = values.variant;
   const hidden = new Set(
     typeof variant === "string" ? (component.variantHides?.[variant] ?? []) : [],
   );
+  // In a Footer column, a section draws its column form, which leaves its frame out (#1334).
+  if (parent?.type === FOOTER_COLUMN) {
+    for (const name of component.columnHides ?? []) hidden.add(name);
+  }
   // A field shown only from some number on (6.16c): a Table's sixth heading, with six Columns.
   for (const [name, { field, atLeast, of }] of Object.entries(component.shownAtLeast ?? {})) {
-    const from = of === "parent" ? parentValues : values;
+    const from = of === "parent" ? parent?.values : values;
     if (from === undefined) continue;
     const number = Number(from[field]);
     if (!(number >= atLeast)) hidden.add(name);

@@ -301,33 +301,44 @@ export function defineSection<const F extends Fields, const Variant extends stri
     titled !== false && rest.mainHeading === undefined && declared.title?.kind === "text"
       ? "title"
       : undefined;
+  // The Style tab shows its groups in the order of their first fields (F23, #1180): the section's
+  // own options (its layout among them), then Appearance with its background first, then its
+  // text, then Spacing.
+  const withFrame = {
+    // A background image (2.26) first on the Content tab, as before.
+    ...(background === false ? {} : { backgroundImage }),
+    ...fields,
+    contentWidth: CONTENT_WIDTH_FIELD,
+    colors: COLORS_FIELD,
+    // Its overlay (2.26), in the Appearance group, before the rest of it.
+    ...(background === false ? {} : overlayFields),
+    ...boxFirst,
+    // Style this ‹component›…'s deeper groups (3.13b), which only the dialog shows, the Title
+    // group's for a section with a title of its own.
+    ...DIALOG_FIELDS,
+    ...(titled === false ? {} : DIALOG_TITLE_FIELDS),
+    padding: PADDING_FIELD,
+    margin: MARGIN_FIELD,
+    ...ENTRANCE_FIELDS,
+  };
+  // Its column form draws its own fields alone (#1334): in a Footer column, its frame's fields and
+  // its layout are hidden, and its entrance doesn't ship.
+  const columnHides =
+    column === undefined
+      ? undefined
+      : [
+          ...Object.keys(withFrame).filter((name) => !Object.hasOwn(fields, name)),
+          ...(rest.variants === undefined ? [] : ["variant"]),
+        ];
   return defineFramedSection<F & FrameFields, Variant>({
     ...rest,
     ...(pictureBehind.length === 0 ? {} : { pictureBehind }),
     ...(titleField === undefined ? {} : { titleField }),
+    ...(columnHides === undefined ? {} : { columnHides }),
     place: "section",
     // Its corners, left to the theme, are a box's (product/11, 3.12 note 7).
     themeCorners: "box",
-    // The Style tab shows its groups in the order of their first fields (F23, #1180): the section's
-    // own options (its layout among them), then Appearance with its background first, then its
-    // text, then Spacing.
-    fields: {
-      // A background image (2.26) first on the Content tab, as before.
-      ...(background === false ? {} : { backgroundImage }),
-      ...fields,
-      contentWidth: CONTENT_WIDTH_FIELD,
-      colors: COLORS_FIELD,
-      // Its overlay (2.26), in the Appearance group, before the rest of it.
-      ...(background === false ? {} : overlayFields),
-      ...boxFirst,
-      // Style this ‹component›…'s deeper groups (3.13b), which only the dialog shows, the Title
-      // group's for a section with a title of its own.
-      ...DIALOG_FIELDS,
-      ...(titled === false ? {} : DIALOG_TITLE_FIELDS),
-      padding: PADDING_FIELD,
-      margin: MARGIN_FIELD,
-      ...ENTRANCE_FIELDS,
-    },
+    fields: withFrame,
     // Its own behaviours, and `animate` for its entrance.
     behaviours: (values) => {
       // Every section's values have the frame's fields, which generic types can't see through.

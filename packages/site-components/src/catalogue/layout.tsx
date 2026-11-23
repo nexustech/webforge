@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { FooterColumnContext } from "../column-form.js";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
+import { FOOTER_COLUMN } from "../hidden-fields.js";
 import { boundString, boundText, type ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
@@ -391,7 +392,7 @@ export type FooterPreset = (typeof FOOTER_PRESETS)[number];
 
 /** A Footer column holding `content`, its id `id`. */
 const presetColumn = (id: string, content: readonly NodeDoc[]): NodeDoc => ({
-  type: "FooterColumn",
+  type: FOOTER_COLUMN,
   props: { id, content: [...content] },
 });
 
@@ -482,7 +483,7 @@ const holdsShown = (slot: unknown, context: RenderContext): boolean =>
 export function inFooterColumn(nodes: readonly NodeDoc[], id: string, inside = false): boolean {
   return nodes.some((node) => {
     if (node.props.id === id) return inside;
-    const within = inside || node.type === "FooterColumn";
+    const within = inside || node.type === FOOTER_COLUMN;
     return Object.values(node.props).some(
       (value) => Array.isArray(value) && inFooterColumn(value.filter(isNodeDoc), id, within),
     );
@@ -544,7 +545,7 @@ const footer = defineComponent({
     columns: {
       kind: "slot",
       label: t("field.footerColumns"),
-      allow: ["FooterColumn"],
+      allow: [FOOTER_COLUMN],
       max: MAX_FOOTER_COLUMNS,
       // One Menu links: two would write two "Footer navigation" landmarks.
       once: ["MenuLinks"],
@@ -601,6 +602,6 @@ const footer = defineComponent({
 export const layoutComponents: Readonly<Record<string, ComponentDef>> = {
   Header: header,
   Footer: footer,
-  FooterColumn: footerColumn,
+  [FOOTER_COLUMN]: footerColumn,
   MenuLinks: menuLinks,
 };

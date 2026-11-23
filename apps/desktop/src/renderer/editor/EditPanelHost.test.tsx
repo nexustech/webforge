@@ -1261,6 +1261,48 @@ describe("a Table row's cells follow its Table's Columns (6.16c)", () => {
   });
 });
 
+describe("a section in a Footer column (#1334)", () => {
+  /** The starter site with Opening hours and contact on its home page, and in a Footer column. */
+  function setupColumn(nodeId: string) {
+    const site = starterSite();
+    const contact = (id: string) => ({ type: "ContactDetails", props: { id, entrance: "fade" } });
+    site.pages[site.homePageId]?.doc.content.push(contact("on-page"));
+    const footer = site.layout.footer[0];
+    if (footer !== undefined) {
+      footer.props.columns = [
+        { type: "FooterColumn", props: { id: "column", content: [contact("in-column")] } },
+      ];
+    }
+    const session = sessionWith(site);
+    session.select(nodeId);
+    render(<EditPanelHost session={session} flush={vi.fn()} />);
+    return userEvent.setup({ delay: null });
+  }
+  const field = (name: string) => document.querySelector(`[data-field="${name}"]`);
+
+  it("offers only what its column form draws: none of its frame's settings, nor its layout", async () => {
+    const user = setupColumn("in-column");
+
+    expect(screen.getByRole("heading", { name: "Opening hours and contact" })).toBeDefined();
+    expect(field("title")).not.toBeNull();
+    await user.click(screen.getByRole("tab", { name: "Style" }));
+    expect(field("showHours")).not.toBeNull();
+    for (const name of ["backgroundImage", "variant", "colors", "padding", "margin", "entrance"]) {
+      expect(field(name), name).toBeNull();
+    }
+    expect(screen.queryByRole("button", { name: "Appearance" })).toBeNull();
+  });
+
+  it("offers them all on a page", async () => {
+    const user = setupColumn("on-page");
+
+    await user.click(screen.getByRole("tab", { name: "Style" }));
+    for (const name of ["variant", "colors", "padding", "margin", "entrance"]) {
+      expect(field(name), name).not.toBeNull();
+    }
+  });
+});
+
 describe("the Header's Highlight the section in view (5.10b, GA10-1)", () => {
   it("is offered once the menu links to a section, on by default, and turned off as one step", async () => {
     const { session, labels, user } = setup("header");

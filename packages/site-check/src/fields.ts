@@ -14,6 +14,7 @@ import {
 } from "@webforge/model";
 import {
   type CatalogueField,
+  type HidingParent,
   hiddenFieldsOf,
   hideableFieldsOf,
 } from "@webforge/site-components/catalogue-data";
@@ -122,18 +123,22 @@ function planFor(
 }
 
 /**
- * The values of `parent`, the element holding another, as the export draws it: its own, else its
- * kind's look, else its defaults. A Table row's cells follow its Table's Columns (6.16c).
+ * `parent`, the element holding another, as the export draws it: its type, and its values, its own,
+ * else its kind's look, else its defaults. A Table row's cells follow its Table's Columns (6.16c),
+ * and a section in a Footer column draws without its frame (#1334).
  */
-function parentValues(
+function parentOf(
   catalogue: CheckInput["catalogue"],
   parent: NodeDoc | undefined,
   looks: SiteDoc["theme"]["looks"],
-): Readonly<Record<string, unknown>> | undefined {
+): HidingParent | undefined {
   if (parent === undefined) return undefined;
   return {
-    ...catalogue[parent.type]?.defaults,
-    ...valuesWithLook(parent.props, looks?.[parent.type]),
+    type: parent.type,
+    values: {
+      ...catalogue[parent.type]?.defaults,
+      ...valuesWithLook(parent.props, looks?.[parent.type]),
+    },
   };
 }
 
@@ -174,7 +179,7 @@ export function eachFieldValue(
           hidden ??= hiddenFieldsOf(
             component,
             { ...component.defaults, ...values },
-            parentValues(catalogue, ancestors.at(-1), looks),
+            parentOf(catalogue, ancestors.at(-1), looks),
           );
           if (hidden.has(name)) continue;
         }

@@ -141,8 +141,10 @@ describe("the Table (6.16c)", () => {
   it("hides them alike as data, as Site Check reads it", () => {
     const row = CATALOGUE.TableRow;
 
-    expect(row && [...hiddenFieldsOf(row, { ...row.defaults }, { columns: "5" })]).toEqual([
-      "cell6",
-    ]);
+    expect(
+      row && [
+        ...hiddenFieldsOf(row, { ...row.defaults }, { type: "Table", values: { columns: "5" } }),
+      ],
+    ).toEqual(["cell6"]);
   });
 });

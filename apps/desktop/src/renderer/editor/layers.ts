@@ -20,6 +20,7 @@ import {
 } from "@webforge/model";
 import {
   type ComponentLibrary,
+  fieldsHiddenBy,
   hasEntrance,
   holdsOverfullSlot,
   overfillsSlots,
@@ -97,14 +98,32 @@ function sectionOf(shared: SharedSectionsDoc, copy: NodeDoc & SharedCopyNode) {
 }
 
 /**
- * The Layers tree of `nodes`: each node with the nodes in its slots as children. A linked copy is
- * one layer, named after its shared section unless it has a name of its own; its section's elements
- * are edited on the canvas. A copy of a shared section the site doesn't have shows nothing.
+ * Whether `node` moves in as it scrolls into view where it is, in `parent` (UX-12): it has an
+ * entrance, and draws it there. A section in a Footer column draws its column form, without its
+ * entrance (#1334).
+ */
+function animates(node: NodeDoc, library: ComponentLibrary, parent: NodeDoc | undefined): boolean {
+  if (!hasEntrance(node.props)) return false;
+  const def = library.components[node.type];
+  if (def === undefined || parent === undefined) return true;
+  const values = { ...def.defaults, ...node.props };
+  const where = { type: parent.type, values: parent.props };
+  return !fieldsHiddenBy(def, values, { menuLinksToSections: false, parent: where }).has(
+    "entrance",
+  );
+}
+
+/**
+ * The Layers tree of `nodes`, held by `parent` (none at the top): each node with the nodes in its
+ * slots as children. A linked copy is one layer, named after its shared section unless it has a
+ * name of its own; its section's elements are edited on the canvas. A copy of a shared section the
+ * site doesn't have shows nothing.
  */
 export function layersOf(
   nodes: readonly NodeDoc[],
   library: ComponentLibrary,
   shared: SharedSectionsDoc = {},
+  parent?: NodeDoc,
 ): Layer[] {
   return nodes.flatMap((node): Layer[] => {
     const kind = elementKind(node, library, shared);
@@ -135,8 +154,8 @@ export function layersOf(
         hidden: node.props.hidden === true,
         ...(node.props.editorHidden === true ? { editorHidden: true } : {}),
         ...(typeof node.props.note === "string" ? { note: node.props.note } : {}),
-        children: slotsOf(node, library).flatMap((list) => layersOf(list, library, shared)),
-        ...(hasEntrance(node.props) ? { animated: true } : {}),
+        children: slotsOf(node, library).flatMap((list) => layersOf(list, library, shared, node)),
+        ...(animates(node, library, parent) ? { animated: true } : {}),
       },
     ];
   });
