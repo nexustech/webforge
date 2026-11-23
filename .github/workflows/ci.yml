@@ -24,10 +24,11 @@ name: CI
 #   `main` is compared with itself, which shows the runner's spread.
 # - To keep runs short: E2E runs in parts side by side on every OS: the app's tests in shards (two
 #   on Linux, three on Windows and macOS) and the exported-site tests in a job of their own
-#   (#1286). Storybook runs in two shards. `export-browsers` waits only for Linux's E2E, whose
-#   export job's site it opens; and the static checks (lint,
-#   typecheck, boundaries, knip, UI strings, React Compiler) run on Linux only, as they read the
-#   same source on every OS.
+#   (#1286). Storybook runs in three shards, and the unit tests in three beside the static checks,
+#   their coverage merged before the thresholds are checked (#1347). `export-browsers` waits only
+#   for Linux's E2E, whose export job's site it opens; and the static checks (lint, typecheck,
+#   boundaries, knip, UI strings, React Compiler) run on Linux only, as they read the same source
+#   on every OS.
 # - Unit tests run on Linux in every run, and on Windows and macOS only nightly and in "Run
 #   workflow" runs: they test the same code on every OS, and repeating them on pull requests cost
 #   about 17 minutes a run (measured 28–31 Oct 2026, research/stack/09). The licence check of each
@@ -244,7 +245,59 @@ jobs:
         run: node tools/src/gitleaks.ts --history
 
   check:
-    name: Check (${{ matrix.os }})
+    # The static checks. They read the source, which is the same on every OS, so they run on Linux
+    # only; the unit tests run beside them in `unit`, and the licences of Windows' and macOS' own
+    # binary packages in the packaged-app job.
+    name: Check
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        # Version comes from the packageManager field in package.json.
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint and format (biome ci)
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Package boundaries (dependency-cruiser)
+        run: pnpm deps
+
+      - name: Unused code and dependencies (knip)
+        run: pnpm knip
+
+      - name: Dependency licences (C1)
+        # Linux's binary packages; the packaged-app job checks Windows' and macOS'.
+        run: pnpm licence-check
+
+      - name: No hard-coded UI strings
+        run: pnpm ui-strings
+
+      - name: React Compiler compiles every component (ADR 0010)
+        run: pnpm react-compiler
+
+  unit:
+    # The unit tests, in `shards` parts side by side (#1347): with about 7,200 tests, one job took
+    # 10 minutes of a 12-minute Check, more than an E2E shard. Each runs its part of `pnpm test`
+    # with coverage, which `coverage` merges and checks against the thresholds (a shard checks
+    # none: vitest.config.ts), and its part of `pnpm test:compiled`. Vitest splits by test file.
+    name: Unit tests (${{ matrix.os }}, ${{ matrix.shard }}/${{ matrix.shards }})
     needs: changes
     if: needs.changes.outputs.run == 'true'
     strategy:
@@ -253,6 +306,8 @@ jobs:
         # Windows and macOS while FULL_CI_ENABLED is true, and not on pull requests (see the notes
         # above).
         os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && github.event_name != 'pull_request' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
+        shard: [1, 2, 3]
+        shards: [3]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -272,43 +327,61 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # Static checks read the source, which is the same on every OS, so they run on Linux only.
-      # Windows and macOS run the tests here (nightly), and the licences of their own binary
-      # packages in the packaged-app job.
-      - name: Lint and format (biome ci)
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm lint
-
-      - name: Typecheck
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm typecheck
-
-      - name: Package boundaries (dependency-cruiser)
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm deps
-
-      - name: Unused code and dependencies (knip)
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm knip
-
-      - name: Dependency licences (C1)
-        # Linux's binary packages; the packaged-app job checks Windows' and macOS'.
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm licence-check
-
-      - name: No hard-coded UI strings
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm ui-strings
-
-      - name: React Compiler compiles every component (ADR 0010)
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm react-compiler
-
       - name: Tests with coverage
-        run: pnpm test
+        run: pnpm test --shard=${{ matrix.shard }}/${{ matrix.shards }} --reporter=default --reporter=blob
 
       - name: Tests on compiled code (React Compiler, ADR 0010)
-        run: pnpm test:compiled
+        run: pnpm test:compiled --shard=${{ matrix.shard }}/${{ matrix.shards }}
+
+      - name: Upload the shard's results and coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-blob-${{ matrix.os }}-${{ matrix.shard }}
+          path: .vitest/blob/
+          # A folder starting with a dot.
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  coverage:
+    # The unit-test shards' coverage merged, then checked against each package's thresholds
+    # (vitest.config.ts), as one `pnpm test` would. Once a shard has failed it doesn't run: "CI
+    # passed" fails on the shard.
+    name: Coverage (${{ matrix.os }})
+    needs: [changes, unit]
+    if: needs.changes.outputs.run == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && github.event_name != 'pull_request' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        # Version comes from the packageManager field in package.json.
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Download the shards' results
+        uses: actions/download-artifact@v8
+        with:
+          pattern: unit-blob-${{ matrix.os }}-*
+          path: .vitest/blob/
+          merge-multiple: true
+
+      - name: Coverage thresholds
+        run: pnpm exec vitest --merge-reports --coverage --reporter=dot
 
       - name: Upload coverage report
         if: always() && matrix.os == 'ubuntu-latest'
@@ -622,15 +695,17 @@ jobs:
     # shows the site components in the three development presets; the nightly run (and a manual
     # one) in every preset too, with axe (2.16). A pull request has 30 minutes: the stories, the
     # template thumbnails and every template's pages took about 20 in one job (#608), the longest
-    # in a run, so they run in two shards.
+    # in a run, so they ran in two shards; with more stories, two took 10–15 minutes each (about
+    # 45 minutes of tests on two workers a shard), the longest jobs in a run again, so they run in
+    # three (#1347). Each keeps Playwright's two workers: more made screenshots time out (#754).
     name: Storybook (axe and screenshots, ${{ matrix.shard }}/${{ matrix.shards }})
     needs: changes
     if: needs.changes.outputs.storybook == 'true'
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
-        shards: [2]
+        shard: [1, 2, 3]
+        shards: [3]
     runs-on: ubuntu-latest
     # Keep in step with @playwright/test in e2e/package.json.
     container: mcr.microsoft.com/playwright:v1.64.1-noble
@@ -1023,6 +1098,8 @@ jobs:
         help,
         secrets,
         check,
+        unit,
+        coverage,
         bench,
         e2e-linux,
         e2e,
