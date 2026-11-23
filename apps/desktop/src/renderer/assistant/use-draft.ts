@@ -27,7 +27,12 @@ export type DraftState =
     }
   /** More text than a draft takes. */
   | { readonly step: "too-long" }
-  | { readonly step: "failed"; readonly error: AssistantErrorCode };
+  /** Why there's none, worded for where requests went (5.20): OpenRouter, or another server. */
+  | {
+      readonly step: "failed";
+      readonly error: AssistantErrorCode;
+      readonly provider?: AssistantStatus["provider"]["kind"] | undefined;
+    };
 
 /** The calls a draft needs from the assistant's domain. */
 export type DraftApi = Pick<
@@ -74,15 +79,18 @@ async function draftOrFailure(
   }
 }
 
-/** What a draft's answer shows: its texts, or why there are none. */
-function stateOf(result: DraftResult): DraftState {
+/** What a draft's answer shows: its texts, or why there are none, from `provider`. */
+function stateOf(
+  result: DraftResult,
+  provider: AssistantStatus["provider"]["kind"] | undefined,
+): DraftState {
   return result.status === "ok"
     ? {
         step: "draft",
         texts: result.texts,
         ...(result.examples === undefined ? {} : { examples: result.examples }),
       }
-    : { step: "failed", error: result.status };
+    : { step: "failed", error: result.status, provider };
 }
 
 /**
@@ -105,7 +113,7 @@ export function useDraft(
   const write = async (request: DraftRequest) => {
     const turn = turns.current;
     setState({ step: "writing" });
-    const next = stateOf(await draftOrFailure(api, sessionId, request));
+    const next = stateOf(await draftOrFailure(api, sessionId, request), status?.provider.kind);
     if (asking.current?.turn === turn) setState(next);
   };
 

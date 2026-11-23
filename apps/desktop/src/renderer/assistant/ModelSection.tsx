@@ -14,7 +14,7 @@ import { t } from "@webforge/i18n";
 import { useEffect, useId, useState } from "react";
 import type { AssistantApi, AssistantModel, AssistantStatus } from "../../shared/ipc/assistant.js";
 import { reportFailure } from "../log.js";
-import { errorKey } from "./ConversationView.js";
+import { errorKey } from "./error-actions.js";
 import { money } from "./money.js";
 import { type SignInStatus, signInKey } from "./sign-in-words.js";
 
@@ -94,7 +94,7 @@ export function ModelSection({ status, api, onStatus }: ModelSectionProps) {
         <p className="m-0 text-xs text-muted-foreground">{t("assistant.loading")}</p>
       ) : typeof models === "string" ? (
         <p role="alert" className="m-0 text-xs text-destructive-text">
-          {t(errorKey(models))}
+          {t(errorKey(models, status.provider.kind))}
         </p>
       ) : (
         <label className="flex flex-col gap-1 text-xs">

@@ -47,6 +47,16 @@ export const assistant = {
     "The model you chose isn't available now. Try again later, or choose another.",
   "assistant.error.provider-error": "The assistant's provider couldn't answer. Try again.",
   "assistant.error.failed": "Something went wrong. Try again.",
+  // The same two from a provider other than OpenRouter (5.20, OL-5): its own server, not OpenRouter.
+  "assistant.error.unauthorized-server":
+    "The server didn't accept your key. Check it in Settings › Assistant.",
+  "assistant.error.no-credit-server": "The server says your account has run out of credit.",
+  // What the person can do about an error, under its message (5.20, OL-5).
+  "assistant.error.action.retry": "Try Again",
+  "assistant.error.action.settings": "Assistant Settings…",
+  "assistant.error.action.credits": "Add Credit on OpenRouter",
+  "assistant.error.action.creditsFailed":
+    "OpenRouter's page didn't open. Add credit at openrouter.ai.",
   // Cost, in US dollars as OpenRouter bills (AIA-8).
   "assistant.cost.reply": "This reply cost {cost}",
   "assistant.cost.free": "No cost shown for this reply",

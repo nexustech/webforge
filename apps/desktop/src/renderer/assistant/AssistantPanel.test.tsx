@@ -15,6 +15,7 @@ function shown(options: FakeAssistantOptions = {}) {
   const send = vi.spyOn(api, "send");
   const session = sessionWith();
   const openSettings = vi.fn();
+  const openCredits = vi.fn();
   const openExamples = vi.fn();
   const show = vi.fn();
   let Panel: () => ReactNode = () => null;
@@ -30,6 +31,7 @@ function shown(options: FakeAssistantOptions = {}) {
     api,
     sessionId: "site-1",
     openSettings,
+    openCredits,
     openExamples,
   });
   render(<Panel />);
@@ -38,6 +40,7 @@ function shown(options: FakeAssistantOptions = {}) {
     send,
     session,
     openSettings,
+    openCredits,
     openExamples,
     show,
     remove,
@@ -186,6 +189,101 @@ describe("the assistant's panel (6.9c)", () => {
     fireEvent.keyDown(box, { key: "Enter" });
     expect(send).toHaveBeenCalledOnce();
     await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe(""));
+  });
+});
+
+describe("what the person can do about an error (5.20, OL-5)", () => {
+  /** Sends `text` from the box. */
+  async function sent(user: ReturnType<typeof userEvent.setup>, text: string) {
+    await user.type(
+      await screen.findByRole("textbox", { name: "Message the assistant" }),
+      `${text}{Enter}`,
+    );
+  }
+
+  it("sends a failed reply's message again with Try Again, from the last reply only", async () => {
+    const { send, user } = shown({ reply: { text: "Working on it", fail: "offline" } });
+    await sent(user, "Say we open on Saturdays");
+    await user.click(await screen.findByRole("button", { name: "Try Again" }));
+
+    await waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+    expect(send.mock.calls.map((call) => call[1])).toEqual([
+      "Say we open on Saturdays",
+      "Say we open on Saturdays",
+    ]);
+    // The second failed too: one Try Again, under it, none under the first.
+    await waitFor(() => expect(screen.getAllByRole("alert")).toHaveLength(2));
+    expect(screen.getAllByRole("button", { name: "Try Again" })).toHaveLength(1);
+  });
+
+  it("offers no Try Again for a reply that changed the site before it failed", async () => {
+    const { send, user } = shown({
+      reply: {
+        text: "Adding your testimonials",
+        steps: [
+          {
+            entryId: "e1",
+            label: "AI (Assistant): Added Testimonials",
+            target: { pageId: "home" },
+          },
+        ],
+        fail: "offline",
+      },
+    });
+    await sent(user, "Add three testimonials");
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/couldn't be reached/);
+    // Sent again, the message would add a second Testimonials section.
+    expect(screen.queryByRole("button", { name: "Try Again" })).toBeNull();
+    expect(send).toHaveBeenCalledOnce();
+  });
+
+  it("opens Assistant Settings for a refusal it can fix there, keeping the message", async () => {
+    const { openSettings, user } = shown({ reply: { refuse: "not-signed-in" } });
+    await sent(user, "Hi");
+    await user.click(await screen.findByRole("button", { name: "Assistant Settings…" }));
+
+    expect(openSettings).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: "Try Again" })).toBeNull();
+  });
+
+  it("sends a refused message again with Try Again, from the box", async () => {
+    const { send, user } = shown({ reply: { refuse: "failed" } });
+    await sent(user, "Hi");
+    await user.click(await screen.findByRole("button", { name: "Try Again" }));
+
+    await waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+    expect(send.mock.calls[1]?.[1]).toBe("Hi");
+  });
+
+  it("opens OpenRouter's page for credit when its account has run out", async () => {
+    const { openCredits, user } = shown({ reply: { fail: "no-credit" } });
+    await sent(user, "Hi");
+    await user.click(await screen.findByRole("button", { name: "Add Credit on OpenRouter" }));
+
+    expect(openCredits).toHaveBeenCalledOnce();
+  });
+
+  it("words another server's out of credit as its own, with no OpenRouter button", async () => {
+    const { user } = shown({
+      reply: { fail: "no-credit" },
+      status: { provider: { kind: "server", baseUrl: "https://ai.example.com/v1", hasKey: true } },
+    });
+    await sent(user, "Hi");
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "The server says your account has run out of credit.",
+    );
+    expect(screen.queryByRole("button", { name: "Add Credit on OpenRouter" })).toBeNull();
+  });
+
+  it("offers nothing where the panel already does: busy has its Stop", async () => {
+    const { user } = shown({ reply: { refuse: "busy" } });
+    await sent(user, "Hi");
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/still replying/);
+    expect(screen.queryByRole("button", { name: "Try Again" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Assistant Settings…" })).toBeNull();
   });
 });
 

@@ -29,10 +29,16 @@ describe("registerGuideHandlers (3.17)", () => {
       [GUIDE_ADDRESSES.businessProfile],
       [GUIDE_ADDRESSES.searchConsole],
     ]);
-    for (const address of Object.values(GUIDE_ADDRESSES)) {
+    for (const address of [GUIDE_ADDRESSES.businessProfile, GUIDE_ADDRESSES.searchConsole]) {
       expect(new URL(address).protocol).toBe("https:");
       expect(new URL(address).hostname).toMatch(/(^|\.)google\.com$/);
     }
+  });
+
+  it("opens OpenRouter's page for adding credit, for the assistant's out of credit (5.20)", async () => {
+    const openExternal = vi.fn(async () => undefined);
+    expect(await invoker(openExternal)("openRouterCredits")).toBe(true);
+    expect(openExternal).toHaveBeenCalledWith("https://openrouter.ai/settings/credits");
   });
 
   it("opens nothing but a guide: an address from the renderer is refused", async () => {
