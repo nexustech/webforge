@@ -14,3 +14,12 @@ commit-msg:
   jobs:
     - name: commitlint
       run: pnpm exec commitlint --edit {1}
+
+pre-push:
+  jobs:
+    - name: gitleaks
+      # The commits being pushed, checked for secrets (5.24, OL-13): git names them on stdin. The
+      # first push downloads the pinned Gitleaks and checks its SHA-256; allowed test values are in
+      # .gitleaks.toml.
+      run: node tools/src/gitleaks.ts
+      use_stdin: true

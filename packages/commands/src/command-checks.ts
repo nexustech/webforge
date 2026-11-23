@@ -22,6 +22,7 @@ import {
   type CatalogueField,
   fieldValueSchema,
   sanitizeStoredRichText,
+  secondOfOne,
 } from "@webforge/site-components/catalogue-data";
 import { z } from "zod";
 import { offLimits } from "./catalogue.js";
@@ -230,7 +231,9 @@ export function withNewIds(node: NodeDoc): NodeDoc {
 
 /**
  * Whether a node of `type` can go in `slot` of `parent`, or at the top level of `location`.
- * `moving` is the id of a node moved there, which a full slot it's already in still takes.
+ * `moving` is the id of a node moved there, which a full slot it's already in still takes. With
+ * `within`, the location's nodes and the node itself, also that it makes no second of what a slot
+ * holds one of (the Footer's one Menu links).
  */
 export function canGo(
   type: string,
@@ -238,6 +241,7 @@ export function canGo(
   parent: NodeDoc | null,
   slot: string | null,
   moving?: string,
+  within?: { readonly nodes: readonly NodeDoc[]; readonly node: NodeDoc },
 ): string | undefined {
   const component = CATALOGUE[type];
   const place = component?.place ?? "element";
@@ -261,7 +265,13 @@ export function canGo(
   if (field.max !== undefined && others.length >= field.max) {
     return `${parent.type}'s ${slot} takes ${field.max} at most.`;
   }
-  return undefined;
+  // One of a kind where it's held once at most (the Footer's one Menu links), as the editor.
+  if (within === undefined) return undefined;
+  const fieldsOf = (kind: string) => CATALOGUE[kind]?.fields;
+  const second = secondOfOne(fieldsOf, within.nodes, String(parent.props.id), within.node, moving);
+  return second === undefined
+    ? undefined
+    : `There's a ${CATALOGUE[second]?.label ?? second} there already, and it takes one at most.`;
 }
 
 /** The node `nodeId` at `location` in `site`, or why it isn't there. */

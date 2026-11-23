@@ -529,6 +529,107 @@ describe("withFavourites (F-ED-26, UX-10)", () => {
   });
 });
 
+describe("adding to the Footer's columns (HF-4, 5.39)", () => {
+  /** A session whose Footer has one column holding a Text, and the Footer. */
+  function withColumn() {
+    const site = starterSite();
+    const footer = site.layout.footer.find((node) => node.type === "Footer");
+    if (footer === undefined) throw new Error("no Footer");
+    footer.props.columns = [
+      {
+        type: "FooterColumn",
+        props: { id: "col", content: [{ type: "Text", props: { id: "t", text: "<p>Hi</p>" } }] },
+      },
+    ];
+    const session = sessionWith(site);
+    const columns = () =>
+      (session.history.document.getState().layout.footer.find((node) => node.type === "Footer")
+        ?.props.columns ?? []) as NodeDoc[];
+    const typesIn = (column: NodeDoc | undefined) =>
+      ((column?.props.content ?? []) as NodeDoc[]).map((node) => node.type);
+    return { session, footerId: String(footer.props.id), columns, typesIn };
+  }
+
+  it("puts an element beside the selected one in its column, on every page, as one step", () => {
+    const { session, columns, typesIn } = withColumn();
+    const page = () => currentPage(session)?.doc.content ?? [];
+    const before = page().length;
+    session.select("t");
+
+    expect(addComponent(session, "SocialLinks")).toBe(true);
+    expect(typesIn(columns()[0])).toEqual(["Text", "SocialLinks"]);
+    expect(page()).toHaveLength(before);
+    expect(session.history.entries().map((entry) => entry.label)).toEqual([
+      "Added shared Social links",
+    ]);
+
+    session.history.undo();
+    expect(typesIn(columns()[0])).toEqual(["Text"]);
+  });
+
+  it("puts Contact details in the last column, and a new column in the Footer itself", () => {
+    const { session, footerId, columns, typesIn } = withColumn();
+    const page = () => currentPage(session)?.doc.content ?? [];
+    const before = page().length;
+    session.select(footerId);
+
+    expect(addComponent(session, "ContactDetails")).toBe(true);
+    expect(typesIn(columns()[0])).toEqual(["Text", "ContactDetails"]);
+    expect(page()).toHaveLength(before);
+    session.select(footerId);
+    expect(addComponent(session, "FooterColumn")).toBe(true);
+    expect(columns().map((column) => column.type)).toEqual(["FooterColumn", "FooterColumn"]);
+  });
+
+  it("puts on the page what no column takes, and adds no fourth column", () => {
+    const { session, footerId, columns, typesIn } = withColumn();
+    const page = () => currentPage(session)?.doc.content ?? [];
+    session.select("t");
+    // An element goes in the page's last section, as with nothing selected there.
+    expect(addTargetFor(session, "Button")?.parentId).toBe(page().at(-1)?.props.id);
+    // A section goes at the end of the page, as with nothing selected; Contact buttons after the
+    // Footer, on every page.
+    expect(addTargetFor(session, "Hero")).toEqual({
+      parentId: null,
+      slot: null,
+      index: page().length,
+    });
+    expect(addComponent(session, "Hero")).toBe(true);
+    expect(page().at(-1)?.type).toBe("Hero");
+    session.select(footerId);
+    expect(addComponent(session, "ContactButtons")).toBe(true);
+    expect(session.history.document.getState().layout.footer.at(-1)?.type).toBe("ContactButtons");
+    expect(typesIn(columns()[0])).toEqual(["Text"]);
+
+    session.select(footerId);
+    expect(addComponent(session, "FooterColumn")).toBe(true);
+    session.select(footerId);
+    expect(addComponent(session, "FooterColumn")).toBe(true);
+    session.select(footerId);
+    expect(addTargetFor(session, "FooterColumn")).toBeUndefined();
+  });
+
+  it("adds one Menu links to the Footer, and refuses a second (5.39)", () => {
+    const { session, columns, typesIn } = withColumn();
+    session.select("t");
+    expect(addComponent(session, "MenuLinks")).toBe(true);
+    expect(typesIn(columns()[0])).toEqual(["Text", "MenuLinks"]);
+
+    session.select("t");
+    expect(addTargetFor(session, "MenuLinks")).toBeUndefined();
+    expect(addComponent(session, "MenuLinks")).toBe(false);
+    expect(typesIn(columns()[0])).toEqual(["Text", "MenuLinks"]);
+  });
+
+  it("suggests what a Footer column takes, Menu links among them", () => {
+    const { session } = withColumn();
+    const footer = session.history.document.getState().layout.footer;
+    expect(suggestedTypes(siteLibrary, footer, "col")).toEqual(
+      expect.arrayContaining(["MenuLinks", "ContactDetails", "Newsletter", "Heading"]),
+    );
+  });
+});
+
 describe("the Suggested group (SP-12)", () => {
   const column = (id: string): NodeDoc => ({ type: "Column", props: { id, content: [] } });
   const content: NodeDoc[] = [

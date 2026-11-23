@@ -311,9 +311,24 @@ describe("renderNodesToHtml", () => {
     expect(html).not.toContain("btn-primary hidden");
   });
 
-  it("lists the menu's links, dropdowns' too, in the Footer's columns (2.6)", () => {
+  it("lists the menu's links, dropdowns' too, in the Footer's columns (2.6, 5.39)", () => {
     const html = renderNodesToHtml(
-      [{ type: "Footer", props: { id: "footer", text: "Thanks.", variant: "columns" } }],
+      [
+        {
+          type: "Footer",
+          props: {
+            id: "footer",
+            text: "Thanks.",
+            variant: "columns",
+            columns: [
+              {
+                type: "FooterColumn",
+                props: { id: "links", content: [{ type: "MenuLinks", props: { id: "menu" } }] },
+              },
+            ],
+          },
+        },
+      ],
       siteLibrary,
       {
         ...context,
@@ -338,6 +353,188 @@ describe("renderNodesToHtml", () => {
       '<a href="https://example.com/map" class="link link-hover" target="_blank" rel="noopener">Find us</a>',
     );
     expect(html).not.toContain("Visit us");
+  });
+
+  it("draws the Footer's columns of elements side by side, the text first (HF-4, 5.39)", () => {
+    const column = (id: string, content: readonly NodeDoc[]) => ({
+      type: "FooterColumn",
+      props: { id, content },
+    });
+    const html = renderNodesToHtml(
+      [
+        {
+          type: "Footer",
+          props: {
+            id: "footer",
+            text: "Thanks.",
+            variant: "columns",
+            columns: [
+              column("a", [
+                { type: "Heading", props: { id: "h", text: "Find us", size: "small" } },
+                { type: "Text", props: { id: "t", text: "<p>1 High Street</p>" } },
+              ]),
+              column("b", [
+                { type: "ContactDetails", props: { id: "c", title: "Visit", text: "<p>Hi</p>" } },
+              ]),
+              column("c", [
+                { type: "Newsletter", props: { id: "n", title: "News", text: "<p>Join</p>" } },
+              ]),
+            ],
+          },
+        },
+      ],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).toContain(
+      '<aside><p>Thanks.</p></aside><div class="site-footer-columns grid w-full gap-8 sm:grid-flow-col sm:auto-cols-fr"><div class="site-footer-column min-w-0">',
+    );
+    expect(html.indexOf("Find us")).toBeLessThan(html.indexOf("Visit"));
+    expect(html.indexOf("Visit")).toBeLessThan(html.indexOf("News"));
+    // Contact details and a Newsletter signup in their column forms: no section, a small title.
+    expect(html).not.toContain("<section");
+    expect(html).toContain(
+      '<div class="site-contact space-y-4"><h3 class="font-heading text-h3">Visit</h3>',
+    );
+    expect(html).toContain(
+      '<div class="site-newsletter space-y-4"><h3 class="font-heading text-h3">News</h3>',
+    );
+    expect(html).toContain("<form");
+  });
+
+  it("leaves out a column with nothing shown, and the grid when no column shows anything", () => {
+    const text = (id: string, hidden?: boolean) => ({
+      type: "Text",
+      props: { id, text: `<p>${id}</p>`, ...(hidden === true ? { hidden } : {}) },
+    });
+    const footerWith = (columns: readonly NodeDoc[]) =>
+      renderNodesToHtml(
+        [{ type: "Footer", props: { id: "footer", text: "Thanks.", variant: "columns", columns } }],
+        siteLibrary,
+        context,
+      );
+    const column = (id: string, content: readonly NodeDoc[], hidden?: boolean) => ({
+      type: "FooterColumn",
+      props: { id, content, ...(hidden === true ? { hidden } : {}) },
+    });
+
+    const some = footerWith([
+      column("a", []),
+      column("b", [text("shown")]),
+      column("c", [text("x", true)]),
+    ]);
+    expect(some.match(/class="site-footer-column /g)).toHaveLength(1);
+    expect(some).toContain("shown");
+
+    const none = footerWith([
+      column("a", []),
+      column("b", [text("y")], true),
+      column("c", [text("x", true)]),
+    ]);
+    expect(none).not.toContain("site-footer-columns");
+    expect(none).toBe(footerWith([]));
+
+    // A migrated Columns Footer on a site with no menu: its Menu links show nothing.
+    const noMenu = { ...context, navigation: [] };
+    const links = renderNodesToHtml(
+      [
+        {
+          type: "Footer",
+          props: {
+            id: "footer",
+            text: "Thanks.",
+            variant: "columns",
+            columns: [column("links", [{ type: "MenuLinks", props: { id: "m" } }])],
+          },
+        },
+      ],
+      siteLibrary,
+      noMenu,
+    );
+    expect(links).not.toContain("site-footer-column");
+  });
+
+  it("puts a section's anchor and Advanced options on its <section>, or its column form's root", () => {
+    // A one-page site's menu goes to the Contact page's section by its anchor (5.9).
+    const advanced = { anchorId: "contact", className: "extra", attributes: { title: "Visit" } };
+    const contact = (id: string) => ({
+      type: "ContactDetails",
+      props: { id, title: "Visit", text: "<p>Hi</p>", advanced },
+    });
+    const page = renderNodesToHtml([contact("c")], siteLibrary, context);
+    expect(page).toMatch(/<section class="site-contact [^"]* extra" title="Visit" id="contact">/);
+
+    const footer = renderNodesToHtml(
+      [
+        {
+          type: "Footer",
+          props: {
+            id: "footer",
+            text: "Thanks.",
+            columns: [{ type: "FooterColumn", props: { id: "a", content: [contact("d")] } }],
+          },
+        },
+      ],
+      siteLibrary,
+      context,
+    );
+    expect(footer).toContain(
+      '<div class="site-contact space-y-4 extra" title="Visit" id="contact">',
+    );
+  });
+
+  it("migrates both layouts with the same text, links and Cookie settings (HF-4, 5.39)", () => {
+    const shown = { ...context, cookieSettings: true as const };
+    const footerOf = (variant: string) => {
+      const raw = {
+        formatVersion: 19,
+        layout: {
+          header: [],
+          footer: [{ type: "Footer", props: { id: "footer", text: "© Rosa's", variant } }],
+        },
+      };
+      const migrate = MIGRATIONS[19];
+      if (migrate === undefined) throw new Error("No migration from format 19");
+      return (migrate(raw) as unknown as typeof raw).layout.footer;
+    };
+
+    // Centred becomes Simple: drawn as before, byte for byte.
+    expect(renderNodesToHtml(footerOf("centred"), siteLibrary, shown)).toBe(
+      '<footer class="site-footer footer footer-center bg-base-200 p-8 text-base-content"><p>© Rosa&#x27;s</p><button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button></footer>',
+    );
+    // Columns stays Columns: its text and Cookie settings first, then the menu's links.
+    const columns = renderNodesToHtml(footerOf("columns"), siteLibrary, shown);
+    expect(columns).toContain(
+      '<aside><p>© Rosa&#x27;s</p><button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button></aside>',
+    );
+    expect(columns).toContain('<nav aria-label="Footer navigation" class="flex flex-col gap-2">');
+    for (const link of context.navigation.flatMap((item) =>
+      "children" in item ? item.children : [item],
+    )) {
+      expect(columns).toContain(`>${link.label}</a>`);
+    }
+  });
+
+  it("draws a Footer with no columns as before them, with no empty grid (5.39)", () => {
+    for (const columns of [[], undefined]) {
+      const html = renderNodesToHtml(
+        [{ type: "Footer", props: { id: "footer", text: "Thanks.", variant: "centred", columns } }],
+        siteLibrary,
+        context,
+      );
+      expect(html).toBe(
+        '<footer class="site-footer footer footer-center bg-base-200 p-8 text-base-content"><p>Thanks.</p></footer>',
+      );
+    }
+  });
+
+  it("leaves Menu links out of a site with no menu (5.39)", () => {
+    const html = renderNodesToHtml([{ type: "MenuLinks", props: { id: "menu" } }], siteLibrary, {
+      ...context,
+      navigation: [],
+    });
+    expect(html).toBe("");
   });
 
   it("links the site name to the home page, wherever it is in the navigation", () => {

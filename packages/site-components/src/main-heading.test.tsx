@@ -59,6 +59,7 @@ const KINDS: Readonly<Record<string, HeadingKind>> = {
   Heading: { mainHeading: { field: "text", when: { size: "large" } } },
   TextSection: { titleField: "title" },
   Section: {},
+  FooterColumn: { noMainHeading: true },
 };
 const kindOf = (type: string) => KINDS[type];
 
@@ -101,6 +102,15 @@ describe("a page's main heading (#1173)", () => {
     expect(pageHeadings([[design], [story], []], kindOf).promoted).toBe("design");
     expect(pageHeadings([[], [], [story]], kindOf).promoted).toBe("story");
     expect(pageHeadings([[], [], [hero]], kindOf)).toEqual({ own: 1, promoted: undefined });
+  });
+
+  it("is never in a Footer column: a large Heading there leaves the page its own (5.39)", () => {
+    const column = node("FooterColumn", "c", {
+      content: [node("Heading", "h", { text: "Visit us", size: "large" })],
+    });
+    const footer = node("Footer", "f", { columns: [column] });
+    expect(pageHeadings([[], [story], [footer]], kindOf)).toEqual({ own: 0, promoted: "story" });
+    expect(pageHeadings([[], [hero], [footer]], kindOf)).toEqual({ own: 1, promoted: undefined });
   });
 
   it("is none on an empty page, or one with no title anywhere", () => {
@@ -156,6 +166,48 @@ describe("a section's title as the page's main heading (#1173)", () => {
     expect(main).toContain(">Our story</h2>");
     // The Features' own items keep their small titles.
     expect(main).toMatch(/<h3 class="font-heading text-h3">/);
+  });
+
+  it("is the page's own where its only large Heading is in the Footer, an h2 at the same size (5.39)", () => {
+    const footer = {
+      type: "Footer",
+      props: {
+        ...structuredClone(siteLibrary.components.Footer?.defaults ?? {}),
+        id: "footer",
+        columns: [
+          {
+            type: "FooterColumn",
+            props: {
+              id: "column",
+              content: [
+                { type: "Heading", props: { id: "visit", text: "Visit us", size: "large" } },
+              ],
+            },
+          },
+        ],
+      },
+    };
+    const story = { type: "TextSection", props: { id: "story", title: "Our story" } };
+    const regions = { header: [], content: [story], footer: [footer] };
+    const page = renderPage(regions, siteLibrary, EDITOR_RENDER_CONTEXT);
+    // The canvas and Site Check take it from the same rule.
+    expect(
+      pageHeadings(
+        [regions.header, regions.content, regions.footer],
+        (type) => siteLibrary.components[type],
+      ),
+    ).toEqual({ own: 0, promoted: "story" });
+    expect(page.main.match(/<h1[^>]*>[^<]*<\/h1>/g)).toEqual([
+      '<h1 class="font-heading text-h2">Our story</h1>',
+    ]);
+    expect(h1s(page.footer)).toBe(0);
+    // A large Heading's look, at level 2.
+    const large = renderNodesToHtml(
+      [{ type: "Heading", props: { id: "h", text: "Visit us", size: "large" } }],
+      siteLibrary,
+      EDITOR_RENDER_CONTEXT,
+    );
+    expect(page.footer).toContain(large.replace(/<(\/?)h1/g, "<$1h2"));
   });
 
   it("is none on a page with a Hero, whose title is its main heading", () => {

@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n/components";
 import type { BindableSetting } from "@webforge/model";
 import type { ReactNode } from "react";
+import { FooterColumnTitle } from "../footer-column.js";
 import { contentWidthClass, defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { openingHoursLines } from "../opening-hours.js";
@@ -150,6 +151,15 @@ const contactDetails = defineSection({
     showContact: true,
   },
   frame: () => "bg-base-100",
+  // In a Footer column (5.39): its title, text and parts one under another, without its frame.
+  column: ({ values, context }) => (
+    <div className="site-contact space-y-4">
+      <FooterColumnTitle>{values.title}</FooterColumnTitle>
+      <SectionIntro className="text-sm">{values.text}</SectionIntro>
+      {values.showHours ? <Hours context={context} /> : null}
+      {values.showContact ? <Contact context={context} /> : null}
+    </div>
+  ),
   render: ({ values, context }) => {
     const parts = [
       values.showHours ? <Hours key="hours" context={context} /> : null,

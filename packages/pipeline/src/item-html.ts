@@ -1,6 +1,7 @@
 import { DOCUMENT_EXTENSIONS, isNodeDoc, type NodeDoc, type SiteSnapshot } from "@webforge/model";
 import {
   type ComponentLibrary,
+  inFooterColumn,
   renderNodesToHtml,
   withPageHeading,
 } from "@webforge/site-components";
@@ -95,6 +96,8 @@ export function itemHtml(
     [node],
     library,
     typeof first === "string" ? { ...shown, firstSection: first } : shown,
+    // A section in a Footer column in its column form, as the export draws it there (5.39).
+    { inFooterColumn: inFooterColumn(regions.footer, nodeId) },
   );
   return html === "" ? "" : formatHtml(html);
 }

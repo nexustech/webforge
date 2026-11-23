@@ -341,7 +341,32 @@
           "type": "Footer",
           "props": {
             "id": "footer",
-            "text": "Rowan Hale Photography · Landscapes and portraits"
+            "text": "Rowan Hale Photography · Landscapes and portraits",
+            "variant": "columns",
+            "columns": [
+              {
+                "type": "FooterColumn",
+                "props": {
+                  "id": "footer-links",
+                  "content": [
+                    {
+                      "type": "Heading",
+                      "props": {
+                        "id": "footer-links-title",
+                        "text": "Explore",
+                        "size": "small"
+                      }
+                    },
+                    {
+                      "type": "MenuLinks",
+                      "props": {
+                        "id": "footer-menu"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
           }
         }
       ]

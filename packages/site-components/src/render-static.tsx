@@ -9,6 +9,7 @@ import {
 } from "@webforge/model";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { FooterColumnContext } from "./column-form.js";
 import {
   type ComponentDef,
   type ComponentLibrary,
@@ -52,6 +53,11 @@ type NodeListOptions = {
    * hand-edited file) doesn't stop the canvas styling the rest.
    */
   readonly includeHidden?: boolean;
+  /**
+   * Draw them as in a Footer column (5.39), where a section draws its column form: Advanced mode's
+   * CSS tab draws an element there alone, as the export writes it.
+   */
+  readonly inFooterColumn?: boolean;
 };
 
 /**
@@ -270,5 +276,12 @@ export function renderNodesToHtml(
   // Edit-only previews are the canvas's: a site never shows one (UX-26).
   const { previews: _previews, ...exported } = context;
   const rendering: Rendering = { library, context: exported, keep: keeps(options, library) };
-  return renderToStaticMarkup(renderNodes(nodes, rendering));
+  const drawn = renderNodes(nodes, rendering);
+  return renderToStaticMarkup(
+    options.inFooterColumn === true ? (
+      <FooterColumnContext value>{drawn}</FooterColumnContext>
+    ) : (
+      drawn
+    ),
+  );
 }

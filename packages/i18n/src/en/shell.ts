@@ -370,6 +370,18 @@ export const shell = {
   "columnsToolbar.layoutOn": "Column widths on {device}",
   "columnsToolbar.previewLabel": "Columns preview",
   "columnsToolbar.showOutlines": "Show column outlines",
+  // The selected Footer's toolbar (HF-4, 5.39): start it from a preset, and its columns.
+  "footerToolbar.startFrom": "Start from",
+  "footerToolbar.preset.simple": "Simple",
+  "footerToolbar.preset.columns": "Columns",
+  "footerToolbar.preset.full": "Full",
+  "footerToolbar.columns": "Columns",
+  "footerToolbar.addColumn": "Add column",
+  "footerToolbar.removeColumn": "Remove last column",
+  // {preset} is one of the presets above: "Started the Footer from 'Full'".
+  "footerToolbar.started": "Started the Footer from '{preset}'",
+  // Its Undo toast, when it replaced elements: how far it reached (LF-15).
+  "footerToolbar.startedEverywhere": "Started the Footer from '{preset}' on every page",
   // The canvas frame's edges, dragged to set its width (1.33, F-ED-25).
   "canvasResize.left": "Canvas width, left edge",
   "canvasResize.right": "Canvas width, right edge",

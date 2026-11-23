@@ -189,6 +189,11 @@ export type FieldDef = {
        * duplicate or a drop (`overfillsSlots`).
        */
       readonly max?: number;
+      /**
+       * The types it holds one of at most, at any depth (the Footer's one Menu links, 5.39): as
+       * with `max`, nothing adds a second (`overfillsSlots`, `secondOfOne`).
+       */
+      readonly once?: readonly string[];
     }
   /**
    * An image from the site's Media, stored as an `ImageValue`: `{ mediaId, alt? }`, where `alt`

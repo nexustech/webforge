@@ -1,5 +1,7 @@
 import { t } from "@webforge/i18n/components";
 import { itemBindingOf } from "@webforge/model";
+import { use } from "react";
+import { FooterColumnContext } from "../column-form.js";
 import { defineComponent } from "../define.js";
 import {
   contentWidthClass,
@@ -82,7 +84,7 @@ function paddedColumn(values: { readonly contentWidth: string; readonly colors: 
 /** A heading; its size also sets the heading level. */
 const heading = defineComponent({
   label: t("element.heading"),
-  // A large Heading is the page's `<h1>` (`HEADING_TAG`).
+  // A large Heading is the page's `<h1>` (`HEADING_TAG`), except in the Footer.
   mainHeading: { field: "text", when: { size: "large" } },
   category: t("category.text"),
   fields: {
@@ -118,7 +120,8 @@ const heading = defineComponent({
   textStyle: (values) => HEADING_TAG[values.size],
   render: ({ values, context }) => {
     const size = values.size;
-    const Tag = HEADING_TAG[size];
+    // In a Footer column a large Heading keeps its size but is no main heading (`noMainHeading`).
+    const Tag = size === "large" && use(FooterColumnContext) ? "h2" : HEADING_TAG[size];
     const colour = colorClass("text", values.color);
     const content = boundText(values, "text", context);
     // Bound to an empty Site Settings value in the export: no empty heading.

@@ -360,7 +360,50 @@
           "type": "Footer",
           "props": {
             "id": "footer",
-            "text": "The Copper Kettle · Coffee, breakfast and lunch by the river"
+            "text": "The Copper Kettle · Coffee, breakfast and lunch by the river",
+            "variant": "columns",
+            "columns": [
+              {
+                "type": "FooterColumn",
+                "props": {
+                  "id": "footer-links",
+                  "content": [
+                    {
+                      "type": "Heading",
+                      "props": {
+                        "id": "footer-links-title",
+                        "text": "Explore",
+                        "size": "small"
+                      }
+                    },
+                    {
+                      "type": "MenuLinks",
+                      "props": {
+                        "id": "footer-menu"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "FooterColumn",
+                "props": {
+                  "id": "footer-contact",
+                  "content": [
+                    {
+                      "type": "ContactDetails",
+                      "props": {
+                        "id": "footer-contact-details",
+                        "title": "Visit us",
+                        "text": "<p>Pop in for a coffee by the river.</p>",
+                        "showHours": true,
+                        "showContact": true
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
           }
         }
       ]

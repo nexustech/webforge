@@ -5,7 +5,7 @@ title: Elements
 summary: Every element you can put inside a section, what it's for and what you can change.
 components: [Heading, Text, List, ListItem, Image, Carousel, CarouselSlide, EmbedVideo, Button, Spacer, Divider, Icon, SocialLinks, Columns, Column, Tabs, Tab, EmbedMap, Form, FormField, BuyButton, Accordion, AccordionItem, Table, TableRow]
 related: [sections, add-panel, edit-panel, media, links, forms, custom-code]
-updated: 2026-11-21
+updated: 2026-11-23
 ---
 
 # Elements
@@ -18,7 +18,7 @@ The Elements tab groups them as below. Every element but the Spacer has a **Spac
 
 ### Heading
 
-A title. **Size** is _Large_, _Medium_ or _Small_. The size also tells search engines and screen readers how important the heading is, so give each page one Large heading (or a Hero). A page with neither has its first section's title as its main heading.
+A title. **Size** is _Large_, _Medium_ or _Small_. The size also tells search engines and screen readers how important the heading is, so give each page one Large heading (or a Hero). A page with neither has its first section's title as its main heading. A Large heading in the [Footer](header-and-footer.md) is never the page's main heading.
 
 ### Text
 

@@ -44,6 +44,11 @@ export function mainHeadingsOf(
 export type HeadingKind = {
   readonly mainHeading?: MainHeading | undefined;
   readonly titleField?: string | undefined;
+  /**
+   * Nothing in it writes the page's main heading, at any depth: a Footer column's (5.39), whose
+   * large Heading is an `<h2>` in the look of an `<h1>`.
+   */
+  readonly noMainHeading?: true | undefined;
 };
 
 /** A page's main headings, as {@link pageHeadings} finds them. */
@@ -57,15 +62,19 @@ export type PageHeadings = {
   readonly promoted: string | undefined;
 };
 
-/** How many main headings `nodes` write, at any depth, hidden ones left out. */
+/**
+ * How many main headings `nodes` write, at any depth, hidden ones left out, and those in a
+ * component that holds none (`noMainHeading`) too.
+ */
 function ownHeadings(
   nodes: readonly NodeDoc[],
   kindOf: (type: string) => HeadingKind | undefined,
 ): number {
   let count = 0;
   for (const node of nodes) {
-    if (node.props.hidden === true) continue;
-    count += mainHeadingsOf(kindOf(node.type)?.mainHeading, node.props);
+    const kind = kindOf(node.type);
+    if (node.props.hidden === true || kind?.noMainHeading === true) continue;
+    count += mainHeadingsOf(kind?.mainHeading, node.props);
     for (const value of Object.values(node.props)) {
       if (Array.isArray(value)) count += ownHeadings(value.filter(isNodeDoc), kindOf);
     }

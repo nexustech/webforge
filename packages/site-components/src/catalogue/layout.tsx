@@ -1,7 +1,8 @@
 import { t } from "@webforge/i18n/components";
 import type { SiteText } from "@webforge/i18n/site-text";
-import { hasLink } from "@webforge/model";
+import { hasLink, isNodeDoc, type NodeDoc } from "@webforge/model";
 import type { ReactNode } from "react";
+import { FooterColumnContext } from "../column-form.js";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
 import { boundString, boundText, type ComponentDef } from "../library.js";
@@ -344,6 +345,28 @@ function headerButton(
 
 const FOOTER_LAYOUTS = ["centred", "columns"] as const;
 
+/**
+ * The most columns of elements a Footer has (HF-4, 5.39): three, beside its own text, which is the
+ * first of four in *Columns*.
+ */
+export const MAX_FOOTER_COLUMNS = 3;
+
+/**
+ * What a Footer column takes (HF-4, 5.39): a title, text, a list, the site's social links, a
+ * picture, the menu's links, and the business's contact details or a newsletter signup in their
+ * column forms.
+ */
+export const FOOTER_COLUMN_TYPES = [
+  "Heading",
+  "Text",
+  "List",
+  "SocialLinks",
+  "Image",
+  "MenuLinks",
+  "ContactDetails",
+  "Newsletter",
+] as const;
+
 /** The links of the site's menu, dropdowns' too, for the Footer's columns. */
 const linksOf = (items: readonly NavItem[]): NavLink[] =>
   items.flatMap((item) => ("children" in item ? item.children : [item]));
@@ -362,9 +385,144 @@ function CookieSettings({ siteText }: { readonly siteText: SiteText }) {
   );
 }
 
+/** What the Footer can start from (HF-4, 5.39): its text alone, the menu's links beside it, or both and more. */
+export const FOOTER_PRESETS = ["simple", "columns", "full"] as const;
+export type FooterPreset = (typeof FOOTER_PRESETS)[number];
+
+/** A Footer column holding `content`, its id `id`. */
+const presetColumn = (id: string, content: readonly NodeDoc[]): NodeDoc => ({
+  type: "FooterColumn",
+  props: { id, content: [...content] },
+});
+
 /**
- * The shared Footer (C5), in one of two layouts (2.6): its text centred, or in columns with the
- * site's menu as links beside it.
+ * What *Start from* gives the Footer (HF-4, 5.39): its layout and its columns, whose elements have
+ * only what differs from their defaults (the editor adds those) and ids to make the site's own.
+ * *Simple* is its text centred; *Columns* its text and the menu's links beside it, as today's two
+ * layouts are; *Full* the menu's links under a title, the business's contact details, and its
+ * social links over a newsletter signup.
+ */
+export function footerPreset(preset: FooterPreset): {
+  readonly variant: (typeof FOOTER_LAYOUTS)[number];
+  readonly columns: readonly NodeDoc[];
+} {
+  const menu: NodeDoc = { type: "MenuLinks", props: { id: "footer-menu" } };
+  if (preset === "simple") return { variant: "centred", columns: [] };
+  if (preset === "columns")
+    return { variant: "columns", columns: [presetColumn("footer-links", [menu])] };
+  return {
+    variant: "columns",
+    columns: [
+      presetColumn("footer-links", [
+        {
+          type: "Heading",
+          props: { id: "footer-links-title", text: t("starter.footerLinksTitle"), size: "small" },
+        },
+        menu,
+      ]),
+      presetColumn("footer-contact", [
+        { type: "ContactDetails", props: { id: "footer-contact-details" } },
+      ]),
+      presetColumn("footer-follow", [
+        { type: "SocialLinks", props: { id: "footer-social" } },
+        { type: "Newsletter", props: { id: "footer-newsletter" } },
+      ]),
+    ],
+  };
+}
+
+/**
+ * The site menu's links, dropdowns' too, in a Footer column (HF-4, 5.39): they change with the
+ * menu. A site with no menu leaves them out.
+ */
+const menuLinks = defineComponent({
+  label: t("element.menuLinks"),
+  place: "child",
+  fields: {},
+  defaults: {},
+  render: ({ context }) => {
+    const links = linksOf(context.navigation);
+    if (links.length === 0) return null;
+    return (
+      <nav
+        aria-label={context.siteText("siteText.footerNavigation")}
+        className="flex flex-col gap-2"
+      >
+        {links.map((link, index) => (
+          <NavAnchor
+            key={link.id ?? `${index}:${link.href}`}
+            link={link}
+            className="link link-hover"
+          />
+        ))}
+      </nav>
+    );
+  },
+});
+
+/**
+ * Whether a column's slot value shows anything: on the canvas (a component) always, there to drop
+ * into; in the export, a list with an element that isn't hidden, Menu links only with links to
+ * show (a site with no menu draws none).
+ */
+const holdsShown = (slot: unknown, context: RenderContext): boolean =>
+  typeof slot === "function" ||
+  (Array.isArray(slot) &&
+    slot.some(
+      (node) =>
+        isNodeDoc(node) &&
+        node.props.hidden !== true &&
+        (node.type !== "MenuLinks" || linksOf(context.navigation).length > 0),
+    ));
+
+/**
+ * Whether element `id` among `nodes` is in a Footer column (5.39), where a section draws its
+ * column form: Advanced mode's CSS tab draws it so too, as the export writes it.
+ */
+export function inFooterColumn(nodes: readonly NodeDoc[], id: string, inside = false): boolean {
+  return nodes.some((node) => {
+    if (node.props.id === id) return inside;
+    const within = inside || node.type === "FooterColumn";
+    return Object.values(node.props).some(
+      (value) => Array.isArray(value) && inFooterColumn(value.filter(isNodeDoc), id, within),
+    );
+  });
+}
+
+/**
+ * One column of the Footer (HF-4, 5.39): elements one under another. Contact details and a
+ * Newsletter signup in it draw their column forms.
+ */
+const footerColumn = defineComponent({
+  label: t("element.footerColumn"),
+  place: "child",
+  // The Footer never writes the page's main heading (product owner, 23 Nov): a large Heading in
+  // it is an `<h2>` at the same size, and the page's own heading, or its first section title, is
+  // still its `<h1>`.
+  noMainHeading: true,
+  fields: {
+    content: { kind: "slot", label: t("field.content"), allow: [...FOOTER_COLUMN_TYPES] },
+  },
+  defaults: { content: [] },
+  render: ({ values, slots, context }) => {
+    // The export leaves out a column with nothing shown in it, so it takes no room beside the
+    // others. On the canvas the slot is a component, there to drop into.
+    if (!holdsShown((values as Readonly<Record<string, unknown>>).content, context)) return null;
+    const Content = slots.content;
+    return (
+      <div className="site-footer-column min-w-0">
+        <FooterColumnContext value>
+          <Content className="flex flex-col gap-3" />
+        </FooterColumnContext>
+      </div>
+    );
+  },
+});
+
+/**
+ * The shared Footer (C5), in one of two layouts (2.6): its text centred, under its columns, or as
+ * the first of its columns. Its columns hold elements (HF-4, 5.39), side by side on wider screens
+ * and one under another on phones.
  */
 const footer = defineComponent({
   label: t("layout.footer"),
@@ -383,49 +541,66 @@ const footer = defineComponent({
         "contact.openingHoursNote",
       ],
     },
+    columns: {
+      kind: "slot",
+      label: t("field.footerColumns"),
+      allow: ["FooterColumn"],
+      max: MAX_FOOTER_COLUMNS,
+      // One Menu links: two would write two "Footer navigation" landmarks.
+      once: ["MenuLinks"],
+    },
   },
-  defaults: { text: t("starter.footer") },
-  render: ({ values, context }) => {
+  defaults: { text: t("starter.footer"), columns: [] },
+  render: ({ values, slots, context }) => {
     const content = boundText(values, "text", context);
     const text = content === null ? null : <p>{content}</p>;
     const cookies =
       context.cookieSettings === true ? <CookieSettings siteText={context.siteText} /> : null;
+    // The export leaves out the grid of a Footer with nothing shown in its columns, so a Footer of
+    // its text alone is drawn as it was before columns. On the canvas the slot is a component,
+    // there to show what it holds.
+    const stored: unknown = (values as Readonly<Record<string, unknown>>).columns;
+    const shown =
+      typeof stored === "function" ||
+      (Array.isArray(stored) &&
+        stored.some(
+          (column) =>
+            isNodeDoc(column) &&
+            column.props.hidden !== true &&
+            holdsShown(column.props.content, context),
+        ));
+    const Columns = slots.columns;
+    const columns = shown ? (
+      <Columns className="site-footer-columns grid w-full gap-8 sm:grid-flow-col sm:auto-cols-fr" />
+    ) : null;
     if (values.variant === "centred") {
       return (
         <footer className="site-footer footer footer-center bg-base-200 p-8 text-base-content">
+          {columns}
           {text}
           {cookies}
         </footer>
       );
     }
-    const links = linksOf(context.navigation);
     return (
       <footer className="site-footer footer sm:footer-horizontal bg-base-200 p-8 text-base-content">
         <aside>
           {text}
           {cookies}
         </aside>
-        {links.length === 0 ? null : (
-          <nav
-            aria-label={context.siteText("siteText.footerNavigation")}
-            className="flex flex-col gap-2"
-          >
-            {links.map((link, index) => (
-              <NavAnchor
-                key={link.id ?? `${index}:${link.href}`}
-                link={link}
-                className="link link-hover"
-              />
-            ))}
-          </nav>
-        )}
+        {columns}
       </footer>
     );
   },
 });
 
-/** The shared Header and Footer (C5), on every page and never added to one. */
+/**
+ * The shared Header and Footer (C5), on every page and never added to one, and what the Footer's
+ * columns hold that nothing else does (5.39).
+ */
 export const layoutComponents: Readonly<Record<string, ComponentDef>> = {
   Header: header,
   Footer: footer,
+  FooterColumn: footerColumn,
+  MenuLinks: menuLinks,
 };
