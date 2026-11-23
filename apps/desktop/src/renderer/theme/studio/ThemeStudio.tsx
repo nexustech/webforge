@@ -23,7 +23,7 @@ import type { EditorSession } from "../../editor/editor-session.js";
 import { elementPlaceName } from "../../editor/element-place.js";
 import type { OwnThemes } from "../../editor/own-themes.js";
 import { canShowElement, showElement } from "../../editor/show-element.js";
-import { endThemePreview, previewTheme } from "../../editor/theme-preview.js";
+import { endThemePreview, followThemeChange, previewTheme } from "../../editor/theme-preview.js";
 import { useDocument } from "../../editor/use-document.js";
 import { addFontPreviews, ColourField, type ThemeColorPreview } from "../../fields/index.js";
 import { useOwnThemeList } from "../own-themes-list.js";
@@ -397,7 +397,9 @@ export function ThemeStudio({
                 issues={ownColorIssues(theme)}
                 onAdd={(name, color) => void addOwnColor(session, asks, name, color)}
                 onRename={(id, name) => void renameOwnColor(session, asks, id, name)}
-                onSetColor={(id, color) => void setOwnColor(session, asks, id, color)}
+                onSetColor={(id, color) =>
+                  void followThemeChange(session, setOwnColor(session, asks, id, color))
+                }
                 usesOf={(id) => ownColorUseCount(session, id, colorFieldsOf(session.library))}
                 onDelete={(id, uses) =>
                   void deleteOwnColor(session, asks, id, uses, colorFieldsOf(session.library))
@@ -434,7 +436,10 @@ export function ThemeStudio({
               <StudioColours
                 theme={theme}
                 onChange={(palette, role, color) =>
-                  void setPaletteColor(session, asks, palette, role, color)
+                  void followThemeChange(
+                    session,
+                    setPaletteColor(session, asks, palette, role, color),
+                  )
                 }
                 preview={(palette, role) =>
                   previewOf(

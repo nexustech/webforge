@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
 import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
+import { stubFrames } from "../testing/frames.test-helper.js";
 import {
   classesOfHtml,
   connectSiteCss,
@@ -193,6 +194,7 @@ describe("connectSiteCss", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it("compiles the site's classes at once and styles the canvas with the result", async () => {
@@ -236,8 +238,10 @@ describe("connectSiteCss", () => {
     const theme = session.history.document.getState().theme;
     const dragged = { ...theme, colors: { ...theme.colors, primary: { l: 0.6, c: 0.2, h: 30 } } };
 
+    const frames = stubFrames();
     for (let step = 0; step < 5; step++) {
       previewTheme(session, dragged);
+      frames.run();
       vi.advanceTimersByTime(SITE_CSS_DEBOUNCE_MS);
     }
     const shown = vi.mocked(engine.setThemePreviewCss).mock.lastCall?.[0] ?? "";
@@ -256,6 +260,7 @@ describe("connectSiteCss", () => {
     await reply(0);
     const theme = session.history.document.getState().theme;
     const chosen = { ...theme, colors: { ...theme.colors, primary: { l: 0.6, c: 0.2, h: 30 } } };
+    stubFrames();
     previewTheme(session, chosen);
     endThemePreview(session, true);
     edit("Changed brand colour", (draft) => {
@@ -282,6 +287,7 @@ describe("connectSiteCss", () => {
         draft.theme.colors.primary = { l: 0.6, c: 0.2, h };
       });
     };
+    stubFrames();
     choose(30);
     choose(90);
     expect(compile).toHaveBeenCalledTimes(3);

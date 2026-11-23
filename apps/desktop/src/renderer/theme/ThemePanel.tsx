@@ -33,7 +33,7 @@ import type { FontsApi } from "../../shared/ipc/fonts.js";
 import type { OwnTheme } from "../../shared/ipc/themes.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { OwnThemes } from "../editor/own-themes.js";
-import { endThemePreview, previewTheme } from "../editor/theme-preview.js";
+import { endThemePreview, followThemeChange, previewTheme } from "../editor/theme-preview.js";
 import { useDocument } from "../editor/use-document.js";
 import { shownRatio, TEXT_PX, themeFieldRenderers } from "../fields/index.js";
 import { useOwnThemeList } from "./own-themes-list.js";
@@ -348,7 +348,9 @@ export function ThemePanel({
     } else if (kind === "color") {
       const role = QUICK_COLORS.find((each) => each === rest);
       const color = oklchSchema.safeParse(value);
-      if (role !== undefined && color.success) void setColor(session, asks, role, color.data);
+      if (role !== undefined && color.success) {
+        void followThemeChange(session, setColor(session, asks, role, color.data));
+      }
     } else if (name === "fonts.pairing") {
       const pairing = FONT_PAIRINGS.find((each) => each.id === value);
       if (pairing !== undefined) void setPairing(session, asks, pairing);
