@@ -10,6 +10,7 @@ import {
 import { t } from "@webforge/i18n";
 import { type ReactNode, useId, useState } from "react";
 import { SiteConsent } from "./Consent.js";
+import { errorKey } from "./error-actions.js";
 import type { DraftState } from "./use-draft.js";
 
 /** Props of {@link DraftDialog}. */
@@ -47,7 +48,7 @@ export function DraftDialog(props: DraftDialogProps) {
     state.step === "denied"
       ? t("assistant.siteDenied")
       : state.step === "failed"
-        ? t(`assistant.error.${state.error}`)
+        ? t(errorKey(state.error, state.provider))
         : state.step === "writing"
           ? t("assistant.rewrite.writing")
           : undefined;
