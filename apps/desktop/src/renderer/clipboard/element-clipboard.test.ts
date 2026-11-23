@@ -3,9 +3,11 @@ import {
   type CopiedElements,
   copiedNodeId,
   type ImageMeta,
+  insertPage,
   type MediaId,
   type MediaMeta,
   type NodeDoc,
+  newId,
   SHARED_COPY_TYPE,
 } from "@webforge/model";
 import { type ComponentLibrary, MAX_COLUMNS, siteLibrary } from "@webforge/site-components";
@@ -827,6 +829,48 @@ describe("pasting into the Footer's columns (#1335, 5.39)", () => {
     expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
     expect(columnTypes("col-2")).toEqual(["MenuLinks", "Text"]);
     expect(columnTypes("col")).toEqual(["Text"]);
+  });
+
+  it("never repeats in the Footer an anchor another page that shows it uses (#1358's review)", async () => {
+    const { session } = withColumns();
+    const home = session.ui.getState().pageId;
+    // Home's Heading, anchored "contact".
+    const heading = sectionContent(session).find((node) => node.type === "Heading");
+    if (heading === undefined) throw new Error("no Heading");
+    session.edit("props", "Anchored the heading", (draft) => {
+      const node = draft.pages[home]?.doc.content[0]?.props.content as NodeDoc[] | undefined;
+      const found = node?.find((each) => each.props.id === heading.props.id);
+      if (found !== undefined) found.props.advanced = { anchorId: "contact" };
+    });
+    const clipboard = fakeClipboard();
+    select(session, String(heading.props.id));
+    await copySelected(session, clipboard, vi.fn());
+    // Pasted into the Footer on another page: Home shows the Footer, with its "contact" too.
+    const about = newId("page");
+    session.edit("insert", "Added page 'About'", (draft) => insertPage(draft, about, "About"));
+    session.showPage(about);
+    select(session, "t");
+    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+
+    const footer = session.history.document
+      .getState()
+      .layout.footer.find((node) => node.type === "Footer");
+    const column = (footer?.props.columns as NodeDoc[] | undefined)?.[0];
+    const pasted = (column?.props.content as NodeDoc[] | undefined)?.at(-1);
+    expect(pasted?.type).toBe("Heading");
+    expect(pasted?.props.advanced?.anchorId).not.toBe("contact");
+  });
+
+  it("puts a picture pasted from another app in the selected column (#1358's review)", async () => {
+    const { session, columnTypes } = withColumns();
+    const before = sectionContent(session).length;
+    select(session, "t");
+    const clipboard = fakeClipboard({ status: "media", items: [photo], rejected: [] });
+
+    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+    expect(columnTypes("col")).toEqual(["Text", "Image"]);
+    expect(sectionContent(session)).toHaveLength(before);
+    expect(session.history.document.getState().media[photo.id]).toBeDefined();
   });
 
   it("puts on the page what no column takes, and never a second Menu links in the Footer", async () => {
