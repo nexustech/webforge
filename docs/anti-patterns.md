@@ -156,6 +156,13 @@ The examples are the ones the reviews gave; most have been fixed since, and they
 - **Instead:** poll for a value that says what was measured, such as `"fits"` or the two boxes, and compare it with the one wanted, so the error holds the evidence.
 - **Found by:** #1347.
 
+### 21. Taking the first of Puck's outlines as the selected element's
+
+- **Looks like:** `canvas().locator(OVERLAY).first()`, measured or clicked as the selected element's outline or bar. Puck draws an outline, with its bar, for each hovered element as well as the selected one, and keeps them in the order they were first drawn, so the first can be another element's. `table.spec.ts` measured it this way until #1350. The quick-action tests had found the same thing and pick the selected outline instead (`canvas-chrome.spec.ts`).
+- **Why it hurts:** the test checks whichever element was outlined first, so it fails, or passes, for something it doesn't name.
+- **Instead:** find the outline by what it's for: `.wf-outline[data-state="selected"]`, or `[data-wf-id="<id>"]` for one element's. To check that nothing else is outlined, count the outlines drawn and say whose each one is.
+- **Found by:** #1350.
+
 ## Now checked
 
 These were found by reviews too, and a check now catches each. They are listed so nobody adds them above.

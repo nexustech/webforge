@@ -1,5 +1,11 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
-import { ACTION_BAR_ACTION, ACTION_BAR_LABEL, COMPONENT, OVERLAY } from "@webforge/engine/puck-dom";
+import {
+  ACTION_BAR_ACTION,
+  ACTION_BAR_LABEL,
+  COMPONENT,
+  COMPONENT_ATTRIBUTE,
+  OVERLAY,
+} from "@webforge/engine/puck-dom";
 import { OPEN_WAIT } from "./budget.js";
 import { clickOnCanvas, editOnCanvas, stillBox } from "./canvas-click.js";
 import { drag } from "./drag.js";
@@ -193,29 +199,47 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
 test("outlines a row, names its size, opens its menu where it is, edits a cell and moves the row", async () => {
   await placeTable();
 
-  // Selected, Puck's outline fits the row. Polled for "fits" or what it measured instead, so a
-  // failure says what the outline was drawn around: it stayed off the row for 30 s on macOS and
-  // Windows CI (#1347), which no run here has reproduced, under load or not.
+  // Selected, the row's own outline fits it, and no other element's is drawn: the pointer is on
+  // the row. Puck draws an outline for each hovered element as well as the selected one, so the
+  // row's is found by its id, not taken as the first (#1350). Measured in one go in the canvas,
+  // and polled for "fits" or what was drawn instead: whose each outline is, hovered or selected,
+  // and where. It stayed off the row for 30 s on macOS and Windows CI (#1347), which no run here
+  // or in a CI run of 800 has reproduced.
   const start = await selectRow(0);
-  const overlay = canvas().locator(OVERLAY).first();
-  const shown = (box: { x: number; y: number; width: number; height: number } | null) =>
-    box === null ? "not drawn" : `${box.width} × ${box.height} at ${box.x}, ${box.y}`;
   await expect
-    .poll(async () => {
-      const [rowBox, outline] = await Promise.all([
-        wrapperOf(0).boundingBox(),
-        overlay.boundingBox(),
-      ]);
-      const fits =
-        rowBox !== null &&
-        outline !== null &&
-        Math.abs(rowBox.y - outline.y) < 2 &&
-        Math.abs(rowBox.height - outline.height) < 2 &&
-        Math.abs(rowBox.width - outline.width) < 2;
-      if (fits) return "fits";
-      const outlines = await canvas().locator(OVERLAY).count();
-      return `row ${shown(rowBox)}, outline ${shown(outline)}, ${outlines} outline(s)`;
-    }, LAYOUT_WAIT)
+    .poll(
+      () =>
+        wrapperOf(0).evaluate(
+          (wrapper, { idAttribute, outlineSelector }) => {
+            const id = wrapper.getAttribute(idAttribute);
+            const shown = (box: DOMRect) =>
+              `${Math.round(box.width)} × ${Math.round(box.height)} at ${Math.round(box.x)}, ${Math.round(box.y)}`;
+            const drawn = [...wrapper.ownerDocument.querySelectorAll(outlineSelector)].filter(
+              (outline) => outline.getAttribute("data-state") !== "none",
+            );
+            const own = drawn.find((outline) => outline.getAttribute("data-wf-id") === id);
+            const row = wrapper.getBoundingClientRect();
+            const box = own?.getBoundingClientRect();
+            const fits =
+              drawn.length === 1 &&
+              own?.getAttribute("data-state") === "selected" &&
+              box !== undefined &&
+              Math.abs(row.x - box.x) < 2 &&
+              Math.abs(row.y - box.y) < 2 &&
+              Math.abs(row.width - box.width) < 2 &&
+              Math.abs(row.height - box.height) < 2;
+            if (fits) return "fits";
+            const outlines = drawn.map((outline) => {
+              const whose = outline.getAttribute("data-wf-id") === id ? "the row's" : "another's";
+              const state = outline.getAttribute("data-state");
+              return `${whose} (${state}) ${shown(outline.getBoundingClientRect())}`;
+            });
+            return `row ${shown(row)}; outlines: ${outlines.join("; ") || "none"}`;
+          },
+          { idAttribute: COMPONENT_ATTRIBUTE, outlineSelector: `${OVERLAY} .wf-outline` },
+        ),
+      LAYOUT_WAIT,
+    )
     .toBe("fits");
 
   // A cell is edited where it is: the third row's first. Before any menu opens, which can take
