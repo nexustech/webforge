@@ -557,6 +557,35 @@ describe("renderNodesToHtml", () => {
     }
   });
 
+  it("puts a centred Footer's text and Cookie settings under its columns, side by side (#1368)", () => {
+    const html = renderNodesToHtml(
+      [
+        {
+          type: "Footer",
+          props: {
+            id: "footer",
+            text: "© 2026 nexustech",
+            variant: "centred",
+            columns: [
+              {
+                type: "FooterColumn",
+                props: { id: "c", content: [{ type: "MenuLinks", props: { id: "menu" } }] },
+              },
+            ],
+          },
+        },
+      ],
+      siteLibrary,
+      { ...context, cookieSettings: true },
+    );
+    // By rows, not daisyUI's footer-center columns: the columns first, the line under them.
+    expect(html).toMatch(/^<footer class="[^"]*footer-center grid-flow-row[^"]*">/);
+    expect(html.indexOf("site-footer-columns")).toBeLessThan(html.indexOf("site-footer-line"));
+    expect(html).toContain(
+      '<div class="site-footer-line grid-flow-col gap-x-4"><p>© 2026 nexustech</p><button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button></div></footer>',
+    );
+  });
+
   it("leaves Menu links out of a site with no menu (5.39)", () => {
     const html = renderNodesToHtml([{ type: "MenuLinks", props: { id: "menu" } }], siteLibrary, {
       ...context,

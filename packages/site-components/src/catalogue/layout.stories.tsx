@@ -88,6 +88,34 @@ export const FooterColumns: Story = {
   },
 };
 
+/** The Footer centred, with columns: its text under them, centred (#1368). */
+export const FooterCentredColumns: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Footer",
+        props: {
+          id: "footer",
+          text: "© Rosa's Bakery, Hightown",
+          variant: "centred",
+          columns: [
+            column("links", [
+              { type: "Heading", props: { id: "links-title", text: "Explore", size: "small" } },
+              { type: "MenuLinks", props: { id: "menu" } },
+            ]),
+            column("about", [
+              {
+                type: "Text",
+                props: { id: "about-text", text: "<p>Fresh bread every morning since 1998.</p>" },
+              },
+            ]),
+          ],
+        },
+      },
+    ],
+  },
+};
+
 /**
  * The Footer as *Full* starts it (HF-4, 5.39): its text, then the menu's links, the business's
  * contact details, and its social links over a newsletter signup, in columns that stack on phones.
