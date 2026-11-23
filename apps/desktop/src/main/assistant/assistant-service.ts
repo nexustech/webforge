@@ -158,8 +158,8 @@ export type AssistantServiceOptions = {
    */
   readonly saveVersionBefore: (session: string, name: string) => Promise<SafetySave>;
   /**
-   * Closes any question the window is asking for the assistant's commands (D7), declined: Stop
-   * doesn't wait for the person's answer (6.9b).
+   * Closes any question the window is asking for the assistant's commands (D7), unanswered: Stop
+   * doesn't wait for the person's answer (6.9b), and isn't their no (5.34).
    */
   readonly cancelQuestions: () => void;
   readonly now?: () => Date;

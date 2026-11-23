@@ -157,6 +157,15 @@ export const aiChannels = {
     response: z.null(),
   },
   /**
+   * The `ai:request` sent with this id now waits on the person's answer to a question (5.34,
+   * UA-1): it has no time limit from here, as walking away is no refusal.
+   */
+  aiAsking: {
+    channel: "ai:asking",
+    request: z.tuple([requestIdSchema]),
+    response: z.null(),
+  },
+  /**
    * Whether the window answers AI apps' requests for the site opened as `sessionId`: it does while
    * that site is open in it (#663). Main sends none once another site has opened, or while the
    * window reloads.
@@ -182,8 +191,9 @@ export const aiEvents = {
   /** An AI app's request, with an id; the renderer answers with `ai:answer` and that id. */
   request: { channel: "ai:request", args: z.tuple([requestIdSchema, aiRequestSchema]) },
   /**
-   * Its asker gave up on request `id` (the assistant's Stop, 6.9b): a question the window is
-   * asking for it closes, and the command is declined. One already answered is untouched.
+   * Its asker gave up on request `id` (an app's cancel, the assistant's Stop, 6.9b): a question
+   * the window is asking for it closes unanswered, which is no decline (5.34). One already
+   * answered is untouched.
    */
   cancel: { channel: "ai:cancel", args: z.tuple([requestIdSchema]) },
   /** An AI app's brief (4.12a): the window opens the quick start with it, filled in. */
@@ -194,11 +204,16 @@ export const aiEvents = {
 export interface AiApi {
   /**
    * Answers AI apps' requests with `answer` until the returned function is called; meanwhile the
-   * main process knows a site is open to ask.
+   * main process knows a site is open to ask. `asking` tells main a request now waits on the
+   * person's answer, with no time limit (5.34).
    */
   onRequest(
     sessionId: string,
-    answer: (request: AiRequest, onCancel: (cancelled: () => void) => void) => Promise<AiResponse>,
+    answer: (
+      request: AiRequest,
+      onCancel: (cancelled: () => void) => void,
+      asking: () => void,
+    ) => Promise<AiResponse>,
   ): () => void;
   /**
    * Calls `open` with each AI app's brief (4.12a) until the returned function is called: the window

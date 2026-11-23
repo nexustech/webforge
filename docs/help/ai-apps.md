@@ -4,7 +4,7 @@ id: ai-apps
 title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
 related: [undo-and-history, version-history, site-check]
-updated: 2026-11-22
+updated: 2026-11-23
 ---
 
 # AI apps
@@ -109,6 +109,8 @@ Some changes ask you first, with **Allow**:
 - changing where visitors' money or details go, such as a Buy button's payment link, even on one page. Changing your web address, phone number, email address or a social profile, or whether search engines may show your site, names the old one and the new one too.
 
 Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or _Page not found_.
+
+The question waits for your answer, however long you're away: walking away isn't a no. The app is told it's still waiting, and **Allow** makes the change when you come back. If the app gives up first, or you close the site, the question closes and nothing changes. Only **Cancel** is a no, and after one the app waits a little before it asks you again.
 
 In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings. It can still see Media and ask you for pictures.
 

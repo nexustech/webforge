@@ -71,8 +71,13 @@ export type ChangeKind = "insert" | "move" | "remove" | "text" | "props";
 /** Who asks: the AI app, by the name the person gave it when pairing (4.9). */
 export type Actor = {
   readonly app: string;
-  /** The asker giving up: a question it's waiting on closes, and the command is declined. */
+  /**
+   * The asker giving up: a question it's waiting on closes unanswered, which is no decline (5.34,
+   * UA-1).
+   */
   readonly signal?: AbortSignal | undefined;
+  /** Called as the command asks the person, and waits on their answer with no time limit (5.34). */
+  readonly onAsking?: (() => void) | undefined;
 };
 
 /** Why a command changed nothing, for the AI app to read. */

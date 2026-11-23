@@ -1,8 +1,13 @@
-import { CONFIRM_TIMEOUT_MS } from "@webforge/commands";
 import type { MediaMeta } from "@webforge/model";
 import { z } from "zod";
 import { mediaStatusInput, requestMediaInput } from "../../shared/ai-tools.js";
 import type { AiRequest, AiResponse } from "../../shared/ipc/ai.js";
+
+/**
+ * How long a request for pictures waits for the person, then closes with nothing added. A change's
+ * question waits for its answer (5.34, UA-1); this one, asking for files, still closes.
+ */
+const ASK_FOR_MS = 60_000;
 
 /** What an AI app asks the person for: who asks, and why, in the app's own words. */
 export type MediaAsk = { readonly app: string; readonly reason: string };
@@ -111,7 +116,7 @@ export function createMediaRequests(deps: MediaRequestDeps): MediaRequests {
   /** Asks the person, then opens Add files: what came of request `id`. */
   const run = async (id: number, asked: MediaAsk): Promise<AiResponse> => {
     const timeout = new AbortController();
-    const timer = setTimeout(() => timeout.abort(), deps.askForMs ?? CONFIRM_TIMEOUT_MS);
+    const timer = setTimeout(() => timeout.abort(), deps.askForMs ?? ASK_FOR_MS);
     let chose: boolean;
     try {
       chose = await deps.ask(asked, timeout.signal);

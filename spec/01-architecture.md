@@ -191,7 +191,8 @@ type CommandApi = {
   run(name: string, input: unknown, actor: Actor): Promise<CommandResult>; // Actor = { app: string }
   // zod-validated against COMMANDS; one HistoryManager step labelled "AI (‹app›): …"; refused with
   // 'busy' while a transaction or text session is open; site-wide commands await the D7
-  // confirmation ('declined' after 60 s)
+  // confirmation for as long as it takes (UA-1, 5.34): 'declined' only by the person, and closed
+  // unanswered, as no decline, when the app gives up or the site closes
 };
 
 // packages/storage: project-store.ts. Synchronous (better-sqlite3), used only in the main process.

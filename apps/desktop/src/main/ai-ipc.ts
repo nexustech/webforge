@@ -8,7 +8,10 @@ import { registerIpcHandler } from "./ipc.js";
 /** How long a query waits for the renderer's answer. */
 const QUERY_TIMEOUT_MS = 15_000;
 
-/** How long a command waits: a minute for the person to allow it (D7), then time to run. */
+/**
+ * How long a command waits for the window to answer, unless the window says it's asking the person
+ * (`ai:asking`): then it waits for their answer however long it takes (5.34, UA-1).
+ */
 const COMMAND_TIMEOUT_MS = 75_000;
 
 // What an AI app is told when the window can't answer, by the app's name (`{appName}`, #1004).
@@ -18,6 +21,15 @@ const noSite = (): AiResponse => ({ status: "not-found", message: t("aiApps.answ
 const reloaded = (): AiResponse => ({ status: "not-found", message: t("aiApps.answer.reloaded") });
 
 const noAnswer = (): AiResponse => ({ status: "busy", message: t("aiApps.answer.noAnswer") });
+
+/**
+ * What a request still waiting gets once its site closes, or its window goes (5.34): no decline,
+ * so the app needn't wait before it asks again.
+ */
+const siteClosed = (): AiResponse => ({
+  status: "not-found",
+  message: t("aiApps.answer.siteClosed"),
+});
 
 /**
  * The most requests that wait on the window at once (S21): one command per app, as each waits for
@@ -41,6 +53,8 @@ export type AiWindow = {
         readonly isSameDocument: boolean;
       }) => void,
     ): unknown;
+    /** Calls `listener` once the window has closed, or its renderer has gone (5.34). */
+    on(event: "destroyed" | "render-process-gone", listener: () => void): unknown;
   };
 };
 
@@ -104,10 +118,16 @@ export function registerAiHandlers(
     number,
     {
       readonly settle: (response: AiResponse) => void;
+      /** It waits on the person now: no time limit (5.34). */
+      readonly asking: () => void;
       readonly app: string | undefined;
       readonly appId: string | undefined;
     }
   >();
+  /** Settles every request still waiting with `response`. */
+  const settleAll = (response: () => AiResponse) => {
+    for (const { settle } of [...waiting.values()]) settle(response());
+  };
   /** Whether one more `request` would wait past {@link MAX_WAITING}. */
   const tooMany = (request: AiRequest) => {
     const all = [...waiting.values()];
@@ -131,12 +151,23 @@ export function registerAiHandlers(
     target.webContents.on("did-start-navigation", (details) => {
       if (!details.isMainFrame || details.isSameDocument) return;
       listening = undefined;
-      for (const { settle } of [...waiting.values()]) settle(reloaded());
+      settleAll(reloaded);
     });
+    // Gone: nothing will answer what waits on it, a question without a time limit among them.
+    const gone = () => {
+      listening = undefined;
+      settleAll(siteClosed);
+    };
+    target.webContents.on("destroyed", gone);
+    target.webContents.on("render-process-gone", gone);
   };
 
   registerIpcHandler(ipc, "aiAnswer", isTrustedSender, (id, response) => {
     waiting.get(id)?.settle(response);
+    return null;
+  });
+  registerIpcHandler(ipc, "aiAsking", isTrustedSender, (id) => {
+    waiting.get(id)?.asking();
     return null;
   });
   registerIpcHandler(ipc, "aiListening", isTrustedSender, (sessionId, on) => {
@@ -145,6 +176,8 @@ export function registerAiHandlers(
       watch(window());
     } else if (listening === sessionId) {
       listening = undefined;
+      // Its site closed: a question still waiting ends, as no decline (5.34).
+      settleAll(siteClosed);
     }
     return null;
   });
@@ -182,6 +215,7 @@ export function registerAiHandlers(
         const timer = setTimeout(() => settle(noAnswer()), timeoutMs);
         waiting.set(id, {
           settle,
+          asking: () => clearTimeout(timer),
           app: request.kind === "command" ? request.app : undefined,
           appId: request.kind === "command" ? appId : undefined,
         });

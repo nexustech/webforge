@@ -43,7 +43,9 @@ export type AppLimits = {
 /**
  * Limits on each app's requests, over `ask` (S20, ADR 0021): {@link PER_MINUTE} queries and
  * commands, and after the person declines a command, none for {@link DECLINED_BACK_OFF_MS},
- * doubling with each further decline. The bridge lets each app have one command in flight.
+ * doubling with each further decline. Only the person's own decline: a question that closed
+ * unanswered, as the app gave up or its site closed, is none (5.34, UA-1). The bridge lets each
+ * app have one command in flight.
  */
 export function createAppLimits(ask: AiBridge["ask"], now: () => number = Date.now): AppLimits {
   type State = {

@@ -15,12 +15,18 @@ function bridge(options: { trusted?: boolean; window?: AiWindow | undefined } = 
   } as unknown as Pick<IpcMain, "handle">;
   const sent: unknown[][] = [];
   const crashed = { value: false };
-  const loads: ((details: { isMainFrame: boolean; isSameDocument: boolean }) => void)[] = [];
+  type Load = (details: { isMainFrame: boolean; isSameDocument: boolean }) => void;
+  const loads: Load[] = [];
+  /** What the window calls once it has closed, or its renderer has gone. */
+  const gone: (() => void)[] = [];
   const window: AiWindow = {
     webContents: {
       send: (...args) => sent.push(args),
       isCrashed: () => crashed.value,
-      on: (_event, listener) => loads.push(listener),
+      on: ((event: string, listener: Load & (() => void)) => {
+        if (event === "did-start-navigation") loads.push(listener);
+        else gone.push(listener);
+      }) as AiWindow["webContents"]["on"],
     },
   };
   // The opening of the site that is open now.
@@ -45,7 +51,7 @@ function bridge(options: { trusted?: boolean; window?: AiWindow | undefined } = 
   };
   const invoke = (channel: string, ...args: unknown[]) =>
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
-  return { ai, sent, crashed, invoke, open, load, loads };
+  return { ai, sent, crashed, invoke, open, load, loads, gone };
 }
 
 /** The opening of the site the window was loaded for. */
@@ -165,6 +171,40 @@ describe("registerAiHandlers", () => {
     expect(sent).toHaveLength(1);
     await invoke("ai:listening", SESSION, true);
     expect(loads).toHaveLength(1);
+  });
+
+  it("lets a command wait for the person however long it takes, once the window is asking (5.34)", async () => {
+    vi.useFakeTimers();
+    const { ai, invoke } = bridge();
+    await invoke("ai:listening", SESSION, true);
+    let settled = false;
+    const command = ai.ask(addHero).finally(() => {
+      settled = true;
+    });
+    await invoke("ai:asking", 1);
+    await vi.advanceTimersByTimeAsync(60 * 60_000);
+    expect(settled).toBe(false);
+    await invoke("ai:answer", 1, { status: "done", label: "AI (Claude): Added Hero" });
+    expect((await command).status).toBe("done");
+    // One no longer waiting changes nothing.
+    await invoke("ai:asking", 1);
+  });
+
+  it("ends a request still waiting once its site closes or its window goes, as no decline (5.34)", async () => {
+    const { ai, invoke, gone } = bridge();
+    await invoke("ai:listening", SESSION, true);
+    const command = ai.ask(addHero);
+    await invoke("ai:asking", 1);
+    await invoke("ai:listening", SESSION, false);
+    expect(await command).toEqual(said("not-found", "aiApps.answer.siteClosed"));
+
+    await invoke("ai:listening", SESSION, true);
+    const another = ai.ask(addHero);
+    await invoke("ai:asking", 2);
+    for (const listener of gone) listener();
+    expect(await another).toEqual(said("not-found", "aiApps.answer.siteClosed"));
+    // Gone, it listens no more.
+    expect((await ai.ask(outline)).status).toBe("not-found");
   });
 
   it("gives up on a query sooner than on a command, which may wait for the person (D7)", async () => {
