@@ -4,7 +4,7 @@
 
 **Date:** 2026-11-20
 
-**The question:** the product owner's reference for Webforge's own website is a dark, one-page product site ([the trial plan, §8](../../docs/testing/own-website-with-claude-code.md#8-the-look-to-aim-for)). Of the parts that make its look, three are covered by no proposal. What would each be in Webforge?
+**The question:** the product owner's reference for Webforge's own website is a dark, one-page product site ([the trial plan, §9](../../docs/testing/own-website-with-claude-code.md#9-the-look-to-aim-for)). Of the parts that make its look, three are covered by no proposal. What would each be in Webforge?
 
 ## 1. The three parts
 
