@@ -425,7 +425,10 @@ describe("removing from a post's design or Header (6.10a, D7)", () => {
         confirmSiteWide,
         busy: () => false,
         current: () => null,
-        afterChange: (action) => action(),
+        afterChange: (action) => {
+          action();
+          return () => undefined;
+        },
       }),
       session,
     );

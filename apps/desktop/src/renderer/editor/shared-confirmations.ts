@@ -3,6 +3,7 @@ import { t } from "@webforge/i18n";
 import type { CollectionId, SharedSectionId } from "@webforge/model";
 import { collectionById, collectionItems, removeNode } from "@webforge/model";
 import {
+  dropHeld,
   historyCommandMindingQuestions,
   type SiteWideAction,
   type SiteWideConfirm,
@@ -103,10 +104,22 @@ export function confirmSharedRemovals(
 ): CanvasEngine {
   return {
     ...engine,
-    onHistoryCommand: (listener) =>
-      engine.onHistoryCommand((command) =>
-        historyCommandMindingQuestions(siteWide, command, (pressed) => listener(pressed) === true),
-      ),
+    onHistoryCommand: (listener) => {
+      // Undo or Redo held for a change's version, dropped if the listener goes first.
+      const held = new Set<() => void>();
+      const stop = engine.onHistoryCommand((command) =>
+        historyCommandMindingQuestions(
+          siteWide,
+          command,
+          (pressed) => listener(pressed) === true,
+          held,
+        ),
+      );
+      return () => {
+        stop();
+        dropHeld(held);
+      };
+    },
     onUserEdit: (listener) =>
       engine.onUserEdit((edit) => {
         const site = session.history.document.getState();

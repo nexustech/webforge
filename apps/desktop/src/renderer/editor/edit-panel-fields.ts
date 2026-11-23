@@ -37,7 +37,7 @@ import {
   sourceOf,
   valueAt,
 } from "./responsive-value.js";
-import { shownLayout } from "./shared-layout.js";
+import { pagesThatShow } from "./shared-layout.js";
 import { anchorsTakenInSection } from "./shared-sections.js";
 
 /**
@@ -167,11 +167,7 @@ function takenAnchors(site: SiteDoc, target: FieldTarget): string[] {
   const taken: string[] = [];
   const { region } = target;
   const pages =
-    region === undefined
-      ? [target.page]
-      : Object.values(site.pages)
-          .filter((other) => shownLayout(site, other.id)[region].length > 0)
-          .map((other) => other.doc);
+    region === undefined ? [target.page] : pagesThatShow(site, region).map((other) => other.doc);
   const nodes = pages.flatMap((other) => other.content);
   findNode([...site.layout.header, ...nodes, ...site.layout.footer], (other) => {
     const anchor = other.props.advanced?.anchorId;

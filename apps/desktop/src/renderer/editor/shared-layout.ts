@@ -5,6 +5,7 @@ import type {
   LayoutDoc,
   NodeDoc,
   PageDoc,
+  PageEntry,
   PageId,
   SiteDoc,
 } from "@webforge/model";
@@ -204,9 +205,17 @@ export function sharedRegionOf(layout: LayoutDoc, nodeId: string): SharedRegion 
   );
 }
 
+/**
+ * The pages that show the shared `region` (F-ED-7): every page whose settings don't hide it. Each
+ * is one an element there may not repeat an anchor of, from the Edit panel or a paste (#1335).
+ */
+export function pagesThatShow(site: SiteDoc, region: SharedRegion): PageEntry[] {
+  return Object.values(site.pages).filter((page) => !page.settings[HIDDEN_BY[region]]);
+}
+
 /** How many of the site's pages show `region`: every page whose settings don't hide it. */
 export function pagesShowing(site: SiteDoc, region: SharedRegion): number {
-  return Object.values(site.pages).filter((page) => !page.settings[HIDDEN_BY[region]]).length;
+  return pagesThatShow(site, region).length;
 }
 
 /** `nodes` as a page, for the helpers that walk a page's content. */
