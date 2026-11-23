@@ -256,16 +256,20 @@ async function titleBarWith(count: string) {
 
 /** Checks {@link titleBarWith} `count`: nothing over or cut off, and `spare` px or more to spare. */
 async function expectTitleBarFits(count: string, width: number, spare = 4): Promise<void> {
-  const layout = await titleBarWith(count);
-  console.log(
-    `[work] ${width} px title bar, "${count}": Publish ends at ${layout.publishRight.toFixed(1)} of ${layout.room} px, ${(layout.searchWidth - 140).toFixed(1)} px to spare`,
-  );
-  expect(layout.overlaps, count).toEqual([]);
-  expect(layout.cutOff, count).toBe(false);
-  // Half a pixel for the zoom's rounding (#1195).
-  expect(layout.publishRight, count).toBeLessThanOrEqual(layout.room + 0.5);
-  // The spare is what the search box has over its least, 140 px.
-  expect(layout.searchWidth - 140, count).toBeGreaterThanOrEqual(spare);
+  // Measured again until it settles: on Linux, the window controls' overlay reports the title
+  // bar's room for the window's size before a resize for a moment after it.
+  await expect(async () => {
+    const layout = await titleBarWith(count);
+    console.log(
+      `[work] ${width} px title bar, "${count}": Publish ends at ${layout.publishRight.toFixed(1)} of ${layout.room} px, ${(layout.searchWidth - 140).toFixed(1)} px to spare`,
+    );
+    expect(layout.overlaps, count).toEqual([]);
+    expect(layout.cutOff, count).toBe(false);
+    // Half a pixel for the zoom's rounding (#1195).
+    expect(layout.publishRight, count).toBeLessThanOrEqual(layout.room + 0.5);
+    // The spare is what the search box has over its least, 140 px.
+    expect(layout.searchWidth - 140, count).toBeGreaterThanOrEqual(spare);
+  }).toPass({ timeout: 5_000 });
 }
 
 /** The left column, open: at its 300 px default, not the 200 px a first opening gave (#1166). */

@@ -975,3 +975,54 @@ describe("a question for the person (5.16, OL-1)", () => {
     });
   });
 });
+
+describe("what to ask next (5.17, OL-2)", () => {
+  it("sends a changing reply's suggestions with its end, and keeps them in the turn", async () => {
+    const NEXT = ["Add our opening hours", "Make the welcome friendlier"];
+    let calls = 0;
+    const { service, events } = await ready({
+      chat: () => {
+        calls += 1;
+        return calls === 1
+          ? sse(toolCall("editText", { nodeId: "hero" }), finished("tool_calls"))
+          : sse(
+              { choices: [{ delta: { content: "Done." } }] },
+              toolCall("suggestNext", { suggestions: NEXT }),
+              finished("tool_calls"),
+            );
+      },
+      tools: {
+        editText: () => ({
+          status: "done",
+          label: "AI (Assistant): Edited Hero text",
+          entryId: "h1",
+          target: { pageId: "home", nodeId: "hero" },
+        }),
+      },
+    });
+
+    const sent = await service.send(SESSION, "Say Fresh bread", {});
+    if (sent.status !== "sending") throw new Error("not sent");
+    await until(() => expect(events.at(-1)?.type).toBe("reply-done"));
+    expect(events.at(-1)).toMatchObject({ stop: "end", suggestions: NEXT });
+    expect(calls).toBe(2);
+    const [turn] = await service.conversation(SESSION);
+    expect(turn).toMatchObject({ reply: "Done.", suggestions: NEXT });
+  });
+
+  it("sends none with a reply that changed nothing", async () => {
+    const { service, events } = await ready({
+      chat: () =>
+        sse(
+          { choices: [{ delta: { content: "It already says that." } }] },
+          toolCall("suggestNext", { suggestions: ["One", "Two"] }),
+          finished("tool_calls"),
+        ),
+    });
+    await service.send(SESSION, "Say Fresh bread", {});
+    await until(() => expect(events.at(-1)?.type).toBe("reply-done"));
+    expect(events.at(-1)).not.toHaveProperty("suggestions");
+    const [turn] = await service.conversation(SESSION);
+    expect(turn).not.toHaveProperty("suggestions");
+  });
+});

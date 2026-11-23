@@ -3,15 +3,18 @@ import { type FormUnset, parseColorRef, type SiteDoc } from "@webforge/model";
 import { checkSite } from "@webforge/site-check";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { TEMPLATE_IMAGE_HASHES } from "@webforge/templates";
-import type { AiResponse } from "../../shared/ipc/ai.js";
+import type { AiRequest, AiResponse } from "../../shared/ipc/ai.js";
 
 /** How long after one Open Preview another opens nothing more, so an app can't flood the browser. */
 export const PREVIEW_AGAIN_MS = 10_000;
 
 /** What Run Site Check and Open Preview work with. */
 export type AppToolsDeps = {
-  /** The open site as it is now. */
-  readonly site: () => SiteDoc;
+  /**
+   * The open site as it is now; for a held reply's request (6.9e), its stage's id, and the draft
+   * its changes are on (5.18).
+   */
+  readonly site: (stage?: string) => SiteDoc;
   /** Whether its owner confirmed the addresses its Custom Code allows (#649), as Site Check reads. */
   readonly allowListConfirmed: () => boolean;
   /** Whether the site has a Netlify destination, where its Netlify Forms send (4.2). */
@@ -97,21 +100,22 @@ const ruleTitle = (rule: string) => {
  * nothing.
  * - **runSiteCheck:** the export's check, by rule id, title and level, and each finding's place by
  *   id, with its facts (#1253): numbers and listed names, such as a contrast finding's colours and
- *   ratios. Never a value that can hold the site's text ({@link factsOf}).
+ *   ratios. Never a value that can hold the site's text ({@link factsOf}). A held reply's (6.9e)
+ *   checks its draft, so what it reports is what its changes would leave (5.18).
  * - **openPreview:** the Preview command, once in {@link PREVIEW_AGAIN_MS}, with the address of the
  *   page it opened (#1255): on this computer only, for the app to look at its work.
  */
 export function createAppTools(deps: AppToolsDeps): {
-  readonly runSiteCheck: () => AiResponse;
+  readonly runSiteCheck: (request?: Pick<AiRequest, "stage">) => AiResponse;
   readonly openPreview: () => AiResponse | Promise<AiResponse>;
 } {
   const now = deps.now ?? Date.now;
   let previewedAt = Number.NEGATIVE_INFINITY;
   return {
-    runSiteCheck: () => {
+    runSiteCheck: (request) => {
       const report = checkSite(
         {
-          site: deps.site(),
+          site: deps.site(request?.stage),
           catalogue: CATALOGUE,
           allowListConfirmed: deps.allowListConfirmed(),
           templateImages: TEMPLATE_IMAGE_HASHES,

@@ -111,6 +111,8 @@ A link in a reply shows its address beside it. Clicking it opens it in your brow
 
 ## Checking what it changed
 
+Before the assistant says it's done, it checks its work. Once it has changed your site, {appName} runs [Site Check](site-check.md) on the pages it changed, on your computer, and gives the assistant what it found. The assistant's last message says what it changed and names any problem the check found there, such as a picture with no description. It doesn't say a change worked unless the check or the site showed it. A reply that only answers a question, or changes nothing, runs no check.
+
 After a reply that changed your site, a card says how many changes it made:
 
 - Click a change to show it on the page.
@@ -119,6 +121,10 @@ After a reply that changed your site, a card says how many changes it made:
 - **Undo These Changes** undoes all of that reply's changes. **Redo** brings them back.
 
 If you've made other changes since, the card can't undo them on their own. Click **Open Version History** and restore the version saved before the assistant's changes. See [Version History](version-history.md).
+
+### What to ask next
+
+Under the card, _You could ask next_ may offer two or three short requests that follow on from what it changed, such as "Add our opening hours to the Contact page". Click one to send it as your next message, just as if you'd typed it. They go once you send anything. A reply that changed nothing, or that you stopped, offers none. If you [review changes first](#reviewing-changes-first), they appear once you apply the changes, and not if you discard them.
 
 ## Reviewing changes first
 

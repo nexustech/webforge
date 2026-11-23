@@ -1,6 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { panelStory } from "../testing/stories.js";
-import { createFakeAssistant, FAKE_STATUS, type FakeAssistantOptions } from "./fake-assistant.js";
+import {
+  createFakeAssistant,
+  FAKE_STATUS,
+  type FakeAssistantOptions,
+  type FakeReply,
+} from "./fake-assistant.js";
 import { registerAssistantPanel } from "./register-assistant-panel.js";
 
 // The assistant's panel (6.9c, UX-28) on 6.9a's stand-in for main: what it shows off, on a site not
@@ -9,8 +14,12 @@ const meta = { title: "Panels/Assistant" } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** The panel on the stand-in, with `message` sent first when given. */
-const story = (options: FakeAssistantOptions, message?: string): Story =>
+/** The panel on the stand-in, with `message` sent first when given, its reply with `more`. */
+const story = (
+  options: FakeAssistantOptions,
+  message?: string,
+  more: Partial<FakeReply> = {},
+): Story =>
   panelStory((panels, session) => {
     // The reply's change, in the site's Undo History, so its card can undo it.
     session.history.run("AI (Assistant): Edited Hero text", (site) => {
@@ -23,6 +32,7 @@ const story = (options: FakeAssistantOptions, message?: string): Story =>
         text: "I've rewritten the Hero's heading to say you open on Saturdays.",
         steps: [{ entryId, label: "AI (Assistant): Edited Hero text", target: { pageId: "home" } }],
         costUsd: 0.12,
+        ...more,
       },
       ...options,
     });
@@ -54,6 +64,15 @@ export const ReplyFailed: Story = story(
   { reply: { text: "Let me look at your opening hours.", fail: "no-credit" } },
   "Say we open on Saturdays",
 );
+
+/** A reply that changed the site, then what to ask next under its review card (5.17, OL-2). */
+export const RepliedWithSuggestions: Story = story({}, "Say we open on Saturdays", {
+  suggestions: [
+    "Add our opening hours to the Contact page",
+    "Make the welcome text friendlier",
+    "Add a photo of the shop to the Hero",
+  ],
+});
 
 /**
  * A message typed while a reply is under way (5.19, OL-4): held above the box, to be sent when the

@@ -18,6 +18,11 @@ type StagedRequest = AiRequest & { readonly stage: string };
 export type Stages = {
   /** `request` answered against its stage, which starts as the site is now. */
   answer(request: StagedRequest): Promise<AiResponse>;
+  /**
+   * Stage `id`'s draft, for Site Check to read (5.18); none if it isn't the current stage, which
+   * would start as the site is now.
+   */
+  site(id: string): SiteDoc | undefined;
 };
 
 /**
@@ -25,7 +30,9 @@ export type Stages = {
  * held; another reply's request starts a new one.
  */
 export function createStages(real: Pick<CommandHost, "history" | "mode" | "published">): Stages {
-  let current: { readonly id: string; readonly api: CommandApi } | undefined;
+  let current:
+    | { readonly id: string; readonly api: CommandApi; readonly draft: () => SiteDoc }
+    | undefined;
   const stage = (id: string): CommandApi => {
     if (current?.id === id) return current.api;
     const history = createHistoryManager<SiteDoc>({ initial: real.history.document.getState() });
@@ -38,7 +45,7 @@ export function createStages(real: Pick<CommandHost, "history" | "mode" | "publi
       mode: real.mode,
       published: real.published,
     });
-    current = { id, api };
+    current = { id, api, draft: () => history.document.getState() };
     return api;
   };
   return {
@@ -51,5 +58,6 @@ export function createStages(real: Pick<CommandHost, "history" | "mode" | "publi
       const { entryId: _draft, ...held } = result;
       return held;
     },
+    site: (id) => (current?.id === id ? current.draft() : undefined),
   };
 }

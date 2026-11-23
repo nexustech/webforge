@@ -607,7 +607,11 @@ describe("a question for the person (5.16, OL-1)", () => {
     ]);
     // The model's own tool: offered with the site's, never sent to them or shown as a step.
     const offered = (bodies[0] as unknown as { tools: { function: { name: string } }[] }).tools;
-    expect(offered.map((tool) => tool.function.name)).toEqual(["outline", "askPerson"]);
+    expect(offered.map((tool) => tool.function.name)).toEqual([
+      "outline",
+      "askPerson",
+      "suggestNext",
+    ]);
     expect(called).toEqual([]);
     expect(tools).toEqual([]);
   });
@@ -638,7 +642,7 @@ describe("a question for the person (5.16, OL-1)", () => {
   it("isn't offered without someone to ask", async () => {
     const { bodies } = await reply([{ text: "Done." }], { outline: () => ({ status: "done" }) });
     const offered = (bodies[0] as unknown as { tools: { function: { name: string } }[] }).tools;
-    expect(offered.map((tool) => tool.function.name)).toEqual(["outline"]);
+    expect(offered.map((tool) => tool.function.name)).toEqual(["outline", "suggestNext"]);
   });
 
   it("refuses a second question on the same topic, and a fourth in one reply", async () => {
@@ -744,5 +748,358 @@ describe("a question for the person (5.16, OL-1)", () => {
     expect(bodies[0]?.messages[2]?.content).toBe(
       'I asked: "Which look would you like?" They answered: "Calm and modern" Their note: "Keep the logo"\n\nI\'ve made it calm and modern.',
     );
+  });
+});
+
+describe("what to ask next (5.17, OL-2)", () => {
+  /** The model offering `suggestions` (with `text`, its last words). */
+  const suggests = (suggestions: readonly unknown[]) => ({
+    name: "suggestNext",
+    args: { suggestions },
+  });
+  const NEXT = ["Add our opening hours", "Make the welcome friendlier"];
+
+  it("ends a reply that changed the site with its suggestions, and no model call more", async () => {
+    const { outcome, bodies, tools, called } = await reply(
+      [
+        { tools: [{ name: "updateFields", args: { nodeId: "hero" } }] },
+        { text: "Done: the hero says Fresh bread.", tools: [suggests(NEXT)] },
+      ],
+      { updateFields: () => changed("Edited Hero Title") },
+    );
+
+    expect(outcome).toMatchObject({ status: "done", stop: "end", suggestions: NEXT });
+    expect(bodies).toHaveLength(2);
+    // The loop's own tool: never sent to the site's tools, nor shown as a call.
+    expect(called.map((call) => call.name)).toEqual(["updateFields"]);
+    expect(tools.map((event) => event.tool)).toEqual(["updateFields", "updateFields"]);
+    // Told what it may suggest, and how.
+    expect(bodies[0]?.messages[0]?.content).toContain("call suggestNext with your last words");
+  });
+
+  it("asks once more for words when the model suggests without any (PR 1342's review)", async () => {
+    const { outcome, bodies } = await reply(
+      [
+        { tools: [{ name: "updateFields", args: { nodeId: "hero" } }] },
+        // Many models send tool calls with no words, or only spaces.
+        { text: "  ", tools: [suggests(NEXT)] },
+        { text: "Done: the hero says Fresh bread." },
+      ],
+      { updateFields: () => changed("Edited Hero Title") },
+    );
+
+    expect(outcome).toMatchObject({ status: "done", stop: "end", suggestions: NEXT });
+    expect(bodies).toHaveLength(3);
+    const results = (bodies[2]?.messages ?? []).filter((message) => message.role === "tool");
+    expect(JSON.parse(results.at(-1)?.content ?? "null")).toMatchObject({
+      status: "done",
+      message: expect.stringContaining("tell the person"),
+    });
+  });
+
+  it(`still ends with its suggestions after ${REPLY_CAPS.toolCalls} calls, as they cost none (PR 1342's review)`, async () => {
+    // The change, then lookups up to the cap.
+    const lookups = Array.from({ length: REPLY_CAPS.toolCalls - 1 }, () => ({
+      name: "outline",
+      args: {},
+    }));
+    const { outcome, called } = await reply(
+      [
+        { tools: [{ name: "updateFields", args: { nodeId: "hero" } }] },
+        { tools: lookups },
+        { text: "Done: the hero says Fresh bread.", tools: [suggests(NEXT)] },
+      ],
+      {
+        updateFields: () => changed("Edited Hero Title"),
+        outline: () => ({ status: "done", data: {} }),
+      },
+    );
+
+    expect(called).toHaveLength(REPLY_CAPS.toolCalls);
+    expect(outcome).toMatchObject({ status: "done", stop: "end", suggestions: NEXT });
+  });
+
+  it("offers none after a reply that changed nothing", async () => {
+    const { outcome } = await reply(
+      [{ text: "The hero already says that.", tools: [suggests(NEXT)] }],
+      { outline: () => ({ status: "done" }) },
+    );
+    expect(outcome).toMatchObject({ status: "done", stop: "end", suggestions: [] });
+  });
+
+  it("offers them after changes held for review (6.9e)", async () => {
+    const { outcome } = await reply(
+      [
+        { tools: [{ name: "updateFields", args: { nodeId: "hero" } }] },
+        { text: "Ready for you to apply.", tools: [suggests(NEXT)] },
+      ],
+      {
+        updateFields: () => ({ status: "done", label: "AI (Assistant): Edited Hero Title" }),
+      },
+      { staged: true },
+    );
+    expect(outcome).toMatchObject({ status: "done", suggestions: NEXT });
+  });
+
+  it("offers none from a reply that stopped early", async () => {
+    const controller = new AbortController();
+    const { outcome } = await reply(
+      [
+        { tools: [{ name: "updateFields", args: { nodeId: "hero" } }, suggests(NEXT)] },
+        { text: "More to do." },
+      ],
+      {
+        updateFields: () => {
+          controller.abort();
+          return changed("Edited Hero Title");
+        },
+      },
+      { signal: controller.signal },
+    );
+    expect(outcome).toMatchObject({ status: "done", stop: "stopped", suggestions: [] });
+  });
+
+  it("drops a fourth suggestion, one too long, a repeat and one that isn't text", async () => {
+    const long = "x".repeat(81);
+    const { outcome } = await reply(
+      [
+        { tools: [{ name: "updateFields", args: { nodeId: "hero" } }] },
+        {
+          text: "Done.",
+          tools: [
+            // Spaced out over two lines, as one; then its repeat, once tidied, is dropped.
+            suggests([
+              " Add  our\nopening hours ",
+              long,
+              7,
+              "Add our opening hours",
+              "Two",
+              "Three",
+              "Four",
+            ]),
+          ],
+        },
+      ],
+      { updateFields: () => changed("Edited Hero Title") },
+    );
+    expect(outcome).toMatchObject({
+      status: "done",
+      suggestions: ["Add our opening hours", "Two", "Three"],
+    });
+  });
+
+  it("goes on when the model suggests with other calls, keeping its latest suggestions", async () => {
+    const { outcome, bodies } = await reply(
+      [
+        {
+          tools: [
+            suggests(["Old idea", "Another"]),
+            { name: "updateFields", args: { nodeId: "a" } },
+          ],
+        },
+        { text: "Done.", tools: [suggests(NEXT)] },
+      ],
+      { updateFields: () => changed("Edited Hero Title") },
+    );
+    expect(outcome).toMatchObject({ status: "done", stop: "end", suggestions: NEXT });
+    expect(bodies).toHaveLength(2);
+    const results = (bodies[1]?.messages ?? []).filter((message) => message.role === "tool");
+    expect(JSON.parse(results[0]?.content ?? "null")).toEqual({ status: "done" });
+  });
+});
+
+/** Site Check's answer as the window gives it: a picture with no description on two pages. */
+const REPORT = {
+  status: "done",
+  data: {
+    mode: "export",
+    found: [
+      {
+        rule: "altText",
+        title: "Pictures have a description",
+        level: "should",
+        places: [
+          { kind: "element", on: "home", nodeId: "photo" },
+          { kind: "element", on: "about", nodeId: "team" },
+        ],
+        facts: [{ mediaId: "m1" }, { mediaId: "m2" }],
+      },
+      {
+        rule: "contrast",
+        title: "Text is easy to read",
+        level: "must",
+        places: [{ kind: "theme" }],
+      },
+    ],
+  },
+};
+
+/** The model's messages in `body` as the loop sent them, with their tool calls. */
+type Sent = { role: string; content: string | null; tool_calls?: { function: { name: string } }[] };
+
+/** The check the loop gave the model in `body`, its last message, as JSON. */
+function checkIn(body: { messages: unknown[] } | undefined) {
+  const messages = (body?.messages ?? []) as Sent[];
+  const call = messages.at(-2);
+  const result = messages.at(-1);
+  expect(call?.tool_calls?.map((each) => each.function.name)).toEqual(["runSiteCheck"]);
+  return JSON.parse(String(result?.content));
+}
+
+describe("the assistant checks its work (5.18, OL-3)", () => {
+  it("runs Site Check after a change, and its closing message gets the changed page's problems", async () => {
+    const { outcome, tools, called, bodies } = await reply(
+      [
+        { tools: [{ name: "addNode", args: { location: { kind: "page", pageId: "home" } } }] },
+        { text: "I added a photo. Site Check found it has no description." },
+      ],
+      { addNode: () => changed("Added Image"), runSiteCheck: () => REPORT },
+    );
+
+    expect(outcome).toMatchObject({ status: "done", stop: "end" });
+    expect(called.map((each) => each.name)).toEqual(["addNode", "runSiteCheck"]);
+    // No model call more than without the check, and no step of its own on the panel.
+    expect(bodies).toHaveLength(2);
+    expect(tools.map((each) => each.tool)).toEqual(["addNode", "addNode"]);
+    // Only the changed page's places: the picture on About and the theme's aren't this reply's.
+    expect(checkIn(bodies[1])).toMatchObject({
+      status: "done",
+      checked: "pages",
+      pages: ["home"],
+      found: [
+        {
+          rule: "altText",
+          level: "should",
+          places: [{ kind: "element", on: "home", nodeId: "photo" }],
+          facts: [{ mediaId: "m1" }],
+        },
+      ],
+    });
+    expect(checkIn(bodies[1]).about).toMatch(/closing message/);
+    // The app's name is never in what the model may repeat to the person: it can be renamed.
+    expect(JSON.stringify(bodies[1]?.messages)).not.toContain("Webforge");
+  });
+
+  it("makes no check and no extra model call for a reply that changed nothing", async () => {
+    const { called, bodies } = await reply(
+      [{ tools: [{ name: "outline", args: {} }] }, { text: "Your site has three pages." }],
+      { outline: () => ({ status: "done", data: {} }), runSiteCheck: () => REPORT },
+    );
+
+    expect(called.map((each) => each.name)).toEqual(["outline"]);
+    expect(bodies).toHaveLength(2);
+    const roles = (bodies[1]?.messages ?? []).map((each) => each.role);
+    expect(roles).toEqual(["system", "user", "assistant", "tool"]);
+  });
+
+  it("checks once a model call's changes, each check covering what changed since the last", async () => {
+    const { called, bodies } = await reply(
+      [
+        {
+          tools: [
+            { name: "editText", args: { pageId: "home" } },
+            { name: "editText", args: { pageId: "home" } },
+          ],
+        },
+        { tools: [{ name: "editText", args: { pageId: "about" } }] },
+        { text: "Done." },
+      ],
+      {
+        editText: (args) => changed("Edited text", String(args.pageId)),
+        runSiteCheck: () => REPORT,
+      },
+    );
+
+    expect(called.map((each) => each.name)).toEqual([
+      "editText",
+      "editText",
+      "runSiteCheck",
+      "editText",
+      "runSiteCheck",
+    ]);
+    expect(checkIn(bodies[1]).pages).toEqual(["home"]);
+    // Home's findings are in the model's messages already: only About's are new.
+    expect(checkIn(bodies[2])).toMatchObject({
+      pages: ["about"],
+      found: [{ rule: "altText", places: [{ kind: "element", on: "about", nodeId: "team" }] }],
+    });
+  });
+
+  it("sends the whole site's findings once for a site-wide change, then a page's own again", async () => {
+    const { bodies } = await reply(
+      [
+        { tools: [{ name: "setThemeTokens", args: {} }] },
+        { tools: [{ name: "editText", args: {} }] },
+        { text: "Done." },
+      ],
+      {
+        setThemeTokens: () => ({
+          status: "done",
+          label: "AI (Assistant): Changed the theme",
+          entryId: "t1",
+        }),
+        editText: () => changed("Edited text", "about"),
+        runSiteCheck: () => REPORT,
+      },
+    );
+
+    expect(checkIn(bodies[1])).toMatchObject({ checked: "site" });
+    expect(checkIn(bodies[2])).toMatchObject({ checked: "pages", pages: ["about"] });
+    expect(checkIn(bodies[2]).found).toHaveLength(1);
+  });
+
+  it("gives the whole site's problems after a change on no one page, such as the theme", async () => {
+    const { bodies } = await reply(
+      [{ tools: [{ name: "setThemeTokens", args: {} }] }, { text: "Done." }],
+      {
+        setThemeTokens: () => ({
+          status: "done",
+          label: "AI (Assistant): Changed the theme",
+          entryId: "t1",
+        }),
+        runSiteCheck: () => REPORT,
+      },
+    );
+
+    const check = checkIn(bodies[1]);
+    expect(check).toMatchObject({ checked: "site" });
+    expect(check.pages).toBeUndefined();
+    expect(check.found).toEqual(REPORT.data.found);
+  });
+
+  it("checks a held reply's changes too, and passes on a check that failed as it came", async () => {
+    const { outcome, bodies } = await reply(
+      [{ tools: [{ name: "editText", args: {} }] }, { text: "Ready for you to apply." }],
+      {
+        editText: () => ({
+          status: "done",
+          label: "AI (Assistant): Edited text",
+          target: { pageId: "home" },
+        }),
+        runSiteCheck: () => ({ status: "failed", message: "The window didn't answer." }),
+      },
+      { staged: true },
+    );
+
+    expect(outcome).toMatchObject({ status: "done", held: [{ name: "editText" }] });
+    expect(checkIn(bodies[1])).toEqual({ status: "failed", message: "The window didn't answer." });
+  });
+
+  it("ends a reply whose site closed during the check, before another model call", async () => {
+    let open = true;
+    const { outcome, bodies } = await reply(
+      [{ tools: [{ name: "editText", args: {} }] }, { text: "Done." }],
+      {
+        editText: () => changed("Edited text"),
+        runSiteCheck: () => {
+          open = false;
+          return REPORT;
+        },
+      },
+      { stillOpen: () => open },
+    );
+
+    expect(outcome).toMatchObject({ status: "failed", error: "no-site" });
+    expect(bodies).toHaveLength(1);
   });
 });
