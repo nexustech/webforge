@@ -612,6 +612,29 @@ describe("a question for the person (5.16, OL-1)", () => {
     expect(tools).toEqual([]);
   });
 
+  it("runs none of the calls asked with the question before its answer, and the next call can", async () => {
+    const ask = vi.fn(async () => ({ answer: "Keep our green" }));
+    const { outcome, bodies, tools, called } = await reply(
+      [
+        { tools: [asks("colours"), { name: "setTheme", args: { colour: "navy" } }] },
+        { tools: [{ name: "setTheme", args: { colour: "green" } }] },
+        { text: "I've kept your green." },
+      ],
+      { setTheme: () => changed("Changed theme") },
+      { ask },
+    );
+
+    expect(outcome).toMatchObject({ status: "done", stop: "end" });
+    // Navy, chosen before the answer, never reached the site, nor shows as a step.
+    expect(called).toEqual([{ name: "setTheme", args: { colour: "green" } }]);
+    expect(tools.map((event) => event.state)).toEqual(["running", "done"]);
+    const second = (bodies[1]?.messages ?? []).filter((message) => message.role === "tool");
+    expect(second.map((message) => JSON.parse(message.content ?? "null").status)).toEqual([
+      "done",
+      "not-run",
+    ]);
+  });
+
   it("isn't offered without someone to ask", async () => {
     const { bodies } = await reply([{ text: "Done." }], { outline: () => ({ status: "done" }) });
     const offered = (bodies[0] as unknown as { tools: { function: { name: string } }[] }).tools;

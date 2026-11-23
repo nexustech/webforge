@@ -1,7 +1,13 @@
 import { Button, fieldControlClass } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { useId, useState } from "react";
-import type { QuestionAnswer } from "../../shared/ipc/assistant.js";
+import { useId } from "react";
+import { NOTE_MAX_CHARS, type QuestionAnswer } from "../../shared/ipc/assistant.js";
+
+/** An answer with the note written for it, if any. */
+export const withNote = (answer: string, note: string): QuestionAnswer => {
+  const kept = note.trim();
+  return { answer: answer.trim(), ...(kept === "" ? {} : { note: kept }) };
+};
 
 /** Props of {@link QuestionCard}. */
 export type QuestionCardProps = {
@@ -14,14 +20,19 @@ export type QuestionCardProps = {
   readonly waiting: boolean;
   /** An answer is on its way. */
   readonly busy: boolean;
+  /**
+   * The note written for the answer: the panel's, as it goes with an answer typed in its box too.
+   */
+  readonly note: string;
+  readonly onNote: (note: string) => void;
   readonly onAnswer: (answer: QuestionAnswer) => void;
 };
 
 /**
  * A question the assistant asks before acting on a vague request (5.16, OL-1), in its reply: the
  * question as plain text, its answers as buttons, the recommended one first and marked, and a note
- * to go with the one chosen. Typing a message in the panel's box answers it too. Once answered,
- * the answer given; once the reply has ended without one, that it wasn't answered.
+ * to go with the answer. Typing a message in the panel's box answers it too, with the note. Once
+ * answered, the answer given; once the reply has ended without one, that it wasn't answered.
  */
 export function QuestionCard({
   question,
@@ -29,14 +40,12 @@ export function QuestionCard({
   answer,
   waiting,
   busy,
+  note,
+  onNote,
   onAnswer,
 }: QuestionCardProps) {
   const id = useId();
-  const [note, setNote] = useState("");
-  const choose = (chosen: string) => {
-    const kept = note.trim();
-    onAnswer({ answer: chosen, ...(kept === "" ? {} : { note: kept }) });
-  };
+  const choose = (chosen: string) => onAnswer(withNote(chosen, note));
   return (
     <section
       aria-labelledby={`${id}-title ${id}-question`}
@@ -90,10 +99,10 @@ export function QuestionCard({
             <input
               type="text"
               value={note}
-              maxLength={1000}
+              maxLength={NOTE_MAX_CHARS}
               disabled={busy}
               className={fieldControlClass}
-              onChange={(event) => setNote(event.currentTarget.value)}
+              onChange={(event) => onNote(event.currentTarget.value)}
             />
           </label>
           <p className="m-0 text-muted-foreground">{t("assistant.question.orType")}</p>

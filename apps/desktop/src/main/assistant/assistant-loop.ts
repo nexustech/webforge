@@ -38,6 +38,13 @@ const EARLIER_TURNS = 10;
 const LINKS_MAX = 50;
 const HREF_MAX = 2000;
 
+/** The result of a call made with a question in the same turn, before the person answered it. */
+const NOT_RUN = JSON.stringify({
+  status: "not-run",
+  message:
+    "This wasn't run: it was asked before the person's answer. Call it again if it's still right.",
+});
+
 /** How often a question's wait checks that the reply's site is still the one open. */
 const OPEN_CHECK_MS = 1_000;
 
@@ -346,9 +353,16 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
       content: result.text || null,
       tool_calls: result.toolCalls,
     });
+    // Whether this call put a question to the person (5.16): its calls after the question were
+    // chosen before the answer, so none runs; the model hears to call again.
+    let answeredHere = false;
     for (const asked of result.toolCalls) {
       if (!options.stillOpen()) return failed("no-site");
       if (signal.aborted) return done("stopped");
+      if (answeredHere) {
+        messages.push({ role: "tool", tool_call_id: asked.id, content: NOT_RUN });
+        continue;
+      }
       if (toolCalls >= REPLY_CAPS.toolCalls) return done("tool-cap");
       toolCalls += 1;
       const name = asked.function.name;
@@ -366,6 +380,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
         if (content === "stopped") return done("stopped");
         if (content === "closed") return failed("no-site");
         messages.push({ role: "tool", tool_call_id: asked.id, content });
+        answeredHere = check.status === "ask";
         continue;
       }
       options.onTool({ callId, tool, state: "running" });

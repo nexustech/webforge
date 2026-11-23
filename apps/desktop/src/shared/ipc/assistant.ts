@@ -211,7 +211,7 @@ export const QUESTIONS_MAX = 3;
 /** The longest question, answer offered and note (5.16). */
 export const QUESTION_MAX_CHARS = 500;
 export const ANSWER_MAX_CHARS = 200;
-const NOTE_MAX_CHARS = 1000;
+export const NOTE_MAX_CHARS = 1000;
 
 /**
  * A question the assistant asks the person in its reply (5.16, OL-1), when the request is too vague

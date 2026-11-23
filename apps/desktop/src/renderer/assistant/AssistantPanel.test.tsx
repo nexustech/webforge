@@ -276,13 +276,19 @@ describe("a question before acting (5.16, OL-1)", () => {
     const answer = vi.spyOn(api, "answer");
     const box = await screen.findByRole("textbox", { name: "Message the assistant" });
     await user.type(box, "Make it look more professional{Enter}");
-    await screen.findByRole("region", { name: /The assistant asks/ });
+    const card = await screen.findByRole("region", { name: /The assistant asks/ });
 
     expect(screen.getByRole("button", { name: "Send as Your Answer" })).toBeDefined();
+    // A note written on the card goes with the answer typed in the box (PR 1332's review).
+    await user.type(
+      within(card).getByRole("textbox", { name: "Add a note (optional)" }),
+      "Keep the logo",
+    );
     await user.type(box, "Something friendly, with green{Enter}");
 
     expect(answer).toHaveBeenCalledWith("site-1", expect.any(String), "question-1", {
       answer: "Something friendly, with green",
+      note: "Keep the logo",
     });
     expect(send).toHaveBeenCalledOnce();
     await screen.findByText("This reply made 1 change");

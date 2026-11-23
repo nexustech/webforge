@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useState } from "react";
 import type { QuestionAnswer } from "../../shared/ipc/assistant.js";
 import { QuestionCard } from "./QuestionCard.js";
 
@@ -19,9 +20,17 @@ const ANSWERS = [
 
 /** The card waiting, sending an answer, answered, or left unanswered. */
 const card = (options: { waiting?: boolean; busy?: boolean; answer?: QuestionAnswer }): Story => ({
-  render: () => (
+  render: () => <Card {...options} />,
+});
+
+/** The card at a side panel's width, its note kept as the panel keeps it. */
+function Card(options: { waiting?: boolean; busy?: boolean; answer?: QuestionAnswer }) {
+  const [note, setNote] = useState("");
+  return (
     <div className="w-80 rounded-md border border-border bg-panel p-3">
       <QuestionCard
+        note={note}
+        onNote={setNote}
         question={QUESTION}
         answers={ANSWERS}
         answer={options.answer}
@@ -30,8 +39,8 @@ const card = (options: { waiting?: boolean; busy?: boolean; answer?: QuestionAns
         onAnswer={() => undefined}
       />
     </div>
-  ),
-});
+  );
+}
 
 /** The reply waits: the answers, the recommended one first, and a note. */
 export const Waiting: Story = card({ waiting: true });

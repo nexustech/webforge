@@ -10,7 +10,7 @@ import { AppConsentDialog, reachOf, SiteConsent } from "./Consent.js";
 import { ConversationView, errorKey } from "./ConversationView.js";
 import { HeldCard } from "./HeldCard.js";
 import { MonthReadout } from "./MonthReadout.js";
-import { QuestionCard } from "./QuestionCard.js";
+import { QuestionCard, withNote } from "./QuestionCard.js";
 import { ReviewCard } from "./ReviewCard.js";
 import { replyUndo } from "./reply-undo.js";
 
@@ -57,6 +57,9 @@ export function AssistantPanel(props: AssistantPanelProps) {
   const position = useStore(history.state);
   const [kept, setKept] = useState<ReadonlySet<string>>(new Set());
   const [text, setText] = useState("");
+  // The note written on the waiting question's card (5.16), by its call: it goes with the answer,
+  // chosen there or typed in the box.
+  const [note, setNote] = useState({ callId: "", text: "" });
   const [asking, setAsking] = useState(true);
   // A held message given back, unsent (5.19): put in the box, before what's typed there now.
   useEffect(() => {
@@ -133,7 +136,8 @@ export function AssistantPanel(props: AssistantPanelProps) {
     if (text.trim() === "") return;
     if (pending !== undefined) {
       const sent = text;
-      void model.answer(pending.replyId, pending.callId, { answer: sent.trim() }).then((taken) => {
+      const written = note.callId === pending.callId ? note.text : "";
+      void model.answer(pending.replyId, pending.callId, withNote(sent, written)).then((taken) => {
         if (taken) setText((now) => (now === sent ? "" : now));
       });
       return;
@@ -194,6 +198,8 @@ export function AssistantPanel(props: AssistantPanelProps) {
                   answer={question.answer}
                   waiting={pending?.callId === question.callId}
                   busy={answering !== undefined}
+                  note={note.callId === question.callId ? note.text : ""}
+                  onNote={(written) => setNote({ callId: question.callId, text: written })}
                   onAnswer={(answer) => void model.answer(turn.replyId, question.callId, answer)}
                 />
               ))
