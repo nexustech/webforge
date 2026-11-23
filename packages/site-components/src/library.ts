@@ -25,6 +25,7 @@ import {
 } from "@webforge/model";
 import { cloneElement, createElement, isValidElement, type ReactNode } from "react";
 import { isDocumentPath } from "./document-path.js";
+import { hasElementRoot } from "./footer-column.js";
 import { hiddenFieldsOf, type ShownAtLeast } from "./hidden-fields.js";
 import type { MainHeading } from "./main-heading.js";
 import type { PictureBehind } from "./picture-behind.js";
@@ -652,7 +653,7 @@ const REACT_ATTRIBUTE_NAMES: Readonly<Record<string, string>> = { tabindex: "tab
  * a Carousel's `data-interval`. Output whose root isn't an HTML element is left as it is.
  */
 export function withAdvanced(output: ReactNode, advanced: unknown): ReactNode {
-  if (advanced === undefined || !isValidElement(output) || typeof output.type !== "string") {
+  if (advanced === undefined || !hasElementRoot(output)) {
     return output;
   }
   // As a file has them: an attribute only the export writes is left out (#650).

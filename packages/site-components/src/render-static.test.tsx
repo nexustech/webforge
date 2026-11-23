@@ -403,6 +403,35 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain("<form");
   });
 
+  it("puts a section's anchor and Advanced options on its <section>, or its column form's root", () => {
+    // A one-page site's menu goes to the Contact page's section by its anchor (5.9).
+    const advanced = { anchorId: "contact", className: "extra", attributes: { title: "Visit" } };
+    const contact = (id: string) => ({
+      type: "ContactDetails",
+      props: { id, title: "Visit", text: "<p>Hi</p>", advanced },
+    });
+    const page = renderNodesToHtml([contact("c")], siteLibrary, context);
+    expect(page).toMatch(/<section class="site-contact [^"]* extra" title="Visit" id="contact">/);
+
+    const footer = renderNodesToHtml(
+      [
+        {
+          type: "Footer",
+          props: {
+            id: "footer",
+            text: "Thanks.",
+            columns: [{ type: "FooterColumn", props: { id: "a", content: [contact("d")] } }],
+          },
+        },
+      ],
+      siteLibrary,
+      context,
+    );
+    expect(footer).toContain(
+      '<div class="site-contact space-y-4 extra" title="Visit" id="contact">',
+    );
+  });
+
   it("migrates both layouts with the same text, links and Cookie settings (HF-4, 5.39)", () => {
     const shown = { ...context, cookieSettings: true as const };
     const footerOf = (variant: string) => {
