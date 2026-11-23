@@ -67,7 +67,11 @@ export async function homePageDocument(
 /** Resolves after `ms`. */
 const after = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-/** Resolves once the browser has drawn what's on screen now. */
+/**
+ * Resolves once the browser has drawn what's on screen now: committed it, that is, as the window
+ * can show it a moment later on a slow computer (#1323), which the main process allows for by
+ * taking a picture of one colour again (`REFUSE_ONE_COLOUR`).
+ */
 const painted = () =>
   new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),

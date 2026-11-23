@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import {
   APP_START_TIMEOUT_MS,
+  CANVAS_START_TIMEOUT_MS,
   launchDesktopApp,
   removeWhenFree,
   type WebforgeApp,
@@ -95,8 +96,12 @@ test("never shows a site's page unstyled, as it's created or opened again", asyn
   await quickStart.getByRole("textbox", { name: "Business or site name" }).fill("Rosa's Bakery");
   await quickStart.getByRole("button", { name: "Create site" }).click();
 
-  // Held over 500 ms, the cover says why the canvas is empty (#1167).
-  await expect(page.locator(".editor__canvas-cover")).toHaveText("Opening your site…");
+  // Held over 500 ms, the cover says why the canvas is empty (#1167). The site can take longer than
+  // Playwright's 5 s to open on a busy runner (Windows CI, PR 1331): the CSS is held 2 s from then,
+  // so the cover still comes.
+  await expect(page.locator(".editor__canvas-cover")).toHaveText("Opening your site…", {
+    timeout: CANVAS_START_TIMEOUT_MS,
+  });
   await waitForCanvas(page);
   await expect(page.locator(".editor__canvas-cover")).toHaveCount(0);
   const created = await watched(page);
