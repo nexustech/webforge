@@ -134,6 +134,15 @@ export const aiApps = {
   "aiApps.answer.stillWaiting": "Still waiting for {appName}: it may be asking the person.",
   "aiApps.answer.tooMany":
     "{appName} is still answering earlier requests: wait for their answers, then ask again.",
+  // A change whose question the person hasn't answered yet (#1364): the app asks about it later.
+  "aiApps.answer.waiting":
+    "The person hasn't answered {appName}'s question about this change yet. Ask changeStatus with this changeId in a while, rather than sending the change again.",
+  "aiApps.answer.sentAgain":
+    "This change is already waiting for the person's answer in {appName}, so it won't be made twice. Ask changeStatus with this changeId in a while.",
+  "aiApps.answer.anotherWaits":
+    "Your last change is still waiting for the person's answer in {appName}: ask changeStatus with its changeId, and send this one once they've answered.",
+  "aiApps.answer.noChange":
+    "{appName} has no change of yours by that changeId: its outcome was given over half an hour ago, or {appName} was closed.",
   "aiApps.cancel": "Cancel",
   "aiApps.indicator": "Connected AI apps: {names}. Open AI apps.",
   // Whether an app works without asking on the open site (5.35, UA-2), in AI apps.

@@ -34,7 +34,7 @@ export type AppLimits = {
     appId: string,
     request: AiRequest,
     before?: () => Promise<void>,
-    answer?: (request: AiRequest) => Promise<AiResponse>,
+    answer?: (request: AiRequest, late: (response: AiResponse) => void) => Promise<AiResponse>,
   ): Promise<AiResponse>;
   /** Forgets app `appId`: it was removed. */
   forget(appId: string): void;
@@ -67,7 +67,7 @@ export function createAppLimits(ask: AiBridge["ask"], now: () => number = Date.n
     return state;
   };
   return {
-    async ask(appId, request, before, answer = ask) {
+    async ask(appId, request, before, answer = (asked) => ask(asked)) {
       const state = stateOf(appId);
       const at = now();
       const times = state.times[request.kind].filter((time) => at - time < MINUTE_MS);
@@ -76,15 +76,18 @@ export function createAppLimits(ask: AiBridge["ask"], now: () => number = Date.n
       if (request.kind === "command" && at < state.backOffUntil) return BACKING_OFF;
       times.push(at);
       await before?.();
-      const response = await answer(request);
-      if (request.kind === "command") {
+      // What the person made of a command: answered `waiting`, it's heard when they answer (#1364).
+      const heard = (response: AiResponse) => {
+        if (request.kind !== "command") return;
         if (response.status === "declined") {
           state.backOffUntil = now() + state.backOffMs;
           state.backOffMs = Math.min(state.backOffMs * 2, DECLINED_BACK_OFF_MS.most);
         } else if (response.status === "done") {
           state.backOffMs = DECLINED_BACK_OFF_MS.first;
         }
-      }
+      };
+      const response = await answer(request, heard);
+      heard(response);
       return response;
     },
     forget(appId) {
