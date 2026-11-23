@@ -193,22 +193,30 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
 test("outlines a row, names its size, opens its menu where it is, edits a cell and moves the row", async () => {
   await placeTable();
 
-  // Selected, Puck's outline fits the row.
+  // Selected, Puck's outline fits the row. Polled for "fits" or what it measured instead, so a
+  // failure says what the outline was drawn around: it stayed off the row for 30 s on macOS and
+  // Windows CI (#1347), which no run here has reproduced, under load or not.
   const start = await selectRow(0);
   const overlay = canvas().locator(OVERLAY).first();
+  const shown = (box: { x: number; y: number; width: number; height: number } | null) =>
+    box === null ? "not drawn" : `${box.width} × ${box.height} at ${box.x}, ${box.y}`;
   await expect
-    .poll(
-      whenShown(async () => {
-        const [rowBox, outline] = await Promise.all([boxOf(wrapperOf(0)), boxOf(overlay)]);
-        return (
-          Math.abs(rowBox.y - outline.y) < 2 &&
-          Math.abs(rowBox.height - outline.height) < 2 &&
-          Math.abs(rowBox.width - outline.width) < 2
-        );
-      }),
-      LAYOUT_WAIT,
-    )
-    .toBe(true);
+    .poll(async () => {
+      const [rowBox, outline] = await Promise.all([
+        wrapperOf(0).boundingBox(),
+        overlay.boundingBox(),
+      ]);
+      const fits =
+        rowBox !== null &&
+        outline !== null &&
+        Math.abs(rowBox.y - outline.y) < 2 &&
+        Math.abs(rowBox.height - outline.height) < 2 &&
+        Math.abs(rowBox.width - outline.width) < 2;
+      if (fits) return "fits";
+      const outlines = await canvas().locator(OVERLAY).count();
+      return `row ${shown(rowBox)}, outline ${shown(outline)}, ${outlines} outline(s)`;
+    }, LAYOUT_WAIT)
+    .toBe("fits");
 
   // A cell is edited where it is: the third row's first. Before any menu opens, which can take
   // the focus back as it closes.

@@ -27,6 +27,13 @@ const workspaces = [
   { path: "tools", name: "tools" },
 ];
 
+/**
+ * One shard of a sharded run (CI's unit-test jobs, #1347): it holds only its own part of the
+ * coverage, so it checks no thresholds. `vitest --merge-reports --coverage` merges the shards'
+ * coverage and checks them there, on the whole.
+ */
+const shard = process.argv.some((arg) => arg.startsWith("--shard"));
+
 export default defineConfig({
   test: {
     projects: workspaces.map((ws) => ws.path),
@@ -63,9 +70,14 @@ export default defineConfig({
       ],
       reporter: ["text-summary", "html", "lcov"],
       // One threshold set per workspace, so every package meets its floor on its own.
-      thresholds: Object.fromEntries(
-        workspaces.map((ws) => [`${ws.path}/src/**`, CORE_PACKAGES.has(ws.name) ? CORE : DEFAULT]),
-      ),
+      thresholds: shard
+        ? {}
+        : Object.fromEntries(
+            workspaces.map((ws) => [
+              `${ws.path}/src/**`,
+              CORE_PACKAGES.has(ws.name) ? CORE : DEFAULT,
+            ]),
+          ),
     },
   },
 });

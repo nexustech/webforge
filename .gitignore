@@ -18,6 +18,8 @@ storybook-static/
 .vite/
 .eslintcache
 coverage/
+# Vitest's blob reports from a sharded run (CI's unit-test jobs), merged for coverage.
+.vitest/
 playwright-report/
 test-results/
 perf-results/
