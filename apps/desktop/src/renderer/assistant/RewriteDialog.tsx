@@ -10,8 +10,13 @@ import {
 import type { RewriteHow } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { useId } from "react";
-import { type AssistantErrorCode, DRAFT_TEXT_MAX } from "../../shared/ipc/assistant.js";
+import {
+  type AssistantErrorCode,
+  type AssistantStatus,
+  DRAFT_TEXT_MAX,
+} from "../../shared/ipc/assistant.js";
 import { type AwayReach, SiteConsent } from "./Consent.js";
+import { errorKey } from "./error-actions.js";
 
 /** Where a rewrite has got to. */
 export type RewriteState =
@@ -23,7 +28,12 @@ export type RewriteState =
   | { readonly step: "draft"; readonly text: string }
   /** More text selected than a draft takes. */
   | { readonly step: "too-long" }
-  | { readonly step: "failed"; readonly error: AssistantErrorCode };
+  | {
+      readonly step: "failed";
+      readonly error: AssistantErrorCode;
+      /** Where requests went, for the message (5.20): OpenRouter, or another server. */
+      readonly provider?: AssistantStatus["provider"]["kind"] | undefined;
+    };
 
 /** Props of {@link RewriteDialog}. */
 export type RewriteDialogProps = {
@@ -54,7 +64,7 @@ export function RewriteDialog(props: RewriteDialogProps) {
       : state.step === "too-long"
         ? t("assistant.rewrite.tooLong", { count: DRAFT_TEXT_MAX.toLocaleString() })
         : state.step === "failed"
-          ? t(`assistant.error.${state.error}`)
+          ? t(errorKey(state.error, state.provider))
           : undefined;
   return (
     <Dialog

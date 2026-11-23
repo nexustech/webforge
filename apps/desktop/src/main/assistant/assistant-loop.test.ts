@@ -607,7 +607,11 @@ describe("a question for the person (5.16, OL-1)", () => {
     ]);
     // The model's own tool: offered with the site's, never sent to them or shown as a step.
     const offered = (bodies[0] as unknown as { tools: { function: { name: string } }[] }).tools;
-    expect(offered.map((tool) => tool.function.name)).toEqual(["outline", "askPerson"]);
+    expect(offered.map((tool) => tool.function.name)).toEqual([
+      "outline",
+      "askPerson",
+      "suggestNext",
+    ]);
     expect(called).toEqual([]);
     expect(tools).toEqual([]);
   });
@@ -638,7 +642,7 @@ describe("a question for the person (5.16, OL-1)", () => {
   it("isn't offered without someone to ask", async () => {
     const { bodies } = await reply([{ text: "Done." }], { outline: () => ({ status: "done" }) });
     const offered = (bodies[0] as unknown as { tools: { function: { name: string } }[] }).tools;
-    expect(offered.map((tool) => tool.function.name)).toEqual(["outline"]);
+    expect(offered.map((tool) => tool.function.name)).toEqual(["outline", "suggestNext"]);
   });
 
   it("refuses a second question on the same topic, and a fourth in one reply", async () => {
@@ -744,6 +748,163 @@ describe("a question for the person (5.16, OL-1)", () => {
     expect(bodies[0]?.messages[2]?.content).toBe(
       'I asked: "Which look would you like?" They answered: "Calm and modern" Their note: "Keep the logo"\n\nI\'ve made it calm and modern.',
     );
+  });
+});
+
+describe("what to ask next (5.17, OL-2)", () => {
+  /** The model offering `suggestions` (with `text`, its last words). */
+  const suggests = (suggestions: readonly unknown[]) => ({
+    name: "suggestNext",
+    args: { suggestions },
+  });
+  const NEXT = ["Add our opening hours", "Make the welcome friendlier"];
+
+  it("ends a reply that changed the site with its suggestions, and no model call more", async () => {
+    const { outcome, bodies, tools, called } = await reply(
+      [
+        { tools: [{ name: "updateFields", args: { nodeId: "hero" } }] },
+        { text: "Done: the hero says Fresh bread.", tools: [suggests(NEXT)] },
+      ],
+      { updateFields: () => changed("Edited Hero Title") },
+    );
+
+    expect(outcome).toMatchObject({ status: "done", stop: "end", suggestions: NEXT });
+    expect(bodies).toHaveLength(2);
+    // The loop's own tool: never sent to the site's tools, nor shown as a call.
+    expect(called.map((call) => call.name)).toEqual(["updateFields"]);
+    expect(tools.map((event) => event.tool)).toEqual(["updateFields", "updateFields"]);
+    // Told what it may suggest, and how.
+    expect(bodies[0]?.messages[0]?.content).toContain("call suggestNext with your last words");
+  });
+
+  it("asks once more for words when the model suggests without any (PR 1342's review)", async () => {
+    const { outcome, bodies } = await reply(
+      [
+        { tools: [{ name: "updateFields", args: { nodeId: "hero" } }] },
+        // Many models send tool calls with no words, or only spaces.
+        { text: "  ", tools: [suggests(NEXT)] },
+        { text: "Done: the hero says Fresh bread." },
+      ],
+      { updateFields: () => changed("Edited Hero Title") },
+    );
+
+    expect(outcome).toMatchObject({ status: "done", stop: "end", suggestions: NEXT });
+    expect(bodies).toHaveLength(3);
+    const results = (bodies[2]?.messages ?? []).filter((message) => message.role === "tool");
+    expect(JSON.parse(results.at(-1)?.content ?? "null")).toMatchObject({
+      status: "done",
+      message: expect.stringContaining("tell the person"),
+    });
+  });
+
+  it(`still ends with its suggestions after ${REPLY_CAPS.toolCalls} calls, as they cost none (PR 1342's review)`, async () => {
+    // The change, then lookups up to the cap.
+    const lookups = Array.from({ length: REPLY_CAPS.toolCalls - 1 }, () => ({
+      name: "outline",
+      args: {},
+    }));
+    const { outcome, called } = await reply(
+      [
+        { tools: [{ name: "updateFields", args: { nodeId: "hero" } }] },
+        { tools: lookups },
+        { text: "Done: the hero says Fresh bread.", tools: [suggests(NEXT)] },
+      ],
+      {
+        updateFields: () => changed("Edited Hero Title"),
+        outline: () => ({ status: "done", data: {} }),
+      },
+    );
+
+    expect(called).toHaveLength(REPLY_CAPS.toolCalls);
+    expect(outcome).toMatchObject({ status: "done", stop: "end", suggestions: NEXT });
+  });
+
+  it("offers none after a reply that changed nothing", async () => {
+    const { outcome } = await reply(
+      [{ text: "The hero already says that.", tools: [suggests(NEXT)] }],
+      { outline: () => ({ status: "done" }) },
+    );
+    expect(outcome).toMatchObject({ status: "done", stop: "end", suggestions: [] });
+  });
+
+  it("offers them after changes held for review (6.9e)", async () => {
+    const { outcome } = await reply(
+      [
+        { tools: [{ name: "updateFields", args: { nodeId: "hero" } }] },
+        { text: "Ready for you to apply.", tools: [suggests(NEXT)] },
+      ],
+      {
+        updateFields: () => ({ status: "done", label: "AI (Assistant): Edited Hero Title" }),
+      },
+      { staged: true },
+    );
+    expect(outcome).toMatchObject({ status: "done", suggestions: NEXT });
+  });
+
+  it("offers none from a reply that stopped early", async () => {
+    const controller = new AbortController();
+    const { outcome } = await reply(
+      [
+        { tools: [{ name: "updateFields", args: { nodeId: "hero" } }, suggests(NEXT)] },
+        { text: "More to do." },
+      ],
+      {
+        updateFields: () => {
+          controller.abort();
+          return changed("Edited Hero Title");
+        },
+      },
+      { signal: controller.signal },
+    );
+    expect(outcome).toMatchObject({ status: "done", stop: "stopped", suggestions: [] });
+  });
+
+  it("drops a fourth suggestion, one too long, a repeat and one that isn't text", async () => {
+    const long = "x".repeat(81);
+    const { outcome } = await reply(
+      [
+        { tools: [{ name: "updateFields", args: { nodeId: "hero" } }] },
+        {
+          text: "Done.",
+          tools: [
+            // Spaced out over two lines, as one; then its repeat, once tidied, is dropped.
+            suggests([
+              " Add  our\nopening hours ",
+              long,
+              7,
+              "Add our opening hours",
+              "Two",
+              "Three",
+              "Four",
+            ]),
+          ],
+        },
+      ],
+      { updateFields: () => changed("Edited Hero Title") },
+    );
+    expect(outcome).toMatchObject({
+      status: "done",
+      suggestions: ["Add our opening hours", "Two", "Three"],
+    });
+  });
+
+  it("goes on when the model suggests with other calls, keeping its latest suggestions", async () => {
+    const { outcome, bodies } = await reply(
+      [
+        {
+          tools: [
+            suggests(["Old idea", "Another"]),
+            { name: "updateFields", args: { nodeId: "a" } },
+          ],
+        },
+        { text: "Done.", tools: [suggests(NEXT)] },
+      ],
+      { updateFields: () => changed("Edited Hero Title") },
+    );
+    expect(outcome).toMatchObject({ status: "done", stop: "end", suggestions: NEXT });
+    expect(bodies).toHaveLength(2);
+    const results = (bodies[1]?.messages ?? []).filter((message) => message.role === "tool");
+    expect(JSON.parse(results[0]?.content ?? "null")).toEqual({ status: "done" });
   });
 });
 

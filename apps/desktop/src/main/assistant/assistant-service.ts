@@ -514,6 +514,9 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
     turn.state = "done";
     turn.stop = outcome.stop;
     turn.links = [...outcome.links];
+    // What to ask next (5.17): none for a reply whose changes went with its site.
+    const suggestions = stillOpen() ? outcome.suggestions : [];
+    if (suggestions.length > 0) turn.suggestions = [...suggestions];
     const { month } = await status();
     options.emit({
       session,
@@ -525,6 +528,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       steps: turn.steps,
       links: turn.links,
       ...(changes.length > 0 ? { held: changes } : {}),
+      ...(suggestions.length > 0 ? { suggestions: [...suggestions] } : {}),
     });
   };
 

@@ -126,6 +126,18 @@ describe("rewriting selected text with the assistant (G25a, #873)", () => {
     await within(dialog).findByText("Open daily.");
   });
 
+  it("words another server's refusal as the server's, not OpenRouter's (5.20)", async () => {
+    const { ask } = setUp({
+      status: { provider: { kind: "server", baseUrl: "https://ai.example.com/v1", hasKey: true } },
+      draft: () => ({ status: "unauthorized" }),
+    });
+    void ask();
+    const dialog = await screen.findByRole("dialog", { name: "Rewrite Text" });
+    await within(dialog).findByText(
+      "The server didn't accept your key. Check it in Settings › Assistant.",
+    );
+  });
+
   it("asks this site's question first, and drafts once the person says yes", async () => {
     const { ask, draft, user } = setUp({
       siteConsent: { asked: false, allowed: false },

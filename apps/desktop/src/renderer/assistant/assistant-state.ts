@@ -33,6 +33,8 @@ type PanelTurn = TurnView & {
   readonly heldOutcome?: HeldOutcome | undefined;
   /** Held changes it couldn't make when they were applied, as the site had changed. */
   readonly refused?: readonly HeldChange[] | undefined;
+  /** What the person might ask next (5.17, OL-2): none unless it changed the site. */
+  readonly suggestions: readonly string[];
 };
 
 /** What the assistant's panel shows for the site open in the window. */
@@ -85,6 +87,7 @@ function panelTurn(turn: ConversationTurn): PanelTurn {
     ...turn,
     held: turn.held ?? [],
     questions: turn.questions ?? [],
+    suggestions: turn.suggestions ?? [],
     tools: turn.steps.map((step) => ({ callId: step.entryId, state: "done" as const, step })),
   };
 }
@@ -216,6 +219,7 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
                 links: [],
                 held: [],
                 questions: [],
+                suggestions: [],
               },
             ],
           },
@@ -284,6 +288,7 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
           steps: event.steps,
           links: event.links,
           held: event.held ?? [],
+          suggestions: event.suggestions ?? [],
         }));
         reread(event.replyId);
         state.setState(({ status, replying }) => ({
