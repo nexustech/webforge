@@ -189,6 +189,9 @@ export const assistant = {
   "assistant.question.yourNote": "Your note",
   "assistant.question.unanswered": "Not answered.",
   "assistant.question.send": "Send as Your Answer",
+  // What to ask next, after a reply that changed the site (5.17, OL-2).
+  "assistant.suggestions.title": "You could ask next",
+  "assistant.suggestions.send": "Ask “{suggestion}”",
   // Settings › Assistant and its dialog (6.9c, AIA-6, AIA-8).
   "assistant.settings.title": "Assistant",
   "assistant.settings.line":

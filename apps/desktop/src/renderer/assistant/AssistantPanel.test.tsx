@@ -335,3 +335,133 @@ describe("a question before acting (5.16, OL-1)", () => {
     expect(screen.getByRole("button", { name: "Send" })).toBeDefined();
   });
 });
+
+describe("what to ask next (5.17, OL-2)", () => {
+  const NEXT = ["Add our opening hours", "Make the welcome friendlier"];
+  /** Replies that change the site, the first offering what to ask next. */
+  const changing = (): FakeAssistantOptions => {
+    let replies = 0;
+    return {
+      reply: () => {
+        replies += 1;
+        return {
+          text: "Done.",
+          steps: [{ entryId: `h${replies}`, label: "AI (Assistant): Edited Hero text" }],
+          ...(replies === 1 ? { suggestions: NEXT } : {}),
+        };
+      },
+    };
+  };
+
+  it("offers them under the review card, sends one tapped, and they go", async () => {
+    const { send, user } = shown(changing());
+    await user.type(
+      await screen.findByRole("textbox", { name: "Message the assistant" }),
+      "Shorten the title{Enter}",
+    );
+    const next = within(await screen.findByRole("region", { name: "You could ask next" }));
+    expect(next.getAllByRole("button").map((button) => button.textContent)).toEqual(NEXT);
+    // Under the review card.
+    const card = screen.getByRole("region", { name: "This reply made 1 change" });
+    expect(
+      card.compareDocumentPosition(screen.getByRole("region", { name: "You could ask next" })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    await user.click(next.getByRole("button", { name: "Ask “Add our opening hours”" }));
+    expect(send).toHaveBeenLastCalledWith("site-1", "Add our opening hours", expect.anything());
+    await waitFor(() =>
+      expect(screen.queryByRole("region", { name: "You could ask next" })).toBeNull(),
+    );
+  });
+
+  it("goes once the person sends anything, and stays after Keep", async () => {
+    const { user } = shown(changing());
+    const box = await screen.findByRole("textbox", { name: "Message the assistant" });
+    await user.type(box, "Shorten the title{Enter}");
+    await screen.findByRole("region", { name: "You could ask next" });
+    await user.click(screen.getByRole("button", { name: "Keep" }));
+    expect(screen.getByRole("region", { name: "You could ask next" })).toBeDefined();
+
+    await user.type(box, "Something else{Enter}");
+    await waitFor(() =>
+      expect(screen.queryByRole("region", { name: "You could ask next" })).toBeNull(),
+    );
+  });
+
+  it("works by keyboard alone: Tab to a suggestion, Enter sends it", async () => {
+    const { send, user } = shown(changing());
+    await user.type(
+      await screen.findByRole("textbox", { name: "Message the assistant" }),
+      "Shorten the title{Enter}",
+    );
+    const first = within(
+      await screen.findByRole("region", { name: "You could ask next" }),
+    ).getByRole("button", { name: "Ask “Add our opening hours”" });
+    first.focus();
+    await user.keyboard("{Tab}");
+    expect(document.activeElement?.textContent).toBe("Make the welcome friendlier");
+    await user.keyboard("{Enter}");
+    expect(send).toHaveBeenLastCalledWith(
+      "site-1",
+      "Make the welcome friendlier",
+      expect.anything(),
+    );
+  });
+
+  it("waits while its changes are held, then offers them once applied, never once discarded (PR 1342's review)", async () => {
+    const REPLY = "8a7b6c5d-4e3f-4a2b-9c1d-0e9f8a7b6c5d";
+    const held = [{ label: "AI (Assistant): Edited Hero text", target: { pageId: "home" } }];
+    const holding = async () => {
+      const { api } = shown();
+      await screen.findByRole("textbox", { name: "Message the assistant" });
+      act(() => {
+        api.emit({ session: "site-1", type: "reply-started", replyId: REPLY, model: "m" });
+        api.emit({
+          session: "site-1",
+          type: "reply-done",
+          replyId: REPLY,
+          stop: "end",
+          costUsd: 0.1,
+          month: { spentUsd: 0.1, limitUsd: 5 },
+          steps: [],
+          links: [],
+          held,
+          suggestions: NEXT,
+        });
+      });
+      await screen.findByRole("button", { name: "Apply Changes" });
+      expect(screen.queryByRole("region", { name: "You could ask next" })).toBeNull();
+      return api;
+    };
+    const settled = (state: "applied" | "discarded") => ({
+      session: "site-1",
+      type: "held" as const,
+      replyId: REPLY,
+      state,
+      steps:
+        state === "applied" ? [{ entryId: "e1", label: "AI (Assistant): Edited Hero text" }] : [],
+      refused: [],
+    });
+
+    const applied = await holding();
+    act(() => applied.emit(settled("applied")));
+    expect(await screen.findByRole("region", { name: "You could ask next" })).toBeDefined();
+    cleanup();
+
+    const discarded = await holding();
+    act(() => discarded.emit(settled("discarded")));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Apply Changes" })).toBeNull());
+    expect(screen.queryByRole("region", { name: "You could ask next" })).toBeNull();
+  });
+
+  it("offers none after a reply that changed nothing", async () => {
+    const { user } = shown({ reply: { text: "It already says that.", suggestions: NEXT } });
+    await user.type(
+      await screen.findByRole("textbox", { name: "Message the assistant" }),
+      "Shorten the title{Enter}",
+    );
+    await screen.findByText("It already says that.");
+    expect(screen.queryByRole("region", { name: "You could ask next" })).toBeNull();
+  });
+});

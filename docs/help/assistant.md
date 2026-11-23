@@ -122,6 +122,10 @@ After a reply that changed your site, a card says how many changes it made:
 
 If you've made other changes since, the card can't undo them on their own. Click **Open Version History** and restore the version saved before the assistant's changes. See [Version History](version-history.md).
 
+### What to ask next
+
+Under the card, _You could ask next_ may offer two or three short requests that follow on from what it changed, such as "Add our opening hours to the Contact page". Click one to send it as your next message, just as if you'd typed it. They go once you send anything. A reply that changed nothing, or that you stopped, offers none. If you [review changes first](#reviewing-changes-first), they appear once you apply the changes, and not if you discard them.
+
 ## Reviewing changes first
 
 With **Review changes before they're made** on, in Assistant Settings under **Advanced**, the assistant works on a copy of your site and changes nothing on it until you say so. After its reply, a card lists what it would change, and any links to other websites by their address.
