@@ -11,6 +11,7 @@ import type {
   ReplyStep,
   ReplyStop,
 } from "../../shared/ipc/assistant.js";
+import { CHECK_TOOL, changedBy, checkMessages, checkResult } from "./assistant-check.js";
 import { ASK_TOOL, ASK_TOOL_DEFINITION, createAsking } from "./assistant-question.js";
 import { type ChatEndpoint, type ChatMessage, type ChatTool, streamChat } from "./chat-client.js";
 import { labelledSiteText } from "./site-text.js";
@@ -70,6 +71,9 @@ const SYSTEM_TEXT = [
   "If something can't be done, or the person declined a change, say so and don't try another way round.",
   // One short question rather than a wrong guess (5.16, OL-1).
   `If a request is too vague to act on well, ask the person one short question with ${ASK_TOOL}, rather than guess.`,
+  // The work checked before it's reported (5.18, OL-3): the loop runs Site Check after changes.
+  "After you change the site, Site Check runs on what changed, and you get its result before you write again.",
+  "Your closing message says what you changed and what that check found; never report success you haven't seen.",
   // Facts the person didn't give: an example, flagged, never passed off as real (#1228, WN-3).
   `${EXAMPLES_RULE} Flag it with the tools' examples or example input.`,
   "Reply briefly, in the person's language, as plain text with simple Markdown: no images and no HTML.",
@@ -307,6 +311,12 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
   }
   if (options.ask !== undefined) tools.push(ASK_TOOL_DEFINITION);
   const asking = createAsking();
+  // Whether the window can check the reply's work (5.18), and whether changes since wait for it.
+  const checks = tools.some((tool) => tool.function.name === CHECK_TOOL);
+  let unchecked = false;
+  /** How many of the reply's changes the last check covered: the next covers those after. */
+  let checkedSteps = 0;
+  let checkedHeld = 0;
 
   const messages = opening(options);
   let toolCalls = 0;
@@ -314,6 +324,20 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
     if (!options.stillOpen()) return failed("no-site");
     if (signal.aborted) return done("stopped");
     if (call > REPLY_CAPS.modelCalls) return done("model-call-cap");
+    // The last call's changes checked before the model writes again, its closing message too.
+    if (unchecked) {
+      unchecked = false;
+      const checked = await callTool(options, CHECK_TOOL, "{}");
+      if (!options.stillOpen()) return failed("no-site");
+      if (signal.aborted) return done("stopped");
+      const changed = changedBy([
+        ...steps.slice(checkedSteps),
+        ...held.slice(checkedHeld).map((each) => each.change),
+      ]);
+      checkedSteps = steps.length;
+      checkedHeld = held.length;
+      messages.push(...checkMessages(`site-check-${call}`, checkResult(checked.text, changed)));
+    }
 
     // A stalled stream ends the call, as Stop does, but as `offline`.
     const idle = new AbortController();
@@ -390,6 +414,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
       // A change's addresses: the links the reply added or changed, by host (S18).
       if (answered.step !== undefined || answered.held !== undefined) {
         linksIn(answered.input, links);
+        unchecked = checks;
       }
       options.onTool({
         callId,

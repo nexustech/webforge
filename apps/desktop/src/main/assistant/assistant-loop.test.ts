@@ -746,3 +746,199 @@ describe("a question for the person (5.16, OL-1)", () => {
     );
   });
 });
+
+/** Site Check's answer as the window gives it: a picture with no description on two pages. */
+const REPORT = {
+  status: "done",
+  data: {
+    mode: "export",
+    found: [
+      {
+        rule: "altText",
+        title: "Pictures have a description",
+        level: "should",
+        places: [
+          { kind: "element", on: "home", nodeId: "photo" },
+          { kind: "element", on: "about", nodeId: "team" },
+        ],
+        facts: [{ mediaId: "m1" }, { mediaId: "m2" }],
+      },
+      {
+        rule: "contrast",
+        title: "Text is easy to read",
+        level: "must",
+        places: [{ kind: "theme" }],
+      },
+    ],
+  },
+};
+
+/** The model's messages in `body` as the loop sent them, with their tool calls. */
+type Sent = { role: string; content: string | null; tool_calls?: { function: { name: string } }[] };
+
+/** The check the loop gave the model in `body`, its last message, as JSON. */
+function checkIn(body: { messages: unknown[] } | undefined) {
+  const messages = (body?.messages ?? []) as Sent[];
+  const call = messages.at(-2);
+  const result = messages.at(-1);
+  expect(call?.tool_calls?.map((each) => each.function.name)).toEqual(["runSiteCheck"]);
+  return JSON.parse(String(result?.content));
+}
+
+describe("the assistant checks its work (5.18, OL-3)", () => {
+  it("runs Site Check after a change, and its closing message gets the changed page's problems", async () => {
+    const { outcome, tools, called, bodies } = await reply(
+      [
+        { tools: [{ name: "addNode", args: { location: { kind: "page", pageId: "home" } } }] },
+        { text: "I added a photo. Site Check found it has no description." },
+      ],
+      { addNode: () => changed("Added Image"), runSiteCheck: () => REPORT },
+    );
+
+    expect(outcome).toMatchObject({ status: "done", stop: "end" });
+    expect(called.map((each) => each.name)).toEqual(["addNode", "runSiteCheck"]);
+    // No model call more than without the check, and no step of its own on the panel.
+    expect(bodies).toHaveLength(2);
+    expect(tools.map((each) => each.tool)).toEqual(["addNode", "addNode"]);
+    // Only the changed page's places: the picture on About and the theme's aren't this reply's.
+    expect(checkIn(bodies[1])).toMatchObject({
+      status: "done",
+      checked: "pages",
+      pages: ["home"],
+      found: [
+        {
+          rule: "altText",
+          level: "should",
+          places: [{ kind: "element", on: "home", nodeId: "photo" }],
+          facts: [{ mediaId: "m1" }],
+        },
+      ],
+    });
+    expect(checkIn(bodies[1]).about).toMatch(/closing message/);
+    // The app's name is never in what the model may repeat to the person: it can be renamed.
+    expect(JSON.stringify(bodies[1]?.messages)).not.toContain("Webforge");
+  });
+
+  it("makes no check and no extra model call for a reply that changed nothing", async () => {
+    const { called, bodies } = await reply(
+      [{ tools: [{ name: "outline", args: {} }] }, { text: "Your site has three pages." }],
+      { outline: () => ({ status: "done", data: {} }), runSiteCheck: () => REPORT },
+    );
+
+    expect(called.map((each) => each.name)).toEqual(["outline"]);
+    expect(bodies).toHaveLength(2);
+    const roles = (bodies[1]?.messages ?? []).map((each) => each.role);
+    expect(roles).toEqual(["system", "user", "assistant", "tool"]);
+  });
+
+  it("checks once a model call's changes, each check covering what changed since the last", async () => {
+    const { called, bodies } = await reply(
+      [
+        {
+          tools: [
+            { name: "editText", args: { pageId: "home" } },
+            { name: "editText", args: { pageId: "home" } },
+          ],
+        },
+        { tools: [{ name: "editText", args: { pageId: "about" } }] },
+        { text: "Done." },
+      ],
+      {
+        editText: (args) => changed("Edited text", String(args.pageId)),
+        runSiteCheck: () => REPORT,
+      },
+    );
+
+    expect(called.map((each) => each.name)).toEqual([
+      "editText",
+      "editText",
+      "runSiteCheck",
+      "editText",
+      "runSiteCheck",
+    ]);
+    expect(checkIn(bodies[1]).pages).toEqual(["home"]);
+    // Home's findings are in the model's messages already: only About's are new.
+    expect(checkIn(bodies[2])).toMatchObject({
+      pages: ["about"],
+      found: [{ rule: "altText", places: [{ kind: "element", on: "about", nodeId: "team" }] }],
+    });
+  });
+
+  it("sends the whole site's findings once for a site-wide change, then a page's own again", async () => {
+    const { bodies } = await reply(
+      [
+        { tools: [{ name: "setThemeTokens", args: {} }] },
+        { tools: [{ name: "editText", args: {} }] },
+        { text: "Done." },
+      ],
+      {
+        setThemeTokens: () => ({
+          status: "done",
+          label: "AI (Assistant): Changed the theme",
+          entryId: "t1",
+        }),
+        editText: () => changed("Edited text", "about"),
+        runSiteCheck: () => REPORT,
+      },
+    );
+
+    expect(checkIn(bodies[1])).toMatchObject({ checked: "site" });
+    expect(checkIn(bodies[2])).toMatchObject({ checked: "pages", pages: ["about"] });
+    expect(checkIn(bodies[2]).found).toHaveLength(1);
+  });
+
+  it("gives the whole site's problems after a change on no one page, such as the theme", async () => {
+    const { bodies } = await reply(
+      [{ tools: [{ name: "setThemeTokens", args: {} }] }, { text: "Done." }],
+      {
+        setThemeTokens: () => ({
+          status: "done",
+          label: "AI (Assistant): Changed the theme",
+          entryId: "t1",
+        }),
+        runSiteCheck: () => REPORT,
+      },
+    );
+
+    const check = checkIn(bodies[1]);
+    expect(check).toMatchObject({ checked: "site" });
+    expect(check.pages).toBeUndefined();
+    expect(check.found).toEqual(REPORT.data.found);
+  });
+
+  it("checks a held reply's changes too, and passes on a check that failed as it came", async () => {
+    const { outcome, bodies } = await reply(
+      [{ tools: [{ name: "editText", args: {} }] }, { text: "Ready for you to apply." }],
+      {
+        editText: () => ({
+          status: "done",
+          label: "AI (Assistant): Edited text",
+          target: { pageId: "home" },
+        }),
+        runSiteCheck: () => ({ status: "failed", message: "The window didn't answer." }),
+      },
+      { staged: true },
+    );
+
+    expect(outcome).toMatchObject({ status: "done", held: [{ name: "editText" }] });
+    expect(checkIn(bodies[1])).toEqual({ status: "failed", message: "The window didn't answer." });
+  });
+
+  it("ends a reply whose site closed during the check, before another model call", async () => {
+    let open = true;
+    const { outcome, bodies } = await reply(
+      [{ tools: [{ name: "editText", args: {} }] }, { text: "Done." }],
+      {
+        editText: () => changed("Edited text"),
+        runSiteCheck: () => {
+          open = false;
+          return REPORT;
+        },
+      },
+      { stillOpen: () => open },
+    );
+
+    expect(outcome).toMatchObject({ status: "failed", error: "no-site" });
+    expect(bodies).toHaveLength(1);
+  });
+});
