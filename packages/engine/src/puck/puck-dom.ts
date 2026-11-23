@@ -79,17 +79,25 @@ export const ROOT_DROP_ZONE = '[data-puck-dropzone="root:default-zone"]';
 export const COMPONENT_DROP_ZONE = "[data-puck-dropzone]";
 
 /**
- * A table row's wrapper on the canvas (6.16c): the wrapper of an element drawn as a `<tr>`, in a
- * table's body, which is the slot's drop zone (`as: "tbody"`). The canvas styles (`chrome.tsx`)
- * draw the wrapper as the row, keyed on the row, never on a component's name.
+ * A drop zone that holds something: Puck marks it so. Its class, rather than `:has()` on what's in
+ * it (#1338): a `:has()` rule on the canvas makes every change on a large page restyle far more of
+ * it, a tenth of a second on each undo.
  */
-export const TABLE_ROW_WRAPPER = `tbody${COMPONENT_DROP_ZONE} > ${COMPONENT}:has(> tr)`;
+const DROP_ZONE_WITH_CHILDREN = '[class*="_DropZone--hasChildren_"]';
+
+/**
+ * A table row's wrapper on the canvas (6.16c): the wrapper of an element in a table's body, which
+ * is the slot's drop zone (`as: "tbody"`) and holds only rows. The canvas styles (`chrome.tsx`)
+ * draw the wrapper as the row, keyed on the body, never on a component's name. No `:has()`:
+ * see {@link DROP_ZONE_WITH_CHILDREN}.
+ */
+export const TABLE_ROW_WRAPPER = `tbody${COMPONENT_DROP_ZONE} > ${COMPONENT}`;
 
 /**
  * A table's body with no rows on the canvas (6.16c): a slot's drop zone, which Puck keeps open
  * with a minimum height that a table's body, laid out as one, doesn't take (`chrome.tsx`).
  */
-export const EMPTY_TABLE_BODY = `tbody${COMPONENT_DROP_ZONE}:not(:has(> ${COMPONENT}))`;
+export const EMPTY_TABLE_BODY = `tbody${COMPONENT_DROP_ZONE}:not(${DROP_ZONE_WITH_CHILDREN})`;
 
 /** A rich-text editor (Tiptap's ProseMirror) on the canvas. */
 export const RICH_TEXT = ".ProseMirror";
