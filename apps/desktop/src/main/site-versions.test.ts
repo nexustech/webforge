@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { saveVersionIn } from "./site-versions.js";
 
@@ -16,7 +17,7 @@ beforeEach(() => {
 
 afterEach(() => {
   store.close();
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(dir, TEST_DIR_REMOVAL);
 });
 
 it("saves 4.5's on-publish version from the documents the publish read, with its record", () => {

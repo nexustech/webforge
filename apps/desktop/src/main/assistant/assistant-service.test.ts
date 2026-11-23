@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { scaledTestTimeout } from "@webforge/test-utils/vitest";
+import { scaledTestTimeout, TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   ASSISTANT_CONSENT_VERSION,
@@ -28,7 +28,7 @@ beforeAll(async () => {
 }, scaledTestTimeout(60_000));
 
 afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of dirs.splice(0)) rmSync(dir, TEST_DIR_REMOVAL);
 });
 
 /** OpenRouter's public lists: two tool models, one of them with a ZDR endpoint. */

@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   collectNotices,
@@ -20,7 +21,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  rmSync(root, { recursive: true, force: true });
+  rmSync(root, TEST_DIR_REMOVAL);
 });
 
 /** Writes package `name` under `node_modules` in `at` with `manifest` and `files`; its folder. */

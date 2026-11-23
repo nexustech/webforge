@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import type { ProjectSummary } from "../shared/ipc/project.js";
@@ -33,7 +34,7 @@ function emitter() {
 const folders: string[] = [];
 afterEach(() => {
   vi.restoreAllMocks();
-  for (const folder of folders.splice(0)) rmSync(folder, { recursive: true, force: true });
+  for (const folder of folders.splice(0)) rmSync(folder, TEST_DIR_REMOVAL);
 });
 
 /**

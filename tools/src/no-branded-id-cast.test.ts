@@ -3,6 +3,7 @@ import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterAll, describe, expect, it } from "vitest";
 
 // Timeouts (#1052): the test runs Biome with the plugin over every probe, seconds alone and
@@ -30,7 +31,7 @@ const PROBES: readonly (readonly [string, boolean])[] = [
 const folder = mkdtempSync(join(tmpdir(), "branded-id-cast-"));
 
 afterAll(() => {
-  rmSync(folder, { recursive: true, force: true });
+  rmSync(folder, TEST_DIR_REMOVAL);
 });
 
 /** The lines of `probe.ts` the plugin reports, linting it with only the plugin's config. */

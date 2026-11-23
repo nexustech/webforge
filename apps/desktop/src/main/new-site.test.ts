@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { DEFAULT_THEME } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { readTemplates, TEMPLATES_DIR, type TemplateFolder } from "@webforge/templates/node";
-import { scaledTestTimeout } from "@webforge/test-utils/vitest";
+import { scaledTestTimeout, TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { themePreset } from "@webforge/themes";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createWriterJobs } from "../worker/writer-jobs.js";
@@ -36,7 +36,7 @@ beforeEach(() => {
 
 afterEach(() => {
   store.close();
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(dir, TEST_DIR_REMOVAL);
 });
 
 /** The new file as the session hands it to the fill: its images stored as the writer stores them. */
@@ -176,7 +176,7 @@ describe("fillNewSite (2.14a)", () => {
       ).rejects.toThrow();
       expect(store.isEmpty()).toBe(true);
     } finally {
-      rmSync(empty, { recursive: true, force: true });
+      rmSync(empty, TEST_DIR_REMOVAL);
     }
   });
 
@@ -195,7 +195,7 @@ describe("fillNewSite (2.14a)", () => {
         fillNewSite(target(), { name: "Bakery", theme: "light", template: "cafe" }, reader),
       ).rejects.toThrow();
     } finally {
-      rmSync(copy, { recursive: true, force: true });
+      rmSync(copy, TEST_DIR_REMOVAL);
     }
   });
 

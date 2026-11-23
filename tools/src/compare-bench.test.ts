@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   compareFromArgs,
@@ -94,7 +95,7 @@ describe("compareFromArgs: the command line CI runs", () => {
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "webforge-bench-compare-"));
   });
-  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+  afterEach(() => rmSync(dir, TEST_DIR_REMOVAL));
 
   /** A results folder `name` with `medians`, as `pnpm bench` writes them. */
   const results = (name: string, medians: Record<string, number>) => {
@@ -134,7 +135,7 @@ describe("readRun", () => {
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "webforge-bench-results-"));
   });
-  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+  afterEach(() => rmSync(dir, TEST_DIR_REMOVAL));
 
   it("reads each result's median, by its file's name", () => {
     mkdirSync(join(dir, "nested"));

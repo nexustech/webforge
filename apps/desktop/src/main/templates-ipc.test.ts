@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { BLANK_TEMPLATE_ID, TEMPLATE_IDS } from "@webforge/templates";
 import { readTemplates } from "@webforge/templates/node";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import { registerTemplatesHandlers } from "./templates-ipc.js";
@@ -99,7 +100,7 @@ describe("registerTemplatesHandlers (2.14a)", () => {
       );
       expect(read).toHaveBeenCalledOnce();
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(dir, TEST_DIR_REMOVAL);
     }
   });
 });

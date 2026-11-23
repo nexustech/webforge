@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ProjectStore, SiteFileWriter } from "@webforge/storage";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -27,7 +28,7 @@ const PNG = Uint8Array.from(
 const dirs: string[] = [];
 afterEach(() => {
   vi.restoreAllMocks();
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of dirs.splice(0)) rmSync(dir, TEST_DIR_REMOVAL);
 });
 
 function handlers(

@@ -10,6 +10,7 @@ import {
   type NodeDoc,
   SITE_FORMAT_VERSION,
 } from "@webforge/model";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type ClipboardContent,
@@ -108,7 +109,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  rmSync(join(dir, ".."), { recursive: true, force: true });
+  rmSync(join(dir, ".."), TEST_DIR_REMOVAL);
 });
 
 describe("element clipboard (1.25)", () => {
