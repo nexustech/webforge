@@ -83,6 +83,22 @@ describe("Undo and Redo keys around a site-wide question (#1344)", () => {
     expect(held.size).toBe(0);
   });
 
+  it("hold nothing when the change is made as they're pressed (#1336 review)", () => {
+    // Busy with no question, yet nothing waits: the confirmation runs the action at once.
+    const confirm = {
+      busy: () => true,
+      current: () => null,
+      afterChange: (action: () => void) => {
+        action();
+        return () => undefined;
+      },
+    };
+    const run = vi.fn((_command: string) => true);
+    expect(historyCommandMindingQuestions(confirm, "undo", run, held)).toBe(true);
+    expect(run).toHaveBeenCalledWith("undo");
+    expect(held.size).toBe(0);
+  });
+
   it("are dropped, not run, once whoever took them stops listening (#1344 review)", async () => {
     const { confirm, saved } = waitingForVersion();
     const change = confirm.confirmSiteWide(deletePage(2));

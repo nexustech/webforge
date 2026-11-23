@@ -175,15 +175,15 @@ Unlike Claude Desktop's extension, these tools can't check who answers at the ad
 
 You need [Claude Code](https://code.claude.com/docs/en/setup) installed.
 
-1. Click **Add AI App**, choose **Claude Code**, and click **Add**. {appName} shows three steps, each with what it copies, and the commands for your computer's terminal.
-2. **Add {appName} to Claude Code:** click **Copy the add command**, and run it in a terminal (Bash, Zsh or PowerShell). It adds {appName}'s server, named `webforge`, to Claude Code for all your projects:
+1. Click **Add AI App**, choose **Claude Code**, and click **Add**. {appName} shows three steps, each with what it copies, and the commands for your computer's terminal. On Windows the steps say PowerShell: run them there, not in Command Prompt, which splits the add command at its spaces.
+2. **Add {appName} to Claude Code:** click **Copy the add command**, and run it in a terminal (Bash or Zsh), or in PowerShell on Windows. It adds {appName}'s server, named `webforge`, to Claude Code for all your projects:
 
    ```
    claude mcp add --transport http --scope user webforge http://127.0.0.1:<port>/mcp --header 'Authorization: Bearer ${WEBFORGE_KEY}'
    ```
 
    The key isn't in it. Claude Code reads it from `WEBFORGE_KEY` each time it connects, so the key isn't in your terminal's history or in Claude Code's settings.
-3. **Give that terminal the key:** in the same terminal, click **Copy the key command** and run it. Then click **Copy the key**, paste it when the terminal waits for it, and press Return (Enter on Windows). The key doesn't show as you paste it, and it isn't typed on the command line. {appName} shows the command for your computer:
+3. **Give that terminal the key:** in the same terminal (the same PowerShell window on Windows), click **Copy the key command** and run it. Then click **Copy the key**, paste it when the terminal waits for it, and press Return (Enter on Windows). The key doesn't show as you paste it, and it isn't typed on the command line. {appName} shows the command for your computer:
    - On a Mac or Linux:
 
      ```
@@ -196,7 +196,7 @@ You need [Claude Code](https://code.claude.com/docs/en/setup) installed.
      $env:WEBFORGE_KEY = [Net.NetworkCredential]::new('', (Read-Host 'Key' -AsSecureString)).Password
      ```
 
-4. **Start Claude Code** in that terminal before the key runs out: {appName} shows how long it has left, from 5 minutes. When Claude Code connects, {appName} says so, without you closing anything, and in Claude Code `/mcp` lists `webforge` as connected. Then click **Done**.
+4. **Start Claude Code** in that terminal (that PowerShell window on Windows) before the key runs out: {appName} shows how long it has left, from 5 minutes. When Claude Code connects, {appName} says so, without you closing anything, and in Claude Code `/mcp` lists `webforge` as connected. Then click **Done**.
 
 If the key runs out first, {appName} says so and removes Claude Code: add it again for a new key.
 

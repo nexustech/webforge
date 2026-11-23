@@ -205,11 +205,15 @@ export function historyCommandMindingQuestions(
 ): boolean {
   if (!confirm.busy()) return run(command);
   if (confirm.current() !== null || command === "cancel") return false;
-  const drop = confirm.afterChange(() => {
+  // Set before `afterChange` can run the action: one that runs it at once has nothing to hold.
+  let ran = false;
+  let drop: () => void = () => undefined;
+  drop = confirm.afterChange(() => {
+    ran = true;
     held.delete(drop);
     run(command);
   });
-  held.add(drop);
+  if (!ran) held.add(drop);
   return true;
 }
 

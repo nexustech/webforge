@@ -57,10 +57,16 @@ export const main = {
   "aiApps.client.claudeCode.returnKey": "Return",
   "aiApps.client.claudeCode.step1":
     "Add {appName} to Claude Code: run this command in a terminal. It adds {appName} for all your projects.",
+  "aiApps.client.claudeCode.step1PowerShell":
+    "Add {appName} to Claude Code: run this command in PowerShell. It adds {appName} for all your projects.",
   "aiApps.client.claudeCode.step2":
     "In the same terminal, give it the key: run this command, then copy the key, paste it when the terminal waits for it, and press {key}. The key doesn't show as you paste it.",
+  "aiApps.client.claudeCode.step2PowerShell":
+    "In the same PowerShell window, give it the key: run this command, then copy the key, paste it when PowerShell waits for it, and press {key}. The key doesn't show as you paste it.",
   "aiApps.client.claudeCode.step3":
     "Start Claude Code in that terminal before the key runs out. In Claude Code, /mcp lists webforge once it's connected.",
+  "aiApps.client.claudeCode.step3PowerShell":
+    "Start Claude Code in that PowerShell window before the key runs out. In Claude Code, /mcp lists webforge once it's connected.",
   "aiApps.client.claudeCode.steps": "To connect Claude Code",
   "aiApps.client.other.hint":
     "An app that connects to an MCP server at an address, such as Cursor.",

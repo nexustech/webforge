@@ -86,9 +86,19 @@ Product owner, 2026-11-20, asked which proposals to adopt: "The recommended ones
 | HF-2 | ✅ **Adopted:** the Header's button is its own; the menu's last link moves into the button (owner, 22 Nov 2026) |
 | HF-3 | ❌ **Not taken for now:** a phone number and social icons in the Header                                         |
 | HF-4 | ✅ **Adopted:** the Footer takes elements, in up to four columns                                                |
-| HF-5 | ❌ **Not taken for now:** a bottom line in the Footer. Next in line after HF-4                                  |
+| HF-5 | ❌ **Not taken for now:** a bottom line in the Footer. Next in line after HF-4. Adopted on 23 Nov: see below    |
 | HF-6 | ❌ **Not taken for now:** a see-through Header                                                                  |
 | HF-7 | ❌ **Not taken for now:** two more Header layouts                                                               |
+
+**After run 2 of the trial** (product owner, 2026-11-23; [#1230](https://github.com/nexustech/webforge/issues/1230), [#1375](https://github.com/nexustech/webforge/issues/1375)), setting up a designed Footer took most of the person's time, and all three of its fixes were adopted:
+
+| #    | Decision                                                                                                                                           |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HF-5 | ✅ **Adopted:** a bottom line under the Footer's columns, for the © line and small links                                                           |
+| HF-8 | ✅ **Adopted:** the Footer's **Menu links** can leave out or add pages, so a page hidden in the menu (shown as the Header's button) can stay there |
+| HF-9 | ✅ **Adopted:** an Image in a Footer column can be _Small_, _Medium_ or _Large_, as the Header's logo is                                           |
+
+About 2 days, out of plan in Phase 5's milestone: [#1375](https://github.com/nexustech/webforge/issues/1375), stream C, after [#1368](https://github.com/nexustech/webforge/issues/1368) (the _Centred_ Footer's text under its columns).
 
 6 days in all, in the order HF-1, HF-2, HF-4. **Planned as PH5-5** (20 Nov 2026; [the plan's §3](../../spec/04-implementation-plan.md#3-timeline), MVP §7 item 59): asked when they ship, the product owner answered "Both before v1.0", so all three join Phase 5. Stream A, after 5.30: 5.37 [#1236](https://github.com/nexustech/webforge/issues/1236) (HF-1, 1.5) → 5.38 [#1237](https://github.com/nexustech/webforge/issues/1237) (HF-2, 1), which share one site format migration if they land together; stream C, after 5.32: 5.39 [#1238](https://github.com/nexustech/webforge/issues/1238) (HF-4, 3.5). Each updates the catalogue data for AI apps, the templates where it fits and the help page.
 
