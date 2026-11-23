@@ -10,6 +10,7 @@ import {
   type DraftRequest,
   type DraftResult,
   MONTHLY_LIMIT_DEFAULT_USD,
+  type QuestionAnswer,
   type ReplyLink,
   type ReplyStep,
   type ReplyStop,
@@ -37,6 +38,8 @@ export type FakeReply = {
   readonly fail?: AssistantErrorCode;
   /** A safety version saved before the first step (S20). */
   readonly safetyVersion?: { readonly versionId: string; readonly label: string };
+  /** A question put to the person after the text (5.16): the steps wait for the answer. */
+  readonly question?: { readonly question: string; readonly answers: readonly string[] };
 };
 
 export type FakeAssistantOptions = {
@@ -110,7 +113,17 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
   const listeners = new Set<(event: AssistantEvent) => void>();
   const conversations = new Map<string, ConversationTurn[]>();
   const consent = new Map<string, { asked: boolean; allowed: boolean }>();
-  const replying = new Map<string, { session: string; stopped: boolean }>();
+  const replying = new Map<
+    string,
+    {
+      session: string;
+      stopped: boolean;
+      /** The question it waits on (5.16), and how its answer, or Stop, ends the wait. */
+      waiting?:
+        | { callId: string; resolve: (answer: QuestionAnswer | undefined) => void }
+        | undefined;
+    }
+  >();
   const delayMs = options.delayMs ?? 30;
 
   const emit = (event: AssistantEvent) => {
@@ -168,6 +181,24 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
       if (live.stopped) return finish("stopped");
       turn.reply += delta;
       emit({ session, type: "text", replyId, delta });
+    }
+    if (reply.question !== undefined) {
+      await pause();
+      if (live.stopped) return finish("stopped");
+      const asked = {
+        callId: "question-1",
+        ...reply.question,
+        answers: [...reply.question.answers],
+      };
+      turn.questions = [asked];
+      const answered = new Promise<QuestionAnswer | undefined>((resolve) => {
+        live.waiting = { callId: asked.callId, resolve };
+      });
+      emit({ session, type: "question", replyId, ...asked });
+      const answer = await answered;
+      live.waiting = undefined;
+      if (answer === undefined) return finish("stopped");
+      turn.questions = [{ ...asked, answer }];
     }
     for (const [index, { tool = "updateFields", ...step }] of (reply.steps ?? []).entries()) {
       await pause();
@@ -250,7 +281,17 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
     },
     stop: async (replyId) => {
       const live = replying.get(replyId);
-      if (live !== undefined) live.stopped = true;
+      if (live === undefined) return;
+      live.stopped = true;
+      live.waiting?.resolve(undefined);
+    },
+    answer: async (session, replyId, callId, answer) => {
+      const live = replying.get(replyId);
+      if (live?.session !== session || live.waiting?.callId !== callId) {
+        return { status: "not-asked" };
+      }
+      live.waiting.resolve(answer);
+      return { status: "answered" };
     },
     newConversation: async (session) => {
       conversations.delete(session);

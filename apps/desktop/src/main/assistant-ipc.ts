@@ -63,6 +63,9 @@ export function registerAssistantHandlers(
     await service.discardHeld(session, replyId);
     return null;
   });
+  registerIpcHandler(ipc, "assistantAnswer", isTrustedSender, (session, replyId, callId, answer) =>
+    service.answer(session, replyId, callId, answer),
+  );
   registerIpcHandler(ipc, "assistantOpenLink", isTrustedSender, (session, replyId, href) =>
     service.openLink(session, replyId, href),
   );
