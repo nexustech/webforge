@@ -65,6 +65,7 @@ function setUp(
     }),
   );
   const cancel = vi.fn((_appId: string) => undefined);
+  const clock = { time: 1_000_000 };
   const briefs = {
     ask: vi.fn(async () => ({ status: "declined", message: "closed" }) as const),
     choices: () => ({ status: "done", data: siteChoices([]) }) as const,
@@ -80,6 +81,7 @@ function setUp(
     briefs,
     listen,
     drawPort: () => ports.shift() ?? 59_999,
+    now: () => clock.time,
   });
   return {
     apps,
@@ -90,6 +92,7 @@ function setUp(
     saveVersionBefore,
     ask,
     cancel,
+    clock,
     briefs,
     closed: () => closed,
     open: (session: string | undefined) => {
@@ -110,6 +113,7 @@ describe("the MCP service (4.9, ADR 0021)", () => {
       port: null,
       moved: false,
       connected: [],
+      unasked: new Map(),
     });
   });
 
@@ -222,6 +226,82 @@ async function connection(options: McpListenerOptions, app: { id: string; name: 
   await client.connect(clientSide);
   return client;
 }
+
+describe("an app working without asking (5.35, UA-2)", () => {
+  const claude = { id: "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5", name: "Claude" };
+  const theme = { name: "setThemeTokens", arguments: { tokens: { spacing: "roomy" } } };
+  /** The commands the window was asked, as main sent them. */
+  const commandsAsked = (ask: ReturnType<typeof setUp>["ask"]) =>
+    ask.mock.calls.map(([request]) => request).filter((request) => request.kind === "command");
+
+  it("says so with the app's commands on the site open now, until its time runs out", async () => {
+    const { service, listened, ask, clock, saveVersionBefore } = setUp();
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+    const client = await connection(options, claude);
+
+    await client.callTool(theme);
+    expect(commandsAsked(ask)[0]).toMatchObject({ appId: claude.id });
+    expect(commandsAsked(ask)[0]).not.toHaveProperty("unasked");
+
+    service.setUnasked(claude.id, 60);
+    expect((await service.status()).unasked).toEqual(new Map([[claude.id, 1_000_000 + 3_600_000]]));
+    await client.callTool(theme);
+    expect(commandsAsked(ask)[1]).toMatchObject({ appId: claude.id, unasked: true });
+    // The version before the app's first change is saved as ever.
+    expect(saveVersionBefore).toHaveBeenCalledOnce();
+
+    // A minute to go: still on. Then its hour is up, and it asks again.
+    clock.time += 59 * 60_000;
+    await client.callTool(theme);
+    expect(commandsAsked(ask)[2]).toMatchObject({ unasked: true });
+    clock.time += 60_000;
+    await client.callTool(theme);
+    expect(commandsAsked(ask)[3]).not.toHaveProperty("unasked");
+    expect((await service.status()).unasked.size).toBe(0);
+  });
+
+  it("ends when the site closes, and reopening it asks again", async () => {
+    const { service, listened, ask, open } = setUp();
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+    const client = await connection(options, claude);
+    service.setUnasked(claude.id, 240);
+
+    open(undefined);
+    expect((await service.status()).unasked.size).toBe(0);
+    // The same site opened again is a new opening: it asks.
+    open("session-2");
+    await client.callTool(theme);
+    expect(commandsAsked(ask)[0]).not.toHaveProperty("unasked");
+    // Nothing is kept with no site open.
+    open(undefined);
+    service.setUnasked(claude.id, 60);
+    open("session-2");
+    expect((await service.status()).unasked.size).toBe(0);
+  });
+
+  it("ends when the person turns it off, or removes the app, and never for a query", async () => {
+    const { service, listened, ask } = setUp();
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+    const client = await connection(options, claude);
+    service.setUnasked(claude.id, 60);
+    await client.callTool({ name: "outline", arguments: {} });
+    expect(ask.mock.calls[0]?.[0]).toEqual({ kind: "query", name: "outline", input: {} });
+
+    service.setUnasked(claude.id, null);
+    await client.callTool(theme);
+    expect(commandsAsked(ask)[0]).not.toHaveProperty("unasked");
+
+    service.setUnasked(claude.id, 60);
+    await service.remove(claude.id);
+    expect((await service.status()).unasked.size).toBe(0);
+  });
+});
 
 describe("an app giving up on a change waiting for the person (5.34, UA-1)", () => {
   const claude = { id: "app-1", name: "Claude" };

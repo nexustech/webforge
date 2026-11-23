@@ -1029,8 +1029,9 @@ describe("where visitors' money and details go (S18, #658)", () => {
         description: "Payment link: from buy.stripe.com to pay.example.net.",
         confirm: "Allow",
         affectedPages: 1,
-        // A plan says it first (S30).
+        // A plan says it first (S30), and an app working without asking is asked too (5.35).
         first: true,
+        alwaysAsk: true,
       });
       const text = await api.run(
         "editText",
@@ -1163,6 +1164,98 @@ describe("where visitors' money and details go (S18, #658)", () => {
       );
     }
     expect(confirm).not.toHaveBeenCalled();
+  });
+});
+
+describe("an app working without asking (5.35, UA-2)", () => {
+  const tokens = { tokens: { spacing: "roomy" } };
+  const unasked = { ...app, unasked: true };
+
+  it("makes a change to every page unasked, as one named undo step", async () => {
+    const { history, host, confirm } = setup(true);
+    const onAsking = vi.fn();
+    const result = await createCommandApi(host).run("setThemeTokens", tokens, {
+      ...unasked,
+      onAsking,
+    });
+
+    expect(result).toMatchObject({ status: "done", label: "AI (Claude): Changed the theme" });
+    // The window runs what goes before a site-wide change (its version), and asks nothing.
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(confirm.mock.calls[0]?.[2]).toEqual({ unasked: true });
+    expect(onAsking).not.toHaveBeenCalled();
+    expect(history.state.getState().entries).toHaveLength(1);
+  });
+
+  it("still asks where visitors' money or details go (S18), and a plan that holds such a change", async () => {
+    const { history, host, confirm } = setup(false, (doc) => {
+      doc.pages[doc.homePageId]?.doc.content.push({
+        type: "Section",
+        props: {
+          id: "shop",
+          content: [
+            { type: "BuyButton", props: { id: "buy", label: "Buy", link: "https://a.example" } },
+          ],
+        },
+      });
+    });
+    const api = createCommandApi(host);
+    const location = home(history);
+    const repoint = { location, nodeId: "buy", values: { link: "https://pay.example.net/x" } };
+
+    expect((await api.run("updateFields", repoint, unasked)).status).toBe("declined");
+    expect(confirm.mock.calls[0]?.[0]).toMatchObject({ alwaysAsk: true });
+    expect(confirm.mock.calls[0]?.[2]).toEqual({});
+
+    const planned = await api.run(
+      "plan",
+      {
+        title: "Tidy the shop",
+        commands: [
+          { name: "setThemeTokens", input: tokens },
+          { name: "updateFields", input: repoint },
+        ],
+      },
+      unasked,
+    );
+    expect(planned.status).toBe("declined");
+    expect(confirm.mock.calls[1]?.[0]).toMatchObject({ alwaysAsk: true });
+    expect(history.state.getState().entries).toEqual([]);
+  });
+
+  it("offers to work without asking in a question that could be unasked, never in one that always asks", async () => {
+    const { history, host, confirm } = setup(true, (doc) => {
+      doc.pages[doc.homePageId]?.doc.content.push({
+        type: "Section",
+        props: {
+          id: "shop",
+          content: [
+            { type: "BuyButton", props: { id: "buy", label: "Buy", link: "https://a.example" } },
+          ],
+        },
+      });
+    });
+    const api = createCommandApi(host);
+    const offerUnasked = vi.fn();
+    await api.run("setThemeTokens", tokens, { ...app, offerUnasked });
+    expect(confirm.mock.calls[0]?.[2]).toEqual({ offerUnasked });
+
+    await api.run(
+      "updateFields",
+      { location: home(history), nodeId: "buy", values: { link: "https://b.example" } },
+      { ...app, offerUnasked },
+    );
+    expect(confirm.mock.calls[1]?.[2]).toEqual({});
+  });
+
+  it("refuses unasked what Content mode forbids, as it does asked", async () => {
+    const { history, host, confirm } = setup(true);
+    host.mode = () => "content";
+    const result = await createCommandApi(host).run("setThemeTokens", tokens, unasked);
+
+    expect(result.status).toBe("refused");
+    expect(confirm).not.toHaveBeenCalled();
+    expect(history.state.getState().entries).toEqual([]);
   });
 });
 

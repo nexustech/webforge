@@ -136,5 +136,15 @@ export const aiApps = {
     "{appName} is still answering earlier requests: wait for their answers, then ask again.",
   "aiApps.cancel": "Cancel",
   "aiApps.indicator": "Connected AI apps: {names}. Open AI apps.",
+  // Whether an app works without asking on the open site (5.35, UA-2), in AI apps.
+  "aiApps.unasked.label": "Work without asking:",
+  "aiApps.unasked.for": "Work without asking: {name}",
+  "aiApps.unasked.asks": "No, ask first",
+  "aiApps.unasked.until": "Yes, until {time}",
+  "aiApps.unasked.minutes": "For {count} minutes",
+  "aiApps.unasked.hour": "For an hour",
+  "aiApps.unasked.hours": "For {count} hours",
+  // An app working without asking on the open site (5.35, UA-2), in the title bar.
+  "aiApps.indicatorUnasked": "Working without asking: {names}. Open AI apps.",
   "aiApps.failed": "{appName} couldn't reach AI apps. Try again.",
 } as const;

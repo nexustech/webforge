@@ -112,6 +112,25 @@ Deleting a page asks as **Delete Page** does, and says how many pages change: li
 
 The question waits for your answer, however long you're away: walking away isn't a no. The app is told it's still waiting, and **Allow** makes the change when you come back. If the app gives up first, or you close the site, the question closes and nothing changes. Only **Cancel** is a no, and after one the app waits a little before it asks you again.
 
+### Working without asking
+
+To let an app get on while you're away, let it work without asking. It then makes changes that reach every page, such as the theme, a new page in the menu or the Header, without a question. Either:
+
+- in its question, click **Allow, and Don't Ask Again for an Hour**; or
+- in **AI Apps**, under the app, choose how long in **Work without asking**: 30 minutes, an hour, 2 hours or 4 hours.
+
+It lasts for the site you have open, and ends when you close the site, when the time runs out, or when you choose **No, ask first**. Opening the site again asks again. {appName} keeps the setting itself: it isn't saved with your site, and the app can't turn it on.
+
+While an app works without asking, the AI apps icon in the title bar changes to a lightning bolt, and says which app. Each change is still a step in [Undo History](undo-and-history.md), named after the app, and the version _Before app's changes_ is still saved first.
+
+Some changes ask whatever you chose:
+
+- changing where visitors' money or details go, such as a Buy button's payment link or a form's address;
+- changing your web address, phone number, email address or a social profile, or whether search engines may show your site;
+- starting a new site.
+
+In Content mode, an app still can't change what Content mode doesn't allow.
+
 In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings. It can still see Media and ask you for pictures.
 
 Before an app's first change after you open your site, {appName} saves a version of it, _Before app's changes_, in [Version History](version-history.md). It saves one for each app, however often the app reconnects, until you open the site again.

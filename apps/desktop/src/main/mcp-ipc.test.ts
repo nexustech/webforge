@@ -41,6 +41,7 @@ function fakeService(
     port: 51_234,
     moved: false,
     connected: [],
+    unasked: new Map(),
     ...status,
   };
   let apps: PairedApp[] = [...paired];
@@ -50,6 +51,12 @@ function fakeService(
       current = { ...current, enabled, port: enabled ? 51_234 : null };
     }),
     seenMoved: vi.fn(async () => undefined),
+    setUnasked: vi.fn((id: string, minutes: number | null) => {
+      const unasked = new Map(current.unasked);
+      if (minutes === null) unasked.delete(id);
+      else unasked.set(id, 1_000_000 + minutes * 60_000);
+      current = { ...current, unasked };
+    }),
     add: vi.fn(
       async (name: string): Promise<Pairing> => ({
         status: "paired",
@@ -109,7 +116,20 @@ describe("the mcp IPC calls (4.9)", () => {
       enabled: true,
       address: "http://127.0.0.1:51234/mcp",
       moved: false,
-      apps: [{ id: CLAUDE.id, name: "Claude", claimed: true, connected: true }],
+      apps: [{ id: CLAUDE.id, name: "Claude", claimed: true, connected: true, unaskedUntil: null }],
+    });
+  });
+
+  it("lets an app work without asking for a while, or no longer, and says until when (5.35)", async () => {
+    const service = fakeService({}, [CLAUDE]);
+    const call = handlers(service);
+
+    expect(await call("mcp:set-unasked", CLAUDE.id, 60)).toMatchObject({
+      apps: [{ id: CLAUDE.id, unaskedUntil: 1_000_000 + 3_600_000 }],
+    });
+    expect(service.setUnasked).toHaveBeenCalledWith(CLAUDE.id, 60);
+    expect(await call("mcp:set-unasked", CLAUDE.id, null)).toMatchObject({
+      apps: [{ id: CLAUDE.id, unaskedUntil: null }],
     });
   });
 

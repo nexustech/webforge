@@ -81,6 +81,7 @@ const meta = {
       setEnabled: async () => ({ enabled: false, address: null, moved: false, apps: [] }),
       add: async () => ({ status: "off" }),
       seenMoved: async () => undefined,
+      setUnasked: async () => ({ enabled: false, address: null, moved: false, apps: [] }),
       install: async () => ({ status: "opened" }),
       remove: async () => ({ enabled: false, address: null, moved: false, apps: [] }),
     },

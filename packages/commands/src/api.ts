@@ -95,6 +95,14 @@ export function createCommandApi(host: CommandHost): CommandApi {
     if (plan.confirm === undefined) return "allowed";
     const { signal } = actor;
     if (signal?.aborted === true) return "unanswered";
+    const confirmation = plan.confirm(actor.app);
+    // An app the person lets work without asking (5.35, UA-2): unasked, unless it always asks.
+    const asks = confirmation.alwaysAsk === true || actor.unasked !== true;
+    if (!asks) {
+      return (await host.confirm(confirmation, new AbortController().signal, { unasked: true }))
+        ? "allowed"
+        : "declined";
+    }
     const closed = new AbortController();
     const gaveUp = new Promise<"unanswered">((resolve) =>
       closed.signal.addEventListener("abort", () => resolve("unanswered")),
@@ -102,9 +110,11 @@ export function createCommandApi(host: CommandHost): CommandApi {
     signal?.addEventListener("abort", () => closed.abort());
     // Whoever asked hears the request now waits on the person, with no time limit (5.34).
     actor.onAsking?.();
+    // Offered only where it would apply: never for a question that always asks.
+    const offer = confirmation.alwaysAsk === true ? undefined : actor.offerUnasked;
     return Promise.race([
       host
-        .confirm(plan.confirm(actor.app), closed.signal)
+        .confirm(confirmation, closed.signal, offer === undefined ? {} : { offerUnasked: offer })
         .then((yes) => (yes ? ("allowed" as const) : ("declined" as const))),
       gaveUp,
     ]);

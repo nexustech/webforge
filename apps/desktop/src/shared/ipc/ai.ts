@@ -50,6 +50,13 @@ export const aiRequestSchema = z.discriminatedUnion("kind", [
     input: inputSchema,
     /** The app's name, as the person gave it when pairing: "AI (‹app›): …" in Undo History. */
     app: z.string().min(1).max(80),
+    /** A paired app's id (5.35): its question can offer to let it work without asking. */
+    appId: z.uuid().optional(),
+    /**
+     * The person lets the app work without asking (5.35, UA-2), as main keeps it: a change that only
+     * reaches every page is made unasked.
+     */
+    unasked: z.literal(true).optional(),
     stage: stageSchema.optional(),
   }),
 ]);

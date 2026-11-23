@@ -3,6 +3,7 @@ import { toast } from "@webforge/editor-ui";
 import { createElement } from "react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
+import { DEFAULT_UNASKED_MINUTES } from "../../shared/ipc/mcp.js";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { textSessionOpen } from "../editor/editor-session.js";
 import {
@@ -11,6 +12,7 @@ import {
   SiteCheckIgnored,
   TrustedCode,
 } from "../editor/window-services.js";
+import { reportFailure } from "../log.js";
 import { addMedia, importItems } from "../media/index.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { siteSession } from "../storage/index.js";
@@ -123,8 +125,13 @@ export const aiRequestsArea: Area<WindowContext> = {
       const own = answerWindowTool(windowTools, request);
       if (own !== undefined) return own;
       if (request.stage !== undefined) return stages.answer({ ...request, stage: request.stage });
-      // A question for the person waits for its answer: main lifts its time limit (5.34).
-      return answerRequest(commandApi, request, cancel.signal, asking);
+      // A question for the person waits for its answer: main lifts its time limit (5.34). One a
+      // paired app asks offers to let it work without asking, as long as AI apps says (5.35).
+      return answerRequest(commandApi, request, cancel.signal, asking, (appId) => {
+        api.mcp
+          .setUnasked(appId, DEFAULT_UNASKED_MINUTES)
+          .catch((error: unknown) => reportFailure("aiApps.unasked", error));
+      });
     });
     return () => {
       stopAnswering();
