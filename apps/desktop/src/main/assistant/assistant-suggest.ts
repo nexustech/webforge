@@ -40,8 +40,14 @@ export const SUGGEST_TOOL_DEFINITION: ChatTool = {
   },
 };
 
-/** The tool's answer to the model: the reply ends with it. */
+/** The tool's answer to the model, called beside its last words: the reply ends with it. */
 export const SUGGESTED = JSON.stringify({ status: "done" });
+
+/** The answer to a model that called it without a word to the person: the reply goes on for them. */
+export const SUGGESTED_WITHOUT_WORDS = JSON.stringify({
+  status: "done",
+  message: "Kept. Now tell the person, in a sentence or two, what you changed.",
+});
 
 const argumentsSchema = z.looseObject({ suggestions: z.array(z.unknown()) });
 

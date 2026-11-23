@@ -16,6 +16,7 @@ import {
   SUGGEST_TOOL,
   SUGGEST_TOOL_DEFINITION,
   SUGGESTED,
+  SUGGESTED_WITHOUT_WORDS,
   suggestionsOf,
 } from "./assistant-suggest.js";
 import { type ChatEndpoint, type ChatMessage, type ChatTool, streamChat } from "./chat-client.js";
@@ -372,11 +373,26 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
     // Whether this call put a question to the person (5.16): its calls after the question were
     // chosen before the answer, so none runs; the model hears to call again.
     let answeredHere = false;
+    // Suggestions alone end the reply when they come with its last words (5.17); without words,
+    // the model is asked for them, so the person isn't left with buttons under an empty reply.
+    const onlySuggests = result.toolCalls.every((each) => each.function.name === SUGGEST_TOOL);
+    const wordless = onlySuggests && result.text.trim().length === 0;
     for (const asked of result.toolCalls) {
       if (!options.stillOpen()) return failed("no-site");
       if (signal.aborted) return done("stopped");
       if (answeredHere) {
         messages.push({ role: "tool", tool_call_id: asked.id, content: NOT_RUN });
+        continue;
+      }
+      // What to ask next (5.17): kept for the reply's end, the latest call's. It reads and changes
+      // nothing, so it isn't one of the reply's 25 calls, and comes before that cap.
+      if (asked.function.name === SUGGEST_TOOL) {
+        suggestions = suggestionsOf(asked.function.arguments);
+        messages.push({
+          role: "tool",
+          tool_call_id: asked.id,
+          content: wordless ? SUGGESTED_WITHOUT_WORDS : SUGGESTED,
+        });
         continue;
       }
       if (toolCalls >= REPLY_CAPS.toolCalls) return done("tool-cap");
@@ -399,12 +415,6 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
         answeredHere = check.status === "ask";
         continue;
       }
-      // What to ask next (5.17): kept for the reply's end, the latest call's.
-      if (name === SUGGEST_TOOL) {
-        suggestions = suggestionsOf(asked.function.arguments);
-        messages.push({ role: "tool", tool_call_id: asked.id, content: SUGGESTED });
-        continue;
-      }
       options.onTool({ callId, tool, state: "running" });
       const answered = await callTool(options, name, asked.function.arguments);
       if (answered.step !== undefined) steps.push(answered.step);
@@ -421,9 +431,9 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
       });
       messages.push({ role: "tool", tool_call_id: asked.id, content: answered.text });
     }
-    // Suggestions were all the call asked for: they come with the last words, so the reply has
-    // ended, with no model call more to say so (5.17).
-    if (result.toolCalls.every((each) => each.function.name === SUGGEST_TOOL)) return done("end");
+    // Suggestions were all the call asked for, beside its last words: the reply has ended, with no
+    // model call more to say so.
+    if (onlySuggests && !wordless) return done("end");
   }
 }
 

@@ -409,6 +409,52 @@ describe("what to ask next (5.17, OL-2)", () => {
     );
   });
 
+  it("waits while its changes are held, then offers them once applied, never once discarded (PR 1342's review)", async () => {
+    const REPLY = "8a7b6c5d-4e3f-4a2b-9c1d-0e9f8a7b6c5d";
+    const held = [{ label: "AI (Assistant): Edited Hero text", target: { pageId: "home" } }];
+    const holding = async () => {
+      const { api } = shown();
+      await screen.findByRole("textbox", { name: "Message the assistant" });
+      act(() => {
+        api.emit({ session: "site-1", type: "reply-started", replyId: REPLY, model: "m" });
+        api.emit({
+          session: "site-1",
+          type: "reply-done",
+          replyId: REPLY,
+          stop: "end",
+          costUsd: 0.1,
+          month: { spentUsd: 0.1, limitUsd: 5 },
+          steps: [],
+          links: [],
+          held,
+          suggestions: NEXT,
+        });
+      });
+      await screen.findByRole("button", { name: "Apply Changes" });
+      expect(screen.queryByRole("region", { name: "You could ask next" })).toBeNull();
+      return api;
+    };
+    const settled = (state: "applied" | "discarded") => ({
+      session: "site-1",
+      type: "held" as const,
+      replyId: REPLY,
+      state,
+      steps:
+        state === "applied" ? [{ entryId: "e1", label: "AI (Assistant): Edited Hero text" }] : [],
+      refused: [],
+    });
+
+    const applied = await holding();
+    act(() => applied.emit(settled("applied")));
+    expect(await screen.findByRole("region", { name: "You could ask next" })).toBeDefined();
+    cleanup();
+
+    const discarded = await holding();
+    act(() => discarded.emit(settled("discarded")));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Apply Changes" })).toBeNull());
+    expect(screen.queryByRole("region", { name: "You could ask next" })).toBeNull();
+  });
+
   it("offers none after a reply that changed nothing", async () => {
     const { user } = shown({ reply: { text: "It already says that.", suggestions: NEXT } });
     await user.type(
