@@ -4,7 +4,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { describe, expect, it, vi } from "vitest";
-import type { AiResponse } from "../shared/ipc/ai.js";
+import type { AiRequest, AiResponse } from "../shared/ipc/ai.js";
 import { aiAppsFileSchema, createAiApps, NO_AI_APPS } from "./ai-apps.js";
 import { createCredentialStore, type SecretCipher } from "./credential-store.js";
 import { createJsonStore } from "./json-store.js";
@@ -58,7 +58,13 @@ function setUp(
   const saveVersionBefore = vi.fn(async (_name: string): Promise<"saved" | "failed"> => "saved");
   // The opening of the site open now, by its session id.
   let opening: string | undefined = "session-1";
-  const ask = vi.fn(async (): Promise<AiResponse> => ({ status: "done", data: {} }));
+  const ask = vi.fn(
+    async (_request: AiRequest, _appId?: string): Promise<AiResponse> => ({
+      status: "done",
+      data: {},
+    }),
+  );
+  const cancel = vi.fn((_appId: string) => undefined);
   const briefs = {
     ask: vi.fn(async () => ({ status: "declined", message: "closed" }) as const),
     choices: () => ({ status: "done", data: siteChoices([]) }) as const,
@@ -67,6 +73,7 @@ function setUp(
   const service = createMcpService({
     apps,
     ask,
+    cancel,
     info: { name: "Webforge", version: "1" },
     saveVersionBefore,
     opening: () => opening,
@@ -82,6 +89,7 @@ function setUp(
     disconnected,
     saveVersionBefore,
     ask,
+    cancel,
     briefs,
     closed: () => closed,
     open: (session: string | undefined) => {
@@ -214,6 +222,55 @@ async function connection(options: McpListenerOptions, app: { id: string; name: 
   await client.connect(clientSide);
   return client;
 }
+
+describe("an app giving up on a change waiting for the person (5.34, UA-1)", () => {
+  const claude = { id: "app-1", name: "Claude" };
+
+  it("closes the question when the app cancels its request or disconnects, never for a query", async () => {
+    const { service, listened, ask, cancel } = setUp();
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+    // The window asks the person, and answers only once the app's question closes.
+    let close: (response: AiResponse) => void = () => undefined;
+    ask.mockImplementation(async (request) =>
+      request.kind === "query"
+        ? { status: "done", data: {} }
+        : new Promise<AiResponse>((resolve) => {
+            close = resolve;
+          }),
+    );
+
+    const client = await connection(options, claude);
+    const stop = new AbortController();
+    const asked = client.callTool(
+      { name: "setThemeTokens", arguments: { tokens: { spacing: "roomy" } } },
+      undefined,
+      { signal: stop.signal },
+    );
+    await vi.waitFor(() => expect(ask).toHaveBeenCalledOnce());
+    expect(cancel).not.toHaveBeenCalled();
+    stop.abort();
+    await expect(asked).rejects.toThrow();
+    await vi.waitFor(() => expect(cancel).toHaveBeenCalledExactlyOnceWith("app-1"));
+    close({ status: "busy", message: "closed unanswered" });
+
+    // Disconnecting gives up too.
+    const again = await connection(options, claude);
+    void again
+      .callTool({ name: "setThemeTokens", arguments: { tokens: { spacing: "roomy" } } })
+      .catch(() => undefined);
+    await vi.waitFor(() => expect(ask).toHaveBeenCalledTimes(2));
+    await again.close();
+    await vi.waitFor(() => expect(cancel).toHaveBeenCalledTimes(2));
+    close({ status: "busy", message: "closed unanswered" });
+
+    // A query waits on no one: giving up on it closes nothing.
+    const reader = await connection(options, claude);
+    await reader.callTool({ name: "outline", arguments: {} });
+    expect(cancel).toHaveBeenCalledTimes(2);
+  });
+});
 
 describe("the version before an AI app's changes (S20)", () => {
   const claude = { id: "app-1", name: "Claude" };

@@ -7,7 +7,7 @@ import {
   scaledTestTimeout,
 } from "@webforge/test-utils/renderer";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
-import type { AiApi, AiRequest, AiResponse } from "../shared/ipc/ai.js";
+import type { AiApi, AiRequest } from "../shared/ipc/ai.js";
 import { applyPreferencesChange, DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
@@ -47,9 +47,7 @@ const setSpellCheckLanguage = vi.fn(async () => null);
 
 /** What main forwards AI apps' requests to: the window's answer while it listens. */
 const ai = {
-  answer: undefined as
-    | ((request: AiRequest, onCancel: (cancelled: () => void) => void) => Promise<AiResponse>)
-    | undefined,
+  answer: undefined as Parameters<AiApi["onRequest"]>[1] | undefined,
 };
 const answerAi = vi.fn<AiApi["onRequest"]>((_sessionId, answer) => {
   ai.answer = answer;
@@ -174,7 +172,12 @@ describe("App's AI apps (4.8)", () => {
     const ask = (request: AiRequest) => {
       if (ai.answer === undefined) throw new Error("not listening");
       return act(
-        () => ai.answer?.(request, () => undefined) ?? Promise.reject(new Error("not listening")),
+        () =>
+          ai.answer?.(
+            request,
+            () => undefined,
+            () => undefined,
+          ) ?? Promise.reject(new Error("not listening")),
       );
     };
 

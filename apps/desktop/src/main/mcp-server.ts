@@ -174,7 +174,8 @@ function serve(
             void extra
               .sendNotification({
                 method: "notifications/progress",
-                params: { progressToken, progress },
+                // Still waiting, maybe on the person, which has no time limit (5.34, UA-1).
+                params: { progressToken, progress, message: t("aiApps.answer.stillWaiting") },
               })
               .catch(() => undefined);
           }, progressEveryMs);

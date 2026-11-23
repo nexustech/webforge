@@ -141,6 +141,8 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "preview:show": "takes the browsers to a page: no site content",
   "preview:stop-phone": "stops the preview's listener on the network",
   "ai:answer": "answers a request by its id; a reload settles those waiting (ai-ipc.ts)",
+  "ai:asking":
+    "lifts a waiting request's time limit by its id, as the window asks the person (5.34)",
   "ai:brief-answer":
     "what became of an AI app's brief, a new site the window makes whichever is open (site-brief.ts)",
   "publish:testConnection": "a destination's connection, nothing of the site",

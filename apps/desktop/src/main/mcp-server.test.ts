@@ -235,6 +235,10 @@ describe("the MCP server (4.9)", () => {
 
     expect(onprogress.mock.calls.length).toBeGreaterThanOrEqual(2);
     expect(onprogress).toHaveBeenCalledWith(expect.objectContaining({ progress: 1 }));
+    // Saying it may be the person it waits on, which has no time limit (5.34).
+    expect(onprogress).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringMatching(/may be asking the person/) }),
+    );
   });
 
   it("offers the catalogue as a resource, without asking the open site (AIB-1)", async () => {

@@ -6,9 +6,6 @@ import type { Failure, Plan, PlanContext } from "./plan.js";
 import { QUERIES, type QueryName, QueryRefusal } from "./queries.js";
 import type { Actor, CommandHost, CommandResult } from "./types.js";
 
-/** How long a change to more than one page waits for the person to allow it (D7). */
-export const CONFIRM_TIMEOUT_MS = 60_000;
-
 /** What a query answers: its data, or why there is none. */
 export type QueryResult =
   | { readonly status: "done"; readonly data: unknown }
@@ -54,6 +51,13 @@ const BUSY =
   "The person is editing (a drag, a slider, typing, a dialog or a question): try again shortly.";
 
 /**
+ * What a command is told when its question closed unanswered, as the asker gave up (5.34, UA-1):
+ * not a decline, so the app needn't wait before it asks again.
+ */
+const UNANSWERED =
+  "The question closed before the person answered it, so nothing changed. Ask again when you're ready.";
+
+/**
  * Whether the person is in the middle of a gesture, typing, a dialog or a question: nothing else
  * may change.
  */
@@ -63,8 +67,9 @@ const busy = (host: CommandHost) =>
 /**
  * The command layer over `host`: every command validated with zod, refused while the person is
  * editing (`busy`) and in Content mode when it's structural, confirmed first when it changes more
- * than one page (D7, `declined` after {@link CONFIRM_TIMEOUT_MS}), and run as one undo step
- * labelled "AI (‹app›): …" (F-AI-1). Nothing runs that isn't one of {@link COMMANDS}.
+ * than one page (D7), the question waiting for its answer however long it takes (5.34, UA-1), and
+ * run as one undo step labelled "AI (‹app›): …" (F-AI-1). Nothing runs that isn't one of
+ * {@link COMMANDS}.
  */
 export function createCommandApi(host: CommandHost): CommandApi {
   /** The command `name` planned against the site as it is now. */
@@ -79,25 +84,30 @@ export function createCommandApi(host: CommandHost): CommandApi {
   };
 
   /**
-   * Asks the person to allow a change; declined when they don't, after a minute, or when the asker
-   * gives up (the assistant's Stop), which closes the question.
+   * Asks the person to allow a change, and waits for their answer however long it takes (5.34,
+   * UA-1): walking away is no refusal. `unanswered` when the asker gives up first (an app's cancel,
+   * the assistant's Stop), which closes the question.
    */
-  const allowed = async (plan: Plan, actor: Actor): Promise<boolean> => {
-    if (plan.confirm === undefined) return true;
-    if (actor.signal?.aborted === true) return false;
-    const timeout = new AbortController();
-    const timer = setTimeout(() => timeout.abort(), CONFIRM_TIMEOUT_MS);
-    actor.signal?.addEventListener("abort", () => timeout.abort());
-    try {
-      return await Promise.race([
-        host.confirm(plan.confirm(actor.app), timeout.signal),
-        new Promise<false>((resolve) =>
-          timeout.signal.addEventListener("abort", () => resolve(false)),
-        ),
-      ]);
-    } finally {
-      clearTimeout(timer);
-    }
+  const allowed = async (
+    plan: Plan,
+    actor: Actor,
+  ): Promise<"allowed" | "declined" | "unanswered"> => {
+    if (plan.confirm === undefined) return "allowed";
+    const { signal } = actor;
+    if (signal?.aborted === true) return "unanswered";
+    const closed = new AbortController();
+    const gaveUp = new Promise<"unanswered">((resolve) =>
+      closed.signal.addEventListener("abort", () => resolve("unanswered")),
+    );
+    signal?.addEventListener("abort", () => closed.abort());
+    // Whoever asked hears the request now waits on the person, with no time limit (5.34).
+    actor.onAsking?.();
+    return Promise.race([
+      host
+        .confirm(plan.confirm(actor.app), closed.signal)
+        .then((yes) => (yes ? ("allowed" as const) : ("declined" as const))),
+      gaveUp,
+    ]);
   };
 
   return {
@@ -133,7 +143,9 @@ export function createCommandApi(host: CommandHost): CommandApi {
             "Webforge is in Content mode: AI apps can edit text and content, not structure or style.",
         };
       }
-      if (!(await allowed(first, actor))) {
+      const answer = await allowed(first, actor);
+      if (answer === "unanswered") return { status: "busy", message: UNANSWERED };
+      if (answer === "declined") {
         return { status: "declined", message: "The person didn't allow this change." };
       }
       // Planned again: the site may have changed while the person was asked.

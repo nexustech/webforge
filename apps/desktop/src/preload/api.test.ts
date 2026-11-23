@@ -347,7 +347,11 @@ describe("createWebforgeApi AI requests (4.8)", () => {
         data: { name: "Bakery" },
       }),
     );
-    expect(answer).toHaveBeenCalledWith(request, expect.any(Function));
+    expect(answer).toHaveBeenCalledWith(request, expect.any(Function), expect.any(Function));
+    // Asking the person for it tells main, with its id (5.34).
+    const asking = (answer.mock.calls[0] as unknown[] | undefined)?.[2] as () => void;
+    asking();
+    expect(invoke).toHaveBeenCalledWith("ai:asking", 4);
 
     stop();
     expect(listeners.has("ai:request")).toBe(false);
