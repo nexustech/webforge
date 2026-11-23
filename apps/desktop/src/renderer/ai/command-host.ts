@@ -13,7 +13,10 @@ import type { PreferencesStore } from "../shell/preferences-store.js";
 export function commandHost(
   session: Pick<EditorSession, "history" | "edit" | "held" | "ui">,
   preferences: Pick<PreferencesStore, "getState">,
-  siteWide: Pick<SiteWideConfirm, "confirmSiteWide" | "current" | "busy" | "answer">,
+  siteWide: Pick<
+    SiteWideConfirm,
+    "confirmSiteWide" | "current" | "busy" | "answer" | "beforeUnaskedChange"
+  >,
   published: () => boolean = () => false,
 ): CommandHost {
   return {
@@ -36,8 +39,14 @@ export function commandHost(
     editing: () => textSessionOpen(session.history) || session.held() || siteWide.busy(),
     mode: () => preferences.getState().mode,
     published,
-    confirm(confirmation, signal) {
-      const action: SiteWideAction = { ...confirmation };
+    confirm(confirmation, signal, options) {
+      const action: SiteWideAction = {
+        ...confirmation,
+        ...(options?.offerUnasked === undefined ? {} : { allowAlways: options.offerUnasked }),
+      };
+      // An app working without asking (5.35, UA-2): no question, but what goes before a change to
+      // every page still runs, Version History's version.
+      if (options?.unasked === true) return siteWide.beforeUnaskedChange(action).then(() => true);
       const answer = siteWide.confirmSiteWide(action);
       // The asker gave up (an app's cancel, the assistant's Stop): the question closes (5.34).
       signal.addEventListener(
@@ -55,15 +64,25 @@ export function commandHost(
 /**
  * `request` run by `api`: a query's answer, or a command's, on behalf of the app that asked. Its
  * asker giving up (`signal`) closes a question the command is waiting on, unanswered; `onAsking`
- * hears it ask one, which waits for its answer however long it takes (5.34).
+ * hears it ask one, which waits for its answer however long it takes (5.34). A command main says
+ * works without asking is made unasked where it may be, and a paired app's question offers to let
+ * it, through `letWorkUnasked` (5.35, UA-2).
  */
 export function answerRequest(
   api: CommandApi,
   request: AiRequest,
   signal?: AbortSignal,
   onAsking?: () => void,
+  letWorkUnasked?: (appId: string) => void,
 ): Promise<AiResponse> {
-  return request.kind === "query"
-    ? Promise.resolve(api.query(request.name, request.input))
-    : api.run(request.name, request.input, { app: request.app, signal, onAsking });
+  if (request.kind === "query") return Promise.resolve(api.query(request.name, request.input));
+  const { appId } = request;
+  return api.run(request.name, request.input, {
+    app: request.app,
+    signal,
+    onAsking,
+    unasked: request.unasked === true,
+    offerUnasked:
+      appId === undefined || letWorkUnasked === undefined ? undefined : () => letWorkUnasked(appId),
+  });
 }

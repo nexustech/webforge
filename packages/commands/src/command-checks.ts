@@ -416,6 +416,7 @@ export function destinationConfirmation(
     confirm: t("ai.confirm.allow"),
     affectedPages: pages,
     first: true,
+    alwaysAsk: true,
   });
 }
 

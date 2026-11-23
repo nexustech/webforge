@@ -37,6 +37,8 @@ export const aiAppsArea: Area<WindowContext> = {
         copySecret: (secret) => api.clipboard.copySecret(secret),
         notify: (message) => toast.error(message),
         onClose: close,
+        // A site is open in the editor's window: an app can work without asking on it (5.35).
+        siteOpen: true,
       });
     }
 

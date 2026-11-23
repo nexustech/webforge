@@ -85,6 +85,7 @@ const mcp = {
   setEnabled: vi.fn(async () => ({ enabled: false, address: null, moved: false, apps: [] })),
   add: vi.fn(async () => ({ status: "off" as const })),
   seenMoved: vi.fn(async () => undefined),
+  setUnasked: vi.fn(async () => ({ enabled: false, address: null, moved: false, apps: [] })),
   install: vi.fn(async () => ({ status: "opened" as const })),
   remove: vi.fn(async () => ({ enabled: false, address: null, moved: false, apps: [] })),
 } satisfies McpApi;

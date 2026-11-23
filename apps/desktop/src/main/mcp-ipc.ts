@@ -22,6 +22,7 @@ async function statusOf(service: McpService): Promise<McpStatus> {
       name: app.name,
       claimed: app.claimedAt !== null,
       connected: connected.has(app.id),
+      unaskedUntil: status.unasked.get(app.id) ?? null,
     })),
   };
 }
@@ -48,6 +49,10 @@ export function registerMcpHandlers(
     }
     return statusOf(service);
   });
+  registerIpcHandler(ipc, "mcpSetUnasked", isTrustedSender, async (id, minutes) => {
+    service.setUnasked(id, minutes);
+    return statusOf(service);
+  });
   registerIpcHandler(ipc, "mcpSeenMoved", isTrustedSender, async () => {
     await service.seenMoved();
     return null;
@@ -60,7 +65,13 @@ export function registerMcpHandlers(
       if (pairing.status !== "paired") return { status: pairing.status };
       return {
         status: "paired",
-        app: { id: pairing.app.id, name: pairing.app.name, claimed: false, connected: false },
+        app: {
+          id: pairing.app.id,
+          name: pairing.app.name,
+          claimed: false,
+          connected: false,
+          unaskedUntil: null,
+        },
         key: pairing.key,
         address: addressAt(status.port),
       };

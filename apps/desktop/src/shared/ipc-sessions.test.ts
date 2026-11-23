@@ -110,6 +110,8 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "assistant:stop":
     "a reply by its id, which main has kept with its site: stopping one only ever stops sending",
   "mcp:set-enabled": "AI apps, which are the app's, whichever site is open",
+  "mcp:set-unasked":
+    "an app working without asking, which main keeps for the opening open now (5.35); nothing of the site",
   "mcp:add": "AI apps, which are the app's, whichever site is open",
   "mcp:install": "an AI app's install, as its kind does, the app's, whichever site is open",
   "mcp:remove": "AI apps, which are the app's, whichever site is open",

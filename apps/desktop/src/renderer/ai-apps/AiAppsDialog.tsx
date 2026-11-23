@@ -35,6 +35,7 @@ import {
   UNCLAIMED_KEY_MS,
 } from "../../shared/ipc/mcp.js";
 import { type ShellKind, shellOf } from "../../shared/mcp-setup.js";
+import { UnaskedChoice } from "./UnaskedChoice.js";
 
 /** How often the dialog asks for the apps' status while open, so *Connected* follows them. */
 export const STATUS_EVERY_MS = 2_000;
@@ -53,6 +54,11 @@ export type AiAppsDialogProps = {
   readonly shell?: ShellKind;
   /** The time now, in ms; injectable for tests and stories. */
   readonly now?: () => number;
+  /**
+   * Whether a site is open in this window, which an app can be let work without asking on (5.35,
+   * UA-2): AI apps opened from the start screen offers no such choice.
+   */
+  readonly siteOpen?: boolean;
 };
 
 type AppStatus = McpStatus["apps"][number];
@@ -321,6 +327,7 @@ export function AiAppsDialog({
   onClose,
   shell = shellOf(navigator.userAgent),
   now: clock = Date.now,
+  siteOpen = false,
 }: AiAppsDialogProps) {
   const [status, setStatus] = useState<McpStatus | null>(null);
   // Shown for as long as the dialog stays open, though main forgets it once it's been seen (S27).
@@ -522,14 +529,24 @@ export function AiAppsDialog({
               ) : (
                 <ul className="flex flex-col gap-1">
                   {status.apps.map((app) => (
-                    <li key={app.id} className="flex items-center justify-between gap-2">
-                      <span>
-                        <span className="font-medium">{app.name}</span>{" "}
-                        <span className="text-sm text-muted-foreground">{statusText(app)}</span>
-                      </span>
-                      <Button variant="outline" size="sm" onClick={() => setRemoving(app)}>
-                        {t("aiApps.remove", { name: app.name })}
-                      </Button>
+                    <li key={app.id} className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span>
+                          <span className="font-medium">{app.name}</span>{" "}
+                          <span className="text-sm text-muted-foreground">{statusText(app)}</span>
+                        </span>
+                        <Button variant="outline" size="sm" onClick={() => setRemoving(app)}>
+                          {t("aiApps.remove", { name: app.name })}
+                        </Button>
+                      </div>
+                      {siteOpen ? (
+                        <UnaskedChoice
+                          name={app.name}
+                          until={app.unaskedUntil}
+                          now={clock()}
+                          onChange={(minutes) => void act(mcp.setUnasked(app.id, minutes))}
+                        />
+                      ) : null}
                     </li>
                   ))}
                 </ul>

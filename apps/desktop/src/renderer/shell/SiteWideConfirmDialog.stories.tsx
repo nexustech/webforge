@@ -37,6 +37,21 @@ export const DeletePage: Story = {
   },
 };
 
+/**
+ * An AI app's change to every page (D7), offering to let it work without asking (5.35, UA-2):
+ * Allow, Allow and don't ask again for an hour, or Cancel.
+ */
+export const AiAppOffersUnasked: Story = {
+  args: {
+    action: {
+      action: "Allow Claude Desktop to Change the Theme?",
+      confirm: t("ai.confirm.allow"),
+      affectedPages: 6,
+      allowAlways: () => undefined,
+    },
+  },
+};
+
 /** Deleting an element of the shared Footer changes every page that shows it (F-ED-7). */
 export const SharedFooterElement: Story = {
   args: {

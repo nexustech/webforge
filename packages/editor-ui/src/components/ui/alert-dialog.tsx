@@ -98,7 +98,7 @@ export function AlertDialogAction({
   variant = "default",
   ...props
 }: ComponentProps<typeof AlertDialogPrimitive.Action> & {
-  readonly variant?: "default" | "destructive";
+  readonly variant?: "default" | "destructive" | "outline";
 }) {
   return (
     <AlertDialogPrimitive.Action

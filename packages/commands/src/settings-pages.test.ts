@@ -213,6 +213,8 @@ describe("updateSettings, the business part of Site Settings (4.11, AIB-2)", () 
       confirm: "Allow",
       affectedPages: history.document.getState().pageOrder.length,
       first: true,
+      // A named contact detail: asked even of an app working without asking (5.35).
+      alwaysAsk: true,
     });
     const settings = history.document.getState().settings;
     expect(settings.general).toMatchObject({

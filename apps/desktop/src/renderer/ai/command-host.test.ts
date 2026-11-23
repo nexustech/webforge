@@ -65,6 +65,65 @@ describe("commandHost (4.8)", () => {
     );
   });
 
+  it("makes an app's change to every page unasked, saving its version first, as main says (5.35)", async () => {
+    const { session, siteWide, host } = setup();
+    const before = vi.fn();
+    siteWide.setBeforeSiteWideAction(before);
+    const theme = {
+      kind: "command",
+      name: "setThemeTokens",
+      input: { tokens: { spacing: "roomy" } },
+      app: "Claude",
+      appId: "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e",
+      unasked: true,
+    } as const;
+
+    const done = await answerRequest(createCommandApi(host), theme);
+
+    expect(done).toMatchObject({ status: "done", label: "AI (Claude): Changed the theme" });
+    expect(siteWide.last()).toBeNull();
+    // Version History's version, as before a change to every page that asks nothing (4.6).
+    expect(before).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ action: "Allow Claude to Change the Theme?" }),
+      { asked: false },
+    );
+    expect(session.history.state.getState().entries.at(-1)?.label).toBe(
+      "AI (Claude): Changed the theme",
+    );
+  });
+
+  it("offers a paired app's question to let it work without asking, which allows the change too (5.35)", async () => {
+    const { siteWide, host } = setup();
+    const letWork = vi.fn();
+    const theme = {
+      kind: "command",
+      name: "setThemeTokens",
+      input: { tokens: { spacing: "roomy" } },
+      app: "Claude",
+      appId: "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e",
+    } as const;
+
+    const asking = answerRequest(createCommandApi(host), theme, undefined, undefined, letWork);
+    await vi.waitFor(() => expect(siteWide.current()).not.toBeNull());
+    siteWide.current()?.allowAlways?.();
+    siteWide.answer(true);
+    expect(await asking).toMatchObject({ status: "done" });
+    expect(letWork).toHaveBeenCalledExactlyOnceWith("0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e");
+
+    // The assistant has no id of a paired app: its question offers nothing.
+    const assistant = answerRequest(
+      createCommandApi(host),
+      { ...theme, appId: undefined, app: "Assistant" },
+      undefined,
+      undefined,
+      letWork,
+    );
+    await vi.waitFor(() => expect(siteWide.current()).not.toBeNull());
+    expect(siteWide.current()?.allowAlways).toBeUndefined();
+    siteWide.answer(false);
+    await assistant;
+  });
+
   it("keeps a renamed page's old address once the window's site has been published (#925)", async () => {
     const session = createEditorSession(siteLibrary, starterSite());
     let published = false;

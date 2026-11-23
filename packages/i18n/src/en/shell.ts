@@ -417,4 +417,6 @@ export const shell = {
   "confirm.siteWide.affectsMany":
     "{count} pages of your site will change. You can undo it afterwards.",
   "confirm.siteWide.cancel": "Cancel",
+  // An AI app's question (5.35, UA-2): allows this change, and lets the app work without asking.
+  "confirm.siteWide.allowAlways": "Allow, and Don't Ask Again for an Hour",
 } as const;
