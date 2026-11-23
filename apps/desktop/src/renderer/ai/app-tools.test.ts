@@ -57,6 +57,29 @@ function setUp(site = siteWithBareImage()) {
 }
 
 describe("the window's own AI tools (4.9)", () => {
+  it("checks a held reply's draft, by its stage, and the site for any other request (5.18)", () => {
+    const draft = siteWithBareImage();
+    const site = starterSite();
+    const asked: (string | undefined)[] = [];
+    const tools = createAppTools({
+      site: (stage) => {
+        asked.push(stage);
+        return stage === "stage-1" ? draft : site;
+      },
+      allowListConfirmed: () => false,
+      ignored: () => [],
+      openPreview: async () => null,
+    });
+    const rules = (answer: ReturnType<typeof tools.runSiteCheck>) =>
+      answer.status === "done" && "data" in answer
+        ? (answer.data as { found: { rule: string }[] }).found.map((each) => each.rule)
+        : [];
+
+    expect(rules(tools.runSiteCheck({ stage: "stage-1" }))).toContain("altText");
+    expect(rules(tools.runSiteCheck())).not.toContain("altText");
+    expect(asked).toEqual(["stage-1", undefined]);
+  });
+
   it("runs Site Check, with each finding's place by id and its facts, never its text", () => {
     const { site, tools } = setUp();
 

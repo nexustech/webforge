@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { SITE_CSS_DEBOUNCE_MS } from "../editor/site-css.js";
 import { previewTheme, themePreviewOf } from "../editor/theme-preview.js";
+import { stubFrames } from "../testing/frames.test-helper.js";
 import {
   createItemPreviews,
   createSectionPreviews,
@@ -13,7 +14,10 @@ import {
   showsAnything,
 } from "./section-preview.js";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 const HOURS = "shared-hours" as SharedSectionId;
 const { theme } = starterSite();
@@ -246,7 +250,13 @@ describe("createItemPreviews (3.13a)", () => {
     const loading = { head: null, body: null };
     Object.defineProperty(frame, "contentDocument", { configurable: true, value: loading });
     const dragged = { ...theme, colors: { ...theme.colors, primary: { l: 0.6, c: 0.2, h: 30 } } };
-    expect(() => act(() => previewTheme(session, dragged))).not.toThrow();
+    const frames = stubFrames();
+    expect(() =>
+      act(() => {
+        previewTheme(session, dragged);
+        frames.run();
+      }),
+    ).not.toThrow();
 
     // Loaded: the colour shows over the drawing's CSS.
     const loaded = document.implementation.createHTMLDocument();

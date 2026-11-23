@@ -47,6 +47,16 @@ export const assistant = {
     "The model you chose isn't available now. Try again later, or choose another.",
   "assistant.error.provider-error": "The assistant's provider couldn't answer. Try again.",
   "assistant.error.failed": "Something went wrong. Try again.",
+  // The same two from a provider other than OpenRouter (5.20, OL-5): its own server, not OpenRouter.
+  "assistant.error.unauthorized-server":
+    "The server didn't accept your key. Check it in Settings › Assistant.",
+  "assistant.error.no-credit-server": "The server says your account has run out of credit.",
+  // What the person can do about an error, under its message (5.20, OL-5).
+  "assistant.error.action.retry": "Try Again",
+  "assistant.error.action.settings": "Assistant Settings…",
+  "assistant.error.action.credits": "Add Credit on OpenRouter",
+  "assistant.error.action.creditsFailed":
+    "OpenRouter's page didn't open. Add credit at openrouter.ai.",
   // Cost, in US dollars as OpenRouter bills (AIA-8).
   "assistant.cost.reply": "This reply cost {cost}",
   "assistant.cost.free": "No cost shown for this reply",
@@ -178,6 +188,20 @@ export const assistant = {
   "assistant.waiting.afterChanges": "Sends once you apply or discard this reply's changes",
   "assistant.waiting.edit": "Edit",
   "assistant.waiting.remove": "Remove",
+  // A question the assistant asks before acting on a vague request (5.16, OL-1).
+  "assistant.question.title": "The assistant asks",
+  "assistant.question.announce": "The assistant asks: {question}",
+  "assistant.question.answers": "Answers",
+  "assistant.question.recommended": "Recommended",
+  "assistant.question.note": "Add a note (optional)",
+  "assistant.question.orType": "Or type your own answer below.",
+  "assistant.question.yourAnswer": "Your answer",
+  "assistant.question.yourNote": "Your note",
+  "assistant.question.unanswered": "Not answered.",
+  "assistant.question.send": "Send as Your Answer",
+  // What to ask next, after a reply that changed the site (5.17, OL-2).
+  "assistant.suggestions.title": "You could ask next",
+  "assistant.suggestions.send": "Ask “{suggestion}”",
   // Settings › Assistant and its dialog (6.9c, AIA-6, AIA-8).
   "assistant.settings.title": "Assistant",
   "assistant.settings.line":

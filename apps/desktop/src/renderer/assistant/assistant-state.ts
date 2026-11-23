@@ -6,7 +6,9 @@ import type {
   AssistantStatus,
   ConversationTurn,
   HeldChange,
+  QuestionAnswer,
   ReplyLink,
+  ReplyQuestion,
   ReplyStep,
 } from "../../shared/ipc/assistant.js";
 import { reportFailure } from "../log.js";
@@ -16,8 +18,13 @@ import type { HeldOutcome } from "./HeldCard.js";
 /** What was selected when a message was sent (ADR 0026 §6). */
 type MessageContext = Parameters<AssistantApi["send"]>[2];
 
+/** A question a reply asked the person (5.16), with their answer once given. */
+export type PanelQuestion = ReplyQuestion & { readonly answer?: QuestionAnswer | undefined };
+
 /** A turn as the panel shows it: the conversation view's, with what the review card needs. */
 type PanelTurn = TurnView & {
+  /** The questions it asked the person (5.16, OL-1). */
+  readonly questions: readonly PanelQuestion[];
   readonly steps: readonly ReplyStep[];
   readonly links: readonly ReplyLink[];
   /** The changes it holds for the person to apply (6.9e, _Review before applying_). */
@@ -26,6 +33,8 @@ type PanelTurn = TurnView & {
   readonly heldOutcome?: HeldOutcome | undefined;
   /** Held changes it couldn't make when they were applied, as the site had changed. */
   readonly refused?: readonly HeldChange[] | undefined;
+  /** What the person might ask next (5.17, OL-2): none unless it changed the site. */
+  readonly suggestions: readonly string[];
 };
 
 /** What the assistant's panel shows for the site open in the window. */
@@ -43,6 +52,8 @@ type AssistantPanelState = {
   readonly safetyVersionId: string | undefined;
   /** The reply whose held changes are being applied (6.9e). */
   readonly applying: string | undefined;
+  /** The question whose answer is on its way to main (5.16), by its call's id. */
+  readonly answering: string | undefined;
   /**
    * A message sent while a reply was under way (5.19, OL-4): held, and sent by itself when the
    * reply finishes, with what was selected when it was written.
@@ -75,8 +86,25 @@ function panelTurn(turn: ConversationTurn): PanelTurn {
   return {
     ...turn,
     held: turn.held ?? [],
+    questions: turn.questions ?? [],
+    suggestions: turn.suggestions ?? [],
     tools: turn.steps.map((step) => ({ callId: step.entryId, state: "done" as const, step })),
   };
+}
+
+/**
+ * The question the reply under way waits on (5.16): its last, while unanswered. What the person
+ * types in the box answers it.
+ */
+export function questionWaiting(
+  turns: readonly PanelTurn[],
+  replying: string | undefined,
+): (PanelQuestion & { readonly replyId: string }) | undefined {
+  if (replying === undefined) return undefined;
+  const last = turns.find((each) => each.replyId === replying)?.questions.at(-1);
+  return last === undefined || last.answer !== undefined
+    ? undefined
+    : { ...last, replyId: replying };
 }
 
 /** The panel's state, and what changes it. */
@@ -115,6 +143,11 @@ export type AssistantPanelModel = {
   readonly applyHeld: (replyId: string) => Promise<void>;
   /** Discards reply `replyId`'s held changes (6.9e): the site stays as it is. */
   readonly discardHeld: (replyId: string) => Promise<void>;
+  /**
+   * Answers the question `callId` that reply `replyId` waits on (5.16): whether main took it. The
+   * reply goes on with it; an answer it didn't take (the reply has stopped) stays for the box.
+   */
+  readonly answer: (replyId: string, callId: string, answer: QuestionAnswer) => Promise<boolean>;
   /** Stops following main's events. */
   readonly dispose: () => void;
 };
@@ -133,6 +166,7 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
     refused: undefined,
     safetyVersionId: undefined,
     applying: undefined,
+    answering: undefined,
     waiting: undefined,
     returned: undefined,
     tried: undefined,
@@ -184,6 +218,8 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
                 steps: [],
                 links: [],
                 held: [],
+                questions: [],
+                suggestions: [],
               },
             ],
           },
@@ -231,6 +267,15 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
           };
         });
         return;
+      case "question": {
+        const { callId, question, answers } = event;
+        turn(event.replyId, (each) =>
+          each.questions.some((asked) => asked.callId === callId)
+            ? each
+            : { ...each, questions: [...each.questions, { callId, question, answers }] },
+        );
+        return;
+      }
       case "safety-version":
         state.setState({ safetyVersionId: event.versionId });
         return;
@@ -243,6 +288,7 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
           steps: event.steps,
           links: event.links,
           held: event.held ?? [],
+          suggestions: event.suggestions ?? [],
         }));
         reread(event.replyId);
         state.setState(({ status, replying }) => ({
@@ -434,6 +480,26 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
         discarding.delete(replyId);
         reportFailure("assistant.discard", error);
       });
+    },
+    answer: async (replyId, callId, answer) => {
+      if (state.getState().answering !== undefined) return false;
+      state.setState({ answering: callId });
+      try {
+        const result = await api.answer(session, replyId, callId, answer);
+        if (result.status !== "answered") return false;
+        turn(replyId, (each) => ({
+          ...each,
+          questions: each.questions.map((asked) =>
+            asked.callId === callId ? { ...asked, answer } : asked,
+          ),
+        }));
+        return true;
+      } catch (error) {
+        reportFailure("assistant.answer", error);
+        return false;
+      } finally {
+        state.setState({ answering: undefined });
+      }
     },
     dispose: unsubscribe,
   };

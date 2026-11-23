@@ -68,10 +68,11 @@ const nativeMenusSchema = z
 export type NativeMenus = z.infer<typeof nativeMenusSchema>;
 
 /**
- * The pages on other websites Site Check's guides open (3.17, SEO-7), by name: main knows their
- * fixed addresses, so the renderer can't open any other.
+ * The pages on other websites the app opens by name: Site Check's guides (3.17, SEO-7), and
+ * OpenRouter's page for adding credit, from the assistant's *out of credit* (5.20, OL-5). Main
+ * knows their fixed addresses, so the renderer can't open any other.
  */
-const GUIDES = ["businessProfile", "searchConsole"] as const;
+const GUIDES = ["businessProfile", "searchConsole", "openRouterCredits"] as const;
 
 /** One of {@link GUIDES}. */
 export type Guide = (typeof GUIDES)[number];

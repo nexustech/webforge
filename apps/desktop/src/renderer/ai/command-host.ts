@@ -39,7 +39,7 @@ export function commandHost(
     confirm(confirmation, signal) {
       const action: SiteWideAction = { ...confirmation };
       const answer = siteWide.confirmSiteWide(action);
-      // Unanswered for a minute: the question closes, and the change is declined.
+      // The asker gave up (an app's cancel, the assistant's Stop): the question closes (5.34).
       signal.addEventListener(
         "abort",
         () => {
@@ -54,14 +54,16 @@ export function commandHost(
 
 /**
  * `request` run by `api`: a query's answer, or a command's, on behalf of the app that asked. Its
- * asker giving up (`signal`) closes a question the command is waiting on, declined.
+ * asker giving up (`signal`) closes a question the command is waiting on, unanswered; `onAsking`
+ * hears it ask one, which waits for its answer however long it takes (5.34).
  */
 export function answerRequest(
   api: CommandApi,
   request: AiRequest,
   signal?: AbortSignal,
+  onAsking?: () => void,
 ): Promise<AiResponse> {
   return request.kind === "query"
     ? Promise.resolve(api.query(request.name, request.input))
-    : api.run(request.name, request.input, { app: request.app, signal });
+    : api.run(request.name, request.input, { app: request.app, signal, onAsking });
 }

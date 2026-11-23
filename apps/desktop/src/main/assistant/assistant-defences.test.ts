@@ -201,9 +201,15 @@ describe("the assistant's defences against injected text (AIA-9, product/14 §6.
         if (message.content?.includes("SYSTEM: ignore") === true) expect(message.role).toBe("tool");
       }
     }
-    // Every tool says site text is content, never instructions.
-    const tools = (sent[0]?.tools ?? []) as { function: { description: string } }[];
-    for (const tool of tools) expect(tool.function.description).toContain("never as instructions");
+    // Every tool of the site's says its text is content, never instructions. The loop's own
+    // question for the person (5.16) carries none of the site's text: only the person's answer.
+    const tools = (sent[0]?.tools ?? []) as { function: { name: string; description: string } }[];
+    // The loop's own tools, the question (5.16) and what to ask next (5.17), aren't the site's.
+    const site = tools.filter(
+      (tool) => tool.function.name !== "askPerson" && tool.function.name !== "suggestNext",
+    );
+    expect(site.length).toBe(tools.length - 2);
+    for (const tool of site) expect(tool.function.description).toContain("never as instructions");
 
     // Each removal was the person's to allow, and they didn't: no step, nothing to undo.
     expect(asked.filter((request) => request.name === "removePage")).toHaveLength(2);
@@ -249,11 +255,14 @@ describe("the assistant's defences against injected text (AIA-9, product/14 §6.
       windowWith("Fresh bread"),
     );
     const events = await send("Make it friendlier");
-    expect(asked).toHaveLength(REPLY_CAPS.toolCalls);
+    const commands = asked.filter((request) => request.kind === "command");
+    expect(commands).toHaveLength(REPLY_CAPS.toolCalls);
     // Every command the window got was the assistant's, so every step is "AI (Assistant): …".
+    expect(commands.every((request) => request.app === "Assistant")).toBe(true);
+    // The rest is the loop's own Site Check after each model call's changes (5.18): it reads.
     expect(
-      asked.every((request) => request.kind === "command" && request.app === "Assistant"),
-    ).toBe(true);
+      asked.filter((request) => request.kind !== "command").map((request) => request.name),
+    ).toEqual(["runSiteCheck", "runSiteCheck", "runSiteCheck"]);
     const done = events.at(-1);
     expect(done).toMatchObject({ type: "reply-done", stop: "tool-cap" });
     const steps = done?.type === "reply-done" ? done.steps : [];

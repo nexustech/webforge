@@ -74,7 +74,9 @@ export function aiAppsFeature(deps: AiAppsFeatureDeps): AiAppsFeature {
           }),
           deps.credentials,
         ),
-        ask: (request) => ai.ask(request),
+        // With the app's id, which the bridge's cancel finds a command's question by (5.34).
+        ask: (request, appId) => ai.ask(request, appId),
+        cancel: (appId) => ai.cancel(appId),
         briefs,
         info: deps.info,
         // Version History's, for the site open now: none to save without one.

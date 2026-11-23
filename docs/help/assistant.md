@@ -4,7 +4,7 @@ id: assistant
 title: The assistant
 summary: Ask {appName}'s built-in assistant to change your site, and check, keep or undo what it changed.
 related: [settings, undo-and-history, version-history, ai-apps]
-updated: 2026-11-22
+updated: 2026-11-23
 status: partial
 ---
 
@@ -88,6 +88,16 @@ While a reply is being written, you can type your next message. Press Enter or c
 
 Each reply says what it cost, and the top of the panel shows this month's spend against your limit. **New Conversation** starts again.
 
+### When the assistant asks first
+
+If what you asked could mean several things, such as "Make it look more professional", the assistant may ask you one short question before it changes anything. A card under its reply, _The assistant asks_, shows the question and up to four answers, the one it recommends first, marked _Recommended_.
+
+- Click an answer to choose it. To say more, type in **Add a note (optional)** first, such as "Keep our logo as it is".
+- Or type your own answer in **Message the assistant** and press Enter or click **Send as Your Answer**.
+- The same reply then carries on with your answer, and the card keeps what you chose.
+
+Nothing on your site changes while it waits, and it asks about each thing once in a reply. Click **Stop** to end the reply without answering: the card then says _Not answered_. A question doesn't ask your permission for a change: changes that need it ask as they always do.
+
 While it works:
 
 - **It reads before it changes.** It looks at your pages and their sections through the same tools AI apps use, and changes only what you asked.
@@ -101,6 +111,8 @@ A link in a reply shows its address beside it. Clicking it opens it in your brow
 
 ## Checking what it changed
 
+Before the assistant says it's done, it checks its work. Once it has changed your site, {appName} runs [Site Check](site-check.md) on the pages it changed, on your computer, and gives the assistant what it found. The assistant's last message says what it changed and names any problem the check found there, such as a picture with no description. It doesn't say a change worked unless the check or the site showed it. A reply that only answers a question, or changes nothing, runs no check.
+
 After a reply that changed your site, a card says how many changes it made:
 
 - Click a change to show it on the page.
@@ -110,6 +122,10 @@ After a reply that changed your site, a card says how many changes it made:
 
 If you've made other changes since, the card can't undo them on their own. Click **Open Version History** and restore the version saved before the assistant's changes. See [Version History](version-history.md).
 
+### What to ask next
+
+Under the card, _You could ask next_ may offer two or three short requests that follow on from what it changed, such as "Add our opening hours to the Contact page". Click one to send it as your next message, just as if you'd typed it. They go once you send anything. A reply that changed nothing, or that you stopped, offers none. If you [review changes first](#reviewing-changes-first), they appear once you apply the changes, and not if you discard them.
+
 ## Reviewing changes first
 
 With **Review changes before they're made** on, in Assistant Settings under **Advanced**, the assistant works on a copy of your site and changes nothing on it until you say so. After its reply, a card lists what it would change, and any links to other websites by their address.
@@ -118,3 +134,13 @@ With **Review changes before they're made** on, in Assistant Settings under **Ad
 - **Discard** drops them. Your site is as it was.
 
 Only the last reply's changes wait: sending a new message drops the ones before, and so do **New Conversation** and opening another site.
+
+## When something goes wrong
+
+If a message can't be sent, or a reply stops part way, the panel says why, and a button under it does something about it where it can:
+
+- **Try Again** sends the message again: after the assistant couldn't be reached, too many messages at once, or another problem with the service. A message that wasn't sent stays in the box, and **Try Again** sends it from there. If the reply changed your site before it stopped, there's no **Try Again**, so nothing is made twice: look at what it changed, each a step in [Undo History](undo-and-history.md), then ask for what's left.
+- **Assistant Settings…** opens Settings › Assistant: to sign in, or sign in again; to choose a model, or another one when yours isn't available; to raise your monthly limit; or to use a secure (https://) address for your server.
+- **Add Credit on OpenRouter** opens OpenRouter's page in your browser when your account there has run out of credit. With your own server, the message says the server refused, and its account is the place to look.
+
+Only the last reply's problem has buttons. While the assistant is still replying, use **Stop**.

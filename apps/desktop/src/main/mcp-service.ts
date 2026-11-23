@@ -70,6 +70,11 @@ type AssistantConnection = { readonly client: Client; close(): Promise<void> };
 export type McpServiceOptions = {
   readonly apps: AiApps;
   readonly ask: AiBridge["ask"];
+  /**
+   * Gives up on an app's command waiting for the window, by the app's id: its question closes,
+   * unanswered (5.34). For an app that cancels its request, or disconnects.
+   */
+  readonly cancel?: AiBridge["cancel"] | undefined;
   readonly info: McpServerInfo;
   /**
    * Saves an automatic version of the open site named `name`, after the window's last edits
@@ -187,6 +192,21 @@ export function createMcpService(options: McpServiceOptions): McpService {
   };
 
   /**
+   * `asked` of the window for `app`. The app giving up on a command (its cancel, or its connection
+   * closing) closes a question the command waits on, unanswered: no one is left to hear the
+   * person's answer (5.34).
+   */
+  const askWindow = (app: McpApp, asked: AiRequest, signal: AbortSignal | undefined) => {
+    const answer = options.ask(asked, app.id);
+    if (signal === undefined || asked.kind !== "command") return answer;
+    const giveUp = () => options.cancel?.(app.id);
+    if (signal.aborted) giveUp();
+    signal.addEventListener("abort", giveUp, { once: true });
+    void answer.finally(() => signal.removeEventListener("abort", giveUp)).catch(() => undefined);
+    return answer;
+  };
+
+  /**
    * `app`'s requests, each answered where its tool's definition says (#981), with `before` run
    * ahead of those whose definition saves a version first.
    */
@@ -200,7 +220,7 @@ export function createMcpService(options: McpServiceOptions): McpService {
         tool.answeredBy === "main"
           ? mainTool(app, signal)
           : // The window's bridge knows each command's app by id, for a cancel (6.9b).
-            (asked) => options.ask(asked, app.id),
+            (asked) => askWindow(app, asked, signal),
       );
       void countRequest(app, request.name, answer);
       return answer;

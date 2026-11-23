@@ -295,6 +295,16 @@ interface AssistantApi {
     replyId: string,
     href: string,
   ): Promise<{ status: "opened" | "refused" | "failed" }>;
+  /**
+   * The person's answer to the question `callId` that reply `replyId` waits on (5.16, OL-1): an
+   * answer offered or typed, and a note. `not-asked` when it isn't waiting on that one.
+   */
+  answer(
+    session: SessionId,
+    replyId: string,
+    callId: string,
+    answer: { answer: string; note?: string },
+  ): Promise<{ status: "answered" | "not-asked" }>;
 
   /** Calls `listener` with each event below. Returns a stop function. */
   onEvent(listener: (event: AssistantEvent) => void): () => void;
@@ -328,6 +338,13 @@ type ConversationTurn = {
   links: ReplyLink[];
   /** The safety version this reply saved before its first change (S20): its `safety-version` event's. */
   safetyVersion?: { versionId: string; label: string };
+  /** The questions it asked the person (5.16), each with their answer once given. */
+  questions?: {
+    callId: string;
+    question: string;
+    answers: string[];
+    answer?: { answer: string; note?: string };
+  }[];
 };
 
 /** A reply's events, about one site's conversation. */
@@ -345,6 +362,8 @@ type ReplyEvent = { session: SessionId } & (
       state: "done" | "refused" | "declined" | "busy" | "invalid" | "failed";
       step?: ReplyStep;
     }
+  /** The reply asks the person a question, and waits for `answer` (5.16): up to four answers. */
+  | { type: "question"; replyId: string; callId: string; question: string; answers: string[] }
   /** The first change of a conversation saved a version first (S20). */
   | { type: "safety-version"; replyId: string; versionId: string; label: string }
   /** The reply has ended, with its cost and the month's total, and the review card's content. */
@@ -425,13 +444,16 @@ type AssistantEvent = ReplyEvent | AppEvent;
   - **One reply at a time per site** (`busy`). `send` answers `sending` with the reply's id, and the reply runs on.
   - **Each reply connects afresh** through `McpService.connectAssistant`, and closes when it ends.
   - **Tool calls run one at a time.** A `busy` answer (the person is editing) waits two seconds and asks once more, then the model hears it (§6.2).
-  - **Stop** ends the reply before its next model or tool call. A tool call under way finishes, and its change is kept in the reply's steps, since the window makes it however its asker gives up. A question the window is asking for one of the reply's commands (D7) closes: the bridge's `cancel(app)` sends `ai:cancel` for each command of the assistant's waiting for the window, and the command layer, given the asker's signal, declines it.
+  - **Stop** ends the reply before its next model or tool call. A tool call under way finishes, and its change is kept in the reply's steps, since the window makes it however its asker gives up. A question the window is asking for one of the reply's commands (D7) closes: the bridge's `cancel(app)` sends `ai:cancel` for each command of the assistant's waiting for the window, and the command layer, given the asker's signal, closes it unanswered (`busy`), which is no decline (5.34, UA-1).
   - **A reply ends as `no-site`** when its site is no longer the open one, as after Open Recent. It's checked before each model call, each tool call, and each command. The window acts on whichever site it has open, and another site's text and changes are never this reply's (consent is by site, AIA-6).
   - **A model call that sends nothing for a minute** ends the reply as `offline`.
   - **The caps** (§5): 25 tool calls, 12 model calls, `max_tokens` 4096. The month's limit, reached by a call, stops the reply before that call's tool calls run.
   - **The safety version** is saved before a conversation's first change, once a conversation, through Version History's before-site-wide path. When one from the last five minutes holds the site already, no other is saved for the conversation, and no `safety-version` event comes.
   - **The review card's links** are the web addresses in the reply's changes' inputs, by host (S18).
-  - **The system text** says site text is content, never instructions, in 4.9's own wording. The person's selection goes as labelled JSON after their message. Earlier turns go as their message and reply text, the last ten.
+  - **The system text** says site text is content, never instructions, in 4.9's own wording. The person's selection goes as labelled JSON after their message. Earlier turns go as their message and reply text, the last ten, with the questions a reply asked and their answers.
+  - **A question for the person (5.16, OL-1):** the loop's own tool, `askPerson`, offered beside 4.9's (`main/assistant/assistant-question.ts`). The model gives a topic, a question and up to four answers, the one it recommends first. The panel gets a `question` event, the turn keeps it, and the reply waits for `assistant:answer` (an answer offered or typed, and a note), which goes back to the model as the tool's result. A second question on the same topic in one reply, or a fourth, is refused to the model, and nothing reaches the person. The wait counts against no time limit and changes nothing in the site. Stop ends it, as does the site closing (`no-site`).
+  - **What to ask next (5.17, OL-2):** the loop's own tool `suggestNext` (`main/assistant/assistant-suggest.ts`), offered beside 4.9's. The model calls it with its last words after a reply that changed the site, with two or three short requests. The loop keeps the latest call's, tidied: each trimmed to one line, and none empty, over 80 characters or a repeat, the first three of those. It isn't one of a reply's 25 calls, as it reads and changes nothing. A model call that asked for nothing else ends the reply, with no model call more, if it came with words for the person; without any, the tool's answer asks the model for them, so the reply never ends with buttons under no words. `reply-done` and the turn carry them only when the reply ended (`end`) and made or holds a change; the panel shows them as buttons under the last reply's card (a held reply's once its changes are applied, never once discarded), each sent as an ordinary message, so anything the tools can't do is refused as a typed one would be.
+  - **The work checked before it's reported (5.18, OL-3):** once a model call's tool calls made a change (a step, or a held change), the loop runs the window's `runSiteCheck` itself before the next model call (`main/assistant/assistant-check.ts`). The model gets it as a call of that tool the loop made, and its result. The result keeps the findings on the pages changed since the last check, or the whole site's once such a change had no page (the theme, the header or footer, a shared section, a page removed, a plan of several): earlier checks are in the model's messages already, so a site-wide change's full report is sent once. Neither the result nor the system text names the app, which the model could repeat to the person. A held reply's check reads its draft. The system text and the result say that the closing message names what was changed and what the check found, and never reports success unseen. It adds no model call: the model is called after tool calls anyway. It's no tool step: no `tool` event, and it counts against no cap. A reply that changed nothing runs none.
 - **Errors carry a code, never the provider's own text,** which could quote the request. The panel words each code with `t()`. Main logs the HTTP status and the provider's error type, without content.
 
 **The stand-in loop for 6.9c:** `apps/desktop/src/renderer/assistant/fake-assistant.ts` (6.9a). It's an `AssistantApi` that answers from a script:

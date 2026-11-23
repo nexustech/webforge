@@ -370,7 +370,7 @@ export const APP_START_TIMEOUT_MS = 30_000;
  * for the first time. That is a few seconds on the developer's computer, but the first compile on a
  * cold, busy CI runner went past Playwright's 5 s default (#296, Windows). The one place to tune it.
  */
-const CANVAS_START_TIMEOUT_MS = 30_000;
+export const CANVAS_START_TIMEOUT_MS = 30_000;
 
 /**
  * Waits until `page`'s canvas shows the site with its compiled CSS (1.12) and the fonts it uses,

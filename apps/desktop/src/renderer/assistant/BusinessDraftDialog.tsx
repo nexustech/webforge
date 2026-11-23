@@ -12,6 +12,7 @@ import { plural, t } from "@webforge/i18n";
 import { useId, useState } from "react";
 import type { BusinessText } from "./business-draft.js";
 import { SiteConsent } from "./Consent.js";
+import { errorKey } from "./error-actions.js";
 import type { DraftState } from "./use-draft.js";
 
 /** Props of {@link BusinessDraftDialog}. */
@@ -55,7 +56,7 @@ export function BusinessDraftDialog(props: BusinessDraftDialogProps) {
     state.step === "denied"
       ? t("assistant.siteDenied")
       : state.step === "failed"
-        ? t(`assistant.error.${state.error}`)
+        ? t(errorKey(state.error, state.provider))
         : state.step === "writing"
           ? t("assistant.business.writing")
           : undefined;

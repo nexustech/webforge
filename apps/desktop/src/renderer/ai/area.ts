@@ -50,7 +50,10 @@ export const aiRequestsArea: Area<WindowContext> = {
     // The assistant's held changes (6.9e): a draft of the site, never the site itself.
     const stages = createStages(host);
     const appTools = createAppTools({
-      site: () => session.history.document.getState(),
+      // A held reply's check reads its draft (5.18): what its changes would leave.
+      site: (stage) =>
+        (stage === undefined ? undefined : stages.site(stage)) ??
+        session.history.document.getState(),
       allowListConfirmed: () => codeTrust.allowListConfirmed.getState(),
       onNetlify: () => onNetlify.getState(),
       ignored: () => siteCheckIgnored.initial,
@@ -111,7 +114,7 @@ export const aiRequestsArea: Area<WindowContext> = {
     };
 
     // For the opening of the site this page was loaded for (#663).
-    const stopAnswering = api.ai.onRequest(siteSession(), async (request, onCancel) => {
+    const stopAnswering = api.ai.onRequest(siteSession(), async (request, onCancel, asking) => {
       // Main's cancel (the assistant's Stop) closes a question the command waits on.
       const cancel = new AbortController();
       onCancel(() => cancel.abort());
@@ -120,7 +123,8 @@ export const aiRequestsArea: Area<WindowContext> = {
       const own = answerWindowTool(windowTools, request);
       if (own !== undefined) return own;
       if (request.stage !== undefined) return stages.answer({ ...request, stage: request.stage });
-      return answerRequest(commandApi, request, cancel.signal);
+      // A question for the person waits for its answer: main lifts its time limit (5.34).
+      return answerRequest(commandApi, request, cancel.signal, asking);
     });
     return () => {
       stopAnswering();

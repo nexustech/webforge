@@ -1,4 +1,7 @@
+import { toast } from "@webforge/editor-ui";
+import { t } from "@webforge/i18n";
 import type { Area, WindowContext } from "../editor/areas.js";
+import { reportFailure } from "../log.js";
 import { siteSession } from "../storage/index.js";
 import { registerAssistantExamples } from "./register-assistant-examples.js";
 import { registerAssistantPanel } from "./register-assistant-panel.js";
@@ -20,6 +23,15 @@ export const assistantPanelArea: Area<WindowContext> = {
       api: api.assistant,
       sessionId: siteSession(),
       openSettings: assistantSettings.open,
+      // OpenRouter's page for credit (5.20), by its name: main knows the address.
+      openCredits: () => {
+        api.app
+          .openGuide("openRouterCredits")
+          .then((opened) => {
+            if (!opened) toast.error(t("assistant.error.action.creditsFailed"));
+          })
+          .catch((error: unknown) => reportFailure("assistant.credits", error));
+      },
       openExamples: () => examples.open(),
     });
     const examples = registerAssistantExamples(commands, windowDialogs, panel.tryExample);

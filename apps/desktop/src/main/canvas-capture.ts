@@ -39,26 +39,44 @@ function oneColour(bitmap: Uint8Array): boolean {
 }
 
 /**
+ * A picture in one colour, refused: taken again up to `retries` times, `everyMs` apart, in case the
+ * window doesn't show the drawing yet (#1323), then refused as of nothing drawn (#1300).
+ */
+export type RefuseOneColour = { readonly retries: number; readonly everyMs: number };
+
+const live = (window: CapturedWindow) => !window.isDestroyed() && !window.webContents.isCrashed();
+
+/** Resolves after `ms`. */
+const after = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
  * The element `selector` finds, as the window shows it, as a 480-pixel-wide JPEG: for the site's
  * picture in the Recent list (1.8, #1175). `undefined` without a window, with a crashed renderer,
  * without the element (never the whole window, editor and all), or for an empty image; with
- * `refuseOneColour`, also for an image in one colour, of nothing drawn (#1300).
+ * `refuseOneColour`, also for an image in one colour, after taking it again as that says.
  */
 export async function captureArea(
   window: CapturedWindow | undefined,
   selector: string,
-  options: { readonly refuseOneColour?: boolean } = {},
+  options: { readonly refuseOneColour?: RefuseOneColour } = {},
 ): Promise<Uint8Array | undefined> {
-  if (window === undefined || window.isDestroyed() || window.webContents.isCrashed()) {
-    return undefined;
-  }
+  if (window === undefined || !live(window)) return undefined;
   const area = await areaOf(window.webContents, selector);
   if (area === undefined) return undefined;
-  const image = await window.webContents.capturePage(area);
-  if (image.isEmpty()) return undefined;
-  const small = image.resize({ width: 480 });
-  if (options.refuseOneColour === true && oneColour(small.toBitmap())) return undefined;
-  return small.toJPEG(75);
+  const take = async () => {
+    const image = await window.webContents.capturePage(area);
+    return image.isEmpty() ? undefined : image.resize({ width: 480 });
+  };
+  let picture = await take();
+  const refuse = options.refuseOneColour;
+  for (let retry = 0; refuse !== undefined && picture !== undefined; retry++) {
+    if (!oneColour(picture.toBitmap())) break;
+    if (retry === refuse.retries) return undefined;
+    await after(refuse.everyMs);
+    if (!live(window)) return undefined;
+    picture = await take();
+  }
+  return picture?.toJPEG(75);
 }
 
 /**

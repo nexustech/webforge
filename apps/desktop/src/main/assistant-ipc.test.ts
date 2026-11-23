@@ -44,6 +44,7 @@ const unbuiltAssistant: AssistantService = {
   conversation: async () => [],
   applyHeld: async () => ({ status: "nothing-held" }),
   discardHeld: async () => undefined,
+  answer: async () => ({ status: "not-asked" }),
   openLink: async () => ({ status: "refused" }),
 };
 
@@ -106,6 +107,25 @@ describe("the assistant IPC calls (6.9a, ADR 0026 §7)", () => {
       status: "refused",
     });
     expect(service.openLink).toHaveBeenCalledWith(SESSION, REPLY, "https://example.com/");
+    const chosen = { answer: "Calm and modern", note: "Keep the logo" };
+    expect(await call("assistant:answer", SESSION, REPLY, "call-1", chosen)).toEqual({
+      status: "not-asked",
+    });
+    expect(service.answer).toHaveBeenCalledWith(SESSION, REPLY, "call-1", chosen);
+  });
+
+  it("checks an answer to a question (5.16): something said, a note no longer than it may be", async () => {
+    const call = handlers(spied());
+    await expect(
+      call("assistant:answer", SESSION, REPLY, "call-1", { answer: " " }),
+    ).rejects.toThrow();
+    await expect(
+      call("assistant:answer", SESSION, REPLY, "call-1", { answer: "Yes", note: "x".repeat(1001) }),
+    ).rejects.toThrow();
+    await expect(call("assistant:answer", SESSION, REPLY, "", { answer: "Yes" })).rejects.toThrow();
+    await expect(
+      call("assistant:answer", SESSION, REPLY, "call-1", { answer: "Yes", extra: true }),
+    ).rejects.toThrow();
   });
 
   it("checks what it's given: no empty or overlong message, no limit out of range", async () => {

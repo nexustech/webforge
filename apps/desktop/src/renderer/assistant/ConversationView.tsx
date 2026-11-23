@@ -1,7 +1,8 @@
 import { EmptyState } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import type { ReactNode } from "react";
-import { ASSISTANT_ERRORS } from "../../shared/ipc/assistant.js";
+import type { AssistantStatus } from "../../shared/ipc/assistant.js";
+import { errorKey } from "./error-actions.js";
 import { money } from "./money.js";
 import { ReplyText } from "./ReplyText.js";
 
@@ -54,6 +55,14 @@ export type ConversationViewProps = {
   readonly onOpenLink: (href: string, replyId: string) => void;
   /** Drawn under a reply that has ended: 6.9c's review card. */
   readonly afterReply?: (turn: TurnView) => ReactNode;
+  /** Drawn under a reply's text and tool calls, while it runs too: the questions it asked (5.16). */
+  readonly asked?: (turn: TurnView) => ReactNode;
+  /**
+   * Where requests go, for a failed reply's message (5.20): OpenRouter's, or another server's. The
+   * provider now, for older replies too: one that failed before a change of provider reads as the
+   * new one's, which is accepted, as only the last reply has buttons.
+   */
+  readonly provider?: AssistantStatus["provider"]["kind"] | undefined;
 };
 
 /** The "AI (Assistant): " every step's label starts with, which the reply needn't repeat. */
@@ -94,10 +103,14 @@ function Turn({
   turn,
   onOpenLink,
   afterReply,
+  asked,
+  provider,
 }: {
   readonly turn: TurnView;
   readonly onOpenLink: ConversationViewProps["onOpenLink"];
   readonly afterReply: ConversationViewProps["afterReply"];
+  readonly asked: ConversationViewProps["asked"];
+  readonly provider: ConversationViewProps["provider"];
 }) {
   const ended = turn.state !== "replying";
   return (
@@ -114,12 +127,13 @@ function Turn({
           <ReplyText text={turn.reply} onOpenLink={(href) => onOpenLink(href, turn.replyId)} />
         )}
         {turn.tools.length === 0 ? null : <ToolSummary tools={turn.tools} />}
+        {asked?.(turn)}
         {turn.state === "done" && turn.stop !== undefined && turn.stop !== "end" ? (
           <p className="m-0 text-xs text-muted-foreground">{t(`assistant.stop.${turn.stop}`)}</p>
         ) : null}
         {turn.state === "failed" ? (
           <p role="alert" className="m-0 text-xs text-destructive-text">
-            {t(errorKey(turn.error))}
+            {t(errorKey(turn.error, provider))}
           </p>
         ) : null}
         {ended && turn.costUsd !== null ? (
@@ -133,20 +147,19 @@ function Turn({
   );
 }
 
-/** The message for an error code. */
-export function errorKey(code: string | undefined) {
-  // Any code the panel doesn't know (a newer main's) is worded as *failed*.
-  const known = ASSISTANT_ERRORS.find((each) => each === code) ?? "failed";
-  return `assistant.error.${known}` as const;
-}
-
 /**
  * The assistant's conversation on this site (6.9c, ADR 0026 §7): each message and its reply as it
  * streams, in limited Markdown and never as HTML, what the reply's tool calls did, why it stopped
  * early, and its cost in money. A reply is announced politely once it has ended (a log, busy while
  * one streams).
  */
-export function ConversationView({ turns, onOpenLink, afterReply }: ConversationViewProps) {
+export function ConversationView({
+  turns,
+  onOpenLink,
+  afterReply,
+  asked,
+  provider,
+}: ConversationViewProps) {
   if (turns.length === 0) {
     return <EmptyState>{t("assistant.empty")}</EmptyState>;
   }
@@ -160,7 +173,14 @@ export function ConversationView({ turns, onOpenLink, afterReply }: Conversation
     >
       <ol className="m-0 flex list-none flex-col gap-4 p-3">
         {turns.map((turn) => (
-          <Turn key={turn.replyId} turn={turn} onOpenLink={onOpenLink} afterReply={afterReply} />
+          <Turn
+            key={turn.replyId}
+            turn={turn}
+            onOpenLink={onOpenLink}
+            afterReply={afterReply}
+            asked={asked}
+            provider={provider}
+          />
         ))}
       </ol>
     </div>
