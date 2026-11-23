@@ -889,3 +889,89 @@ describe("Review before applying (6.9e)", () => {
     expect(await service.applyHeld(SESSION, second.replyId)).toEqual({ status: "nothing-held" });
   });
 });
+
+describe("a question for the person (5.16, OL-1)", () => {
+  const QUESTION = {
+    topic: "style",
+    question: "Which look would you like?",
+    answers: ["Calm and modern", "Bold"],
+  };
+  /** A reply that asks first, then answers: the bodies of its model calls. */
+  const asking = () => {
+    const bodies: Record<string, unknown>[] = [];
+    const chat = (body: Record<string, unknown>) => {
+      bodies.push(body);
+      return bodies.length === 1
+        ? sse(toolCall("askPerson", QUESTION), finished("tool_calls"))
+        : sse({ choices: [{ delta: { content: "Done." } }] }, finished("stop"));
+    };
+    return { bodies, chat };
+  };
+
+  it("tells the panel, waits for the answer, keeps both in the turn, and goes on", async () => {
+    const { bodies, chat } = asking();
+    const { service, events, versions } = await ready({ chat });
+    const sent = await service.send(SESSION, "Make it look more professional", {});
+    if (sent.status !== "sending") throw new Error("not sent");
+    const { replyId } = sent;
+
+    await until(() => expect(events.at(-1)?.type).toBe("question"));
+    expect(events.at(-1)).toEqual({
+      session: SESSION,
+      type: "question",
+      replyId,
+      callId: "call-1",
+      question: "Which look would you like?",
+      answers: ["Calm and modern", "Bold"],
+    });
+    expect(bodies).toHaveLength(1);
+    // Nothing in the site changes while it waits: no command, so no safety version either.
+    expect(versions).toEqual([]);
+    expect(events.filter((event) => event.type === "tool")).toEqual([]);
+    // Only the question it waits on, from the site it's for.
+    const chosen = { answer: "Calm and modern", note: "Keep the logo" };
+    expect(await service.answer(SESSION, replyId, "call-2", chosen)).toEqual({
+      status: "not-asked",
+    });
+    expect(await service.answer(REOPENED, replyId, "call-1", chosen)).toEqual({
+      status: "not-asked",
+    });
+
+    expect(await service.answer(SESSION, replyId, "call-1", chosen)).toEqual({
+      status: "answered",
+    });
+    await until(() => expect(events.at(-1)?.type).toBe("reply-done"));
+    expect(events.at(-1)).toMatchObject({ stop: "end" });
+    const sentBack = ((bodies[1]?.messages ?? []) as { role: string; content: string }[]).at(-1);
+    expect(sentBack).toMatchObject({ role: "tool" });
+    expect(JSON.parse(sentBack?.content ?? "")).toEqual({ status: "done", ...chosen });
+    const [turn] = await service.conversation(SESSION);
+    expect(turn?.questions).toEqual([
+      {
+        callId: "call-1",
+        question: "Which look would you like?",
+        answers: ["Calm and modern", "Bold"],
+        answer: chosen,
+      },
+    ]);
+    expect(await service.answer(SESSION, replyId, "call-1", chosen)).toEqual({
+      status: "not-asked",
+    });
+  });
+
+  it("ends the wait on Stop: the reply stops, and the question can't be answered after", async () => {
+    const { bodies, chat } = asking();
+    const { service, events } = await ready({ chat });
+    const sent = await service.send(SESSION, "Make it look more professional", {});
+    if (sent.status !== "sending") throw new Error("not sent");
+
+    await until(() => expect(events.at(-1)?.type).toBe("question"));
+    await service.stop(sent.replyId);
+    await until(() => expect(events.at(-1)?.type).toBe("reply-done"));
+    expect(events.at(-1)).toMatchObject({ stop: "stopped" });
+    expect(bodies).toHaveLength(1);
+    expect(await service.answer(SESSION, sent.replyId, "call-1", { answer: "Bold" })).toEqual({
+      status: "not-asked",
+    });
+  });
+});

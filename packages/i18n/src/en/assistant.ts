@@ -178,6 +178,17 @@ export const assistant = {
   "assistant.waiting.afterChanges": "Sends once you apply or discard this reply's changes",
   "assistant.waiting.edit": "Edit",
   "assistant.waiting.remove": "Remove",
+  // A question the assistant asks before acting on a vague request (5.16, OL-1).
+  "assistant.question.title": "The assistant asks",
+  "assistant.question.announce": "The assistant asks: {question}",
+  "assistant.question.answers": "Answers",
+  "assistant.question.recommended": "Recommended",
+  "assistant.question.note": "Add a note (optional)",
+  "assistant.question.orType": "Or type your own answer below.",
+  "assistant.question.yourAnswer": "Your answer",
+  "assistant.question.yourNote": "Your note",
+  "assistant.question.unanswered": "Not answered.",
+  "assistant.question.send": "Send as Your Answer",
   // Settings › Assistant and its dialog (6.9c, AIA-6, AIA-8).
   "assistant.settings.title": "Assistant",
   "assistant.settings.line":
