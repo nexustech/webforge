@@ -57,6 +57,16 @@ export const ai = {
   "ai.confirm.no": "no",
   // An AI app asks for pictures or files (4.12b): its reason in its own words, quoted.
   "ai.media.title": "{app} Asks You to Add Pictures or Files",
+  // While you were away (5.36, UA-3): what an app working without asking changed meanwhile.
+  "ai.away.title": "While You Were Away",
+  "ai.away.description":
+    "An AI app worked without asking while you were away. Each change is a step in Undo History.",
+  "ai.away.app": "What {app} changed",
+  "ai.away.showPage": "Show {page}",
+  "ai.away.everyPage": "Every page",
+  "ai.away.undoAll": "Undo All of {app}'s Changes",
+  "ai.away.noVersion": "No version from before {app}'s changes was found. Open Version History.",
+  "ai.away.keep": "Keep",
   "ai.media.description":
     'Its reason: "{reason}" Only the files you choose are added to Media, and you can undo it.',
   "ai.media.addFiles": "Add Files…",

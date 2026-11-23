@@ -7,7 +7,7 @@ import type { VersionSummary } from "../../shared/ipc/versions.js";
 import type { WindowContext } from "../editor/areas.js";
 import { createPublishRequests } from "../editor/publish-requests.js";
 import { createSettingsRegistry } from "../editor/settings-registry.js";
-import { Publishing } from "../editor/window-services.js";
+import { Publishing, VersionHistory } from "../editor/window-services.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createSiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { createWindowDialogs, WindowDialogs } from "../shell/window-dialogs.js";
@@ -45,7 +45,7 @@ function setUp() {
   });
   const publishing = createPublishRequests();
   // Only what the area uses of the window's context.
-  const context = {
+  const base = {
     ...registries,
     api,
     session,
@@ -53,6 +53,14 @@ function setUp() {
     settings,
     siteWide,
     ...servicesForTest([Publishing, publishing]),
+  } as unknown as WindowContext;
+  // Its list and actions, made as the window makes the service it provides (5.36).
+  const versionHistory = versionHistoryArea.provides
+    ?.find((provision) => provision.service === VersionHistory)
+    ?.make(base);
+  const context = {
+    ...base,
+    ...servicesForTest([Publishing, publishing], [VersionHistory, versionHistory]),
   } as unknown as WindowContext;
   const remove = versionHistoryArea.register(context);
   render(<WindowDialogs registry={windowDialogs} />);

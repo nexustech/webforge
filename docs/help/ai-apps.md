@@ -131,6 +131,16 @@ Some changes ask whatever you chose:
 
 In Content mode, an app still can't change what Content mode doesn't allow.
 
+### While you were away
+
+When you come back to {appName} after an app has worked without asking, **While You Were Away** shows what it changed while you were gone, app by app and page by page. Changes that reach every page, such as the theme, are listed under **Every page**.
+
+- Click **Show** and a page's name to go to that page.
+- **Undo All of** the app's **Changes** puts your site back as it was before that app's first change, from the version _Before app's changes_ in [Version History](version-history.md). It's one step in [Undo History](undo-and-history.md), so **Undo** brings the changes back, and {appName} saves your site as it was just before, in Version History.
+- **Keep** closes it, and keeps the changes.
+
+It shows only what an app changed without asking while {appName} wasn't the window in front.
+
 In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings. It can still see Media and ask you for pictures.
 
 Before an app's first change after you open your site, {appName} saves a version of it, _Before app's changes_, in [Version History](version-history.md). It saves one for each app, however often the app reconnects, until you open the site again.

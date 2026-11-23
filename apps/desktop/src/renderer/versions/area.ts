@@ -5,7 +5,8 @@ import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 import { VERSION_NAME_MAX } from "../../shared/ipc/versions.js";
 import type { Area, WindowContext } from "../editor/areas.js";
-import { Publishing } from "../editor/window-services.js";
+import { provide } from "../editor/services.js";
+import { Publishing, VersionHistory } from "../editor/window-services.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { NameDialog } from "../shell/NameDialog.js";
 import { siteSession } from "../storage/index.js";
@@ -27,36 +28,34 @@ import { registerVersionSettings } from "./versions-settings.js";
 export const versionHistoryArea: Area<WindowContext> = {
   id: "versionHistory",
   uses: [Publishing],
-  register: ({
-    api,
-    session,
-    commands,
-    panels,
-    siteWide,
-    windowDialogs,
-    settings,
-    preferences,
-    use,
-  }) => {
-    const publishing = use(Publishing);
-    const list = createVersionList(() => api.versions.list(siteSession()));
-    const actions = createVersionActions({
-      versions: api.versions,
-      preview: api.preview,
-      sessionId: siteSession,
-      session,
-      list,
-      notify: {
-        success: (message) => toast.success(message),
-        error: (message) => toast.error(message),
-        working: (message) => {
-          const id = toast.loading(message);
-          return () => toast.dismiss(id);
+  // Its list and actions, which AI apps' While you were away restores with (5.36).
+  provides: [
+    provide(VersionHistory, ({ api, session, use }: WindowContext) => {
+      const publishing = use(Publishing);
+      const list = createVersionList(() => api.versions.list(siteSession()));
+      const actions = createVersionActions({
+        versions: api.versions,
+        preview: api.preview,
+        sessionId: siteSession,
+        session,
+        list,
+        notify: {
+          success: (message) => toast.success(message),
+          error: (message) => toast.error(message),
+          working: (message) => {
+            const id = toast.loading(message);
+            return () => toast.dismiss(id);
+          },
         },
-      },
-      restart: () => window.location.reload(),
-      republish: (version) => publishing.republish(version),
-    });
+        restart: () => window.location.reload(),
+        republish: (version) => publishing.republish(version),
+      });
+      return { list, actions };
+    }),
+  ],
+  register: ({ commands, panels, siteWide, windowDialogs, settings, preferences, use }) => {
+    const publishing = use(Publishing);
+    const { list, actions } = use(VersionHistory);
 
     const naming = createStore<{ readonly open: boolean }>(() => ({ open: false }));
     const askName = () => naming.setState({ open: true });

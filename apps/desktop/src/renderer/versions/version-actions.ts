@@ -12,11 +12,11 @@ import { openFailureMessage } from "../../shared/open-failure.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { VersionToRepublish } from "../editor/publish-requests.js";
 import type { EditorSelection } from "../editor/selection.js";
+import type { VersionActions, VersionList } from "../editor/version-history.js";
 import { reportFailure } from "../log.js";
 import { fileSizeLabel } from "../media/index.js";
 import { previewPageOf } from "../preview/index.js";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
-import type { VersionList } from "./version-list.js";
 import { fit, newSiteName, versionName } from "./version-words.js";
 
 /** What the person is told: a toast in the app. */
@@ -41,39 +41,6 @@ export type VersionActionsDeps = {
   readonly restart: () => void;
   /** Asks Publish to republish a version: its destinations open, to choose where (4.6b). */
   readonly republish: (version: VersionToRepublish) => void;
-};
-
-/** What the Version History panel and its commands do. */
-export type VersionActions = {
-  /**
-   * Shows `version`'s site in the browser as it was, read-only, at the page the editor shows (or
-   * its home page); true once opened.
-   */
-  preview(version: VersionSummary): Promise<boolean>;
-  /** Saves the person's own version, named `name` (Save Version…); true once saved. */
-  save(name: string): Promise<boolean>;
-  /**
-   * Restores `version` as one undo step, "Restored version '…'", once a version of the site as it
-   * is now is saved; true once restored.
-   */
-  restore(version: VersionSummary): Promise<boolean>;
-  /** Republishes `version` (4.6b): the site's destinations open, to choose where. */
-  republish(version: VersionSummary): void;
-  /** Deletes `version`; true once deleted. */
-  remove(version: VersionSummary): Promise<boolean>;
-  /** Opens `version` as a new site where the person chooses (P5), which replaces this one. */
-  openAsNewSite(version: VersionSummary): Promise<void>;
-  /**
-   * Clean up (P3): removes what nothing needs any more and gives the space back to the disk,
-   * saying it's working meanwhile; true once done.
-   */
-  cleanUp(): Promise<boolean>;
-  /**
-   * The automatic version before a change to every page (`setBeforeSiteWideAction`, A21): one for
-   * each action the person confirms, named after it, and one before the first theme change that
-   * asks no question in each opening of the site.
-   */
-  beforeSiteWide(action: SiteWideAction, options: { readonly asked: boolean }): Promise<void>;
 };
 
 /** A name that fits a version's: `name`, cut to the longest a version may have. */
