@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { changedDocuments, createSite, type MediaId, type SiteDoc } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProjectSession } from "./project-session.js";
 
@@ -95,7 +96,7 @@ beforeEach(() => {
 afterEach(async () => {
   await session.close();
   vi.restoreAllMocks();
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(dir, TEST_DIR_REMOVAL);
 });
 
 describe("Clean up while the site is open (4.6)", () => {

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createFontLibrary, type FontFetch, registerFontHandlers } from "./font-library.js";
@@ -117,7 +118,7 @@ const newDir = () => {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of dirs.splice(0)) rmSync(dir, TEST_DIR_REMOVAL);
 });
 
 describe("createFontLibrary: downloads (2.2, PH2-8)", () => {
