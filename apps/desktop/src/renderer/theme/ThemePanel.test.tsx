@@ -201,7 +201,8 @@ describe("the Theme tab (2.3a)", () => {
     await user.click(colourPicker("Brand"));
     screen.getByRole("slider", { name: "Hue" }).focus();
     await user.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
-    // Shown, not changed: the theme as it would be, and no step yet.
+    // Shown at the next frame, not changed: the theme as it would be, and no step yet.
+    await vi.waitFor(() => expect(previews.getState().preview).toBeDefined());
     const shown = previews.getState().preview;
     expect(shown?.chosen).toBe(false);
     expect(shown?.theme.colors.primary).not.toEqual(before);
@@ -225,7 +226,7 @@ describe("the Theme tab (2.3a)", () => {
     await user.click(colourPicker("Accent"));
     screen.getByRole("slider", { name: "Hue" }).focus();
     await user.keyboard("{End}");
-    expect(themePreviewOf(session).getState().preview).toBeDefined();
+    await vi.waitFor(() => expect(themePreviewOf(session).getState().preview).toBeDefined());
     await user.keyboard("{Escape}");
 
     expect(themePreviewOf(session).getState().preview).toBeUndefined();

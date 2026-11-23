@@ -31,17 +31,53 @@ export function themePreviewOf(session: { readonly history: object }): ThemePrev
   return store;
 }
 
-/** Shows `theme`, a colour being chosen, in place of the site's (5.30). */
+/** Each session's latest preview waiting for the next frame, with that frame's request. */
+const waiting = new WeakMap<ThemePreviewStore, { theme: ThemeTokens; readonly frame: number }>();
+
+/** Shows the preview waiting for `store`'s next frame now, if one is, rather than then. */
+function shownNow(store: ThemePreviewStore): void {
+  const next = waiting.get(store);
+  if (next === undefined) return;
+  cancelAnimationFrame(next.frame);
+  waiting.delete(store);
+  store.setState({ preview: { theme: next.theme, chosen: false } });
+}
+
+/**
+ * Shows `theme`, a colour being chosen, in place of the site's (5.30): once a frame at most, the
+ * latest colour of a drag (#1316). Each preview restyles the canvas and every sample page, more
+ * than a frame's work on a large site, and a pointer can move several times in one.
+ */
 export function previewTheme(session: { readonly history: object }, theme: ThemeTokens): void {
-  themePreviewOf(session).setState({ preview: { theme, chosen: false } });
+  const store = themePreviewOf(session);
+  const next = waiting.get(store);
+  if (next !== undefined) {
+    next.theme = theme;
+    return;
+  }
+  const frame = requestAnimationFrame(() => {
+    const shown = waiting.get(store);
+    if (shown?.frame !== frame) return;
+    waiting.delete(store);
+    store.setState({ preview: { theme: shown.theme, chosen: false } });
+  });
+  waiting.set(store, { theme, frame });
 }
 
 /**
  * Ends the preview: at once if nothing was `chosen` (Escape: the site's own theme again); else it
- * stays until the page's CSS has the change, or {@link CHOSEN_PREVIEW_MS} at most.
+ * stays, as the last colour dragged to, until the page's CSS has the change, or
+ * {@link CHOSEN_PREVIEW_MS} at most: {@link followThemeChange} ends it sooner when there's none.
  */
 export function endThemePreview(session: { readonly history: object }, chosen: boolean): void {
   const store = themePreviewOf(session);
+  if (chosen) {
+    shownNow(store);
+  } else {
+    const next = waiting.get(store);
+    if (next !== undefined) cancelAnimationFrame(next.frame);
+    waiting.delete(store);
+  }
   const current = store.getState().preview;
   if (!chosen || current === undefined) {
     store.setState({ preview: undefined });
@@ -52,4 +88,30 @@ export function endThemePreview(session: { readonly history: object }, chosen: b
   setTimeout(() => {
     if (store.getState().preview === ended) store.setState({ preview: undefined });
   }, CHOSEN_PREVIEW_MS);
+}
+
+/**
+ * Ends a chosen colour's preview as soon as its `change` turns out not to happen (#1316): declined
+ * at a question, or failed. The page shows its own colour again at once rather than the dragged one
+ * for {@link CHOSEN_PREVIEW_MS}. A preview still being dragged is left alone. Gives `change`'s
+ * outcome, and its failure still fails.
+ */
+export function followThemeChange(
+  session: { readonly history: object },
+  change: Promise<boolean>,
+): Promise<boolean> {
+  const unchosen = () => {
+    const store = themePreviewOf(session);
+    if (store.getState().preview?.chosen === true) store.setState({ preview: undefined });
+  };
+  return change.then(
+    (changed) => {
+      if (!changed) unchosen();
+      return changed;
+    },
+    (error: unknown) => {
+      unchosen();
+      throw error;
+    },
+  );
 }
