@@ -5,11 +5,12 @@ import { PlusIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import type { ReplyStep } from "../../shared/ipc/assistant.js";
-import type { AssistantPanelModel } from "./assistant-state.js";
+import { type AssistantPanelModel, questionWaiting } from "./assistant-state.js";
 import { AppConsentDialog, reachOf, SiteConsent } from "./Consent.js";
 import { ConversationView, errorKey } from "./ConversationView.js";
 import { HeldCard } from "./HeldCard.js";
 import { MonthReadout } from "./MonthReadout.js";
+import { QuestionCard } from "./QuestionCard.js";
 import { ReviewCard } from "./ReviewCard.js";
 import { replyUndo } from "./reply-undo.js";
 
@@ -51,9 +52,8 @@ export type AssistantPanelProps = {
  */
 export function AssistantPanel(props: AssistantPanelProps) {
   const { model, history } = props;
-  const { status, site, turns, replying, refused, applying, waiting, returned, tried } = useStore(
-    model.state,
-  );
+  const { status, site, turns, replying, refused, applying, answering, waiting, returned, tried } =
+    useStore(model.state);
   const position = useStore(history.state);
   const [kept, setKept] = useState<ReadonlySet<string>>(new Set());
   const [text, setText] = useState("");
@@ -127,8 +127,17 @@ export function AssistantPanel(props: AssistantPanelProps) {
       />
     );
   }
+  // The question the reply waits on (5.16): what's typed in the box answers it.
+  const pending = questionWaiting(turns, replying);
   const send = () => {
     if (text.trim() === "") return;
+    if (pending !== undefined) {
+      const sent = text;
+      void model.answer(pending.replyId, pending.callId, { answer: sent.trim() }).then((taken) => {
+        if (taken) setText((now) => (now === sent ? "" : now));
+      });
+      return;
+    }
     // While a reply is under way, held to send when it finishes (5.19, OL-4).
     if (replying !== undefined) {
       model.hold(text, props.context());
@@ -174,6 +183,21 @@ export function AssistantPanel(props: AssistantPanelProps) {
         <ConversationView
           turns={turns}
           onOpenLink={props.onOpenLink}
+          asked={(turn) =>
+            turns
+              .find((each) => each.replyId === turn.replyId)
+              ?.questions.map((question) => (
+                <QuestionCard
+                  key={question.callId}
+                  question={question.question}
+                  answers={question.answers}
+                  answer={question.answer}
+                  waiting={pending?.callId === question.callId}
+                  busy={answering !== undefined}
+                  onAnswer={(answer) => void model.answer(turn.replyId, question.callId, answer)}
+                />
+              ))
+          }
           afterReply={(turn) => {
             const shown = turns.find((each) => each.replyId === turn.replyId);
             if (shown === undefined || turn.state !== "done" || kept.has(turn.replyId)) return null;
@@ -215,6 +239,12 @@ export function AssistantPanel(props: AssistantPanelProps) {
           }}
         />
       </div>
+      {/* A question asked (5.16) is said once: the conversation is busy while the reply runs. */}
+      <p role="status" className="sr-only">
+        {pending === undefined
+          ? ""
+          : t("assistant.question.announce", { question: pending.question })}
+      </p>
       {refused === undefined ? null : (
         <p role="alert" className="m-0 px-3 pb-1 text-xs text-destructive-text">
           {t(errorKey(refused))}
@@ -288,9 +318,13 @@ export function AssistantPanel(props: AssistantPanelProps) {
               <Button size="sm" variant="outline" type="button" onClick={() => void model.stop()}>
                 {t("assistant.stop")}
               </Button>
-              {/* Held, and sent by itself once this reply finishes (5.19, OL-4). */}
-              <Button size="sm" type="submit" disabled={text.trim() === ""}>
-                {t("assistant.sendAfter")}
+              {/* An answer to its question (5.16); else held, and sent once it finishes (5.19). */}
+              <Button
+                size="sm"
+                type="submit"
+                disabled={text.trim() === "" || answering !== undefined}
+              >
+                {t(pending === undefined ? "assistant.sendAfter" : "assistant.question.send")}
               </Button>
             </>
           )}

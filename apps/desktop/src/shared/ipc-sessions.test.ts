@@ -46,6 +46,7 @@ const SITE_CHANNELS = [
   "assistant:open-link",
   "assistant:apply-held",
   "assistant:discard-held",
+  "assistant:answer",
   "versions:list",
   "versions:save",
   "versions:delete",

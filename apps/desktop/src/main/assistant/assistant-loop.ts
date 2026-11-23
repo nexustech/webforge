@@ -5,10 +5,13 @@ import type {
   AssistantErrorCode,
   ConversationTurn,
   HeldChange,
+  QuestionAnswer,
   ReplyLink,
+  ReplyQuestion,
   ReplyStep,
   ReplyStop,
 } from "../../shared/ipc/assistant.js";
+import { ASK_TOOL, ASK_TOOL_DEFINITION, createAsking } from "./assistant-question.js";
 import { type ChatEndpoint, type ChatMessage, type ChatTool, streamChat } from "./chat-client.js";
 import { labelledSiteText } from "./site-text.js";
 
@@ -35,6 +38,9 @@ const EARLIER_TURNS = 10;
 const LINKS_MAX = 50;
 const HREF_MAX = 2000;
 
+/** How often a question's wait checks that the reply's site is still the one open. */
+const OPEN_CHECK_MS = 1_000;
+
 /** The longest step label the panel takes. */
 const LABEL_MAX = 300;
 
@@ -55,6 +61,8 @@ const SYSTEM_TEXT = [
   "Read what you need first: outline lists the pages, and pageTree a page's sections and elements, each by id.",
   "Each change you make is one step the person can undo.",
   "If something can't be done, or the person declined a change, say so and don't try another way round.",
+  // One short question rather than a wrong guess (5.16, OL-1).
+  `If a request is too vague to act on well, ask the person one short question with ${ASK_TOOL}, rather than guess.`,
   // Facts the person didn't give: an example, flagged, never passed off as real (#1228, WN-3).
   `${EXAMPLES_RULE} Flag it with the tools' examples or example input.`,
   "Reply briefly, in the person's language, as plain text with simple Markdown: no images and no HTML.",
@@ -95,7 +103,13 @@ export type ReplyOptions = {
   readonly addCost: (usd: number) => Promise<boolean>;
   readonly onText: (delta: string) => void;
   readonly onTool: (call: ToolEvent) => void;
+  /**
+   * Puts a question to the person (5.16, OL-1), and gives their answer. Without it, the model
+   * isn't offered the tool. The wait counts against no time limit; Stop ends it.
+   */
+  readonly ask?: (question: ReplyQuestion) => Promise<QuestionAnswer>;
   readonly idleMs?: number;
+  readonly openCheckMs?: number;
   readonly busyRetryMs?: number;
 };
 
@@ -208,7 +222,7 @@ function opening(options: ReplyOptions): ChatMessage[] {
     .slice(-EARLIER_TURNS)
     .flatMap((turn): ChatMessage[] => [
       { role: "user", content: turn.message },
-      { role: "assistant", content: turn.reply },
+      { role: "assistant", content: withAnswers(turn) },
     ]);
   const { pageId, nodeId } = options.selection;
   const selected =
@@ -220,6 +234,18 @@ function opening(options: ReplyOptions): ChatMessage[] {
     ...earlier,
     { role: "user", content: `${options.message}${selected}` },
   ];
+}
+
+/** A turn's reply, with the questions it asked and their answers (5.16), to follow on from. */
+function withAnswers(turn: ConversationTurn): string {
+  const answered = (turn.questions ?? []).flatMap(({ question, answer }) => {
+    if (answer === undefined) return [];
+    const note = answer.note === undefined ? "" : ` Their note: ${JSON.stringify(answer.note)}`;
+    return [
+      `I asked: ${JSON.stringify(question)} They answered: ${JSON.stringify(answer.answer)}${note}`,
+    ];
+  });
+  return [...answered, turn.reply].filter((part) => part !== "").join("\n\n");
 }
 
 /** Waits `ms`, or less if `signal` aborts. */
@@ -272,6 +298,8 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
   } catch {
     return failed("failed");
   }
+  if (options.ask !== undefined) tools.push(ASK_TOOL_DEFINITION);
+  const asking = createAsking();
 
   const messages = opening(options);
   let toolCalls = 0;
@@ -328,6 +356,18 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
       const tool = TOOL_NAME.test(name) ? name : "unknown";
       const callId =
         asked.id.length > 0 && asked.id.length <= CALL_ID_MAX ? asked.id : `call-${toolCalls}`;
+      // A question for the person (5.16): the reply waits for their answer, which goes back.
+      if (name === ASK_TOOL && options.ask !== undefined) {
+        const check = asking.check(asked.function.arguments);
+        const content =
+          check.status === "ask"
+            ? await answerOf(options, options.ask, { callId, ...check.question })
+            : check.text;
+        if (content === "stopped") return done("stopped");
+        if (content === "closed") return failed("no-site");
+        messages.push({ role: "tool", tool_call_id: asked.id, content });
+        continue;
+      }
       options.onTool({ callId, tool, state: "running" });
       const answered = await callTool(options, name, asked.function.arguments);
       if (answered.step !== undefined) steps.push(answered.step);
@@ -345,6 +385,36 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
       messages.push({ role: "tool", tool_call_id: asked.id, content: answered.text });
     }
   }
+}
+
+/**
+ * The person's answer to `question`, as the tool's result for the model; `stopped` if Stop came
+ * first, or `closed` once the reply's site isn't the one open, as no answer can come then.
+ */
+function answerOf(
+  options: Pick<ReplyOptions, "signal" | "stillOpen" | "openCheckMs">,
+  ask: NonNullable<ReplyOptions["ask"]>,
+  question: ReplyQuestion,
+): Promise<string> {
+  const { signal } = options;
+  if (signal.aborted) return Promise.resolve("stopped");
+  return new Promise((resolve) => {
+    const finish = (outcome: string) => {
+      clearInterval(open);
+      signal.removeEventListener("abort", stopped);
+      resolve(outcome);
+    };
+    const stopped = () => finish("stopped");
+    const open = setInterval(() => {
+      if (!options.stillOpen()) finish("closed");
+    }, options.openCheckMs ?? OPEN_CHECK_MS);
+    signal.addEventListener("abort", stopped, { once: true });
+    ask(question).then(
+      ({ answer, note }) =>
+        finish(JSON.stringify({ status: "done", answer, ...(note === undefined ? {} : { note }) })),
+      stopped,
+    );
+  });
 }
 
 /** One tool call: its arguments read, asked once more if the person's editing held it up. */

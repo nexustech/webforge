@@ -575,3 +575,151 @@ describe("held changes (6.9e, Review before applying)", () => {
     expect(other.texts.size).toBe(0);
   });
 });
+
+describe("a question for the person (5.16, OL-1)", () => {
+  /** The model asking `topic`'s question, with `answers`. */
+  const asks = (topic: string, answers: readonly string[] = ["Calm and modern", "Bold"]) => ({
+    name: "askPerson",
+    args: { topic, question: "Which look would you like?", answers },
+  });
+  /** The tool results the model was sent in its last call, parsed. */
+  const resultsIn = (bodies: { messages: { role: string; content: string | null }[] }[]) =>
+    (bodies.at(-1)?.messages ?? [])
+      .filter((message) => message.role === "tool")
+      .map((message) => JSON.parse(message.content ?? "null"));
+
+  it("asks, waits for the answer, and goes on in the same reply with it", async () => {
+    const ask = vi.fn(async () => ({ answer: "Calm and modern", note: "Keep the logo" }));
+    const { outcome, bodies, tools, called } = await reply(
+      [{ tools: [asks("style")] }, { text: "I've made it calm and modern." }],
+      { outline: () => ({ status: "done" }) },
+      { ask },
+    );
+
+    expect(ask).toHaveBeenCalledWith({
+      callId: "call-1-0",
+      question: "Which look would you like?",
+      answers: ["Calm and modern", "Bold"],
+    });
+    expect(outcome).toMatchObject({ status: "done", stop: "end" });
+    expect(resultsIn(bodies)).toEqual([
+      { status: "done", answer: "Calm and modern", note: "Keep the logo" },
+    ]);
+    // The model's own tool: offered with the site's, never sent to them or shown as a step.
+    const offered = (bodies[0] as unknown as { tools: { function: { name: string } }[] }).tools;
+    expect(offered.map((tool) => tool.function.name)).toEqual(["outline", "askPerson"]);
+    expect(called).toEqual([]);
+    expect(tools).toEqual([]);
+  });
+
+  it("isn't offered without someone to ask", async () => {
+    const { bodies } = await reply([{ text: "Done." }], { outline: () => ({ status: "done" }) });
+    const offered = (bodies[0] as unknown as { tools: { function: { name: string } }[] }).tools;
+    expect(offered.map((tool) => tool.function.name)).toEqual(["outline"]);
+  });
+
+  it("refuses a second question on the same topic, and a fourth in one reply", async () => {
+    const ask = vi.fn(async () => ({ answer: "Bold" }));
+    const { bodies } = await reply(
+      [
+        { tools: [asks("Colours")] },
+        { tools: [asks(" colours! ")] },
+        { tools: [asks("tone of the text")] },
+        { tools: [asks("pictures")] },
+        { tools: [asks("layout")] },
+        { text: "Done." },
+      ],
+      {},
+      { ask },
+    );
+
+    expect(ask).toHaveBeenCalledTimes(3);
+    expect(resultsIn(bodies).map((result) => result.status)).toEqual([
+      "done",
+      "refused",
+      "done",
+      "done",
+      "refused",
+    ]);
+  });
+
+  it("asks nothing it can't show: five answers, no question", async () => {
+    const ask = vi.fn(async () => ({ answer: "Bold" }));
+    const { bodies } = await reply(
+      [
+        { tools: [asks("style", ["a", "b", "c", "d", "e"])] },
+        { tools: [{ name: "askPerson", args: { topic: "style", answers: ["a"] } }] },
+        { text: "Done." },
+      ],
+      {},
+      { ask },
+    );
+
+    expect(ask).not.toHaveBeenCalled();
+    expect(resultsIn(bodies).map((result) => result.status)).toEqual(["invalid", "invalid"]);
+  });
+
+  it("ends with Stop while it waits, and with the site closed, as no answer can come", async () => {
+    const stop = new AbortController();
+    const stopped = await reply(
+      [{ tools: [asks("style")] }],
+      {},
+      {
+        signal: stop.signal,
+        ask: () => {
+          stop.abort();
+          return new Promise(() => undefined);
+        },
+      },
+    );
+    expect(stopped.outcome).toMatchObject({ status: "done", stop: "stopped" });
+    expect(stopped.bodies).toHaveLength(1);
+
+    let open = true;
+    const closed = await reply(
+      [{ tools: [asks("style")] }],
+      {},
+      {
+        stillOpen: () => open,
+        openCheckMs: 1,
+        ask: () => {
+          open = false;
+          return new Promise(() => undefined);
+        },
+      },
+    );
+    expect(closed.outcome).toMatchObject({ status: "failed", error: "no-site" });
+  });
+
+  it("follows on from an earlier reply's question and its answer", async () => {
+    const { bodies } = await reply(
+      [{ text: "Done." }],
+      {},
+      {
+        earlier: [
+          {
+            replyId: "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e",
+            message: "Make it look more professional",
+            reply: "I've made it calm and modern.",
+            state: "done",
+            costUsd: null,
+            steps: [],
+            links: [],
+            questions: [
+              {
+                callId: "call-1-0",
+                question: "Which look would you like?",
+                answers: ["Calm and modern", "Bold"],
+                answer: { answer: "Calm and modern", note: "Keep the logo" },
+              },
+            ],
+          },
+        ],
+      },
+    );
+
+    expect(bodies[0]?.messages[2]?.content).toBe(
+      'I asked: "Which look would you like?" They answered: "Calm and modern" Their note: "Keep the logo"\n\nI\'ve made it calm and modern.',
+    );
+  });
+});

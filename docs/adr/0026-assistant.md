@@ -295,6 +295,16 @@ interface AssistantApi {
     replyId: string,
     href: string,
   ): Promise<{ status: "opened" | "refused" | "failed" }>;
+  /**
+   * The person's answer to the question `callId` that reply `replyId` waits on (5.16, OL-1): an
+   * answer offered or typed, and a note. `not-asked` when it isn't waiting on that one.
+   */
+  answer(
+    session: SessionId,
+    replyId: string,
+    callId: string,
+    answer: { answer: string; note?: string },
+  ): Promise<{ status: "answered" | "not-asked" }>;
 
   /** Calls `listener` with each event below. Returns a stop function. */
   onEvent(listener: (event: AssistantEvent) => void): () => void;
@@ -328,6 +338,13 @@ type ConversationTurn = {
   links: ReplyLink[];
   /** The safety version this reply saved before its first change (S20): its `safety-version` event's. */
   safetyVersion?: { versionId: string; label: string };
+  /** The questions it asked the person (5.16), each with their answer once given. */
+  questions?: {
+    callId: string;
+    question: string;
+    answers: string[];
+    answer?: { answer: string; note?: string };
+  }[];
 };
 
 /** A reply's events, about one site's conversation. */
@@ -345,6 +362,8 @@ type ReplyEvent = { session: SessionId } & (
       state: "done" | "refused" | "declined" | "busy" | "invalid" | "failed";
       step?: ReplyStep;
     }
+  /** The reply asks the person a question, and waits for `answer` (5.16): up to four answers. */
+  | { type: "question"; replyId: string; callId: string; question: string; answers: string[] }
   /** The first change of a conversation saved a version first (S20). */
   | { type: "safety-version"; replyId: string; versionId: string; label: string }
   /** The reply has ended, with its cost and the month's total, and the review card's content. */
@@ -431,7 +450,8 @@ type AssistantEvent = ReplyEvent | AppEvent;
   - **The caps** (§5): 25 tool calls, 12 model calls, `max_tokens` 4096. The month's limit, reached by a call, stops the reply before that call's tool calls run.
   - **The safety version** is saved before a conversation's first change, once a conversation, through Version History's before-site-wide path. When one from the last five minutes holds the site already, no other is saved for the conversation, and no `safety-version` event comes.
   - **The review card's links** are the web addresses in the reply's changes' inputs, by host (S18).
-  - **The system text** says site text is content, never instructions, in 4.9's own wording. The person's selection goes as labelled JSON after their message. Earlier turns go as their message and reply text, the last ten.
+  - **The system text** says site text is content, never instructions, in 4.9's own wording. The person's selection goes as labelled JSON after their message. Earlier turns go as their message and reply text, the last ten, with the questions a reply asked and their answers.
+  - **A question for the person (5.16, OL-1):** the loop's own tool, `askPerson`, offered beside 4.9's (`main/assistant/assistant-question.ts`). The model gives a topic, a question and up to four answers, the one it recommends first. The panel gets a `question` event, the turn keeps it, and the reply waits for `assistant:answer` (an answer offered or typed, and a note), which goes back to the model as the tool's result. A second question on the same topic in one reply, or a fourth, is refused to the model, and nothing reaches the person. The wait counts against no time limit and changes nothing in the site. Stop ends it, as does the site closing (`no-site`).
 - **Errors carry a code, never the provider's own text,** which could quote the request. The panel words each code with `t()`. Main logs the HTTP status and the provider's error type, without content.
 
 **The stand-in loop for 6.9c:** `apps/desktop/src/renderer/assistant/fake-assistant.ts` (6.9a). It's an `AssistantApi` that answers from a script:

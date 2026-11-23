@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createAssistantPanel } from "./assistant-state.js";
+import { createAssistantPanel, questionWaiting } from "./assistant-state.js";
 import { createFakeAssistant, FAKE_STATUS } from "./fake-assistant.js";
 
 /** Lets the fake's events, sent a tick apart, all arrive. */
@@ -395,5 +395,48 @@ describe("a message held while a reply is under way (5.19, OL-4)", () => {
     await settle();
     expect(send).toHaveBeenCalledOnce();
     panel.dispose();
+  });
+});
+
+describe("a question before acting (5.16, OL-1)", () => {
+  const ASKING = {
+    text: "First:",
+    question: { question: "Which look?", answers: ["Calm", "Bold"] },
+  };
+
+  it("keeps the question in its turn, waits on it, and keeps the answer once main takes it", async () => {
+    const api = createFakeAssistant({ delayMs: 0, reply: ASKING });
+    const panel = createAssistantPanel(api, "site-1");
+    await panel.send("Make it look more professional", {});
+    await vi.waitFor(() => expect(panel.state.getState().turns[0]?.questions).toHaveLength(1));
+    const { turns, replying } = panel.state.getState();
+    const waiting = questionWaiting(turns, replying);
+    expect(waiting).toMatchObject({ callId: "question-1", question: "Which look?" });
+    if (waiting === undefined) throw new Error("no question");
+
+    // An answer to a question it doesn't wait on: main doesn't take it, and nothing is kept.
+    expect(await panel.answer(waiting.replyId, "question-2", { answer: "Calm" })).toBe(false);
+    expect(await panel.answer(waiting.replyId, "question-1", { answer: "Calm" })).toBe(true);
+    expect(panel.state.getState().turns[0]?.questions[0]?.answer).toEqual({ answer: "Calm" });
+    await vi.waitFor(() => expect(panel.state.getState().replying).toBeUndefined());
+    expect(questionWaiting(panel.state.getState().turns, undefined)).toBeUndefined();
+    panel.dispose();
+  });
+
+  it("shows a question asked before the panel opened again, with its answer", async () => {
+    const api = createFakeAssistant({ delayMs: 0, reply: ASKING });
+    const first = createAssistantPanel(api, "site-1");
+    await first.send("Make it look more professional", {});
+    await vi.waitFor(() => expect(first.state.getState().turns[0]?.questions).toHaveLength(1));
+    first.dispose();
+
+    const again = createAssistantPanel(api, "site-1");
+    await vi.waitFor(() => expect(again.state.getState().turns).toHaveLength(1));
+    const { turns, replying } = again.state.getState();
+    expect(turns[0]?.questions).toEqual([
+      { callId: "question-1", question: "Which look?", answers: ["Calm", "Bold"] },
+    ]);
+    expect(questionWaiting(turns, replying)?.callId).toBe("question-1");
+    again.dispose();
   });
 });

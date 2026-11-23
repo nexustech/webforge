@@ -198,6 +198,44 @@ const modelsResultSchema = z.union([
 /** See {@link modelsResultSchema}. */
 type ModelsResult = z.infer<typeof modelsResultSchema>;
 
+/** A tool's name, as 4.9's tool layer names it. */
+const toolSchema = z.string().regex(/^[a-zA-Z]{1,64}$/);
+
+/** A tool call's id within its reply. */
+const callIdSchema = z.string().min(1).max(100);
+
+/** The most answers a question offers, and the most questions one reply asks (5.16, OL-1). */
+export const QUESTION_ANSWERS_MAX = 4;
+export const QUESTIONS_MAX = 3;
+
+/** The longest question, answer offered and note (5.16). */
+export const QUESTION_MAX_CHARS = 500;
+export const ANSWER_MAX_CHARS = 200;
+const NOTE_MAX_CHARS = 1000;
+
+/**
+ * A question the assistant asks the person in its reply (5.16, OL-1), when the request is too vague
+ * to act on well: the answers it offers, the one it recommends first. The reply waits for the answer.
+ */
+const questionSchema = z.strictObject({
+  /** The tool call that asked it, which the answer names. */
+  callId: callIdSchema,
+  question: z.string().min(1).max(QUESTION_MAX_CHARS),
+  answers: z.array(z.string().min(1).max(ANSWER_MAX_CHARS)).min(1).max(QUESTION_ANSWERS_MAX),
+});
+
+/** See {@link questionSchema}. */
+export type ReplyQuestion = z.infer<typeof questionSchema>;
+
+/** The person's answer to a question: one offered, or what they typed instead, and a note. */
+const questionAnswerSchema = z.strictObject({
+  answer: z.string().trim().min(1).max(MESSAGE_MAX_CHARS),
+  note: z.string().trim().min(1).max(NOTE_MAX_CHARS).optional(),
+});
+
+/** See {@link questionAnswerSchema}. */
+export type QuestionAnswer = z.infer<typeof questionAnswerSchema>;
+
 /** A change one tool call made: one undo step (§1). */
 const stepSchema = z.strictObject({
   /** The `HistoryManager` entry, for *Undo these changes*. */
@@ -272,6 +310,11 @@ const turnSchema = z.strictObject({
     .optional(),
   /** The changes it holds, with _Review before applying_ on, until applied or discarded. */
   held: z.array(heldSchema).max(HELD_MAX).optional(),
+  /** The questions it asked the person (5.16), each with their answer once given. */
+  questions: z
+    .array(questionSchema.extend({ answer: questionAnswerSchema.optional() }))
+    .max(QUESTIONS_MAX)
+    .optional(),
 });
 
 /** See {@link turnSchema}. */
@@ -370,12 +413,6 @@ const draftResultSchema = z.union([
 /** See {@link draftResultSchema}. */
 export type DraftResult = z.infer<typeof draftResultSchema>;
 
-/** A tool's name, as 4.9's tool layer names it. */
-const toolSchema = z.string().regex(/^[a-zA-Z]{1,64}$/);
-
-/** A tool call's id within its reply. */
-const callIdSchema = z.string().min(1).max(100);
-
 /**
  * What main tells the panel (ADR 0026 §7), in order per reply. A reply's events name its site's
  * session; `limit` and `status` are the app's, and name none. `reply-done` or `reply-failed` closes
@@ -404,6 +441,15 @@ const eventSchema = z.discriminatedUnion("type", [
     tool: toolSchema,
     state: z.enum(["running", "done", "refused", "declined", "busy", "invalid", "failed"]),
     step: stepSchema.optional(),
+  }),
+  /**
+   * The reply asks the person a question (5.16, OL-1) and waits for the answer (`answer`), which
+   * continues it. Typing a message counts as one; Stop ends the reply as it does now.
+   */
+  questionSchema.extend({
+    session: sessionIdSchema,
+    type: z.literal("question"),
+    replyId: replyIdSchema,
   }),
   /** The first change of a conversation saved a version first (S20). */
   z.strictObject({
@@ -568,6 +614,15 @@ export const assistantChannels = {
     request: z.tuple([sessionIdSchema, replyIdSchema]),
     response: z.strictObject({ status: z.enum(["applied", "nothing-held", "busy", "no-site"]) }),
   },
+  /**
+   * The person's answer to the question `callId` that reply `replyId` asked and waits on (5.16):
+   * `not-asked` when it isn't waiting on that one, as once it has stopped.
+   */
+  assistantAnswer: {
+    channel: "assistant:answer",
+    request: z.tuple([sessionIdSchema, replyIdSchema, callIdSchema, questionAnswerSchema]),
+    response: z.strictObject({ status: z.enum(["answered", "not-asked"]) }),
+  },
   /** Discards a reply's held changes (6.9e): the site stays as it is. */
   assistantDiscardHeld: {
     channel: "assistant:discard-held",
@@ -625,6 +680,16 @@ export interface AssistantApi {
   ): Promise<{ status: "applied" | "nothing-held" | "busy" | "no-site" }>;
   /** Discards reply `replyId`'s held changes (6.9e). */
   discardHeld(session: string, replyId: string): Promise<void>;
+  /**
+   * Answers the question `callId` that reply `replyId` waits on (5.16): `not-asked` when it isn't
+   * waiting on that one.
+   */
+  answer(
+    session: string,
+    replyId: string,
+    callId: string,
+    answer: QuestionAnswer,
+  ): Promise<{ status: "answered" | "not-asked" }>;
   conversation(session: string): Promise<ConversationTurn[]>;
   /**
    * Opens `href`, a link in that reply as the reply wrote it (its Markdown token's `href`), in the

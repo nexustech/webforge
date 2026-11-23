@@ -54,6 +54,8 @@ export type ConversationViewProps = {
   readonly onOpenLink: (href: string, replyId: string) => void;
   /** Drawn under a reply that has ended: 6.9c's review card. */
   readonly afterReply?: (turn: TurnView) => ReactNode;
+  /** Drawn under a reply's text and tool calls, while it runs too: the questions it asked (5.16). */
+  readonly asked?: (turn: TurnView) => ReactNode;
 };
 
 /** The "AI (Assistant): " every step's label starts with, which the reply needn't repeat. */
@@ -94,10 +96,12 @@ function Turn({
   turn,
   onOpenLink,
   afterReply,
+  asked,
 }: {
   readonly turn: TurnView;
   readonly onOpenLink: ConversationViewProps["onOpenLink"];
   readonly afterReply: ConversationViewProps["afterReply"];
+  readonly asked: ConversationViewProps["asked"];
 }) {
   const ended = turn.state !== "replying";
   return (
@@ -114,6 +118,7 @@ function Turn({
           <ReplyText text={turn.reply} onOpenLink={(href) => onOpenLink(href, turn.replyId)} />
         )}
         {turn.tools.length === 0 ? null : <ToolSummary tools={turn.tools} />}
+        {asked?.(turn)}
         {turn.state === "done" && turn.stop !== undefined && turn.stop !== "end" ? (
           <p className="m-0 text-xs text-muted-foreground">{t(`assistant.stop.${turn.stop}`)}</p>
         ) : null}
@@ -146,7 +151,7 @@ export function errorKey(code: string | undefined) {
  * early, and its cost in money. A reply is announced politely once it has ended (a log, busy while
  * one streams).
  */
-export function ConversationView({ turns, onOpenLink, afterReply }: ConversationViewProps) {
+export function ConversationView({ turns, onOpenLink, afterReply, asked }: ConversationViewProps) {
   if (turns.length === 0) {
     return <EmptyState>{t("assistant.empty")}</EmptyState>;
   }
@@ -160,7 +165,13 @@ export function ConversationView({ turns, onOpenLink, afterReply }: Conversation
     >
       <ol className="m-0 flex list-none flex-col gap-4 p-3">
         {turns.map((turn) => (
-          <Turn key={turn.replyId} turn={turn} onOpenLink={onOpenLink} afterReply={afterReply} />
+          <Turn
+            key={turn.replyId}
+            turn={turn}
+            onOpenLink={onOpenLink}
+            afterReply={afterReply}
+            asked={asked}
+          />
         ))}
       </ol>
     </div>
