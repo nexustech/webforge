@@ -75,8 +75,8 @@ function LayoutIcon({ layout, count }: { readonly layout: ColumnLayout; readonly
   );
 }
 
-/** A button named by a tooltip too: its icon is all it shows. */
-function IconButton({
+/** A button named by a tooltip too: its icon is all it shows. The Footer's toolbar has them too. */
+export function IconButton({
   name,
   disabled,
   onClick,

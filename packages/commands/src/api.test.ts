@@ -777,6 +777,51 @@ describe("the command API's commands on shared parts (4.8)", () => {
     ).toBe("refused");
   });
 
+  it("adds a Footer column and elements in it, as it adds to a section (HF-4, 5.39)", async () => {
+    const { host, history } = setup(true);
+    const api = createCommandApi(host);
+    const footer = { kind: "layout", part: "footer" } as const;
+    const column = await api.run(
+      "addNode",
+      { location: footer, type: "FooterColumn", parentId: "footer", slot: "columns" },
+      app,
+    );
+    if (column.status !== "done" || column.id === undefined) throw new Error("no column");
+    const into = (type: string) =>
+      api.run("addNode", { location: footer, type, parentId: column.id, slot: "content" }, app);
+    for (const type of ["Heading", "MenuLinks", "ContactDetails", "Newsletter"]) {
+      expect((await into(type)).status, type).toBe("done");
+    }
+    // Only what a Footer column takes.
+    expect((await into("Button")).status).toBe("refused");
+    expect((await into("Hero")).status).toBe("refused");
+    // One Menu links per Footer: a second, or a column bringing one, is refused, saying why.
+    const second = await into("MenuLinks");
+    expect(second).toMatchObject({ status: "refused" });
+    expect(JSON.stringify(second)).toContain("There's a Menu links there already");
+    const bringing = await api.run(
+      "addNode",
+      {
+        location: footer,
+        type: "FooterColumn",
+        parentId: "footer",
+        slot: "columns",
+        values: { content: [{ type: "MenuLinks" }] },
+      },
+      app,
+    );
+    expect(bringing.status).toBe("refused");
+
+    const node = history.document.getState().layout.footer.find((each) => each.type === "Footer");
+    const [placed] = (node?.props.columns ?? []) as NodeDoc[];
+    expect(((placed?.props.content ?? []) as NodeDoc[]).map((each) => each.type)).toEqual([
+      "Heading",
+      "MenuLinks",
+      "ContactDetails",
+      "Newsletter",
+    ]);
+  });
+
   it("plans again once the person allows a change, and is busy if they started editing", async () => {
     const edit = {
       location: { kind: "layout", part: "header" },

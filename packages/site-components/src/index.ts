@@ -29,6 +29,15 @@ export { BELOW_THE_FOOTER } from "./catalogue/contact-buttons.js";
 export { serviceFormLabel } from "./catalogue/forms.js";
 export { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue/index.js";
 export { POSTS_PER_PAGE } from "./catalogue/latest-posts.js";
+export {
+  FOOTER_COLUMN_TYPES,
+  FOOTER_PRESETS,
+  type FooterPreset,
+  footerPreset,
+  inFooterColumn,
+  MAX_FOOTER_COLUMNS,
+} from "./catalogue/layout.js";
+export { hasElementRoot } from "./column-form.js";
 export { consentBannerHtml } from "./consent-banner.js";
 export type { ComponentSpec } from "./define.js";
 export { createLibrary, defineComponent } from "./define.js";
@@ -36,6 +45,7 @@ export { videoEmbed } from "./embed.js";
 export type { FieldValueShape } from "./field-values.js";
 export { acceptsFieldValue, fieldValueSchema, MAX_TEXT_LENGTH } from "./field-values.js";
 export { PADDED_COLUMN_CLASS } from "./frame.js";
+export { secondOfOne } from "./held-once.js";
 export { ICON_NAMES, iconNameOf, isIconName, LucideIcon } from "./icons.js";
 export type {
   ComponentDef,

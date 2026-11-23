@@ -187,6 +187,17 @@ describe("main headings (3.17)", () => {
     expect(counts(withLayout)).toEqual([[ABOUT, 2]]);
   });
 
+  it("never counts a large Heading in a Footer column, which is an h2 there (5.39)", () => {
+    const story = element("TextSection", "story", { title: "Our story" });
+    const withFooter = changed(site([story], [heading("a")]), (draft) => {
+      const column = element("FooterColumn", "column", { content: [heading("visit")] });
+      draft.layout.footer = [element("Footer", "footer", { columns: [column] })];
+    });
+    // Each page keeps its own: the home page its section title, About its Heading, and the empty
+    // Menu page still has none.
+    expect(counts(withFooter)).toEqual([[MENU, 0]]);
+  });
+
   it("counts a page's first section title as its main heading when it has none of its own (#1173)", () => {
     const story = element("TextSection", "story", { title: "Our story" });
     const untitled = element("TextSection", "untitled", { title: "" });

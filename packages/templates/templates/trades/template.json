@@ -361,12 +361,58 @@
           "type": "Footer",
           "props": {
             "id": "footer",
-            "text": "Brightside Electrical · Registered and insured electricians in Leeds"
+            "text": "Brightside Electrical · Registered and insured electricians in Leeds",
+            "variant": "columns",
+            "columns": [
+              {
+                "type": "FooterColumn",
+                "props": {
+                  "id": "footer-links",
+                  "content": [
+                    {
+                      "type": "Heading",
+                      "props": {
+                        "id": "footer-links-title",
+                        "text": "Explore",
+                        "size": "small"
+                      }
+                    },
+                    {
+                      "type": "MenuLinks",
+                      "props": {
+                        "id": "footer-menu"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "FooterColumn",
+                "props": {
+                  "id": "footer-contact",
+                  "content": [
+                    {
+                      "type": "ContactDetails",
+                      "props": {
+                        "id": "footer-contact-details",
+                        "title": "Visit us",
+                        "text": "<p>Call us for a free quote.</p>",
+                        "showHours": true,
+                        "showContact": true
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
           }
         },
         {
           "type": "ContactButtons",
-          "props": { "id": "contact-buttons", "whatsapp": true }
+          "props": {
+            "id": "contact-buttons",
+            "whatsapp": true
+          }
         }
       ]
     },

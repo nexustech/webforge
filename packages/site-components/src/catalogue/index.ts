@@ -122,6 +122,6 @@ export function starterLayout(siteName: string): LayoutDoc {
     header: [
       { type: "Header", props: { id: "header", siteName, bindings: { siteName: "general.name" } } },
     ],
-    footer: [{ type: "Footer", props: { id: "footer", text: t("starter.footer") } }],
+    footer: [{ type: "Footer", props: { id: "footer", text: t("starter.footer"), columns: [] } }],
   };
 }

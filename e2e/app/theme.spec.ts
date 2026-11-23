@@ -33,6 +33,14 @@ test.afterEach(async () => {
   void removeWhenFree(dir);
 });
 
+/**
+ * How long a test waits for main's copy of the site to have a change: autosave sends it after
+ * about 2 s with no further change (P2), and a busy runner's main can take seconds more to answer
+ * (PR 1333's Windows run). A generous wait, as ADR 0014 has them, so only a change that never
+ * arrives fails.
+ */
+const SAVED = { timeout: OPEN_WAIT };
+
 /** The open site's theme, as the main process keeps it. */
 async function themeOf(page: Page): Promise<{ preset: string; colors: Record<string, unknown> }> {
   const read = (await page.evaluate(() =>
@@ -76,7 +84,7 @@ test("switching the theme asks first, with the pages it changes, and is one undo
   await page.getByRole("alertdialog").getByRole("button", { name: "Switch Theme" }).click();
   await expect(page.getByRole("heading", { name: "Theme: Bistro" })).toBeVisible();
   // The main process has the site once the change reaches it.
-  await expect.poll(async () => (await themeOf(page)).preset).toBe("bistro");
+  await expect.poll(async () => (await themeOf(page)).preset, SAVED).toBe("bistro");
   // The canvas takes the theme's heading font.
   const heading = themePreset("bistro")?.fonts.heading.family ?? "";
   await expect(canvasHeading).toHaveCSS("font-family", new RegExp(heading));
@@ -89,7 +97,7 @@ test("switching the theme asks first, with the pages it changes, and is one undo
   ]);
   await page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Theme: Light" })).toBeVisible();
-  await expect.poll(async () => (await themeOf(page)).preset).toBe("light");
+  await expect.poll(async () => (await themeOf(page)).preset, SAVED).toBe("light");
 });
 
 test("a colour hard to read says so under it at once, in words, with a shade that reads (#1174)", async () => {
@@ -113,7 +121,7 @@ test("a colour hard to read says so under it at once, in words, with a shade tha
   // Before the panel is left, in the words Site Check's row has.
   await expect(brand.getByText("Brand is hard to read on Surface", { exact: true })).toBeVisible();
   await expect
-    .poll(async () => (await themeOf(page)) as unknown)
+    .poll(async () => (await themeOf(page)) as unknown, SAVED)
     .toMatchObject({ own: { name: "Light (yours)" } });
 
   await brand.getByRole("button", { name: "Use a darker shade" }).click();
@@ -137,7 +145,7 @@ test("Theme Studio opens from the View menu, switches theme from a card, and und
     "aria-pressed",
     "true",
   );
-  await expect.poll(async () => (await themeOf(page)).preset).toBe("atelier");
+  await expect.poll(async () => (await themeOf(page)).preset, SAVED).toBe("atelier");
   // Switched once Version History's version is saved (4.6), while the question may still fade out.
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
 
@@ -147,7 +155,7 @@ test("Theme Studio opens from the View menu, switches theme from a card, and und
     "aria-pressed",
     "true",
   );
-  await expect.poll(async () => (await themeOf(page)).preset).toBe("light");
+  await expect.poll(async () => (await themeOf(page)).preset, SAVED).toBe("light");
 });
 
 test("a photo in Media proposes brand colours, read on this computer, used as one step (PG-2)", async () => {
@@ -178,9 +186,7 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
   await studio.getByRole("button", { name: "Use These Colours" }).click();
   // At once, nothing asked (LF-15). The change waits for a version of the site saved before it
   // (`beforeUnaskedChange`), written to disk: longer than the poll's 5 s on a busy runner (#1147).
-  await expect
-    .poll(async () => (await themeOf(page)).colors.primary, { timeout: OPEN_WAIT })
-    .not.toEqual(before);
+  await expect.poll(async () => (await themeOf(page)).colors.primary, SAVED).not.toEqual(before);
 
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: "Undo History" }).click();
@@ -210,9 +216,7 @@ test("Theme Studio's colour picker chooses a colour in its dialog, and Escape le
   // A code typed in: chosen once the picker closes.
   await chooseColour(page, brand, "#c0392b");
   await expect(brand).toHaveAccessibleDescription(/#c0392b/);
-  await expect
-    .poll(async () => (await themeOf(page)).colors.primary, { timeout: OPEN_WAIT })
-    .not.toEqual(before);
+  await expect.poll(async () => (await themeOf(page)).colors.primary, SAVED).not.toEqual(before);
 });
 
 test("a change to a built-in theme saves the person's own, which another site can use (2.23)", async () => {
@@ -230,7 +234,7 @@ test("a change to a built-in theme saves the person's own, which another site ca
   await page.getByRole("combobox", { name: "Card style" }).selectOption("raised");
   await expect(page.getByRole("heading", { name: "Theme: Light (yours)" })).toBeVisible();
   await expect
-    .poll(async () => (await themeOf(page)) as unknown)
+    .poll(async () => (await themeOf(page)) as unknown, SAVED)
     .toMatchObject({ preset: "light", own: { name: "Light (yours)" } });
   await app.close();
 
@@ -250,6 +254,6 @@ test("a change to a built-in theme saves the person's own, which another site ca
   await page.getByRole("alertdialog").getByRole("button", { name: "Switch Theme" }).click();
   await expect(page.getByRole("heading", { name: "Theme: Light (yours)" })).toBeVisible();
   await expect
-    .poll(async () => (await themeOf(page)) as unknown)
+    .poll(async () => (await themeOf(page)) as unknown, SAVED)
     .toMatchObject({ own: { name: "Light (yours)" } });
 });

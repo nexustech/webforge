@@ -5,6 +5,7 @@ import { deleteSelected, duplicateSelected, moveSelected } from "./bulk-layers.j
 import { columnsToolbar } from "./ColumnsToolbar.js";
 import { type BulkCanvasAction, registerCanvasCommands } from "./canvas-commands.js";
 import { registerElementCommands } from "./element-commands.js";
+import { footerToolbar } from "./FooterToolbar.js";
 import { connectFieldDrags } from "./field-drag.js";
 import { headerToolbar } from "./HeaderToolbar.js";
 import { headingToolbar } from "./HeadingToolbar.js";
@@ -127,4 +128,11 @@ export const columnsToolbarArea: Area<EditorContext> = {
   id: "columnsToolbar",
   register: ({ toolbars, session, engine, editPreviews }) =>
     toolbars.register(columnsToolbar({ session, flush: engine.flush, previews: editPreviews })),
+};
+
+/** The selected Footer's toolbar (HF-4, 5.39): *Start from* a preset, and its columns. */
+export const footerToolbarArea: Area<EditorContext> = {
+  id: "footerToolbar",
+  register: ({ toolbars, session, engine }) =>
+    toolbars.register(footerToolbar({ session, flush: engine.flush })),
 };

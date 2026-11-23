@@ -1,10 +1,12 @@
 import type { ComponentConfig } from "@puckeditor/core";
+import { HIDDEN_ATTRIBUTE } from "@webforge/model";
 import {
   type ComponentDef,
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   type FieldDef,
   type RenderContext,
+  siteLibrary,
   slotComponent,
   textValue,
 } from "@webforge/site-components";
@@ -12,6 +14,7 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { isTextField, toPuckConfig } from "./config.js";
+import { NOTE_ATTRIBUTE } from "./puck-dom.js";
 import { fixedRenderContext } from "./render-context-store.js";
 import { FormatToolbar, RICH_TEXT_OPTIONS } from "./rich-text.js";
 import { ROOT_ZONE } from "./tree.js";
@@ -238,6 +241,27 @@ describe("toPuckConfig", () => {
     expect(renderToStaticMarkup(<Section content={[]} />)).toBe('<section data-id=""></section>');
     expect(renderToStaticMarkup(<Text id="t" title="Hi" size="large" body="x" />)).toBe(
       "<p>Hi|large</p>",
+    );
+  });
+
+  it("marks a section that has a column form for the Footer on its <section> (5.39)", () => {
+    const ContactDetails = toPuckConfig(siteLibrary).components.ContactDetails?.render as (
+      props: Record<string, unknown>,
+    ) => ReactNode;
+    const html = renderToStaticMarkup(
+      <ContactDetails
+        id="c"
+        title="Visit"
+        hidden
+        note="Check the hours"
+        advanced={{ anchorId: "contact" }}
+      />,
+    );
+
+    expect(html).toMatch(
+      new RegExp(
+        `^<section class="site-contact [^>]*id="contact" ${HIDDEN_ATTRIBUTE}="" ${NOTE_ATTRIBUTE}="">`,
+      ),
     );
   });
 });

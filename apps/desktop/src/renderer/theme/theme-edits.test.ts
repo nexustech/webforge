@@ -1,6 +1,7 @@
 import {
   countOneOffUses,
   DEFAULT_THEME,
+  type OneOffUse,
   OWN_COLORS_MAX,
   type SiteDoc,
   themeIdSchema,
@@ -20,6 +21,7 @@ import {
   lookReach,
   ownColorUseCount,
   ownCopyName,
+  pagesShowing,
   renameOwnColor,
   renameOwnTheme,
   setBrandColours,
@@ -948,7 +950,6 @@ describe("a one-off given the nearest of your colours (TC-4, #1222)", () => {
   it("gives every use the nearest, keeping opacity, in one step undo reverses", async () => {
     const { session, labels, theme } = setUp();
     const said = toastsOf(session);
-    const pages = Object.keys(session.history.document.getState().pages).length;
     const sky = await addOwnColor(session, undefined, "Sky", { l: 0.6, c: 0.17, h: 260 });
     await addOwnColor(session, undefined, "Brick", { l: 0.5, c: 0.16, h: 30 });
     twoUses(session);
@@ -957,13 +958,29 @@ describe("a one-off given the nearest of your colours (TC-4, #1222)", () => {
     expect(await applyNearestOwnColor(session, undefined, "#1f6feb", isColorField)).toBe("Sky");
     expect(backgrounds(session)).toEqual([`own-${sky}/50`, `own-${sky}`]);
     expect(labels().at(-1)).toBe("Used 'Sky' in place of #1f6feb");
-    // Its toast says how far it reached, with Undo (LF-15).
-    expect(said.at(-1)).toBe(`'Sky' used in place of #1f6feb on ${pages} pages`);
+    // Its toast says how far it reached, with Undo (LF-15): both uses are on the home page.
+    expect(said.at(-1)).toBe("'Sky' used in place of #1f6feb on 1 page");
     // Nothing in the theme changed.
     expect(theme()).toEqual(themeBefore);
 
     session.history.undo();
     expect(backgrounds(session)).toEqual(["[#1f6feb]/50", "[#1f6feb]"]);
+  });
+
+  it("counts the pages that show its uses, each once (PR 1324's review)", () => {
+    const site = starterSite();
+    const home = site.homePageId;
+    const all = Object.keys(site.pages).length;
+    const use = (on: OneOffUse["on"], nodeId = "n"): OneOffUse => ({ on, nodeId, field: "f" });
+    expect(all).toBeGreaterThan(1);
+    expect(pagesShowing(site, [])).toBe(0);
+    expect(pagesShowing(site, [use(home), use(home, "m")])).toBe(1);
+    expect(pagesShowing(site, [use("footer"), use(home)])).toBe(all);
+    // A page that hides the Header doesn't show its uses.
+    const page = site.pages[home];
+    if (page === undefined) throw new Error("no home page");
+    page.settings.hideHeader = true;
+    expect(pagesShowing(site, [use("header")])).toBe(all - 1);
   });
 
   it("changes nothing while the person has none of their own colours", async () => {

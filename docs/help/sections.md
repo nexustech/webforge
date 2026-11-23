@@ -5,7 +5,7 @@ title: Sections
 summary: Every section you can add to a page, what it's for and what you can change.
 components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat, Steps, Step, ContactButtons, Menu, MenuItem]
 related: [elements, add-panel, edit-panel, forms, header-and-footer]
-updated: 2026-11-21
+updated: 2026-11-22
 ---
 
 # Sections
@@ -126,6 +126,7 @@ Your opening hours, address, phone number and email, taken from [Site Settings](
 - Turn **Show opening hours** and **Show contact details** on or off.
 - Anything left empty in Site Settings is left out.
 - **Layouts:** _Side by side_ or _One above the other_.
+- It can go in a column of the [Footer](header-and-footer.md#header-and-footer) too, where it shows without its background and spacing, its title as the column's.
 
 ## Contact form
 
@@ -138,6 +139,8 @@ Messages are sent to the form service you choose in Site Settings. Until you cho
 An email signup for a newsletter service you already use. {appName} doesn't include one of its own. Paste the service's form address (starting `https://`) into **Form address**, and the name it expects for the email field into **Email field's name**. Turn on **Ask for a name** if your service takes one.
 
 This section sends sign-ups straight to that service, not to the form service in Site Settings.
+
+It can go in a column of the [Footer](header-and-footer.md#header-and-footer) too, where it shows without its background and spacing, its title as the column's.
 
 ## Section
 

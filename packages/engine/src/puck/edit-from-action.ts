@@ -36,10 +36,25 @@ export function selectedNodeId(state: PuckState): string | null {
   return nodeAt(toPageDoc(state.data), selector.zone, selector.index)?.props.id ?? null;
 }
 
+/**
+ * Whether two values of a prop are the same: the same value, or two lists of the same items. Puck
+ * gives a replaced element's slots new lists of the same elements (an empty one too, as a Footer
+ * with no columns has, 5.39), which change nothing.
+ */
+function sameValue(before: unknown, after: unknown): boolean {
+  if (Object.is(before, after)) return true;
+  return (
+    Array.isArray(before) &&
+    Array.isArray(after) &&
+    before.length === after.length &&
+    before.every((item, index) => Object.is(item, after[index]))
+  );
+}
+
 /** The props whose values differ between two versions of a node. */
 function changedFields(before: Record<string, unknown>, after: Record<string, unknown>): string[] {
   const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
-  return [...keys].filter((key) => !Object.is(before[key], after[key]));
+  return [...keys].filter((key) => !sameValue(before[key], after[key]));
 }
 
 function isPlainValue(value: unknown): value is EnginePatch["value"] {
