@@ -252,11 +252,14 @@ describe("the assistant's defences against injected text (AIA-9, product/14 §6.
       windowWith("Fresh bread"),
     );
     const events = await send("Make it friendlier");
-    expect(asked).toHaveLength(REPLY_CAPS.toolCalls);
+    const commands = asked.filter((request) => request.kind === "command");
+    expect(commands).toHaveLength(REPLY_CAPS.toolCalls);
     // Every command the window got was the assistant's, so every step is "AI (Assistant): …".
+    expect(commands.every((request) => request.app === "Assistant")).toBe(true);
+    // The rest is the loop's own Site Check after each model call's changes (5.18): it reads.
     expect(
-      asked.every((request) => request.kind === "command" && request.app === "Assistant"),
-    ).toBe(true);
+      asked.filter((request) => request.kind !== "command").map((request) => request.name),
+    ).toEqual(["runSiteCheck", "runSiteCheck", "runSiteCheck"]);
     const done = events.at(-1);
     expect(done).toMatchObject({ type: "reply-done", stop: "tool-cap" });
     const steps = done?.type === "reply-done" ? done.steps : [];

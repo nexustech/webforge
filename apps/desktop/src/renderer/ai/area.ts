@@ -50,7 +50,10 @@ export const aiRequestsArea: Area<WindowContext> = {
     // The assistant's held changes (6.9e): a draft of the site, never the site itself.
     const stages = createStages(host);
     const appTools = createAppTools({
-      site: () => session.history.document.getState(),
+      // A held reply's check reads its draft (5.18): what its changes would leave.
+      site: (stage) =>
+        (stage === undefined ? undefined : stages.site(stage)) ??
+        session.history.document.getState(),
       allowListConfirmed: () => codeTrust.allowListConfirmed.getState(),
       onNetlify: () => onNetlify.getState(),
       ignored: () => siteCheckIgnored.initial,
