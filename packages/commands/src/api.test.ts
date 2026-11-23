@@ -1157,6 +1157,14 @@ describe("where visitors' money and details go (S18, #658)", () => {
     expect(change?.name).not.toMatch(/["“”\n]/);
     expect(change?.from).toBe("buy.stripe.com");
     expect(change?.to).toBe("pay.example.com");
+    // An apostrophe stays: it can't close the question's quotes, and a name needs it.
+    const [named] = destinationChanges(
+      site,
+      plan,
+      { name: "Rosa's Café ’Plus’" },
+      { link: { kind: "url", href: "https://pay.example.com/" } },
+    );
+    expect(named?.name).toBe("Rosa's Café ’Plus’");
     // A page's title, which an app can write too, alike.
     const [toPage] = destinationChanges(
       site,

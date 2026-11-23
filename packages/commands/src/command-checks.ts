@@ -333,10 +333,11 @@ function addressOf(value: unknown): string {
 const NAME_MAX_CHARS = 40;
 
 /**
- * Quotation marks, which a confirmation puts around a name, and line breaks: an app writes the
- * names, so one could close the quotes and write a "from … to …" of its own (#1366 review).
+ * Double quotation marks, as a confirmation puts around a name, and line breaks: an app writes the
+ * names, so one could close the quotes and write a "from … to …" of its own (#1366 review). An
+ * apostrophe (' or ’) stays: it can't close them, and most names that hold one need it (Rosa's Café).
  */
-const NAME_SPOOFS = /["“”„‟‘’‚‛'`«»‹›\r\n\u2028\u2029]/g;
+const NAME_SPOOFS = /["“”„‟«»\r\n\u2028\u2029]/g;
 
 /**
  * `name` as a confirmation quotes it: with no quotation marks or line breaks, its spaces run
