@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCommandRegistry } from "./commands.js";
 import {
   createSiteWideConfirm,
+  historyCommandMindingQuestions,
   pauseCommandsWhileAsking,
   SiteWideConfirmDialog,
 } from "./confirm-site-wide.js";
@@ -16,6 +17,72 @@ const deletePage = (affectedPages: number) => ({
   description: "This removes the page and its content.",
   confirm: "Delete Page",
   affectedPages,
+});
+
+describe("Undo and Redo keys around a site-wide question (#1344)", () => {
+  /** A confirmation whose hook (the version's saving) waits until `saved` is called. */
+  function waitingForVersion() {
+    const confirm = createSiteWideConfirm();
+    let saved: () => void = () => undefined;
+    confirm.setBeforeSiteWideAction(
+      () =>
+        new Promise<void>((resolve) => {
+          saved = resolve;
+        }),
+    );
+    return { confirm, saved: () => saved() };
+  }
+
+  it("run at once while nothing is asked or waits", () => {
+    const run = vi.fn((_command: string) => true);
+    expect(historyCommandMindingQuestions(createSiteWideConfirm(), "undo", run)).toBe(true);
+    expect(run).toHaveBeenCalledWith("undo");
+  });
+
+  it("do nothing while the question is open: the keys are the dialog's", () => {
+    const { confirm } = waitingForVersion();
+    void confirm.confirmSiteWide(deletePage(2));
+    const run = vi.fn((_command: string) => true);
+    expect(historyCommandMindingQuestions(confirm, "undo", run)).toBe(false);
+    expect(historyCommandMindingQuestions(confirm, "cancel", run)).toBe(false);
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("wait for the answered change, in the order pressed, and come after it", async () => {
+    const { confirm, saved } = waitingForVersion();
+    const order: string[] = [];
+    const change = confirm.confirmSiteWide(deletePage(2)).then(() => order.push("change"));
+    confirm.answer(true);
+    await Promise.resolve();
+    expect(confirm.busy()).toBe(true);
+
+    const run = (command: string) => {
+      order.push(command);
+      return true;
+    };
+    // Taken, so nothing else has the keys, but not run yet; Esc has nothing to cancel.
+    expect(historyCommandMindingQuestions(confirm, "undo", run)).toBe(true);
+    expect(historyCommandMindingQuestions(confirm, "redo", run)).toBe(true);
+    expect(historyCommandMindingQuestions(confirm, "cancel", run)).toBe(false);
+    expect(order).toEqual([]);
+
+    saved();
+    await change;
+    await vi.waitFor(() => expect(order).toEqual(["change", "undo", "redo"]));
+  });
+
+  it("wait for an unasked change too, and run at once after it", async () => {
+    const { confirm, saved } = waitingForVersion();
+    const unasked = confirm.beforeUnaskedChange(deletePage(2));
+    const run = vi.fn((_command: string) => true);
+    expect(historyCommandMindingQuestions(confirm, "undo", run)).toBe(true);
+    expect(run).not.toHaveBeenCalled();
+    saved();
+    await unasked;
+    await vi.waitFor(() => expect(run).toHaveBeenCalledWith("undo"));
+    confirm.afterChange(() => run("redo"));
+    expect(run).toHaveBeenLastCalledWith("redo");
+  });
 });
 
 describe("confirmSiteWide (D7)", () => {

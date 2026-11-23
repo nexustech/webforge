@@ -421,7 +421,12 @@ describe("removing from a post's design or Header (6.10a, D7)", () => {
     const engine = createFakeEngine();
     const confirmSiteWide = vi.fn((_action: SiteWideAction) => Promise.resolve(answer));
     connectEngine(
-      confirmSharedRemovals(engine, session, { confirmSiteWide, busy: () => false }),
+      confirmSharedRemovals(engine, session, {
+        confirmSiteWide,
+        busy: () => false,
+        current: () => null,
+        afterChange: (action) => action(),
+      }),
       session,
     );
     const now = () => session.history.document.getState();

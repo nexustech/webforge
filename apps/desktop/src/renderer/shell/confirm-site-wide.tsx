@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@webforge/editor-ui";
+import type { HistoryCommand } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { useSyncExternalStore } from "react";
 import type { CommandRegistry } from "./commands.js";
@@ -69,6 +70,12 @@ export type SiteWideConfirm = {
    * site meanwhile: every way in checks this, not {@link SiteWideConfirm.current} alone.
    */
   busy(): boolean;
+  /**
+   * Runs `action` once no answered change waits for its {@link BeforeSiteWideAction}, after that
+   * change is made; at once while none waits. What the person pressed meanwhile (Undo, #1344)
+   * comes after the change, as they pressed it, rather than being lost.
+   */
+  afterChange(action: () => void): void;
   /** The last question asked, kept once answered; the dialog shows it while it fades out. */
   last(): SiteWideAction | null;
   subscribe(listener: () => void): () => void;
@@ -85,9 +92,23 @@ export function createSiteWideConfirm(): SiteWideConfirm {
   let before = nothingBefore;
   // How many changes wait for the hook before they're made.
   let waiting = 0;
+  // What runs once they have been (`afterChange`).
+  let after: (() => void)[] = [];
   const listeners = new Set<() => void>();
   const changed = () => {
     for (const listener of listeners) listener();
+  };
+  /**
+   * Runs what waits for the changes, once none waits any more. In a task of its own: each change is
+   * made as its promise resolves, in the microtasks after the hook, so all of them come first.
+   */
+  const runAfter = () => {
+    setTimeout(() => {
+      if (waiting > 0) return;
+      const actions = after;
+      after = [];
+      for (const action of actions) action();
+    }, 0);
   };
   /** Runs the hook for `action`, counted as {@link SiteWideConfirm.busy} until it has. */
   const runBefore = async (action: SiteWideAction, asked: boolean): Promise<void> => {
@@ -100,6 +121,7 @@ export function createSiteWideConfirm(): SiteWideConfirm {
     } finally {
       waiting -= 1;
       changed();
+      if (waiting === 0 && after.length > 0) runAfter();
     }
   };
   return {
@@ -135,6 +157,13 @@ export function createSiteWideConfirm(): SiteWideConfirm {
     },
     current: () => open?.action ?? null,
     busy: () => open !== null || waiting > 0,
+    afterChange(action) {
+      if (waiting === 0) {
+        action();
+        return;
+      }
+      after.push(action);
+    },
     last: () => last,
     subscribe(listener) {
       listeners.add(listener);
@@ -146,6 +175,26 @@ export function createSiteWideConfirm(): SiteWideConfirm {
       open?.settle(confirmed);
     },
   };
+}
+
+/**
+ * Runs Undo, Redo or Esc's cancel pressed on the editor's keys with `run`, minding `confirm`:
+ * - while it asks a question, nothing: the keys are the dialog's;
+ * - while an answered change waits for its version (4.6), Undo and Redo once it's made, so they
+ *   never land before it and aren't lost either (#1344); Esc has nothing to cancel then;
+ * - otherwise at once.
+ *
+ * Returns what `run` returns, or true for a command it holds back.
+ */
+export function historyCommandMindingQuestions(
+  confirm: Pick<SiteWideConfirm, "busy" | "current" | "afterChange">,
+  command: HistoryCommand,
+  run: (command: HistoryCommand) => boolean,
+): boolean {
+  if (!confirm.busy()) return run(command);
+  if (confirm.current() !== null || command === "cancel") return false;
+  confirm.afterChange(() => run(command));
+  return true;
 }
 
 /**

@@ -2,6 +2,7 @@ import { toast } from "@webforge/editor-ui";
 import {
   type CanvasEngine,
   createPuckEngine,
+  type HistoryCommand,
   installHistoryKeys,
   type ViewOptions,
 } from "@webforge/engine";
@@ -22,7 +23,10 @@ import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { installCommandShortcuts } from "../shell/commands.js";
-import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
+import {
+  historyCommandMindingQuestions,
+  type SiteWideConfirm,
+} from "../shell/confirm-site-wide.js";
 import { useContextualToolbars } from "../shell/contextual-toolbar-context.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import {
@@ -98,7 +102,12 @@ export type EditorProps = {
    */
   readonly siteWide?: Pick<
     SiteWideConfirm,
-    "confirmSiteWide" | "current" | "busy" | "setBeforeSiteWideAction" | "beforeUnaskedChange"
+    | "confirmSiteWide"
+    | "current"
+    | "busy"
+    | "afterChange"
+    | "setBeforeSiteWideAction"
+    | "beforeUnaskedChange"
   >;
   /** My themes (2.23), the window's, for its areas: see {@link EditorContext}. */
   readonly ownThemes?: OwnThemes | undefined;
@@ -259,11 +268,16 @@ export function Editor({
     const removeKeys = installHistoryKeys(
       window,
       (command) => {
-        // Nothing changes while a question about the whole site waits for its answer (D7), or
-        // the answered change for its version (4.6); Esc goes to the dialog.
-        if (siteWide?.busy()) return false;
-        connection.flush();
-        return runHistoryCommand(session, command);
+        const run = (pressed: HistoryCommand) => {
+          connection.flush();
+          return runHistoryCommand(session, pressed);
+        };
+        // Nothing changes while a question about the whole site waits for its answer (D7), and
+        // Esc goes to the dialog; Undo pressed as the answered change waits for its version (4.6)
+        // comes once it's made (#1344).
+        return siteWide === undefined
+          ? run(command)
+          : historyCommandMindingQuestions(siteWide, command, run);
       },
       // Ctrl/Cmd+Z in a dialog's text undoes the text, not a step of the site behind it (#421
       // review); elsewhere in a dialog it is the site's.
