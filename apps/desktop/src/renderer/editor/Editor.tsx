@@ -24,6 +24,7 @@ import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { installCommandShortcuts } from "../shell/commands.js";
 import {
+  dropHeld,
   historyCommandMindingQuestions,
   type SiteWideConfirm,
 } from "../shell/confirm-site-wide.js";
@@ -264,6 +265,8 @@ export function Editor({
       session,
     );
     setEngine(engine);
+    // Undo or Redo held for a change's version (#1344), dropped as the editor closes.
+    const held = new Set<() => void>();
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
     const removeKeys = installHistoryKeys(
       window,
@@ -277,7 +280,7 @@ export function Editor({
         // comes once it's made (#1344).
         return siteWide === undefined
           ? run(command)
-          : historyCommandMindingQuestions(siteWide, command, run);
+          : historyCommandMindingQuestions(siteWide, command, run, held);
       },
       // Ctrl/Cmd+Z in a dialog's text undoes the text, not a step of the site behind it (#421
       // review); elsewhere in a dialog it is the site's.
@@ -298,6 +301,8 @@ export function Editor({
       removeFrameShortcuts?.();
       detach();
       removeKeys();
+      // An Undo held for a change's version has no editor to run in any more.
+      dropHeld(held);
       connection.disconnect();
       engine.destroy();
       element.remove();

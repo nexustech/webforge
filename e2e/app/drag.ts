@@ -55,14 +55,20 @@ async function dragReady(canvas: FrameLocator, from: Locator): Promise<void> {
  * as a fraction of the source's width: pressing on an inline-editable element's text selects text
  * instead of dragging. `grabHeight` is the same down its height: a selected element's padding grips
  * sit at the middle of its sides, where a press resizes its padding instead.
+ *
+ * `to` is a point, or what finds it: found again at every try, so a canvas that moves once the drag
+ * is under way is followed. With `into`, the drop preview must be inside it before the drag lets
+ * go: on a busy computer the preview can still be in a zone the pointer crossed on its way (#1336).
  */
 export async function drag(
   page: Page,
   from: Locator,
-  to: { x: number; y: number },
+  to: { x: number; y: number } | (() => Promise<{ x: number; y: number }>),
   grabAt = 0.5,
   grabHeight = 0.5,
+  into?: Locator,
 ): Promise<void> {
+  const target = () => (typeof to === "function" ? to() : Promise.resolve(to));
   const canvas = page.frameLocator(".editor__canvas iframe");
   let nudge = 0;
   for (let press = 1; ; press++) {
@@ -92,16 +98,18 @@ export async function drag(
       if (press === PRESSES) throw error;
     }
   }
-  await page.mouse.move(to.x, to.y, { steps: 25 });
+  const first = await target();
+  await page.mouse.move(first.x, first.y, { steps: 25 });
   await expect
     .poll(
       async () => {
         nudge += 1;
+        const at = await target();
         // Come down onto the point again, a few pixels at a time, as a hand would: Puck finds the
         // zone nested under the pointer from its movement, which one jump may not give it.
-        await page.mouse.move(to.x, to.y - 12, { steps: 2 });
-        await page.mouse.move(to.x, to.y + (nudge % 2), { steps: 6 });
-        return canvas.locator(DROP_PREVIEW).count();
+        await page.mouse.move(at.x, at.y - 12, { steps: 2 });
+        await page.mouse.move(at.x, at.y + (nudge % 2), { steps: 6 });
+        return (into === undefined ? canvas : into).locator(DROP_PREVIEW).count();
       },
       { message: "No drop preview where the drag ends", timeout: 10_000 },
     )

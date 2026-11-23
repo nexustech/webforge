@@ -52,6 +52,10 @@ export type SiteWideConfirm = {
    * they confirm and {@link BeforeSiteWideAction} has run, `false` if they cancel. The action
    * itself stays one undo step, as any edit. One question at a time: asking again while one is
    * open cancels the first.
+   *
+   * Confirmed, the caller makes the change as this resolves, with nothing awaited between: the
+   * keys pressed meanwhile run in the next task (see {@link SiteWideConfirm.afterChange}), and
+   * would land before a change made later.
    */
   confirmSiteWide(action: SiteWideAction): Promise<boolean>;
   /** Sets what runs before every confirmed action (nothing until Version History); returns undo. */
@@ -59,7 +63,8 @@ export type SiteWideConfirm = {
   /**
    * Runs the {@link BeforeSiteWideAction} for a change to every page that asks no question first
    * (a theme control's, 4.6), before the change is made. Resolves once it has run; a failed hook
-   * never blocks the change.
+   * never blocks the change. As with {@link SiteWideConfirm.confirmSiteWide}, the caller makes the
+   * change as this resolves, with nothing awaited between.
    */
   beforeUnaskedChange(action: SiteWideAction): Promise<void>;
   /** The question shown, if any; for the dialog. */
@@ -73,9 +78,10 @@ export type SiteWideConfirm = {
   /**
    * Runs `action` once no answered change waits for its {@link BeforeSiteWideAction}, after that
    * change is made; at once while none waits. What the person pressed meanwhile (Undo, #1344)
-   * comes after the change, as they pressed it, rather than being lost.
+   * comes after the change, as they pressed it, rather than being lost. Returns what drops
+   * `action` if it hasn't run yet: the editor it was pressed in has closed.
    */
-  afterChange(action: () => void): void;
+  afterChange(action: () => void): () => void;
   /** The last question asked, kept once answered; the dialog shows it while it fades out. */
   last(): SiteWideAction | null;
   subscribe(listener: () => void): () => void;
@@ -160,9 +166,12 @@ export function createSiteWideConfirm(): SiteWideConfirm {
     afterChange(action) {
       if (waiting === 0) {
         action();
-        return;
+        return () => undefined;
       }
       after.push(action);
+      return () => {
+        after = after.filter((each) => each !== action);
+      };
     },
     last: () => last,
     subscribe(listener) {
@@ -184,17 +193,30 @@ export function createSiteWideConfirm(): SiteWideConfirm {
  *   never land before it and aren't lost either (#1344); Esc has nothing to cancel then;
  * - otherwise at once.
  *
- * Returns what `run` returns, or true for a command it holds back.
+ * A command held back is in `held` until it runs: what drops it, for whoever stops listening to
+ * the keys before then (the editor closing as the version saves). Returns what `run` returns, or
+ * true for a command it holds back.
  */
 export function historyCommandMindingQuestions(
   confirm: Pick<SiteWideConfirm, "busy" | "current" | "afterChange">,
   command: HistoryCommand,
   run: (command: HistoryCommand) => boolean,
+  held: Set<() => void>,
 ): boolean {
   if (!confirm.busy()) return run(command);
   if (confirm.current() !== null || command === "cancel") return false;
-  confirm.afterChange(() => run(command));
+  const drop = confirm.afterChange(() => {
+    held.delete(drop);
+    run(command);
+  });
+  held.add(drop);
   return true;
+}
+
+/** Drops every command `held` holds back (see {@link historyCommandMindingQuestions}). */
+export function dropHeld(held: Set<() => void>): void {
+  for (const drop of held) drop();
+  held.clear();
 }
 
 /**

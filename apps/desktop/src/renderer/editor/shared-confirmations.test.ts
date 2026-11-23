@@ -48,7 +48,10 @@ function setUp(answer?: boolean, site: SiteDoc = footerSite()) {
     confirmSiteWide,
     busy: () => asking,
     current: () => (asking ? (confirmSiteWide.mock.lastCall?.[0] ?? null) : null),
-    afterChange: (action: () => void) => action(),
+    afterChange: (action: () => void) => {
+      action();
+      return () => undefined;
+    },
   };
   connectEngine(confirmSharedRemovals(engine, session, siteWide), session);
   const removeHeading = () => {
