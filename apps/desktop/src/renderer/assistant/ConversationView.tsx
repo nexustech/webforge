@@ -57,7 +57,11 @@ export type ConversationViewProps = {
   readonly afterReply?: (turn: TurnView) => ReactNode;
   /** Drawn under a reply's text and tool calls, while it runs too: the questions it asked (5.16). */
   readonly asked?: (turn: TurnView) => ReactNode;
-  /** Where requests go, for a failed reply's message (5.20): OpenRouter's, or another server's. */
+  /**
+   * Where requests go, for a failed reply's message (5.20): OpenRouter's, or another server's. The
+   * provider now, for older replies too: one that failed before a change of provider reads as the
+   * new one's, which is accepted, as only the last reply has buttons.
+   */
   readonly provider?: AssistantStatus["provider"]["kind"] | undefined;
 };
 

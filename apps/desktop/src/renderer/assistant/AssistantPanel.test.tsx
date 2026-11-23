@@ -216,6 +216,28 @@ describe("what the person can do about an error (5.20, OL-5)", () => {
     expect(screen.getAllByRole("button", { name: "Try Again" })).toHaveLength(1);
   });
 
+  it("offers no Try Again for a reply that changed the site before it failed", async () => {
+    const { send, user } = shown({
+      reply: {
+        text: "Adding your testimonials",
+        steps: [
+          {
+            entryId: "e1",
+            label: "AI (Assistant): Added Testimonials",
+            target: { pageId: "home" },
+          },
+        ],
+        fail: "offline",
+      },
+    });
+    await sent(user, "Add three testimonials");
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/couldn't be reached/);
+    // Sent again, the message would add a second Testimonials section.
+    expect(screen.queryByRole("button", { name: "Try Again" })).toBeNull();
+    expect(send).toHaveBeenCalledOnce();
+  });
+
   it("opens Assistant Settings for a refusal it can fix there, keeping the message", async () => {
     const { openSettings, user } = shown({ reply: { refuse: "not-signed-in" } });
     await sent(user, "Hi");

@@ -133,7 +133,7 @@ Only the last reply's changes wait: sending a new message drops the ones before,
 
 If a message can't be sent, or a reply stops part way, the panel says why, and a button under it does something about it where it can:
 
-- **Try Again** sends the message again: after the assistant couldn't be reached, too many messages at once, or another problem with the service. A message that wasn't sent stays in the box, and **Try Again** sends it from there.
+- **Try Again** sends the message again: after the assistant couldn't be reached, too many messages at once, or another problem with the service. A message that wasn't sent stays in the box, and **Try Again** sends it from there. If the reply changed your site before it stopped, there's no **Try Again**, so nothing is made twice: look at what it changed, each a step in [Undo History](undo-and-history.md), then ask for what's left.
 - **Assistant Settings…** opens Settings › Assistant: to sign in, or sign in again; to choose a model, or another one when yours isn't available; to raise your monthly limit; or to use a secure (https://) address for your server.
 - **Add Credit on OpenRouter** opens OpenRouter's page in your browser when your account there has run out of credit. With your own server, the message says the server refused, and its account is the place to look.
 

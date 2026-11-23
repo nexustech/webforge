@@ -213,12 +213,16 @@ export function AssistantPanel(props: AssistantPanelProps) {
             // What the person can do about the last reply's error (5.20, OL-5): an older one's
             // moment has passed.
             if (turn.state === "failed") {
-              if (turns.at(-1)?.replyId !== turn.replyId) return null;
+              const last = turns.at(-1);
+              if (last?.replyId !== turn.replyId) return null;
+              // Sent again whole, a message would make again what the reply made before it
+              // failed (the model hears earlier replies as text): Try Again only if it made none.
+              const madeNone = last.steps.length === 0 && last.held.length === 0;
               return (
                 <ErrorActions
                   actions={errorActions(turn.error, status.provider.kind)}
                   onRetry={
-                    replying === undefined
+                    replying === undefined && madeNone
                       ? () => void model.send(turn.message, props.context())
                       : undefined
                   }
