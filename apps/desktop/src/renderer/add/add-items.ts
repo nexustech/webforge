@@ -442,7 +442,7 @@ export function addComponent(session: AddSession, key: string, point?: InsertPoi
   ) {
     return false;
   }
-  const { pageId, viewport, nodeId: selectedId } = session.ui.getState();
+  const { pageId, viewport } = session.ui.getState();
   const site = session.history.document.getState();
   // Into the Footer's columns, on every page, when the selection is there (5.39).
   const toFooter = inFooter(session, type, point) !== undefined;
