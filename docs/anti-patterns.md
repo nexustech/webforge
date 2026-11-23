@@ -145,7 +145,7 @@ The examples are the ones the reviews gave; most have been fixed since, and they
 ### 19. Measuring once what the app or the platform settles a moment later
 
 - **Looks like:** the title bar's fit was measured once after a resize, while on Linux the window controls' overlay reports the room for the size before it for a moment (`small-window.spec.ts`, fixed in #1341). The canvas's tooltips were hovered before the canvas was ready (#1125). Theme Studio's accent radio was read while the studio was still laying out (#1277).
-- **Why it hurts:** the test passes on a fast machine and fails at random on a busy CI runner, often on one OS only. Each failure costs a fix and a full re-run, and the merge queue holds every PR behind it: these were most of the 32% of PR runs that failed in the week of 16 Nov 2026.
+- **Why it hurts:** the test passes on a fast machine and fails at random on a busy CI runner, often on one OS only. Each failure costs a fix and a full re-run, and the merge queue holds every PR behind it: races like these were among the most common causes of the 32% of PR runs that failed in the week of 16 Nov 2026.
 - **Instead:** wait for the condition itself, with `expect.poll` or `toPass` around the measurement, never a fixed sleep or a longer timeout. A failure on one OS only is a real bug until shown otherwise.
 - **Found by:** #1347's survey of the CI failures of 9–23 Nov 2026.
 
