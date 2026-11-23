@@ -2,17 +2,35 @@ import type { NativeImage } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import { areaOf, type CapturedWindow, captureArea, captureCanvas } from "./canvas-capture.js";
 
+/** A drawn page's pixels, four bytes each: white and the theme's colour. */
+const DRAWN = new Uint8Array([255, 255, 255, 255, 30, 60, 90, 255]);
+const WHITE = new Uint8Array([255, 255, 255, 255, 255, 255, 255, 255]);
+/** Refused at once, without taking it again. */
+const AT_ONCE = { retries: 0, everyMs: 0 };
+
 /**
  * A window whose page reports `area` for the element asked for, capturing an image `empty` or not,
  * whose pixels are `bitmap`'s (four bytes each).
  */
 function fakeWindow(
   area: unknown,
-  options: { crashed?: boolean; empty?: boolean; bitmap?: Uint8Array } = {},
+  options: { crashed?: boolean; empty?: boolean; bitmap?: Uint8Array; later?: Uint8Array[] } = {},
 ) {
   const jpeg = new Uint8Array([0xff, 0xd8]);
-  const bitmap = options.bitmap ?? new Uint8Array([255, 255, 255, 255, 30, 60, 90, 255]);
-  const resize = vi.fn(() => ({ toJPEG: vi.fn(() => jpeg), toBitmap: () => bitmap }));
+  // Each capture's pixels: `bitmap`'s, then `later`'s in turn, the last kept; with `later`, each
+  // JPEG after the first is the capture's number.
+  const bitmaps = [options.bitmap ?? DRAWN, ...(options.later ?? [])];
+  let taken = 0;
+  const resize = vi.fn(() => {
+    const bitmap = bitmaps[Math.min(taken, bitmaps.length - 1)];
+    const number = taken++;
+    return {
+      toJPEG: vi.fn(() =>
+        number === 0 || options.later === undefined ? jpeg : new Uint8Array([number]),
+      ),
+      toBitmap: () => bitmap,
+    };
+  });
   const image = { isEmpty: () => options.empty === true, resize } as unknown as NativeImage;
   const capturePage = vi.fn(async () => image);
   const executeJavaScript = vi.fn(async (_code: string) => area);
@@ -87,11 +105,63 @@ describe("captureArea", () => {
     const blue = new Uint8Array([10, 20, 30, 255, 10, 20, 31, 255]);
     const alpha = new Uint8Array([10, 20, 30, 255, 10, 20, 30, 0]);
     const drawn = fakeWindow(area, { bitmap: blue });
-    expect(await captureArea(drawn.window, "[data-x]", { refuseOneColour: true })).toBe(drawn.jpeg);
+    expect(await captureArea(drawn.window, "[data-x]", { refuseOneColour: AT_ONCE })).toBe(
+      drawn.jpeg,
+    );
     const blank = fakeWindow(area, { bitmap: alpha });
-    expect(await captureArea(blank.window, "[data-x]", { refuseOneColour: true })).toBeUndefined();
+    expect(
+      await captureArea(blank.window, "[data-x]", { refuseOneColour: AT_ONCE }),
+    ).toBeUndefined();
     // A blank page's thumbnail in Version History is still one.
     expect(await captureArea(blank.window, "[data-x]")).toBe(blank.jpeg);
+  });
+});
+
+describe("captureArea, a picture in one colour taken again (#1323)", () => {
+  const area = { x: 1, y: 2, width: 3, height: 4 };
+
+  it("takes it again until the window shows the drawing", async () => {
+    const { window, capturePage } = fakeWindow(area, { bitmap: WHITE, later: [WHITE, DRAWN] });
+    const picture = await captureArea(window, "[data-x]", {
+      refuseOneColour: { retries: 5, everyMs: 0 },
+    });
+    expect(picture).toEqual(new Uint8Array([2]));
+    expect(capturePage).toHaveBeenCalledTimes(3);
+  });
+
+  it("refuses it once the retries are used up", async () => {
+    const { window, capturePage } = fakeWindow(area, { bitmap: WHITE });
+    const picture = await captureArea(window, "[data-x]", {
+      refuseOneColour: { retries: 2, everyMs: 0 },
+    });
+    expect(picture).toBeUndefined();
+    expect(capturePage).toHaveBeenCalledTimes(3);
+  });
+
+  it("waits between pictures", async () => {
+    vi.useFakeTimers();
+    try {
+      const { window, capturePage } = fakeWindow(area, { bitmap: WHITE, later: [DRAWN] });
+      const picture = captureArea(window, "[data-x]", {
+        refuseOneColour: { retries: 5, everyMs: 50 },
+      });
+      await vi.advanceTimersByTimeAsync(49);
+      expect(capturePage).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(await picture).toEqual(new Uint8Array([1]));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("gives nothing when the window goes while it waits", async () => {
+    const { window, capturePage } = fakeWindow(area, { bitmap: WHITE });
+    let destroyed = false;
+    const going = { ...window, isDestroyed: () => destroyed };
+    const picture = captureArea(going, "[data-x]", { refuseOneColour: { retries: 5, everyMs: 0 } });
+    destroyed = true;
+    expect(await picture).toBeUndefined();
+    expect(capturePage).toHaveBeenCalledTimes(1);
   });
 });
 
