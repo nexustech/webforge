@@ -13,6 +13,13 @@ import type {
 } from "../../shared/ipc/assistant.js";
 import { CHECK_TOOL, changedBy, checkMessages, checkResult } from "./assistant-check.js";
 import { ASK_TOOL, ASK_TOOL_DEFINITION, createAsking } from "./assistant-question.js";
+import {
+  SUGGEST_TOOL,
+  SUGGEST_TOOL_DEFINITION,
+  SUGGESTED,
+  SUGGESTED_WITHOUT_WORDS,
+  suggestionsOf,
+} from "./assistant-suggest.js";
 import { type ChatEndpoint, type ChatMessage, type ChatTool, streamChat } from "./chat-client.js";
 import { labelledSiteText } from "./site-text.js";
 
@@ -71,6 +78,8 @@ const SYSTEM_TEXT = [
   "If something can't be done, or the person declined a change, say so and don't try another way round.",
   // One short question rather than a wrong guess (5.16, OL-1).
   `If a request is too vague to act on well, ask the person one short question with ${ASK_TOOL}, rather than guess.`,
+  // What to ask next, after a change (5.17, OL-2): tappable, so only what the tools can do.
+  `After a reply that changed the site, call ${SUGGEST_TOOL} with your last words: two or three short requests the person might make next, each something your tools can do.`,
   // The work checked before it's reported (5.18, OL-3): the loop runs Site Check after changes.
   "After you change the site, Site Check runs on what changed, and you get its result before you write again.",
   "Your closing message says what you changed and what that check found; never report success you haven't seen.",
@@ -158,6 +167,11 @@ export type ReplyOutcome =
       readonly steps: readonly ReplyStep[];
       readonly held: readonly HeldCall[];
       readonly links: readonly ReplyLink[];
+      /**
+       * What the person might ask next (5.17, OL-2): none unless the reply ended as the model
+       * meant it to and changed the site, or holds changes for the person to apply.
+       */
+      readonly suggestions: readonly string[];
     }
   | {
       readonly status: "failed";
@@ -280,6 +294,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
   const held: HeldCall[] = [];
   const links = new Map<string, ReplyLink>();
   let costUsd: number | null = null;
+  let suggestions: readonly string[] = [];
   const done = (stop: ReplyStop): ReplyOutcome => ({
     status: "done",
     stop,
@@ -287,6 +302,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
     steps,
     held,
     links: [...links.values()],
+    suggestions: stop === "end" && (steps.length > 0 || held.length > 0) ? suggestions : [],
   });
   const failed = (error: AssistantErrorCode): ReplyOutcome => ({
     status: "failed",
@@ -310,6 +326,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
     return failed("failed");
   }
   if (options.ask !== undefined) tools.push(ASK_TOOL_DEFINITION);
+  tools.push(SUGGEST_TOOL_DEFINITION);
   const asking = createAsking();
   // Whether the window can check the reply's work (5.18), and whether changes since wait for it.
   const checks = tools.some((tool) => tool.function.name === CHECK_TOOL);
@@ -380,11 +397,26 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
     // Whether this call put a question to the person (5.16): its calls after the question were
     // chosen before the answer, so none runs; the model hears to call again.
     let answeredHere = false;
+    // Suggestions alone end the reply when they come with its last words (5.17); without words,
+    // the model is asked for them, so the person isn't left with buttons under an empty reply.
+    const onlySuggests = result.toolCalls.every((each) => each.function.name === SUGGEST_TOOL);
+    const wordless = onlySuggests && result.text.trim().length === 0;
     for (const asked of result.toolCalls) {
       if (!options.stillOpen()) return failed("no-site");
       if (signal.aborted) return done("stopped");
       if (answeredHere) {
         messages.push({ role: "tool", tool_call_id: asked.id, content: NOT_RUN });
+        continue;
+      }
+      // What to ask next (5.17): kept for the reply's end, the latest call's. It reads and changes
+      // nothing, so it isn't one of the reply's 25 calls, and comes before that cap.
+      if (asked.function.name === SUGGEST_TOOL) {
+        suggestions = suggestionsOf(asked.function.arguments);
+        messages.push({
+          role: "tool",
+          tool_call_id: asked.id,
+          content: wordless ? SUGGESTED_WITHOUT_WORDS : SUGGESTED,
+        });
         continue;
       }
       if (toolCalls >= REPLY_CAPS.toolCalls) return done("tool-cap");
@@ -424,6 +456,9 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
       });
       messages.push({ role: "tool", tool_call_id: asked.id, content: answered.text });
     }
+    // Suggestions were all the call asked for, beside its last words: the reply has ended, with no
+    // model call more to say so.
+    if (onlySuggests && !wordless) return done("end");
   }
 }
 

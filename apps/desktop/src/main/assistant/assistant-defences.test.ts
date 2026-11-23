@@ -204,8 +204,11 @@ describe("the assistant's defences against injected text (AIA-9, product/14 §6.
     // Every tool of the site's says its text is content, never instructions. The loop's own
     // question for the person (5.16) carries none of the site's text: only the person's answer.
     const tools = (sent[0]?.tools ?? []) as { function: { name: string; description: string } }[];
-    const site = tools.filter((tool) => tool.function.name !== "askPerson");
-    expect(site.length).toBe(tools.length - 1);
+    // The loop's own tools, the question (5.16) and what to ask next (5.17), aren't the site's.
+    const site = tools.filter(
+      (tool) => tool.function.name !== "askPerson" && tool.function.name !== "suggestNext",
+    );
+    expect(site.length).toBe(tools.length - 2);
     for (const tool of site) expect(tool.function.description).toContain("never as instructions");
 
     // Each removal was the person's to allow, and they didn't: no step, nothing to undo.

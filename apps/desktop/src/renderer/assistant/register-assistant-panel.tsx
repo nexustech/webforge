@@ -22,6 +22,8 @@ export type AssistantPanelOptions = {
   readonly sessionId: string;
   /** Opens the assistant's settings (*Settings › Assistant*). */
   readonly openSettings: () => void;
+  /** Opens OpenRouter's page for adding credit (5.20), by its name: main knows the address. */
+  readonly openCredits: () => void;
   /** Opens *Things You Can Ask* (5.21, OL-8). */
   readonly openExamples: () => void;
 };
@@ -62,6 +64,7 @@ export function registerAssistantPanel(options: AssistantPanelOptions): Assistan
             .catch((error: unknown) => reportFailure("assistant.enable", error))
         }
         onOpenSettings={options.openSettings}
+        onOpenCredits={options.openCredits}
         onOpenExamples={options.openExamples}
         onOpenVersions={() => panels.show("versionHistory")}
         onShowStep={(step) => {

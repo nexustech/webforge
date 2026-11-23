@@ -15,6 +15,7 @@ function shown(options: FakeAssistantOptions = {}) {
   const send = vi.spyOn(api, "send");
   const session = sessionWith();
   const openSettings = vi.fn();
+  const openCredits = vi.fn();
   const openExamples = vi.fn();
   const show = vi.fn();
   let Panel: () => ReactNode = () => null;
@@ -30,6 +31,7 @@ function shown(options: FakeAssistantOptions = {}) {
     api,
     sessionId: "site-1",
     openSettings,
+    openCredits,
     openExamples,
   });
   render(<Panel />);
@@ -38,6 +40,7 @@ function shown(options: FakeAssistantOptions = {}) {
     send,
     session,
     openSettings,
+    openCredits,
     openExamples,
     show,
     remove,
@@ -189,6 +192,101 @@ describe("the assistant's panel (6.9c)", () => {
   });
 });
 
+describe("what the person can do about an error (5.20, OL-5)", () => {
+  /** Sends `text` from the box. */
+  async function sent(user: ReturnType<typeof userEvent.setup>, text: string) {
+    await user.type(
+      await screen.findByRole("textbox", { name: "Message the assistant" }),
+      `${text}{Enter}`,
+    );
+  }
+
+  it("sends a failed reply's message again with Try Again, from the last reply only", async () => {
+    const { send, user } = shown({ reply: { text: "Working on it", fail: "offline" } });
+    await sent(user, "Say we open on Saturdays");
+    await user.click(await screen.findByRole("button", { name: "Try Again" }));
+
+    await waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+    expect(send.mock.calls.map((call) => call[1])).toEqual([
+      "Say we open on Saturdays",
+      "Say we open on Saturdays",
+    ]);
+    // The second failed too: one Try Again, under it, none under the first.
+    await waitFor(() => expect(screen.getAllByRole("alert")).toHaveLength(2));
+    expect(screen.getAllByRole("button", { name: "Try Again" })).toHaveLength(1);
+  });
+
+  it("offers no Try Again for a reply that changed the site before it failed", async () => {
+    const { send, user } = shown({
+      reply: {
+        text: "Adding your testimonials",
+        steps: [
+          {
+            entryId: "e1",
+            label: "AI (Assistant): Added Testimonials",
+            target: { pageId: "home" },
+          },
+        ],
+        fail: "offline",
+      },
+    });
+    await sent(user, "Add three testimonials");
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/couldn't be reached/);
+    // Sent again, the message would add a second Testimonials section.
+    expect(screen.queryByRole("button", { name: "Try Again" })).toBeNull();
+    expect(send).toHaveBeenCalledOnce();
+  });
+
+  it("opens Assistant Settings for a refusal it can fix there, keeping the message", async () => {
+    const { openSettings, user } = shown({ reply: { refuse: "not-signed-in" } });
+    await sent(user, "Hi");
+    await user.click(await screen.findByRole("button", { name: "Assistant Settings…" }));
+
+    expect(openSettings).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: "Try Again" })).toBeNull();
+  });
+
+  it("sends a refused message again with Try Again, from the box", async () => {
+    const { send, user } = shown({ reply: { refuse: "failed" } });
+    await sent(user, "Hi");
+    await user.click(await screen.findByRole("button", { name: "Try Again" }));
+
+    await waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+    expect(send.mock.calls[1]?.[1]).toBe("Hi");
+  });
+
+  it("opens OpenRouter's page for credit when its account has run out", async () => {
+    const { openCredits, user } = shown({ reply: { fail: "no-credit" } });
+    await sent(user, "Hi");
+    await user.click(await screen.findByRole("button", { name: "Add Credit on OpenRouter" }));
+
+    expect(openCredits).toHaveBeenCalledOnce();
+  });
+
+  it("words another server's out of credit as its own, with no OpenRouter button", async () => {
+    const { user } = shown({
+      reply: { fail: "no-credit" },
+      status: { provider: { kind: "server", baseUrl: "https://ai.example.com/v1", hasKey: true } },
+    });
+    await sent(user, "Hi");
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "The server says your account has run out of credit.",
+    );
+    expect(screen.queryByRole("button", { name: "Add Credit on OpenRouter" })).toBeNull();
+  });
+
+  it("offers nothing where the panel already does: busy has its Stop", async () => {
+    const { user } = shown({ reply: { refuse: "busy" } });
+    await sent(user, "Hi");
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/still replying/);
+    expect(screen.queryByRole("button", { name: "Try Again" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Assistant Settings…" })).toBeNull();
+  });
+});
+
 describe("a message typed while a reply runs (5.19, OL-4)", () => {
   it("is held above the box, sent when the reply finishes, and can be taken back or removed", async () => {
     const { send, user } = shown({ delayMs: 30 });
@@ -333,5 +431,135 @@ describe("a question before acting (5.16, OL-1)", () => {
     expect(await within(card).findByText("Not answered.")).toBeDefined();
     expect(within(card).queryByRole("button")).toBeNull();
     expect(screen.getByRole("button", { name: "Send" })).toBeDefined();
+  });
+});
+
+describe("what to ask next (5.17, OL-2)", () => {
+  const NEXT = ["Add our opening hours", "Make the welcome friendlier"];
+  /** Replies that change the site, the first offering what to ask next. */
+  const changing = (): FakeAssistantOptions => {
+    let replies = 0;
+    return {
+      reply: () => {
+        replies += 1;
+        return {
+          text: "Done.",
+          steps: [{ entryId: `h${replies}`, label: "AI (Assistant): Edited Hero text" }],
+          ...(replies === 1 ? { suggestions: NEXT } : {}),
+        };
+      },
+    };
+  };
+
+  it("offers them under the review card, sends one tapped, and they go", async () => {
+    const { send, user } = shown(changing());
+    await user.type(
+      await screen.findByRole("textbox", { name: "Message the assistant" }),
+      "Shorten the title{Enter}",
+    );
+    const next = within(await screen.findByRole("region", { name: "You could ask next" }));
+    expect(next.getAllByRole("button").map((button) => button.textContent)).toEqual(NEXT);
+    // Under the review card.
+    const card = screen.getByRole("region", { name: "This reply made 1 change" });
+    expect(
+      card.compareDocumentPosition(screen.getByRole("region", { name: "You could ask next" })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    await user.click(next.getByRole("button", { name: "Ask “Add our opening hours”" }));
+    expect(send).toHaveBeenLastCalledWith("site-1", "Add our opening hours", expect.anything());
+    await waitFor(() =>
+      expect(screen.queryByRole("region", { name: "You could ask next" })).toBeNull(),
+    );
+  });
+
+  it("goes once the person sends anything, and stays after Keep", async () => {
+    const { user } = shown(changing());
+    const box = await screen.findByRole("textbox", { name: "Message the assistant" });
+    await user.type(box, "Shorten the title{Enter}");
+    await screen.findByRole("region", { name: "You could ask next" });
+    await user.click(screen.getByRole("button", { name: "Keep" }));
+    expect(screen.getByRole("region", { name: "You could ask next" })).toBeDefined();
+
+    await user.type(box, "Something else{Enter}");
+    await waitFor(() =>
+      expect(screen.queryByRole("region", { name: "You could ask next" })).toBeNull(),
+    );
+  });
+
+  it("works by keyboard alone: Tab to a suggestion, Enter sends it", async () => {
+    const { send, user } = shown(changing());
+    await user.type(
+      await screen.findByRole("textbox", { name: "Message the assistant" }),
+      "Shorten the title{Enter}",
+    );
+    const first = within(
+      await screen.findByRole("region", { name: "You could ask next" }),
+    ).getByRole("button", { name: "Ask “Add our opening hours”" });
+    first.focus();
+    await user.keyboard("{Tab}");
+    expect(document.activeElement?.textContent).toBe("Make the welcome friendlier");
+    await user.keyboard("{Enter}");
+    expect(send).toHaveBeenLastCalledWith(
+      "site-1",
+      "Make the welcome friendlier",
+      expect.anything(),
+    );
+  });
+
+  it("waits while its changes are held, then offers them once applied, never once discarded (PR 1342's review)", async () => {
+    const REPLY = "8a7b6c5d-4e3f-4a2b-9c1d-0e9f8a7b6c5d";
+    const held = [{ label: "AI (Assistant): Edited Hero text", target: { pageId: "home" } }];
+    const holding = async () => {
+      const { api } = shown();
+      await screen.findByRole("textbox", { name: "Message the assistant" });
+      act(() => {
+        api.emit({ session: "site-1", type: "reply-started", replyId: REPLY, model: "m" });
+        api.emit({
+          session: "site-1",
+          type: "reply-done",
+          replyId: REPLY,
+          stop: "end",
+          costUsd: 0.1,
+          month: { spentUsd: 0.1, limitUsd: 5 },
+          steps: [],
+          links: [],
+          held,
+          suggestions: NEXT,
+        });
+      });
+      await screen.findByRole("button", { name: "Apply Changes" });
+      expect(screen.queryByRole("region", { name: "You could ask next" })).toBeNull();
+      return api;
+    };
+    const settled = (state: "applied" | "discarded") => ({
+      session: "site-1",
+      type: "held" as const,
+      replyId: REPLY,
+      state,
+      steps:
+        state === "applied" ? [{ entryId: "e1", label: "AI (Assistant): Edited Hero text" }] : [],
+      refused: [],
+    });
+
+    const applied = await holding();
+    act(() => applied.emit(settled("applied")));
+    expect(await screen.findByRole("region", { name: "You could ask next" })).toBeDefined();
+    cleanup();
+
+    const discarded = await holding();
+    act(() => discarded.emit(settled("discarded")));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Apply Changes" })).toBeNull());
+    expect(screen.queryByRole("region", { name: "You could ask next" })).toBeNull();
+  });
+
+  it("offers none after a reply that changed nothing", async () => {
+    const { user } = shown({ reply: { text: "It already says that.", suggestions: NEXT } });
+    await user.type(
+      await screen.findByRole("textbox", { name: "Message the assistant" }),
+      "Shorten the title{Enter}",
+    );
+    await screen.findByText("It already says that.");
+    expect(screen.queryByRole("region", { name: "You could ask next" })).toBeNull();
   });
 });

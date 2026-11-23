@@ -40,6 +40,8 @@ export type FakeReply = {
   readonly safetyVersion?: { readonly versionId: string; readonly label: string };
   /** A question put to the person after the text (5.16): the steps wait for the answer. */
   readonly question?: { readonly question: string; readonly answers: readonly string[] };
+  /** What to ask next (5.17): sent, as main does, only when the reply ended and changed something. */
+  readonly suggestions?: readonly string[];
 };
 
 export type FakeAssistantOptions = {
@@ -158,6 +160,8 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
       status = { ...status, month: { ...status.month, spentUsd, reached } };
       const month = { spentUsd, limitUsd: status.month.limitUsd };
       Object.assign(turn, { state: "done", stop, costUsd, steps, links: [...(reply.links ?? [])] });
+      const suggestions = stop === "end" && steps.length > 0 ? [...(reply.suggestions ?? [])] : [];
+      if (suggestions.length > 0) turn.suggestions = suggestions;
       emit({
         session,
         type: "reply-done",
@@ -167,6 +171,7 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
         month,
         steps,
         links: turn.links,
+        ...(suggestions.length > 0 ? { suggestions } : {}),
       });
       if (!status.month.warned && spentUsd >= month.limitUsd * 0.8) {
         status = { ...status, month: { ...status.month, warned: true } };

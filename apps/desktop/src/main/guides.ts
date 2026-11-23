@@ -3,12 +3,14 @@ import type { Guide } from "../shared/ipc/app.js";
 import { registerIpcHandler } from "./ipc.js";
 
 /**
- * Where each of Site Check's guides goes (3.17, SEO-7): Google's own pages for a Business Profile
- * and for Search Console. Fixed here, so the renderer names a guide, never an address.
+ * Where each guide goes: Site Check's to Google's own pages for a Business Profile and for Search
+ * Console (3.17, SEO-7), and the assistant's to OpenRouter's page for adding credit (5.20). Fixed
+ * here, so the renderer names a guide, never an address.
  */
 export const GUIDE_ADDRESSES: Readonly<Record<Guide, string>> = {
   businessProfile: "https://www.google.com/business/",
   searchConsole: "https://search.google.com/search-console",
+  openRouterCredits: "https://openrouter.ai/settings/credits",
 };
 
 /**

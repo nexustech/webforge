@@ -7,12 +7,15 @@ import { useStore } from "zustand";
 import type { ReplyStep } from "../../shared/ipc/assistant.js";
 import { type AssistantPanelModel, questionWaiting } from "./assistant-state.js";
 import { AppConsentDialog, reachOf, SiteConsent } from "./Consent.js";
-import { ConversationView, errorKey } from "./ConversationView.js";
+import { ConversationView } from "./ConversationView.js";
+import { ErrorActions } from "./ErrorActions.js";
+import { errorActions, errorKey } from "./error-actions.js";
 import { HeldCard } from "./HeldCard.js";
 import { MonthReadout } from "./MonthReadout.js";
 import { QuestionCard, withNote } from "./QuestionCard.js";
 import { ReviewCard } from "./ReviewCard.js";
 import { replyUndo } from "./reply-undo.js";
+import { SuggestedNext } from "./SuggestedNext.js";
 
 /** Undo History as the review card reads it, and how it undoes a reply's steps. */
 type PanelHistory = {
@@ -34,6 +37,8 @@ export type AssistantPanelProps = {
   /** Turns the assistant on at the consent's wording shown (ADR 0026 §4). */
   readonly onAgree: () => void;
   readonly onOpenSettings: () => void;
+  /** Opens OpenRouter's page for adding credit (5.20), for its *out of credit*. */
+  readonly onOpenCredits: () => void;
   readonly onOpenVersions: () => void;
   readonly onShowStep: (step: ReplyStep) => void;
   /** Whether the element a change is on holds an example now (#1228), for the review card. */
@@ -61,6 +66,8 @@ export function AssistantPanel(props: AssistantPanelProps) {
   // chosen there or typed in the box.
   const [note, setNote] = useState({ callId: "", text: "" });
   const [asking, setAsking] = useState(true);
+  // A suggestion tapped (5.17), on its way to main.
+  const [suggesting, setSuggesting] = useState(false);
   // A held message given back, unsent (5.19): put in the box, before what's typed there now.
   useEffect(() => {
     if (returned === undefined) return;
@@ -186,6 +193,7 @@ export function AssistantPanel(props: AssistantPanelProps) {
       <div className="min-h-0 flex-1 overflow-auto">
         <ConversationView
           turns={turns}
+          provider={status.provider.kind}
           onOpenLink={props.onOpenLink}
           asked={(turn) =>
             turns
@@ -205,42 +213,91 @@ export function AssistantPanel(props: AssistantPanelProps) {
               ))
           }
           afterReply={(turn) => {
-            const shown = turns.find((each) => each.replyId === turn.replyId);
-            if (shown === undefined || turn.state !== "done" || kept.has(turn.replyId)) return null;
-            // Review before applying (6.9e): its changes wait for the person, or were dropped.
-            if (shown.held.length > 0 || shown.heldOutcome !== undefined) {
+            // What the person can do about the last reply's error (5.20, OL-5): an older one's
+            // moment has passed.
+            if (turn.state === "failed") {
+              const last = turns.at(-1);
+              if (last?.replyId !== turn.replyId) return null;
+              // Sent again whole, a message would make again what the reply made before it
+              // failed (the model hears earlier replies as text): Try Again only if it made none.
+              const madeNone = last.steps.length === 0 && last.held.length === 0;
               return (
-                <HeldCard
-                  held={shown.held}
-                  links={shown.links}
-                  outcome={shown.heldOutcome}
-                  applying={applying === turn.replyId}
-                  onApply={() => void model.applyHeld(turn.replyId)}
-                  onDiscard={() => void model.discardHeld(turn.replyId)}
+                <ErrorActions
+                  actions={errorActions(turn.error, status.provider.kind)}
+                  onRetry={
+                    replying === undefined && madeNone
+                      ? () => void model.send(turn.message, props.context())
+                      : undefined
+                  }
+                  onSettings={props.onOpenSettings}
+                  onCredits={props.onOpenCredits}
                 />
               );
             }
-            const { steps } = shown;
-            const refusedChanges = shown.refused ?? [];
-            if (steps.length === 0 && refusedChanges.length === 0) return null;
-            const ids = steps.map((step) => step.entryId);
+            const shown = turns.find((each) => each.replyId === turn.replyId);
+            if (shown === undefined || turn.state !== "done") return null;
+            // What to ask next (5.17), under the last reply only: sending anything starts another,
+            // and they go. Not while its changes wait to be applied (6.9e), or once dropped.
+            const next =
+              turns.at(-1)?.replyId === turn.replyId &&
+              replying === undefined &&
+              waiting === undefined &&
+              shown.held.length === 0 &&
+              shown.heldOutcome === undefined ? (
+                <SuggestedNext
+                  suggestions={shown.suggestions}
+                  busy={suggesting}
+                  onSend={(suggestion) => {
+                    setSuggesting(true);
+                    void model
+                      .send(suggestion, props.context())
+                      .finally(() => setSuggesting(false));
+                  }}
+                />
+              ) : null;
+            const review = (() => {
+              if (kept.has(turn.replyId)) return null;
+              // Review before applying (6.9e): its changes wait for the person, or were dropped.
+              if (shown.held.length > 0 || shown.heldOutcome !== undefined) {
+                return (
+                  <HeldCard
+                    held={shown.held}
+                    links={shown.links}
+                    outcome={shown.heldOutcome}
+                    applying={applying === turn.replyId}
+                    onApply={() => void model.applyHeld(turn.replyId)}
+                    onDiscard={() => void model.discardHeld(turn.replyId)}
+                  />
+                );
+              }
+              const { steps } = shown;
+              const refusedChanges = shown.refused ?? [];
+              if (steps.length === 0 && refusedChanges.length === 0) return null;
+              const ids = steps.map((step) => step.entryId);
+              return (
+                <ReviewCard
+                  steps={steps}
+                  links={shown.links}
+                  refused={refusedChanges}
+                  undo={replyUndo(position, ids)}
+                  onKeep={() => setKept(new Set([...kept, turn.replyId]))}
+                  onUndo={() => {
+                    // Read again: the history may have changed since the card was drawn.
+                    const now = replyUndo(history.state.getState(), ids);
+                    if (now.kind === "undo") history.jumpTo(now.to);
+                  }}
+                  // Version History lists the safety version, known here or not.
+                  onOpenVersions={props.onOpenVersions}
+                  onShowStep={props.onShowStep}
+                  holdsExample={props.holdsExample}
+                />
+              );
+            })();
             return (
-              <ReviewCard
-                steps={steps}
-                links={shown.links}
-                refused={refusedChanges}
-                undo={replyUndo(position, ids)}
-                onKeep={() => setKept(new Set([...kept, turn.replyId]))}
-                onUndo={() => {
-                  // Read again: the history may have changed since the card was drawn.
-                  const now = replyUndo(history.state.getState(), ids);
-                  if (now.kind === "undo") history.jumpTo(now.to);
-                }}
-                // Version History lists the safety version, known here or not.
-                onOpenVersions={props.onOpenVersions}
-                onShowStep={props.onShowStep}
-                holdsExample={props.holdsExample}
-              />
+              <>
+                {review}
+                {next}
+              </>
             );
           }}
         />
@@ -252,9 +309,18 @@ export function AssistantPanel(props: AssistantPanelProps) {
           : t("assistant.question.announce", { question: pending.question })}
       </p>
       {refused === undefined ? null : (
-        <p role="alert" className="m-0 px-3 pb-1 text-xs text-destructive-text">
-          {t(errorKey(refused))}
-        </p>
+        <div className="flex flex-col gap-1 px-3 pb-1">
+          <p role="alert" className="m-0 text-xs text-destructive-text">
+            {t(errorKey(refused, status.provider.kind))}
+          </p>
+          {/* The refused message stays in the box: Try Again sends it (5.20). */}
+          <ErrorActions
+            actions={errorActions(refused, status.provider.kind)}
+            onRetry={replying === undefined ? send : undefined}
+            onSettings={props.onOpenSettings}
+            onCredits={props.onOpenCredits}
+          />
+        </div>
       )}
       {waiting === undefined ? null : (
         <section
