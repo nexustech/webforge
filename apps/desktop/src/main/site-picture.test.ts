@@ -14,7 +14,14 @@ const APP_URL = "file:///app/index.html";
 /** The renderer's answer to a draw request, as the preload sends it. */
 type Answer = (id: number, drawn: boolean, senderUrl?: string) => void;
 
-function setUp(renderer: (id: number, answer: Answer) => void, crashed = false) {
+/** A drawn page's pixels, four bytes each: white and the theme's colour. */
+const DRAWN = new Uint8Array([255, 255, 255, 255, 30, 60, 90, 255]);
+
+function setUp(
+  renderer: (id: number, answer: Answer) => void,
+  crashed = false,
+  bitmap: Uint8Array = DRAWN,
+) {
   const handlers = new Map<string, Handler>();
   const ipc = {
     handle: (channel: string, handler: Handler) => handlers.set(channel, handler),
@@ -33,7 +40,7 @@ function setUp(renderer: (id: number, answer: Answer) => void, crashed = false) 
   const jpeg = new Uint8Array([0xff, 0xd8]);
   const image = {
     isEmpty: () => false,
-    resize: () => ({ toJPEG: () => jpeg }),
+    resize: () => ({ toJPEG: () => jpeg, toBitmap: () => bitmap }),
   } as unknown as NativeImage;
   const executeJavaScript = vi.fn(async (_code: string) => ({
     x: 0,
@@ -89,6 +96,19 @@ describe("createSitePicture (#1175)", () => {
     expect(await taken).toBe(jpeg);
     // Room to spare: the budget is more than the 1.5 s the renderer waits for what loads.
     expect(DRAW_TIMEOUT_MS).toBeGreaterThanOrEqual(3_500);
+  });
+
+  it("takes no picture of a page in one colour, nothing drawn, so the Recent list keeps its own (#1300)", async () => {
+    const white = new Uint8Array(480 * 300 * 4).fill(255);
+    const { pictures, window, sent, capturePage } = setUp(
+      (id, answer) => answer(id, true),
+      false,
+      white,
+    );
+
+    expect(await pictures.capture(window)).toBeUndefined();
+    expect(capturePage).toHaveBeenCalledOnce();
+    expect(sent.at(-1)).toEqual(["app:site-picture", 1, "done"]);
   });
 
   it("takes no picture when the renderer can't draw the page, and still has it tidy up", async () => {

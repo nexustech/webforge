@@ -28,14 +28,26 @@ export type CapturedWindow = Pick<BrowserWindow, "isDestroyed"> & {
   readonly webContents: Pick<WebContents, "isCrashed" | "executeJavaScript" | "capturePage">;
 };
 
+/** Whether every pixel of `bitmap` (four bytes each, as `toBitmap` gives them) is one colour. */
+function oneColour(bitmap: Uint8Array): boolean {
+  for (let at = 4; at + 3 < bitmap.length; at += 4) {
+    if (bitmap[at] !== bitmap[0] || bitmap[at + 1] !== bitmap[1] || bitmap[at + 2] !== bitmap[2]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * The element `selector` finds, as the window shows it, as a 480-pixel-wide JPEG: for the site's
  * picture in the Recent list (1.8, #1175). `undefined` without a window, with a crashed renderer,
- * without the element (never the whole window, editor and all), or for an empty image.
+ * without the element (never the whole window, editor and all), or for an empty image; with
+ * `refuseOneColour`, also for an image in one colour, of nothing drawn (#1300).
  */
 export async function captureArea(
   window: CapturedWindow | undefined,
   selector: string,
+  options: { readonly refuseOneColour?: boolean } = {},
 ): Promise<Uint8Array | undefined> {
   if (window === undefined || window.isDestroyed() || window.webContents.isCrashed()) {
     return undefined;
@@ -43,7 +55,10 @@ export async function captureArea(
   const area = await areaOf(window.webContents, selector);
   if (area === undefined) return undefined;
   const image = await window.webContents.capturePage(area);
-  return image.isEmpty() ? undefined : image.resize({ width: 480 }).toJPEG(75);
+  if (image.isEmpty()) return undefined;
+  const small = image.resize({ width: 480 });
+  if (options.refuseOneColour === true && oneColour(small.toBitmap())) return undefined;
+  return small.toJPEG(75);
 }
 
 /**
