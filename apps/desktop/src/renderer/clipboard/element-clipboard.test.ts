@@ -771,6 +771,86 @@ describe("copy and paste (1.25)", () => {
   });
 });
 
+describe("pasting into the Footer's columns (#1335, 5.39)", () => {
+  /** The starter site with a Footer column holding a Text, and Menu links in a second. */
+  function withColumns() {
+    const site = starterSite();
+    const footer = site.layout.footer.find((node) => node.type === "Footer");
+    if (footer === undefined) throw new Error("no Footer");
+    footer.props.columns = [
+      {
+        type: "FooterColumn",
+        props: { id: "col", content: [{ type: "Text", props: { id: "t", text: "<p>Hi</p>" } }] },
+      },
+      {
+        type: "FooterColumn",
+        props: { id: "col-2", content: [{ type: "MenuLinks", props: { id: "menu" } }] },
+      },
+    ];
+    const session = sessionWith(site);
+    const columnTypes = (id: string) =>
+      (
+        ((
+          session.history.document.getState().layout.footer.find((node) => node.type === "Footer")
+            ?.props.columns as NodeDoc[] | undefined
+        )?.find((column) => column.props.id === id)?.props.content ?? []) as NodeDoc[]
+      ).map((node) => node.type);
+    return { session, footerId: String(footer.props.id), columnTypes };
+  }
+
+  it("pastes beside the selected element in its column, on every page, as one shared step", async () => {
+    const { session, columnTypes } = withColumns();
+    const clipboard = fakeClipboard();
+    // A Text from the page, copied.
+    select(session, sectionContent(session).find((node) => node.type === "Text")?.props.id ?? null);
+    await copySelected(session, clipboard, vi.fn());
+    const before = sectionContent(session).length;
+    const steps = labels(session).length;
+
+    select(session, "t");
+    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+
+    expect(columnTypes("col")).toEqual(["Text", "Text"]);
+    expect(sectionContent(session)).toHaveLength(before);
+    expect(labels(session).slice(steps)).toEqual(["Pasted shared Text"]);
+    session.history.undo();
+    expect(columnTypes("col")).toEqual(["Text"]);
+  });
+
+  it("pastes at the end of the last column that takes it with the Footer itself selected", async () => {
+    const { session, footerId, columnTypes } = withColumns();
+    const clipboard = fakeClipboard();
+    select(session, sectionContent(session).find((node) => node.type === "Text")?.props.id ?? null);
+    await copySelected(session, clipboard, vi.fn());
+
+    select(session, footerId);
+    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+    expect(columnTypes("col-2")).toEqual(["MenuLinks", "Text"]);
+    expect(columnTypes("col")).toEqual(["Text"]);
+  });
+
+  it("puts on the page what no column takes, and never a second Menu links in the Footer", async () => {
+    const { session, footerId, columnTypes } = withColumns();
+    const clipboard = fakeClipboard();
+    // A Section: no column takes one, so it goes on the page, as with nothing selected.
+    select(session, content(session)[0]?.props.id ?? null);
+    await copySelected(session, clipboard, vi.fn());
+    const sections = content(session).length;
+    select(session, footerId);
+    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+    expect(content(session)).toHaveLength(sections + 1);
+
+    // The Footer holds one Menu links already: a second isn't pasted into it.
+    select(session, "menu");
+    await copySelected(session, clipboard, vi.fn());
+    select(session, "t");
+    await pasteElements(session, clipboard, vi.fn());
+    expect(
+      [...columnTypes("col"), ...columnTypes("col-2")].filter((type) => type === "MenuLinks"),
+    ).toHaveLength(1);
+  });
+});
+
 describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
   /** The starter site with its section saved as the shared section "Hours", the copy selected. */
   function saved() {
