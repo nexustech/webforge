@@ -101,6 +101,23 @@ describe("the assistant's held changes in the window (6.9e)", () => {
     expect(JSON.stringify(tree)).not.toContain("Hero");
   });
 
+  it("gives Site Check the current stage's draft, and none for another stage (5.18)", async () => {
+    const { history, home } = site();
+    const stages = createStages({ history, mode: () => "design", published: () => false });
+    expect(stages.site(STAGE)).toBeUndefined();
+    await stages.answer({
+      kind: "command",
+      name: "addNode",
+      input: { location: home, type: "Hero", values: {} },
+      app: "Assistant",
+      stage: STAGE,
+    });
+
+    expect(JSON.stringify(stages.site(STAGE)?.pages[home.pageId])).toContain("Hero");
+    expect(JSON.stringify(history.document.getState().pages[home.pageId])).not.toContain("Hero");
+    expect(stages.site(NEXT)).toBeUndefined();
+  });
+
   it("refuses in the draft what the site would refuse: Content mode, a missing element", async () => {
     const { history, home } = site();
     const stages = createStages({ history, mode: () => "content", published: () => false });

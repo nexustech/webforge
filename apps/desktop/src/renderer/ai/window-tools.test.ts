@@ -51,6 +51,8 @@ describe("the window's own tools, by their definitions (#981)", () => {
   it("answers a held reply's reads, never a change of its (6.9e)", () => {
     const own = handlers();
     expect(answerWindowTool(own, query("runSiteCheck", STAGE))).toBe(DONE);
+    // With its stage, so Site Check reads the reply's draft (5.18).
+    expect(own.runSiteCheck).toHaveBeenCalledWith(expect.objectContaining({ stage: STAGE }));
     expect(answerWindowTool(own, command("requestMedia", STAGE))).toBeUndefined();
     expect(own.requestMedia).not.toHaveBeenCalled();
   });
