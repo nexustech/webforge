@@ -80,10 +80,11 @@ test("starts the Footer from Full, adds to a column from the Add panel, on every
   const left = page.getByRole("region", { name: "Left panels" });
   await left.getByRole("tab", { name: "Add" }).click();
   await left.getByRole("tab", { name: "Elements" }).click();
-  // A section of the page selected first: with the Footer selected, the line saying a change
-  // reaches every page goes as the drag starts, and the canvas moves up under the pointer. The
-  // Footer is at the bottom of the page: in view first, so the pointer can reach it.
-  await clickOnCanvas(canvas().locator(".site-section").first(), { position: { x: 4, y: 4 } });
+  // With the Footer still selected, the line saying a change reaches every page stays while the
+  // drag is under way, so the canvas doesn't move under the pointer (#1336). The Footer is at the
+  // bottom of the page: in view first, so the pointer can reach it.
+  const banner = page.locator(".editor > [role='status']");
+  await expect(banner).toContainText("Footer");
   const links = columns.first().getByRole("navigation", { name: "Footer navigation" });
   await links.scrollIntoViewIfNeeded();
   await drag(

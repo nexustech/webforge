@@ -236,8 +236,11 @@ export function createCanvasPage(options: CanvasPageOptions): CanvasPage {
             commands.edited();
           }
         }
-        // After the edit, so the history records the selection from before it.
-        selection.report(selectedNodeId(next));
+        // After the edit, so the history records the selection from before it. Not while a drag
+        // is under way: Puck lets go of the selection as one starts, and the app showing that
+        // (the shared Footer's banner going) would move the canvas under the pointer (#1336). The
+        // drop selects what it placed, which is reported then.
+        if (next.ui.isDragging !== true) selection.report(selectedNodeId(next));
       }),
 
     load(next) {

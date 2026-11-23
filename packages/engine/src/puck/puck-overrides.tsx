@@ -60,9 +60,12 @@ export function createPuckOverrides(options: PuckOverridesOptions): Partial<Over
   function Bridge({ children }: { children: ReactNode }) {
     const get = useGetPuck();
     // Some selections bypass onAction (Puck's inline text field selects through an internal
-    // helper), so watch the selected item too.
+    // helper), so watch the selected item too; as there, not while a drag is under way (#1336).
     const selectedId = usePuck((state) => state.selectedItem?.props.id ?? null);
-    useEffect(() => selection.report(selectedId), [selectedId]);
+    const dragging = usePuck((state) => state.appState.ui.isDragging);
+    useEffect(() => {
+      if (!dragging) selection.report(selectedId);
+    }, [selectedId, dragging]);
     const width = usePuck((state) => state.appState.ui.viewports.current.width);
     useEffect(() => {
       options.setPuck(get);

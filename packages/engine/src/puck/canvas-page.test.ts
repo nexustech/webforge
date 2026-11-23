@@ -224,4 +224,32 @@ describe("CanvasPage (R8)", () => {
 
     expect(edits).toEqual([]);
   });
+
+  it("keeps the selection the app has while a drag is under way, and reports the drop's (#1336)", () => {
+    const { page, selection } = canvasPage();
+    const content = [heading("a0"), heading("b1")];
+    page.load({ page: pageOf(...content), layout: NO_LAYOUT, shared: {} });
+    selection.report("a0");
+    const reported: (string | null)[] = [];
+    selection.onChange((id) => reported.push(id));
+    const state = (isDragging: boolean, index: number | null) =>
+      ({
+        data: { root: { props: {} }, content },
+        ui: {
+          isDragging,
+          itemSelector: index === null ? null : { zone: "root:default-zone", index },
+        },
+      }) as unknown as AppState;
+    const setUi = { type: "setUi", ui: {} } as PuckAction;
+
+    // Puck lets go of the selection as the drag starts: the app keeps it, so what it shows for
+    // it (the shared Footer's banner) stays, and the canvas doesn't move under the pointer.
+    page.handleAction(setUi, state(true, null), state(false, 0));
+    expect(reported).toEqual([]);
+    expect(selection.current()).toBe("a0");
+
+    // The drop selects what it placed: reported once the drag is over.
+    page.handleAction(setUi, state(false, 1), state(true, null));
+    expect(reported).toEqual(["b1"]);
+  });
 });

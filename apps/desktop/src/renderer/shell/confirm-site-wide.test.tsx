@@ -1,10 +1,11 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCommandRegistry } from "./commands.js";
 import {
   createSiteWideConfirm,
+  dropHeld,
   historyCommandMindingQuestions,
   pauseCommandsWhileAsking,
   SiteWideConfirmDialog,
@@ -32,10 +33,17 @@ describe("Undo and Redo keys around a site-wide question (#1344)", () => {
     );
     return { confirm, saved: () => saved() };
   }
+  /** What each test holds back. */
+  let held = new Set<() => void>();
+  beforeEach(() => {
+    held = new Set();
+  });
 
   it("run at once while nothing is asked or waits", () => {
     const run = vi.fn((_command: string) => true);
-    expect(historyCommandMindingQuestions(createSiteWideConfirm(), "undo", run)).toBe(true);
+    expect(historyCommandMindingQuestions(createSiteWideConfirm(), "undo", run, new Set())).toBe(
+      true,
+    );
     expect(run).toHaveBeenCalledWith("undo");
   });
 
@@ -43,8 +51,8 @@ describe("Undo and Redo keys around a site-wide question (#1344)", () => {
     const { confirm } = waitingForVersion();
     void confirm.confirmSiteWide(deletePage(2));
     const run = vi.fn((_command: string) => true);
-    expect(historyCommandMindingQuestions(confirm, "undo", run)).toBe(false);
-    expect(historyCommandMindingQuestions(confirm, "cancel", run)).toBe(false);
+    expect(historyCommandMindingQuestions(confirm, "undo", run, held)).toBe(false);
+    expect(historyCommandMindingQuestions(confirm, "cancel", run, held)).toBe(false);
     expect(run).not.toHaveBeenCalled();
   });
 
@@ -61,21 +69,42 @@ describe("Undo and Redo keys around a site-wide question (#1344)", () => {
       return true;
     };
     // Taken, so nothing else has the keys, but not run yet; Esc has nothing to cancel.
-    expect(historyCommandMindingQuestions(confirm, "undo", run)).toBe(true);
-    expect(historyCommandMindingQuestions(confirm, "redo", run)).toBe(true);
-    expect(historyCommandMindingQuestions(confirm, "cancel", run)).toBe(false);
+    expect(historyCommandMindingQuestions(confirm, "undo", run, held)).toBe(true);
+    expect(historyCommandMindingQuestions(confirm, "redo", run, held)).toBe(true);
+    expect(historyCommandMindingQuestions(confirm, "cancel", run, held)).toBe(false);
     expect(order).toEqual([]);
+
+    expect(held.size).toBe(2);
 
     saved();
     await change;
     await vi.waitFor(() => expect(order).toEqual(["change", "undo", "redo"]));
+    // Run, so nothing is held any more.
+    expect(held.size).toBe(0);
+  });
+
+  it("are dropped, not run, once whoever took them stops listening (#1344 review)", async () => {
+    const { confirm, saved } = waitingForVersion();
+    const change = confirm.confirmSiteWide(deletePage(2));
+    confirm.answer(true);
+    await Promise.resolve();
+    const run = vi.fn((_command: string) => true);
+    expect(historyCommandMindingQuestions(confirm, "undo", run, held)).toBe(true);
+
+    // The editor closes as the version saves: its Undo has nothing left to undo in.
+    dropHeld(held);
+    expect(held.size).toBe(0);
+    saved();
+    await change;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(run).not.toHaveBeenCalled();
   });
 
   it("wait for an unasked change too, and run at once after it", async () => {
     const { confirm, saved } = waitingForVersion();
     const unasked = confirm.beforeUnaskedChange(deletePage(2));
     const run = vi.fn((_command: string) => true);
-    expect(historyCommandMindingQuestions(confirm, "undo", run)).toBe(true);
+    expect(historyCommandMindingQuestions(confirm, "undo", run, held)).toBe(true);
     expect(run).not.toHaveBeenCalled();
     saved();
     await unasked;
