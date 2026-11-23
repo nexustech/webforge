@@ -144,7 +144,7 @@ The examples are the ones the reviews gave; most have been fixed since, and they
 
 ### 19. Measuring once what the app or the platform settles a moment later
 
-- **Looks like:** the title bar's fit was measured once after a resize, while on Linux the window controls' overlay reports the room for the size before it for a moment (`small-window.spec.ts`, fixed in #1341). The canvas's tooltips were hovered before the canvas was ready (#1125). Theme Studio's accent radio was read while the studio was still laying out (#1277).
+- **Looks like:** the title bar's fit was measured once after a resize, while on Linux the window controls' overlay reports the room for the size before it for a moment (`small-window.spec.ts`, fixed in #1341). The canvas's tooltips were hovered before the canvas was ready (#1125). Theme Studio's accent radio was read while the studio was still laying out (#1277). A point on a new Table's row was picked before the canvas had compiled the Table's styles, so the rows grew under the pointer and left it on the Table's headings (#1350).
 - **Why it hurts:** the test passes on a fast machine and fails at random on a busy CI runner, often on one OS only. Each failure costs a fix and a full re-run, and the merge queue holds every PR behind it: races like these were among the most common causes of the 32% of PR runs that failed in the week of 16 Nov 2026.
 - **Instead:** wait for the condition itself, with `expect.poll` or `toPass` around the measurement, never a fixed sleep or a longer timeout. A failure on one OS only is a real bug until shown otherwise.
 - **Found by:** #1347's survey of the CI failures of 9–23 Nov 2026.
@@ -155,6 +155,13 @@ The examples are the ones the reviews gave; most have been fixed since, and they
 - **Why it hurts:** a failure seen only in CI can't be diagnosed, so it gets a longer timeout instead of a fix.
 - **Instead:** poll for a value that says what was measured, such as `"fits"` or the two boxes, and compare it with the one wanted, so the error holds the evidence.
 - **Found by:** #1347.
+
+### 21. Taking the first of Puck's outlines as the selected element's
+
+- **Looks like:** `canvas().locator(OVERLAY).first()`, measured or clicked as the selected element's outline or bar. Puck draws an outline, with its bar, for each hovered element as well as the selected one, and keeps them in the order they were first drawn, so the first can be another element's. `table.spec.ts` measured it this way until #1350: with the Table left hovered, its outline came first in some runs, and the test said the row's outline didn't fit. The quick-action tests had found the same thing and pick the selected outline instead (`canvas-chrome.spec.ts`).
+- **Why it hurts:** the test checks whichever element was outlined first, so it fails, or passes, for something it doesn't name.
+- **Instead:** find the outline by what it's for: `.wf-outline[data-state="selected"]`, or `[data-wf-id="<id>"]` for one element's. To check that nothing else is outlined, count the outlines drawn and say whose each one is.
+- **Found by:** #1350.
 
 ## Now checked
 
