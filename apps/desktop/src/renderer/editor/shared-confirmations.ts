@@ -2,7 +2,11 @@ import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import type { CollectionId, SharedSectionId } from "@webforge/model";
 import { collectionById, collectionItems, removeNode } from "@webforge/model";
-import type { SiteWideAction, SiteWideConfirm } from "../shell/confirm-site-wide.js";
+import {
+  historyCommandMindingQuestions,
+  type SiteWideAction,
+  type SiteWideConfirm,
+} from "../shell/confirm-site-wide.js";
 import type { EditorSession } from "./editor-session.js";
 import { canvasLayout, pagesShowing, type SharedRegion, sharedHomeOf } from "./shared-layout.js";
 import { copySelection, reachOf } from "./shared-sections.js";
@@ -89,17 +93,20 @@ function confirmShared(
  * confirms them (D7): the quick action, the Delete key, the Edit menu and Layers all report one
  * this way. Confirmed, the removal is recorded as usual, one undo step, against the document as it
  * is then; cancelled, the canvas is put back as the document still is. While a question is open,
- * or the confirmed removal waits for its version (4.6), undo and redo from the canvas do nothing.
+ * undo and redo from the canvas do nothing; pressed as the confirmed removal waits for its version
+ * (4.6), they run once it's recorded (#1344).
  */
 export function confirmSharedRemovals(
   engine: CanvasEngine,
   session: Session,
-  siteWide: Pick<SiteWideConfirm, "confirmSiteWide" | "busy">,
+  siteWide: Pick<SiteWideConfirm, "confirmSiteWide" | "busy" | "current" | "afterChange">,
 ): CanvasEngine {
   return {
     ...engine,
     onHistoryCommand: (listener) =>
-      engine.onHistoryCommand((command) => (siteWide.busy() ? false : listener(command))),
+      engine.onHistoryCommand((command) =>
+        historyCommandMindingQuestions(siteWide, command, (pressed) => listener(pressed) === true),
+      ),
     onUserEdit: (listener) =>
       engine.onUserEdit((edit) => {
         const site = session.history.document.getState();

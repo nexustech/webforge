@@ -3,6 +3,7 @@ import type { CodeTrust } from "./code-trust.js";
 import type { FirstTips } from "./first-tips.js";
 import type { PublishRequests } from "./publish-requests.js";
 import { defineService } from "./services.js";
+import type { VersionActions, VersionList } from "./version-history.js";
 
 // The services the window's areas share (#984): each provided by one area, listed in `uses` by
 // the areas that use it. The area that provides each says so beside its token.
@@ -30,6 +31,15 @@ export const Publishing = defineService<PublishRequests>("publishing");
  * trust provides it.
  */
 export const TrustedCode = defineService<CodeTrust>("trustedCode");
+
+/**
+ * Version History's list of the open site's versions and its actions on them (4.6): what AI apps'
+ * _While you were away_ restores with (5.36). Version History provides it.
+ */
+export const VersionHistory = defineService<{
+  readonly list: VersionList;
+  readonly actions: VersionActions;
+}>("versionHistory");
 
 /** Where areas say the person has reached a first-time tip's place (OB-4, 5.4a). Onboarding provides it. */
 export const TipPlaces = defineService<FirstTips>("tipPlaces");
