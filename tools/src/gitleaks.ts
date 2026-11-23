@@ -163,7 +163,12 @@ export async function ensureGitleaks(dir: string, install: Install): Promise<str
     }
     if (install.platform !== "win32") chmodSync(unpacked, 0o755);
     mkdirSync(join(dir, GITLEAKS_VERSION), { recursive: true });
-    renameSync(unpacked, binary);
+    try {
+      renameSync(unpacked, binary);
+    } catch (error) {
+      // Another push, run at the same time, put its copy there first: the same checked build.
+      if (!existsSync(binary)) throw error;
+    }
   } finally {
     rmSync(part, { recursive: true, force: true });
   }
@@ -215,14 +220,17 @@ function scan(binary: string, repo: string, logOpts: string | undefined): boolea
   }
 }
 
-const FOUND = [
-  "",
-  "Gitleaks found what looks like a secret in the commits being pushed (each file and line is above),",
-  "so the push stopped.",
-  "- A real secret: take it out of every commit that holds it, then push again. Revoke it too if it",
-  "  could have been copied anywhere.",
-  "- A made-up value a test needs: allow it in .gitleaks.toml, by path or value, with a reason.",
-].join("\n");
+/** What to do about a finding: in the commits being pushed, or anywhere in the history. */
+const found = (history: boolean) =>
+  [
+    "",
+    history
+      ? "Gitleaks found what looks like a secret in the repository's history (each file and line is above)."
+      : "Gitleaks found what looks like a secret in the commits being pushed (each file and line is above),\nso the push stopped.",
+    "- A real secret: take it out of every commit that holds it. Revoke it too if it could have been",
+    "  copied anywhere.",
+    "- A made-up value a test needs: allow it in .gitleaks.toml, by path or value, with a reason.",
+  ].join("\n");
 
 async function main(args: readonly string[]): Promise<number> {
   const repo = resolve(import.meta.dirname, "../..");
@@ -247,10 +255,10 @@ async function main(args: readonly string[]): Promise<number> {
     download,
     extract,
   });
-  let found = false;
-  for (const range of ranges) found = scan(binary, repo, range) || found;
-  if (found) console.error(FOUND);
-  return found ? 1 : 0;
+  let leaked = false;
+  for (const range of ranges) leaked = scan(binary, repo, range) || leaked;
+  if (leaked) console.error(found(history));
+  return leaked ? 1 : 0;
 }
 
 if (import.meta.main) {

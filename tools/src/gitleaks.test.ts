@@ -18,7 +18,7 @@ import {
   GITLEAKS_VERSION,
   GitleaksError,
   rangesToScan,
-} from "./gitleaks.ts";
+} from "./gitleaks.js";
 
 const sha256 = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 
