@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import type { RenderedPage } from "@webforge/site-components";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { canvasLayout } from "./shared-layout.js";
 import { canvasNavigation } from "./site-navigation.js";
@@ -65,7 +65,38 @@ describe("homePageDocument (#1175)", () => {
   });
 });
 
+/** Whether the load under way is the test's, through {@link load}. */
+let loading = false;
+
+/**
+ * A document loaded in `frame`: the page's, its markup in the body as the `srcdoc` gives it, or the
+ * frame's first, empty one (#1300).
+ */
+function load(frame: HTMLIFrameElement, which: "page" | "empty") {
+  const body = frame.contentDocument?.body;
+  if (body === undefined || body === null) throw new Error("no document");
+  body.innerHTML = which === "page" ? "<p>Home</p>" : "";
+  loading = true;
+  try {
+    fireEvent.load(frame);
+  } finally {
+    loading = false;
+  }
+}
+
+/** happy-dom's own loads of a frame's `srcdoc` kept from the stage: each test fires its own. */
+const keepOwnLoads = (event: Event) => {
+  if (!loading) event.stopImmediatePropagation();
+};
+
 describe("SitePictureStage (#1175)", () => {
+  beforeEach(() => {
+    document.addEventListener("load", keepOwnLoads, true);
+  });
+  afterEach(() => {
+    document.removeEventListener("load", keepOwnLoads, true);
+  });
+
   /** The stage with an app whose requests the test makes, as the main process does. */
   function setUp(draw: () => Promise<string | undefined>) {
     let requests: { draw: () => Promise<boolean>; done: () => void } | undefined;
@@ -97,11 +128,38 @@ describe("SitePictureStage (#1175)", () => {
     // Scripts never run in it.
     expect(shown?.getAttribute("sandbox")).toBe("allow-same-origin");
     if (shown === null) throw new Error("no frame");
-    fireEvent.load(shown);
+    load(shown, "page");
     await expect(answer).resolves.toBe(true);
 
     act(() => asked().done());
     expect(frame()).toBeNull();
+  });
+
+  it("waits for the page's own document, not the frame's first, empty one (#1300)", async () => {
+    const { asked, frame } = setUp(async () => "<p>Home</p>");
+
+    let answer: Promise<boolean> | undefined;
+    await act(async () => {
+      answer = asked().draw();
+    });
+    const shown = frame();
+    if (shown === null || answer === undefined) throw new Error("no frame");
+    let answered: boolean | undefined;
+    void answer.then((drawn) => {
+      answered = drawn;
+    });
+    // The empty document loads first: no answer, even once the time to settle has passed.
+    vi.useFakeTimers();
+    try {
+      load(shown, "empty");
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(answered).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+
+    load(shown, "page");
+    await expect(answer).resolves.toBe(true);
   });
 
   it("answers that nothing is drawn when the page can't be, or is taken away first", async () => {

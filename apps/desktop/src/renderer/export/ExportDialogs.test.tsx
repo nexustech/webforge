@@ -155,3 +155,21 @@ describe("ExportDialogs (3.3)", () => {
     expect(dialogs.shown()).toBeNull();
   });
 });
+
+describe("closing the export's dialogs (#1320)", () => {
+  it("cancels a question open, and closes the report", async () => {
+    const dialogs = createExportDialogs();
+    const asked = dialogs.askWebAddress();
+    dialogs.close();
+    await expect(asked).resolves.toBe("cancel");
+    expect(dialogs.shown()).toBeNull();
+
+    const chosen = dialogs.chooseOptions(
+      { format: "folder", minify: false, developerFiles: false, askWebAddress: true },
+      false,
+    );
+    dialogs.close();
+    await expect(chosen).resolves.toBeUndefined();
+    expect(dialogs.shown()).toBeNull();
+  });
+});

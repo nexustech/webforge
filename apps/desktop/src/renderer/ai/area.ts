@@ -14,7 +14,7 @@ import {
 import { addMedia, importItems } from "../media/index.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { siteSession } from "../storage/index.js";
-import { createAppTools } from "./app-tools.js";
+import { createAppTools, openPreviewFor } from "./app-tools.js";
 import { answerRequest, commandHost } from "./command-host.js";
 import { MediaRequestDialog } from "./MediaRequestDialog.js";
 import { createMediaRequests, type MediaAsk } from "./media-request.js";
@@ -54,9 +54,13 @@ export const aiRequestsArea: Area<WindowContext> = {
       allowListConfirmed: () => codeTrust.allowListConfirmed.getState(),
       onNetlify: () => onNetlify.getState(),
       ignored: () => siteCheckIgnored.initial,
-      openPreview: () => {
-        commands.run(COMMAND_IDS.preview);
-      },
+      // Asked for before the command runs, so the open it starts is the one told (#1255).
+      openPreview: () =>
+        openPreviewFor({
+          next: () => api.preview.nextOpened(siteSession()),
+          run: () => commands.run(COMMAND_IDS.preview),
+          cancel: () => api.preview.cancelNext(siteSession()),
+        }),
     });
 
     // The last question stays shown while the dialog fades out.
@@ -94,7 +98,12 @@ export const aiRequestsArea: Area<WindowContext> = {
         onAnswer: (addFiles) => current?.answer(addFiles),
       });
     }
-    const removeDialog = windowDialogs.register({ id: "aiMediaRequest", component: MediaRequest });
+    const removeDialog = windowDialogs.register({
+      id: "aiMediaRequest",
+      component: MediaRequest,
+      // As its Not Now: nothing is added.
+      close: () => asking.getState().current?.answer(false),
+    });
     const windowTools: WindowToolHandlers = {
       ...appTools,
       requestMedia: mediaRequests.requestMedia,

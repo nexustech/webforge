@@ -2,10 +2,17 @@ import type { NativeImage } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import { areaOf, type CapturedWindow, captureArea, captureCanvas } from "./canvas-capture.js";
 
-/** A window whose page reports `area` for the element asked for, capturing an image `empty` or not. */
-function fakeWindow(area: unknown, options: { crashed?: boolean; empty?: boolean } = {}) {
+/**
+ * A window whose page reports `area` for the element asked for, capturing an image `empty` or not,
+ * whose pixels are `bitmap`'s (four bytes each).
+ */
+function fakeWindow(
+  area: unknown,
+  options: { crashed?: boolean; empty?: boolean; bitmap?: Uint8Array } = {},
+) {
   const jpeg = new Uint8Array([0xff, 0xd8]);
-  const resize = vi.fn(() => ({ toJPEG: vi.fn(() => jpeg) }));
+  const bitmap = options.bitmap ?? new Uint8Array([255, 255, 255, 255, 30, 60, 90, 255]);
+  const resize = vi.fn(() => ({ toJPEG: vi.fn(() => jpeg), toBitmap: () => bitmap }));
   const image = { isEmpty: () => options.empty === true, resize } as unknown as NativeImage;
   const capturePage = vi.fn(async () => image);
   const executeJavaScript = vi.fn(async (_code: string) => area);
@@ -72,6 +79,19 @@ describe("captureArea", () => {
     expect(crashed.capturePage).not.toHaveBeenCalled();
     const empty = fakeWindow({ x: 1, y: 2, width: 3, height: 4 }, { empty: true });
     expect(await captureArea(empty.window, "[data-x]")).toBeUndefined();
+  });
+
+  it("refuses an image in one colour only when asked to, as the site's picture does (#1300)", async () => {
+    const area = { x: 1, y: 2, width: 3, height: 4 };
+    // Two pixels apart only in blue, and one colour but for alpha.
+    const blue = new Uint8Array([10, 20, 30, 255, 10, 20, 31, 255]);
+    const alpha = new Uint8Array([10, 20, 30, 255, 10, 20, 30, 0]);
+    const drawn = fakeWindow(area, { bitmap: blue });
+    expect(await captureArea(drawn.window, "[data-x]", { refuseOneColour: true })).toBe(drawn.jpeg);
+    const blank = fakeWindow(area, { bitmap: alpha });
+    expect(await captureArea(blank.window, "[data-x]", { refuseOneColour: true })).toBeUndefined();
+    // A blank page's thumbnail in Version History is still one.
+    expect(await captureArea(blank.window, "[data-x]")).toBe(blank.jpeg);
   });
 });
 

@@ -52,7 +52,11 @@ export function registerPageSettingsCommand(
     );
   }
 
-  const removeDialog = windowDialogs.register({ id: "pageSettings", component: PageSettings });
+  const removeDialog = windowDialogs.register({
+    id: "pageSettings",
+    component: PageSettings,
+    close,
+  });
   const removeCommand = commands.register({
     id: COMMAND_IDS.pageSettings,
     label: t("pageSettings.open"),

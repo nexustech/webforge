@@ -46,6 +46,8 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
   };
   const api = {
     open: vi.fn<PreviewApi["open"]>(async () => "opened"),
+    nextOpened: vi.fn<PreviewApi["nextOpened"]>(async () => null),
+    cancelNext: vi.fn<PreviewApi["cancelNext"]>(async () => null),
     update: vi.fn<PreviewApi["update"]>(async () => null),
     show: vi.fn<PreviewApi["show"]>(async () => null),
     savePage: vi.fn<PreviewApi["savePage"]>(async () => ({
@@ -138,6 +140,9 @@ describe("registerPreviewCommands: the site's code (#649)", () => {
     expect(confirmCode).toHaveBeenCalledTimes(2);
     expect(api.open).not.toHaveBeenCalled();
     expect(api.phone).not.toHaveBeenCalled();
+    // An AI app waiting for the preview's address hears at once that none follows (#1255).
+    expect(api.cancelNext).toHaveBeenCalledOnce();
+    expect(api.cancelNext).toHaveBeenCalledWith(SESSION);
   });
 
   it("builds again once more code is trusted, which main builds with, while it follows", async () => {
@@ -172,6 +177,8 @@ describe("registerPreviewCommands: the site's code (#649)", () => {
     const registry = createCommandRegistry();
     const api = {
       open: vi.fn<PreviewApi["open"]>(async () => "opened"),
+      nextOpened: vi.fn<PreviewApi["nextOpened"]>(async () => null),
+      cancelNext: vi.fn<PreviewApi["cancelNext"]>(async () => null),
       update: vi.fn<PreviewApi["update"]>(async () => null),
       show: vi.fn<PreviewApi["show"]>(async () => null),
       phone: vi.fn<PreviewApi["phone"]>(async () => ({ status: "offline" })),
