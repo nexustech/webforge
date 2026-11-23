@@ -4,15 +4,15 @@ import { sessionIdSchema } from "./project.js";
 import { type SiteContent, siteContentSchema } from "./site.js";
 
 /**
- * A page's file in the preview, as the build names it (`index.html`, `services/cakes.html`): never
- * absolute, never a step up, so it only ever names a page of the preview.
- */
-/**
  * How long an AI app's openPreview waits for the preview to open (#1255): the Preview command may
  * first ask the person about code to trust (#649), and a large site's first build takes a while.
  */
 export const PREVIEW_OPEN_WAIT_MS = 60_000;
 
+/**
+ * A page's file in the preview, as the build names it (`index.html`, `services/cakes.html`): never
+ * absolute, never a step up, so it only ever names a page of the preview.
+ */
 const pagePathSchema = z
   .string()
   .min(6)
