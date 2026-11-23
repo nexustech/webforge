@@ -73,12 +73,25 @@ async function cellBoxes() {
   return { a1, a2, b1, b2 };
 }
 
-/** Places a Table from the Add panel, with its three starter rows. */
+/**
+ * Waits for the Table's styles, which the canvas compiles a moment after the change that placed
+ * it: until then its rows stack all the same, only shorter, without their cells' padding. A point
+ * picked on a row then was over the Table's headings once they came, so the Table stayed hovered
+ * and its outline was taken for the row's (#1350). Until the first cell has its padding.
+ */
+async function waitForStyles() {
+  const cell = canvas().locator("tr.site-table-row").first().locator("td").first();
+  await expect
+    .poll(() => cell.evaluate((element) => getComputedStyle(element).paddingTop), LAYOUT_WAIT)
+    .not.toBe("0px");
+}
+
+/** Places a Table from the Add panel, with its three starter rows, laid out with its styles. */
 async function placeTable() {
   await left().getByRole("tab", { name: "Elements" }).click();
   await left().getByRole("button", { name: "Table", exact: true }).click();
   await expect(canvas().locator("tr.site-table-row")).toHaveCount(3);
-  // Laid out once the canvas has its styles, which it compiles a moment after the change.
+  await waitForStyles();
   await expect
     .poll(
       whenShown(async () => {
@@ -139,6 +152,7 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
   await expect(canvas().locator(".site-table > table")).toHaveCount(1);
   await expect(canvas().locator("tr.site-table-row")).toHaveCount(3);
   await expect(canvas().locator("th")).toHaveText(["Item", "Price"]);
+  await waitForStyles();
 
   // In columns: a row's cells side by side, under the headings, the second row under the first.
   await expect
@@ -203,8 +217,7 @@ test("outlines a row, names its size, opens its menu where it is, edits a cell a
   // the row. Puck draws an outline for each hovered element as well as the selected one, so the
   // row's is found by its id, not taken as the first (#1350). Measured in one go in the canvas,
   // and polled for "fits" or what was drawn instead: whose each outline is, hovered or selected,
-  // and where. It stayed off the row for 30 s on macOS and Windows CI (#1347), which no run here
-  // or in a CI run of 800 has reproduced.
+  // and where.
   const start = await selectRow(0);
   await expect
     .poll(
