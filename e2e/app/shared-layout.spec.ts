@@ -82,7 +82,8 @@ test("starts the Footer from Full, adds to a column from the Add panel, on every
   await left.getByRole("tab", { name: "Elements" }).click();
   // With the Footer still selected, the line saying a change reaches every page stays while the
   // drag is under way, so the canvas doesn't move under the pointer (#1336). The Footer is at the
-  // bottom of the page: in view first, so the pointer can reach it.
+  // bottom of the page: in view first, so the pointer can reach it. The drag lets go only once the
+  // drop preview is in that column, not where the pointer passed on its way (#1336).
   const banner = page.locator(".editor > [role='status']");
   await expect(banner).toContainText("Footer");
   const links = columns.first().getByRole("navigation", { name: "Footer navigation" });
@@ -90,8 +91,12 @@ test("starts the Footer from Full, adds to a column from the Add panel, on every
   await drag(
     page,
     left.getByRole("button", { name: "Heading", exact: true }),
-    await lowerHalf(links),
+    () => lowerHalf(links),
+    0.5,
+    0.5,
+    columns.first(),
   );
+  await expect(banner).toContainText("Footer");
   await expect(columns.first().locator(".site-heading")).toHaveCount(2);
 
   // Opening hours and contact in the second column, in its column form: selected by its title,
