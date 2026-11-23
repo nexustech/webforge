@@ -336,7 +336,7 @@ function footerHolding(site: SiteDoc, selectedId: string | null): NodeDoc | unde
  * Where a click adds `type` to the Footer whose element `selectedId` is (HF-4, 5.39): into the
  * selection or beside it, as on a page ({@link addTarget}), else at the end of its last column that
  * takes it. Contact details and a Newsletter signup go in a column too. `undefined` when no column
- * takes it, or a new column when all three are there.
+ * takes it: it then goes on the page.
  */
 function footerTarget(
   library: ComponentLibrary,
@@ -353,6 +353,17 @@ function footerTarget(
     }
   }
   return undefined;
+}
+
+/**
+ * Where a click adds `type` in the Footer's columns (5.39): when no point is given and the Footer,
+ * or an element in it, is selected, and a column takes it.
+ */
+function inFooter(session: AddSession, type: string, point?: InsertPoint): AddTarget | undefined {
+  const selectedId = session.ui.getState().nodeId;
+  if (point !== undefined || selectedId === null) return undefined;
+  const footer = footerHolding(session.history.document.getState(), selectedId);
+  return footer === undefined ? undefined : footerTarget(session.library, footer, type, selectedId);
 }
 
 /**
@@ -389,14 +400,18 @@ export function addTargetFor(
 ): AddTarget | undefined {
   const component = placed(session.library, type)?.type;
   if (component === undefined) return undefined;
-  const selectedId = session.ui.getState().nodeId;
   // With the Footer or one of its elements selected, into its columns (5.39).
-  const footer = footerHolding(session.history.document.getState(), selectedId);
-  if (footer !== undefined && selectedId !== null && point === undefined) {
-    return footerTarget(session.library, footer, component, selectedId);
-  }
+  const footer = inFooter(session, component, point);
+  if (footer !== undefined) return footer;
+  // What no column takes goes on the page, as with nothing selected there: Contact buttons, or a
+  // section the Footer doesn't take.
+  const selectedId = session.ui.getState().nodeId;
+  const onPage =
+    footerHolding(session.history.document.getState(), selectedId) === undefined
+      ? selectedId
+      : null;
   const content = currentPage(session)?.doc.content ?? [];
-  return addTarget(session.library, content, component, selectedId, point);
+  return addTarget(session.library, content, component, onPage, point);
 }
 
 /**
@@ -421,7 +436,7 @@ export function addComponent(session: AddSession, key: string, point?: InsertPoi
   const { pageId, viewport, nodeId: selectedId } = session.ui.getState();
   const site = session.history.document.getState();
   // Into the Footer's columns, on every page, when the selection is there (5.39).
-  const toFooter = point === undefined && footerHolding(site, selectedId) !== undefined;
+  const toFooter = inFooter(session, type, point) !== undefined;
   // A click puts it above the Header (6.4), or after the Footer (6.16d), once, on every page; a
   // second click shows the one there. A page that hides that region shows none of it: there it
   // goes on the page, as a drop does.

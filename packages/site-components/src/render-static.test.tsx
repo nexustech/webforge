@@ -403,6 +403,39 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain("<form");
   });
 
+  it("leaves out a column with nothing shown, and the grid when no column shows anything", () => {
+    const text = (id: string, hidden?: boolean) => ({
+      type: "Text",
+      props: { id, text: `<p>${id}</p>`, ...(hidden === true ? { hidden } : {}) },
+    });
+    const footerWith = (columns: readonly NodeDoc[]) =>
+      renderNodesToHtml(
+        [{ type: "Footer", props: { id: "footer", text: "Thanks.", variant: "columns", columns } }],
+        siteLibrary,
+        context,
+      );
+    const column = (id: string, content: readonly NodeDoc[], hidden?: boolean) => ({
+      type: "FooterColumn",
+      props: { id, content, ...(hidden === true ? { hidden } : {}) },
+    });
+
+    const some = footerWith([
+      column("a", []),
+      column("b", [text("shown")]),
+      column("c", [text("x", true)]),
+    ]);
+    expect(some.match(/class="site-footer-column /g)).toHaveLength(1);
+    expect(some).toContain("shown");
+
+    const none = footerWith([
+      column("a", []),
+      column("b", [text("y")], true),
+      column("c", [text("x", true)]),
+    ]);
+    expect(none).not.toContain("site-footer-columns");
+    expect(none).toBe(footerWith([]));
+  });
+
   it("puts a section's anchor and Advanced options on its <section>, or its column form's root", () => {
     // A one-page site's menu goes to the Contact page's section by its anchor (5.9).
     const advanced = { anchorId: "contact", className: "extra", attributes: { title: "Visit" } };

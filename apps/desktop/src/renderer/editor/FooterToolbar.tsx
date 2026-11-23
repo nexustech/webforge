@@ -1,15 +1,5 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  Button,
-} from "@webforge/editor-ui";
-import { plural, t } from "@webforge/i18n/components";
+import { Button } from "@webforge/editor-ui";
+import { t } from "@webforge/i18n/components";
 import { isNodeDoc, type NodeDoc, newId, pastedCopies, type SiteDoc } from "@webforge/model";
 import {
   type ComponentLibrary,
@@ -19,7 +9,7 @@ import {
   MAX_FOOTER_COLUMNS,
 } from "@webforge/site-components";
 import { MinusIcon, PlusIcon } from "lucide-react";
-import { useId, useState } from "react";
+import { useId } from "react";
 import type { ContextualToolbar } from "../shell/contextual-toolbars.js";
 import { IconButton } from "./ColumnsToolbar.js";
 import type { EditorSession } from "./editor-session.js";
@@ -36,7 +26,7 @@ const columnsOf = (footer: NodeDoc | undefined): NodeDoc[] => {
   return Array.isArray(stored) ? stored.filter(isNodeDoc) : [];
 };
 
-/** How many elements the Footer's columns hold: what *Start from* would replace. */
+/** How many elements the Footer's columns hold: what *Start from* replaces. */
 const elementsIn = (footer: NodeDoc | undefined): number =>
   columnsOf(footer).reduce((sum, column) => {
     const content = column.props.content;
@@ -60,7 +50,8 @@ function withDefaults(library: ComponentLibrary, node: NodeDoc): NodeDoc {
 /**
  * Starts the Footer from `preset` (HF-4, 5.39): its layout and its columns as *Start from* gives
  * them, every element with its defaults and an id of its own, in place of the columns it had, as
- * one "Started the Footer from …" step that selects it. Its own text stays. `flush` ends a canvas
+ * one "Started the Footer from …" step that selects it. Its own text stays. When that replaces
+ * elements, an Undo toast says so, rather than a question first (LF-15). `flush` ends a canvas
  * text session first.
  */
 function startFooterFrom(
@@ -78,16 +69,21 @@ function startFooterFrom(
     () => newId("node"),
   );
   const { pageId, viewport } = session.ui.getState();
+  const name = t(`footerToolbar.preset.${preset}`);
   session.edit(
     "props",
-    t("footerToolbar.started", { preset: t(`footerToolbar.preset.${preset}`) }),
+    t("footerToolbar.started", { preset: name }),
     (draft) => {
       const node = footerOf(draft);
       if (node === undefined) return;
       node.props.variant = variant;
       node.props.columns = placed;
     },
-    { selectionAfter: { pageId, viewport, nodeId: footer.props.id }, apply: true },
+    {
+      selectionAfter: { pageId, viewport, nodeId: footer.props.id },
+      apply: true,
+      announce: elementsIn(footer) > 0 && t("footerToolbar.startedEverywhere", { preset: name }),
+    },
   );
 }
 
@@ -181,31 +177,23 @@ function removeFooterColumn(
 }
 
 /**
- * The Footer's toolbar (HF-4, 5.39): *Start from* one of its presets, which asks first when that
- * would replace the elements in its columns; and its number of columns, with Add and Remove.
+ * The Footer's toolbar (HF-4, 5.39): *Start from* one of its presets, and its number of columns,
+ * with Add and Remove.
  */
 export function FooterTools({
   count,
-  elements,
   onStart,
   onAdd,
   onRemove,
 }: {
   /** How many columns the Footer has. */
   readonly count: number;
-  /** How many elements its columns hold. */
-  readonly elements: number;
   readonly onStart: (preset: FooterPreset) => void;
   readonly onAdd: () => void;
   readonly onRemove: () => void;
 }) {
   const startId = useId();
   const columnsId = useId();
-  const [asking, setAsking] = useState<FooterPreset | undefined>(undefined);
-  const start = (preset: FooterPreset) => {
-    if (elements > 0) setAsking(preset);
-    else onStart(preset);
-  };
   return (
     <div className="flex items-center gap-4">
       <fieldset aria-labelledby={startId} className="flex items-center gap-1">
@@ -218,7 +206,7 @@ export function FooterTools({
             type="button"
             size="sm"
             variant="outline"
-            onClick={() => start(preset)}
+            onClick={() => onStart(preset)}
           >
             {t(`footerToolbar.preset.${preset}`)}
           </Button>
@@ -244,36 +232,6 @@ export function FooterTools({
           <PlusIcon aria-hidden />
         </IconButton>
       </fieldset>
-      <AlertDialog
-        open={asking !== undefined}
-        onOpenChange={(open) => {
-          if (!open) setAsking(undefined);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("footerToolbar.replace.title", {
-                preset: t(`footerToolbar.preset.${asking ?? "simple"}`),
-              })}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {plural("footerToolbar.replace.description", elements)}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("footerToolbar.replace.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (asking !== undefined) onStart(asking);
-                setAsking(undefined);
-              }}
-            >
-              {t("footerToolbar.replace.confirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
@@ -295,11 +253,9 @@ export function footerToolbar({
     types: ["Footer", "FooterColumn"],
     component: function FooterToolbar() {
       const count = useDocument(session, (site) => columnsOf(footerOf(site)).length);
-      const elements = useDocument(session, (site) => elementsIn(footerOf(site)));
       return (
         <FooterTools
           count={count}
-          elements={elements}
           onStart={(preset) => startFooterFrom(session, flush, preset)}
           onAdd={() => addFooterColumn(session, flush)}
           onRemove={() => removeFooterColumn(session, flush)}

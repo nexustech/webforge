@@ -52,6 +52,20 @@ describe("itemHtml (3.14)", () => {
     );
   });
 
+  it("writes a section in a Footer column in its column form, as the export does (5.39)", () => {
+    const site = sampleSite();
+    const footer = site.layout.footer.find((node) => node.type === "Footer");
+    const [column] = (footer?.props.columns ?? []) as { props: { content: unknown[] } }[];
+    if (column === undefined) throw new Error("no Footer column");
+    column.props.content.push({
+      type: "ContactDetails",
+      props: { id: "visit", title: "Visit us", text: "<p>Hi</p>" },
+    });
+
+    const html = itemHtml(site, siteLibrary, SIZES, "home", "visit") ?? "missing";
+    expect(flat(html)).toMatch(/^<div class="site-contact space-y-4"><h3/);
+  });
+
   it("writes nothing for a hidden item, and gives up on an unknown page or item", () => {
     const site = sampleSite();
     const home = site.pages.find((each) => each.id === "home");

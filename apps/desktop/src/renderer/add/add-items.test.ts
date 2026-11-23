@@ -581,11 +581,25 @@ describe("adding to the Footer's columns (HF-4, 5.39)", () => {
     expect(columns().map((column) => column.type)).toEqual(["FooterColumn", "FooterColumn"]);
   });
 
-  it("adds nothing a column doesn't take, and no fourth column", () => {
-    const { session, footerId } = withColumn();
+  it("puts on the page what no column takes, and adds no fourth column", () => {
+    const { session, footerId, columns, typesIn } = withColumn();
+    const page = () => currentPage(session)?.doc.content ?? [];
     session.select("t");
-    expect(addTargetFor(session, "Button")).toBeUndefined();
-    expect(addTargetFor(session, "Hero")).toBeUndefined();
+    // An element goes in the page's last section, as with nothing selected there.
+    expect(addTargetFor(session, "Button")?.parentId).toBe(page().at(-1)?.props.id);
+    // A section goes at the end of the page, as with nothing selected; Contact buttons after the
+    // Footer, on every page.
+    expect(addTargetFor(session, "Hero")).toEqual({
+      parentId: null,
+      slot: null,
+      index: page().length,
+    });
+    expect(addComponent(session, "Hero")).toBe(true);
+    expect(page().at(-1)?.type).toBe("Hero");
+    session.select(footerId);
+    expect(addComponent(session, "ContactButtons")).toBe(true);
+    expect(session.history.document.getState().layout.footer.at(-1)?.type).toBe("ContactButtons");
+    expect(typesIn(columns()[0])).toEqual(["Text"]);
 
     session.select(footerId);
     expect(addComponent(session, "FooterColumn")).toBe(true);

@@ -24,8 +24,8 @@ import {
   valuesWithLook,
 } from "@webforge/model";
 import { cloneElement, createElement, isValidElement, type ReactNode } from "react";
+import { hasElementRoot } from "./column-form.js";
 import { isDocumentPath } from "./document-path.js";
-import { hasElementRoot } from "./footer-column.js";
 import { hiddenFieldsOf, type ShownAtLeast } from "./hidden-fields.js";
 import type { MainHeading } from "./main-heading.js";
 import type { PictureBehind } from "./picture-behind.js";

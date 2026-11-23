@@ -18,8 +18,8 @@ import {
   backgroundClasses,
   SectionBackground,
 } from "./background.js";
+import { FramedOrColumn } from "./column-form.js";
 import { type ComponentSpec, defineFramedSection } from "./define.js";
-import { FramedOrColumn } from "./footer-column.js";
 import { boxClasses, type ComponentDef } from "./library.js";
 import {
   ENTRANCE_FIELD_NAMES,

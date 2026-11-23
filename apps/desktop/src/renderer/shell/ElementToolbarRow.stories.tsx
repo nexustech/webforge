@@ -107,10 +107,10 @@ const footerActions = {
 
 /** The Footer selected (HF-4, 5.39): *Start from* a preset, and two columns of three. */
 export const FooterSelected: Story = {
-  args: { children: <FooterTools count={2} elements={3} {...footerActions} /> },
+  args: { children: <FooterTools count={2} {...footerActions} /> },
 };
 
 /** A Footer of its text alone: no column to remove. */
 export const FooterNoColumns: Story = {
-  args: { children: <FooterTools count={0} elements={0} {...footerActions} /> },
+  args: { children: <FooterTools count={0} {...footerActions} /> },
 };

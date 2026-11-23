@@ -1,10 +1,10 @@
 import { t } from "@webforge/i18n/components";
 import type { SiteText } from "@webforge/i18n/site-text";
-import { hasLink, type NodeDoc } from "@webforge/model";
+import { hasLink, isNodeDoc, type NodeDoc } from "@webforge/model";
 import type { ReactNode } from "react";
+import { FooterColumnContext } from "../column-form.js";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
-import { FooterColumnContext } from "../footer-column.js";
 import { boundString, boundText, type ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
@@ -464,6 +464,28 @@ const menuLinks = defineComponent({
  * One column of the Footer (HF-4, 5.39): elements one under another. Contact details and a
  * Newsletter signup in it draw their column forms.
  */
+/**
+ * Whether a slot's value shows anything: on the canvas (a component) always, there to drop into;
+ * in the export, a list with an element that isn't hidden.
+ */
+const holdsShown = (slot: unknown): boolean =>
+  typeof slot === "function" ||
+  (Array.isArray(slot) && slot.some((node) => isNodeDoc(node) && node.props.hidden !== true));
+
+/**
+ * Whether element `id` among `nodes` is in a Footer column (5.39), where a section draws its
+ * column form: Advanced mode's CSS tab draws it so too, as the export writes it.
+ */
+export function inFooterColumn(nodes: readonly NodeDoc[], id: string, inside = false): boolean {
+  return nodes.some((node) => {
+    if (node.props.id === id) return inside;
+    const within = inside || node.type === "FooterColumn";
+    return Object.values(node.props).some(
+      (value) => Array.isArray(value) && inFooterColumn(value.filter(isNodeDoc), id, within),
+    );
+  });
+}
+
 const footerColumn = defineComponent({
   label: t("element.footerColumn"),
   place: "child",
@@ -471,7 +493,10 @@ const footerColumn = defineComponent({
     content: { kind: "slot", label: t("field.content"), allow: [...FOOTER_COLUMN_TYPES] },
   },
   defaults: { content: [] },
-  render: ({ slots }) => {
+  render: ({ values, slots }) => {
+    // The export leaves out a column with nothing shown in it, so it takes no room beside the
+    // others. On the canvas the slot is a component, there to drop into.
+    if (!holdsShown((values as Readonly<Record<string, unknown>>).content)) return null;
     const Content = slots.content;
     return (
       <div className="site-footer-column min-w-0">
@@ -518,15 +543,21 @@ const footer = defineComponent({
     const text = content === null ? null : <p>{content}</p>;
     const cookies =
       context.cookieSettings === true ? <CookieSettings siteText={context.siteText} /> : null;
-    // The export leaves out a Footer with no columns' empty grid, so a Footer of its text alone is
-    // drawn as it was before columns. On the canvas the slot is a component, there to show what it
-    // holds.
+    // The export leaves out the grid of a Footer with nothing shown in its columns, so a Footer of
+    // its text alone is drawn as it was before columns. On the canvas the slot is a component,
+    // there to show what it holds.
     const stored: unknown = (values as Readonly<Record<string, unknown>>).columns;
-    const none = typeof stored !== "function" && (!Array.isArray(stored) || stored.length === 0);
+    const shown =
+      typeof stored === "function" ||
+      (Array.isArray(stored) &&
+        stored.some(
+          (column) =>
+            isNodeDoc(column) && column.props.hidden !== true && holdsShown(column.props.content),
+        ));
     const Columns = slots.columns;
-    const columns = none ? null : (
+    const columns = shown ? (
       <Columns className="site-footer-columns grid w-full gap-8 sm:grid-flow-col sm:auto-cols-fr" />
-    );
+    ) : null;
     if (values.variant === "centred") {
       return (
         <footer className="site-footer footer footer-center bg-base-200 p-8 text-base-content">

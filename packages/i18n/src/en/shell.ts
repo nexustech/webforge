@@ -380,13 +380,8 @@ export const shell = {
   "footerToolbar.removeColumn": "Remove last column",
   // {preset} is one of the presets above: "Started the Footer from 'Full'".
   "footerToolbar.started": "Started the Footer from '{preset}'",
-  "footerToolbar.replace.title": "Start the Footer from '{preset}'?",
-  "footerToolbar.replace.description.one":
-    "This replaces the Footer's columns and the element in them, on every page. You can undo it.",
-  "footerToolbar.replace.description.other":
-    "This replaces the Footer's columns and the {count} elements in them, on every page. You can undo it.",
-  "footerToolbar.replace.confirm": "Replace Columns",
-  "footerToolbar.replace.cancel": "Cancel",
+  // Its Undo toast, when it replaced elements: how far it reached (LF-15).
+  "footerToolbar.startedEverywhere": "Started the Footer from '{preset}' on every page",
   // The canvas frame's edges, dragged to set its width (1.33, F-ED-25).
   "canvasResize.left": "Canvas width, left edge",
   "canvasResize.right": "Canvas width, right edge",

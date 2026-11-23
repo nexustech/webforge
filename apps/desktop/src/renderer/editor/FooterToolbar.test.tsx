@@ -79,26 +79,33 @@ describe("the Footer's toolbar (HF-4, 5.39)", () => {
     expect(shown()).toEqual([]);
   });
 
-  it("asks before it replaces the elements in the columns, and does nothing on Cancel", async () => {
-    const { shown, typesIn, footerNode, labels, user } = setUp([
+  it("replaces the elements in the columns at once, with an Undo toast, never a question (LF-15)", async () => {
+    const { session, shown, typesIn, footerNode, labels, user } = setUp([
       {
         type: "FooterColumn",
         props: { id: "col", content: [{ type: "Text", props: { id: "t", text: "<p>Hi</p>" } }] },
       },
     ]);
+    const announced: (boolean | string)[] = [];
+    session.onEntryAdded((_entry, _kind, announce) => announced.push(announce));
 
     await user.click(within(startFrom()).getByRole("button", { name: "Simple" }));
-    const ask = screen.getByRole("alertdialog", { name: "Start the Footer from 'Simple'?" });
-    expect(ask.textContent).toContain("the element in them, on every page");
-    await user.click(within(ask).getByRole("button", { name: "Cancel" }));
-    expect(shown().map(typesIn)).toEqual([["Text"]]);
-    expect(labels()).toEqual([]);
-
-    await user.click(within(startFrom()).getByRole("button", { name: "Simple" }));
-    await user.click(screen.getByRole("button", { name: "Replace Columns" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
     expect(shown()).toEqual([]);
     expect(footerNode()?.props.variant).toBe("centred");
     expect(labels()).toEqual(["Started the Footer from 'Simple'"]);
+    expect(announced).toEqual(["Started the Footer from 'Simple' on every page"]);
+
+    session.history.undo();
+    expect(shown().map(typesIn)).toEqual([["Text"]]);
+  });
+
+  it("shows no toast when the columns held nothing to replace", async () => {
+    const { session, user } = setUp();
+    const announced: (boolean | string)[] = [];
+    session.onEntryAdded((_entry, _kind, announce) => announced.push(announce));
+    await user.click(within(startFrom()).getByRole("button", { name: "Columns" }));
+    expect(announced).toEqual([false]);
   });
 
   it("adds columns up to three and removes the last, each a step of its own", async () => {
