@@ -5,6 +5,7 @@ import {
   DRAW_TIMEOUT_MS,
   type PicturedWindow,
   SITE_PICTURE_SELECTOR,
+  WHILE_ONE_COLOUR,
 } from "./site-picture.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
@@ -31,9 +32,12 @@ function setUp(renderer: (id: number, answer: Answer) => void, crashed = false) 
       .catch(() => undefined);
   const sent: unknown[][] = [];
   const jpeg = new Uint8Array([0xff, 0xd8]);
+  // The home page drawn: more than one colour, unless a test says otherwise.
+  const bitmaps: Buffer[] = [];
+  const bitmap = () => bitmaps.shift() ?? Buffer.from([255, 255, 255, 255, 0, 0, 0, 255]);
   const image = {
     isEmpty: () => false,
-    resize: () => ({ toJPEG: () => jpeg }),
+    resize: () => ({ toJPEG: () => jpeg, toBitmap: () => bitmap() }),
   } as unknown as NativeImage;
   const executeJavaScript = vi.fn(async (_code: string) => ({
     x: 0,
@@ -55,7 +59,7 @@ function setUp(renderer: (id: number, answer: Answer) => void, crashed = false) 
       },
     } as unknown as PicturedWindow["webContents"],
   };
-  return { pictures, window, sent, jpeg, capturePage, executeJavaScript };
+  return { pictures, window, sent, jpeg, capturePage, executeJavaScript, bitmaps };
 }
 
 describe("createSitePicture (#1175)", () => {
@@ -89,6 +93,23 @@ describe("createSitePicture (#1175)", () => {
     expect(await taken).toBe(jpeg);
     // Room to spare: the budget is more than the 1.5 s the renderer waits for what loads.
     expect(DRAW_TIMEOUT_MS).toBeGreaterThanOrEqual(3_500);
+  });
+
+  it("takes the picture again while the window still shows the stage's white box (#1323)", async () => {
+    const { pictures, window, sent, jpeg, capturePage, bitmaps } = setUp((id, answer) =>
+      answer(id, true),
+    );
+    const white = Buffer.from([255, 255, 255, 255, 255, 255, 255, 255]);
+    bitmaps.push(white, white);
+
+    const taken = pictures.capture(window);
+    await vi.advanceTimersByTimeAsync(2 * WHILE_ONE_COLOUR.everyMs);
+    expect(await taken).toBe(jpeg);
+    expect(capturePage).toHaveBeenCalledTimes(3);
+    // The drawing stays until the last picture is taken.
+    expect(sent.at(-1)).toEqual(["app:site-picture", 1, "done"]);
+    // Half a second at most, well within the 8 s the renderer keeps its drawing for.
+    expect(WHILE_ONE_COLOUR.retries * WHILE_ONE_COLOUR.everyMs).toBeLessThanOrEqual(500);
   });
 
   it("takes no picture when the renderer can't draw the page, and still has it tidy up", async () => {

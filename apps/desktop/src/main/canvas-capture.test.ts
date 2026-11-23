@@ -1,11 +1,36 @@
 import type { NativeImage } from "electron";
 import { describe, expect, it, vi } from "vitest";
-import { areaOf, type CapturedWindow, captureArea, captureCanvas } from "./canvas-capture.js";
+import {
+  areaOf,
+  type CapturedWindow,
+  captureArea,
+  captureCanvas,
+  isOneColour,
+} from "./canvas-capture.js";
 
-/** A window whose page reports `area` for the element asked for, capturing an image `empty` or not. */
-function fakeWindow(area: unknown, options: { crashed?: boolean; empty?: boolean } = {}) {
+/** Two pixels, as `toBitmap` gives them: white and black, or white twice. */
+const TWO_COLOURS = Buffer.from([255, 255, 255, 255, 0, 0, 0, 255]);
+const WHITE = Buffer.from([255, 255, 255, 255, 255, 255, 255, 255]);
+
+/**
+ * A window whose page reports `area` for the element asked for, capturing an image `empty` or not:
+ * each capture's pixels the next of `bitmaps`, the last kept, and its JPEG the capture's number.
+ */
+function fakeWindow(
+  area: unknown,
+  options: { crashed?: boolean; empty?: boolean; bitmaps?: readonly Buffer[] } = {},
+) {
+  const bitmaps = options.bitmaps ?? [TWO_COLOURS];
   const jpeg = new Uint8Array([0xff, 0xd8]);
-  const resize = vi.fn(() => ({ toJPEG: vi.fn(() => jpeg) }));
+  let taken = 0;
+  const resize = vi.fn(() => {
+    const bitmap = bitmaps[Math.min(taken, bitmaps.length - 1)];
+    const number = taken++;
+    return {
+      toBitmap: () => bitmap,
+      toJPEG: vi.fn(() => (number === 0 ? jpeg : new Uint8Array([number]))),
+    };
+  });
   const image = { isEmpty: () => options.empty === true, resize } as unknown as NativeImage;
   const capturePage = vi.fn(async () => image);
   const executeJavaScript = vi.fn(async (_code: string) => area);
@@ -72,6 +97,63 @@ describe("captureArea", () => {
     expect(crashed.capturePage).not.toHaveBeenCalled();
     const empty = fakeWindow({ x: 1, y: 2, width: 3, height: 4 }, { empty: true });
     expect(await captureArea(empty.window, "[data-x]")).toBeUndefined();
+  });
+});
+
+describe("isOneColour", () => {
+  it("says whether every pixel is the same colour, its alpha too", () => {
+    expect(isOneColour({ toBitmap: () => WHITE })).toBe(true);
+    expect(isOneColour({ toBitmap: () => TWO_COLOURS })).toBe(false);
+    expect(isOneColour({ toBitmap: () => Buffer.from([1, 2, 3, 255, 1, 2, 3, 254]) })).toBe(false);
+    expect(isOneColour({ toBitmap: () => Buffer.from([1, 2, 3, 4]) })).toBe(true);
+  });
+});
+
+describe("captureArea while one colour (#1323)", () => {
+  const area = { x: 1, y: 2, width: 3, height: 4 };
+
+  it("takes a picture of one colour again until the window shows the drawing", async () => {
+    const { window, capturePage } = fakeWindow(area, { bitmaps: [WHITE, WHITE, TWO_COLOURS] });
+    const picture = await captureArea(window, "[data-x]", { retries: 5, everyMs: 0 });
+    expect(picture).toEqual(new Uint8Array([2]));
+    expect(capturePage).toHaveBeenCalledTimes(3);
+  });
+
+  it("keeps the last picture of one colour once the retries are used up", async () => {
+    const { window, capturePage } = fakeWindow(area, { bitmaps: [WHITE] });
+    const picture = await captureArea(window, "[data-x]", { retries: 2, everyMs: 0 });
+    expect(picture).toEqual(new Uint8Array([2]));
+    expect(capturePage).toHaveBeenCalledTimes(3);
+  });
+
+  it("waits between pictures", async () => {
+    vi.useFakeTimers();
+    try {
+      const { window, capturePage } = fakeWindow(area, { bitmaps: [WHITE, TWO_COLOURS] });
+      const picture = captureArea(window, "[data-x]", { retries: 5, everyMs: 50 });
+      await vi.advanceTimersByTimeAsync(49);
+      expect(capturePage).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(await picture).toEqual(new Uint8Array([1]));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("gives nothing when the window goes while it waits", async () => {
+    const { window, capturePage } = fakeWindow(area, { bitmaps: [WHITE] });
+    let destroyed = false;
+    const going = { ...window, isDestroyed: () => destroyed };
+    const picture = captureArea(going, "[data-x]", { retries: 5, everyMs: 0 });
+    destroyed = true;
+    expect(await picture).toBeUndefined();
+    expect(capturePage).toHaveBeenCalledTimes(1);
+  });
+
+  it("takes one picture without being asked to retry, one colour or not", async () => {
+    const { window, capturePage, jpeg } = fakeWindow(area, { bitmaps: [WHITE] });
+    expect(await captureArea(window, "[data-x]")).toBe(jpeg);
+    expect(capturePage).toHaveBeenCalledTimes(1);
   });
 });
 

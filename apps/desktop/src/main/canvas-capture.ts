@@ -1,4 +1,4 @@
-import type { BrowserWindow, Rectangle, WebContents } from "electron";
+import type { BrowserWindow, NativeImage, Rectangle, WebContents } from "electron";
 import { z } from "zod";
 
 const areaSchema = z.object({
@@ -29,21 +29,55 @@ export type CapturedWindow = Pick<BrowserWindow, "isDestroyed"> & {
 };
 
 /**
+ * How many times a picture of one colour is taken again, and how long apart: a window can show a
+ * drawing a little after the renderer has drawn it (#1323).
+ */
+export type WhileOneColour = { readonly retries: number; readonly everyMs: number };
+
+/** Whether every pixel of `image` is the same colour: nothing on it, or not yet. */
+export function isOneColour(image: Pick<NativeImage, "toBitmap">): boolean {
+  const bitmap = image.toBitmap();
+  for (let at = 4; at < bitmap.length; at += 4) {
+    for (let channel = 0; channel < 4; channel++) {
+      if (bitmap[at + channel] !== bitmap[channel]) return false;
+    }
+  }
+  return true;
+}
+
+const live = (window: CapturedWindow) => !window.isDestroyed() && !window.webContents.isCrashed();
+
+/** Resolves after `ms`. */
+const after = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
  * The element `selector` finds, as the window shows it, as a 480-pixel-wide JPEG: for the site's
  * picture in the Recent list (1.8, #1175). `undefined` without a window, with a crashed renderer,
  * without the element (never the whole window, editor and all), or for an empty image.
+ *
+ * With `whileOneColour`, a picture of one colour is taken again until it isn't, up to its
+ * `retries`; the last is kept, for an element that is one colour.
  */
 export async function captureArea(
   window: CapturedWindow | undefined,
   selector: string,
+  whileOneColour?: WhileOneColour,
 ): Promise<Uint8Array | undefined> {
-  if (window === undefined || window.isDestroyed() || window.webContents.isCrashed()) {
-    return undefined;
-  }
+  if (window === undefined || !live(window)) return undefined;
   const area = await areaOf(window.webContents, selector);
   if (area === undefined) return undefined;
-  const image = await window.webContents.capturePage(area);
-  return image.isEmpty() ? undefined : image.resize({ width: 480 }).toJPEG(75);
+  const take = async () => {
+    const image = await window.webContents.capturePage(area);
+    return image.isEmpty() ? undefined : image.resize({ width: 480 });
+  };
+  const { retries, everyMs } = whileOneColour ?? { retries: 0, everyMs: 0 };
+  let picture = await take();
+  for (let retry = 0; retry < retries && picture !== undefined && isOneColour(picture); retry++) {
+    await after(everyMs);
+    if (!live(window)) return undefined;
+    picture = await take();
+  }
+  return picture?.toJPEG(75);
 }
 
 /**
