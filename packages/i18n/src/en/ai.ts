@@ -66,6 +66,7 @@ export const ai = {
   "ai.away.everyPage": "Every page",
   "ai.away.undoAll": "Undo All of {app}'s Changes",
   "ai.away.noVersion": "No version from before {app}'s changes was found. Open Version History.",
+  "ai.away.failed": "{appName} couldn't put the site back. Try again, or use Version History.",
   "ai.away.keep": "Keep",
   "ai.media.description":
     'Its reason: "{reason}" Only the files you choose are added to Media, and you can undo it.',

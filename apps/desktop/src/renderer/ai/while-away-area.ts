@@ -62,20 +62,25 @@ export function registerWhileAway(deps: WhileAwayDeps): WhileAway {
     shown.setState({ undoing: app });
     try {
       const listed = await deps.listVersions();
-      const version =
-        listed.status === "ok" ? versionBefore(listed.versions, app, group.firstAt) : undefined;
+      if (listed.status !== "ok") {
+        deps.notify(t("ai.away.failed"));
+        return;
+      }
+      const version = versionBefore(listed.versions, group.firstAt);
       if (version === undefined) {
         deps.notify(t("ai.away.noVersion", { app }));
         return;
       }
       if (await deps.restore(version)) {
-        // Undone: the app's changes leave the list, and the dialog closes with the last.
-        const changes = shown.getState().changes.filter((change) => change.app !== app);
+        // The restore took back every change made since the version, another app's too: none of
+        // them is listed any more, and the dialog closes with the last.
+        const since = Date.parse(version.createdAt);
+        const changes = shown.getState().changes.filter((change) => change.at < since);
         shown.setState({ changes });
       }
     } catch (error) {
       reportFailure("ai.away.undoAll", error);
-      deps.notify(t("ai.away.noVersion", { app }));
+      deps.notify(t("ai.away.failed"));
     } finally {
       const { undoing: _done, ...rest } = shown.getState();
       shown.setState(rest, true);

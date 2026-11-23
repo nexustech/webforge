@@ -49,16 +49,20 @@ describe("what an app changed while the person was away (5.36, UA-3)", () => {
     expect(groupAway([], titleOf)).toEqual([]);
   });
 
-  it("finds the version before the app's first change by its name, or else by its time", () => {
+  it("finds the newest version saved before the app's first change, whatever its name", () => {
     const before = version("Before Claude's changes", 1_000);
     const later = version("", 5_000);
     // Newest first, as main lists them.
-    expect(versionBefore([later, before], "Claude", 3_000)).toBe(before);
+    expect(versionBefore([later, before], 3_000)).toBe(before);
+    expect(versionBefore([later], 3_000)).toBeUndefined();
+  });
 
-    // Main saved none: one from moments before held the site already (4.6).
-    const earlier = version("", 900);
-    expect(versionBefore([later, earlier], "Claude", 3_000)).toBe(earlier);
-    expect(versionBefore([later], "Claude", 3_000)).toBeUndefined();
+  it("never takes an earlier opening's version by its name over a newer one (#1352's review)", () => {
+    // Days ago, in another opening of the site: named as main names it.
+    const old = version("Before Claude's changes", 1_000);
+    // This opening's, from moments before: main saved no other (4.6).
+    const recent = version("", 2_900);
+    expect(versionBefore([recent, old], 3_000)).toBe(recent);
   });
 
   it("keeps the changes until they're taken, once", () => {

@@ -69,21 +69,16 @@ export function groupAway(
 }
 
 /**
- * The version **Undo All** goes back to for `app` (5.36): the newest named _Before ‹app›'s
- * changes_, saved before its first change on this opening of the site (S20); or, when none was
- * saved because a version from moments before held the site already, the newest saved before
- * `firstAt`. `versions` are newest first.
+ * The version **Undo All** goes back to (5.36): the newest saved at or before `firstAt`, the app's
+ * first change while the person was away, whatever its name. Never by name: when a version from the
+ * last few minutes held the site, main saved no _Before ‹app›'s changes_ (4.6), and one of that
+ * name may be an earlier opening's, days old. `versions` are newest first.
  */
 export function versionBefore(
   versions: readonly VersionSummary[],
-  app: string,
   firstAt: number,
 ): VersionSummary | undefined {
-  const name = t("ai.version.before", { app });
-  return (
-    versions.find((version) => version.name === name) ??
-    versions.find((version) => Date.parse(version.createdAt) <= firstAt)
-  );
+  return versions.find((version) => Date.parse(version.createdAt) <= firstAt);
 }
 
 /** The changes made while the person was away, kept until they come back. */

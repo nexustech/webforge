@@ -22,11 +22,11 @@ const BEFORE: VersionSummary = {
 };
 
 /** A change Claude made: its request, unasked or not, and the answer it got. */
-const unasked = (asked = true): AiRequest => ({
+const unasked = (asked = true, app = "Claude"): AiRequest => ({
   kind: "command",
   name: "updateFields",
   input: {},
-  app: "Claude",
+  app,
   ...(asked ? { unasked: true } : {}),
 });
 const done = (label: string, pageId?: string): AiResponse => ({
@@ -39,12 +39,16 @@ const done = (label: string, pageId?: string): AiResponse => ({
  * *While you were away* on a site whose version before Claude's changes is `version`, with Version
  * History's own restore; the person away until `come back` is called.
  */
-function setUp(listed: readonly VersionSummary[] = [BEFORE]) {
+function setUp(listed: readonly VersionSummary[] = [BEFORE], listing: "ok" | "failed" = "ok") {
   const session = sessionWith(starterSite());
   // The site before Claude's changes, as main saved it.
   const version: SiteDoc = structuredClone(session.history.document.getState());
   const versions = {
-    list: vi.fn(async () => ({ status: "ok" as const, versions: [...listed], bytes: 0 })),
+    list: vi.fn(async () =>
+      listing === "ok"
+        ? { status: "ok" as const, versions: [...listed], bytes: 0 }
+        : { status: "failed" as const, reason: "unknown" as const },
+    ),
     save: vi.fn(async () => ({
       status: "saved" as const,
       version: { ...BEFORE, id: crypto.randomUUID() },
@@ -146,6 +150,38 @@ describe("While you were away (5.36, UA-3)", () => {
     expect(site.theme).toEqual(version.theme);
     // One undo step, which Undo takes back.
     expect(session.history.entries().at(-1)?.label).toMatch(/Restored version/);
+  });
+
+  it("lists none of the changes Undo All took back, another app's too (#1352's review)", async () => {
+    const { whileAway, comeBack, user } = setUp();
+    whileAway.heard(unasked(), done("Changed the theme"));
+    whileAway.heard(unasked(true, "Cursor"), {
+      status: "done",
+      label: "AI (Cursor): Added Gallery",
+    });
+    comeBack();
+    expect(screen.getByRole("button", { name: "Undo All of Cursor's Changes" })).toBeTruthy();
+
+    // Claude's version is from before both: restoring it took back Cursor's change as well.
+    await user.click(screen.getByRole("button", { name: "Undo All of Claude's Changes" }));
+
+    await vi.waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.queryByRole("button", { name: "Undo All of Cursor's Changes" })).toBeNull();
+  });
+
+  it("says so when the versions can't be listed, and changes nothing", async () => {
+    const { session, whileAway, comeBack, notify, user } = setUp(undefined, "failed");
+    whileAway.heard(unasked(), done("Changed the theme"));
+    const steps = session.history.entries().length;
+    comeBack();
+    await user.click(screen.getByRole("button", { name: "Undo All of Claude's Changes" }));
+
+    await vi.waitFor(() =>
+      expect(notify).toHaveBeenCalledWith(
+        "Webforge couldn't put the site back. Try again, or use Version History.",
+      ),
+    );
+    expect(session.history.entries()).toHaveLength(steps);
   });
 
   it("shows nothing for changes made asked, made with the person there, or that changed nothing", () => {
