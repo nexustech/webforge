@@ -77,13 +77,17 @@ async function cellBoxes() {
  * Waits for the Table's styles, which the canvas compiles a moment after the change that placed
  * it: until then its rows stack all the same, only shorter, without their cells' padding. A point
  * picked on a row then was over the Table's headings once they came, so the Table stayed hovered
- * and its outline was taken for the row's (#1350). Until the first cell has its padding.
+ * and its outline was taken for the row's (#1350). Until the first cell has its padding (`py-2`),
+ * more than the 1 px a browser gives a cell of its own.
  */
 async function waitForStyles() {
   const cell = canvas().locator("tr.site-table-row").first().locator("td").first();
   await expect
-    .poll(() => cell.evaluate((element) => getComputedStyle(element).paddingTop), LAYOUT_WAIT)
-    .not.toBe("0px");
+    .poll(
+      () => cell.evaluate((element) => Number.parseFloat(getComputedStyle(element).paddingTop)),
+      LAYOUT_WAIT,
+    )
+    .toBeGreaterThan(1);
 }
 
 /** Places a Table from the Add panel, with its three starter rows, laid out with its styles. */
