@@ -106,7 +106,7 @@ An AI never passes off a made-up fact as yours. If it needs one you didn't give,
 Some changes ask you first, with **Allow**:
 
 - changes that reach every page: the theme, a new page with a menu entry, deleting a page, Site Settings, the Header or Footer, or a shared section;
-- changing where visitors' money or details go, such as a Buy button's payment link, even on one page. The question names the element, such as the plan by its name, and where the link goes now and would go: a web address, or one of your pages, files or lists by its name. Changing your web address, phone number, email address or a social profile, or whether search engines may show your site, names the old one and the new one too.
+- changing where visitors' money or details go, such as a Buy button's payment link, even on one page, though not a link to one of your own pages that replaces no web address, email address or phone number. The question names the element, such as the plan by its name, and where the link goes now and would go: a web address, or one of your pages, files or lists by its name. Changing your web address, phone number, email address or a social profile, or whether search engines may show your site, names the old one and the new one too.
 
 Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or _Page not found_.
 
@@ -129,7 +129,7 @@ While an app works without asking, the AI apps icon in the title bar changes to 
 
 Some changes ask whatever you chose:
 
-- changing where visitors' money or details go, such as a Buy button's payment link or a form's address;
+- changing where visitors' money or details go, such as a Buy button's payment link or a form's address. A link to one of your own pages, or a section on one, doesn't ask, unless it replaces a web address, email address or phone number, such as a payment link;
 - changing your web address, phone number, email address or a social profile, or whether search engines may show your site;
 - starting a new site.
 
