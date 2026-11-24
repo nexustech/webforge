@@ -198,7 +198,7 @@ export const QUERIES = {
   /** Site Settings that say what the business is: never publishing, forms or analytics. */
   settings: {
     description:
-      "Site Settings that say what the business is: its name, address, social profiles, contact details and search settings. general holds the logo the Header shows and the site's icon, as Media ids, when they're set: you can read them, and pictureColours gives their colours, but only the person sets them. Never publishing, forms or analytics.",
+      "Site Settings that say what the business is: its name, address, social profiles, contact details and search settings. general holds the logo the Header shows and the site's icon, as Media ids, when they're set: pictureColours gives their colours, and updateSettings sets or clears them, choosing a picture in Media, once the person allows it. Never publishing, forms or analytics.",
     input: z.strictObject({}),
     read: (site: SiteDoc) => {
       const { general, address, social, contact, search } = site.settings;
@@ -256,7 +256,7 @@ export const QUERIES = {
             ...(item.size === undefined ? {} : { size: item.size }),
           };
         }
-        // What Site Settings use it as (#1373): an app may read, never set, the logo or icon.
+        // What Site Settings use it as (#1373); updateSettings sets them, always asking (UA-8).
         const { logo, icon } = site.settings.general;
         const usedAs = [
           ...(logo === item.id ? ["logo"] : []),

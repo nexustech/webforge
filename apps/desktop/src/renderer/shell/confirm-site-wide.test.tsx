@@ -151,6 +151,28 @@ describe("confirmSiteWide (D7)", () => {
     expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
+  it("shows each new picture an AI app's question names, small, with what it would be (UA-8)", () => {
+    const confirm = createSiteWideConfirm();
+    render(<SiteWideConfirmDialog confirm={confirm} />);
+
+    act(() => {
+      void confirm.confirmSiteWide({
+        action: "Allow Claude to Change Site Settings: General?",
+        description: "Logo: from none to the picture “logo.png”.",
+        confirm: "Allow",
+        affectedPages: 6,
+        pictures: [{ label: "Logo", src: "webforge-media://thumbnail/abc" }],
+      });
+    });
+
+    const dialog = screen.getByRole("alertdialog");
+    const figure = dialog.querySelector("figure");
+    expect(figure?.querySelector("img")?.getAttribute("src")).toBe(
+      "webforge-media://thumbnail/abc",
+    );
+    expect(figure?.querySelector("figcaption")?.textContent).toBe("Logo");
+  });
+
   it("offers an AI app's question to let it work without asking, by keyboard too (5.35)", async () => {
     const confirm = createSiteWideConfirm();
     render(<SiteWideConfirmDialog confirm={confirm} />);

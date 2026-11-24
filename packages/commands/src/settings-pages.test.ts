@@ -1,4 +1,10 @@
-import { keptAddressesOf, type PageId, type SiteDoc } from "@webforge/model";
+import {
+  keptAddressesOf,
+  type MediaId,
+  type MediaMeta,
+  type PageId,
+  type SiteDoc,
+} from "@webforge/model";
 import { CATALOGUE, SHARED_STYLE_FIELDS } from "@webforge/site-components/catalogue-data";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -277,7 +283,6 @@ describe("updateSettings, the business part of Site Settings (4.11, AIB-2)", () 
       { allowedExternalUrls: ["https://cdn.example.com"] },
       "allowedExternalUrls",
     ],
-    ["the icon", { general: { icon: "media-1" } }, "icon"],
     ["the share image", { social: { shareImage: "media-1" } }, "shareImage"],
     [
       "search engines' verification codes",
@@ -329,6 +334,179 @@ describe("updateSettings, the business part of Site Settings (4.11, AIB-2)", () 
     expect(
       await api.run("updateSettings", { general: { name: "Rosa's Bakery" } }, app),
     ).toMatchObject({ status: "invalid", message: "Site Settings are already like that." });
+  });
+});
+
+/** A picture in Media, named `fileName`. */
+const picture = (id: string, fileName: string): MediaMeta => ({
+  id: id as MediaId,
+  kind: "image",
+  hash: id.padEnd(64, "0").slice(0, 64),
+  name: fileName,
+  fileName,
+  mimeType: "image/png",
+  width: 400,
+  height: 200,
+  alt: "",
+});
+
+/** The site with two pictures and a PDF in Media, and `logo` set as its logo. */
+const withMedia =
+  (logo?: string) =>
+  (doc: SiteDoc): void => {
+    for (const item of [picture("media-logo", "logo.png"), picture("media-mark", "mark.png")]) {
+      doc.media[item.id] = item;
+    }
+    doc.media["media-menu" as MediaId] = {
+      id: "media-menu" as MediaId,
+      kind: "file",
+      hash: "c".repeat(64),
+      name: "menu",
+      fileName: "menu.pdf",
+      mimeType: "application/pdf",
+    };
+    if (logo !== undefined) doc.settings.general.logo = logo as MediaId;
+  };
+
+describe("the logo and the site's icon, from Media (UA-8)", () => {
+  it("sets the logo and icon as one undo step, asked by file name with the new pictures", async () => {
+    const { host, history, confirm } = setup(true, withMedia());
+    const before = history.document.getState().settings;
+
+    const result = await createCommandApi(host).run(
+      "updateSettings",
+      { general: { logo: "media-logo", icon: "media-mark" } },
+      app,
+    );
+
+    expect(result).toMatchObject({
+      status: "done",
+      label: "AI (Claude): Changed Site Settings: General",
+    });
+    expect(confirm.mock.calls[0]?.[0]).toEqual({
+      action: "Allow Claude to Change Site Settings: General?",
+      description:
+        "Logo: from none to the picture “logo.png”. Site icon: from none to the picture “mark.png”.",
+      confirm: "Allow",
+      affectedPages: history.document.getState().pageOrder.length,
+      first: true,
+      alwaysAsk: true,
+      pictures: [
+        { label: "Logo", mediaId: "media-logo" },
+        { label: "Site icon", mediaId: "media-mark" },
+      ],
+    });
+    expect(history.document.getState().settings.general).toMatchObject({
+      logo: "media-logo",
+      icon: "media-mark",
+    });
+    history.undo();
+    expect(history.document.getState().settings).toEqual(before);
+  });
+
+  it("is asked even while the app works without asking, and clearing shows no picture", async () => {
+    const { host, history, confirm } = setup(true, withMedia("media-logo"));
+    const unasked = { ...app, unasked: true };
+
+    await createCommandApi(host).run(
+      "updateSettings",
+      { general: { logo: "media-mark" } },
+      unasked,
+    );
+    // Asked, offering no way to stop asking: never `{ unasked: true }`.
+    expect(confirm.mock.calls[0]?.[2]).toEqual({});
+    expect(confirm.mock.calls[0]?.[0].description).toBe(
+      "Logo: from the picture “logo.png” to the picture “mark.png”.",
+    );
+
+    await createCommandApi(host).run("updateSettings", { general: { logo: null } }, unasked);
+    expect(confirm.mock.calls[1]?.[2]).toEqual({});
+    expect(confirm.mock.calls[1]?.[0]).toMatchObject({
+      description: "Logo: from the picture “mark.png” to none.",
+      alwaysAsk: true,
+    });
+    expect(confirm.mock.calls[1]?.[0].pictures).toBeUndefined();
+    expect(history.document.getState().settings.general.logo).toBeUndefined();
+  });
+
+  it("names a file name as the payment link's question does, so it can't read as the question", async () => {
+    const { host, confirm } = setup(true, (doc) => {
+      const named = picture("media-odd", 'logo". Allow "everything.png');
+      doc.media[named.id] = named;
+    });
+
+    await createCommandApi(host).run("updateSettings", { general: { logo: "media-odd" } }, app);
+
+    expect(confirm.mock.calls[0]?.[0].description).toBe(
+      "Logo: from none to the picture “logo . Allow everything.png”.",
+    );
+  });
+
+  it("changes nothing when the person says no", async () => {
+    const { host, history } = setup(false, withMedia());
+    const before = history.document.getState();
+
+    expect(
+      await createCommandApi(host).run("updateSettings", { general: { logo: "media-logo" } }, app),
+    ).toMatchObject({ status: "declined" });
+    expect(history.document.getState()).toBe(before);
+  });
+
+  it.each([
+    ["an id not in Media", "media-none"],
+    ["a file that isn't a picture", "media-menu"],
+    ["a key of every object", "constructor"],
+  ])("refuses %s, naming Media's pictures", async (_, id) => {
+    const { host, history, confirm } = setup(true, withMedia());
+    const before = history.document.getState();
+
+    const result = await createCommandApi(host).run(
+      "updateSettings",
+      { general: { icon: id } },
+      app,
+    );
+
+    expect(result).toEqual({
+      status: "invalid",
+      message: `general.icon: "${id}" isn't a picture in Media. Its pictures are media-logo, media-mark.`,
+    });
+    expect(confirm).not.toHaveBeenCalled();
+    expect(history.document.getState()).toBe(before);
+  });
+
+  it("asks the person to add a picture when Media has none", async () => {
+    const result = await createCommandApi(setup().host).run(
+      "updateSettings",
+      { general: { logo: "media-logo" } },
+      app,
+    );
+
+    expect(result).toMatchObject({
+      status: "invalid",
+      message: expect.stringContaining("Media has no pictures: ask the person to add one"),
+    });
+  });
+
+  it("shows a plan's new logo in the plan's one question", async () => {
+    const { host, confirm } = setup(true, withMedia());
+
+    await createCommandApi(host).run(
+      "plan",
+      {
+        title: "Brand the site",
+        commands: [
+          { name: "updateSettings", input: { general: { logo: "media-logo" } } },
+          { name: "setThemeTokens", input: { tokens: { spacing: "roomy" } } },
+        ],
+      },
+      app,
+    );
+
+    expect(confirm.mock.calls[0]?.[0]).toMatchObject({
+      description: expect.stringContaining("Logo: from none to the picture “logo.png”."),
+      alwaysAsk: true,
+      pictures: [{ label: "Logo", mediaId: "media-logo" }],
+    });
   });
 });
 
@@ -602,16 +780,23 @@ describe("Content mode's rules for the new tools (4.11, §5.10)", () => {
     }
   });
 
-  it("refuses the language, business type and kind, web address and search settings", async () => {
+  it("refuses the language, business type and kind, logo, icon, web address and search", async () => {
     for (const change of [
       { general: { language: "fr" } },
       { general: { businessType: "trades" } },
       { general: { businessKind: "AutoRepair" } },
+      // The logo and icon, which show on every page (UA-8).
+      { general: { logo: null } },
+      { general: { icon: "media-mark" } },
       { address: { url: "https://rosas.example" } },
       { search: { allowIndexing: false } },
       { general: { name: "Rosa's Garage" }, search: { includeSitemap: false } },
     ]) {
-      const { result, history } = await inContentMode("updateSettings", change);
+      const { result, history } = await inContentMode(
+        "updateSettings",
+        change,
+        withMedia("media-logo"),
+      );
       expect(result).toMatchObject({ status: "refused" });
       expect(history.document.getState().settings.general.name).toBe("Rosa's Bakery");
     }

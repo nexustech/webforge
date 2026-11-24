@@ -30,6 +30,11 @@ export type SiteWideAction = {
    * and the change is allowed.
    */
   readonly allowAlways?: () => void;
+  /**
+   * Pictures the change would show, small, each with what it would be (an AI app's new logo or site
+   * icon, UA-8), so the person sees what they allow.
+   */
+  readonly pictures?: readonly { readonly label: string; readonly src: string }[];
 };
 
 /**
@@ -286,6 +291,21 @@ export function SiteWideConfirmDialog({ confirm }: { readonly confirm: SiteWideC
                 ? t("confirm.siteWide.affectsOne")
                 : t("confirm.siteWide.affectsMany", { count: action.affectedPages })}
           </AlertDialogDescription>
+          {action?.pictures === undefined || action.pictures.length === 0 ? null : (
+            <div className="flex flex-wrap gap-3">
+              {action.pictures.map(({ label, src }) => (
+                <figure key={`${label} ${src}`} className="m-0 flex flex-col items-center gap-1">
+                  {/* Named by its caption, and by file name in the question above. */}
+                  <img
+                    src={src}
+                    alt=""
+                    className="size-16 rounded-md border border-border bg-muted object-contain"
+                  />
+                  <figcaption className="text-muted-foreground text-xs">{label}</figcaption>
+                </figure>
+              ))}
+            </div>
+          )}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t("confirm.siteWide.cancel")}</AlertDialogCancel>
