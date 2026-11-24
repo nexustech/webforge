@@ -18,27 +18,43 @@ export const claudeCode = {
     title: () => t("aiApps.client.claudeCode.steps"),
     steps: (address, shell) => [
       {
-        text: t("aiApps.client.claudeCode.step1"),
+        // On Windows, PowerShell by name: its commands are PowerShell's (#1367).
+        text: t(
+          shell === "powershell"
+            ? "aiApps.client.claudeCode.step1PowerShell"
+            : "aiApps.client.claudeCode.step1",
+        ),
         command: {
           value: claudeCodeCommand(address),
           copyLabel: t("aiApps.client.claudeCode.copyCommand"),
         },
       },
       {
-        text: t("aiApps.client.claudeCode.step2", {
-          key: t(
-            shell === "powershell"
-              ? "aiApps.client.claudeCode.enterKey"
-              : "aiApps.client.claudeCode.returnKey",
-          ),
-        }),
+        text: t(
+          shell === "powershell"
+            ? "aiApps.client.claudeCode.step2PowerShell"
+            : "aiApps.client.claudeCode.step2",
+          {
+            key: t(
+              shell === "powershell"
+                ? "aiApps.client.claudeCode.enterKey"
+                : "aiApps.client.claudeCode.returnKey",
+            ),
+          },
+        ),
         command: {
           value: claudeCodeKeyCommand(shell),
           copyLabel: t("aiApps.client.claudeCode.copyKeyCommand"),
         },
         key: true,
       },
-      { text: t("aiApps.client.claudeCode.step3") },
+      {
+        text: t(
+          shell === "powershell"
+            ? "aiApps.client.claudeCode.step3PowerShell"
+            : "aiApps.client.claudeCode.step3",
+        ),
+      },
     ],
   },
   note: () => t("aiApps.client.claudeCode.keyWhere", { variable: CLAUDE_CODE_KEY_VARIABLE }),
