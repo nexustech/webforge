@@ -92,7 +92,7 @@ An app works on the site you have open in {appName}, and only that one. It can:
 - add, change, move and delete sections and elements, and change text;
 - add, rename, move and delete pages, and change a page's title, description, **Hide in menu** and **Hide this page from search engines**, as [Page Settings](pages.md) does. When an app renames a page of a site you've published, the page's old address keeps working, as **Rename…** does, in the same step: see [Keeping old addresses working](pages.md#keeping-old-addresses-working);
 - change your business's details in [Site Settings](site-settings.md): its name, description, language and type, web address, contact details, opening hours, social profiles and search engine settings;
-- change the theme;
+- change the theme, all of it or one part, such as the line spacing of your headings;
 - see what's in [Media](media.md), and place your pictures in elements. It can see which picture is your logo, and a picture's main colours, which {appName} works out on your computer, to match the theme to your logo. It never sees the picture itself;
 - ask you to add pictures or files (see [Pictures](#pictures));
 - run [Site Check](site-check.md), and open the [Preview](preview.md) in your browser. The app is told the page's address, which works on this computer only, so it can look at its work: how the page looks at desktop and phone widths, and whether its pictures show. It sees the Preview only when it opens it in your browser, so you see it too.
@@ -106,11 +106,11 @@ An AI never passes off a made-up fact as yours. If it needs one you didn't give,
 Some changes ask you first, with **Allow**:
 
 - changes that reach every page: the theme, a new page with a menu entry, deleting a page, Site Settings, the Header or Footer, or a shared section;
-- changing where visitors' money or details go, such as a Buy button's payment link, even on one page. Changing your web address, phone number, email address or a social profile, or whether search engines may show your site, names the old one and the new one too.
+- changing where visitors' money or details go, such as a Buy button's payment link, even on one page. The question names the element, such as the plan by its name, and where the link goes now and would go: a web address, or one of your pages, files or lists by its name. Changing your web address, phone number, email address or a social profile, or whether search engines may show your site, names the old one and the new one too.
 
 Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or _Page not found_.
 
-The question waits for your answer, however long you're away: walking away isn't a no. The app is told it's still waiting, and **Allow** makes the change when you come back. If the app gives up first, or you close the site, the question closes and nothing changes. Only **Cancel** is a no, and after one the app waits a little before it asks you again.
+The question waits for your answer, however long you're away: walking away isn't a no. **Allow** makes the change when you come back. If you haven't answered within about 45 seconds, the app is told the change is waiting, with a number it can ask about later, so it can find out whether you allowed it without asking you to look. If it sends the same change again meanwhile, it isn't made twice. Until then, it waits to send other changes. If the app gives up within those 45 seconds, or you close the site, the question closes and nothing changes. Only **Cancel** is a no, and after one the app waits a little before it asks you again.
 
 In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings. It can still see Media and ask you for pictures.
 

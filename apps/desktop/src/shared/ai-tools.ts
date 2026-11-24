@@ -102,10 +102,14 @@ export type WindowToolName = (typeof WINDOW_TOOLS)[number]["name"];
 /** What `briefStatus` takes: the id `createSiteFromBrief` answered `waiting` with. */
 export const briefStatusSchema = z.strictObject({ briefId: z.int().positive() });
 
+/** What `changeStatus` takes: the id a change answered `waiting` with (#1364). */
+export const changeStatusSchema = z.strictObject({ changeId: z.int().positive() });
+
 /**
  * The tools main answers itself, beside the window's (4.12a): a new site is made without one open,
- * and the window that took the request starts over with it. None saves a version: a brief changes
- * no open site. Not the assistant's, which works on the site open.
+ * and the window that took the request starts over with it; and what became of a change whose
+ * question outlived the app's call (#1364), which main's bridge keeps. None saves a version: none
+ * changes the open site. Not the assistant's, which works on the site open.
  */
 export const MAIN_TOOLS = [
   tool({
@@ -134,6 +138,16 @@ export const MAIN_TOOLS = [
     input: briefStatusSchema,
     description:
       "What became of a brief createSiteFromBrief answered waiting for: waiting still, done with the new site open, or declined. Takes its briefId; an app reads only its own briefs, each outcome once.",
+    answeredBy: "main",
+    savesVersionFirst: false,
+    forAssistant: false,
+  }),
+  tool({
+    name: "changeStatus",
+    kind: "query",
+    input: changeStatusSchema,
+    description:
+      "What became of a change that answered waiting with a changeId: a plan, or any command whose question the person hadn't answered within about 45 seconds. Waiting still (the question is open in Webforge, however long the person takes), done (made, as the command answers), declined, or not-found if the site closed or the window reloaded first, so nothing changed. Takes its changeId; an app reads only its own changes, each outcome for half an hour. Ask it rather than sending the change again: one sent again while it waits is never made twice.",
     answeredBy: "main",
     savesVersionFirst: false,
     forAssistant: false,
