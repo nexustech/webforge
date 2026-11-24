@@ -106,7 +106,7 @@ An AI never passes off a made-up fact as yours. If it needs one you didn't give,
 Some changes ask you first, with **Allow**:
 
 - changes that reach every page: the theme, a new page with a menu entry, deleting a page, Site Settings, the Header or Footer, or a shared section;
-- changing where visitors' money or details go, such as a Buy button's payment link, even on one page. Changing your web address, phone number, email address or a social profile, or whether search engines may show your site, names the old one and the new one too.
+- changing where visitors' money or details go, such as a Buy button's payment link, even on one page. The question names the element, such as the plan by its name, and where the link goes now and would go: a web address, or one of your pages, files or lists by its name. Changing your web address, phone number, email address or a social profile, or whether search engines may show your site, names the old one and the new one too.
 
 Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or _Page not found_.
 

@@ -50,8 +50,20 @@ export const ai = {
   // "Allow Claude to change the Buy button's Payment link?", then where it goes now and would go.
   "ai.confirm.destination": "Allow {app} to Change the {item}'s {field}?",
   "ai.confirm.destinationFromTo": "{field}: from {from} to {to}.",
+  // The same, for an element with a name or title of its own, so two plans' lines differ (#1366):
+  // "Button link of the Plan “Webforge licence”: from no address to the page “Download”."
+  "ai.confirm.destinationFromToOf": "{field} of the {item} “{name}”: from {from} to {to}.",
   // Where a field with no address sends visitors.
   "ai.confirm.noAddress": "no address",
+  // A link to the site's own page, a section on one, a file or a list, by its name (#1366).
+  "ai.confirm.toPage": "the page “{page}”",
+  "ai.confirm.toSection": "the section “{section}” on the page “{page}”",
+  "ai.confirm.toFile": "the file “{file}”",
+  "ai.confirm.toList": "the list “{list}”",
+  // A page, file or list a link names that the site doesn't have any more.
+  "ai.confirm.toMissingPage": "a page that isn't there",
+  "ai.confirm.toMissingFile": "a file that isn't there",
+  "ai.confirm.toMissingList": "a list that isn't there",
   // Whether search engines may show the site, before and after (4.11): "…: from yes to no."
   "ai.confirm.yes": "yes",
   "ai.confirm.no": "no",

@@ -2,10 +2,12 @@ import { t } from "@webforge/i18n";
 import {
   colorFieldsIn,
   countOwnColorUses,
+  isKeyOf,
   isNodeDoc,
   isPageIn,
   isResponsiveValue,
   linkValueSchema,
+  mediaItem,
   type NodeDoc,
   newId,
   type PageEntry,
@@ -327,6 +329,62 @@ function addressOf(value: unknown): string {
   }
 }
 
+/** The most of an element's name, or of a page, file or list's, a confirmation shows. */
+const NAME_MAX_CHARS = 40;
+
+/**
+ * Quotation marks, which a confirmation puts around a name, and line breaks: an app writes the
+ * names, so one could close the quotes and write a "from … to …" of its own (#1366 review).
+ */
+const NAME_SPOOFS = /["“”„‟‘’‚‛'`«»‹›\r\n\u2028\u2029]/g;
+
+/**
+ * `name` as a confirmation quotes it: with no quotation marks or line breaks, its spaces run
+ * together, cut short past {@link NAME_MAX_CHARS}. Names an app writes (an element's, a page's
+ * title, a file's or a list's) can't then read as part of the question around them.
+ */
+function shortName(name: string): string {
+  const plain = name.replace(NAME_SPOOFS, " ").replace(/\s+/g, " ").trim();
+  return plain.length <= NAME_MAX_CHARS ? plain : `${plain.slice(0, NAME_MAX_CHARS - 1)}…`;
+}
+
+/**
+ * Where `value`, a sensitive field's, sends visitors, as a confirmation names it (#1366): a page of
+ * the site by its title (and a section on it by its anchor), a file by its name and a list by its
+ * name, never by an id; any other address as {@link shown} names it.
+ */
+function named(site: SiteDoc, value: unknown): string {
+  const link = linkValueSchema.safeParse(value);
+  if (!link.success) return shown(addressOf(value));
+  const { data } = link;
+  switch (data.kind) {
+    case "page": {
+      const page = pageEntryOf(site.pages, data.pageId);
+      if (page === undefined) return t("ai.confirm.toMissingPage");
+      const title = shortName(page.title);
+      return data.anchor === undefined
+        ? t("ai.confirm.toPage", { page: title })
+        : t("ai.confirm.toSection", { section: shortName(data.anchor), page: title });
+    }
+    case "file": {
+      const file = mediaItem(site.media, data.mediaId);
+      return file === undefined
+        ? t("ai.confirm.toMissingFile")
+        : t("ai.confirm.toFile", { file: shortName(file.fileName) });
+    }
+    case "list": {
+      const list = isKeyOf(site.collections, data.collectionId)
+        ? site.collections[data.collectionId]
+        : undefined;
+      return list === undefined
+        ? t("ai.confirm.toMissingList")
+        : t("ai.confirm.toList", { list: shortName(list.name) });
+    }
+    default:
+      return shown(addressOf(value));
+  }
+}
+
 /**
  * `address` as a browser reads it (WHATWG URL), or `undefined` for text that isn't a web address:
  * `\` taken as `/`, `../` resolved, and a look-alike host in punycode (`xn--…`), so a question
@@ -357,21 +415,48 @@ function shown(address: string): string {
 }
 
 /**
- * Where a field sends visitors before and after a change, as a confirmation names them: each
- * address's host, or the whole addresses when the hosts are the same (a payment page of another
- * account on the same service) or one isn't a web address.
+ * Where a field of `site` sends visitors before and after a change, as a confirmation names them:
+ * each address's host, or the whole addresses when the hosts are the same (a payment page of
+ * another account on the same service) or one isn't a web address, and the site's own pages,
+ * files and lists by their names (#1366).
  */
-function fromTo(before: string, after: string): { readonly from: string; readonly to: string } {
-  const from = webAddress(before)?.host;
-  const to = webAddress(after)?.host;
+function fromTo(
+  site: SiteDoc,
+  before: unknown,
+  after: unknown,
+): { readonly from: string; readonly to: string } {
+  const from = webAddress(addressOf(before))?.host;
+  const to = webAddress(addressOf(after))?.host;
   return from !== undefined && to !== undefined && from !== to
     ? { from, to }
-    : { from: shown(before), to: shown(after) };
+    : { from: named(site, before), to: named(site, after) };
 }
 
-/** A change to where visitors' money or details go (S18): the element, its field, from and to. */
+/** The text fields an element is named by, after its title field, if it has one: a plan's name. */
+const NAME_FIELDS = ["name", "title", "label"] as const;
+
+/**
+ * The name or title of an element of `component` with `values`, as a confirmation names it, so two
+ * plans' changes read apart (#1366); `undefined` for one without.
+ */
+function elementName(
+  component: CatalogueComponent,
+  values: Readonly<Record<string, unknown>>,
+): string | undefined {
+  const field =
+    component.titleField ?? NAME_FIELDS.find((name) => component.fields[name]?.kind === "text");
+  const value = field === undefined ? undefined : values[field];
+  const name = typeof value === "string" ? shortName(value) : "";
+  return name === "" ? undefined : name;
+}
+
+/**
+ * A change to where visitors' money or details go (S18): the element, its name if it has one, its
+ * field, from and to.
+ */
 export type DestinationChange = {
   readonly item: string;
+  readonly name?: string | undefined;
   readonly field: string;
   readonly from: string;
   readonly to: string;
@@ -379,18 +464,22 @@ export type DestinationChange = {
 
 /**
  * What setting `values` on an element of `component` that has `before` changes about where
- * visitors' money or details go (S18): each field marked `sensitive` whose address changes.
+ * visitors' money or details go (S18): each field marked `sensitive` whose address changes, named
+ * as `site` has its pages, files and lists.
  */
 export function destinationChanges(
+  site: SiteDoc,
   component: CatalogueComponent,
   before: Readonly<Record<string, unknown>>,
   values: Readonly<Record<string, unknown>>,
 ): DestinationChange[] {
-  return Object.entries(values).flatMap(([name, value]) => {
-    const field = component.fields[name];
-    const [was, now] = [addressOf(before[name]), addressOf(value)];
-    return field?.sensitive === true && was !== now
-      ? [{ item: component.label, field: field.label, ...fromTo(was, now) }]
+  // Named as the page shows it: its own name, else its default.
+  const name = elementName(component, { ...component.defaults, ...before, ...values });
+  return Object.entries(values).flatMap(([fieldName, value]) => {
+    const field = component.fields[fieldName];
+    const was = before[fieldName];
+    return field?.sensitive === true && addressOf(was) !== addressOf(value)
+      ? [{ item: component.label, name, field: field.label, ...fromTo(site, was, value) }]
       : [];
   });
 }
@@ -411,7 +500,11 @@ export function destinationConfirmation(
   return (app) => ({
     action: t("ai.confirm.destination", { app, item: first.item, field: first.field }),
     description: changes
-      .map(({ field, from, to }) => t("ai.confirm.destinationFromTo", { field, from, to }))
+      .map(({ item, name, field, from, to }) =>
+        name === undefined
+          ? t("ai.confirm.destinationFromTo", { field, from, to })
+          : t("ai.confirm.destinationFromToOf", { field, item, name, from, to }),
+      )
       .join(" "),
     confirm: t("ai.confirm.allow"),
     affectedPages: pages,
@@ -431,7 +524,11 @@ export function confirmationFor(
   before: Readonly<Record<string, unknown>>,
   values: Readonly<Record<string, unknown>>,
 ): Plan["confirm"] {
-  return destinationConfirmation(site, location, destinationChanges(component, before, values));
+  return destinationConfirmation(
+    site,
+    location,
+    destinationChanges(site, component, before, values),
+  );
 }
 
 /** Page `pageId` of `site`, or why it isn't there. */

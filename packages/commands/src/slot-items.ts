@@ -78,7 +78,7 @@ export function builtNode(
     id: "",
   };
   const changes: DestinationChange[] = [
-    ...destinationChanges(component, component.defaults, stored.values),
+    ...destinationChanges(site, component, component.defaults, stored.values),
   ];
   for (const [slot, value] of Object.entries(given).filter(([name]) => isSlotField(name))) {
     if (depth + 1 >= SLOT_DEPTH_MAX) {
