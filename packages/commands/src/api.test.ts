@@ -1053,7 +1053,7 @@ describe("the command API's moves and fields (4.8)", () => {
     expect(image()).toEqual({ mediaId: white.id });
     expect(replaced).toMatchObject({
       status: "done",
-      note: expect.stringContaining('The new picture in "image" has no alt text'),
+      note: 'A new picture cleared the alt text that described the old one, in element "hero" ("image"). Ask the person to describe each new picture, or set it with updateFields as { mediaId, alt }.',
     });
     // Given with the new picture, its alt text clears nothing.
     expect(

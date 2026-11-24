@@ -3,7 +3,7 @@ import { z } from "zod";
 import { APP_PARSE } from "./app-errors.js";
 import { COMMANDS, type CommandName } from "./commands.js";
 import { locationSchema } from "./locations.js";
-import type { Failure, Plan, PlanContext } from "./plan.js";
+import { clearedAltNote, type Failure, type Plan, type PlanContext } from "./plan.js";
 import { QUERIES, type QueryName, QueryRefusal } from "./queries.js";
 import type { Actor, CommandHost, CommandResult } from "./types.js";
 
@@ -181,7 +181,7 @@ export function createCommandApi(host: CommandHost): CommandApi {
         ...(plan.id === undefined ? {} : { id: plan.id }),
         ...(entryId === undefined ? {} : { entryId }),
         ...(target === undefined ? {} : { target }),
-        ...(plan.note === undefined ? {} : { note: plan.note }),
+        ...(plan.clearedAlt === undefined ? {} : { note: clearedAltNote(plan.clearedAlt) }),
       };
     },
   };

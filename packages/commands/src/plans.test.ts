@@ -68,7 +68,7 @@ describe("a plan (4.12a, AIB-6)", () => {
     expect(history.document.getState()).toEqual(before);
   });
 
-  it("passes on each step's note: a plan of two picture swaps says both (#1371)", async () => {
+  it("says once where its picture swaps cleared alt text: ten swaps, a short note (#1371)", async () => {
     const picture = (id: string) =>
       ({
         id: id as MediaId,
@@ -83,25 +83,32 @@ describe("a plan (4.12a, AIB-6)", () => {
       }) as const;
     const charcoal = picture("media-charcoal");
     const white = picture("media-white");
+    const ids = Array.from({ length: 10 }, (_, index) => `logo-${index}`);
     const { host, history } = setup(true, (doc) => {
       doc.media[charcoal.id] = charcoal;
       doc.media[white.id] = white;
+      doc.pages[doc.homePageId]?.doc.content.push(
+        ...ids.map((id) => ({
+          type: "Image",
+          props: { id, image: { mediaId: charcoal.id, alt: "Webforge" } },
+        })),
+      );
     });
     const api = createCommandApi(host);
-    const set = (image: object) => ({
+    const swap = (nodeId: string, mediaId: string) => ({
       name: "updateFields",
-      input: { location: home(history), nodeId: "hero", values: { image } },
+      input: { location: home(history), nodeId, values: { image: { mediaId } } },
     });
 
     const result = await api.run(
       "plan",
       {
-        title: "Change the logo twice",
+        title: "Change every logo",
         commands: [
-          set({ mediaId: charcoal.id, alt: "Webforge" }),
-          set({ mediaId: white.id }),
-          set({ mediaId: charcoal.id, alt: "Webforge again" }),
-          set({ mediaId: white.id }),
+          ...ids.map((id) => swap(id, white.id)),
+          // Swapped back and again: still named once.
+          swap("logo-0", charcoal.id),
+          swap("logo-0", white.id),
         ],
       },
       app,
@@ -109,14 +116,12 @@ describe("a plan (4.12a, AIB-6)", () => {
 
     expect(result).toMatchObject({ status: "done" });
     const note = "note" in result ? (result.note ?? "") : "";
-    const lines = note.split("\n");
-    expect(lines).toHaveLength(2);
-    expect(lines[0]).toMatch(
-      /^Command 2 \(updateFields\), element "hero": The new picture in "image"/,
-    );
-    expect(lines[1]).toMatch(
-      /^Command 4 \(updateFields\), element "hero": The new picture in "image"/,
-    );
+    for (const id of ids) {
+      expect(note.split(`element "${id}" ("image")`)).toHaveLength(2);
+    }
+    // One sentence of where, one of what to do: short however many swaps.
+    expect(note.match(/Ask the person/g)).toHaveLength(1);
+    expect(note.length).toBeLessThan(600);
   });
 
   it("names the pages it renames, moves and hides, which ask nothing on their own", async () => {

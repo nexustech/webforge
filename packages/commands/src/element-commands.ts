@@ -31,15 +31,6 @@ import {
 } from "./slot-items.js";
 
 /** The commands that add, change, move and remove sections and elements (F-AI-1). */
-/**
- * What an app is told when a new picture cleared a placement's alt text (#1371): it described the
- * old picture, so the new one needs its own, from the person or set with the field.
- */
-function clearedNote(fields: readonly string[]): string {
-  const which = fields.map((name) => `"${name}"`).join(", ");
-  return `The new picture in ${which} has no alt text: what described the old picture was cleared. Ask the person to describe the new one, or set it with updateFields as { mediaId, alt }.`;
-}
-
 export const ELEMENT_COMMANDS = {
   /** Adds a section to a page, or an element to a slot, with `values` over its defaults. */
   addNode: {
@@ -147,7 +138,9 @@ export const ELEMENT_COMMANDS = {
         clearsDescription(placed.node.props[name], values[name], site.media),
       );
       return {
-        ...(cleared.length === 0 ? {} : { note: clearedNote(cleared) }),
+        ...(cleared.length === 0
+          ? {}
+          : { clearedAlt: cleared.map((field) => ({ nodeId: id, field })) }),
         action:
           fields.length === 1 && only !== undefined
             ? t("history.editedField", {

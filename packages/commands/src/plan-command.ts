@@ -4,6 +4,7 @@ import { produce } from "immer";
 import { z } from "zod";
 import { APP_PARSE } from "./app-errors.js";
 import {
+  type ClearedAlt,
   type Failure,
   fail,
   failed,
@@ -188,8 +189,8 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
       let working: SiteDoc = site;
       const recipes: ((draft: SiteDoc) => void)[] = [];
       const removesPages: PageId[] = [];
-      // What its steps tell the app to pass on, each by its step and element (#1371).
-      const notes: string[] = [];
+      // Where its steps' new pictures cleared alt text, for one short note (#1371).
+      const clearedAlt: ClearedAlt[] = [];
       const summary: PlanSummary = {
         pagesAdded: [],
         pagesRemoved: [],
@@ -225,11 +226,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         }
         structural ||= planned.structural;
         if (planned.removesPages !== undefined) removesPages.push(...planned.removesPages);
-        if (planned.note !== undefined) {
-          const { nodeId } = parsed.data as { readonly nodeId?: unknown };
-          const element = typeof nodeId === "string" ? `, element "${nodeId}"` : "";
-          notes.push(`${where}${element}: ${planned.note}`);
-        }
+        if (planned.clearedAlt !== undefined) clearedAlt.push(...planned.clearedAlt);
         recipes.push(planned.recipe);
         // Frozen as each step leaves it, so nothing a recipe keeps from it can change under it.
         working = produce(working, (draft) => {
@@ -259,7 +256,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
           ...(alwaysAsk ? { alwaysAsk: true as const } : {}),
         }),
         ...(removesPages.length === 0 ? {} : { removesPages }),
-        ...(notes.length === 0 ? {} : { note: notes.join("\n") }),
+        ...(clearedAlt.length === 0 ? {} : { clearedAlt }),
         recipe: (draft) => {
           for (const recipe of recipes) recipe(draft);
         },

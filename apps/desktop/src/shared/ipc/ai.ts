@@ -91,7 +91,8 @@ const aiResponseSchema = z.union([
       })
       .optional(),
     /** What the app should tell the person, or ask them: a picture's cleared alt text (#1371). */
-    note: z.string().min(1).max(1000).optional(),
+    // As long as a request may be: a plan's note names each element whose alt text went.
+    note: z.string().min(1).max(AI_INPUT_MAX_CHARS).optional(),
   }),
   z.strictObject({
     status: z.enum(["invalid", "not-found", "refused", "busy", "declined"]),
