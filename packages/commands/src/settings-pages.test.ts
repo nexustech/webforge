@@ -456,11 +456,12 @@ describe("the logo and the site's icon, from Media (UA-8)", () => {
 
   it("no longer tells an app the logo and Site icon are the person's", async () => {
     const api = createCommandApi(setup().host);
+    // The refusal for a key an app can't change.
+    const refused = await api.run("updateSettings", { general: { favicon: "media-logo" } }, app);
     const said = [
       COMMANDS.updateSettings.description,
       QUERIES.settings.description,
-      // The refusal for a key an app can't change.
-      (await api.run("updateSettings", { general: { favicon: "media-logo" } }, app)).message,
+      "message" in refused ? refused.message : "",
     ];
 
     for (const words of said) {
