@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { type SiteDoc, type SiteSettings, siteSettingsSchema } from "@webforge/model";
 import { z } from "zod";
+import { APP_PARSE } from "./app-errors.js";
 import { type Failure, fail, type Plan } from "./plan.js";
 
 /** The parts of Site Settings AI apps may change (4.11, AIB-2): what the business is. */
@@ -178,7 +179,7 @@ export const updateSettings = {
   summarize() {},
   plan(site: SiteDoc, input: SettingsChange): Plan | Failure {
     const before = site.settings;
-    const parsed = siteSettingsSchema.safeParse(changed(before, input));
+    const parsed = siteSettingsSchema.safeParse(changed(before, input), APP_PARSE);
     if (!parsed.success) return fail("invalid", z.prettifyError(parsed.error));
     const after = parsed.data;
     const parts = PARTS.filter((part: Part) => !same(before[part], after[part]));

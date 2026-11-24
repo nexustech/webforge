@@ -25,6 +25,7 @@ import {
   secondOfOne,
 } from "@webforge/site-components/catalogue-data";
 import { z } from "zod";
+import { APP_PARSE } from "./app-errors.js";
 import { offLimits } from "./catalogue.js";
 import { isSlot, type Location, locate, nodesAt, type Placed, pagesShowing } from "./locations.js";
 import { type Failure, fail, type Plan } from "./plan.js";
@@ -99,7 +100,7 @@ function checkedValues(
     if (field === undefined || field.kind === "slot" || field.kind === "code") {
       return `${component.label} has no field "${name}" an AI app can set.`;
     }
-    const checked = fieldValueSchema(field).safeParse(value);
+    const checked = fieldValueSchema(field).safeParse(value, APP_PARSE);
     if (!checked.success) {
       return `"${name}" isn't a valid ${field.kind}: ${z.prettifyError(checked.error)}`;
     }
