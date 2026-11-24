@@ -295,11 +295,11 @@ export function SiteWideConfirmDialog({ confirm }: { readonly confirm: SiteWideC
             <div className="flex flex-wrap gap-3">
               {action.pictures.map(({ label, src }) => (
                 <figure key={`${label} ${src}`} className="m-0 flex flex-col items-center gap-1">
-                  {/* Named by its caption, and by file name in the question above. */}
+                  {/* As Site Settings shows it (`ImageField`); named by its caption and the question. */}
                   <img
                     src={src}
                     alt=""
-                    className="size-16 rounded-md border border-border bg-muted object-contain"
+                    className="size-16 rounded-md border border-border bg-input object-contain"
                   />
                   <figcaption className="text-muted-foreground text-xs">{label}</figcaption>
                 </figure>
