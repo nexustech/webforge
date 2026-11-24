@@ -26,6 +26,11 @@ type TreeNode = {
   /** Its component's name ("Hero"), or the name the person gave it in Layers. */
   readonly label: string;
   readonly hidden?: true;
+  /**
+   * Its anchor (Advanced), if it has one: a link to it on its page is
+   * `webforge:page/<pageId>#<anchor>` in rich text, or a page link with `anchor` (#1374).
+   */
+  readonly anchor?: string;
   /** A linked copy shows this shared section: edit it there (`kind: "shared"`). */
   readonly sharedSectionId?: string;
   readonly slots?: Readonly<Record<string, readonly TreeNode[]>>;
@@ -51,11 +56,13 @@ function treeNode(node: NodeDoc, site: SiteDoc): TreeNode {
       ? [[name, value.map((child) => treeNode(child, site))] as const]
       : [];
   });
+  const anchor = node.props.advanced?.anchorId;
   return {
     id: node.props.id,
     type: node.type,
     label: named ?? component?.label ?? node.type,
     ...(node.props.hidden === true ? { hidden: true } : {}),
+    ...(typeof anchor === "string" && anchor !== "" ? { anchor } : {}),
     ...(slots.length === 0 ? {} : { slots: Object.fromEntries(slots) }),
   };
 }
@@ -95,7 +102,7 @@ export const QUERIES = {
   /** The elements at a location, as a tree: a page's, the Header's or a shared section's. */
   pageTree: {
     description:
-      'The elements at a location, as a tree of ids and types: a page\'s content (kind "page"), the Header or Footer every page shares ("layout"), or a shared section ("shared").',
+      'The elements at a location, as a tree of ids and types: a page\'s content (kind "page"), the Header or Footer every page shares ("layout"), or a shared section ("shared"). An element with an anchor gives it: a link goes to it as webforge:page/<pageId>#<anchor> in rich text, or a page link with that anchor.',
     input: z.strictObject({ location: locationSchema }),
     read: (site: SiteDoc, { location }: { location: Location }) => {
       const nodes = nodesAt(site, location);
