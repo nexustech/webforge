@@ -99,7 +99,7 @@ export const ai = {
   "ai.prompt.catalogue":
     "2. Read the catalogue (the catalogue resource, or the components query) for the sections and elements you can add, and their fields.",
   "ai.prompt.plan":
-    "3. Make the changes as one plan: a title, and the commands in order, for the pages, sections, text, theme and Site Settings. I allow it once, and Undo takes it all back. New pages' and elements' ids aren't known until a plan runs, so add pages in one plan and fill them in the next.",
+    "3. Make the changes as one plan: a title, and the commands in order, for the pages, sections, text, theme and Site Settings. I allow it once, and Undo takes it all back. New pages' and elements' ids aren't known until a plan runs, so add pages in one plan and fill them in the next. If a plan answers waiting, I haven't answered yet: call changeStatus with its changeId until it says what I chose, and don't send the plan again.",
   "ai.prompt.check":
     "4. Call runSiteCheck, and fix what it finds that you can. Its templateImages tip lists the template's pictures still shown: call requestMedia to ask me for my own, and put them in place with updateFields. Choosing them takes me a few minutes: if it answers waiting, call mediaStatus with its requestId until it says what I added.",
   "ai.prompt.preview": "5. Call openPreview, so I can see the site in my browser.",
