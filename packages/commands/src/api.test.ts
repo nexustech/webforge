@@ -1162,35 +1162,45 @@ describe("where visitors' money and details go (S18, #658)", () => {
     }
   });
 
-  it("names each plan, and the site's own pages by their titles, never by an id (#1366)", async () => {
-    const { history, host, confirm } = setup(false);
-    const api = createCommandApi(host);
-    const doc = history.document.getState();
-    const about = doc.pageOrder.find((id) => doc.pages[id]?.title === "About") ?? "";
-    const plan = (name: string, link: unknown) => ({ type: "PricingPlan", values: { name, link } });
-
-    const result = await api.run(
-      "addNode",
-      {
-        location: home(history),
+  /** The home page's Pricing section, with plans "Cakes" and "Bread" whose links are `links`. */
+  const pricing =
+    (...links: unknown[]) =>
+    (doc: SiteDoc) => {
+      doc.pages[doc.homePageId]?.doc.content.push({
         type: "Pricing",
-        values: {
-          items: [
-            plan("Webforge licence", { kind: "page", pageId: about }),
-            plan("Support", { kind: "page", pageId: about, anchor: "team" }),
-          ],
+        props: {
+          id: "pricing",
+          items: ["Cakes", "Bread"].map((name, at) => ({
+            type: "PricingPlan",
+            props: { id: name.toLowerCase(), name, link: links[at] },
+          })),
         },
-      },
-      app,
+      });
+    };
+  const aboutOf = (history: Setup["history"]) => {
+    const doc = history.document.getState();
+    return doc.pageOrder.find((id) => doc.pages[id]?.title === "About") ?? "";
+  };
+
+  it("names each plan, and the site's own pages by their titles, never by an id (#1366)", async () => {
+    const pay = { kind: "url", href: PAY };
+    const { history, host, confirm } = setup(false, pricing(pay, pay));
+    const api = createCommandApi(host);
+    const about = aboutOf(history);
+    const relink = (nodeId: string, link: unknown) =>
+      api.run("updateFields", { location: home(history), nodeId, values: { link } }, app);
+
+    expect((await relink("cakes", { kind: "page", pageId: about })).status).toBe("declined");
+    expect((await relink("bread", { kind: "page", pageId: about, anchor: "team" })).status).toBe(
+      "declined",
     );
 
-    expect(result.status).toBe("declined");
-    const description = confirm.mock.calls[0]?.[0].description ?? "";
-    expect(description).toBe(
-      "Button link of the Plan “Webforge licence”: from no address to the page “About”. " +
-        "Button link of the Plan “Support”: from no address to the section “team” on the page “About”.",
+    const [cakes, bread] = confirm.mock.calls.map(([asked]) => asked.description ?? "");
+    expect(cakes).toBe(`Button link of the Plan “Cakes”: from ${PAY} to the page “About”.`);
+    expect(bread).toBe(
+      `Button link of the Plan “Bread”: from ${PAY} to the section “team” on the page “About”.`,
     );
-    expect(description).not.toContain(about);
+    expect(`${cakes} ${bread}`).not.toContain(about);
   });
 
   it("quotes names an app wrote with no quotation marks or line breaks, and short (#1366)", () => {
@@ -1214,6 +1224,14 @@ describe("where visitors' money and details go (S18, #658)", () => {
     expect(change?.name).not.toMatch(/["“”\n]/);
     expect(change?.from).toBe("buy.stripe.com");
     expect(change?.to).toBe("pay.example.com");
+    // An apostrophe stays: it can't close the question's quotes, and a name needs it.
+    const [named] = destinationChanges(
+      site,
+      plan,
+      { name: "Rosa's Café ’Plus’" },
+      { link: { kind: "url", href: "https://pay.example.com/" } },
+    );
+    expect(named?.name).toBe("Rosa's Café ’Plus’");
     // A page's title, which an app can write too, alike.
     const [toPage] = destinationChanges(
       site,
@@ -1231,8 +1249,9 @@ describe("where visitors' money and details go (S18, #658)", () => {
     Object.assign(site.collections, { c1: { name: "Recipes" } });
     const plan = CATALOGUE.PricingPlan;
     if (plan === undefined) throw new Error("No PricingPlan in the catalogue");
+    const before = { name: "Cakes", link: { kind: "url", href: PAY } };
     const to = (link: unknown) =>
-      destinationChanges(site, plan, { name: "Cakes" }, { link }).map((change) => change.to);
+      destinationChanges(site, plan, before, { link }).map((change) => change.to);
 
     expect(to({ kind: "file", mediaId: "m1" })).toEqual(["the file “price-list.pdf”"]);
     expect(to({ kind: "list", collectionId: "c1" })).toEqual(["the list “Recipes”"]);
@@ -1247,6 +1266,76 @@ describe("where visitors' money and details go (S18, #658)", () => {
       { link: { kind: "url", href: "https://pay.example/" } },
     );
     expect(unnamed[0]?.name).toBeUndefined();
+  });
+
+  it("doesn't ask for a link to one of the site's own pages, unless it replaces an outside address (UA-7, #1365)", async () => {
+    // As the trial's plans: no link yet, then the site's Download page.
+    const { history, host, confirm } = setup(
+      false,
+      pricing(undefined, { kind: "page", pageId: "x" }),
+    );
+    const api = createCommandApi(host);
+    const about = aboutOf(history);
+    const location = home(history);
+    const relink = (nodeId: string, link: unknown) =>
+      api.run("updateFields", { location, nodeId, values: { link } }, app);
+
+    // To a page, or a section on one, from no address or from another page: no question.
+    expect((await relink("cakes", { kind: "page", pageId: about })).status).toBe("done");
+    expect((await relink("bread", { kind: "page", pageId: about, anchor: "team" })).status).toBe(
+      "done",
+    );
+    expect(confirm).not.toHaveBeenCalled();
+    // A section's plans given as it's added, linked to the site's pages: no question either.
+    const added = await api.run(
+      "addNode",
+      {
+        location,
+        type: "Pricing",
+        values: {
+          items: [
+            {
+              type: "PricingPlan",
+              values: { name: "Licence", link: { kind: "page", pageId: about } },
+            },
+          ],
+        },
+      },
+      app,
+    );
+    expect(added.status).toBe("done");
+    expect(confirm).not.toHaveBeenCalled();
+    // Out of the site, a web address, an email address or a phone number still asks, each time.
+    for (const link of [
+      { kind: "url", href: "https://pay.example.net/x" },
+      { kind: "email", address: "orders@example.net" },
+      { kind: "phone", number: "01234 567890" },
+    ]) {
+      expect((await relink("cakes", link)).status, link.kind).toBe("declined");
+    }
+    expect(confirm).toHaveBeenCalledTimes(3);
+    expect(confirm.mock.calls.every(([asked]) => asked.alwaysAsk === true)).toBe(true);
+  });
+
+  it("still asks when a page link replaces an outside address, such as a payment link (UA-7)", async () => {
+    const { history, host, confirm } = setup(false, pricing({ kind: "url", href: PAY }));
+    const api = createCommandApi(host);
+
+    const result = await api.run(
+      "updateFields",
+      {
+        location: home(history),
+        nodeId: "cakes",
+        values: { link: { kind: "page", pageId: aboutOf(history) } },
+      },
+      app,
+    );
+
+    expect(result.status).toBe("declined");
+    expect(confirm.mock.calls[0]?.[0]).toMatchObject({
+      description: `Button link of the Plan “Cakes”: from ${PAY} to the page “About”.`,
+      alwaysAsk: true,
+    });
   });
 
   it("asks before a Pricing plan's button link changes, naming both addresses (5.6)", async () => {

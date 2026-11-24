@@ -93,11 +93,11 @@ An app works on the site you have open in {appName}, and only that one. It can:
 - add, rename, move and delete pages, and change a page's title, description, **Hide in menu** and **Hide this page from search engines**, as [Page Settings](pages.md) does. When an app renames a page of a site you've published, the page's old address keeps working, as **Rename…** does, in the same step: see [Keeping old addresses working](pages.md#keeping-old-addresses-working);
 - change your business's details in [Site Settings](site-settings.md): its name, description, language and type, web address, contact details, opening hours, social profiles and search engine settings;
 - change the theme, all of it or one part, such as the line spacing of your headings;
-- see what's in [Media](media.md), and place your pictures in elements;
+- see what's in [Media](media.md), and place your pictures in elements. It can see which picture is your logo, and a picture's main colours, which {appName} works out on your computer, to match the theme to your logo. It never sees the picture itself;
 - ask you to add pictures or files (see [Pictures](#pictures));
 - run [Site Check](site-check.md), and open the [Preview](preview.md) in your browser. The app is told the page's address, which works on this computer only, so it can look at its work: how the page looks at desktop and phone widths, and whether its pictures show. It sees the Preview only when it opens it in your browser, so you see it too.
 
-It can't change publishing, forms, analytics, Custom Code, search engines' verification codes or your site's icon: those stay yours. It never adds a picture or file itself.
+It can't change publishing, forms, analytics, Custom Code, search engines' verification codes, your logo or your site's icon: those stay yours. It never adds a picture or file itself.
 
 ### Examples, never made-up facts
 
@@ -106,7 +106,7 @@ An AI never passes off a made-up fact as yours. If it needs one you didn't give,
 Some changes ask you first, with **Allow**:
 
 - changes that reach every page: the theme, a new page with a menu entry, deleting a page, Site Settings, the Header or Footer, or a shared section;
-- changing where visitors' money or details go, such as a Buy button's payment link, even on one page. The question names the element, such as the plan by its name, and where the link goes now and would go: a web address, or one of your pages, files or lists by its name. Changing your web address, phone number, email address or a social profile, or whether search engines may show your site, names the old one and the new one too.
+- changing where visitors' money or details go, such as a Buy button's payment link, even on one page, though not a link to one of your own pages that replaces no web address, email address or phone number. The question names the element, such as the plan by its name, and where the link goes now and would go: a web address, or one of your pages, files or lists by its name. Changing your web address, phone number, email address or a social profile, or whether search engines may show your site, names the old one and the new one too.
 
 Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or _Page not found_.
 
@@ -129,7 +129,7 @@ While an app works without asking, the AI apps icon in the title bar changes to 
 
 Some changes ask whatever you chose:
 
-- changing where visitors' money or details go, such as a Buy button's payment link or a form's address;
+- changing where visitors' money or details go, such as a Buy button's payment link or a form's address. A link to one of your own pages, or a section on one, doesn't ask, unless it replaces a web address, email address or phone number, such as a payment link;
 - changing your web address, phone number, email address or a social profile, or whether search engines may show your site;
 - starting a new site.
 

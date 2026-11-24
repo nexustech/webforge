@@ -20,6 +20,9 @@ export const requestMediaInput = z.strictObject({ reason: z.string().trim().min(
 /** What `mediaStatus` takes: the id `requestMedia` answered `waiting` with (#1252). */
 export const mediaStatusInput = z.strictObject({ requestId: z.int().positive() });
 
+/** What `pictureColours` takes: a picture in Media, by the id the media query gives (#1373). */
+export const pictureColoursInput = z.strictObject({ mediaId: z.string().min(1).max(64) });
+
 /**
  * The tools the window answers itself, beside the command layer's (4.9, #981). Run Site Check and
  * Open Preview take nothing, so neither can be pointed at an address, a path or a host;
@@ -79,6 +82,16 @@ export const WINDOW_TOOLS = [
     input: mediaStatusInput,
     description:
       "What became of a requestMedia that answered waiting: waiting still (the person is answering its question, or choosing files in Add files), done with the files added, or declined. Takes its requestId. An outcome is kept for half an hour, or until the site closes.",
+    answeredBy: "window",
+    savesVersionFirst: false,
+    forAssistant: false,
+  }),
+  tool({
+    name: "pictureColours",
+    kind: "query",
+    input: pictureColoursInput,
+    description:
+      "A picture's main colours, by its id in the media query: up to six, the commonest first, each in OKLCH (as theme gives colours) and hex, with how much of the picture it covers (share, 0 to 1). A logo's see-through background is left out. Use it to match the theme to the logo (its id is general.logo in settings) or a photo. Worked out in Webforge from a small copy of the picture: you never see the picture itself.",
     answeredBy: "window",
     savesVersionFirst: false,
     forAssistant: false,

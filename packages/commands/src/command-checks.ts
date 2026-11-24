@@ -334,10 +334,11 @@ function addressOf(value: unknown): string {
 const NAME_MAX_CHARS = 40;
 
 /**
- * Quotation marks, which a confirmation puts around a name, and line breaks: an app writes the
- * names, so one could close the quotes and write a "from … to …" of its own (#1366 review).
+ * Double quotation marks, as a confirmation puts around a name, and line breaks: an app writes the
+ * names, so one could close the quotes and write a "from … to …" of its own (#1366 review). An
+ * apostrophe (' or ’) stays: it can't close them, and most names that hold one need it (Rosa's Café).
  */
-const NAME_SPOOFS = /["“”„‟‘’‚‛'`«»‹›\r\n\u2028\u2029]/g;
+const NAME_SPOOFS = /["“”„‟«»\r\n\u2028\u2029]/g;
 
 /**
  * `name` as a confirmation quotes it: with no quotation marks or line breaks, its spaces run
@@ -452,6 +453,37 @@ function elementName(
 }
 
 /**
+ * Whether `value`, a sensitive field's, sends visitors away from the site: a web address, an email
+ * address or a phone number, or text that holds one. A link to one of its own pages, files or
+ * lists doesn't, nor does no address at all.
+ */
+function leavesSite(value: unknown): boolean {
+  const link = linkValueSchema.safeParse(value);
+  if (!link.success) return addressOf(value) !== "";
+  switch (link.data.kind) {
+    case "url":
+      return link.data.href.trim() !== "";
+    case "email":
+      return link.data.address.trim() !== "";
+    case "phone":
+      return link.data.number.trim() !== "";
+    default:
+      return false;
+  }
+}
+
+/**
+ * Whether setting a sensitive field from `before` to `after` keeps visitors on the site (UA-7,
+ * #1365): `after` links to one of its own pages, or a section on one, and `before` sent them
+ * nowhere else. Such a change sends no money or details anywhere, so S18 doesn't ask for it; one
+ * that replaces an outside address, such as a payment link, still does.
+ */
+function staysOnSite(before: unknown, after: unknown): boolean {
+  const link = linkValueSchema.safeParse(after);
+  return link.success && link.data.kind === "page" && !leavesSite(before);
+}
+
+/**
  * A change to where visitors' money or details go (S18): the element, its name if it has one, its
  * field, from and to.
  */
@@ -466,7 +498,8 @@ export type DestinationChange = {
 /**
  * What setting `values` on an element of `component` that has `before` changes about where
  * visitors' money or details go (S18): each field marked `sensitive` whose address changes, named
- * as `site` has its pages, files and lists.
+ * as `site` has its pages, files and lists. A link set to one of the site's own pages, in place of
+ * no outside address, isn't one (UA-7).
  */
 export function destinationChanges(
   site: SiteDoc,
@@ -479,7 +512,9 @@ export function destinationChanges(
   return Object.entries(values).flatMap(([fieldName, value]) => {
     const field = component.fields[fieldName];
     const was = before[fieldName];
-    return field?.sensitive === true && addressOf(was) !== addressOf(value)
+    return field?.sensitive === true &&
+      addressOf(was) !== addressOf(value) &&
+      !staysOnSite(was, value)
       ? [{ item: component.label, name, field: field.label, ...fromTo(site, was, value) }]
       : [];
   });

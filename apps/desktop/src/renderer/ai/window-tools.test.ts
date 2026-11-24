@@ -11,6 +11,7 @@ function handlers() {
     openPreview: vi.fn(() => DONE),
     requestMedia: vi.fn(async () => DONE),
     mediaStatus: vi.fn(() => DONE),
+    pictureColours: vi.fn(async () => DONE),
   } satisfies WindowToolHandlers;
 }
 
@@ -34,7 +35,9 @@ describe("the window's own tools, by their definitions (#981)", () => {
     expect(answerWindowTool(own, query("runSiteCheck"))).toBe(DONE);
     expect(answerWindowTool(own, query("openPreview"))).toBe(DONE);
     expect(await answerWindowTool(own, command("requestMedia"))).toBe(DONE);
+    expect(await answerWindowTool(own, query("pictureColours"))).toBe(DONE);
     expect(own.runSiteCheck).toHaveBeenCalledOnce();
+    expect(own.pictureColours).toHaveBeenCalledOnce();
     expect(own.openPreview).toHaveBeenCalledOnce();
     expect(own.requestMedia).toHaveBeenCalledOnce();
   });
