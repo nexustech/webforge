@@ -76,22 +76,26 @@ test("starts the Footer from Full, adds to a column from the Add panel, on every
   ).toBeVisible();
   await expect(steps().first()).toHaveText("Started the Footer from 'Full'");
 
-  // A Heading dragged from the Add panel onto the menu's links' lower edge, into their column.
+  // A Heading dragged from the Add panel onto the lower half of the first column's title, into that
+  // column after it.
   const left = page.getByRole("region", { name: "Left panels" });
   await left.getByRole("tab", { name: "Add" }).click();
   await left.getByRole("tab", { name: "Elements" }).click();
   // With the Footer still selected, the line saying a change reaches every page stays while the
   // drag is under way, so the canvas doesn't move under the pointer (#1336). The Footer is at the
   // bottom of the page: in view first, so the pointer can reach it. The drag lets go only once the
-  // drop preview is in that column, not where the pointer passed on its way (#1336).
+  // drop preview is in that column, not where the pointer passed on its way (#1336). The column is
+  // as tall as its title and links: aimed below its middle, at its links' lower edge, the drag
+  // lands on the column itself as often as on its links, and the Footer's columns take only
+  // columns, so nothing would drop (#1393).
   const banner = page.locator(".editor > [role='status']");
   await expect(banner).toContainText("Footer");
-  const links = columns.first().getByRole("navigation", { name: "Footer navigation" });
-  await links.scrollIntoViewIfNeeded();
+  const title = columns.first().locator(".site-heading");
+  await title.scrollIntoViewIfNeeded();
   await drag(
     page,
     left.getByRole("button", { name: "Heading", exact: true }),
-    () => lowerHalf(links),
+    () => lowerHalf(title),
     0.5,
     0.5,
     columns.first(),
