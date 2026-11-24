@@ -70,6 +70,22 @@ describe("each AI app's limits (S20, ADR 0021)", () => {
     }
   });
 
+  it("backs off after a decline given once the change answered waiting (#1364)", async () => {
+    const { limits, ask } = setUp();
+    let late: ((response: AiResponse) => void) | undefined;
+    const waiting: AiResponse = { status: "waiting", data: { changeId: 1 }, message: "Later." };
+    const answer = vi.fn(async (_request: AiRequest, heard: (response: AiResponse) => void) => {
+      late = heard;
+      return waiting;
+    });
+
+    expect(await limits.ask("claude", command, undefined, answer)).toEqual(waiting);
+    expect((await limits.ask("claude", command)).status).toBe("done");
+    late?.({ status: "declined", message: "No." });
+    expect(await limits.ask("claude", command)).toMatchObject({ status: "busy" });
+    expect(ask).toHaveBeenCalledOnce();
+  });
+
   it("runs what comes first only for a request it lets through (S20's version)", async () => {
     const { limits } = setUp();
     const before = vi.fn(async () => undefined);
