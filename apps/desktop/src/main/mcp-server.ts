@@ -74,7 +74,8 @@ export const assistantApp = (): McpApp => ({ id: ASSISTANT_APP_ID, name: t("assi
 /**
  * A tool's answer: the bridge's response as JSON, in labelled fields; an error unless done, or a
  * brief still waiting for the person. A command's undo step and what it changed go only to the
- * assistant (`steps`), which shows them (6.9b): an AI app is told what it made, as before.
+ * assistant (`steps`), which shows them (6.9b): an AI app is told what it made, as before, and
+ * anything it should pass on to the person (#1371).
  */
 function toolResult(response: AiResponse, steps: boolean): CallToolResult {
   const shown =
@@ -84,6 +85,7 @@ function toolResult(response: AiResponse, steps: boolean): CallToolResult {
           status: response.status,
           label: response.label,
           ...(response.id === undefined ? {} : { id: response.id }),
+          ...(response.note === undefined ? {} : { note: response.note }),
         };
   return {
     content: [{ type: "text", text: JSON.stringify(shown) }],

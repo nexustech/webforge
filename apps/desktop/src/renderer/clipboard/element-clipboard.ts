@@ -1,5 +1,6 @@
 import { plural, t } from "@webforge/i18n";
 import {
+  clearsDescription,
   copiedNodeId,
   findNode,
   isNodeDoc,
@@ -638,5 +639,12 @@ function pasteMedia(
     },
     { selectionAfter: ui },
   );
+  // The alt text that described the old picture goes with it, and the person is asked for the new
+  // one's, as when they choose another in the Edit panel (#1371).
+  if (
+    clearsDescription(node.props[field], { mediaId: item.id }, { ...site.media, [item.id]: item })
+  ) {
+    notify(t("site.media.field.altCleared"));
+  }
   return true;
 }

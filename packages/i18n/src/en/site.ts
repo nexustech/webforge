@@ -100,6 +100,9 @@ export const site = {
   "site.media.field.missing": "This image is no longer in Media.",
   "site.media.field.alt": "Alt text here",
   "site.media.field.altHint": "Leave empty to use the image's own alt text from Media.",
+  // A new picture cleared the alt text that described the old one (#1371).
+  "site.media.field.altCleared":
+    "The old picture's alt text was cleared, as it doesn't describe this one. Describe the new picture here.",
   "site.media.field.altFrom": "From Media: {alt}",
   "site.media.field.altNone": "The image has no alt text in Media yet",
   "site.clipboard.history.pasted": "Pasted {item}",

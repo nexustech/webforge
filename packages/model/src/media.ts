@@ -162,6 +162,34 @@ export function altTextFor(value: ImageValue, media: ImageMeta | undefined): str
   return value.alt ?? media?.alt ?? "";
 }
 
+/**
+ * Whether a change from `before` to `after` replaces the picture and so clears a description the
+ * placement had (#1371): its own alt text, which described the old picture, or the old picture's
+ * alt text from Media where the new one has none. The placement's own alt text never carries over
+ * to another picture (product owner, 23 Nov 2026): a kept but wrong description would pass Site
+ * Check, so the person is asked to describe the new one. A new value with alt text of its own
+ * clears nothing.
+ */
+export function clearsDescription(
+  before: unknown,
+  after: unknown,
+  media: Readonly<Record<MediaId, MediaMeta>>,
+): boolean {
+  const old = imageValueSchema.safeParse(before);
+  const next = imageValueSchema.safeParse(after);
+  if (!old.success || !next.success) return false;
+  if (old.data.mediaId === next.data.mediaId || next.data.alt !== undefined) return false;
+  const imageOf = (id: string) => {
+    const item = mediaItem(media, id);
+    return item !== undefined && isImageMeta(item) ? item : undefined;
+  };
+  if (old.data.alt !== undefined && old.data.alt !== "") return true;
+  return (
+    altTextFor(old.data, imageOf(old.data.mediaId)) !== "" &&
+    altTextFor(next.data, imageOf(next.data.mediaId)) === ""
+  );
+}
+
 /** The longest {@link mediaNameSchema} name {@link mediaNameFor} makes, before any `-2`. */
 const MAX_MEDIA_NAME = 60;
 

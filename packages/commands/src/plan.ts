@@ -16,7 +16,28 @@ export type Plan = {
   readonly id?: string;
   /** The pages it deletes: the window shows the Home page instead, if it showed one of them. */
   readonly removesPages?: readonly PageId[];
+  /** Where a new picture cleared the alt text that described the old one (#1371). */
+  readonly clearedAlt?: readonly ClearedAlt[];
 };
+
+/** An element's image field whose alt text a new picture cleared (#1371). */
+export type ClearedAlt = { readonly nodeId: string; readonly field: string };
+
+/**
+ * What an app is told when new pictures cleared alt text that described the old ones (#1371): each
+ * element and field once, and what to do once, so a plan of many swaps stays a short answer.
+ */
+export function clearedAltNote(cleared: readonly ClearedAlt[]): string {
+  const seen = new Set<string>();
+  const places: string[] = [];
+  for (const { nodeId, field } of cleared) {
+    const place = `element "${nodeId}" ("${field}")`;
+    if (seen.has(place)) continue;
+    seen.add(place);
+    places.push(place);
+  }
+  return `A new picture cleared the alt text that described the old one, in ${places.join(", ")}. Ask the person to describe each new picture, or set it with updateFields as { mediaId, alt }.`;
+}
 
 /**
  * What a command is planned with besides the site: what the window knows of it. Left out, the site

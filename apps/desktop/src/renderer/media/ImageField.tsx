@@ -7,7 +7,13 @@ import {
   toast,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { type ImageMeta, type ImageValue, imageValueSchema, isImageMeta } from "@webforge/model";
+import {
+  clearsDescription,
+  type ImageMeta,
+  type ImageValue,
+  imageValueSchema,
+  isImageMeta,
+} from "@webforge/model";
 import { ImagePlusIcon } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
@@ -49,6 +55,11 @@ export function ImageField({
 }: FieldRendererProps<"image"> & ImageFieldContext) {
   const items = useDocument(session, (site) => site.media);
   const [picking, setPicking] = useState(false);
+  // The element and picture whose alt text a new picture just cleared, to say so (#1371).
+  const [cleared, setCleared] = useState<{
+    readonly nodeId: string | null;
+    readonly mediaId: string;
+  }>();
   // *Edit* on the selected element's image (F-ED-25): its picker opens, focus on its button.
   useEffect(() => {
     if (picks === undefined) return undefined;
@@ -63,6 +74,7 @@ export function ImageField({
   const altId = useId();
   const actionId = useId();
   const altHintId = useId();
+  const altClearedId = useId();
   const placed = imageValueSchema.safeParse(value);
   const current = placed.success ? placed.data : undefined;
   const item = current === undefined ? undefined : items[current.mediaId];
@@ -85,7 +97,22 @@ export function ImageField({
     setPicking(false);
   };
   // Another image gets its own alt text from Media: the old override described the old image.
-  const pick = (chosen: ImageMeta) => choose({ mediaId: chosen.id });
+  // Where that leaves it without one, the field says so and asks for one (#1371).
+  const pick = (chosen: ImageMeta) => {
+    const next = { mediaId: chosen.id };
+    setCleared(
+      clearsDescription(current, next, items)
+        ? { nodeId: session.ui.getState().nodeId, mediaId: chosen.id }
+        : undefined,
+    );
+    choose(next);
+  };
+  const showCleared =
+    cleared !== undefined &&
+    current !== undefined &&
+    cleared.mediaId === current.mediaId &&
+    cleared.nodeId === session.ui.getState().nodeId &&
+    (current.alt ?? "") === "";
   const addNew = async () => {
     const added = (await importItems(() => api.choose(siteSession()), notify)).filter(isImageMeta);
     addMedia(session, added);
@@ -177,7 +204,7 @@ export function ImageField({
             id={altId}
             type="text"
             className={fieldControlClass}
-            aria-describedby={altHintId}
+            aria-describedby={showCleared ? `${altClearedId} ${altHintId}` : altHintId}
             value={current.alt ?? ""}
             placeholder={
               image === undefined || image.alt === ""
@@ -193,6 +220,10 @@ export function ImageField({
             }}
             onBlur={onCommit}
           />
+          {/* Polite and always there, so a screen reader hears it as it appears. */}
+          <p id={altClearedId} role="status" className="m-0 text-xs font-medium empty:hidden">
+            {showCleared ? t("site.media.field.altCleared") : ""}
+          </p>
           <p id={altHintId} className="m-0 text-xs text-muted-foreground">
             {t("site.media.field.altHint")}
           </p>
