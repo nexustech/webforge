@@ -86,6 +86,8 @@ export type McpServiceOptions = {
    * unanswered (5.34). For an app that cancels its request, or disconnects.
    */
   readonly cancel?: AiBridge["cancel"] | undefined;
+  /** What became of an app's change that answered `waiting` (#1364), as the bridge keeps it. */
+  readonly changeStatus: AiBridge["changeStatus"];
   readonly info: McpServerInfo;
   /**
    * Saves an automatic version of the open site named `name`, after the window's last edits
@@ -102,10 +104,13 @@ export type McpServiceOptions = {
   readonly now?: () => number;
 };
 
+/** What main answers its own tools from: the briefs (4.12a), and the bridge's changes (#1364). */
+export type MainAnswers = Pick<McpServiceOptions, "briefs" | "changeStatus">;
+
 /** What main answers each of its own tools with (4.12a): a tool without one fails typecheck (#978). */
 type MainToolHandlers = {
   readonly [name in MainToolName]: (
-    briefs: McpServiceOptions["briefs"],
+    main: MainAnswers,
     request: AiRequest,
     app: string,
     signal: AbortSignal | undefined,
@@ -113,9 +118,10 @@ type MainToolHandlers = {
 };
 
 const MAIN_TOOL_HANDLERS: MainToolHandlers = {
-  siteChoices: (briefs) => briefs.choices(),
-  createSiteFromBrief: (briefs, request, app, signal) => briefs.ask(request.input, app, signal),
-  briefStatus: (briefs, request, app) => briefs.status(request.input, app),
+  siteChoices: ({ briefs }) => briefs.choices(),
+  createSiteFromBrief: ({ briefs }, request, app, signal) => briefs.ask(request.input, app, signal),
+  briefStatus: ({ briefs }, request, app) => briefs.status(request.input, app),
+  changeStatus: ({ changeStatus }, request, app) => changeStatus(request.input, app),
 };
 
 /**
@@ -123,13 +129,13 @@ const MAIN_TOOL_HANDLERS: MainToolHandlers = {
  * `MAIN_TOOLS` is refused, never taken for a brief (#978).
  */
 export async function answerMainTool(
-  briefs: McpServiceOptions["briefs"],
+  main: MainAnswers,
   request: AiRequest,
   app: string,
   signal?: AbortSignal,
 ): Promise<AiResponse> {
   if (!isMainTool(request.name)) return { status: "invalid", message: "There is no such tool." };
-  return MAIN_TOOL_HANDLERS[request.name](briefs, request, app, signal);
+  return MAIN_TOOL_HANDLERS[request.name](main, request, app, signal);
 }
 
 /**
@@ -153,11 +159,14 @@ export function createMcpService(options: McpServiceOptions): McpService {
   const drawPort = options.drawPort ?? (() => randomInt(EPHEMERAL.from, EPHEMERAL.to + 1));
   const limits = createAppLimits(options.ask);
 
-  /** Main's own tools (4.12a), for `app`: a brief, its status, and what it chooses from. */
+  /**
+   * Main's own tools (4.12a), for `app`: a brief, its status, and what it chooses from; and what
+   * became of a change that answered `waiting` (#1364).
+   */
   const mainTool =
     (app: McpApp, signal: AbortSignal | undefined) =>
     async (request: AiRequest): Promise<AiResponse> =>
-      answerMainTool(options.briefs, request, app.id, signal);
+      answerMainTool(options, request, app.id, signal);
   let listener: McpListener | null = null;
   /**
    * The version "Before ‹app›'s changes" saved, or being saved, for each app in each opening of
@@ -219,9 +228,15 @@ export function createMcpService(options: McpServiceOptions): McpService {
   /**
    * `asked` of the window for `app`. The app giving up on a command (its cancel, or its connection
    * closing) closes a question the command waits on, unanswered: no one is left to hear the
-   * person's answer (5.34).
+   * person's answer (5.34). Not once it has answered `waiting`: the app has the change's id, and
+   * `late` hears the person's answer, for the app's limits (#1364).
    */
-  const askWindow = (app: McpApp, request: AiRequest, signal: AbortSignal | undefined) => {
+  const askWindow = (
+    app: McpApp,
+    request: AiRequest,
+    signal: AbortSignal | undefined,
+    late: (response: AiResponse) => void,
+  ) => {
     // A paired app's command names it, and says whether it works without asking (5.35, UA-2).
     const asked: AiRequest =
       request.kind === "command" && app.id !== ASSISTANT_APP_ID
@@ -231,7 +246,7 @@ export function createMcpService(options: McpServiceOptions): McpService {
             ...(unaskedUntil(app.id) === undefined ? {} : { unasked: true as const }),
           }
         : request;
-    const answer = options.ask(asked, app.id);
+    const answer = options.ask(asked, app.id, late);
     if (signal === undefined || asked.kind !== "command") return answer;
     const giveUp = () => options.cancel?.(app.id);
     if (signal.aborted) giveUp();
@@ -254,7 +269,7 @@ export function createMcpService(options: McpServiceOptions): McpService {
         tool.answeredBy === "main"
           ? mainTool(app, signal)
           : // The window's bridge knows each command's app by id, for a cancel (6.9b).
-            (asked) => askWindow(app, asked, signal),
+            (asked, late) => askWindow(app, asked, signal, late),
       );
       void countRequest(app, request.name, answer);
       return answer;

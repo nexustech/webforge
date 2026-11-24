@@ -93,6 +93,14 @@ export const aiApps = {
   "aiApps.client.claudeCode.enterKey": "Enter",
   "aiApps.client.claudeCode.step3":
     "Start Claude Code in that terminal before the key runs out. In Claude Code, /mcp lists webforge once it's connected.",
+  // On Windows, the same steps in PowerShell: its commands are PowerShell's, and cmd.exe splits the
+  // add command's header at its spaces (#1367).
+  "aiApps.client.claudeCode.step1PowerShell":
+    "Add {appName} to Claude Code: run this command in PowerShell. It adds {appName} for all your projects.",
+  "aiApps.client.claudeCode.step2PowerShell":
+    "In the same PowerShell window, give it the key: run this command, then copy the key, paste it when PowerShell waits for it, and press {key}. The key doesn't show as you paste it.",
+  "aiApps.client.claudeCode.step3PowerShell":
+    "Start Claude Code in that PowerShell window before the key runs out. In Claude Code, /mcp lists webforge once it's connected.",
   "aiApps.client.claudeCode.keyWhere":
     "Why the key isn't in the commands: Claude Code reads it from {variable} as it connects, so it isn't in your terminal's history or in Claude Code's settings. {variable} lasts as long as that terminal.",
   "aiApps.client.claudeCode.copyCommand": "Copy the add command",
@@ -134,6 +142,15 @@ export const aiApps = {
   "aiApps.answer.stillWaiting": "Still waiting for {appName}: it may be asking the person.",
   "aiApps.answer.tooMany":
     "{appName} is still answering earlier requests: wait for their answers, then ask again.",
+  // A change whose question the person hasn't answered yet (#1364): the app asks about it later.
+  "aiApps.answer.waiting":
+    "The person hasn't answered {appName}'s question about this change yet. Ask changeStatus with this changeId in a while, rather than sending the change again.",
+  "aiApps.answer.sentAgain":
+    "This change is already waiting for the person's answer in {appName}, so it won't be made twice. Ask changeStatus with this changeId in a while.",
+  "aiApps.answer.anotherWaits":
+    "Your last change is still waiting for the person's answer in {appName}: ask changeStatus with its changeId, and send this one once they've answered.",
+  "aiApps.answer.noChange":
+    "{appName} has no change of yours by that changeId: its outcome was given over half an hour ago, or {appName} was closed.",
   "aiApps.cancel": "Cancel",
   "aiApps.indicator": "Connected AI apps: {names}. Open AI apps.",
   // Whether an app works without asking on the open site (5.35, UA-2), in AI apps.

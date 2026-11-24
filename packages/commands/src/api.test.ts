@@ -5,11 +5,13 @@ import {
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
+import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createCommandApi } from "./api.js";
 import { app, content, home, type Setup, setup } from "./api.test-helper.js";
+import { destinationChanges } from "./command-checks.js";
 import type { Confirmation } from "./types.js";
 
 const HOURS = "shared-hours" as SharedSectionId;
@@ -1118,7 +1120,8 @@ describe("where visitors' money and details go (S18, #658)", () => {
       expect(repointed.status).toBe("declined");
       expect(confirm.mock.calls[0]?.[0]).toEqual({
         action: "Allow Claude to Change the Buy button's Payment link?",
-        description: "Payment link: from buy.stripe.com to pay.example.net.",
+        description:
+          "Payment link of the Buy button “Buy”: from buy.stripe.com to pay.example.net.",
         confirm: "Allow",
         affectedPages: 1,
         // A plan says it first (S30), and an app working without asking is asked too (5.35).
@@ -1132,10 +1135,97 @@ describe("where visitors' money and details go (S18, #658)", () => {
       );
       expect(text.status).toBe("declined");
       expect(confirm.mock.calls[1]?.[0].description).toBe(
-        "Form address: from list.rosas.example to collect.example.net.",
+        "Form address of the Newsletter signup “Stay in the loop”: from list.rosas.example to collect.example.net.",
       );
       expect(history.state.getState().entries).toEqual([]);
     }
+  });
+
+  it("names each plan, and the site's own pages by their titles, never by an id (#1366)", async () => {
+    const { history, host, confirm } = setup(false);
+    const api = createCommandApi(host);
+    const doc = history.document.getState();
+    const about = doc.pageOrder.find((id) => doc.pages[id]?.title === "About") ?? "";
+    const plan = (name: string, link: unknown) => ({ type: "PricingPlan", values: { name, link } });
+
+    const result = await api.run(
+      "addNode",
+      {
+        location: home(history),
+        type: "Pricing",
+        values: {
+          items: [
+            plan("Webforge licence", { kind: "page", pageId: about }),
+            plan("Support", { kind: "page", pageId: about, anchor: "team" }),
+          ],
+        },
+      },
+      app,
+    );
+
+    expect(result.status).toBe("declined");
+    const description = confirm.mock.calls[0]?.[0].description ?? "";
+    expect(description).toBe(
+      "Button link of the Plan “Webforge licence”: from no address to the page “About”. " +
+        "Button link of the Plan “Support”: from no address to the section “team” on the page “About”.",
+    );
+    expect(description).not.toContain(about);
+  });
+
+  it("quotes names an app wrote with no quotation marks or line breaks, and short (#1366)", () => {
+    const { history } = setup();
+    const site = structuredClone(history.document.getState());
+    const plan = CATALOGUE.PricingPlan;
+    if (plan === undefined) throw new Error("No PricingPlan in the catalogue");
+    const about = site.pageOrder.find((id) => site.pages[id]?.title === "About") ?? "";
+    const page = site.pages[about as never];
+    if (page !== undefined) page.title = 'About"\n: from no address to the page “Home';
+    const spoof = "Basic”: from no address to the page “Download";
+    const [change] = destinationChanges(
+      site,
+      plan,
+      { name: spoof, link: { kind: "url", href: "https://buy.stripe.com/rosas" } },
+      { link: { kind: "url", href: "https://pay.example.com/theirs" } },
+    );
+
+    // The name can't close its quotes: the question's own from and to stay the only ones.
+    expect(change?.name).toBe("Basic : from no address to the page Dow…");
+    expect(change?.name).not.toMatch(/["“”\n]/);
+    expect(change?.from).toBe("buy.stripe.com");
+    expect(change?.to).toBe("pay.example.com");
+    // A page's title, which an app can write too, alike.
+    const [toPage] = destinationChanges(
+      site,
+      plan,
+      { link: { kind: "url", href: "https://buy.stripe.com/rosas" } },
+      { link: { kind: "page", pageId: about } },
+    );
+    expect(toPage?.to).toBe("the page “About : from no address to the page Home”");
+  });
+
+  it("names a file and a list by their names, and says when a page, file or list isn't there (#1366)", () => {
+    const { history } = setup();
+    const site = structuredClone(history.document.getState());
+    Object.assign(site.media, { m1: { fileName: "price-list.pdf" } });
+    Object.assign(site.collections, { c1: { name: "Recipes" } });
+    const plan = CATALOGUE.PricingPlan;
+    if (plan === undefined) throw new Error("No PricingPlan in the catalogue");
+    const to = (link: unknown) =>
+      destinationChanges(site, plan, { name: "Cakes" }, { link }).map((change) => change.to);
+
+    expect(to({ kind: "file", mediaId: "m1" })).toEqual(["the file “price-list.pdf”"]);
+    expect(to({ kind: "list", collectionId: "c1" })).toEqual(["the list “Recipes”"]);
+    expect(to({ kind: "page", pageId: "gone" })).toEqual(["a page that isn't there"]);
+    expect(to({ kind: "file", mediaId: "gone" })).toEqual(["a file that isn't there"]);
+    expect(to({ kind: "list", collectionId: "gone" })).toEqual(["a list that isn't there"]);
+    // An element without a name or title of its own has none in its line.
+    const unnamed = destinationChanges(
+      site,
+      { ...plan, fields: { link: plan.fields.link } } as never,
+      {},
+      { link: { kind: "url", href: "https://pay.example/" } },
+    );
+    expect(unnamed[0]?.name).toBeUndefined();
   });
 
   it("asks before a Pricing plan's button link changes, naming both addresses (5.6)", async () => {
@@ -1166,7 +1256,7 @@ describe("where visitors' money and details go (S18, #658)", () => {
     );
     expect(repointed.status).toBe("declined");
     expect(confirm.mock.calls[0]?.[0].description).toBe(
-      "Button link: from buy.stripe.com to evil-checkout.example.",
+      "Button link of the Plan “Cakes”: from buy.stripe.com to evil-checkout.example.",
     );
     expect(history.state.getState().entries).toEqual([]);
   });
@@ -1198,7 +1288,7 @@ describe("where visitors' money and details go (S18, #658)", () => {
       ),
     ).toMatchObject({ status: "done" });
     expect(confirm.mock.calls[0]?.[0].description).toBe(
-      `Payment link: from ${PAY} to https://buy.stripe.com/theirs.`,
+      `Payment link of the Buy button “Buy”: from ${PAY} to https://buy.stripe.com/theirs.`,
     );
     const added = await api.run(
       "addNode",
@@ -1213,7 +1303,7 @@ describe("where visitors' money and details go (S18, #658)", () => {
     );
     expect(added.status).toBe("done");
     expect(confirm.mock.calls[1]?.[0].description).toBe(
-      "Payment link: from no address to https://pay.example.net/x.",
+      "Payment link of the Buy button “Buy now”: from no address to https://pay.example.net/x.",
     );
   });
 
@@ -1228,15 +1318,17 @@ describe("where visitors' money and details go (S18, #658)", () => {
 
     // A browser reads `\` as `/`: this pays evil.example, not buy.stripe.com.
     expect(await repoint("https://evil.example\\@buy.stripe.com/p")).toBe(
-      "Payment link: from buy.stripe.com to evil.example.",
+      "Payment link of the Buy button “Buy”: from buy.stripe.com to evil.example.",
     );
     // A Cyrillic "у" in a look-alike host shows as punycode.
     const lookAlike = await repoint("https://buу.stripe.com/rosas");
-    expect(lookAlike).toMatch(/^Payment link: from buy\.stripe\.com to xn--/);
+    expect(lookAlike).toMatch(
+      /^Payment link of the Buy button “Buy”: from buy\.stripe\.com to xn--/,
+    );
     expect(lookAlike).not.toContain("у");
     // `../` that leaves the account's own path is resolved.
     expect(await repoint(`${PAY}/x/x/../../../theirs`)).toBe(
-      `Payment link: from ${PAY} to https://buy.stripe.com/theirs.`,
+      `Payment link of the Buy button “Buy”: from ${PAY} to https://buy.stripe.com/theirs.`,
     );
     // A long address is cut in the middle: where on the host it goes still shows.
     const long = await repoint(`https://buy.stripe.com/rosas/${"x".repeat(1_000)}/theirs`);

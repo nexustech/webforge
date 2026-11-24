@@ -303,10 +303,14 @@ describe("AI apps (4.9)", () => {
       const steps = dialog()
         .getAllByRole("listitem")
         .filter((item) => item.closest("ol"));
-      expect(steps.map((step) => step.textContent?.slice(0, 20))).toEqual([
-        "Add Webforge to Clau",
-        "In the same terminal",
-        "Start Claude Code in",
+      // On Windows, each step names PowerShell, where its commands run (#1367).
+      const where = shell === "powershell" ? "PowerShell" : "a terminal";
+      const same = shell === "powershell" ? "the same PowerShell window" : "the same terminal";
+      const that = shell === "powershell" ? "that PowerShell window" : "that terminal";
+      expect(steps.map((step) => step.textContent)).toEqual([
+        expect.stringContaining(`run this command in ${where}.`),
+        expect.stringMatching(new RegExp(`^In ${same}, give it the key`)),
+        expect.stringMatching(new RegExp(`^Start Claude Code in ${that} before`)),
       ]);
       // The key command for this shell, with no key in it: it waits for the key to be pasted.
       expect(within(steps[1] as HTMLElement).getByText(keyCommand)).toBeTruthy();

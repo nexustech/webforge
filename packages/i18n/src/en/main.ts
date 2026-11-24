@@ -6,14 +6,22 @@
 export const main = {
   "ai.version.before": "Before {app}'s changes",
   "aiApps.add.failed.off": "Turn on Let AI apps connect first.",
+  "aiApps.answer.anotherWaits":
+    "Your last change is still waiting for the person's answer in {appName}: ask changeStatus with its changeId, and send this one once they've answered.",
   "aiApps.answer.noAnswer": "{appName} didn't answer in time: try again.",
+  "aiApps.answer.noChange":
+    "{appName} has no change of yours by that changeId: its outcome was given over half an hour ago, or {appName} was closed.",
   "aiApps.answer.noSite": "No site is open in {appName}.",
   "aiApps.answer.reloaded":
     "{appName} reloaded the site before it answered: ask again once it has.",
+  "aiApps.answer.sentAgain":
+    "This change is already waiting for the person's answer in {appName}, so it won't be made twice. Ask changeStatus with this changeId in a while.",
   "aiApps.answer.siteClosed":
     "The site closed in {appName} before the person answered, so nothing changed.",
   "aiApps.answer.tooMany":
     "{appName} is still answering earlier requests: wait for their answers, then ask again.",
+  "aiApps.answer.waiting":
+    "The person hasn't answered {appName}'s question about this change yet. Ask changeStatus with this changeId in a while, rather than sending the change again.",
   "aiApps.bridge.failed": "{appName} couldn't answer. Try again.",
   "aiApps.bridge.keyRefused":
     "{appName} didn't take the key. In {appName}'s AI apps, remove Claude Desktop and add it again, then paste the new key into the extension's settings in Claude Desktop.",
@@ -49,10 +57,16 @@ export const main = {
   "aiApps.client.claudeCode.returnKey": "Return",
   "aiApps.client.claudeCode.step1":
     "Add {appName} to Claude Code: run this command in a terminal. It adds {appName} for all your projects.",
+  "aiApps.client.claudeCode.step1PowerShell":
+    "Add {appName} to Claude Code: run this command in PowerShell. It adds {appName} for all your projects.",
   "aiApps.client.claudeCode.step2":
     "In the same terminal, give it the key: run this command, then copy the key, paste it when the terminal waits for it, and press {key}. The key doesn't show as you paste it.",
+  "aiApps.client.claudeCode.step2PowerShell":
+    "In the same PowerShell window, give it the key: run this command, then copy the key, paste it when PowerShell waits for it, and press {key}. The key doesn't show as you paste it.",
   "aiApps.client.claudeCode.step3":
     "Start Claude Code in that terminal before the key runs out. In Claude Code, /mcp lists webforge once it's connected.",
+  "aiApps.client.claudeCode.step3PowerShell":
+    "Start Claude Code in that PowerShell window before the key runs out. In Claude Code, /mcp lists webforge once it's connected.",
   "aiApps.client.claudeCode.steps": "To connect Claude Code",
   "aiApps.client.other.hint":
     "An app that connects to an MCP server at an address, such as Cursor.",
