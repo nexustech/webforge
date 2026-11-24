@@ -1,4 +1,4 @@
-import type { SiteDoc } from "@webforge/model";
+import type { MediaId, SiteDoc } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createCommandApi } from "./api.js";
@@ -66,6 +66,62 @@ describe("a plan (4.12a, AIB-6)", () => {
     expect(content(history).map(({ type }) => type)).toContain("Hero");
     history.undo();
     expect(history.document.getState()).toEqual(before);
+  });
+
+  it("says once where its picture swaps cleared alt text: ten swaps, a short note (#1371)", async () => {
+    const picture = (id: string) =>
+      ({
+        id: id as MediaId,
+        kind: "image",
+        hash: "a".repeat(64),
+        name: id,
+        fileName: `${id}.png`,
+        mimeType: "image/png",
+        width: 400,
+        height: 100,
+        alt: "",
+      }) as const;
+    const charcoal = picture("media-charcoal");
+    const white = picture("media-white");
+    const ids = Array.from({ length: 10 }, (_, index) => `logo-${index}`);
+    const { host, history } = setup(true, (doc) => {
+      doc.media[charcoal.id] = charcoal;
+      doc.media[white.id] = white;
+      doc.pages[doc.homePageId]?.doc.content.push(
+        ...ids.map((id) => ({
+          type: "Image",
+          props: { id, image: { mediaId: charcoal.id, alt: "Webforge" } },
+        })),
+      );
+    });
+    const api = createCommandApi(host);
+    const swap = (nodeId: string, mediaId: string) => ({
+      name: "updateFields",
+      input: { location: home(history), nodeId, values: { image: { mediaId } } },
+    });
+
+    const result = await api.run(
+      "plan",
+      {
+        title: "Change every logo",
+        commands: [
+          ...ids.map((id) => swap(id, white.id)),
+          // Swapped back and again: still named once.
+          swap("logo-0", charcoal.id),
+          swap("logo-0", white.id),
+        ],
+      },
+      app,
+    );
+
+    expect(result).toMatchObject({ status: "done" });
+    const note = "note" in result ? (result.note ?? "") : "";
+    for (const id of ids) {
+      expect(note.split(`element "${id}" ("image")`)).toHaveLength(2);
+    }
+    // One sentence of where, one of what to do: short however many swaps.
+    expect(note.match(/Ask the person/g)).toHaveLength(1);
+    expect(note.length).toBeLessThan(600);
   });
 
   it("names the pages it renames, moves and hides, which ask nothing on their own", async () => {

@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import type { SiteDoc } from "@webforge/model";
+import { clearsDescription, type SiteDoc } from "@webforge/model";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { z } from "zod";
 import { usableComponents } from "./catalogue.js";
@@ -104,7 +104,7 @@ export const ELEMENT_COMMANDS = {
   },
   /** Sets fields of an element: its title, a select's option, an image, a link… */
   updateFields: {
-    description: `Sets fields of an element, by the names and value schemas fields gives. One undo step. A change to the shared Header, Footer or a shared section, or to where visitors' payments or details go, waits for the person to allow it. ${EXAMPLES_FIELD}`,
+    description: `Sets fields of an element, by the names and value schemas fields gives. One undo step. A new picture clears the alt text that described the old one: give alt with the new mediaId, or the answer's note asks for it. A change to the shared Header, Footer or a shared section, or to where visitors' payments or details go, waits for the person to allow it. ${EXAMPLES_FIELD}`,
     input: z.strictObject({ location: locationSchema, nodeId, values, examples: examplesInput }),
     summarize(summary: PlanSummary) {
       summary.elements.changed += 1;
@@ -133,7 +133,14 @@ export const ELEMENT_COMMANDS = {
       const { location, nodeId: id } = input;
       // The facts the site gives as it is, to tell what the text made up (#1228).
       const known = knownFacts(site);
+      // A new picture's placement loses the alt text that described the old one (#1371).
+      const cleared = names.filter((name) =>
+        clearsDescription(placed.node.props[name], values[name], site.media),
+      );
       return {
+        ...(cleared.length === 0
+          ? {}
+          : { clearedAlt: cleared.map((field) => ({ nodeId: id, field })) }),
         action:
           fields.length === 1 && only !== undefined
             ? t("history.editedField", {

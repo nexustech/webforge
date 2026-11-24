@@ -625,4 +625,29 @@ describe("the assistant's connection to the tool layer (6.9b, ADR 0026 §1)", ()
       },
     ]);
   });
+
+  it("passes on what an AI app should tell the person: a picture's cleared alt text (#1371)", async () => {
+    const { service, listened, ask } = setUp();
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+    const note = 'The new picture in "image" has no alt text.';
+    ask.mockResolvedValueOnce({
+      status: "done",
+      label: "AI (Claude): Edited Image image",
+      entryId: "h1",
+      note,
+    });
+    const client = await connection(options, { id: "app-1", name: "Claude" });
+    const set = await client.callTool({
+      name: "updateFields",
+      arguments: { location: { pageId: "page-1" }, nodeId: "logo", values: {} },
+    });
+    expect(set.content).toEqual([
+      {
+        type: "text",
+        text: JSON.stringify({ status: "done", label: "AI (Claude): Edited Image image", note }),
+      },
+    ]);
+  });
 });
