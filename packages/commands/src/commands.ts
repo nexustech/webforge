@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { type SiteDoc, themeTokensSchema } from "@webforge/model";
+import { isResponsiveValue, type SiteDoc, themeTokensSchema } from "@webforge/model";
 import { z } from "zod";
 import { APP_PARSE } from "./app-errors.js";
 import { droppedOwnColourInUse } from "./command-checks.js";
@@ -21,7 +21,7 @@ const STEPS = {
    */
   setThemeTokens: {
     description:
-      "Sets theme tokens, as theme gives them. It changes every page, so it waits for the person to allow it. A group named in part keeps the values it doesn't name, at any depth: { typeScale: { h1: { leading: \"normal\" } } } changes only h1's leading. A font is replaced whole, with its family and fallback. null removes a value that may be left out. A list, such as ownColors, is the whole list: one of your colours the site still uses can't be left out, so change its uses first.",
+      "Sets theme tokens, as theme gives them. It changes every page, so it waits for the person to allow it. A group named in part keeps the values it doesn't name, at any depth: { typeScale: { h1: { leading: \"normal\" } } } changes only h1's leading. A font is replaced whole, with its family and fallback, and so is a look's value per screen size ({ $responsive: { desktop, tablet, mobile } }). null removes a value that may be left out. A list, such as ownColors, is the whole list: one of your colours the site still uses can't be left out, so change its uses first.",
     input: z.strictObject({
       tokens: z
         .record(z.string(), z.unknown())
@@ -66,9 +66,15 @@ export const COMMANDS = { ...STEPS, plan: planCommand(STEPS) };
 /** The name of a command. */
 export type CommandName = keyof typeof COMMANDS;
 
-/** Whether `value` is a group of tokens (`fonts`, `radius`…): an object, not a list. */
+/**
+ * Whether `value` is a group of tokens (`fonts`, `radius`…): an object, not a list. A look's value
+ * set per screen size (`{ $responsive: … }`) is one value, not a group (#1384).
+ */
 const isGroup = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
+  typeof value === "object" &&
+  value !== null &&
+  !Array.isArray(value) &&
+  !isResponsiveValue(value as Record<string, unknown>);
 
 /**
  * `before` with `after` over it: a group both have is merged, as deep as `depth` says for its key;
@@ -98,7 +104,7 @@ function merged(
  * `theme` with `tokens` over it (#645, #1369): every group is merged at every depth, so a partial
  * `fonts`, or one text style's `leading` in `typeScale`, keeps the values it doesn't name. But a
  * font is one value, its family with its fallback, so it's replaced whole: Lora never keeps the
- * sans-serif fallback of the font before it.
+ * sans-serif fallback of the font before it. So is a look's value per screen size (#1384).
  */
 const withTokens = (theme: object, tokens: Record<string, unknown>) =>
   merged(theme, tokens, (key) => (key === "fonts" ? 1 : Number.POSITIVE_INFINITY));

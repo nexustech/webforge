@@ -1,7 +1,10 @@
 import type { ToolDef } from "@webforge/commands";
 import { z } from "zod";
-import { siteBriefSchema } from "./ipc/ai.js";
+import { ANSWER_WITHIN_MS, siteBriefSchema } from "./ipc/ai.js";
 import { PREVIEW_OPEN_WAIT_MS } from "./ipc/preview.js";
+
+/** How long a request waits on the person before answering `waiting`, in a description's words. */
+const WAITS = `about ${ANSWER_WITHIN_MS / 1000} seconds`;
 
 /** `def`, its name kept as written, so a record of handlers can be keyed by it. */
 const tool = <const Name extends string, I extends z.ZodType>(
@@ -67,8 +70,7 @@ export const WINDOW_TOOLS = [
     name: "requestMedia",
     kind: "command",
     input: requestMediaInput,
-    description:
-      'Asks the person to add pictures or files to the site\'s Media, with your reason ("Photos of your workshop and team"), through Webforge\'s own Add files dialog. You never give a path or a web address, and nothing is downloaded: the person chooses the files on their computer, or adds none. Answers with the id, file name and kind of each one added, which updateFields takes as { "mediaId": id }. Choosing takes a person minutes: if they are still at it after about 45 seconds, it answers waiting with a requestId. Then ask mediaStatus with it a little later, rather than asking requestMedia again.',
+    description: `Asks the person to add pictures or files to the site's Media, with your reason ("Photos of your workshop and team"), through Webforge's own Add files dialog. You never give a path or a web address, and nothing is downloaded: the person chooses the files on their computer, or adds none. Answers with the id, file name and kind of each one added, which updateFields takes as { "mediaId": id }. Choosing takes a person minutes: if they are still at it after ${WAITS}, it answers waiting with a requestId. Then ask mediaStatus with it a little later, rather than asking requestMedia again.`,
     answeredBy: "window",
     savesVersionFirst: true,
     // It asks for files: the assistant works with the site's Media as it is.
@@ -126,8 +128,7 @@ export const MAIN_TOOLS = [
     name: "createSiteFromBrief",
     kind: "command",
     input: siteBriefSchema,
-    description:
-      "Starts a new site from a brief: Webforge opens its quick start filled in with these answers, for the person to check, change and create, or not. Nothing is made until they click Create; the site open now is saved first. Answers once they have: done, with the new site open, or declined. If they haven't decided within about 45 seconds, it answers waiting with a briefId: ask briefStatus with it a little later. Give the business type, and its kind, name and what it does; a template, theme, brand colour (or palette), pages to leave out and recipes to add, and contact details, each optional, as siteChoices lists them. Refused in Content mode.",
+    description: `Starts a new site from a brief: Webforge opens its quick start filled in with these answers, for the person to check, change and create, or not. Nothing is made until they click Create; the site open now is saved first. Answers once they have: done, with the new site open, or declined. If they haven't decided within ${WAITS}, it answers waiting with a briefId: ask briefStatus with it a little later. Give the business type, and its kind, name and what it does; a template, theme, brand colour (or palette), pages to leave out and recipes to add, and contact details, each optional, as siteChoices lists them. Refused in Content mode.`,
     answeredBy: "main",
     savesVersionFirst: false,
     forAssistant: false,
@@ -146,8 +147,7 @@ export const MAIN_TOOLS = [
     name: "changeStatus",
     kind: "query",
     input: changeStatusSchema,
-    description:
-      "What became of a change that answered waiting with a changeId: a plan, or any command whose question the person hadn't answered within about 45 seconds. Waiting still (the question is open in Webforge, however long the person takes), done (made, as the command answers), declined, or not-found if the site closed or the window reloaded first, so nothing changed. Takes its changeId; an app reads only its own changes, each outcome for half an hour. Ask it rather than sending the change again: one sent again while it waits is never made twice.",
+    description: `What became of a change that answered waiting with a changeId: a plan, or any command whose question the person hadn't answered within ${WAITS}. Waiting still (the question is open in Webforge, however long the person takes), done (made, as the command answers), declined, or not-found if the site closed or the window reloaded first, so nothing changed. Takes its changeId; an app reads only its own changes, each outcome for half an hour. Ask it rather than sending the change again: one sent again while it waits is never made twice.`,
     answeredBy: "main",
     savesVersionFirst: false,
     forAssistant: false,

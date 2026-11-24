@@ -603,6 +603,27 @@ describe("the command API's commands (4.8)", () => {
     expect(history.document.getState().theme.looks?.Heading).toEqual({});
   });
 
+  it("replaces a look's value per screen size whole, as one value (#1384)", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const padding = (value: unknown) => ({ looks: { Section: { lookPadding: value } } });
+    const lookPadding = () => history.document.getState().theme.looks?.Section?.lookPadding;
+
+    const sizes = { $responsive: { desktop: "lg", tablet: "md", mobile: "sm" } };
+    expect((await api.run("setThemeTokens", { tokens: padding(sizes) }, app)).status).toBe("done");
+    // Desktop's alone: the phone and tablet sizes before it go, as they would from the field.
+    const desktop = { $responsive: { desktop: "xl" } };
+    expect((await api.run("setThemeTokens", { tokens: padding(desktop) }, app)).status).toBe(
+      "done",
+    );
+    expect(lookPadding()).toEqual(desktop);
+    // One value for every screen replaces it too, and a value per screen replaces one value.
+    expect((await api.run("setThemeTokens", { tokens: padding("md") }, app)).status).toBe("done");
+    expect(lookPadding()).toBe("md");
+    expect((await api.run("setThemeTokens", { tokens: padding(sizes) }, app)).status).toBe("done");
+    expect(lookPadding()).toEqual(sizes);
+  });
+
   it("names what's missing in an app's refusal, never the editor's form words (#1369)", async () => {
     // The renderer words every schema's problems for its forms ("Fill this in.").
     z.config({ customError: (issue) => (issue.input === undefined ? "Fill this in." : undefined) });

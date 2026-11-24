@@ -6,7 +6,7 @@ import { t } from "@webforge/i18n";
 import { TEMPLATE_IDS } from "@webforge/templates";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MAIN_TOOLS, WINDOW_TOOLS } from "../shared/ai-tools.js";
-import type { AiResponse } from "../shared/ipc/ai.js";
+import { type AiResponse, ANSWER_WITHIN_MS } from "../shared/ipc/ai.js";
 import { MCP_HOST, MCP_PATH } from "./mcp-address.js";
 import { type McpListener, startMcpListener } from "./mcp-listener.js";
 import { createAssistantMcpServer, createMcpServer, type McpApp } from "./mcp-server.js";
@@ -126,6 +126,17 @@ describe("the MCP server (4.9)", () => {
     });
     expect(http.tools).toEqual(memory.tools);
     expect(memory.tools[0]?.inputSchema).toEqual(AI_TOOLS.map(toMcpTool)[0]?.inputSchema);
+  });
+
+  it("names how long each tool that answers waiting waits, as it does (#1384)", async () => {
+    const tools = (await (await inMemory()).listTools()).tools;
+    const waits = `about ${ANSWER_WITHIN_MS / 1000} seconds`;
+    // `plan`'s words are written in the commands package, which can't read the time.
+    for (const name of ["plan", "requestMedia", "createSiteFromBrief", "changeStatus"]) {
+      expect(tools.find((tool) => tool.name === name)?.description).toContain(waits);
+    }
+    // Well within the 60 s an MCP client waits by default, so it learns the id before it gives up.
+    expect(ANSWER_WITHIN_MS).toBeLessThanOrEqual(30_000);
   });
 
   it("lists the same tools, word for word, as before they were one definition (#981)", async () => {

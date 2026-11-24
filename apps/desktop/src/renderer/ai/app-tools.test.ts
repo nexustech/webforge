@@ -1,5 +1,6 @@
 import type { ImageMeta, MediaId, SiteDoc } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { starterSite } from "../../shared/starter-site.js";
 import { createAppTools, openPreviewFor, PREVIEW_AGAIN_MS } from "./app-tools.js";
 
@@ -251,6 +252,16 @@ describe("a picture's main colours for an AI app (#1373)", () => {
     expect((await ask({ mediaId: "constructor" })).status).toBe("not-found");
     expect((await ask({ mediaId: "doc" })).status).toBe("invalid");
     expect((await ask({})).status).toBe("invalid");
+    // In the app's words, never the window's form words (#1369, #1384).
+    z.config({ customError: (issue) => (issue.input === undefined ? "Fill this in." : undefined) });
+    try {
+      const missing = await ask({});
+      const message = "message" in missing ? missing.message : undefined;
+      expect(message).toContain("Missing: give a value here (expected string)");
+      expect(message).not.toContain("Fill this in.");
+    } finally {
+      z.config({ customError: undefined });
+    }
     readPixels.mockRejectedValueOnce(new Error("The image didn't load"));
     expect((await ask({ mediaId: "bare" })).status).toBe("refused");
     // One that couldn't be read is read again next time.

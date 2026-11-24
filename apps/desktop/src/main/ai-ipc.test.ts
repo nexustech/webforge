@@ -1,7 +1,7 @@
 import { type MessageKey, t } from "@webforge/i18n";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AiRequest } from "../shared/ipc/ai.js";
+import { type AiRequest, ANSWER_WITHIN_MS } from "../shared/ipc/ai.js";
 import { PREVIEW_OPEN_WAIT_MS } from "../shared/ipc/preview.js";
 import { type AiWindow, exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
 
@@ -43,7 +43,7 @@ function bridge(options: { trusted?: boolean; window?: AiWindow | undefined } = 
             ? undefined
             : "stale-session",
     },
-    { queryMs: 1_000, commandMs: 2_000, answerWithinMs: 45_000, keepMs: 30 * 60_000 },
+    { queryMs: 1_000, commandMs: 2_000, answerWithinMs: ANSWER_WITHIN_MS, keepMs: 30 * 60_000 },
   );
   /** The window starts loading a page: a reload, or only a part of the same one. */
   const load = (isSameDocument = false) => {
@@ -295,7 +295,7 @@ describe("registerAiHandlers", () => {
     await invoke("ai:listening", SESSION, true);
     const command = ai.ask(plan, CLAUDE);
     await invoke("ai:asking", 1);
-    await vi.advanceTimersByTimeAsync(45_000);
+    await vi.advanceTimersByTimeAsync(ANSWER_WITHIN_MS);
     expect((await command).status).toBe("waiting");
     sent.length = 0;
     // The app's connection closing gives up on nothing: it has the change's id.
