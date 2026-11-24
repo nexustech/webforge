@@ -256,8 +256,9 @@ describe("a picture's main colours for an AI app (#1373)", () => {
     z.config({ customError: (issue) => (issue.input === undefined ? "Fill this in." : undefined) });
     try {
       const missing = await ask({});
-      expect(missing.message).toContain("Missing: give a value here (expected string)");
-      expect(missing.message).not.toContain("Fill this in.");
+      const message = "message" in missing ? missing.message : undefined;
+      expect(message).toContain("Missing: give a value here (expected string)");
+      expect(message).not.toContain("Fill this in.");
     } finally {
       z.config({ customError: undefined });
     }
