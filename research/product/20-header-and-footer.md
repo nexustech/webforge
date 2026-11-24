@@ -1,6 +1,6 @@
 # The Header and Footer: what they can hold
 
-**Status:** ✅ Decided 2026-11-20 ([§5](#5-decisions)): HF-1, HF-2 and HF-4 are adopted (6 days); the other four are not taken for now. Planned as PH5-5, before v1.0: 5.37–5.39 ([#1236](https://github.com/nexustech/webforge/issues/1236)–[#1238](https://github.com/nexustech/webforge/issues/1238)).
+**Status:** ✅ Decided 2026-11-20 ([§5](#5-decisions)): HF-1, HF-2 and HF-4 are adopted (6 days), and on 23 Nov HF-5, HF-8 and HF-9; HF-3, HF-6 and HF-7 are not taken for now. Planned as PH5-5, before v1.0: 5.37–5.39 ([#1236](https://github.com/nexustech/webforge/issues/1236)–[#1238](https://github.com/nexustech/webforge/issues/1238)). **24 Nov 2026:** HF-10, a content width for the Header and Footer, is proposed ([§4](#added-on-24-nov-2026-the-contents-width)), awaiting the product owner.
 
 **Date:** 2026-11-20
 
@@ -75,6 +75,22 @@ Sizes are rough ideal days.
 **Not proposed:** any element in the Header (see §3); a different Header for one page (hiding covers the need; a landing page can hide both); a search box (no site search yet); a language switcher (comes with sites in several languages, CC-2, v1.1); a light/dark switch (comes with dark mode for visitors, 6.11).
 
 **What changes if adopted:** the Header's and Footer's fields, with a format migration each (HF-2, HF-4); the templates, which would use the new parts; the catalogue data for AI apps; and the help page.
+
+### Added on 24 Nov 2026: the content's width
+
+**The question,** from the product owner: can the Header and Footer set a width for their content, as sections can?
+
+**What we have.** No. Each section has a **Content width** (3.21): _Narrow_, _Medium_, _Wide_ or _Full_, at most 768, 896 or 1152 px, or the page's width less the padding, with its background across the page's whole width. The Announcement bar and Contact buttons, which are also shared by every page, have the same field (_Full_ by default). The Header and Footer have no such field: their content spans the page's width less their padding, 16 px each side for the Header and 32 px for the Footer. On a 1920 px window, below sections at _Wide_, the Header's logo and the Footer's first column sit 350 to 370 px to the left of everything under them, and the menu and the last column as far to the right. On a laptop's window it hardly shows; on a large screen the site looks unfinished.
+
+| #         | Proposal                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Why                                                                                 | Size |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---- |
+| **HF-10** | **Content width on the Header and the Footer,** the field sections have, with the same four choices, each set on its own. The background, the bar's style when scrolling and a sticky Header still span the page's width; on a phone nothing changes. A new site and every template start both at _Wide_, the widest capped width, so they line up with the widest content below them. Both default to _Full_, so a site saved before keeps it with no migration, as sections kept their widths in 3.21, and nothing moves until its owner changes it | The Header and Footer line up with the page between them, the way designed sites do | 2    |
+
+**About the size:** the field is the one sections share, exported from `frame.tsx` to the Header and Footer, which aren't sections. Most of the work is in the HTML: the `<header>` is itself the bar and the `<footer>` itself the grid, so each gains an inner wrapper that holds the width. The Header's _Shrink_ style moves onto that wrapper, while the phone menu stays placed against the `<header>`. Then the Header's three layouts and the Footer's two, with and without columns, are drawn inside it, and the E2E tests that find the Footer's parts follow. Last come the templates, set to _Wide_, with their thumbnails and screenshots, the catalogue data for AI apps and the help page [Header and Footer](../../docs/help/header-and-footer.md). An AI app can set it with `updateFields` once it's a field.
+
+**Recommended:** HF-10 as proposed. The one choice left to the product owner is what a site saved before gets: _Full_ (proposed: nothing moves when it opens, and its owner changes it if they want) or _Wide_ (it lines up at once, through a site format migration, but a published site looks different the next time it's published, without its owner having changed anything).
+
+**Not proposed:** one width for the whole site, in the theme, that every section, the Header and the Footer follow. It would change every section's default, which differ on purpose (a text section reads better _Narrow_, a gallery _Wide_), and it's about three days. Nor a _boxed_ page, a fixed-width column with plain space either side, where no background reaches the window's edges: no template looks like that, and none of our audience has asked for it. Competitors weren't checked for this question.
 
 ## 5. Decisions
 
