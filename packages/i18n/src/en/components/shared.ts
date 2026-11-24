@@ -12,10 +12,11 @@ export const shared = {
   "field.sectionColors.inverse": "Reversed",
   "field.sectionColors.help":
     "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
-  // How wide a section's content is at most (3.21, PF-4); its background still spans the page.
+  // How wide a section's content is at most (3.21, PF-4), or the Header's or Footer's (HF-10); its
+  // background still spans the page. It doesn't say "section": the Header and Footer have it too.
   "field.contentWidth": "Content width",
   "field.contentWidth.help":
-    "How wide the section's content can be. Its background still goes across the page.",
+    "How wide the content inside can be. Its background still goes across the page.",
   "field.contentWidth.narrow": "Narrow",
   "field.contentWidth.medium": "Medium",
   "field.contentWidth.wide": "Wide",

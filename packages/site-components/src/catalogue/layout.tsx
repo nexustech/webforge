@@ -194,11 +194,11 @@ const HEADER_BAR_CLASSES: Readonly<Record<(typeof HEADER_LAYOUTS)[number], strin
 /**
  * A sticky header's *Shrink* style at a capped content width (HF-10): the `<header>` keeps its
  * place, background and shadow, and the bar inside it, which holds its height, shrinks once the
- * page has scrolled.
+ * page has scrolled. `data-scrolled` stays on the `<header>`, a `group` the bar's variants follow.
  */
-const SHRINK_HEADER = "sticky top-0 bg-base-100 shadow-sm";
+const SHRINK_HEADER = "group sticky top-0 bg-base-100 shadow-sm";
 const SHRINK_BAR =
-  "transition-[min-height,padding] in-data-scrolled:min-h-12 in-data-scrolled:py-1";
+  "transition-[min-height,padding] group-data-scrolled:min-h-12 group-data-scrolled:py-1";
 
 /**
  * The shared Header (C5): the site name or its logo (HF-1), and the navigation, from the site's

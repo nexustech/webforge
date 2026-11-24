@@ -95,6 +95,8 @@ describe("a section's content width (3.21, PF-4)", () => {
       const def = siteLibrary.components[type];
       expect(def?.fields.contentWidth, type).toBe(siteLibrary.components.Hero?.fields.contentWidth);
       expect(def?.defaults.contentWidth, type).toBe("full");
+      // Its help reads right on them too: it doesn't speak of a section.
+      expect(def?.fields.contentWidth?.help, type).not.toMatch(/section/i);
     }
     // A Section's Full width toggle is now its Full.
     expect(siteLibrary.components.Section?.fields).not.toHaveProperty("fullWidth");
@@ -374,11 +376,11 @@ describe("the Header's and the Footer's content width (HF-10)", () => {
       expect(html, scrollStyle).toMatch(
         /^<header class="site-header relative z-30 px-4 sticky top-0 [^"]*" data-wf-sticky="">/,
       );
-      expect(html, scrollStyle).not.toContain("in-data-scrolled");
+      expect(html, scrollStyle).not.toContain("group-data-scrolled");
     }
     const shrink = header({ sticky: true, scrollStyle: "shrink", contentWidth: "wide" });
     expect(shrink).toMatch(
-      /^<header class="site-header relative z-30 px-4 sticky top-0 bg-base-100 shadow-sm \[:root:has\(&amp;\)\]:scroll-pt-20" data-wf-sticky=""><div class="site-header-bar mx-auto w-full max-w-6xl navbar gap-2 px-0 transition-\[min-height,padding\] in-data-scrolled:min-h-12 in-data-scrolled:py-1">/,
+      /^<header class="site-header relative z-30 px-4 group sticky top-0 bg-base-100 shadow-sm \[:root:has\(&amp;\)\]:scroll-pt-20" data-wf-sticky=""><div class="site-header-bar mx-auto w-full max-w-6xl navbar gap-2 px-0 transition-\[min-height,padding\] group-data-scrolled:min-h-12 group-data-scrolled:py-1">/,
     );
     // At Full, on the <header> as before.
     expect(header({ sticky: true, scrollStyle: "shrink" })).toContain(

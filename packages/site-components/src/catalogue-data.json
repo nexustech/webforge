@@ -1243,7 +1243,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -1364,7 +1364,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -1522,7 +1522,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -3299,7 +3299,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -3490,7 +3490,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -3699,7 +3699,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -3929,7 +3929,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -4153,7 +4153,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -4425,7 +4425,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -4786,7 +4786,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -5016,7 +5016,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -5431,7 +5431,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -5709,7 +5709,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -5956,7 +5956,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -6524,7 +6524,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -6896,7 +6896,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -7278,7 +7278,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -7661,7 +7661,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -8353,7 +8353,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -8627,7 +8627,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -8935,7 +8935,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -9176,7 +9176,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -9433,7 +9433,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -9594,7 +9594,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
@@ -10011,7 +10011,7 @@
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
-          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "help": "How wide the content inside can be. Its background still goes across the page.",
           "group": "style",
           "options": [
             {
