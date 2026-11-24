@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n/components";
 import { Window } from "happy-dom";
 import { afterEach, describe, expect, it } from "vitest";
+import { CARD_ROWS } from "../card-rows.js";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
 import type { RenderContext, ResolvedImage } from "../schema.js";
@@ -76,9 +77,9 @@ describe("the Team section", () => {
     expect(cards.querySelector(".site-team-member img")?.className).toContain("aspect-square");
     expect(round.querySelector(".site-team-member")?.className).toContain("text-center");
     expect(round.querySelector(".site-team-member img")?.className).toContain("rounded-full");
-    expect(round.querySelector(".grid")?.className).toContain("md:grid-cols-4");
+    expect(round.querySelector(".flex-wrap")?.className).toBe(CARD_ROWS.twoFourGap10);
     expect(list.querySelector(".site-team-member")?.className).toContain("items-start");
-    expect(list.querySelector(".grid")?.className).toContain("md:grid-cols-2");
+    expect(list.querySelector(".flex-wrap")?.className).toBe(CARD_ROWS.twoGap8);
   });
 
   it("shows a photo with its alt text here, else Media's, and nothing for one gone", () => {

@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n/components";
 import { createContext, type ReactNode, useContext } from "react";
+import { CARD_ROWS } from "../card-rows.js";
 import { defineComponent } from "../define.js";
 import { contentWidthClass, defineSection } from "../frame.js";
 import { LucideIcon } from "../icons.js";
@@ -12,9 +13,9 @@ type FeaturesLayout = (typeof FEATURES_LAYOUTS)[number];
 
 /** The grid each layout lays its features out in, the slot's own element (docs/components.md). */
 const GRID_CLASS = {
-  cards: "grid gap-6 md:grid-cols-3",
-  centred: "grid gap-10 md:grid-cols-3",
-  list: "grid gap-8 md:grid-cols-2",
+  cards: CARD_ROWS.threeGap6,
+  centred: CARD_ROWS.threeGap10,
+  list: CARD_ROWS.twoGap8,
 } as const satisfies Record<FeaturesLayout, string>;
 
 /** The layout of the Features section a feature is in, and its cards' hover effect's classes. */
