@@ -6,6 +6,7 @@ export { APP_PARSE } from "./app-errors.js";
 export { CATALOGUE_RESOURCE, catalogueResourceText } from "./catalogue.js";
 export type { CommandName } from "./commands.js";
 export { COMMANDS } from "./commands.js";
+export { fieldInLabel } from "./field-label.js";
 export type { Location } from "./locations.js";
 export type { QueryName } from "./queries.js";
 export { QUERIES } from "./queries.js";

@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n/components";
 import { Window } from "happy-dom";
 import { afterEach, describe, expect, it } from "vitest";
+import { CARD_ROWS } from "../card-rows.js";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
 import { siteLibrary } from "./index.js";
@@ -48,11 +49,12 @@ describe("the Features section", () => {
     const list = page(render({ variant: "list" }));
 
     expect(cards.querySelector(".site-feature")?.className).toContain("bg-base-200");
-    expect(cards.querySelector(".grid")?.className).toContain("md:grid-cols-3");
+    // Rows of three that centre a last row not full (#1372).
+    expect(cards.querySelector(".flex-wrap")?.className).toBe(CARD_ROWS.threeGap6);
     expect(centred.querySelector(".site-feature")?.className).toContain("text-center");
     expect(centred.querySelector(".site-feature .rounded-full svg")).not.toBeNull();
     expect(list.querySelector(".site-feature")?.className).toContain("flex items-start");
-    expect(list.querySelector(".grid")?.className).toContain("md:grid-cols-2");
+    expect(list.querySelector(".flex-wrap")?.className).toBe(CARD_ROWS.twoGap8);
   });
 
   it("takes the first layout for one it doesn't have", () => {

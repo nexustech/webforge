@@ -232,6 +232,7 @@ export {
   FILE_MIME_TYPES,
   focalPointSchema,
   IMAGE_MIME_TYPES,
+  imageChangeOf,
   imageValueSchema,
   isImageMeta,
   mediaItem,

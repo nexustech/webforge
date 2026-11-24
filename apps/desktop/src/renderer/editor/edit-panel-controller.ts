@@ -339,7 +339,8 @@ export function createEditPanelController(
     const codeBefore = live.storedOr(name, live.node.props[name]);
     session.edit(
       field.kind === "text" ? "text" : "props",
-      live.labelOf(name, field, at),
+      // Named by what changed: "Changed Image alt text", not "Changed Image image" (#1370).
+      live.labelOf(name, field, at, false, { from: codeBefore, to: value }),
       overlay === undefined
         ? recipe
         : (draft) => {

@@ -4,12 +4,12 @@ id: undo-and-history
 title: Undo and Undo History
 summary: Take back any change, or jump back several steps at once.
 related: [version-history, saving-and-backups, editing-on-the-page]
-updated: 2026-11-20
+updated: 2026-11-24
 ---
 
 # Undo and Undo History
 
-Every change you make to your site can be undone: text, pictures, pages, the theme, Site Settings. Each step has a name that says what changed, such as "Changed Heading size" or "Deleted page 'Events'".
+Every change you make to your site can be undone: text, pictures, pages, the theme, Site Settings. Each step has a name that says what changed, such as "Changed Heading size" or "Deleted page 'Events'". A change to a picture's alt text is named for it, such as "Changed Image alt text", and a new picture in an Image as "Changed Image picture".
 
 - **Undo:** the **Undo** button in the title bar, or Ctrl+Z (Cmd+Z on a Mac). Hover over the button to see which step it will undo, such as "Undo Changed Heading size".
 - **Redo:** the **Redo** button, or Ctrl+Shift+Z or Ctrl+Y (Cmd+Shift+Z or Cmd+Y on a Mac). It names its step too.

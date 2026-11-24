@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n/components";
 import type { ImageValue } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
+import { CARD_ROWS } from "../card-rows.js";
 import { defineComponent } from "../define.js";
 import { contentWidthClass, defineSection } from "../frame.js";
 import { LucideIcon } from "../icons.js";
@@ -15,9 +16,9 @@ type TestimonialsLayout = (typeof TESTIMONIALS_LAYOUTS)[number];
 
 /** The grid each layout lays its testimonials out in, the slot's own element. */
 const GRID_CLASS = {
-  cards: "grid gap-6 md:grid-cols-3",
+  cards: CARD_ROWS.threeGap6,
   large: "mx-auto grid max-w-3xl gap-16",
-  photos: "grid gap-10 md:grid-cols-2",
+  photos: CARD_ROWS.twoGap10,
 } as const satisfies Record<TestimonialsLayout, string>;
 
 /** The layout of the Testimonials section a testimonial is in, and its cards' hover effect's classes. */

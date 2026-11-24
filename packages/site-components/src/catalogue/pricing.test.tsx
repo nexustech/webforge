@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n/components";
 import { Window } from "happy-dom";
 import { afterEach, describe, expect, it } from "vitest";
+import { CARD_ROWS } from "../card-rows.js";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
 import { siteLibrary } from "./index.js";
@@ -79,7 +80,8 @@ describe("the Pricing section", () => {
     const cards = page(render({ variant: "cards", items: [plan("one")] }));
     const list = page(render({ variant: "list", items: [plan("one")] }));
 
-    expect(cards.querySelector(".grid")?.className).toContain("md:grid-cols-3");
+    // One plan centred, a column wide, as with three (#1372).
+    expect(cards.querySelector(".flex-wrap")?.className).toBe(CARD_ROWS.threeGap6);
     expect(cards.querySelector(".site-pricing-plan .text-4xl")?.textContent).toBe("£10");
     expect(list.querySelector(".grid")?.className).toContain("max-w-3xl");
     expect(list.querySelector(".site-pricing-plan")?.className).toContain("sm:flex-row");

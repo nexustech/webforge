@@ -1076,7 +1076,8 @@ describe("EditPanelHost", () => {
       expect(labels()).toEqual([
         "Added image 'shop.jpg'",
         "Changed Hero image",
-        "Changed Hero image",
+        // Named by what changed (#1370).
+        "Changed Hero alt text",
       ]);
       act(() => {
         session.history.undo();
