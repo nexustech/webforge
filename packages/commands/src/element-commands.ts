@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import type { SiteDoc } from "@webforge/model";
+import { clearsDescription, type SiteDoc } from "@webforge/model";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { z } from "zod";
 import { usableComponents } from "./catalogue.js";
@@ -30,6 +30,15 @@ import {
 } from "./slot-items.js";
 
 /** The commands that add, change, move and remove sections and elements (F-AI-1). */
+/**
+ * What an app is told when a new picture cleared a placement's alt text (#1371): it described the
+ * old picture, so the new one needs its own, from the person or set with the field.
+ */
+function clearedNote(fields: readonly string[]): string {
+  const which = fields.map((name) => `"${name}"`).join(", ");
+  return `The new picture in ${which} has no alt text: what described the old picture was cleared. Ask the person to describe the new one, or set it with updateFields as { mediaId, alt }.`;
+}
+
 export const ELEMENT_COMMANDS = {
   /** Adds a section to a page, or an element to a slot, with `values` over its defaults. */
   addNode: {
@@ -103,7 +112,7 @@ export const ELEMENT_COMMANDS = {
   },
   /** Sets fields of an element: its title, a select's option, an image, a link… */
   updateFields: {
-    description: `Sets fields of an element, by the names and value schemas fields gives. One undo step. A change to the shared Header, Footer or a shared section, or to where visitors' payments or details go, waits for the person to allow it. ${EXAMPLES_FIELD}`,
+    description: `Sets fields of an element, by the names and value schemas fields gives. One undo step. A new picture clears the alt text that described the old one: give alt with the new mediaId, or the answer's note asks for it. A change to the shared Header, Footer or a shared section, or to where visitors' payments or details go, waits for the person to allow it. ${EXAMPLES_FIELD}`,
     input: z.strictObject({ location: locationSchema, nodeId, values, examples: examplesInput }),
     summarize(summary: PlanSummary) {
       summary.elements.changed += 1;
@@ -131,7 +140,12 @@ export const ELEMENT_COMMANDS = {
       const { location, nodeId: id } = input;
       // The facts the site gives as it is, to tell what the text made up (#1228).
       const known = knownFacts(site);
+      // A new picture's placement loses the alt text that described the old one (#1371).
+      const cleared = names.filter((name) =>
+        clearsDescription(placed.node.props[name], values[name], site.media),
+      );
       return {
+        ...(cleared.length === 0 ? {} : { note: clearedNote(cleared) }),
         action:
           fields.length === 1 && only !== undefined
             ? t("history.editedField", { item: component.label, field: only.label })

@@ -16,6 +16,8 @@ export type Plan = {
   readonly id?: string;
   /** The pages it deletes: the window shows the Home page instead, if it showed one of them. */
   readonly removesPages?: readonly PageId[];
+  /** Something the app should pass on to the person: a picture's cleared alt text (#1371). */
+  readonly note?: string;
 };
 
 /**

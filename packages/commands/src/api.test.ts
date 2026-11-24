@@ -1,4 +1,5 @@
 import {
+  type MediaId,
   type NodeDoc,
   type PageId,
   richTextPageLinks,
@@ -990,6 +991,46 @@ describe("the command API's moves and fields (4.8)", () => {
     ).toBe("not-found");
     expect((await set({ buttonLink: { kind: "page", pageId: about } })).status).toBe("done");
     expect(history.state.getState().entries).toHaveLength(1);
+  });
+
+  it("clears a replaced picture's alt text and says so, asking for the new one's (#1371)", async () => {
+    const picture = (id: string, alt: string) =>
+      ({
+        id: id as MediaId,
+        kind: "image",
+        hash: "a".repeat(64),
+        name: id,
+        fileName: `${id}.png`,
+        mimeType: "image/png",
+        width: 400,
+        height: 100,
+        alt,
+      }) as const;
+    const charcoal = picture("media-charcoal", "");
+    const white = picture("media-white", "");
+    const { history, host } = setup(true, (doc) => {
+      doc.media[charcoal.id] = charcoal;
+      doc.media[white.id] = white;
+    });
+    const api = createCommandApi(host);
+    const location = home(history);
+    const set = (values: object) =>
+      api.run("updateFields", { location, nodeId: "hero", values }, app);
+    const image = () => content(history).find((node) => node.props.id === "hero")?.props.image;
+
+    expect(await set({ image: { mediaId: charcoal.id, alt: "Webforge" } })).not.toHaveProperty(
+      "note",
+    );
+    const replaced = await set({ image: { mediaId: white.id } });
+    expect(image()).toEqual({ mediaId: white.id });
+    expect(replaced).toMatchObject({
+      status: "done",
+      note: expect.stringContaining('The new picture in "image" has no alt text'),
+    });
+    // Given with the new picture, its alt text clears nothing.
+    expect(
+      await set({ image: { mediaId: charcoal.id, alt: "Webforge, in charcoal" } }),
+    ).not.toHaveProperty("note");
   });
 
   it("names a change to several fields after the element, and leaves Custom Code alone", async () => {

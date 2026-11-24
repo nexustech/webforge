@@ -132,6 +132,8 @@ export type CommandResult =
       readonly entryId?: string;
       /** The page, and the element on it, that it changed, for the assistant's _Show_ (6.9b). */
       readonly target?: CommandTarget;
+      /** What the app should tell the person, or ask them: a picture's cleared alt text (#1371). */
+      readonly note?: string;
     }
   | { readonly status: Refusal; readonly message: string };
 

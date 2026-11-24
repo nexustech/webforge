@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { MediaId } from "./ids.js";
 import {
   altTextFor,
+  clearsDescription,
   cropForAspect,
   type ImageMeta,
   imageValueSchema,
@@ -68,6 +69,41 @@ describe("altTextFor", () => {
     expect(altTextFor({ mediaId: meta.id, alt: "Inside" }, meta)).toBe("Inside");
     expect(altTextFor({ mediaId: meta.id, alt: "" }, meta)).toBe("");
     expect(altTextFor({ mediaId: meta.id }, undefined)).toBe("");
+  });
+});
+
+describe("clearsDescription (#1371)", () => {
+  const plain = { ...image, id: "plain", alt: "" };
+  const media = { shop: image, plain, menu: pdf } as unknown as Record<MediaId, MediaMeta>;
+
+  it("clears the placement's own alt text with a new picture: it described the old one", () => {
+    expect(
+      clearsDescription({ mediaId: "plain", alt: "Webforge" }, { mediaId: "shop" }, media),
+    ).toBe(true);
+    expect(clearsDescription({ mediaId: "shop", alt: "Inside" }, { mediaId: "plain" }, media)).toBe(
+      true,
+    );
+  });
+
+  it("says a description went where the new picture has none in Media", () => {
+    expect(clearsDescription({ mediaId: "shop" }, { mediaId: "plain" }, media)).toBe(true);
+    // The new picture's own alt text from Media describes it.
+    expect(clearsDescription({ mediaId: "plain" }, { mediaId: "shop" }, media)).toBe(false);
+    // There was none to clear.
+    expect(clearsDescription({ mediaId: "plain", alt: "" }, { mediaId: "plain2" }, media)).toBe(
+      false,
+    );
+  });
+
+  it("clears nothing when the picture stays, the new value has alt text, or isn't a picture", () => {
+    expect(clearsDescription({ mediaId: "shop", alt: "A" }, { mediaId: "shop" }, media)).toBe(
+      false,
+    );
+    expect(
+      clearsDescription({ mediaId: "shop", alt: "A" }, { mediaId: "plain", alt: "B" }, media),
+    ).toBe(false);
+    expect(clearsDescription({ mediaId: "shop", alt: "A" }, undefined, media)).toBe(false);
+    expect(clearsDescription(undefined, { mediaId: "plain" }, media)).toBe(false);
   });
 });
 

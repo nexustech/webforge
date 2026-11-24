@@ -181,6 +181,7 @@ export function createCommandApi(host: CommandHost): CommandApi {
         ...(plan.id === undefined ? {} : { id: plan.id }),
         ...(entryId === undefined ? {} : { entryId }),
         ...(target === undefined ? {} : { target }),
+        ...(plan.note === undefined ? {} : { note: plan.note }),
       };
     },
   };

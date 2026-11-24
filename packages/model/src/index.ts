@@ -225,6 +225,7 @@ export type {
 } from "./media.js";
 export {
   altTextFor,
+  clearsDescription,
   cropForAspect,
   cropSchema,
   DOCUMENT_EXTENSIONS,

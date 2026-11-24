@@ -1084,6 +1084,42 @@ describe("EditPanelHost", () => {
       expect(hero()?.image).toEqual({ mediaId: "shop" });
     });
 
+    it("says when a new picture cleared the alt text that described the old one (#1371)", async () => {
+      const door = { ...shop, id: "door" as MediaId, name: "door", fileName: "door.jpg", alt: "" };
+      const { session, user } = setup("hero", (session) => ({
+        image: imageFieldRenderer({
+          session,
+          media: { choose: async () => ({ status: "canceled" }) },
+          imageUrl: (item) => `test://${item.name}`,
+        }),
+      }));
+      act(() => addMedia(session, [shop, door]));
+      const hero = () => currentPage(session)?.doc.content[1]?.props;
+      const cleared = /The old picture's alt text was cleared/;
+
+      await user.click(screen.getByRole("tab", { name: "Content" }));
+      await user.click(screen.getByRole("button", { name: "Image Choose an Image…" }));
+      await user.dblClick(screen.getByRole("option", { name: "shop.jpg" }));
+      const alt = screen.getByLabelText("Alt text here");
+      await user.type(alt, "Fresh");
+      fireEvent.blur(alt);
+      expect(screen.queryByText(cleared)).toBeNull();
+
+      await user.click(screen.getByRole("button", { name: "Image Change Image…" }));
+      await user.dblClick(screen.getByRole("option", { name: "door.jpg" }));
+
+      expect(hero()?.image).toEqual({ mediaId: "door" });
+      const status = screen.getByRole("status");
+      expect(status.textContent).toMatch(cleared);
+      // Read with the alt text field, as its description.
+      expect(screen.getByLabelText("Alt text here").getAttribute("aria-describedby")).toContain(
+        status.id,
+      );
+      // Described, it says no more.
+      await user.type(screen.getByLabelText("Alt text here"), "Our front door");
+      expect(screen.queryByText(cleared)).toBeNull();
+    });
+
     it("places a section's first background image with the overlay the theme needs, as one step (ST-9)", async () => {
       const { session, labels, user } = setup("faq", (session) => ({
         image: imageFieldRenderer({
