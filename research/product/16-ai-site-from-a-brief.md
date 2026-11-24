@@ -201,6 +201,8 @@ Decided by the product owner on 7 Nov 2026, each as proposed. 4.12 is split into
 
 **AIB-6, amended 7 Nov 2026 (security review 2, S26, #793):** a plan's one version is the one the person's **Allow** saves, named _Before ‹app›'s changes: ‹title›_. Main no longer saves one before each plan, and the version before an app's first single command is saved once per app per opening of the site, however often it reconnects. Before this, each new connection and each plan, even an invalid one refused before it asked, saved a version, so an app on its own could push the site as it was out of the versions kept. App versions are still pruned like any other version Webforge saves.
 
+**AIB-2, amended 24 Nov 2026 (UA-8, [#1396](https://github.com/nexustech/webforge/issues/1396)):** `updateSettings` may also set or clear the **Logo** and **Site icon**, from pictures already in Media. It always asks, even while an app works without asking, and Content mode refuses it. See [product/19 §5](19-ai-apps-unattended.md#5-decisions).
+
 **Total:** 11.75 days. 4.11 is 3.75 days and 4.12 is 8, which is over 5 days, so it would be split when planned.
 
 ## 7. What it does to the dates
