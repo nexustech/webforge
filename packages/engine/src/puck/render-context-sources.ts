@@ -22,6 +22,8 @@ type Source =
  */
 export const RENDER_CONTEXT_SOURCES = {
   navigation: "setNavigation",
+  // Each page's link, which a Footer's Menu links can add (HF-8).
+  pageLinks: "setNavigation",
   link: "editor",
   href: "editor",
   image: "setImages",

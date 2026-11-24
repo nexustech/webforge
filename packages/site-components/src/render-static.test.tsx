@@ -355,6 +355,102 @@ describe("renderNodesToHtml", () => {
     expect(html).not.toContain("Visit us");
   });
 
+  it("leaves the menu's pages out of Menu links, and adds others after them (HF-8)", () => {
+    const footer = (menu: Record<string, unknown>) =>
+      renderNodesToHtml(
+        [
+          {
+            type: "Footer",
+            props: {
+              id: "footer",
+              variant: "columns",
+              columns: [
+                {
+                  type: "FooterColumn",
+                  props: {
+                    id: "links",
+                    content: [{ type: "MenuLinks", props: { id: "menu", ...menu } }],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+        siteLibrary,
+        {
+          ...context,
+          navigation: [
+            {
+              id: "item-home",
+              pageId: "page-home",
+              label: "Home",
+              href: "index.html",
+              current: true,
+            },
+            {
+              id: "item-menu",
+              pageId: "page-menu",
+              label: "Our menu",
+              href: "menu.html",
+              current: false,
+            },
+            { id: "item-map", label: "Find us", href: "https://example.com/map", current: false },
+          ],
+          pageLinks: [
+            {
+              id: "page-home",
+              pageId: "page-home",
+              label: "Home",
+              href: "index.html",
+              current: true,
+            },
+            {
+              id: "page-menu",
+              pageId: "page-menu",
+              label: "Menu",
+              href: "menu.html",
+              current: false,
+            },
+            {
+              id: "page-download",
+              pageId: "page-download",
+              label: "Download",
+              href: "download.html",
+              current: false,
+            },
+            {
+              id: "page-privacy",
+              pageId: "page-privacy",
+              label: "Privacy",
+              href: "privacy.html",
+              current: false,
+            },
+          ],
+        },
+      );
+    const names = (html: string) =>
+      [...html.matchAll(/class="link link-hover"[^>]*>([^<]+)</g)].map((m) => m[1]);
+
+    // As the menu has them, unless it says otherwise.
+    expect(names(footer({}))).toEqual(["Home", "Our menu", "Find us"]);
+    expect(
+      names(
+        footer({ leaveOut: ["page-menu"], add: ["page-privacy", "page-download", "page-home"] }),
+      ),
+    ).toEqual(["Home", "Find us", "Download", "Privacy"]);
+    // A page deleted since is skipped; with nothing left, it draws nothing.
+    expect(names(footer({ add: ["page-gone"] }))).toEqual(["Home", "Our menu", "Find us"]);
+    const empty = renderNodesToHtml(
+      [{ type: "MenuLinks", props: { id: "menu", leaveOut: ["page-home"] } }],
+      siteLibrary,
+      {
+        ...context,
+        navigation: [{ pageId: "page-home", label: "Home", href: "index.html", current: true }],
+      },
+    );
+    expect(empty).toBe("");
+  });
+
   it("draws the Footer's columns of elements side by side, the text first (HF-4, 5.39)", () => {
     const column = (id: string, content: readonly NodeDoc[]) => ({
       type: "FooterColumn",

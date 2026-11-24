@@ -33,6 +33,7 @@ const HOLDING_A_FILE = {
   code: null,
   // A list item's fields are text, choices, toggles, sliders and colours only (`ListItemFieldDef`).
   list: null,
+  pages: null,
 } as const satisfies { readonly [Kind in FieldDef["kind"]]: unknown };
 
 /** A component type of the catalogue's with a field of `kind`, and that field's name. */

@@ -386,10 +386,14 @@ export interface CanvasEngine {
    */
   setSettings(bindings: SiteBindings): void;
   /**
-   * Shows the site's navigation menu in the Header on the canvas (1.21), as the export draws it.
-   * Called again when the menu, the pages or the page shown change; what shows it draws again.
+   * Shows the site's navigation menu in the Header on the canvas (1.21), as the export draws it,
+   * and `pageLinks`, a link to each page, which a Footer's Menu links can add (HF-8). Called again
+   * when the menu, the pages or the page shown change; what shows them draws again.
    */
-  setNavigation(navigation: RenderContext["navigation"]): void;
+  setNavigation(
+    navigation: RenderContext["navigation"],
+    pageLinks?: RenderContext["pageLinks"],
+  ): void;
   setMode(mode: EditorMode): void;
   /** Shows the View menu's options on the canvas (F-ED-25); none until called. */
   setViewOptions(options: ViewOptions): void;

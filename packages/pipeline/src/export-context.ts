@@ -11,6 +11,7 @@ import {
   hrefFor,
   listPathOf,
   navigationFor,
+  pageLinksFor,
   type RenderContext,
   type ResolvedImage,
 } from "@webforge/site-components";
@@ -127,6 +128,21 @@ export function pageRender(
   );
   const context: RenderContext = {
     navigation,
+    // What a Footer's Menu links can add (HF-8).
+    pageLinks: pageLinksFor(
+      {
+        // The snapshot knows "Page not found" by its path, and a post by its item's values.
+        pages: site.pages.map((each) =>
+          each.path === "404"
+            ? { ...each, kind: "not-found" as const }
+            : each.item === undefined
+              ? each
+              : { ...each, kind: "post" as const },
+        ),
+      },
+      page,
+      prefix,
+    ),
     link: (target) => {
       if (EXTERNAL_LINK.test(target)) {
         return target;

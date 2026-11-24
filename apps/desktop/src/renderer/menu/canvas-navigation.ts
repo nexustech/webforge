@@ -1,8 +1,8 @@
 import type { CanvasEngine } from "@webforge/engine";
 import { sameJson } from "@webforge/model";
-import type { NavItem } from "@webforge/site-components";
+import type { NavItem, NavLink } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
-import { canvasNavigation } from "../editor/site-navigation.js";
+import { canvasNavigation, canvasPageLinks } from "../editor/site-navigation.js";
 
 type Unsubscribe = () => void;
 
@@ -17,13 +17,18 @@ export function connectCanvasNavigation(
   session: Pick<EditorSession, "history" | "ui">,
 ): Unsubscribe {
   const { document } = session.history;
-  let shown: readonly NavItem[] | undefined;
+  let shown: { readonly items: readonly NavItem[]; readonly pages: readonly NavLink[] } | undefined;
   const show = () => {
-    const items = canvasNavigation(document.getState(), session.ui.getState().pageId);
-    if (items === undefined) return;
-    if (shown === undefined || !sameJson(items, shown)) {
-      shown = items;
-      engine.setNavigation(items);
+    const site = document.getState();
+    const { pageId } = session.ui.getState();
+    const items = canvasNavigation(site, pageId);
+    // And each page's link, which a Footer's Menu links can add (HF-8).
+    const pages = canvasPageLinks(site, pageId);
+    if (items === undefined || pages === undefined) return;
+    const next = { items, pages };
+    if (shown === undefined || !sameJson(next, shown)) {
+      shown = next;
+      engine.setNavigation(items, pages);
     }
   };
   show();

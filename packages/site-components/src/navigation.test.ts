@@ -5,6 +5,7 @@ import {
   menuLinksToSections,
   type NavigationSite,
   navigationFor,
+  pageLinksFor,
 } from "./navigation.js";
 
 const id = (value: string) => value as MenuItemId;
@@ -85,11 +86,42 @@ function navigation(snapshot: ReturnType<typeof site>, path = "index") {
   return { items: navigationFor(snapshot, shown, prefix, (detail) => broken.push(detail)), broken };
 }
 
+describe("pageLinksFor (HF-8)", () => {
+  it("links every page, those the menu hides too, named as the menu names them, but Page not found and posts", () => {
+    const snapshot = site();
+    const about = snapshot.pages.find((each) => each.path === "about");
+    if (about === undefined) throw new Error("no About");
+    const links = pageLinksFor(
+      {
+        pages: [
+          ...snapshot.pages,
+          {
+            ...about,
+            id: page("missing"),
+            path: "404",
+            title: "Page not found",
+            kind: "not-found",
+          },
+          { ...about, id: page("spring"), path: "blog/spring", title: "Spring", kind: "post" },
+        ],
+      },
+      about,
+      "",
+    );
+    expect(links.map((link) => [link.pageId, link.label, link.href, link.current])).toEqual([
+      ["home", "Home", "index.html", false],
+      ["about", "About us", "about.html", true],
+      ["thanks", "Thank you", "thanks.html", false],
+      ["team", "Our team", "company/team.html", false],
+    ]);
+  });
+});
+
 describe("navigationFor (F-ED-17)", () => {
   it("lists the pages in order without a menu, leaving hidden ones out", () => {
     expect(navigation(site()).items).toEqual([
-      { id: "home", label: "Home", href: "index.html", current: true },
-      { id: "about", label: "About us", href: "about.html", current: false },
+      { id: "home", pageId: "home", label: "Home", href: "index.html", current: true },
+      { id: "about", pageId: "about", label: "About us", href: "about.html", current: false },
     ]);
   });
 
@@ -97,8 +129,8 @@ describe("navigationFor (F-ED-17)", () => {
     const { items } = navigation(site(BAKERY_MENU), "about");
 
     expect(items).toEqual([
-      { id: "home", label: "Home", href: "index.html", current: false },
-      { id: "about", label: "About us", href: "about.html", current: true },
+      { id: "home", pageId: "home", label: "Home", href: "index.html", current: false },
+      { id: "about", pageId: "about", label: "About us", href: "about.html", current: true },
       {
         id: "visit",
         label: "Visit us",
@@ -114,7 +146,15 @@ describe("navigationFor (F-ED-17)", () => {
           },
         ],
       },
-      { id: "order", label: "Order a cake", href: "about.html", current: true, button: true },
+      // A link to a whole page is that page's (HF-8); one to a section of it isn't.
+      {
+        id: "order",
+        pageId: "about",
+        label: "Order a cake",
+        href: "about.html",
+        current: true,
+        button: true,
+      },
     ]);
   });
 
@@ -154,7 +194,9 @@ describe("navigationFor (F-ED-17)", () => {
       "company/team",
     );
 
-    expect(items).toEqual([{ id: "home", label: "Start", href: "../index.html", current: false }]);
+    expect(items).toEqual([
+      { id: "home", pageId: "home", label: "Start", href: "../index.html", current: false },
+    ]);
     expect(broken).toEqual(["deleted"]);
   });
 

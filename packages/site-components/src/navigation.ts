@@ -12,7 +12,13 @@ import type { NavItem, NavLink } from "./schema.js";
 export type NavigationPage = Pick<
   SitePage,
   "id" | "path" | "title" | "navLabel" | "hideFromNavigation"
->;
+> & {
+  /**
+   * What else it is: "Page not found", or a Blog's post (HF-8). Neither is a page a Footer's Menu
+   * links can add, though a menu can still link a post.
+   */
+  readonly kind?: "not-found" | "post" | undefined;
+};
 
 /** What the navigation needs of a site: its pages, in order, its menu, and its collections. */
 export type NavigationSite = {
@@ -53,6 +59,7 @@ export function navigationFor(
   const shown = (other: NavigationPage) => other.hideFromNavigation !== true;
   const pageLink = (other: NavigationPage, id: string, label?: string): NavLink => ({
     id,
+    pageId: other.id,
     label: label ?? other.navLabel ?? other.title,
     href: `${prefix}${other.path}.html`,
     current: other.path === page.path,
@@ -99,6 +106,8 @@ export function navigationFor(
       (link.kind === "list" && listPathOf(site, link.collectionId) === page.path);
     return {
       id: item.id,
+      // A link to a whole page is that page's, as a page item is (HF-8).
+      ...(link.kind === "page" && link.anchor === undefined ? { pageId: link.pageId } : {}),
       label: item.label,
       href,
       current,
@@ -129,6 +138,27 @@ export function navigationFor(
           },
         ];
   });
+}
+
+/**
+ * A link to each of `site`'s pages on `page`, in order, whatever the menu shows or hides (HF-8):
+ * the pages a Footer's Menu links can add, named as the menu names a page. "Page not found" and
+ * a Blog's posts never are: a blog of 40 posts would bury the page the person wants.
+ */
+export function pageLinksFor(
+  site: Pick<NavigationSite, "pages">,
+  page: NavigationPage,
+  prefix: string,
+): NavLink[] {
+  return site.pages
+    .filter((other) => other.kind === undefined)
+    .map((other) => ({
+      id: other.id,
+      pageId: other.id,
+      label: other.navLabel ?? other.title,
+      href: `${prefix}${other.path}.html`,
+      current: other.path === page.path,
+    }));
 }
 
 /**

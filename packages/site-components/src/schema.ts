@@ -222,6 +222,12 @@ export type FieldDef = {
       readonly button?: string;
     }
   /**
+   * Some of the site's pages, stored as their ids in the order chosen (HF-8): the menu's pages to
+   * leave out (`from: "menu"`) or other pages to add (`from: "others"`), for the Footer's Menu
+   * links. The Edit panel lists them as checkboxes; a page deleted since is skipped.
+   */
+  | { readonly kind: "pages"; readonly label: string; readonly from: "menu" | "others" }
+  /**
    * Code the person writes themselves (Custom Code's HTML, F-ED-15), stored as written: edited in a
    * monospace box of its own lines, never on the canvas.
    */
@@ -266,6 +272,8 @@ export type ListItem = { readonly id: string } & Readonly<Record<string, unknown
 export type NavLink = {
   /** The menu item (or page) it comes from: two items can go to the same address. */
   readonly id?: string;
+  /** The page it goes to, for a page item or a link to a whole page: what Menu links can leave out (HF-8). */
+  readonly pageId?: string;
   readonly label: string;
   /** Relative URL from the page being rendered, e.g. `about.html` or `../index.html`. */
   readonly href: string;
@@ -403,6 +411,11 @@ export type RenderContext = SiteBindings & {
   readonly pageAddress?: string;
   /** The site's pages, for navigation. Empty on the canvas. */
   readonly navigation: readonly NavItem[];
+  /**
+   * A link to each of the site's pages, in order, whatever the menu shows (HF-8): those a Footer's
+   * Menu links can add. Left out, it adds none.
+   */
+  readonly pageLinks?: readonly NavLink[];
   /** The relative URL of a page path (`about`) or the link itself if it is external. */
   readonly link: (target: string) => string;
   /**
@@ -501,11 +514,13 @@ type StoredOne<Field extends FieldDef> = Field extends { readonly kind: "text" |
                   ? string
                   : Field extends { readonly kind: "code" }
                     ? string
-                    : Field extends { readonly kind: "list" }
-                      ? readonly Readonly<Record<string, unknown>>[]
-                      : Field extends { readonly kind: "slot" }
-                        ? readonly NodeDoc[]
-                        : never;
+                    : Field extends { readonly kind: "pages" }
+                      ? readonly string[]
+                      : Field extends { readonly kind: "list" }
+                        ? readonly Readonly<Record<string, unknown>>[]
+                        : Field extends { readonly kind: "slot" }
+                          ? readonly NodeDoc[]
+                          : never;
 
 /** What a field stores: per device too, for a field set per device (F-ED-4). */
 export type StoredValue<Field extends FieldDef> = Field extends { readonly responsive: true }

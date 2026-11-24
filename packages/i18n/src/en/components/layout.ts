@@ -28,6 +28,11 @@ export const layout = {
   "field.footerColumns": "Columns",
   "element.footerColumn": "Footer column",
   "element.menuLinks": "Menu links",
+  // What Menu links leaves out of the menu, and adds to it, in the Footer (HF-8).
+  "field.menuLinksLeaveOut": "Leave out",
+  "field.menuLinksLeaveOut.help": "Pages in your menu that the Footer doesn't list.",
+  "field.menuLinksAdd": "Add",
+  "field.menuLinksAdd.help": "Pages not in your menu that the Footer lists too, after the menu's.",
   // A sticky header (F-DS-6).
   "field.sticky": "Stay at the top when scrolling",
   "field.scrollStyle": "Change style when scrolling",

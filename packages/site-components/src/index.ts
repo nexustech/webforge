@@ -101,6 +101,7 @@ export {
   type NavigationPage,
   type NavigationSite,
   navigationFor,
+  pageLinksFor,
 } from "./navigation.js";
 export { partnersOf, shownValueOf } from "./partner-fields.js";
 export { type EditPreviews, PREVIEW_ATTRIBUTE, samePreviews } from "./previews.js";

@@ -128,6 +128,11 @@ type FieldSpecs = {
     /** Why a value isn't acceptable (translated), or undefined if it is: checked when it's done. */
     readonly validate: (value: string) => string | undefined;
   };
+  /**
+   * Drawn by the app: some of the site's pages, as checkboxes (HF-8, fields/pages/): the menu's
+   * pages (`menu`) or the others (`others`), the value their ids.
+   */
+  readonly pages: { readonly from: "menu" | "others" };
 };
 
 /** A kind of field: the renderer that draws it. */

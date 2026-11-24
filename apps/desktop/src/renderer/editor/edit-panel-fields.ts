@@ -92,6 +92,9 @@ export function specOf(field: FieldDef): FieldSpec | undefined {
       return { kind: "icon", label };
     case "code":
       return { kind: "code", label };
+    // Some of the site's pages (HF-8): see PagesField.
+    case "pages":
+      return { kind: "pages", label, from: field.from };
     case "list":
     case "richtext":
     case "slot":
