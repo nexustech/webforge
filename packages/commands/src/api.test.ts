@@ -8,6 +8,7 @@ import {
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { createCommandApi } from "./api.js";
 import { app, content, home, type Setup, setup } from "./api.test-helper.js";
 import { destinationChanges } from "./command-checks.js";
@@ -575,6 +576,52 @@ describe("the command API's commands (4.8)", () => {
     const prototype: unknown = JSON.parse('{ "__proto__": { "spacing": "roomy" } }');
     await api.run("setThemeTokens", { tokens: prototype }, app);
     expect(history.document.getState().theme).toEqual(theme);
+  });
+
+  it("merges a text style's own values, and null removes one that may be left out (#1369)", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const before = history.document.getState().theme;
+
+    // H1 to H4's line spacing alone, as Claude Code sent it in the website trial: each keeps its
+    // size and weight.
+    const leading = { leading: "normal" } as const;
+    const typeScale = { h1: leading, h2: leading, h3: leading, h4: leading };
+    expect((await api.run("setThemeTokens", { tokens: { typeScale } }, app)).status).toBe("done");
+    const after = history.document.getState().theme.typeScale;
+    for (const style of ["h1", "h2", "h3", "h4"] as const) {
+      expect(after[style]).toEqual({ ...before.typeScale[style], leading: "normal" });
+    }
+    expect(after.body).toEqual(before.typeScale.body);
+
+    // A look's field, at the same depth, and null to take it away again.
+    const looks = { looks: { Heading: { lookColor: "primary" } } };
+    expect((await api.run("setThemeTokens", { tokens: looks }, app)).status).toBe("done");
+    const cleared = { looks: { Heading: { lookColor: null } } };
+    expect((await api.run("setThemeTokens", { tokens: cleared }, app)).status).toBe("done");
+    expect(history.document.getState().theme.looks?.Heading).toEqual({});
+  });
+
+  it("names what's missing in an app's refusal, never the editor's form words (#1369)", async () => {
+    // The renderer words every schema's problems for its forms ("Fill this in.").
+    z.config({ customError: (issue) => (issue.input === undefined ? "Fill this in." : undefined) });
+    try {
+      const { host } = setup();
+      const api = createCommandApi(host);
+      const refused = await api.run("setThemeTokens", { tokens: { typeScale: { h1: null } } }, app);
+      expect(refused.status).toBe("invalid");
+      const message = "message" in refused ? refused.message : "";
+      expect(message).toContain("Missing: give a value here (expected object)");
+      expect(message).toContain("typeScale.h1");
+      expect(message).not.toContain("Fill this in.");
+      // A command's own input too.
+      const page = await api.run("addPage", {}, app);
+      const said = "message" in page ? page.message : "";
+      expect(said).toContain("Missing: give a value here (expected string)");
+      expect(said).toContain("→ at title");
+    } finally {
+      z.config({ customError: undefined });
+    }
   });
 
   it("waits for the person to allow a change to more than one page (D7), however long it takes (5.34)", async () => {
