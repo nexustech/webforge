@@ -109,6 +109,8 @@ export const catalogueFieldSchema = z.discriminatedUnion("kind", [
     button: z.string().optional(),
   }),
   z.strictObject({ ...common, kind: z.literal("code") }),
+  /** Some of the site's pages by id (HF-8): the menu's to leave out, or others to add. */
+  z.strictObject({ ...common, kind: z.literal("pages"), from: z.enum(["menu", "others"]) }),
   z.strictObject({ ...common, kind: z.literal("icon") }),
   z.strictObject({
     ...common,

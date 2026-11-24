@@ -2,7 +2,7 @@ import { mediaItem, pagePath, type SiteDoc } from "@webforge/model";
 import type { NavItem, NavLink } from "@webforge/site-components";
 // The export's own navigation, through a subpath that must stay free of Node imports, as it runs
 // in the renderer (the pipeline-navigation-no-node rule in .dependency-cruiser.mjs checks it).
-import { type NavigationPage, navigationFor } from "@webforge/site-components";
+import { type NavigationPage, navigationFor, pageLinksFor } from "@webforge/site-components";
 
 /** The site's pages as the navigation sees them, in Pages panel order, as the export has them. */
 function navigationPages(site: SiteDoc): NavigationPage[] {
@@ -52,4 +52,15 @@ export function canvasNavigation(site: SiteDoc, pageId: string): readonly NavIte
     (item): NavItem =>
       "children" in item ? { ...item, children: item.children.map(inert) } : inert(item),
   );
+}
+
+/**
+ * A link to each of the site's pages on page `pageId`, as the canvas shows them (HF-8): what a
+ * Footer's Menu links can add, made as the export makes them, their addresses inert. None for a
+ * page the site doesn't have.
+ */
+export function canvasPageLinks(site: SiteDoc, pageId: string): readonly NavLink[] | undefined {
+  const pages = navigationPages(site);
+  const page = pages.find((candidate) => candidate.id === pageId);
+  return page === undefined ? undefined : pageLinksFor({ pages }, page, "").map(inert);
 }

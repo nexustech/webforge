@@ -164,8 +164,28 @@ export function storedValues(
         : value,
     ]),
   );
-  const missing = missingReference(site, stored) ?? missingOwnColour(site, component, stored);
+  const missing =
+    missingReference(site, stored) ??
+    missingPage(site, component, stored) ??
+    missingOwnColour(site, component, stored);
   return missing === undefined ? { values: stored } : fail("not-found", missing);
+}
+
+/**
+ * The first page a pages field in `values` names that the site doesn't have (HF-8), as a message:
+ * Menu links would leave it out or add it to no effect.
+ */
+function missingPage(
+  site: SiteDoc,
+  component: CatalogueComponent,
+  values: Readonly<Record<string, unknown>>,
+): string | undefined {
+  for (const [name, value] of Object.entries(values)) {
+    if (component.fields[name]?.kind !== "pages" || !Array.isArray(value)) continue;
+    const gone = value.find((id) => typeof id !== "string" || !isPageIn(site.pages, id));
+    if (gone !== undefined) return `There is no page "${String(gone)}".`;
+  }
+  return undefined;
 }
 
 /**

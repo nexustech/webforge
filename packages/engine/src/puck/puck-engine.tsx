@@ -433,7 +433,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       });
     },
 
-    setNavigation: (navigation) => changeContext({ parts: { ...parts, navigation } }),
+    setNavigation: (navigation, pageLinks) =>
+      changeContext({
+        parts: { ...parts, navigation, ...(pageLinks === undefined ? {} : { pageLinks }) },
+      }),
 
     setLinkPicker: richText.setLinkPicker,
     setTextRewriter: richText.setTextRewriter,

@@ -11,6 +11,7 @@ import {
   hrefFor,
   listPathOf,
   navigationFor,
+  pageLinksFor,
   type RenderContext,
   type ResolvedImage,
 } from "@webforge/site-components";
@@ -127,6 +128,8 @@ export function pageRender(
   );
   const context: RenderContext = {
     navigation,
+    // What a Footer's Menu links can add (HF-8).
+    pageLinks: pageLinksFor(site, page, prefix),
     link: (target) => {
       if (EXTERNAL_LINK.test(target)) {
         return target;

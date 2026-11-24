@@ -8,6 +8,7 @@ import { fontField } from "./font/field.js";
 import { iconField } from "./icon/field.js";
 import { imageField } from "./image/field.js";
 import { linkField } from "./link/field.js";
+import { pagesField } from "./pages/field.js";
 import { themeColorField } from "./theme-color/field.js";
 import type { ThemeColorPreview } from "./theme-color/ThemeColorField.js";
 
@@ -24,6 +25,7 @@ export function fieldRenderers(context: FieldRendererContext): FieldRenderers {
     color: colourField(context),
     code: codeField(),
     classes: classesField(context),
+    pages: pagesField(context),
   };
 }
 

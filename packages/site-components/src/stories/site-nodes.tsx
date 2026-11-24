@@ -121,9 +121,16 @@ const storyContext: RenderContext = {
   posts: () => STORY_POSTS,
   ...EDITOR_RENDER_CONTEXT,
   navigation: [
-    { id: "home", label: "Home", href: "#", current: true },
-    { id: "about", label: "About us", href: "#", current: false },
-    { id: "book", label: "Book a table", href: "#", current: false, button: true },
+    { id: "home", pageId: "home", label: "Home", href: "#", current: true },
+    { id: "about", pageId: "about", label: "About us", href: "#", current: false },
+    { id: "book", pageId: "book", label: "Book a table", href: "#", current: false, button: true },
+  ],
+  // Every page, those the menu leaves out too, for a Footer's Menu links to add (HF-8).
+  pageLinks: [
+    { id: "home", pageId: "home", label: "Home", href: "#", current: true },
+    { id: "about", pageId: "about", label: "About us", href: "#", current: false },
+    { id: "book", pageId: "book", label: "Book a table", href: "#", current: false },
+    { id: "privacy", pageId: "privacy", label: "Privacy", href: "#", current: false },
   ],
   link: () => "#",
   image: (id) => (id === "photo" ? photo : (DRAWINGS[id] ?? null)),

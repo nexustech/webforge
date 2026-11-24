@@ -53,6 +53,7 @@ export function navigationFor(
   const shown = (other: NavigationPage) => other.hideFromNavigation !== true;
   const pageLink = (other: NavigationPage, id: string, label?: string): NavLink => ({
     id,
+    pageId: other.id,
     label: label ?? other.navLabel ?? other.title,
     href: `${prefix}${other.path}.html`,
     current: other.path === page.path,
@@ -99,6 +100,8 @@ export function navigationFor(
       (link.kind === "list" && listPathOf(site, link.collectionId) === page.path);
     return {
       id: item.id,
+      // A link to a whole page is that page's, as a page item is (HF-8).
+      ...(link.kind === "page" && link.anchor === undefined ? { pageId: link.pageId } : {}),
       label: item.label,
       href,
       current,
@@ -129,6 +132,27 @@ export function navigationFor(
           },
         ];
   });
+}
+
+/**
+ * A link to each of `site`'s pages on `page`, in order, whatever the menu shows or hides (HF-8):
+ * the pages a Footer's Menu links can add, named as the menu names a page. "Page not found" is
+ * never one.
+ */
+export function pageLinksFor(
+  site: Pick<NavigationSite, "pages">,
+  page: NavigationPage,
+  prefix: string,
+): NavLink[] {
+  return site.pages
+    .filter((other) => other.path !== "404")
+    .map((other) => ({
+      id: other.id,
+      pageId: other.id,
+      label: other.navLabel ?? other.title,
+      href: `${prefix}${other.path}.html`,
+      current: other.path === page.path,
+    }));
 }
 
 /**

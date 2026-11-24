@@ -1021,6 +1021,33 @@ describe("the command API's moves and fields (4.8)", () => {
     });
   });
 
+  it("sets the pages Menu links leaves out and adds, refusing one the site hasn't (HF-8)", async () => {
+    const { history, host } = setup(true, (doc) => {
+      const footer = doc.layout.footer[0];
+      if (footer === undefined) return;
+      footer.props.columns = [
+        {
+          type: "FooterColumn",
+          props: { id: "links", content: [{ type: "MenuLinks", props: { id: "menu" } }] },
+        },
+      ];
+    });
+    const api = createCommandApi(host);
+    const location = { kind: "layout", part: "footer" } as const;
+    const home = history.document.getState().homePageId;
+    const set = (values: object) =>
+      api.run("updateFields", { location, nodeId: "menu", values }, app);
+
+    expect((await set({ leaveOut: [home], add: [] })).status).toBe("done");
+    const menu = history.document.getState().layout.footer[0]?.props.columns;
+    expect(JSON.stringify(menu)).toContain(`"leaveOut":["${home}"]`);
+    expect(await set({ add: ["page-gone"] })).toMatchObject({
+      status: "not-found",
+      message: 'There is no page "page-gone".',
+    });
+    expect((await set({ add: [home, home] })).status).toBe("invalid");
+  });
+
   it("names a change to several fields after the element, and leaves Custom Code alone", async () => {
     const { history, host } = setup(true, nested);
     const api = createCommandApi(host);

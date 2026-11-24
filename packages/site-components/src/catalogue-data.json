@@ -1379,8 +1379,24 @@
     "MenuLinks": {
       "label": "Menu links",
       "place": "child",
-      "fields": {},
-      "defaults": {}
+      "fields": {
+        "leaveOut": {
+          "kind": "pages",
+          "label": "Leave out",
+          "help": "Pages in your menu that the Footer doesn't list.",
+          "from": "menu"
+        },
+        "add": {
+          "kind": "pages",
+          "label": "Add",
+          "help": "Pages not in your menu that the Footer lists too, after the menu's.",
+          "from": "others"
+        }
+      },
+      "defaults": {
+        "leaveOut": [],
+        "add": []
+      }
     },
     "Section": {
       "label": "Section",

@@ -190,6 +190,11 @@ function valueReader(field: FieldDef, initial: unknown): (value: unknown) => unk
         return isIconName(value) ? value : isIconName(fallback) ? fallback : undefined;
       case "code":
         return typeof value === "string" ? value : typeof fallback === "string" ? fallback : "";
+      case "pages": {
+        // Page ids; anything else, as an old or hand-edited file may hold, is left out.
+        const ids = Array.isArray(value) ? value : Array.isArray(fallback) ? fallback : [];
+        return ids.filter((id): id is string => typeof id === "string");
+      }
       case "link": {
         const link = linkValueSchema.safeParse(value);
         if (link.success) return link.data;

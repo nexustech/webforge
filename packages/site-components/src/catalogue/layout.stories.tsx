@@ -202,3 +202,31 @@ export const FooterLogo: Story = {
     ],
   },
 };
+
+/**
+ * Menu links with a page of the menu left out and another added (HF-8): Book a table, the menu's
+ * button, stays in the Header, and Privacy, not in the menu, is in the Footer.
+ */
+export const FooterMenuLinksChosen: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Footer",
+        props: {
+          id: "footer",
+          text: "© Rosa's Bakery, Hightown",
+          variant: "columns",
+          columns: [
+            column("links", [
+              { type: "Heading", props: { id: "links-title", text: "Explore", size: "small" } },
+              {
+                type: "MenuLinks",
+                props: { id: "menu", leaveOut: ["book"], add: ["privacy"] },
+              },
+            ]),
+          ],
+        },
+      },
+    ],
+  },
+};

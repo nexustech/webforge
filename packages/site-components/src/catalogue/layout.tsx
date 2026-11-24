@@ -362,6 +362,31 @@ export const FOOTER_COLUMN_TYPES = [
 const linksOf = (items: readonly NavItem[]): NavLink[] =>
   items.flatMap((item) => ("children" in item ? item.children : [item]));
 
+/** The page ids a pages field holds (HF-8), whatever a file holds there. */
+const pageIdsOf = (value: unknown): ReadonlySet<string> =>
+  new Set(Array.isArray(value) ? value.filter((id) => typeof id === "string") : []);
+
+/**
+ * The links Menu links shows (HF-8): the menu's, but for the pages it leaves out, then the pages
+ * it adds that the menu doesn't show, in page order. So a page hidden in the menu, shown as the
+ * Header's button, can still be in the Footer, and the Footer's links still follow the menu.
+ */
+const menuLinksOf = (
+  values: Readonly<Record<string, unknown>>,
+  context: RenderContext,
+): NavLink[] => {
+  const leftOut = pageIdsOf(values.leaveOut);
+  const added = pageIdsOf(values.add);
+  const menu = linksOf(context.navigation).filter(
+    (link) => link.pageId === undefined || !leftOut.has(link.pageId),
+  );
+  const inMenu = new Set(menu.map((link) => link.pageId));
+  const more = (context.pageLinks ?? []).filter(
+    (link) => link.pageId !== undefined && added.has(link.pageId) && !inMenu.has(link.pageId),
+  );
+  return [...menu, ...more];
+};
+
 /**
  * *Cookie settings* in the Footer of a site with Google Analytics and its consent banner (#539,
  * B7): the `consent` behaviour shows it and reopens the banner with it, so a visitor can change
@@ -424,15 +449,29 @@ export function footerPreset(preset: FooterPreset): {
 
 /**
  * The site menu's links, dropdowns' too, in a Footer column (HF-4, 5.39): they change with the
- * menu. A site with no menu leaves them out.
+ * menu. It can leave some of the menu's pages out and add others (HF-8). With none to show, it
+ * draws nothing.
  */
 const menuLinks = defineComponent({
   label: t("element.menuLinks"),
   place: "child",
-  fields: {},
-  defaults: {},
-  render: ({ context }) => {
-    const links = linksOf(context.navigation);
+  fields: {
+    leaveOut: {
+      kind: "pages",
+      label: t("field.menuLinksLeaveOut"),
+      help: t("field.menuLinksLeaveOut.help"),
+      from: "menu",
+    },
+    add: {
+      kind: "pages",
+      label: t("field.menuLinksAdd"),
+      help: t("field.menuLinksAdd.help"),
+      from: "others",
+    },
+  },
+  defaults: { leaveOut: [], add: [] },
+  render: ({ values, context }) => {
+    const links = menuLinksOf(values, context);
     if (links.length === 0) return null;
     return (
       <nav
@@ -463,7 +502,7 @@ const holdsShown = (slot: unknown, context: RenderContext): boolean =>
       (node) =>
         isNodeDoc(node) &&
         node.props.hidden !== true &&
-        (node.type !== "MenuLinks" || linksOf(context.navigation).length > 0),
+        (node.type !== "MenuLinks" || menuLinksOf(node.props, context).length > 0),
     ));
 
 /**

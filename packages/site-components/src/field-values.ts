@@ -2,7 +2,13 @@
 // edits, canvas drags, and what an AI app sets (packages/commands). Without React or the catalogue's
 // data, so every one of them can load it: the icon names only, not the icons.
 
-import { boxValueSchema, colorRefSchema, imageValueSchema, linkValueSchema } from "@webforge/model";
+import {
+  boxValueSchema,
+  colorRefSchema,
+  imageValueSchema,
+  linkValueSchema,
+  pageIdSchema,
+} from "@webforge/model";
 import { z } from "zod";
 import iconNames from "./icon-names-offered.json" with { type: "json" };
 
@@ -16,6 +22,9 @@ const TAKEN_ICONS: ReadonlySet<string> = new Set(ICON_NAMES_TAKEN);
 
 /** The longest text a text, rich text or icon field takes: the Edit panel's input stops there too. */
 export const MAX_TEXT_LENGTH = 20_000;
+
+/** The most pages a pages field names (HF-8): far more than a site has. */
+const MAX_PAGE_IDS = 1000;
 
 /** A choice of a select, a slider's step: its value is what the field stores. */
 type OptionValue = { readonly value: string };
@@ -39,6 +48,7 @@ export type FieldValueShape = {
         | "media"
         | "link"
         | "slot"
+        | "pages"
         | "code";
     }
   | { readonly kind: "select" | "spacing" | "color"; readonly options: readonly OptionValue[] }
@@ -76,6 +86,12 @@ export function fieldValueSchema(field: FieldValueShape): z.ZodType {
         return field.inputType === "date"
           ? z.string().regex(/^(?:\d{4}-\d{2}-\d{2})?$/)
           : z.string().max(MAX_TEXT_LENGTH);
+      case "pages":
+        // Page ids (HF-8), each once.
+        return z
+          .array(pageIdSchema)
+          .max(MAX_PAGE_IDS)
+          .refine((ids) => new Set(ids).size === ids.length, "Name each page once.");
       case "richtext":
         // How to link text as a person can in the link dialog (#1374): to the site's own pages by
         // id, so a link follows a page's rename, as the editor stores it.

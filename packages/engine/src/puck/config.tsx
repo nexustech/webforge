@@ -62,6 +62,7 @@ function toPuckField(field: FieldDef, richText: RichTextTools): Field {
     case "select":
       return { type: "select", label: field.label, options: [...field.options] };
     case "media":
+    case "pages":
     case "code":
     case "link":
     case "icon":

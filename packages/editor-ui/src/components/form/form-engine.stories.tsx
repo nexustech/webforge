@@ -107,6 +107,7 @@ const FORM_KINDS = {
     label: "CSS classes",
     validate: () => undefined,
   },
+  pages: { kind: "pages", name: "pages", label: "Add", from: "others" },
 } satisfies { readonly [K in FieldKind]: FormField & { readonly kind: K } };
 
 const VALUES: FormValues = {

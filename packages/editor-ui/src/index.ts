@@ -55,6 +55,7 @@ export {
 } from "./components/form/form.js";
 export { FormDialog, type FormDialogProps } from "./components/form/form-dialog.js";
 export { Form, type FormProps } from "./components/form/form-engine.js";
+export { MultiChoiceField } from "./components/form/form-fields.js";
 export type {
   FormActions,
   FormField,

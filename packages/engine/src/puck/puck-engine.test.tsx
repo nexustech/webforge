@@ -848,7 +848,10 @@ describe("createPuckEngine", () => {
         () => "Choose one",
       );
       engine.setPreviews({ mobileMenu: true });
-      engine.setNavigation([{ label: "Home", href: "#", current: true }]);
+      engine.setNavigation(
+        [{ label: "Home", href: "#", current: true }],
+        [{ pageId: "home", label: "Home", href: "#", current: true }],
+      );
       engine.setLooks({ Button: { lookCorners: "full" } });
       engine.setItem({
         item: () => undefined,

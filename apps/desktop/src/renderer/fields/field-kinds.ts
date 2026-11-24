@@ -56,6 +56,7 @@ export const FIELD_KINDS = {
   link: { editPanel: "link", story: "Edit/Fields/Link" },
   icon: { editPanel: "icon", story: "Edit/Fields/Icon" },
   code: { editPanel: "code", story: "Edit/Fields/Code" },
+  pages: { editPanel: "pages", story: "Edit/Fields/Pages" },
   list: { editPanel: "list", story: "Edit/Fields/List" },
 } as const satisfies { readonly [K in FieldDef["kind"]]: FieldKindEditing };
 
