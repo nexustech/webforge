@@ -7,6 +7,7 @@ import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
 import { FOOTER_COLUMN } from "../hidden-fields.js";
 import { boundString, boundText, type ComponentDef } from "../library.js";
+import { LOGO_HEIGHTS, LOGO_SIZES } from "../logo-sizes.js";
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
 import type { NavItem, NavLink, RenderContext } from "../schema.js";
@@ -147,17 +148,6 @@ function HeaderNavigation({
 const HEADER_LAYOUTS = ["left", "centred", "split"] as const;
 const SCROLL_STYLES = ["shadow", "shrink", "solid", "none"] as const;
 const LOGO_PLACES = ["instead", "beside"] as const;
-const LOGO_SIZES = ["small", "medium", "large"] as const;
-
-/**
- * The logo's height at each size (HF-1): on phones never above the menu's button, so the Header
- * stays one line high there.
- */
-const LOGO_HEIGHTS: Readonly<Record<(typeof LOGO_SIZES)[number], string>> = {
-  small: "h-8",
-  medium: "h-10 md:h-12",
-  large: "h-10 md:h-16",
-};
 
 /**
  * A sticky header's classes for its scroll style (F-DS-6), applied once the page has scrolled 80 px

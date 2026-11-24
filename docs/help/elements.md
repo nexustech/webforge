@@ -5,7 +5,7 @@ title: Elements
 summary: Every element you can put inside a section, what it's for and what you can change.
 components: [Heading, Text, List, ListItem, Image, Carousel, CarouselSlide, EmbedVideo, Button, Spacer, Divider, Icon, SocialLinks, Columns, Column, Tabs, Tab, EmbedMap, Form, FormField, BuyButton, Accordion, AccordionItem, Table, TableRow]
 related: [sections, add-panel, edit-panel, media, links, forms, custom-code]
-updated: 2026-11-23
+updated: 2026-11-24
 ---
 
 # Elements
@@ -34,7 +34,7 @@ A list of short items. **Style** is _Bullets_, _Numbers_ or _No markers_. Choose
 
 A picture from [Media](media.md).
 
-- **Width:** _Small_, _Medium_, _Large_ or _Full width_.
+- **Width:** _Small_, _Medium_, _Large_ or _Full width_. In a [Footer column](header-and-footer.md), **Size** takes its place, and Shape's: _Small_, _Medium_ or _Large_, as high as the Header's logo.
 - **Shape:** _Original_, _Square_, _Landscape (4:3)_, _Wide (16:9)_, _Portrait (3:4)_ or _Set height_. Every shape but Original cuts the picture to fit, keeping its focal point in view. It never stretches the picture.
 - **Height** (with _Set height_), **Caption**, **Alignment** and **Rounded corners**.
 - **Open larger when clicked:** on your site, a click shows the whole picture larger. In the editor a click still selects it.

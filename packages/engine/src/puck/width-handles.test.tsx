@@ -23,6 +23,18 @@ describe("the width a handle sets (2.17)", () => {
     expect(widthHandleField(siteLibrary, "Heading")).toBeUndefined();
   });
 
+  it("gives an Image in a Footer column none: its logo's Size takes Width's place (HF-9)", () => {
+    const column = { type: "FooterColumn", values: { content: [] } };
+    expect(widthHandleField(siteLibrary, "Image", { values: {}, parent: column })).toBeUndefined();
+    expect(widthHandleField(siteLibrary, "Image", { values: {} })?.name).toBe("width");
+    expect(
+      widthHandleField(siteLibrary, "Image", {
+        values: {},
+        parent: { type: "Column", values: {} },
+      })?.name,
+    ).toBe("width");
+  });
+
   it("holds an element by the side it touches, by its middle otherwise, and as aligned when full", () => {
     const column = { left: 0, right: 800 };
     expect(anchorOf({ left: 0, right: 320 }, column, "centre")).toBe("left");
