@@ -40,7 +40,12 @@ import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spac
 import { ensureStyle } from "./styles.js";
 import { ROOT_ZONE } from "./tree.js";
 import { OPTION_ATTRIBUTES } from "./view-attributes.js";
-import { WIDTH_HANDLES_CSS, type WidthHandleField, WidthHandles } from "./width-handles.js";
+import {
+  WIDTH_HANDLES_CSS,
+  type WidthHandleField,
+  type WidthHandlePlace,
+  WidthHandles,
+} from "./width-handles.js";
 
 const usePuck = createUsePuck();
 
@@ -311,8 +316,14 @@ type OverlayProps = {
 export type SpacingHandleOptions = {
   /** The `box` fields of a component type. */
   readonly fieldsOf: (componentType: string) => readonly BoxHandleField[];
-  /** The field that sets how wide an element of a component type is, if it has one. */
-  readonly widthFieldOf?: (componentType: string) => WidthHandleField | undefined;
+  /**
+   * The field that sets how wide an element of a component type is, if it has one and it's shown
+   * for the element where it is (`at`).
+   */
+  readonly widthFieldOf?: (
+    componentType: string,
+    at?: WidthHandlePlace,
+  ) => WidthHandleField | undefined;
   /** The device view the canvas shows, whose values the handles change. */
   readonly breakpoint: () => Breakpoint;
   readonly onFieldDrag: (drag: FieldDrag) => void;
@@ -357,7 +368,22 @@ export function createSelectionOutline(
     const state = isSelected ? "selected" : hover ? "hover" : "none";
     const showAdd = state !== "none" && topLevelIndex >= 0 && canInsert;
     const boxFields = isSelected && canInsert ? (spacing?.fieldsOf(componentType) ?? []) : [];
-    const widthField = isSelected && canInsert ? spacing?.widthFieldOf?.(componentType) : undefined;
+    // The element holding it, whose place can hide its width (an Image in a Footer column, HF-9).
+    const parent = usePuck((state) => {
+      if (!isSelected) return undefined;
+      const zone = state.getSelectorForId(componentId)?.zone;
+      if (zone === undefined || zone === ROOT_ZONE) return undefined;
+      return state.getItemById(zone.slice(0, zone.lastIndexOf(":")));
+    });
+    const widthField =
+      isSelected && canInsert && props !== undefined
+        ? spacing?.widthFieldOf?.(componentType, {
+            values: props,
+            ...(parent === undefined
+              ? {}
+              : { parent: { type: parent.type, values: parent.props } }),
+          })
+        : undefined;
     return (
       <div ref={ref} className="wf-outline" data-state={state} data-wf-id={componentId}>
         {showAdd ? (

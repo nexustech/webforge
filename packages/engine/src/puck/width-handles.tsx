@@ -1,6 +1,6 @@
 import { t } from "@webforge/i18n";
 import { type Breakpoint, resolveResponsive } from "@webforge/model";
-import type { ComponentLibrary } from "@webforge/site-components";
+import { type ComponentLibrary, fieldsHiddenBy } from "@webforge/site-components";
 import {
   type PointerEvent as ReactPointerEvent,
   useEffect,
@@ -24,14 +24,45 @@ export type WidthHandleField = {
   }[];
 };
 
-/** The first slider field of component `type` that gives its steps' widths, if it has one. */
+/** Where an element is, for its width handles: its values, and the element holding it. */
+export type WidthHandlePlace = {
+  readonly values: Readonly<Record<string, unknown>>;
+  readonly parent?: { readonly type: string; readonly values: Readonly<Record<string, unknown>> };
+};
+
+/**
+ * The first slider field of component `type` that gives its steps' widths, if it has one, and the
+ * Edit panel shows it for an element `at` its place: an Image in a Footer column has its logo's
+ * Size instead of Width, so no handles (HF-9).
+ */
 export function widthHandleField(
   library: ComponentLibrary | null,
   type: string,
+  at?: WidthHandlePlace,
 ): WidthHandleField | undefined {
-  const fields = library?.components[type]?.fields ?? {};
+  const def = library?.components[type];
+  const fields = def?.fields ?? {};
+  const parentDef = at?.parent === undefined ? undefined : library?.components[at.parent.type];
+  const hidden =
+    def === undefined || at === undefined
+      ? new Set<string>()
+      : fieldsHiddenBy(
+          def,
+          { ...def.defaults, ...at.values },
+          {
+            menuLinksToSections: false,
+            ...(at.parent === undefined
+              ? {}
+              : {
+                  parent: {
+                    type: at.parent.type,
+                    values: { ...parentDef?.defaults, ...at.parent.values },
+                  },
+                }),
+          },
+        );
   for (const [name, field] of Object.entries(fields)) {
-    if (field.kind !== "slider" || field.widths === undefined) continue;
+    if (field.kind !== "slider" || field.widths === undefined || hidden.has(name)) continue;
     const widths = field.widths;
     const steps = field.steps.flatMap((step) =>
       step.value in widths

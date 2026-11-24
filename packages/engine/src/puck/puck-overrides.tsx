@@ -181,7 +181,7 @@ export function createPuckOverrides(options: PuckOverridesOptions): Partial<Over
       },
       {
         fieldsOf: (componentType) => boxHandleFields(options.library(), componentType),
-        widthFieldOf: (componentType) => widthHandleField(options.library(), componentType),
+        widthFieldOf: (componentType, at) => widthHandleField(options.library(), componentType, at),
         // The width the app asked for: its view's breakpoint, as the app writes the drag at.
         breakpoint: () => breakpointForWidth(view.width()),
         onFieldDrag: options.fieldDrag,
