@@ -2,6 +2,7 @@ import { plural, t } from "@webforge/i18n";
 import type { PageId, SiteDoc } from "@webforge/model";
 import { produce } from "immer";
 import { z } from "zod";
+import { APP_PARSE } from "./app-errors.js";
 import {
   type Failure,
   fail,
@@ -205,7 +206,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         const command = commands[step.name];
         if (command === undefined) return fail("invalid", `There is no command "${step.name}".`);
         const where = `Command ${at + 1} (${step.name})`;
-        const parsed = command.input.safeParse(step.input);
+        const parsed = command.input.safeParse(step.input, APP_PARSE);
         if (!parsed.success) {
           return fail("invalid", `${where}: ${z.prettifyError(parsed.error)} Nothing changed.`);
         }
