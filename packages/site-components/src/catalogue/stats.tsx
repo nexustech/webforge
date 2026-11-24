@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n/components";
 import { createContext, type ReactNode, useContext } from "react";
+import { CARD_ROWS } from "../card-rows.js";
 import { defineComponent } from "../define.js";
 import { contentWidthClass, defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
@@ -67,11 +68,7 @@ const stats = defineSection({
           <div className={`mx-auto ${contentWidthClass(values.contentWidth)} space-y-10`}>
             <div className="mx-auto max-w-3xl text-center">{intro}</div>
             <Items
-              className={
-                layout === "cards"
-                  ? "grid gap-6 sm:grid-cols-2 md:grid-cols-3"
-                  : "grid gap-8 sm:grid-cols-2 md:grid-cols-3"
-              }
+              className={layout === "cards" ? CARD_ROWS.twoThreeGap6 : CARD_ROWS.twoThreeGap8}
             />
           </div>
         )}

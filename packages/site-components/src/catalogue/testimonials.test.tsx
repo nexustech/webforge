@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n/components";
 import { Window } from "happy-dom";
 import { afterEach, describe, expect, it } from "vitest";
+import { CARD_ROWS } from "../card-rows.js";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
 import type { RenderContext, ResolvedImage } from "../schema.js";
@@ -86,7 +87,7 @@ describe("the Testimonials section", () => {
     expect(cards.querySelector(".site-testimonial svg")).not.toBeNull();
     expect(large.querySelector(".site-testimonial blockquote")?.className).toContain("text-2xl");
     expect(large.querySelector(".grid")?.className).toContain("max-w-3xl");
-    expect(photos.querySelector(".grid")?.className).toContain("md:grid-cols-2");
+    expect(photos.querySelector(".flex-wrap")?.className).toBe(CARD_ROWS.twoGap10);
     expect(photos.querySelector(".site-testimonial")?.className).toContain("items-start");
   });
 

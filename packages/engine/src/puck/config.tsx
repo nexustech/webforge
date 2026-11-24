@@ -130,9 +130,8 @@ function toPuckComponent(
     const slots = Object.fromEntries(
       slotNames
         .map((name) => [name, values[name]] as const)
-        .filter(
-          (entry): entry is readonly [string, ComponentType] => typeof entry[1] === "function",
-        ),
+        .filter((entry): entry is readonly [string, SlotType] => typeof entry[1] === "function")
+        .map(([name, Slot]) => [name, droppingAsLaidOut(Slot)] as const),
     );
     const output = withAdvanced(def.render({ id, values, slots, context }), values.advanced);
     const marked = values.hidden === true ? markedHidden(output) : output;
@@ -148,6 +147,31 @@ function toPuckComponent(
       <Drawn props={props} draw={draw} context={context} />
     ),
   };
+}
+
+/** A slot as Puck passes it to `render`: its drop zone, taking the drop zone's props. */
+type SlotType = ComponentType<{ readonly className?: string; readonly collisionAxis?: "dynamic" }>;
+
+/** Each Puck slot with its wrapper, so the wrapper is as stable as Puck's slot is. */
+const slotsDroppingAsLaidOut = new WeakMap<SlotType, SlotType>();
+
+/**
+ * `Slot`, dropping into wrapping flex rows as into a grid (#1372). Puck reads a flex row's drop
+ * zone as running left to right only, and a grid's as both ways. Rows of cards that wrap
+ * (`CARD_ROWS`) sit one above another, and stack on a phone, so a drop along the row alone would
+ * land on the wrong side of a card above or below.
+ */
+function droppingAsLaidOut(Slot: SlotType): SlotType {
+  const known = slotsDroppingAsLaidOut.get(Slot);
+  if (known !== undefined) return known;
+  const wrapped: SlotType = (props) => (
+    <Slot
+      {...props}
+      {...(props.className?.split(" ").includes("flex-wrap") ? { collisionAxis: "dynamic" } : {})}
+    />
+  );
+  slotsDroppingAsLaidOut.set(Slot, wrapped);
+  return wrapped;
 }
 
 /**

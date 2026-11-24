@@ -29,3 +29,28 @@ export const CentredIcons: Story = features("centred");
 
 /** A list in two columns, each icon beside its text. */
 export const List: Story = features("list");
+
+/** Four features in rows of three: the fourth is centred under the others (#1372). */
+export const FourCards: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Features",
+        props: {
+          id: "features-four",
+          ...siteLibrary.components.Features?.defaults,
+          variant: "cards",
+          items: ["sparkles", "heart-handshake", "clock", "leaf"].map((icon, index) => ({
+            type: "Feature",
+            props: {
+              id: `feature-four-${index}`,
+              icon,
+              title: ["Made fresh", "Friendly staff", "Open early", "Local flour"][index],
+              text: "<p>A few words about why it matters.</p>",
+            },
+          })),
+        },
+      },
+    ],
+  },
+};

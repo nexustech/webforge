@@ -244,6 +244,37 @@ describe("toPuckConfig", () => {
     );
   });
 
+  it("drops into a slot of wrapping rows both ways, as into a grid (#1372)", () => {
+    const rows = (className: string): ComponentLibrary => ({
+      components: {
+        Cards: {
+          label: "Cards",
+          place: "section",
+          fields: { items: { kind: "slot", label: "Items" } },
+          defaults: { items: [] },
+          render: (props) => {
+            const Items = slotComponent(props, "items");
+            return <Items className={className} />;
+          },
+        },
+      },
+    });
+    const Slot = (props: { readonly className?: string; readonly collisionAxis?: string }) => (
+      <i>{props.collisionAxis ?? "auto"}</i>
+    );
+    const draw = (className: string) => {
+      const Cards = toPuckConfig(rows(className)).components.Cards?.render as (
+        props: Record<string, unknown>,
+      ) => ReactNode;
+      return renderToStaticMarkup(<Cards id="c" items={Slot} puck={{}} />);
+    };
+
+    expect(draw("flex flex-wrap justify-center gap-6")).toBe("<i>dynamic</i>");
+    // Puck reads anything else from its layout, as before.
+    expect(draw("flex gap-6")).toBe("<i>auto</i>");
+    expect(draw("grid md:grid-cols-3")).toBe("<i>auto</i>");
+  });
+
   it("marks a section that has a column form for the Footer on its <section> (5.39)", () => {
     const ContactDetails = toPuckConfig(siteLibrary).components.ContactDetails?.render as (
       props: Record<string, unknown>,
