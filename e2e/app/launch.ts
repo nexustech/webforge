@@ -398,4 +398,17 @@ export async function waitForCanvas(page: Page): Promise<void> {
   await expect(page.locator(".editor__canvas-cover")).toHaveCount(0, {
     timeout: CANVAS_START_TIMEOUT_MS,
   });
+  await slowWhenAsked(page);
+}
+
+/**
+ * How many times slower the renderer runs from the canvas showing, when the run asks
+ * (`WEBFORGE_E2E_CPU_SLOWDOWN=3`): a busy runner on a fast computer, to check a test that waits on
+ * timing, such as a drag, doesn't depend on it (anti-pattern 22). Unset, it runs at full speed.
+ */
+async function slowWhenAsked(page: Page): Promise<void> {
+  const rate = Number(process.env.WEBFORGE_E2E_CPU_SLOWDOWN ?? "1");
+  if (!(rate > 1)) return;
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setCPUThrottlingRate", { rate });
 }

@@ -84,10 +84,8 @@ test("starts the Footer from Full, adds to a column from the Add panel, on every
   // With the Footer still selected, the line saying a change reaches every page stays while the
   // drag is under way, so the canvas doesn't move under the pointer (#1336). The Footer is at the
   // bottom of the page: in view first, so the pointer can reach it. The drag lets go only once the
-  // drop preview is in that column, not where the pointer passed on its way (#1336). The column is
-  // as tall as its title and links: aimed below its middle, at its links' lower edge, the drag
-  // lands on the column itself as often as on its links, and the Footer's columns take only
-  // columns, so nothing would drop (#1393).
+  // drop preview is in that column, not where the pointer passed on its way (#1336). The foot of
+  // the column, its links' lower half, has a test of its own below (#1393).
   const banner = page.locator(".editor > [role='status']");
   await expect(banner).toContainText("Footer");
   const title = columns.first().locator(".site-heading");
@@ -116,6 +114,46 @@ test("starts the Footer from Full, adds to a column from the Add panel, on every
   await expect(canvas().locator(".site-footer-column").nth(1).locator(".site-text")).toHaveCount(1);
   await left.getByRole("tab", { name: "Undo History" }).click();
   await expect(steps().first()).toHaveText("Added shared Text");
+});
+
+test("drops a Heading at the foot of a Footer column, after its links (#1393)", async () => {
+  await page.getByRole("radio", { name: "Design", exact: true }).click();
+  await clickOnCanvas(canvas().locator(".site-footer"), { position: { x: 4, y: 4 } });
+  await page
+    .getByRole("toolbar", { name: "Selected element" })
+    .getByRole("group", { name: "Start from" })
+    .getByRole("button", { name: "Full" })
+    .click();
+  const column = canvas().locator(".site-footer-column").first();
+  const links = column.getByRole("navigation", { name: "Footer navigation" });
+  await expect(links).toBeVisible();
+  const left = page.getByRole("region", { name: "Left panels" });
+  await left.getByRole("tab", { name: "Add" }).click();
+  await left.getByRole("tab", { name: "Elements" }).click();
+
+  // The links are the column's last element and fill it to its foot: their lower half is within
+  // Puck's margin at the column's edge, where it looked past the column to the Footer's columns,
+  // which take only columns, and nothing dropped (#1393).
+  await links.scrollIntoViewIfNeeded();
+  await drag(
+    page,
+    left.getByRole("button", { name: "Heading", exact: true }),
+    () => lowerHalf(links),
+    0.5,
+    0.5,
+    column,
+  );
+
+  await expect(column.locator(".site-heading")).toHaveCount(2);
+  // After the links, the column's last element.
+  expect(
+    await links.evaluate(
+      (nav, heading) =>
+        heading !== null &&
+        (nav.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+      await column.locator(".site-heading").last().elementHandle(),
+    ),
+  ).toBe(true);
 });
 
 test("says how far a change reaches, edits the Footer in the Edit panel, and hides it on one page", async () => {

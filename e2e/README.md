@@ -36,6 +36,12 @@ pnpm e2e --project=app --shard=2/3
 pnpm e2e --project=export-setup --project=export-chromium
 ```
 
+To check that a test waiting on timing, such as a drag, holds on a busy runner, slow the app's renderer from the moment its canvas shows (`waitForCanvas`) with `WEBFORGE_E2E_CPU_SLOWDOWN`, how many times slower, and repeat it ([anti-pattern 22](../docs/anti-patterns.md)):
+
+```sh
+WEBFORGE_E2E_CPU_SLOWDOWN=3 pnpm --filter @webforge/e2e exec playwright test --project=app app/shared-layout.spec.ts --repeat-each 20
+```
+
 ```sh
 pnpm e2e:packaged
 ```
