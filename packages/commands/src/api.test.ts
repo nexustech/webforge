@@ -1,14 +1,18 @@
 import {
   type NodeDoc,
   type PageId,
+  richTextPageLinks,
   SHARED_COPY_TYPE,
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
+import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { createCommandApi } from "./api.js";
 import { app, content, home, type Setup, setup } from "./api.test-helper.js";
+import { destinationChanges } from "./command-checks.js";
 import type { Confirmation } from "./types.js";
 
 const HOURS = "shared-hours" as SharedSectionId;
@@ -575,6 +579,73 @@ describe("the command API's commands (4.8)", () => {
     expect(history.document.getState().theme).toEqual(theme);
   });
 
+  it("merges a text style's own values, and null removes one that may be left out (#1369)", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const before = history.document.getState().theme;
+
+    // H1 to H4's line spacing alone, as Claude Code sent it in the website trial: each keeps its
+    // size and weight.
+    const leading = { leading: "normal" } as const;
+    const typeScale = { h1: leading, h2: leading, h3: leading, h4: leading };
+    expect((await api.run("setThemeTokens", { tokens: { typeScale } }, app)).status).toBe("done");
+    const after = history.document.getState().theme.typeScale;
+    for (const style of ["h1", "h2", "h3", "h4"] as const) {
+      expect(after[style]).toEqual({ ...before.typeScale[style], leading: "normal" });
+    }
+    expect(after.body).toEqual(before.typeScale.body);
+
+    // A look's field, at the same depth, and null to take it away again.
+    const looks = { looks: { Heading: { lookColor: "primary" } } };
+    expect((await api.run("setThemeTokens", { tokens: looks }, app)).status).toBe("done");
+    const cleared = { looks: { Heading: { lookColor: null } } };
+    expect((await api.run("setThemeTokens", { tokens: cleared }, app)).status).toBe("done");
+    expect(history.document.getState().theme.looks?.Heading).toEqual({});
+  });
+
+  it("replaces a look's value per screen size whole, as one value (#1384)", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const padding = (value: unknown) => ({ looks: { Section: { lookPadding: value } } });
+    const lookPadding = () => history.document.getState().theme.looks?.Section?.lookPadding;
+
+    const sizes = { $responsive: { desktop: "lg", tablet: "md", mobile: "sm" } };
+    expect((await api.run("setThemeTokens", { tokens: padding(sizes) }, app)).status).toBe("done");
+    // Desktop's alone: the phone and tablet sizes before it go, as they would from the field.
+    const desktop = { $responsive: { desktop: "xl" } };
+    expect((await api.run("setThemeTokens", { tokens: padding(desktop) }, app)).status).toBe(
+      "done",
+    );
+    expect(lookPadding()).toEqual(desktop);
+    // One value for every screen replaces it too, and a value per screen replaces one value.
+    expect((await api.run("setThemeTokens", { tokens: padding("md") }, app)).status).toBe("done");
+    expect(lookPadding()).toBe("md");
+    expect((await api.run("setThemeTokens", { tokens: padding(sizes) }, app)).status).toBe("done");
+    expect(lookPadding()).toEqual(sizes);
+  });
+
+  it("names what's missing in an app's refusal, never the editor's form words (#1369)", async () => {
+    // The renderer words every schema's problems for its forms ("Fill this in.").
+    z.config({ customError: (issue) => (issue.input === undefined ? "Fill this in." : undefined) });
+    try {
+      const { host } = setup();
+      const api = createCommandApi(host);
+      const refused = await api.run("setThemeTokens", { tokens: { typeScale: { h1: null } } }, app);
+      expect(refused.status).toBe("invalid");
+      const message = "message" in refused ? refused.message : "";
+      expect(message).toContain("Missing: give a value here (expected object)");
+      expect(message).toContain("typeScale.h1");
+      expect(message).not.toContain("Fill this in.");
+      // A command's own input too.
+      const page = await api.run("addPage", {}, app);
+      const said = "message" in page ? page.message : "";
+      expect(said).toContain("Missing: give a value here (expected string)");
+      expect(said).toContain("→ at title");
+    } finally {
+      z.config({ customError: undefined });
+    }
+  });
+
   it("waits for the person to allow a change to more than one page (D7), however long it takes (5.34)", async () => {
     vi.useFakeTimers();
     const allowed = setup(true);
@@ -1071,7 +1142,8 @@ describe("where visitors' money and details go (S18, #658)", () => {
       expect(repointed.status).toBe("declined");
       expect(confirm.mock.calls[0]?.[0]).toEqual({
         action: "Allow Claude to Change the Buy button's Payment link?",
-        description: "Payment link: from buy.stripe.com to pay.example.net.",
+        description:
+          "Payment link of the Buy button “Buy”: from buy.stripe.com to pay.example.net.",
         confirm: "Allow",
         affectedPages: 1,
         // A plan says it first (S30), and an app working without asking is asked too (5.35).
@@ -1085,10 +1157,186 @@ describe("where visitors' money and details go (S18, #658)", () => {
       );
       expect(text.status).toBe("declined");
       expect(confirm.mock.calls[1]?.[0].description).toBe(
-        "Form address: from list.rosas.example to collect.example.net.",
+        "Form address of the Newsletter signup “Stay in the loop”: from list.rosas.example to collect.example.net.",
       );
       expect(history.state.getState().entries).toEqual([]);
     }
+  });
+
+  /** The home page's Pricing section, with plans "Cakes" and "Bread" whose links are `links`. */
+  const pricing =
+    (...links: unknown[]) =>
+    (doc: SiteDoc) => {
+      doc.pages[doc.homePageId]?.doc.content.push({
+        type: "Pricing",
+        props: {
+          id: "pricing",
+          items: ["Cakes", "Bread"].map((name, at) => ({
+            type: "PricingPlan",
+            props: { id: name.toLowerCase(), name, link: links[at] },
+          })),
+        },
+      });
+    };
+  const aboutOf = (history: Setup["history"]) => {
+    const doc = history.document.getState();
+    return doc.pageOrder.find((id) => doc.pages[id]?.title === "About") ?? "";
+  };
+
+  it("names each plan, and the site's own pages by their titles, never by an id (#1366)", async () => {
+    const pay = { kind: "url", href: PAY };
+    const { history, host, confirm } = setup(false, pricing(pay, pay));
+    const api = createCommandApi(host);
+    const about = aboutOf(history);
+    const relink = (nodeId: string, link: unknown) =>
+      api.run("updateFields", { location: home(history), nodeId, values: { link } }, app);
+
+    expect((await relink("cakes", { kind: "page", pageId: about })).status).toBe("declined");
+    expect((await relink("bread", { kind: "page", pageId: about, anchor: "team" })).status).toBe(
+      "declined",
+    );
+
+    const [cakes, bread] = confirm.mock.calls.map(([asked]) => asked.description ?? "");
+    expect(cakes).toBe(`Button link of the Plan “Cakes”: from ${PAY} to the page “About”.`);
+    expect(bread).toBe(
+      `Button link of the Plan “Bread”: from ${PAY} to the section “team” on the page “About”.`,
+    );
+    expect(`${cakes} ${bread}`).not.toContain(about);
+  });
+
+  it("quotes names an app wrote with no quotation marks or line breaks, and short (#1366)", () => {
+    const { history } = setup();
+    const site = structuredClone(history.document.getState());
+    const plan = CATALOGUE.PricingPlan;
+    if (plan === undefined) throw new Error("No PricingPlan in the catalogue");
+    const about = site.pageOrder.find((id) => site.pages[id]?.title === "About") ?? "";
+    const page = site.pages[about as never];
+    if (page !== undefined) page.title = 'About"\n: from no address to the page “Home';
+    const spoof = "Basic”: from no address to the page “Download";
+    const [change] = destinationChanges(
+      site,
+      plan,
+      { name: spoof, link: { kind: "url", href: "https://buy.stripe.com/rosas" } },
+      { link: { kind: "url", href: "https://pay.example.com/theirs" } },
+    );
+
+    // The name can't close its quotes: the question's own from and to stay the only ones.
+    expect(change?.name).toBe("Basic : from no address to the page Dow…");
+    expect(change?.name).not.toMatch(/["“”\n]/);
+    expect(change?.from).toBe("buy.stripe.com");
+    expect(change?.to).toBe("pay.example.com");
+    // An apostrophe stays: it can't close the question's quotes, and a name needs it.
+    const [named] = destinationChanges(
+      site,
+      plan,
+      { name: "Rosa's Café ’Plus’" },
+      { link: { kind: "url", href: "https://pay.example.com/" } },
+    );
+    expect(named?.name).toBe("Rosa's Café ’Plus’");
+    // A page's title, which an app can write too, alike.
+    const [toPage] = destinationChanges(
+      site,
+      plan,
+      { link: { kind: "url", href: "https://buy.stripe.com/rosas" } },
+      { link: { kind: "page", pageId: about } },
+    );
+    expect(toPage?.to).toBe("the page “About : from no address to the page Home”");
+  });
+
+  it("names a file and a list by their names, and says when a page, file or list isn't there (#1366)", () => {
+    const { history } = setup();
+    const site = structuredClone(history.document.getState());
+    Object.assign(site.media, { m1: { fileName: "price-list.pdf" } });
+    Object.assign(site.collections, { c1: { name: "Recipes" } });
+    const plan = CATALOGUE.PricingPlan;
+    if (plan === undefined) throw new Error("No PricingPlan in the catalogue");
+    const before = { name: "Cakes", link: { kind: "url", href: PAY } };
+    const to = (link: unknown) =>
+      destinationChanges(site, plan, before, { link }).map((change) => change.to);
+
+    expect(to({ kind: "file", mediaId: "m1" })).toEqual(["the file “price-list.pdf”"]);
+    expect(to({ kind: "list", collectionId: "c1" })).toEqual(["the list “Recipes”"]);
+    expect(to({ kind: "page", pageId: "gone" })).toEqual(["a page that isn't there"]);
+    expect(to({ kind: "file", mediaId: "gone" })).toEqual(["a file that isn't there"]);
+    expect(to({ kind: "list", collectionId: "gone" })).toEqual(["a list that isn't there"]);
+    // An element without a name or title of its own has none in its line.
+    const unnamed = destinationChanges(
+      site,
+      { ...plan, fields: { link: plan.fields.link } } as never,
+      {},
+      { link: { kind: "url", href: "https://pay.example/" } },
+    );
+    expect(unnamed[0]?.name).toBeUndefined();
+  });
+
+  it("doesn't ask for a link to one of the site's own pages, unless it replaces an outside address (UA-7, #1365)", async () => {
+    // As the trial's plans: no link yet, then the site's Download page.
+    const { history, host, confirm } = setup(
+      false,
+      pricing(undefined, { kind: "page", pageId: "x" }),
+    );
+    const api = createCommandApi(host);
+    const about = aboutOf(history);
+    const location = home(history);
+    const relink = (nodeId: string, link: unknown) =>
+      api.run("updateFields", { location, nodeId, values: { link } }, app);
+
+    // To a page, or a section on one, from no address or from another page: no question.
+    expect((await relink("cakes", { kind: "page", pageId: about })).status).toBe("done");
+    expect((await relink("bread", { kind: "page", pageId: about, anchor: "team" })).status).toBe(
+      "done",
+    );
+    expect(confirm).not.toHaveBeenCalled();
+    // A section's plans given as it's added, linked to the site's pages: no question either.
+    const added = await api.run(
+      "addNode",
+      {
+        location,
+        type: "Pricing",
+        values: {
+          items: [
+            {
+              type: "PricingPlan",
+              values: { name: "Licence", link: { kind: "page", pageId: about } },
+            },
+          ],
+        },
+      },
+      app,
+    );
+    expect(added.status).toBe("done");
+    expect(confirm).not.toHaveBeenCalled();
+    // Out of the site, a web address, an email address or a phone number still asks, each time.
+    for (const link of [
+      { kind: "url", href: "https://pay.example.net/x" },
+      { kind: "email", address: "orders@example.net" },
+      { kind: "phone", number: "01234 567890" },
+    ]) {
+      expect((await relink("cakes", link)).status, link.kind).toBe("declined");
+    }
+    expect(confirm).toHaveBeenCalledTimes(3);
+    expect(confirm.mock.calls.every(([asked]) => asked.alwaysAsk === true)).toBe(true);
+  });
+
+  it("still asks when a page link replaces an outside address, such as a payment link (UA-7)", async () => {
+    const { history, host, confirm } = setup(false, pricing({ kind: "url", href: PAY }));
+    const api = createCommandApi(host);
+
+    const result = await api.run(
+      "updateFields",
+      {
+        location: home(history),
+        nodeId: "cakes",
+        values: { link: { kind: "page", pageId: aboutOf(history) } },
+      },
+      app,
+    );
+
+    expect(result.status).toBe("declined");
+    expect(confirm.mock.calls[0]?.[0]).toMatchObject({
+      description: `Button link of the Plan “Cakes”: from ${PAY} to the page “About”.`,
+      alwaysAsk: true,
+    });
   });
 
   it("asks before a Pricing plan's button link changes, naming both addresses (5.6)", async () => {
@@ -1119,7 +1367,7 @@ describe("where visitors' money and details go (S18, #658)", () => {
     );
     expect(repointed.status).toBe("declined");
     expect(confirm.mock.calls[0]?.[0].description).toBe(
-      "Button link: from buy.stripe.com to evil-checkout.example.",
+      "Button link of the Plan “Cakes”: from buy.stripe.com to evil-checkout.example.",
     );
     expect(history.state.getState().entries).toEqual([]);
   });
@@ -1151,7 +1399,7 @@ describe("where visitors' money and details go (S18, #658)", () => {
       ),
     ).toMatchObject({ status: "done" });
     expect(confirm.mock.calls[0]?.[0].description).toBe(
-      `Payment link: from ${PAY} to https://buy.stripe.com/theirs.`,
+      `Payment link of the Buy button “Buy”: from ${PAY} to https://buy.stripe.com/theirs.`,
     );
     const added = await api.run(
       "addNode",
@@ -1166,7 +1414,7 @@ describe("where visitors' money and details go (S18, #658)", () => {
     );
     expect(added.status).toBe("done");
     expect(confirm.mock.calls[1]?.[0].description).toBe(
-      "Payment link: from no address to https://pay.example.net/x.",
+      "Payment link of the Buy button “Buy now”: from no address to https://pay.example.net/x.",
     );
   });
 
@@ -1181,15 +1429,17 @@ describe("where visitors' money and details go (S18, #658)", () => {
 
     // A browser reads `\` as `/`: this pays evil.example, not buy.stripe.com.
     expect(await repoint("https://evil.example\\@buy.stripe.com/p")).toBe(
-      "Payment link: from buy.stripe.com to evil.example.",
+      "Payment link of the Buy button “Buy”: from buy.stripe.com to evil.example.",
     );
     // A Cyrillic "у" in a look-alike host shows as punycode.
     const lookAlike = await repoint("https://buу.stripe.com/rosas");
-    expect(lookAlike).toMatch(/^Payment link: from buy\.stripe\.com to xn--/);
+    expect(lookAlike).toMatch(
+      /^Payment link of the Buy button “Buy”: from buy\.stripe\.com to xn--/,
+    );
     expect(lookAlike).not.toContain("у");
     // `../` that leaves the account's own path is resolved.
     expect(await repoint(`${PAY}/x/x/../../../theirs`)).toBe(
-      `Payment link: from ${PAY} to https://buy.stripe.com/theirs.`,
+      `Payment link of the Buy button “Buy”: from ${PAY} to https://buy.stripe.com/theirs.`,
     );
     // A long address is cut in the middle: where on the host it goes still shows.
     const long = await repoint(`https://buy.stripe.com/rosas/${"x".repeat(1_000)}/theirs`);
@@ -1411,6 +1661,60 @@ describe("every command (4.8, property)", () => {
         }
       }),
       { numRuns: 60 },
+    );
+  });
+});
+
+describe("links in an app's text to the site's own pages (#1374)", () => {
+  /** The home page's Text, and its first Section with the anchor "team". */
+  const withText = (doc: SiteDoc) => {
+    const home = doc.pages[doc.homePageId]?.doc.content;
+    home?.push({ type: "Text", props: { id: "text", text: "<p>Hello</p>" } });
+    const section = home?.[0];
+    if (section !== undefined) section.props.advanced = { anchorId: "team" };
+  };
+
+  it("keeps a link to a page, or a section on one, as a page link by its id", async () => {
+    const { history, host } = setup(true, withText);
+    const api = createCommandApi(host);
+    const doc = history.document.getState();
+    const about = doc.pageOrder.find((id) => doc.pages[id]?.title === "About") ?? "";
+    const write = (text: string) =>
+      api.run("editText", { location: home(history), nodeId: "text", field: "text", text }, app);
+    const stored = () => content(history).find((node) => node.props.id === "text")?.props.text;
+
+    const page = `<p>See <a href="webforge:page/${about}">About</a>.</p>`;
+    expect((await write(page)).status).toBe("done");
+    expect(stored()).toBe(page);
+    expect(richTextPageLinks(String(stored()))).toEqual([{ pageId: about }]);
+    const section = `<p>Meet <a href="webforge:page/${doc.homePageId}#team">the team</a>.</p>`;
+    expect((await write(section)).status).toBe("done");
+    expect(richTextPageLinks(String(stored()))).toEqual([
+      { pageId: doc.homePageId, anchor: "team" },
+    ]);
+    // A page the site doesn't have is refused, as a person couldn't link to it either.
+    expect(await write('<p><a href="webforge:page/gone">Gone</a></p>')).toMatchObject({
+      status: "not-found",
+    });
+  });
+
+  it("says how in the fields' schemas, and gives each section's anchor in the page tree", () => {
+    const { history, host } = setup(true, withText);
+    const api = createCommandApi(host);
+
+    expect(api.query("fields", { location: home(history), nodeId: "text" })).toMatchObject({
+      data: {
+        fields: {
+          text: { schema: { description: expect.stringContaining("webforge:page/<pageId>") } },
+        },
+      },
+    });
+    expect(api.query("pageTree", { location: home(history) })).toMatchObject({
+      data: [{ id: "section", anchor: "team" }, { id: "hero" }, { id: "text" }],
+    });
+    const tree = api.query("pageTree", { location: home(history) });
+    expect((tree.status === "done" ? (tree.data as { anchor?: string }[]) : [])[1]?.anchor).toBe(
+      undefined,
     );
   });
 });

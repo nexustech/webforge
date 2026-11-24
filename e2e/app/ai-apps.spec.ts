@@ -452,6 +452,16 @@ test("an AI app asks for pictures with its reason; the person chooses them in Ad
     expect(media.data).toEqual([
       expect.objectContaining({ id: added.data.added[0]?.id, fileName: "Workshop.jpg" }),
     ]);
+    // Its main colours, read from its thumbnail in the window: never the picture (#1373).
+    const colours = answer(
+      await client.callTool({
+        name: "pictureColours",
+        arguments: { mediaId: added.data.added[0]?.id },
+      }),
+    ) as unknown as { status: string; data: { colours: { hex: string; share: number }[] } };
+    expect(colours.status).toBe("done");
+    expect(colours.data.colours.length).toBeGreaterThan(0);
+    expect(colours.data.colours[0]?.hex).toMatch(/^#[0-9a-f]{6}$/);
     // The person's own step: it undoes as any other.
     await expect(step("Added image 'Workshop.jpg'")).toBeVisible();
 

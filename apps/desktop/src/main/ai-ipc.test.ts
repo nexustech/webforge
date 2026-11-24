@@ -1,7 +1,7 @@
 import { type MessageKey, t } from "@webforge/i18n";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AiRequest } from "../shared/ipc/ai.js";
+import { type AiRequest, ANSWER_WITHIN_MS } from "../shared/ipc/ai.js";
 import { PREVIEW_OPEN_WAIT_MS } from "../shared/ipc/preview.js";
 import { type AiWindow, exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
 
@@ -43,7 +43,7 @@ function bridge(options: { trusted?: boolean; window?: AiWindow | undefined } = 
             ? undefined
             : "stale-session",
     },
-    { queryMs: 1_000, commandMs: 2_000 },
+    { queryMs: 1_000, commandMs: 2_000, answerWithinMs: ANSWER_WITHIN_MS, keepMs: 30 * 60_000 },
   );
   /** The window starts loading a page: a reload, or only a part of the same one. */
   const load = (isSameDocument = false) => {
@@ -63,6 +63,16 @@ const addHero: AiRequest = {
   name: "addNode",
   input: { type: "Hero" },
   app: "Claude",
+};
+
+/** A paired app (5.35), by its id, and its command, which names it. */
+const CLAUDE = "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e";
+const plan: AiRequest = {
+  kind: "command",
+  name: "plan",
+  input: { title: "Build out the five pages", commands: [] },
+  app: "Claude",
+  appId: CLAUDE,
 };
 
 afterEach(() => {
@@ -205,6 +215,110 @@ describe("registerAiHandlers", () => {
     expect(await another).toEqual(said("not-found", "aiApps.answer.siteClosed"));
     // Gone, it listens no more.
     expect((await ai.ask(outline)).status).toBe("not-found");
+  });
+
+  it("tells a paired app its change waits by id before its call gives up, and the outcome later (#1364)", async () => {
+    vi.useFakeTimers();
+    const { ai, invoke } = bridge();
+    await invoke("ai:listening", SESSION, true);
+    const late = vi.fn();
+    const command = ai.ask(plan, CLAUDE, late);
+    await invoke("ai:asking", 1);
+    await vi.advanceTimersByTimeAsync(44_999);
+    await invoke("ai:answer", 99, { status: "done", data: {} });
+    // Before an MCP client's 60 s, it's told the change's id, and the question stays.
+    await vi.advanceTimersByTimeAsync(1);
+    const waiting = {
+      status: "waiting",
+      data: { changeId: 1 },
+      message: t("aiApps.answer.waiting"),
+    };
+    expect(await command).toEqual(waiting);
+    expect(waiting.message).toContain(t("app.name"));
+    expect(ai.changeStatus({ changeId: 1 }, CLAUDE)).toEqual(waiting);
+    // The app's call would have timed out long before the person answers.
+    await vi.advanceTimersByTimeAsync(60 * 60_000);
+    expect(ai.changeStatus({ changeId: 1 }, CLAUDE)).toEqual(waiting);
+
+    const made = { status: "done", label: "AI (Claude): Build out the five pages" } as const;
+    expect(late).not.toHaveBeenCalled();
+    await invoke("ai:answer", 1, made);
+    expect(ai.changeStatus({ changeId: 1 }, CLAUDE)).toEqual(made);
+    // The app's limits hear the person's answer too.
+    expect(late).toHaveBeenCalledExactlyOnceWith(made);
+    // Read as often as the app asks, by that app alone, for half an hour.
+    expect(ai.changeStatus({ changeId: 1 }, CLAUDE)).toEqual(made);
+    expect(ai.changeStatus({ changeId: 1 }, "4c1e9e10-0b0c-4f4e-8a6d-3f6b1b2c4d5e")).toEqual(
+      said("not-found", "aiApps.answer.noChange"),
+    );
+    await vi.advanceTimersByTimeAsync(30 * 60_000);
+    expect(ai.changeStatus({ changeId: 1 }, CLAUDE)).toEqual(
+      said("not-found", "aiApps.answer.noChange"),
+    );
+    expect(ai.changeStatus({ changeId: "1" }, CLAUDE).status).toBe("invalid");
+  });
+
+  it("never makes a change sent again while the person decides twice (#1364)", async () => {
+    const { ai, invoke, sent } = bridge();
+    await invoke("ai:listening", SESSION, true);
+    const late = vi.fn();
+    const first = ai.ask(plan, CLAUDE, late);
+    // Sent again before it's asked: the window may still refuse it, so this one waits its turn.
+    expect(await ai.ask(plan, CLAUDE)).toEqual(said("busy", "aiApps.answer.tooMany"));
+    await invoke("ai:asking", 1);
+    sent.length = 0;
+
+    expect(await ai.ask(plan, CLAUDE)).toEqual({
+      ...said("waiting", "aiApps.answer.sentAgain"),
+      data: { changeId: 1 },
+    });
+    // Another change of the app's waits for the person's answer to this one.
+    expect(await ai.ask({ ...plan, input: { title: "Other", commands: [] } }, CLAUDE)).toEqual(
+      said("busy", "aiApps.answer.anotherWaits"),
+    );
+    expect(sent).toEqual([]);
+
+    const made = { status: "done", label: "AI (Claude): Build out the five pages" } as const;
+    await invoke("ai:answer", 1, made);
+    // The first call still open hears it, once, and so does changeStatus.
+    expect(await first).toEqual(made);
+    expect(late).not.toHaveBeenCalled();
+    expect(ai.changeStatus({ changeId: 1 }, CLAUDE)).toEqual(made);
+    // Once answered, the same change may be sent again: it's a new one.
+    void ai.ask(plan, CLAUDE);
+    expect(sent).toEqual([["ai:request", 2, plan]]);
+  });
+
+  it("keeps the question once the app has its id, until the site closes (#1364)", async () => {
+    vi.useFakeTimers();
+    const { ai, invoke, sent } = bridge();
+    await invoke("ai:listening", SESSION, true);
+    const command = ai.ask(plan, CLAUDE);
+    await invoke("ai:asking", 1);
+    await vi.advanceTimersByTimeAsync(ANSWER_WITHIN_MS);
+    expect((await command).status).toBe("waiting");
+    sent.length = 0;
+    // The app's connection closing gives up on nothing: it has the change's id.
+    ai.cancel(CLAUDE);
+    expect(sent).toEqual([]);
+
+    await invoke("ai:listening", SESSION, false);
+    expect(ai.changeStatus({ changeId: 1 }, CLAUDE)).toEqual(
+      said("not-found", "aiApps.answer.siteClosed"),
+    );
+  });
+
+  it("answers no waiting for a question asked for the assistant, which waits in its panel", async () => {
+    vi.useFakeTimers();
+    const { ai, invoke } = bridge();
+    await invoke("ai:listening", SESSION, true);
+    let settled = false;
+    void ai.ask({ ...addHero, app: "Assistant" }, "assistant").finally(() => {
+      settled = true;
+    });
+    await invoke("ai:asking", 1);
+    await vi.advanceTimersByTimeAsync(60 * 60_000);
+    expect(settled).toBe(false);
   });
 
   it("gives up on a query sooner than on a command, which may wait for the person (D7)", async () => {

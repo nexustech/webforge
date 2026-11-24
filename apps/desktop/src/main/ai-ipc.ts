@@ -1,8 +1,14 @@
 import { t } from "@webforge/i18n/main";
 import type { IpcMain } from "electron";
 import { z } from "zod";
-import { windowTool } from "../shared/ai-tools.js";
-import { type AiRequest, type AiResponse, aiEvents, aiRequestSchema } from "../shared/ipc/ai.js";
+import { changeStatusSchema, windowTool } from "../shared/ai-tools.js";
+import {
+  type AiRequest,
+  type AiResponse,
+  ANSWER_WITHIN_MS,
+  aiEvents,
+  aiRequestSchema,
+} from "../shared/ipc/ai.js";
 import { registerIpcHandler } from "./ipc.js";
 
 /** How long a query waits for the renderer's answer. */
@@ -13,6 +19,9 @@ const QUERY_TIMEOUT_MS = 15_000;
  * (`ai:asking`): then it waits for their answer however long it takes (5.34, UA-1).
  */
 const COMMAND_TIMEOUT_MS = 75_000;
+
+/** How long a change's outcome waits to be read with `changeStatus`, as a brief's does. */
+const KEEP_MS = 30 * 60_000;
 
 // What an AI app is told when the window can't answer, by the app's name (`{appName}`, #1004).
 
@@ -38,6 +47,24 @@ const siteClosed = (): AiResponse => ({
 const MAX_WAITING = { commandsPerApp: 1, commands: 4, queries: 4 } as const;
 
 const tooManyWaiting = (): AiResponse => ({ status: "busy", message: t("aiApps.answer.tooMany") });
+
+/**
+ * What a paired app is told while the person hasn't answered its change's question (#1364): its
+ * id, for `changeStatus`. `again` when the app sent the same change again meanwhile.
+ */
+const waitingFor = (changeId: number, again: boolean): AiResponse => ({
+  status: "waiting",
+  data: { changeId },
+  message: t(again ? "aiApps.answer.sentAgain" : "aiApps.answer.waiting"),
+});
+
+/** What an app's other change gets while one of its changes waits on the person (#1364). */
+const anotherWaits = (): AiResponse => ({
+  status: "busy",
+  message: t("aiApps.answer.anotherWaits"),
+});
+
+const noChange = (): AiResponse => ({ status: "not-found", message: t("aiApps.answer.noChange") });
 
 /** The parts of the window an AI app's request goes to; a fake in tests. */
 export type AiWindow = {
@@ -74,13 +101,25 @@ export type AiBridge = {
    * (S21). Nothing is logged of a request or its answer (architecture §9). With no site open, or
    * no answer in time, it says so.
    */
-  ask(request: unknown, appId?: string): Promise<AiResponse>;
+  ask(
+    request: unknown,
+    appId?: string,
+    /** The outcome of a change that answered `waiting`, once the person answers (#1364). */
+    late?: (response: AiResponse) => void,
+  ): Promise<AiResponse>;
   /**
    * Gives up on the commands of the app with id `appId` waiting for the window (the assistant's
    * Stop, 6.9b): a question asked for one closes, and it's declined. Each still answers through
-   * `ask`. By id, never by name: a paired app may be named "Assistant" (#1050's review).
+   * `ask`. By id, never by name: a paired app may be named "Assistant" (#1050's review). Not a
+   * change already answered `waiting`: the app has its id, and its question waits (#1364).
    */
   cancel(appId: string): void;
+  /**
+   * What became of paired app `appId`'s change that answered `waiting` (#1364), by the `changeId`
+   * in `input`: `waiting` still, or its outcome, kept for {@link KEEP_MS}. Another app's reads as
+   * none.
+   */
+  changeStatus(input: unknown, appId: string): AiResponse;
 };
 
 /**
@@ -111,8 +150,15 @@ export function registerAiHandlers(
   isTrustedSender: (senderUrl: string) => boolean,
   window: () => AiWindow | undefined,
   site: AiSite,
-  timeouts: { readonly queryMs?: number; readonly commandMs?: number } = {},
+  timeouts: {
+    readonly queryMs?: number;
+    readonly commandMs?: number;
+    readonly answerWithinMs?: number;
+    readonly keepMs?: number;
+  } = {},
 ): AiBridge {
+  const answerWithinMs = timeouts.answerWithinMs ?? ANSWER_WITHIN_MS;
+  const keepMs = timeouts.keepMs ?? KEEP_MS;
   /** Each request waiting on the window: how to settle it, and who asked (a command's app). */
   const waiting = new Map<
     number,
@@ -122,6 +168,21 @@ export function registerAiHandlers(
       readonly asking: () => void;
       readonly app: string | undefined;
       readonly appId: string | undefined;
+      /** A paired app's command, as sent: the same one sent again is the same change (#1364). */
+      readonly sent: string | undefined;
+      /** The window is asking the person about it. */
+      asked: boolean;
+      /** Its id was given out with `waiting`: its outcome is kept for `changeStatus` (#1364). */
+      parked: boolean;
+    }
+  >();
+  /** What became of the changes that answered `waiting`, by id, and whose they are (#1364). */
+  const kept = new Map<
+    number,
+    {
+      readonly appId: string | undefined;
+      readonly outcome: AiResponse;
+      readonly timer: ReturnType<typeof setTimeout>;
     }
   >();
   /** Settles every request still waiting with `response`. */
@@ -183,7 +244,7 @@ export function registerAiHandlers(
   });
 
   return {
-    ask(asked, appId) {
+    ask(asked, appId, late) {
       const parsed = aiRequestSchema.safeParse(asked);
       if (!parsed.success) {
         return Promise.resolve({ status: "invalid", message: z.prettifyError(parsed.error) });
@@ -198,6 +259,23 @@ export function registerAiHandlers(
       ) {
         return Promise.resolve(noSite());
       }
+      // A paired app's command (5.35): one whose question the person leaves waiting answers
+      // `waiting` with its id, for the app to ask about later (#1364).
+      const sent =
+        request.kind === "command" && request.appId !== undefined
+          ? JSON.stringify([request.name, request.input])
+          : undefined;
+      if (sent !== undefined) {
+        for (const [id, each] of waiting) {
+          if (each.appId !== appId || !each.asked) continue;
+          // Sent again while the person decides: the same change, never made twice.
+          if (each.sent === sent) {
+            each.parked = true;
+            return Promise.resolve(waitingFor(id, true));
+          }
+          if (each.parked) return Promise.resolve(anotherWaits());
+        }
+      }
       if (tooMany(request)) return Promise.resolve(tooManyWaiting());
       // A window tool that waits on the person or a build has a time of its own (#1255).
       const timeoutMs =
@@ -206,19 +284,49 @@ export function registerAiHandlers(
           ? (timeouts.queryMs ?? QUERY_TIMEOUT_MS)
           : (timeouts.commandMs ?? COMMAND_TIMEOUT_MS));
       const id = nextId++;
+      const started = Date.now();
       return new Promise((resolve) => {
+        let within: ReturnType<typeof setTimeout> | undefined;
+        // This call answered `waiting`: its outcome reaches the caller later, through `late`.
+        let toldWaiting = false;
         const settle = (response: AiResponse) => {
           clearTimeout(timer);
+          clearTimeout(within);
           waiting.delete(id);
+          if (entry.parked) {
+            const forget = setTimeout(() => kept.delete(id), keepMs);
+            forget.unref?.();
+            kept.set(id, { appId: entry.appId, outcome: response, timer: forget });
+          }
+          if (toldWaiting) late?.(response);
           resolve(response);
         };
         const timer = setTimeout(() => settle(noAnswer()), timeoutMs);
-        waiting.set(id, {
+        const entry = {
           settle,
-          asking: () => clearTimeout(timer),
+          asking: () => {
+            clearTimeout(timer);
+            if (entry.asked) return;
+            entry.asked = true;
+            if (sent === undefined) return;
+            // The app's call may give up before the person answers: it's told the change's id
+            // first, and the question stays.
+            within = setTimeout(
+              () => {
+                entry.parked = true;
+                toldWaiting = true;
+                resolve(waitingFor(id, false));
+              },
+              Math.max(0, started + answerWithinMs - Date.now()),
+            );
+          },
           app: request.kind === "command" ? request.app : undefined,
           appId: request.kind === "command" ? appId : undefined,
-        });
+          sent,
+          asked: false,
+          parked: false,
+        };
+        waiting.set(id, entry);
         target.webContents.send(aiEvents.request.channel, id, request);
       });
     },
@@ -226,8 +334,19 @@ export function registerAiHandlers(
       const target = window();
       if (target === undefined || target.webContents.isCrashed()) return;
       for (const [id, each] of waiting) {
-        if (each.appId === appId) target.webContents.send(aiEvents.cancel.channel, id);
+        if (each.appId === appId && !each.parked) {
+          target.webContents.send(aiEvents.cancel.channel, id);
+        }
       }
+    },
+    changeStatus(input, appId) {
+      const parsed = changeStatusSchema.safeParse(input);
+      if (!parsed.success) return { status: "invalid", message: z.prettifyError(parsed.error) };
+      const { changeId } = parsed.data;
+      const open = waiting.get(changeId);
+      if (open?.parked === true && open.appId === appId) return waitingFor(changeId, false);
+      const outcome = kept.get(changeId);
+      return outcome !== undefined && outcome.appId === appId ? outcome.outcome : noChange();
     },
   };
 }

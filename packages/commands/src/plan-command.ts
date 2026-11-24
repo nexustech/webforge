@@ -2,6 +2,7 @@ import { plural, t } from "@webforge/i18n";
 import type { PageId, SiteDoc } from "@webforge/model";
 import { produce } from "immer";
 import { z } from "zod";
+import { APP_PARSE } from "./app-errors.js";
 import {
   type Failure,
   fail,
@@ -164,7 +165,7 @@ function described(summary: PlanSummary, switches: readonly string[]): string {
 export function planCommand(commands: Readonly<Record<string, Command>>) {
   const names = Object.keys(commands) as [string, ...string[]];
   return {
-    description: `Runs a titled list of commands as one change: one question for the person, with a summary of everything it does, then one undo step named after the title ("Build the Rapidfix site"), a version saved before it. Every command is checked first, each against the site as the ones before it leave it; if any fails, nothing changes and the answer says which. Use it for a build of more than a few edits. Each command takes what it takes on its own (${names.join(", ")}); a plan holds no plan. New ids from addPage and addNode aren't known before it runs: add a page and fill it in two plans.`,
+    description: `Runs a titled list of commands as one change: one question for the person, with a summary of everything it does, then one undo step named after the title ("Build the Rapidfix site"), a version saved before it. Every command is checked first, each against the site as the ones before it leave it; if any fails, nothing changes and the answer says which. Use it for a build of more than a few edits. Each command takes what it takes on its own (${names.join(", ")}); a plan holds no plan. New ids from addPage and addNode aren't known before it runs: add a page and fill it in two plans. If the person hasn't answered within about 25 seconds, it answers waiting with a changeId: ask changeStatus with it a little later, rather than sending the plan again.`,
     /**
      * No version of its own before it (S26, AIB-6 amended): a plan always asks, and the person's
      * Allow saves one, so a plan refused as invalid saves nothing.
@@ -205,7 +206,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         const command = commands[step.name];
         if (command === undefined) return fail("invalid", `There is no command "${step.name}".`);
         const where = `Command ${at + 1} (${step.name})`;
-        const parsed = command.input.safeParse(step.input);
+        const parsed = command.input.safeParse(step.input, APP_PARSE);
         if (!parsed.success) {
           return fail("invalid", `${where}: ${z.prettifyError(parsed.error)} Nothing changed.`);
         }

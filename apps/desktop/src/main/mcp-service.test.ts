@@ -65,6 +65,9 @@ function setUp(
     }),
   );
   const cancel = vi.fn((_appId: string) => undefined);
+  const changeStatus = vi.fn(
+    (_input: unknown, _appId: string): AiResponse => ({ status: "not-found", message: "none" }),
+  );
   const clock = { time: 1_000_000 };
   const briefs = {
     ask: vi.fn(async () => ({ status: "declined", message: "closed" }) as const),
@@ -75,6 +78,7 @@ function setUp(
     apps,
     ask,
     cancel,
+    changeStatus,
     info: { name: "Webforge", version: "1" },
     saveVersionBefore,
     opening: () => opening,
@@ -92,6 +96,7 @@ function setUp(
     saveVersionBefore,
     ask,
     cancel,
+    changeStatus,
     clock,
     briefs,
     closed: () => closed,
@@ -440,6 +445,20 @@ describe("the version before an AI app's changes (S20)", () => {
     expect(briefs.status).toHaveBeenCalledWith(expect.anything(), "app-2");
   });
 
+  it("asks main's bridge what became of a change, by the app's id, saving nothing (#1364)", async () => {
+    const { service, listened, saveVersionBefore, changeStatus, ask } = setUp();
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+
+    const client = await connection(options, { id: "app-2", name: "Claude" });
+    await client.callTool({ name: "changeStatus", arguments: { changeId: 3 } });
+
+    expect(changeStatus).toHaveBeenCalledWith({ changeId: 3 }, "app-2");
+    expect(ask).not.toHaveBeenCalled();
+    expect(saveVersionBefore).not.toHaveBeenCalled();
+  });
+
   it("lets the command run when the version can't be saved", async () => {
     const { service, listened, saveVersionBefore, ask } = setUp();
     saveVersionBefore.mockResolvedValue("failed");
@@ -456,27 +475,32 @@ describe("the version before an AI app's changes (S20)", () => {
 });
 
 describe("main's own tools (4.12a)", () => {
-  const briefs = () => ({
-    ask: vi.fn(async (): Promise<AiResponse> => ({ status: "declined", message: "closed" })),
-    choices: vi.fn(() => ({ status: "done", data: siteChoices([]) }) as const),
-    status: vi.fn((): AiResponse => ({ status: "not-found", message: "none" })),
+  const main = () => ({
+    briefs: {
+      ask: vi.fn(async (): Promise<AiResponse> => ({ status: "declined", message: "closed" })),
+      choices: vi.fn(() => ({ status: "done", data: siteChoices([]) }) as const),
+      status: vi.fn((): AiResponse => ({ status: "not-found", message: "none" })),
+    },
+    changeStatus: vi.fn((): AiResponse => ({ status: "not-found", message: "none" })),
   });
 
   it("answers each by its name", async () => {
-    const each = briefs();
+    const each = main();
     const command = { kind: "command", input: {}, app: "Claude" } as const;
 
     await answerMainTool(each, { ...command, name: "createSiteFromBrief" }, "app-1");
     await answerMainTool(each, { kind: "query", name: "siteChoices", input: {} }, "app-1");
     await answerMainTool(each, { kind: "query", name: "briefStatus", input: {} }, "app-1");
+    await answerMainTool(each, { kind: "query", name: "changeStatus", input: {} }, "app-1");
 
-    expect(each.ask).toHaveBeenCalledOnce();
-    expect(each.choices).toHaveBeenCalledOnce();
-    expect(each.status).toHaveBeenCalledWith({}, "app-1");
+    expect(each.briefs.ask).toHaveBeenCalledOnce();
+    expect(each.briefs.choices).toHaveBeenCalledOnce();
+    expect(each.briefs.status).toHaveBeenCalledWith({}, "app-1");
+    expect(each.changeStatus).toHaveBeenCalledWith({}, "app-1");
   });
 
   it("refuses a name it has no tool for, rather than starting a brief (#978)", async () => {
-    const each = briefs();
+    const each = main();
 
     const answer = await answerMainTool(
       each,
@@ -485,9 +509,10 @@ describe("main's own tools (4.12a)", () => {
     );
 
     expect(answer).toEqual({ status: "invalid", message: "There is no such tool." });
-    expect(each.ask).not.toHaveBeenCalled();
-    expect(each.choices).not.toHaveBeenCalled();
-    expect(each.status).not.toHaveBeenCalled();
+    expect(each.briefs.ask).not.toHaveBeenCalled();
+    expect(each.briefs.choices).not.toHaveBeenCalled();
+    expect(each.briefs.status).not.toHaveBeenCalled();
+    expect(each.changeStatus).not.toHaveBeenCalled();
   });
 });
 
@@ -520,6 +545,7 @@ describe("the assistant's connection to the tool layer (6.9b, ADR 0026 §1)", ()
     expect(ask).toHaveBeenLastCalledWith(
       { kind: "command", name: "addPage", input: { title: "Menu" }, app: "Assistant" },
       "assistant",
+      expect.any(Function),
     );
     expect(added.content).toEqual([
       {
@@ -549,11 +575,13 @@ describe("the assistant's connection to the tool layer (6.9b, ADR 0026 §1)", ()
       1,
       { kind: "query", name: "outline", input: {}, stage },
       "assistant",
+      expect.any(Function),
     );
     expect(ask).toHaveBeenNthCalledWith(
       2,
       { kind: "command", name: "addPage", input: { title: "Menu" }, app: "Assistant", stage },
       "assistant",
+      expect.any(Function),
     );
     await close();
   });

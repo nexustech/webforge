@@ -4,6 +4,7 @@ import { createElement } from "react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 import { DEFAULT_UNASKED_MINUTES } from "../../shared/ipc/mcp.js";
+import { mediaImageUrl } from "../../shared/ipc/media.js";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { textSessionOpen } from "../editor/editor-session.js";
 import {
@@ -17,6 +18,7 @@ import { reportFailure } from "../log.js";
 import { addMedia, importItems } from "../media/index.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { siteSession } from "../storage/index.js";
+import { readPixels } from "../theme/index.js";
 import { createAppTools, openPreviewFor } from "./app-tools.js";
 import { answerRequest, commandHost } from "./command-host.js";
 import { MediaRequestDialog } from "./MediaRequestDialog.js";
@@ -82,6 +84,8 @@ export const aiRequestsArea: Area<WindowContext> = {
           run: () => commands.run(COMMAND_IDS.preview),
           cancel: () => api.preview.cancelNext(siteSession()),
         }),
+      // A small copy, as Theme Studio's palette from an image reads (#1373).
+      readPixels: (item) => readPixels(mediaImageUrl(item, "thumbnail")),
     });
 
     // The last question stays shown while the dialog fades out.

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { briefStatusSchema } from "../shared/ai-tools.js";
 import {
   type AiResponse,
+  ANSWER_WITHIN_MS,
   aiEvents,
   type BriefOutcome,
   type SiteBrief,
@@ -139,12 +140,6 @@ export type SiteBriefsOptions = {
   /** How long a decided brief's outcome is kept for `briefStatus`, unless read before. */
   readonly keepMs?: number;
 };
-
-/**
- * How long `createSiteFromBrief` waits for the person before answering `waiting`: under the 60 s an
- * MCP client waits by default, whether or not it asks for progress (coordinator, #778 review).
- */
-const ANSWER_WITHIN_MS = 45_000;
 
 /** How long a decided brief's outcome waits to be read with `briefStatus`. */
 const KEEP_MS = 30 * 60_000;

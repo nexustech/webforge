@@ -192,7 +192,10 @@ type CommandApi = {
   // zod-validated against COMMANDS; one HistoryManager step labelled "AI (‹app›): …"; refused with
   // 'busy' while a transaction or text session is open; site-wide commands await the D7
   // confirmation for as long as it takes (UA-1, 5.34): 'declined' only by the person, and closed
-  // unanswered, as no decline, when the app gives up or the site closes
+  // unanswered, as no decline, when the app gives up or the site closes. After 25 s, main's bridge
+  // answers a paired app's change 'waiting' with a changeId and keeps the question; the main tool
+  // changeStatus tells its outcome for 30 min, and the same change sent meanwhile is not made twice
+  // (#1364, #1384)
 };
 
 // packages/storage: project-store.ts. Synchronous (better-sqlite3), used only in the main process.

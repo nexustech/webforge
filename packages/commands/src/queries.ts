@@ -26,6 +26,11 @@ type TreeNode = {
   /** Its component's name ("Hero"), or the name the person gave it in Layers. */
   readonly label: string;
   readonly hidden?: true;
+  /**
+   * Its anchor (Advanced), if it has one: a link to it on its page is
+   * `webforge:page/<pageId>#<anchor>` in rich text, or a page link with `anchor` (#1374).
+   */
+  readonly anchor?: string;
   /** A linked copy shows this shared section: edit it there (`kind: "shared"`). */
   readonly sharedSectionId?: string;
   readonly slots?: Readonly<Record<string, readonly TreeNode[]>>;
@@ -51,11 +56,13 @@ function treeNode(node: NodeDoc, site: SiteDoc): TreeNode {
       ? [[name, value.map((child) => treeNode(child, site))] as const]
       : [];
   });
+  const anchor = node.props.advanced?.anchorId;
   return {
     id: node.props.id,
     type: node.type,
     label: named ?? component?.label ?? node.type,
     ...(node.props.hidden === true ? { hidden: true } : {}),
+    ...(typeof anchor === "string" && anchor !== "" ? { anchor } : {}),
     ...(slots.length === 0 ? {} : { slots: Object.fromEntries(slots) }),
   };
 }
@@ -95,7 +102,7 @@ export const QUERIES = {
   /** The elements at a location, as a tree: a page's, the Header's or a shared section's. */
   pageTree: {
     description:
-      'The elements at a location, as a tree of ids and types: a page\'s content (kind "page"), the Header or Footer every page shares ("layout"), or a shared section ("shared").',
+      'The elements at a location, as a tree of ids and types: a page\'s content (kind "page"), the Header or Footer every page shares ("layout"), or a shared section ("shared"). An element with an anchor gives it: a link goes to it as webforge:page/<pageId>#<anchor> in rich text, or a page link with that anchor.',
     input: z.strictObject({ location: locationSchema }),
     read: (site: SiteDoc, { location }: { location: Location }) => {
       const nodes = nodesAt(site, location);
@@ -191,7 +198,7 @@ export const QUERIES = {
   /** Site Settings that say what the business is: never publishing, forms or analytics. */
   settings: {
     description:
-      "Site Settings that say what the business is: its name, address, social profiles, contact details and search settings. Never publishing, forms or analytics.",
+      "Site Settings that say what the business is: its name, address, social profiles, contact details and search settings. general holds the logo the Header shows and the site's icon, as Media ids, when they're set: you can read them, and pictureColours gives their colours, but only the person sets them. Never publishing, forms or analytics.",
     input: z.strictObject({}),
     read: (site: SiteDoc) => {
       const { general, address, social, contact, search } = site.settings;
@@ -236,28 +243,36 @@ export const QUERIES = {
    * fields as `{ mediaId }`; requestMedia asks the person for more.
    */
   media: {
-    description: `The site's Media: each picture and file by id, with its file name, kind ("image" or "file"), type, a picture's width, height and alt text, and a file's size in bytes. Put a picture in an Image field with updateFields, as { "mediaId": id }. runSiteCheck's templateImages tip lists those still the template's; requestMedia asks the person for their own.`,
+    description: `The site's Media: each picture and file by id, with its file name, kind ("image" or "file"), type, a picture's width, height and alt text, and a file's size in bytes. The picture Site Settings use as the logo, or the site's icon, says so (usedAs). Put a picture in an Image field with updateFields, as { "mediaId": id }; pictureColours gives its main colours. runSiteCheck's templateImages tip lists those still the template's; requestMedia asks the person for their own.`,
     input: z.strictObject({}),
     read: (site: SiteDoc) =>
-      Object.values(site.media).map((item) =>
-        item.kind === "image"
-          ? {
-              id: item.id,
-              fileName: item.fileName,
-              kind: item.kind,
-              mimeType: item.mimeType,
-              width: item.width,
-              height: item.height,
-              alt: item.alt,
-            }
-          : {
-              id: item.id,
-              fileName: item.fileName,
-              kind: item.kind,
-              mimeType: item.mimeType,
-              ...(item.size === undefined ? {} : { size: item.size }),
-            },
-      ),
+      Object.values(site.media).map((item) => {
+        if (item.kind !== "image") {
+          return {
+            id: item.id,
+            fileName: item.fileName,
+            kind: item.kind,
+            mimeType: item.mimeType,
+            ...(item.size === undefined ? {} : { size: item.size }),
+          };
+        }
+        // What Site Settings use it as (#1373): an app may read, never set, the logo or icon.
+        const { logo, icon } = site.settings.general;
+        const usedAs = [
+          ...(logo === item.id ? ["logo"] : []),
+          ...(icon === item.id ? ["icon"] : []),
+        ];
+        return {
+          id: item.id,
+          fileName: item.fileName,
+          kind: item.kind,
+          mimeType: item.mimeType,
+          width: item.width,
+          height: item.height,
+          alt: item.alt,
+          ...(usedAs.length === 0 ? {} : { usedAs }),
+        };
+      }),
   },
   /** The theme's tokens: colours, fonts, corners, spacing… */
   theme: {

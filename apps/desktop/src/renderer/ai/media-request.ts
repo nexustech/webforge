@@ -1,7 +1,8 @@
+import { APP_PARSE } from "@webforge/commands";
 import type { MediaMeta } from "@webforge/model";
 import { z } from "zod";
 import { mediaStatusInput, requestMediaInput } from "../../shared/ai-tools.js";
-import type { AiRequest, AiResponse } from "../../shared/ipc/ai.js";
+import { type AiRequest, type AiResponse, ANSWER_WITHIN_MS } from "../../shared/ipc/ai.js";
 
 /**
  * How long a request for pictures waits for the person, then closes with nothing added. A change's
@@ -34,13 +35,6 @@ export type MediaRequestDeps = {
   /** The first request's id; a random one when left out. */
   readonly firstId?: number;
 };
-
-/**
- * How long `requestMedia` waits for the person before answering `waiting` with its id: under the
- * 60 s an MCP client waits by default, as a brief's (`ANSWER_WITHIN_MS` in main's site-brief.ts).
- * Choosing pictures takes minutes (#1252).
- */
-const ANSWER_WITHIN_MS = 45_000;
 
 /** How long a request's outcome waits to be read with `mediaStatus`, as a brief's does. */
 const KEEP_MS = 30 * 60_000;
@@ -137,7 +131,7 @@ export function createMediaRequests(deps: MediaRequestDeps): MediaRequests {
   };
 
   const requestMedia = async (app: string, input: unknown): Promise<AiResponse> => {
-    const parsed = requestMediaInput.safeParse(input);
+    const parsed = requestMediaInput.safeParse(input, APP_PARSE);
     if (!parsed.success) return { status: "invalid", message: z.prettifyError(parsed.error) };
     if (open !== undefined) {
       if (open.app !== app) return OTHER_APP;
@@ -175,7 +169,7 @@ export function createMediaRequests(deps: MediaRequestDeps): MediaRequests {
         ? requestMedia(request.app, request.input)
         : { status: "invalid", message: "requestMedia is a command." },
     mediaStatus: (request) => {
-      const parsed = mediaStatusInput.safeParse(request.input);
+      const parsed = mediaStatusInput.safeParse(request.input, APP_PARSE);
       if (!parsed.success) return { status: "invalid", message: z.prettifyError(parsed.error) };
       const { requestId } = parsed.data;
       if (open?.id === requestId && parked.has(requestId))

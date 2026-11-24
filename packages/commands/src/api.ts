@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import { z } from "zod";
+import { APP_PARSE } from "./app-errors.js";
 import { COMMANDS, type CommandName } from "./commands.js";
 import { locationSchema } from "./locations.js";
 import type { Failure, Plan, PlanContext } from "./plan.js";
@@ -75,7 +76,7 @@ export function createCommandApi(host: CommandHost): CommandApi {
   /** The command `name` planned against the site as it is now. */
   const planNow = (name: CommandName, input: unknown): Plan | Failure => {
     const command = COMMANDS[name];
-    const parsed = command.input.safeParse(input);
+    const parsed = command.input.safeParse(input, APP_PARSE);
     if (!parsed.success) return { status: "invalid", message: z.prettifyError(parsed.error) };
     // Each command's input type is its own schema's output.
     return (
@@ -126,7 +127,7 @@ export function createCommandApi(host: CommandHost): CommandApi {
         return { status: "invalid", message: `There is no query "${name}".` };
       }
       const query = QUERIES[name as QueryName];
-      const parsed = query.input.safeParse(input);
+      const parsed = query.input.safeParse(input, APP_PARSE);
       if (!parsed.success) return { status: "invalid", message: z.prettifyError(parsed.error) };
       const data = (query.read as (site: unknown, input: unknown) => unknown)(
         host.history.document.getState(),

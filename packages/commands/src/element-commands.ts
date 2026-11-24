@@ -152,7 +152,7 @@ export const ELEMENT_COMMANDS = {
   /** Replaces an element's text, or rich text's HTML. */
   editText: {
     description:
-      "Replaces an element's text, or a rich-text field's HTML (cleaned). One undo step. Set example to true if the new text holds an example for a fact you weren't given.",
+      "Replaces an element's text, or a rich-text field's HTML (cleaned). Rich text links to one of the site's pages as <a href=\"webforge:page/<pageId>\">, as fields describes. One undo step. Set example to true if the new text holds an example for a fact you weren't given.",
     input: z.strictObject({
       location: locationSchema,
       nodeId,

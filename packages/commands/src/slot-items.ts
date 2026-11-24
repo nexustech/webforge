@@ -1,6 +1,7 @@
 import type { NodeDoc, SiteDoc } from "@webforge/model";
 import type { CatalogueComponent } from "@webforge/site-components/catalogue-data";
 import { z } from "zod";
+import { APP_PARSE } from "./app-errors.js";
 import {
   canGo,
   componentOf,
@@ -78,7 +79,7 @@ export function builtNode(
     id: "",
   };
   const changes: DestinationChange[] = [
-    ...destinationChanges(component, component.defaults, stored.values),
+    ...destinationChanges(site, component, component.defaults, stored.values),
   ];
   for (const [slot, value] of Object.entries(given).filter(([name]) => isSlotField(name))) {
     if (depth + 1 >= SLOT_DEPTH_MAX) {
@@ -87,7 +88,7 @@ export function builtNode(
         `${component.label}'s "${slot}" is too deep to fill here: add it, then add to it.`,
       );
     }
-    const items = itemsSchema.safeParse(value);
+    const items = itemsSchema.safeParse(value, APP_PARSE);
     if (!items.success) {
       return fail(
         "invalid",
