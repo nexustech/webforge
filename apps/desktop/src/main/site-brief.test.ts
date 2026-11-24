@@ -1,5 +1,6 @@
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ANSWER_WITHIN_MS } from "../shared/ipc/ai.js";
 import type { AiWindow } from "./ai-ipc.js";
 import { type BriefTemplate, briefProblem, createSiteBriefs, siteChoices } from "./site-brief.js";
 
@@ -183,10 +184,10 @@ describe("a brief, shown to the person (4.12a, AIB-5)", () => {
 describe("a brief the person takes a while over (4.12a, #778 review)", () => {
   it("answers waiting with its id after the wait, and briefStatus gives the outcome, once", async () => {
     vi.useFakeTimers();
-    const { briefs, sent, answer } = setUp({ answerWithinMs: 45_000 });
+    const { briefs, sent, answer } = setUp();
 
     const asked = briefs.ask(brief, "Claude");
-    await vi.advanceTimersByTimeAsync(45_000);
+    await vi.advanceTimersByTimeAsync(ANSWER_WITHIN_MS);
     const first = await asked;
     expect(first).toEqual({
       status: "waiting",

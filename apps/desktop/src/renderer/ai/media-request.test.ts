@@ -1,6 +1,6 @@
 import type { MediaId, MediaMeta } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AiRequest } from "../../shared/ipc/ai.js";
+import { type AiRequest, ANSWER_WITHIN_MS } from "../../shared/ipc/ai.js";
 import { createMediaRequests, type MediaRequestDeps } from "./media-request.js";
 
 const photo: MediaMeta = {
@@ -133,7 +133,7 @@ describe("a request the person takes minutes over (#1252)", () => {
     const { deps, requests } = setup({ choose });
 
     const first = requests.requestMedia(request({ reason: "Photos of your workshop" }));
-    await vi.advanceTimersByTimeAsync(45_000);
+    await vi.advanceTimersByTimeAsync(ANSWER_WITHIN_MS);
     expect(await first).toEqual({
       status: "waiting",
       data: { requestId: 1 },

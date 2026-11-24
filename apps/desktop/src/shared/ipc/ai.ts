@@ -6,6 +6,14 @@ import { sessionIdSchema } from "./project.js";
 /** A query's or command's name: `outline`, `addNode`. Which ones exist, the renderer checks. */
 const nameSchema = z.string().regex(/^[a-zA-Z]{1,64}$/);
 
+/**
+ * How long an AI app's request waits on the person before answering `waiting` with an id to ask
+ * about later: a change's question (#1364), a brief (#778) and a request for Media (#1252). Well
+ * under the 60 s an MCP client waits by default, so a client that gives up sooner still learns the
+ * id (#1384). The tools' descriptions and the help page say "about 25 seconds".
+ */
+export const ANSWER_WITHIN_MS = 25_000;
+
 /** The most an AI app's request may carry as JSON: well over any command's input (S21). */
 export const AI_INPUT_MAX_CHARS = 256_000;
 

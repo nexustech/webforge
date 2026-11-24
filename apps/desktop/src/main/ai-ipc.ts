@@ -2,7 +2,13 @@ import { t } from "@webforge/i18n/main";
 import type { IpcMain } from "electron";
 import { z } from "zod";
 import { changeStatusSchema, windowTool } from "../shared/ai-tools.js";
-import { type AiRequest, type AiResponse, aiEvents, aiRequestSchema } from "../shared/ipc/ai.js";
+import {
+  type AiRequest,
+  type AiResponse,
+  ANSWER_WITHIN_MS,
+  aiEvents,
+  aiRequestSchema,
+} from "../shared/ipc/ai.js";
 import { registerIpcHandler } from "./ipc.js";
 
 /** How long a query waits for the renderer's answer. */
@@ -13,13 +19,6 @@ const QUERY_TIMEOUT_MS = 15_000;
  * (`ai:asking`): then it waits for their answer however long it takes (5.34, UA-1).
  */
 const COMMAND_TIMEOUT_MS = 75_000;
-
-/**
- * How long a paired app's command waits on the person's answer to its question before answering
- * `waiting` with its id (#1364): under the 60 s an MCP client waits by default, as a brief's
- * (`ANSWER_WITHIN_MS` in site-brief.ts). The question stays, and `changeStatus` tells the outcome.
- */
-const ANSWER_WITHIN_MS = 45_000;
 
 /** How long a change's outcome waits to be read with `changeStatus`, as a brief's does. */
 const KEEP_MS = 30 * 60_000;
