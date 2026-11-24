@@ -1,3 +1,4 @@
+import { APP_PARSE } from "@webforge/commands";
 import { isMessageKey, t } from "@webforge/i18n";
 import {
   type FormUnset,
@@ -148,7 +149,7 @@ export function createAppTools(deps: AppToolsDeps): {
   };
   return {
     pictureColours: async (request) => {
-      const parsed = pictureColoursInput.safeParse(request.input);
+      const parsed = pictureColoursInput.safeParse(request.input, APP_PARSE);
       if (!parsed.success) return { status: "invalid", message: z.prettifyError(parsed.error) };
       const { mediaId } = parsed.data;
       const item = mediaItem(deps.site(request.stage).media, mediaId);
