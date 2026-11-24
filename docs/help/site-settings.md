@@ -4,7 +4,7 @@ id: site-settings
 title: Site Settings
 summary: Your site's name, web address, business details, social profiles, search engine and analytics settings, and form service.
 related: [settings, forms, pages, site-check, custom-code]
-updated: 2026-11-22
+updated: 2026-11-24
 ---
 
 # Site Settings
@@ -20,6 +20,8 @@ They're in the same **Settings** window as {appName}'s own preferences, under **
 - **Language:** the language your site is written in, chosen by name, such as _English (United Kingdom)_ or _German_. Spelling checks use it too. The words your site writes itself, such as _Menu_, _Back to top_, _Accept all_ and the days of the week, are in this language when it's French, German or Spanish, and in English for any other.
 - **Logo:** your business's logo, from Media. The Header shows it in place of the site's name or beside it; choose which, and its size, in the [Header's options](header-and-footer.md#header-and-footer). Search engines show it too, once your site has a web address. A logo with a transparent background looks best.
 - **Site icon:** the small picture in browser tabs and bookmarks. Choose a square picture from Media.
+
+  An [AI app](ai-apps.md) can set or clear the **Logo** and the **Site icon** too, choosing among your pictures in Media, but only once you allow it: its question shows the new picture, even while it works without asking. It can't add a picture itself.
 - **Show a back-to-top button:** a button that appears once visitors scroll down. It isn't shown in the editor.
 - **Business type** and **More precisely:** what kind of business this is, such as _Restaurant_, _Plumber_ or _Vehicle repair_. Search engines use it.
 - **Help AI tools read your site:** adds a plain-text copy of each page to your website, for AI tools that read them. Search engines don't read them. Off unless you turn it on.

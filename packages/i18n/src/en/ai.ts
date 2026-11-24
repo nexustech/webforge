@@ -59,6 +59,11 @@ export const ai = {
   "ai.confirm.toPage": "the page “{page}”",
   "ai.confirm.toSection": "the section “{section}” on the page “{page}”",
   "ai.confirm.toFile": "the file “{file}”",
+  // A logo or site icon an AI app sets, by its file name (UA-8): "Logo: from none to the picture
+  // “logo.png”.", with "none" while there's none.
+  "ai.confirm.toPicture": "the picture “{file}”",
+  "ai.confirm.noPicture": "none",
+  "ai.confirm.toMissingPicture": "a picture that isn't there",
   "ai.confirm.toList": "the list “{list}”",
   // A page, file or list a link names that the site doesn't have any more.
   "ai.confirm.toMissingPage": "a page that isn't there",

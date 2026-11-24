@@ -368,7 +368,7 @@ const NAME_SPOOFS = /["“”„‟«»\r\n\u2028\u2029]/g;
  * together, cut short past {@link NAME_MAX_CHARS}. Names an app writes (an element's, a page's
  * title, a file's or a list's) can't then read as part of the question around them.
  */
-function shortName(name: string): string {
+export function shortName(name: string): string {
   const plain = name.replace(NAME_SPOOFS, " ").replace(/\s+/g, " ").trim();
   return plain.length <= NAME_MAX_CHARS ? plain : `${plain.slice(0, NAME_MAX_CHARS - 1)}…`;
 }

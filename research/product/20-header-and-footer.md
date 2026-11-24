@@ -1,6 +1,6 @@
 # The Header and Footer: what they can hold
 
-**Status:** ✅ Decided 2026-11-20 ([§5](#5-decisions)): HF-1, HF-2 and HF-4 are adopted (6 days), and on 23 Nov HF-5, HF-8 and HF-9; HF-3, HF-6 and HF-7 are not taken for now. Planned as PH5-5, before v1.0: 5.37–5.39 ([#1236](https://github.com/nexustech/webforge/issues/1236)–[#1238](https://github.com/nexustech/webforge/issues/1238)). **24 Nov 2026:** HF-10, a content width for the Header and Footer, is proposed ([§4](#added-on-24-nov-2026-the-contents-width)), awaiting the product owner.
+**Status:** ✅ Decided 2026-11-20 ([§5](#5-decisions)): HF-1, HF-2 and HF-4 are adopted (6 days), and on 23 Nov HF-5, HF-8 and HF-9; HF-3, HF-6 and HF-7 are not taken for now. Planned as PH5-5, before v1.0: 5.37–5.39 ([#1236](https://github.com/nexustech/webforge/issues/1236)–[#1238](https://github.com/nexustech/webforge/issues/1238)). **24 Nov 2026:** HF-10, a content width for the Header and Footer ([§4](#added-on-24-nov-2026-the-contents-width)), is adopted, with sites saved before kept at _Full_ ([#1401](https://github.com/nexustech/webforge/issues/1401)).
 
 **Date:** 2026-11-20
 
@@ -106,6 +106,8 @@ Product owner, 2026-11-20, asked which proposals to adopt: "The recommended ones
 | HF-6 | ❌ **Not taken for now:** a see-through Header                                                                  |
 | HF-7 | ❌ **Not taken for now:** two more Header layouts                                                               |
 
+6 days in all, in the order HF-1, HF-2, HF-4. **Planned as PH5-5** (20 Nov 2026; [the plan's §3](../../spec/04-implementation-plan.md#3-timeline), MVP §7 item 59): asked when they ship, the product owner answered "Both before v1.0", so all three join Phase 5. Stream A, after 5.30: 5.37 [#1236](https://github.com/nexustech/webforge/issues/1236) (HF-1, 1.5) → 5.38 [#1237](https://github.com/nexustech/webforge/issues/1237) (HF-2, 1), which share one site format migration if they land together; stream C, after 5.32: 5.39 [#1238](https://github.com/nexustech/webforge/issues/1238) (HF-4, 3.5). Each updates the catalogue data for AI apps, the templates where it fits and the help page.
+
 **After run 2 of the trial** (product owner, 2026-11-23; [#1230](https://github.com/nexustech/webforge/issues/1230), [#1375](https://github.com/nexustech/webforge/issues/1375)), setting up a designed Footer took most of the person's time, and all three of its fixes were adopted:
 
 | #    | Decision                                                                                                                                           |
@@ -116,7 +118,13 @@ Product owner, 2026-11-20, asked which proposals to adopt: "The recommended ones
 
 About 2 days, out of plan in Phase 5's milestone: [#1375](https://github.com/nexustech/webforge/issues/1375), stream C, after [#1368](https://github.com/nexustech/webforge/issues/1368) (the _Centred_ Footer's text under its columns).
 
-6 days in all, in the order HF-1, HF-2, HF-4. **Planned as PH5-5** (20 Nov 2026; [the plan's §3](../../spec/04-implementation-plan.md#3-timeline), MVP §7 item 59): asked when they ship, the product owner answered "Both before v1.0", so all three join Phase 5. Stream A, after 5.30: 5.37 [#1236](https://github.com/nexustech/webforge/issues/1236) (HF-1, 1.5) → 5.38 [#1237](https://github.com/nexustech/webforge/issues/1237) (HF-2, 1), which share one site format migration if they land together; stream C, after 5.32: 5.39 [#1238](https://github.com/nexustech/webforge/issues/1238) (HF-4, 3.5). Each updates the catalogue data for AI apps, the templates where it fits and the help page.
+**Asked whether the Header and Footer can set a width for their content** (product owner, 2026-11-24: "Adopt, old sites Full"; [#1401](https://github.com/nexustech/webforge/issues/1401)):
+
+| #     | Decision                                                                                                                                                                                                                                                            |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HF-10 | ✅ **Adopted:** the Header and the Footer each get sections' **Content width**, set on its own. The background, the scroll style and a sticky Header still span the page. Every template starts both at _Wide_; a site saved before keeps _Full_, with no migration |
+
+2 days, out of plan in Phase 5's milestone: [#1401](https://github.com/nexustech/webforge/issues/1401), stream C, at once (MVP §7 item 64).
 
 ## Sources
 

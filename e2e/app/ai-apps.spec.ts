@@ -465,6 +465,27 @@ test("an AI app asks for pictures with its reason; the person chooses them in Ad
     // The person's own step: it undoes as any other.
     await expect(step("Added image 'Workshop.jpg'")).toBeVisible();
 
+    // The logo, from that picture (UA-8): asked, naming it, and showing its thumbnail small.
+    const logo = client.callTool({
+      name: "updateSettings",
+      arguments: { general: { logo: added.data.added[0]?.id } },
+    });
+    const allowLogo = page.getByRole("alertdialog", {
+      name: "Allow Test client to Change Site Settings: General?",
+    });
+    await expect(allowLogo).toContainText("Logo: from none to the picture “Workshop.jpg”.");
+    await expect(allowLogo.locator("figcaption")).toHaveText("Logo");
+    const thumbnail = allowLogo.locator("figure img");
+    // Drawn from Media's thumbnail, not a broken picture.
+    await expect
+      .poll(() => thumbnail.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))
+      .toBeGreaterThan(0);
+    await allowLogo.getByRole("button", { name: "Allow", exact: true }).click();
+    expect(answer(await logo)).toMatchObject({ status: "done" });
+    expect(answer(await client.callTool({ name: "settings", arguments: {} }))).toMatchObject({
+      data: { general: { logo: added.data.added[0]?.id } },
+    });
+
     // Not now: nothing more is added, and the app is told; as after any decline, it waits.
     const notNow = client.callTool({
       name: "requestMedia",

@@ -114,3 +114,54 @@ export const LongPlan: Story = {
     },
   },
 };
+
+/** A picture for the stories, as an SVG with no text, so it draws the same everywhere. */
+const svg = (width: number, height: number, shapes: string) =>
+  `data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${shapes}</svg>`,
+  )}`;
+
+/** A wide logo with a see-through background, and a square icon. */
+const LOGO = svg(
+  240,
+  80,
+  '<circle cx="40" cy="40" r="32" fill="#c0392b"/><rect x="88" y="22" width="132" height="14" rx="7" fill="#2c3e50"/><rect x="88" y="46" width="96" height="10" rx="5" fill="#7f8c8d"/>',
+);
+const ICON = svg(
+  64,
+  64,
+  '<rect width="64" height="64" rx="14" fill="#c0392b"/><circle cx="32" cy="32" r="14" fill="#fff"/>',
+);
+
+/**
+ * An AI app setting the logo and the site's icon (UA-8): always asked, each named from and to by
+ * its file name, and each new picture shown small, so the person sees what they allow.
+ */
+export const AiAppSetsLogo: Story = {
+  args: {
+    action: {
+      action: t("ai.confirm.settings", {
+        app: "Claude Desktop",
+        sections: t("site.settings.section.general"),
+      }),
+      description: [
+        t("ai.confirm.destinationFromTo", {
+          field: t("site.settings.logo"),
+          from: t("ai.confirm.noPicture"),
+          to: t("ai.confirm.toPicture", { file: "rapidfix-logo.png" }),
+        }),
+        t("ai.confirm.destinationFromTo", {
+          field: t("site.settings.icon"),
+          from: t("ai.confirm.toPicture", { file: "old-icon.png" }),
+          to: t("ai.confirm.toPicture", { file: "rapidfix-icon.png" }),
+        }),
+      ].join(" "),
+      confirm: t("ai.confirm.allow"),
+      affectedPages: 6,
+      pictures: [
+        { label: t("site.settings.logo"), src: LOGO },
+        { label: t("site.settings.icon"), src: ICON },
+      ],
+    },
+  },
+};

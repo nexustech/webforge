@@ -1,7 +1,8 @@
 import { createCommandApi } from "@webforge/commands";
-import { insertPage, newId } from "@webforge/model";
+import { type ImageMeta, insertPage, type MediaId, newId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
+import { mediaImageUrl } from "../../shared/ipc/media.js";
 import { starterSite } from "../../shared/starter-site.js";
 import { createEditorSession, textSessionKey } from "../editor/editor-session.js";
 import { createSiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -38,6 +39,37 @@ describe("commandHost (4.8)", () => {
     expect(session.ui.getState().pageId).toBe(home);
     session.history.undo();
     expect(session.ui.getState().pageId).toBe(other);
+  });
+
+  it("shows a new logo in the question by its thumbnail, and sets it once allowed (UA-8)", async () => {
+    const site = starterSite();
+    const logo: ImageMeta = {
+      id: "media-logo" as MediaId,
+      kind: "image",
+      hash: "a".repeat(64),
+      name: "logo",
+      fileName: "logo.png",
+      mimeType: "image/png",
+      width: 400,
+      height: 200,
+      alt: "",
+    };
+    site.media[logo.id] = logo;
+    const session = createEditorSession(siteLibrary, site);
+    const siteWide = createSiteWideConfirm();
+    const api = createCommandApi(
+      commandHost(session, { getState: () => ({ mode: "design" }) as never }, siteWide),
+    );
+
+    const setting = api.run("updateSettings", { general: { logo: logo.id } }, { app: "Claude" });
+    await vi.waitFor(() => expect(siteWide.current()).not.toBeNull());
+    expect(siteWide.current()?.pictures).toEqual([
+      { label: "Logo", src: mediaImageUrl(logo, "thumbnail") },
+    ]);
+    siteWide.answer(true);
+
+    expect(await setting).toMatchObject({ status: "done" });
+    expect(session.history.document.getState().settings.general.logo).toBe(logo.id);
   });
 
   it("saves the plan's one version when the person allows it, named after the plan, and none if not (S26)", async () => {
