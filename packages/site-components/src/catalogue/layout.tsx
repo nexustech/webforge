@@ -337,8 +337,8 @@ function headerButton(
 const FOOTER_LAYOUTS = ["centred", "columns"] as const;
 
 /**
- * The most columns of elements a Footer has (HF-4, 5.39): three, beside its own text, which is the
- * first of four in *Columns*.
+ * The most columns of elements a Footer has (HF-4, 5.39): three. Its text was a fourth beside them
+ * in *Columns*; it's in the bottom line under them now (HF-5).
  */
 export const MAX_FOOTER_COLUMNS = 3;
 
@@ -414,9 +414,9 @@ const presetColumn = (id: string, content: readonly NodeDoc[]): NodeDoc => ({
 /**
  * What *Start from* gives the Footer (HF-4, 5.39): its layout and its columns, whose elements have
  * only what differs from their defaults (the editor adds those) and ids to make the site's own.
- * *Simple* is its text centred; *Columns* its text and the menu's links beside it, as today's two
- * layouts are; *Full* the menu's links under a title, the business's contact details, and its
- * social links over a newsletter signup.
+ * *Simple* is its text centred; *Columns* the menu's links over its text; *Full* the menu's links
+ * under a title, the business's contact details, and its social links over a newsletter signup,
+ * its text in the bottom line under them (HF-5).
  */
 export function footerPreset(preset: FooterPreset): {
   readonly variant: (typeof FOOTER_LAYOUTS)[number];
@@ -550,9 +550,10 @@ const footerColumn = defineComponent({
 });
 
 /**
- * The shared Footer (C5), in one of two layouts (2.6): its text centred, under its columns, or as
- * the first of its columns. Its columns hold elements (HF-4, 5.39), side by side on wider screens
- * and one under another on phones.
+ * The shared Footer (C5), in one of two layouts (2.6), centred or to the sides. Its columns hold
+ * elements (HF-4, 5.39), side by side on wider screens and one under another on phones; its text,
+ * its own small links (HF-5) and Cookie settings are its bottom line, under them over a rule.
+ * Without columns, it draws as it did before them.
  */
 const footer = defineComponent({
   label: t("layout.footer"),
@@ -579,13 +580,36 @@ const footer = defineComponent({
       // One Menu links: two would write two "Footer navigation" landmarks.
       once: ["MenuLinks"],
     },
+    // Small links of its own, apart from the menu (HF-5): Privacy, Terms.
+    links: {
+      kind: "pages",
+      label: t("field.footerLinks"),
+      help: t("field.footerLinks.help"),
+      from: "all",
+    },
   },
-  defaults: { text: t("starter.footer"), columns: [] },
+  defaults: { text: t("starter.footer"), columns: [], links: [] },
   render: ({ values, slots, context }) => {
     const content = boundText(values, "text", context);
     const text = content === null ? null : <p>{content}</p>;
     const cookies =
       context.cookieSettings === true ? <CookieSettings siteText={context.siteText} /> : null;
+    // Its own small links (HF-5), in page order: none, and it draws as it did before them.
+    const chosen = pageIdsOf(values.links);
+    const linked = (context.pageLinks ?? []).filter(
+      (link) => link.pageId !== undefined && chosen.has(link.pageId),
+    );
+    const links =
+      linked.length === 0 ? null : (
+        <nav
+          aria-label={context.siteText("siteText.footerLinks")}
+          className="site-footer-links flex flex-wrap gap-x-4 gap-y-1"
+        >
+          {linked.map((link) => (
+            <NavAnchor key={link.pageId} link={link} className="link link-hover" />
+          ))}
+        </nav>
+      );
     // The export leaves out the grid of a Footer with nothing shown in its columns, so a Footer of
     // its text alone is drawn as it was before columns. On the canvas the slot is a component,
     // there to show what it holds.
@@ -608,21 +632,25 @@ const footer = defineComponent({
       />
     ) : null;
     if (values.variant === "centred") {
-      // Without columns, as it was before them: its text and Cookie settings side by side, centred.
+      // Without columns, as it was before them: its text, links and Cookie settings side by side,
+      // centred.
       if (columns === null) {
         return (
           <footer className="site-footer footer footer-center bg-base-200 p-8 text-base-content">
             {text}
+            {links}
             {cookies}
           </footer>
         );
       }
-      // With them, its text and Cookie settings under them, still side by side (#1368):
-      // daisyUI's footer-center lays its children out in a row, so the Footer flows by rows.
+      // With them, its bottom line under them (#1368, HF-5): its text, links and Cookie settings
+      // side by side over a rule, wrapping on a phone. daisyUI's footer-center lays its children
+      // out in a row, so the Footer flows by rows.
       const line =
-        text === null && cookies === null ? null : (
-          <div className="site-footer-line grid-flow-col gap-x-4">
+        text === null && links === null && cookies === null ? null : (
+          <div className="site-footer-line flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-1 border-base-content/15 border-t pt-6">
             {text}
+            {links}
             {cookies}
           </div>
         );
@@ -633,13 +661,36 @@ const footer = defineComponent({
         </footer>
       );
     }
-    return (
-      <footer className="site-footer footer sm:footer-horizontal bg-base-200 p-8 text-base-content">
-        <aside>
+    // Without columns, as it was before them: its text, links and Cookie settings to one side.
+    if (columns === null) {
+      return (
+        <footer className="site-footer footer sm:footer-horizontal bg-base-200 p-8 text-base-content">
+          <aside>
+            {text}
+            {links}
+            {cookies}
+          </aside>
+        </footer>
+      );
+    }
+    // With them, its bottom line under them (HF-5): the © line where it belongs, not a narrow
+    // first column beside the logo; its links and Cookie settings at the other end, over a rule.
+    const line =
+      text === null && links === null && cookies === null ? null : (
+        <div className="site-footer-line flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-2 border-base-content/15 border-t pt-6">
           {text}
-          {cookies}
-        </aside>
+          {links === null && cookies === null ? null : (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              {links}
+              {cookies}
+            </div>
+          )}
+        </div>
+      );
+    return (
+      <footer className="site-footer footer bg-base-200 p-8 text-base-content">
         {columns}
+        {line}
       </footer>
     );
   },

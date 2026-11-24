@@ -230,3 +230,33 @@ export const FooterMenuLinksChosen: Story = {
     ],
   },
 };
+
+/**
+ * The Footer's bottom line (HF-5): its © line under the columns over a rule, with a Privacy link of
+ * its own at the other end.
+ */
+export const FooterBottomLine: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Footer",
+        props: {
+          id: "footer",
+          text: "© Rosa's Bakery, Hightown",
+          variant: "columns",
+          links: ["privacy"],
+          columns: [
+            column("links", [
+              { type: "Heading", props: { id: "links-title", text: "Explore", size: "small" } },
+              { type: "MenuLinks", props: { id: "menu" } },
+            ]),
+            column("follow", [
+              { type: "Heading", props: { id: "follow-title", text: "Follow us", size: "small" } },
+              { type: "SocialLinks", props: { id: "social" } },
+            ]),
+          ],
+        },
+      },
+    ],
+  },
+};

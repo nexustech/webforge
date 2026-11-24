@@ -143,9 +143,10 @@ for (const { template } of readTemplates()) {
           page.getByRole("navigation", { name: "Main navigation" }).getByRole("link").first(),
         ).toBeVisible();
       }
-      // The Footer's text and columns one under another, in reading order (HF-4, 5.39).
+      // The Footer's text and columns one under another, in reading order (HF-4, 5.39): its text
+      // first without columns, in the bottom line under them with them (HF-5).
       const columns = await page
-        .locator(".site-footer > aside, .site-footer > p, .site-footer-column")
+        .locator(".site-footer > aside, .site-footer > p, .site-footer-column, .site-footer-line")
         .evaluateAll((parts) =>
           parts
             .map((part) => part.getBoundingClientRect())

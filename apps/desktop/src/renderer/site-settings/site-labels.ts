@@ -34,7 +34,7 @@ const PLACES: readonly (readonly [RegExp, LabelPlace])[] = [
   [/^siteText\.embed\./, "embed"],
   [/^siteText\.(form|thanks)\./, "forms"],
   [/^siteText\.logo$/, "logos"],
-  [/^siteText\.(navigation|menu|footerNavigation)$/, "menu"],
+  [/^siteText\.(navigation|menu|footerNavigation|footerLinks)$/, "menu"],
   [/^siteText\.redirect\./, "moved"],
   [
     /^siteText\.(lightbox|imageOf|close|previousImage|nextImage|openLarger|galleryImage|openLargerPicture)/,

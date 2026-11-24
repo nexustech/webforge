@@ -451,7 +451,7 @@ describe("renderNodesToHtml", () => {
     expect(empty).toBe("");
   });
 
-  it("draws the Footer's columns of elements side by side, the text first (HF-4, 5.39)", () => {
+  it("draws the Footer's columns of elements side by side, its text under them (HF-4, HF-5)", () => {
     const column = (id: string, content: readonly NodeDoc[]) => ({
       type: "FooterColumn",
       props: { id, content },
@@ -484,8 +484,13 @@ describe("renderNodesToHtml", () => {
     );
 
     expect(html).toContain(
-      '<aside><p>Thanks.</p></aside><div class="site-footer-columns grid w-full gap-8 sm:grid-flow-col sm:auto-cols-fr"><div class="site-footer-column min-w-0">',
+      '<footer class="site-footer footer bg-base-200 p-8 text-base-content"><div class="site-footer-columns grid w-full gap-8 sm:grid-flow-col sm:auto-cols-fr"><div class="site-footer-column min-w-0">',
     );
+    // Its text in the bottom line under them, not a narrow first column (HF-5).
+    expect(html).toContain(
+      '<div class="site-footer-line flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-2 border-base-content/15 border-t pt-6"><p>Thanks.</p></div></footer>',
+    );
+    expect(html).not.toContain("<aside>");
     expect(html.indexOf("Find us")).toBeLessThan(html.indexOf("Visit"));
     expect(html.indexOf("Visit")).toBeLessThan(html.indexOf("News"));
     // Contact details and a Newsletter signup in their column forms: no section, a small title.
@@ -627,10 +632,10 @@ describe("renderNodesToHtml", () => {
     expect(renderNodesToHtml(footerOf("centred"), siteLibrary, shown)).toBe(
       '<footer class="site-footer footer footer-center bg-base-200 p-8 text-base-content"><p>© Rosa&#x27;s</p><button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button></footer>',
     );
-    // Columns stays Columns: its text and Cookie settings first, then the menu's links.
+    // Columns stays Columns: the menu's links, then its text and Cookie settings under them (HF-5).
     const columns = renderNodesToHtml(footerOf("columns"), siteLibrary, shown);
     expect(columns).toContain(
-      '<aside><p>© Rosa&#x27;s</p><button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button></aside>',
+      '<p>© Rosa&#x27;s</p><div class="flex flex-wrap items-center gap-x-4 gap-y-1"><button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button></div></div></footer>',
     );
     expect(columns).toContain('<nav aria-label="Footer navigation" class="flex flex-col gap-2">');
     for (const link of context.navigation.flatMap((item) =>
@@ -653,7 +658,7 @@ describe("renderNodesToHtml", () => {
     }
   });
 
-  it("puts a centred Footer's text and Cookie settings under its columns, side by side (#1368)", () => {
+  it("puts a centred Footer's text and Cookie settings under its columns, side by side (#1368, HF-5)", () => {
     const html = renderNodesToHtml(
       [
         {
@@ -678,7 +683,58 @@ describe("renderNodesToHtml", () => {
     expect(html).toMatch(/^<footer class="[^"]*footer-center grid-flow-row[^"]*">/);
     expect(html.indexOf("site-footer-columns")).toBeLessThan(html.indexOf("site-footer-line"));
     expect(html).toContain(
-      '<div class="site-footer-line grid-flow-col gap-x-4"><p>© 2026 nexustech</p><button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button></div></footer>',
+      '<div class="site-footer-line flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-1 border-base-content/15 border-t pt-6"><p>© 2026 nexustech</p><button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button></div></footer>',
+    );
+  });
+
+  it("links its own pages in its bottom line, in page order, or draws as before (HF-5)", () => {
+    const pageLinks = [
+      { id: "page-home", pageId: "page-home", label: "Home", href: "index.html", current: true },
+      {
+        id: "page-privacy",
+        pageId: "page-privacy",
+        label: "Privacy",
+        href: "privacy.html",
+        current: false,
+      },
+      {
+        id: "page-terms",
+        pageId: "page-terms",
+        label: "Terms",
+        href: "terms.html",
+        current: false,
+      },
+    ];
+    const footer = (variant: string, links: readonly string[], columns: readonly NodeDoc[] = []) =>
+      renderNodesToHtml(
+        [{ type: "Footer", props: { id: "footer", text: "© Rosa's", variant, links, columns } }],
+        siteLibrary,
+        { ...context, pageLinks },
+      );
+    const menu: NodeDoc = {
+      type: "FooterColumn",
+      props: { id: "c", content: [{ type: "MenuLinks", props: { id: "menu" } }] },
+    };
+    const nav =
+      '<nav aria-label="Footer links" class="site-footer-links flex flex-wrap gap-x-4 gap-y-1"><a href="privacy.html" class="link link-hover">Privacy</a><a href="terms.html" class="link link-hover">Terms</a></nav>';
+
+    // Chosen in any order, drawn in page order; a page deleted since is skipped.
+    expect(footer("columns", ["page-terms", "page-gone", "page-privacy"], [menu])).toContain(
+      `<p>© Rosa&#x27;s</p><div class="flex flex-wrap items-center gap-x-4 gap-y-1">${nav}</div></div></footer>`,
+    );
+    expect(footer("centred", ["page-privacy", "page-terms"], [menu])).toContain(
+      `<p>© Rosa&#x27;s</p>${nav}</div></footer>`,
+    );
+    // Without columns, beside its text, as Cookie settings is.
+    expect(footer("columns", ["page-privacy", "page-terms"])).toContain(
+      `<aside><p>© Rosa&#x27;s</p>${nav}</aside>`,
+    );
+    expect(footer("centred", ["page-privacy", "page-terms"])).toBe(
+      `<footer class="site-footer footer footer-center bg-base-200 p-8 text-base-content"><p>© Rosa&#x27;s</p>${nav}</footer>`,
+    );
+    // None: as before, byte for byte.
+    expect(footer("columns", [])).toBe(
+      '<footer class="site-footer footer sm:footer-horizontal bg-base-200 p-8 text-base-content"><aside><p>© Rosa&#x27;s</p></aside></footer>',
     );
   });
 
