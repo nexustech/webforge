@@ -17,5 +17,6 @@ export type {
   CommandResult,
   Confirmation,
   ConfirmOptions,
+  ConfirmPicture,
   Refusal,
 } from "./types.js";

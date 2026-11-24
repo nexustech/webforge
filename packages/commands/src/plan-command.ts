@@ -13,6 +13,7 @@ import {
   type PlanSummary,
   UNPUBLISHED,
 } from "./plan.js";
+import type { ConfirmPicture } from "./types.js";
 
 /** The longest plan: a whole site's build, with room to spare. */
 const MOST_COMMANDS = 200;
@@ -205,6 +206,8 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
       let structural = false;
       // Whether any of its commands would ask even an app working without asking (5.35).
       let alwaysAsk = false;
+      // The pictures its questions would show (UA-8), all in the plan's one question.
+      const pictures: ConfirmPicture[] = [];
       for (const [at, step] of input.commands.entries()) {
         const command = commands[step.name];
         if (command === undefined) return fail("invalid", `There is no command "${step.name}".`);
@@ -223,6 +226,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
           const ask = [asked.action, asked.description].filter(Boolean).join(" ");
           (asked.first === true ? summary.asksFirst : summary.asks).push(ask);
           alwaysAsk ||= asked.alwaysAsk === true;
+          pictures.push(...(asked.pictures ?? []));
         }
         structural ||= planned.structural;
         if (planned.removesPages !== undefined) removesPages.push(...planned.removesPages);
@@ -254,6 +258,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
           // The one version before the plan, saved once it's allowed (S26).
           version: t("ai.version.beforePlan", { app, title: input.title }),
           ...(alwaysAsk ? { alwaysAsk: true as const } : {}),
+          ...(pictures.length === 0 ? {} : { pictures }),
         }),
         ...(removesPages.length === 0 ? {} : { removesPages }),
         ...(clearedAlt.length === 0 ? {} : { clearedAlt }),

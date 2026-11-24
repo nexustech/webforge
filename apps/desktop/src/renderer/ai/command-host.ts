@@ -1,8 +1,28 @@
-import type { CommandApi, CommandHost } from "@webforge/commands";
+import type { CommandApi, CommandHost, ConfirmPicture } from "@webforge/commands";
+import { mediaItem, type SiteDoc } from "@webforge/model";
 import type { AiRequest, AiResponse } from "../../shared/ipc/ai.js";
+import { mediaImageUrl } from "../../shared/ipc/media.js";
 import { type EditorSession, textSessionOpen } from "../editor/editor-session.js";
 import type { SiteWideAction, SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
+
+/**
+ * The pictures a question shows (UA-8), by their thumbnails in `site`'s Media: each once, and none
+ * that isn't a picture there.
+ */
+function shownPictures(
+  site: SiteDoc,
+  pictures: readonly ConfirmPicture[],
+): NonNullable<SiteWideAction["pictures"]> {
+  const shown = new Map<string, { readonly label: string; readonly src: string }>();
+  for (const { label, mediaId } of pictures) {
+    const item = mediaItem(site.media, mediaId);
+    if (item?.kind !== "image") continue;
+    const src = mediaImageUrl(item, "thumbnail");
+    shown.set(`${label} ${src}`, { label, src });
+  }
+  return [...shown.values()];
+}
 
 /**
  * What AI apps' commands run against in this window (4.8): the open site's session, whose steps
@@ -40,8 +60,12 @@ export function commandHost(
     mode: () => preferences.getState().mode,
     published,
     confirm(confirmation, signal, options) {
+      const { pictures, ...asked } = confirmation;
       const action: SiteWideAction = {
-        ...confirmation,
+        ...asked,
+        ...(pictures === undefined
+          ? {}
+          : { pictures: shownPictures(session.history.document.getState(), pictures) }),
         ...(options?.offerUnasked === undefined ? {} : { allowAlways: options.offerUnasked }),
       };
       // An app working without asking (5.35, UA-2): no question, but what goes before a change to

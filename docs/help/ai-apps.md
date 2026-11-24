@@ -98,10 +98,11 @@ An app works on the site you have open in {appName}, and only that one. It can:
 - change your business's details in [Site Settings](site-settings.md): its name, description, language and type, web address, contact details, opening hours, social profiles and search engine settings;
 - change the theme, all of it or one part, such as the line spacing of your headings;
 - see what's in [Media](media.md), and place your pictures in elements. It can see which picture is your logo, and a picture's main colours, which {appName} works out on your computer, to match the theme to your logo. It never sees the picture itself;
+- set or clear your **Logo** and **Site icon** in [Site Settings](site-settings.md), choosing among the pictures in Media. It always asks first, and the question names the picture before and after by its file name and shows the new one small;
 - ask you to add pictures or files (see [Pictures](#pictures));
 - run [Site Check](site-check.md), and open the [Preview](preview.md) in your browser. The app is told the page's address, which works on this computer only, so it can look at its work: how the page looks at desktop and phone widths, and whether its pictures show. It sees the Preview only when it opens it in your browser, so you see it too.
 
-It can't change publishing, forms, analytics, Custom Code, search engines' verification codes, your logo or your site's icon: those stay yours. It never adds a picture or file itself.
+It can't change publishing, forms, analytics, Custom Code or search engines' verification codes: those stay yours. It never adds a picture or file itself.
 
 ### Examples, never made-up facts
 
@@ -135,6 +136,7 @@ Some changes ask whatever you chose:
 
 - changing where visitors' money or details go, such as a Buy button's payment link or a form's address. A link to one of your own pages, or a section on one, doesn't ask, unless it replaces a web address, email address or phone number, such as a payment link;
 - changing your web address, phone number, email address or a social profile, or whether search engines may show your site;
+- changing your **Logo** or **Site icon**;
 - starting a new site.
 
 In Content mode, an app still can't change what Content mode doesn't allow.

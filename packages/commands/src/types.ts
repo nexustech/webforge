@@ -1,5 +1,5 @@
 import type { HistoryManager } from "@webforge/history";
-import type { PageId, SiteDoc } from "@webforge/model";
+import type { MediaId, PageId, SiteDoc } from "@webforge/model";
 // AbortSignal, as the renderer and Node both have it.
 import type {} from "./web-globals.js";
 
@@ -32,7 +32,15 @@ export type Confirmation = {
    * address, a phone, an email, a social profile, search engines' permission).
    */
   readonly alwaysAsk?: true;
+  /**
+   * Pictures from Media the change would show, each with what it would be (UA-8): a new logo or
+   * site icon, which the question shows small so the person sees what they allow.
+   */
+  readonly pictures?: readonly ConfirmPicture[];
 };
+
+/** A picture a {@link Confirmation} shows: what it would be ("Logo") and which picture in Media. */
+export type ConfirmPicture = { readonly label: string; readonly mediaId: MediaId };
 
 /**
  * How a change is to be allowed (5.35, UA-2): `unasked`, made without a question, as the app works
