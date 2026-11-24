@@ -47,3 +47,21 @@ export const Cards: Story = pricing("cards");
 
 /** A price list, one plan to a row. */
 export const PriceList: Story = pricing("list");
+
+/** Two plans: centred, each as wide as one of three (#1372). */
+export const TwoPlans: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Pricing",
+        props: {
+          id: "pricing-two",
+          title: "Prices",
+          text: "<p>Simple prices, no surprises.</p>",
+          items: PLANS.slice(0, 2),
+          variant: "cards",
+        },
+      },
+    ],
+  },
+};

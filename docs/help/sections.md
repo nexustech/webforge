@@ -51,7 +51,7 @@ Asks visitors to do one thing, with a title, a short text and a button. **Layout
 
 What you offer, or the reasons to choose you. Each **Feature** has an icon, a title and a text.
 
-- **Layouts:** _Cards_, _Centred icons_ or _List_.
+- **Layouts:** _Cards_, _Centred icons_ or _List_. A last row that isn't full is centred, as in Testimonials, Team, Pricing, Stats and Latest posts: four features in rows of three put the fourth in the middle under them.
 - **Cards when hovered** sets what the cards do under the pointer (see [Styling](styling.md#hover-effects)).
 
 ## Gallery
@@ -73,7 +73,7 @@ The people behind the business: a photo, a name, what they do and a short text. 
 
 Your plans or a price list. Each **Plan** has a name, a price, what it's per ("a month", "a session"), what's included and a button.
 
-- **Layouts:** _Cards_ or _Price list_.
+- **Layouts:** _Cards_ or _Price list_. As cards, one or two plans are centred, each as wide as one of three.
 - Turn on **Highlight this plan** to show one plan in your brand colour. Only a highlighted plan shows its **Badge** ("Most popular").
 - For a café's or a restaurant's dishes and drinks, or any list of prices without buttons, use the [Food and drink menu](#food-and-drink-menu).
 

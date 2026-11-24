@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n/components";
 import { createContext, type ReactNode, useContext } from "react";
+import { CARD_ROWS } from "../card-rows.js";
 import { defineComponent } from "../define.js";
 import { contentWidthClass, defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
@@ -12,7 +13,7 @@ type PricingLayout = (typeof PRICING_LAYOUTS)[number];
 
 /** The grid each layout lays its plans out in, the slot's own element. */
 const GRID_CLASS = {
-  cards: "grid items-stretch gap-6 md:grid-cols-3",
+  cards: CARD_ROWS.threeGap6,
   list: "mx-auto grid max-w-3xl gap-4",
 } as const satisfies Record<PricingLayout, string>;
 

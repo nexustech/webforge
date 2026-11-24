@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n/components";
 import type { ImageValue } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
+import { CARD_ROWS } from "../card-rows.js";
 import { defineComponent } from "../define.js";
 import { contentWidthClass, defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
@@ -14,9 +15,9 @@ type TeamLayout = (typeof TEAM_LAYOUTS)[number];
 
 /** The grid each layout lays its people out in, the slot's own element. */
 const GRID_CLASS = {
-  cards: "grid gap-6 sm:grid-cols-2 md:grid-cols-3",
-  round: "grid gap-10 sm:grid-cols-2 md:grid-cols-4",
-  list: "grid gap-8 md:grid-cols-2",
+  cards: CARD_ROWS.twoThreeGap6,
+  round: CARD_ROWS.twoFourGap10,
+  list: CARD_ROWS.twoGap8,
 } as const satisfies Record<TeamLayout, string>;
 
 /** The layout of the Team section a person is in, and its cards' hover effect's classes. */

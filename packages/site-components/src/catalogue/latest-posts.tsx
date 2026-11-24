@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n/components";
 import { listPath, type SiteCollectionItem } from "@webforge/model";
+import { CARD_ROWS } from "../card-rows.js";
 import { contentWidthClass, defineSection } from "../frame.js";
 import { type ComponentDef, dateText, stringValue } from "../library.js";
 import type { RenderContext } from "../schema.js";
@@ -164,13 +165,7 @@ const latestPosts = defineSection({
         {shown.length === 0 ? (
           <p className="text-center">{context.siteText("siteText.noPosts")}</p>
         ) : (
-          <ul
-            className={
-              layout === "cards"
-                ? "grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
-                : "flex flex-col gap-4"
-            }
-          >
+          <ul className={layout === "cards" ? CARD_ROWS.twoThreeLgGap8 : "flex flex-col gap-4"}>
             {shown.map((item) => (
               <PostCard
                 key={item.pageId}
