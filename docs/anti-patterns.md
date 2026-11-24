@@ -167,7 +167,7 @@ The examples are the ones the reviews gave; most have been fixed since, and they
 
 - **Looks like:** an E2E drag that waits for a drop preview anywhere on the canvas and then lets go. `shared-layout.spec.ts`'s drag of a Heading into the Footer's first column did so, at a point measured once before the drag. The links it aimed at are 44 × 12 px at the canvas's fitted zoom. On a busy Windows runner the preview was still in a zone the pointer had crossed on its way, or never reached the small target, and the test failed with "No drop preview where the drag ends" (PR 1356, then PR 1360). Slowed 3× with CDP CPU throttling it failed almost every time, and at 2× it always passed.
 - **Why it hurts:** the drop lands in whichever zone the preview happened to be in, so the test fails at random on a slow runner, or passes having dropped somewhere it doesn't check.
-- **Instead:** pass `drag()` the zone the drop is aimed at as `into`. It then lets go only once the preview is inside that zone. Give the point as a function, such as `() => lowerHalf(links)`, so it's measured again at every try. To check a drag is robust, run it with the renderer slowed (`Emulation.setCPUThrottlingRate`).
+- **Instead:** pass `drag()` the zone the drop is aimed at as `into`. It then lets go only once the preview is inside that zone. Give the point as a function, such as `() => lowerHalf(links)`, so it's measured again at every try. To check a drag is robust, run it with the renderer slowed: `WEBFORGE_E2E_CPU_SLOWDOWN=3` with `--repeat-each 20` (`e2e/README.md`). A miss says where the preview was and which zones were under the pointer, which is how #1393 found a place on the canvas where nothing dropped.
 - **Found by:** #1336's review (PR 1360).
 
 ## Now checked

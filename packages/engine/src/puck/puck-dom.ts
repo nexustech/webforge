@@ -149,6 +149,13 @@ export const RICH_TEXT_MENU = "[data-puck-rte-menu]";
 export const DRAGGING = "[data-puck-entry][data-puck-dragging]";
 export const DROP_PREVIEW = "[data-dnd-placeholder], [data-puck-line-placeholder]";
 
+/**
+ * The drop zone a drag would drop in now (A20): Puck enables one zone at a time, the deepest under
+ * the pointer that takes what is dragged. Only while a drag goes on; the E2E drags name it when a
+ * drop preview doesn't show (#1393).
+ */
+export const ENABLED_DROP_ZONE = '[class*="_DropZone--isEnabled_"]';
+
 /** The attribute Puck gives a component's wrapper that can't be dragged now, as it is drawn again. */
 export const DISABLED_ATTRIBUTE = "data-puck-disabled";
 

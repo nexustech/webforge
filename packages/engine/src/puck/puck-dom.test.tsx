@@ -26,6 +26,7 @@ import {
   DRAWER_ITEM,
   DROP_PREVIEW,
   EMPTY_TABLE_BODY,
+  ENABLED_DROP_ZONE,
   elementOf,
   HOVERED_COMPONENT,
   INLINE_TEXT,
@@ -255,6 +256,10 @@ describe("what Puck marks only while a drag goes on (A20)", () => {
       "data-puck-disabled",
     ]);
     for (const name of names) expect(puckCss, name).toContain(`[${name}]`);
+    // And the class of the zone a drag would drop in.
+    const enabled = /_DropZone--isEnabled_/.exec(ENABLED_DROP_ZONE)?.[0];
+    expect(enabled).toBeDefined();
+    expect(puckCss).toContain(enabled);
   });
 });
 

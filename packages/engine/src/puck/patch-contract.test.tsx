@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { useDragDropManager } from "@dnd-kit/react";
-import { type Config, createUsePuck, Puck, useGetPuck } from "@puckeditor/core";
+import { type Config, createUsePuck, Puck, type PuckContext, useGetPuck } from "@puckeditor/core";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it } from "vitest";
@@ -21,6 +21,8 @@ import { puckPrivateApi } from "./puck-dom.js";
 //   9. An element's active zones, read by the drag library as it asks: below.
 //  10. The zone under the pointer found through the elements a hit test skips: below; a Table
 //      row dragged on the canvas in e2e/app/table.spec.ts (#1144).
+//  11. Near a zone's edge, the zone itself when nothing around it takes what is dragged: below; a
+//      Heading dropped at the foot of a Footer column in e2e/app/shared-layout.spec.ts (#1393).
 
 /** How many elements the page has: the walk reads each one's config, the patched check none. */
 const ELEMENTS = 30;
@@ -135,10 +137,11 @@ async function mounted() {
 type DragData = { readonly inDroppableZone: boolean; readonly containsActiveZone: boolean };
 
 /**
- * Puck on a page of a heading and a card whose slot takes only text, with one text in it: the
- * drag library's manager, and each element's collision data as the library reads it.
+ * Puck on a page of a heading and a card whose slot takes only text, with two texts in it: the
+ * drag library's manager, and each element's collision data as the library reads it. With
+ * `rootTakes`, the page's top level takes only those kinds, as the editor's takes only sections.
  */
-async function mountedWithSlot() {
+async function mountedWithSlot(rootTakes?: readonly string[]) {
   // The drag library's feedback waits for the page's animations, which happy-dom doesn't list.
   document.getAnimations ??= () => [];
   let manager: ReturnType<typeof useDragDropManager> | undefined;
@@ -148,6 +151,14 @@ async function mountedWithSlot() {
   }
   const text = { fields: { text: { type: "text" as const } } };
   const config = {
+    ...(rootTakes === undefined
+      ? {}
+      : {
+          root: {
+            render: ({ puck }: { readonly puck: PuckContext }) =>
+              puck.renderDropZone({ zone: "default-zone", allow: [...rootTakes] }),
+          },
+        }),
     components: {
       Heading: {
         ...text,
@@ -304,6 +315,42 @@ describe("our Puck patch (ADR 0007, A9)", () => {
       const droppables = puck.manager()?.registry.droppables;
       expect(droppables?.get("t1")?.disabled).toBe(false);
       expect(droppables?.get("h0")?.disabled).toBe(true);
+    } finally {
+      document.elementsFromPoint = elementsFromPoint;
+      Element.prototype.getBoundingClientRect = box;
+      await puck.unmount();
+    }
+  });
+
+  it("11. drops into the zone under the pointer near its edge when nothing around it takes what's dragged (#1393)", async () => {
+    // The page's top level takes only cards, and the card's slot only text, as a Footer's
+    // columns take only columns and a column takes elements.
+    const puck = await mountedWithSlot(["Card"]);
+    const weekly = [...document.querySelectorAll("p")].find((p) => p.textContent === "Weekly");
+    const card = document.querySelector('[data-puck-dnd="c0"]');
+    const slot = document.querySelector('[data-puck-dropzone="c0:items"]');
+    const editor = document.querySelector(".Puck");
+    if (weekly === undefined || card === null || slot === null || editor === null) {
+      throw new Error("not drawn");
+    }
+    // The pointer 3 px above the foot of the card's slot and its last text, inside Puck's 6 px
+    // margin, where it looks past them to the card and the page: neither takes text.
+    const elementsFromPoint = document.elementsFromPoint;
+    const box = Element.prototype.getBoundingClientRect;
+    document.elementsFromPoint = () => [weekly, card, editor];
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      return slot.contains(this) ? new DOMRect(0, 0, 1000, 500) : new DOMRect(0, 0, 1000, 1000);
+    };
+    try {
+      puck.manager()?.actions.start({ source: "t0", coordinates: { x: 500, y: 497 } });
+      await settle();
+      weekly.dispatchEvent(
+        new PointerEvent("pointermove", { bubbles: true, clientX: 500, clientY: 497 }),
+      );
+      await settle(400);
+
+      // The card's slot is where the text would drop, not nowhere.
+      expect(puck.manager()?.registry.droppables.get("t1")?.disabled).toBe(false);
     } finally {
       document.elementsFromPoint = elementsFromPoint;
       Element.prototype.getBoundingClientRect = box;
