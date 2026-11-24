@@ -374,7 +374,7 @@ describe("scaffold", () => {
       '        | "rating"\n        | "code";',
     );
     expect(read(root, "packages/site-components/src/field-values.ts")).toContain(
-      '      case "rating":\n      case "richtext":',
+      '      case "rating":\n        return z.string().max(MAX_TEXT_LENGTH);\n      case "richtext":',
     );
     expect(read(root, "apps/desktop/src/renderer/editor/edit-panel-fields.ts")).toContain(
       '    case "rating":\n      return { kind: "rating", label };',

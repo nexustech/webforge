@@ -77,7 +77,14 @@ export function fieldValueSchema(field: FieldValueShape): z.ZodType {
           ? z.string().regex(/^(?:\d{4}-\d{2}-\d{2})?$/)
           : z.string().max(MAX_TEXT_LENGTH);
       case "richtext":
-        return z.string().max(MAX_TEXT_LENGTH);
+        // How to link text as a person can in the link dialog (#1374): to the site's own pages by
+        // id, so a link follows a page's rename, as the editor stores it.
+        return z
+          .string()
+          .max(MAX_TEXT_LENGTH)
+          .describe(
+            "HTML: paragraphs, bold, italic, lists and links. Link to one of the site's pages with <a href=\"webforge:page/<pageId>\">, and to a section on it with webforge:page/<pageId>#<anchor> (the outline gives page ids, and a section's anchor); to a file in Media with webforge:file/<mediaId>; to an email address with mailto:, a phone number with tel:, and another website with https://. A link to a page by its id follows the page if it's renamed.",
+          );
       case "icon":
         // One of the icons, or none (#1251): any other name would draw nothing.
         return z

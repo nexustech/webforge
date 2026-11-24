@@ -799,14 +799,15 @@ export function fieldKindPlanFor(root: string, names: Names): Plan {
             `: Field extends { readonly kind: "${kind}" }\n ? string\n `,
           ),
       ],
-      // 1. And what it may hold (#667): a string, like a text field.
+      // 1. And what it may hold (#667): a string, like a text field. Its own, before rich text's,
+      // whose description is about links in HTML (#1374).
       "packages/site-components/src/field-values.ts": [
         (text) => insertBefore(text, '        | "code";\n', `        | "${kind}"\n`),
         (text) =>
           insertBefore(
             text,
-            '      case "richtext":\n        return z.string().max(MAX_TEXT_LENGTH);',
-            `      case "${kind}":\n`,
+            '      case "richtext":\n',
+            `      case "${kind}":\n        return z.string().max(MAX_TEXT_LENGTH);\n`,
           ),
       ],
       // 2. How render reads it.

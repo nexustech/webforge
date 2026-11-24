@@ -73,6 +73,10 @@ An app can't start a new site while you're in [Content mode](the-editor.md#desig
 4. it opens the [Preview](preview.md) in your browser;
 5. it tells you what's still yours to do: your photos, where the contact form sends messages, and publishing.
 
+### Links
+
+An app can make the links you can make in the link dialog, in text and in a button's link: to one of your pages, a section on a page that has an anchor, a file in Media, an email address, a phone number or another website. A link to one of your pages follows the page if you rename it.
+
 ## Pictures
 
 An app never adds a picture itself, and {appName} downloads nothing. To use your own photos, the app asks you: {appName} shows **_app_ asks you to add pictures or files**, with the app's reason, such as "Photos of your workshop and team".
