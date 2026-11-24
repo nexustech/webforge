@@ -5,6 +5,7 @@ import {
   DISABLED_ATTRIBUTE,
   DRAGGING,
   DROP_PREVIEW,
+  ENABLED_DROP_ZONE,
 } from "@webforge/engine/puck-dom";
 
 export type Box = { x: number; y: number; width: number; height: number };
@@ -164,9 +165,16 @@ async function whereDropping(page: Page, at: { x: number; y: number }): Promise<
       under.push(`${await zone.getAttribute("data-puck-dropzone")} at ${round(box)}`);
     }
   }
+  const enabled: string[] = [];
+  for (const zone of await canvas.locator(ENABLED_DROP_ZONE).all()) {
+    enabled.push(
+      `${await zone.getAttribute("data-puck-dropzone")} at ${round(await zone.boundingBox())}`,
+    );
+  }
   return [
     `Pointer at ${Math.round(at.x)},${Math.round(at.y)}.`,
     `Drop previews: ${previews.length === 0 ? "none" : previews.join("; ")}.`,
+    `Zone the drop would go in: ${enabled.length === 0 ? "none" : enabled.join("; ")}.`,
     `Zones under the pointer: ${under.length === 0 ? "none" : under.join("; ")}.`,
   ].join("\n");
 }
