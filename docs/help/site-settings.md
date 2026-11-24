@@ -21,7 +21,7 @@ They're in the same **Settings** window as {appName}'s own preferences, under **
 - **Logo:** your business's logo, from Media. The Header shows it in place of the site's name or beside it; choose which, and its size, in the [Header's options](header-and-footer.md#header-and-footer). Search engines show it too, once your site has a web address. A logo with a transparent background looks best.
 - **Site icon:** the small picture in browser tabs and bookmarks. Choose a square picture from Media.
 
-  An [AI app](ai-apps.md) can set or clear the logo and the site icon too, choosing among your pictures in Media, but only once you allow it: its question shows the new picture, even while it works without asking. It can't add a picture itself.
+  An [AI app](ai-apps.md) can set or clear the **Logo** and the **Site icon** too, choosing among your pictures in Media, but only once you allow it: its question shows the new picture, even while it works without asking. It can't add a picture itself.
 - **Show a back-to-top button:** a button that appears once visitors scroll down. It isn't shown in the editor.
 - **Business type** and **More precisely:** what kind of business this is, such as _Restaurant_, _Plumber_ or _Vehicle repair_. Search engines use it.
 - **Help AI tools read your site:** adds a plain-text copy of each page to your website, for AI tools that read them. Search engines don't read them. Off unless you turn it on.

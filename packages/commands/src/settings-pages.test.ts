@@ -11,6 +11,8 @@ import { describe, expect, it } from "vitest";
 import { createCommandApi } from "./api.js";
 import { app, home, type Setup, setup } from "./api.test-helper.js";
 import { type ComponentDetail, catalogueResourceText } from "./catalogue.js";
+import { COMMANDS } from "./commands.js";
+import { QUERIES } from "./queries.js";
 
 /** The most a Hero's answer may be, in characters, without its shared styling fields (#1250). */
 const HERO_ANSWER_MAX = 10_000;
@@ -442,14 +444,34 @@ describe("the logo and the site's icon, from Media (UA-8)", () => {
     );
   });
 
-  it("changes nothing when the person says no", async () => {
+  it("changes nothing when the person says no, and tells the app so", async () => {
     const { host, history } = setup(false, withMedia());
     const before = history.document.getState();
 
     expect(
       await createCommandApi(host).run("updateSettings", { general: { logo: "media-logo" } }, app),
-    ).toMatchObject({ status: "declined" });
+    ).toEqual({ status: "declined", message: "The person didn't allow this change." });
     expect(history.document.getState()).toBe(before);
+  });
+
+  it("no longer tells an app the logo and Site icon are the person's", async () => {
+    const api = createCommandApi(setup().host);
+    const said = [
+      COMMANDS.updateSettings.description,
+      QUERIES.settings.description,
+      // The refusal for a key an app can't change.
+      (await api.run("updateSettings", { general: { favicon: "media-logo" } }, app)).message,
+    ];
+
+    for (const words of said) {
+      expect(words).toMatch(/logo/);
+      expect(words).not.toMatch(/(the icon|the logo)[^.]*stays? the person's/i);
+      expect(words).not.toMatch(/only the person sets/i);
+    }
+    expect(said[0]).toContain("general.logo and general.icon take the id of a picture");
+    expect(said[1]).toContain("updateSettings sets or clears them");
+    expect(said[2]).toContain("AI apps can't change favicon");
+    expect(said[2]).toContain("its logo and icon (pictures already in Media)");
   });
 
   it.each([
