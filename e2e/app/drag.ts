@@ -1,5 +1,11 @@
 import { expect, type FrameLocator, type Locator, type Page } from "@playwright/test";
-import { COMPONENT, DISABLED_ATTRIBUTE, DRAGGING, DROP_PREVIEW } from "@webforge/engine/puck-dom";
+import {
+  COMPONENT,
+  COMPONENT_DROP_ZONE,
+  DISABLED_ATTRIBUTE,
+  DRAGGING,
+  DROP_PREVIEW,
+} from "@webforge/engine/puck-dom";
 
 export type Box = { x: number; y: number; width: number; height: number };
 
@@ -100,22 +106,69 @@ export async function drag(
   }
   const first = await target();
   await page.mouse.move(first.x, first.y, { steps: 25 });
-  await expect
-    .poll(
-      async () => {
-        nudge += 1;
-        const at = await target();
-        // Come down onto the point again, a few pixels at a time, as a hand would: Puck finds the
-        // zone nested under the pointer from its movement, which one jump may not give it.
-        await page.mouse.move(at.x, at.y - 12, { steps: 2 });
-        await page.mouse.move(at.x, at.y + (nudge % 2), { steps: 6 });
-        return (into === undefined ? canvas : into).locator(DROP_PREVIEW).count();
-      },
-      { message: "No drop preview where the drag ends", timeout: 10_000 },
-    )
-    .toBeGreaterThan(0);
+  try {
+    await expect
+      .poll(
+        async () => {
+          nudge += 1;
+          const at = await target();
+          // Come down onto the point again, a few pixels at a time, as a hand would: Puck finds
+          // the zone nested under the pointer from its movement, which one jump may not give it.
+          await page.mouse.move(at.x, at.y - 12, { steps: 2 });
+          await page.mouse.move(at.x, at.y + (nudge % 2), { steps: 6 });
+          return (into === undefined ? canvas : into).locator(DROP_PREVIEW).count();
+        },
+        { message: "No drop preview where the drag ends", timeout: 10_000 },
+      )
+      .toBeGreaterThan(0);
+  } catch (error) {
+    // Say where the preview is instead, and which zone is under the pointer (#1393).
+    const at = await target();
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)}\n${await whereDropping(page, at)}`,
+    );
+  }
   await page.mouse.up();
   await expect(canvas.locator(DRAGGING)).toHaveCount(0);
+}
+
+/**
+ * Where a drag would drop when it isn't where the test aimed (#1393): the zone each drop preview is
+ * in, and the zones under the point `at`, innermost last, each with its box on the page.
+ */
+async function whereDropping(page: Page, at: { x: number; y: number }): Promise<string> {
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  const zoneOf = (locator: Locator) =>
+    locator.evaluate(
+      (element, zone) => element.closest(zone)?.getAttribute("data-puck-dropzone") ?? "(none)",
+      COMPONENT_DROP_ZONE,
+    );
+  const round = (box: Box | null) =>
+    box === null
+      ? "hidden"
+      : `${Math.round(box.x)},${Math.round(box.y)} ${Math.round(box.width)}×${Math.round(box.height)}`;
+  const previews: string[] = [];
+  for (const preview of await canvas.locator(DROP_PREVIEW).all()) {
+    previews.push(`${await zoneOf(preview)} at ${round(await preview.boundingBox())}`);
+  }
+  const under: string[] = [];
+  for (const zone of await canvas.locator(COMPONENT_DROP_ZONE).all()) {
+    const box = await zone.boundingBox();
+    if (
+      box !== null &&
+      at.x >= box.x &&
+      at.x <= box.x + box.width &&
+      at.y >= box.y &&
+      at.y <= box.y + box.height
+    ) {
+      under.push(`${await zone.getAttribute("data-puck-dropzone")} at ${round(box)}`);
+    }
+  }
+  return [
+    `Pointer at ${Math.round(at.x)},${Math.round(at.y)}.`,
+    `Drop previews: ${previews.length === 0 ? "none" : previews.join("; ")}.`,
+    `Zones under the pointer: ${under.length === 0 ? "none" : under.join("; ")}.`,
+  ].join("\n");
 }
 
 /**
