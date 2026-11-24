@@ -19,6 +19,11 @@ function navigationPages(site: SiteDoc): NavigationPage[] {
             // A Blog's post is in the menu only where an edited menu has it (6.10a): a menu that
             // follows the pages leaves posts out (syncMenuWithPages).
             hideFromNavigation: page.settings.hideFromNavigation || page.kind === "not-found",
+            ...(page.kind === "not-found"
+              ? { kind: "not-found" as const }
+              : page.collection === undefined
+                ? {}
+                : { kind: "post" as const }),
           },
         ];
   });

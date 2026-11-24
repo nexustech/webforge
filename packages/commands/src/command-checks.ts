@@ -184,6 +184,9 @@ function missingPage(
     if (component.fields[name]?.kind !== "pages" || !Array.isArray(value)) continue;
     const gone = value.find((id) => typeof id !== "string" || !isPageIn(site.pages, id));
     if (gone !== undefined) return `There is no page "${String(gone)}".`;
+    // A Blog's posts are left out of the pages it offers (HF-8): the Blog's own page is one.
+    const post = value.find((id) => pageEntryOf(site.pages, String(id))?.collection !== undefined);
+    if (post !== undefined) return `"${String(post)}" is a post of a Blog: Menu links lists pages.`;
   }
   return undefined;
 }

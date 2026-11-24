@@ -87,7 +87,7 @@ function navigation(snapshot: ReturnType<typeof site>, path = "index") {
 }
 
 describe("pageLinksFor (HF-8)", () => {
-  it("links every page, those the menu hides too, named as the menu names them, but Page not found", () => {
+  it("links every page, those the menu hides too, named as the menu names them, but Page not found and posts", () => {
     const snapshot = site();
     const about = snapshot.pages.find((each) => each.path === "about");
     if (about === undefined) throw new Error("no About");
@@ -95,7 +95,14 @@ describe("pageLinksFor (HF-8)", () => {
       {
         pages: [
           ...snapshot.pages,
-          { ...about, id: page("missing"), path: "404", title: "Page not found" },
+          {
+            ...about,
+            id: page("missing"),
+            path: "404",
+            title: "Page not found",
+            kind: "not-found",
+          },
+          { ...about, id: page("spring"), path: "blog/spring", title: "Spring", kind: "post" },
         ],
       },
       about,

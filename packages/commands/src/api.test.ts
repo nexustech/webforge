@@ -1,4 +1,5 @@
 import {
+  type CollectionId,
   type MediaId,
   type NodeDoc,
   type PageId,
@@ -1046,6 +1047,16 @@ describe("the command API's moves and fields (4.8)", () => {
       message: 'There is no page "page-gone".',
     });
     expect((await set({ add: [home, home] })).status).toBe("invalid");
+    // A Blog's post isn't a page Menu links lists.
+    const post = history.document.getState().pageOrder.find((id) => id !== home);
+    if (post === undefined) throw new Error("no second page");
+    history.run("Made a post", (draft) => {
+      const page = draft.pages[post];
+      if (page !== undefined) page.collection = "collection-blog" as CollectionId;
+    });
+    expect(await set({ add: [post] })).toMatchObject({
+      message: `"${post}" is a post of a Blog: Menu links lists pages.`,
+    });
   });
 
   it("clears a replaced picture's alt text and says so, asking for the new one's (#1371)", async () => {

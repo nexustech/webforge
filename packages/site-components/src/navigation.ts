@@ -12,7 +12,13 @@ import type { NavItem, NavLink } from "./schema.js";
 export type NavigationPage = Pick<
   SitePage,
   "id" | "path" | "title" | "navLabel" | "hideFromNavigation"
->;
+> & {
+  /**
+   * What else it is: "Page not found", or a Blog's post (HF-8). Neither is a page a Footer's Menu
+   * links can add, though a menu can still link a post.
+   */
+  readonly kind?: "not-found" | "post" | undefined;
+};
 
 /** What the navigation needs of a site: its pages, in order, its menu, and its collections. */
 export type NavigationSite = {
@@ -136,8 +142,8 @@ export function navigationFor(
 
 /**
  * A link to each of `site`'s pages on `page`, in order, whatever the menu shows or hides (HF-8):
- * the pages a Footer's Menu links can add, named as the menu names a page. "Page not found" is
- * never one.
+ * the pages a Footer's Menu links can add, named as the menu names a page. "Page not found" and
+ * a Blog's posts never are: a blog of 40 posts would bury the page the person wants.
  */
 export function pageLinksFor(
   site: Pick<NavigationSite, "pages">,
@@ -145,7 +151,7 @@ export function pageLinksFor(
   prefix: string,
 ): NavLink[] {
   return site.pages
-    .filter((other) => other.path !== "404")
+    .filter((other) => other.kind === undefined)
     .map((other) => ({
       id: other.id,
       pageId: other.id,
