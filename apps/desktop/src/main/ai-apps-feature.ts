@@ -74,9 +74,11 @@ export function aiAppsFeature(deps: AiAppsFeatureDeps): AiAppsFeature {
           }),
           deps.credentials,
         ),
-        // With the app's id, which the bridge's cancel finds a command's question by (5.34).
-        ask: (request, appId) => ai.ask(request, appId),
+        // With the app's id, which the bridge's cancel finds a command's question by (5.34), and
+        // what the person made of a change that answered waiting, for the app's limits (#1364).
+        ask: (request, appId, late) => ai.ask(request, appId, late),
         cancel: (appId) => ai.cancel(appId),
+        changeStatus: (input, appId) => ai.changeStatus(input, appId),
         briefs,
         info: deps.info,
         // Version History's, for the site open now: none to save without one.

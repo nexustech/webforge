@@ -110,7 +110,7 @@ Some changes ask you first, with **Allow**:
 
 Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or _Page not found_.
 
-The question waits for your answer, however long you're away: walking away isn't a no. The app is told it's still waiting, and **Allow** makes the change when you come back. If the app gives up first, or you close the site, the question closes and nothing changes. Only **Cancel** is a no, and after one the app waits a little before it asks you again.
+The question waits for your answer, however long you're away: walking away isn't a no. **Allow** makes the change when you come back. If you haven't answered within about 45 seconds, the app is told the change is waiting, with a number it can ask about later, so it can find out whether you allowed it without asking you to look. If it sends the same change again meanwhile, it isn't made twice. Until then, it waits to send other changes. If the app gives up within those 45 seconds, or you close the site, the question closes and nothing changes. Only **Cancel** is a no, and after one the app waits a little before it asks you again.
 
 In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings. It can still see Media and ask you for pictures.
 
