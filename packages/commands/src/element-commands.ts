@@ -19,6 +19,7 @@ import {
   withNewIds,
 } from "./command-checks.js";
 import { EXAMPLES_FIELD, examplesInput, knownFacts, markWritten } from "./examples.js";
+import { fieldInLabel } from "./field-label.js";
 import { holds, type Location, locate, locationSchema, nodesAt } from "./locations.js";
 import { type Failure, fail, failed, type Plan, type PlanSummary } from "./plan.js";
 import {
@@ -128,13 +129,23 @@ export const ELEMENT_COMMANDS = {
       if (names.length === 0) return fail("invalid", "Give at least one field to set.");
       const fields = names.map((name) => component.fields[name]).filter((f) => f !== undefined);
       const [only] = fields;
+      const onlyName = names.find((name) => component.fields[name] === only) ?? "";
       const { location, nodeId: id } = input;
       // The facts the site gives as it is, to tell what the text made up (#1228).
       const known = knownFacts(site);
       return {
         action:
           fields.length === 1 && only !== undefined
-            ? t("history.editedField", { item: component.label, field: only.label })
+            ? t("history.editedField", {
+                item: component.label,
+                // "Edited Image alt text", not "Edited Image Image" (#1370).
+                field: fieldInLabel(
+                  component.label,
+                  only,
+                  placed.node.props[onlyName],
+                  values[onlyName],
+                ),
+              })
             : t("ai.history.fields", { item: component.label }),
         structural: fields.some((field) => !isContent(field)),
         kind: "props",

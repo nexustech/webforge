@@ -1,4 +1,5 @@
 import {
+  type MediaId,
   type NodeDoc,
   type PageId,
   richTextPageLinks,
@@ -417,7 +418,7 @@ describe("the command API's commands (4.8)", () => {
     ).toMatchObject({ status: "done", label: "AI (Claude): Edited Heading text" });
     expect(
       await api.run("updateFields", { location, nodeId: "hero", values: { title: "Rolls" } }, app),
-    ).toMatchObject({ status: "done", label: "AI (Claude): Edited Hero Title" });
+    ).toMatchObject({ status: "done", label: "AI (Claude): Edited Hero title" });
     expect((await api.run("moveNode", { location, nodeId: "hero", index: 0 }, app)).status).toBe(
       "done",
     );
@@ -990,6 +991,34 @@ describe("the command API's moves and fields (4.8)", () => {
     ).toBe("not-found");
     expect((await set({ buttonLink: { kind: "page", pageId: about } })).status).toBe("done");
     expect(history.state.getState().entries).toHaveLength(1);
+  });
+
+  it("names an image's alt text, not the field again, when only that changes (#1370)", async () => {
+    const photo = {
+      id: "media-photo" as MediaId,
+      kind: "image",
+      hash: "a".repeat(64),
+      name: "workshop",
+      fileName: "workshop.jpg",
+      mimeType: "image/jpeg",
+      width: 1600,
+      height: 900,
+      alt: "The workshop",
+    } as const;
+    const { history, host } = setup(true, (doc) => {
+      doc.media[photo.id] = photo;
+    });
+    const api = createCommandApi(host);
+    const location = home(history);
+    const set = (values: object) =>
+      api.run("updateFields", { location, nodeId: "hero", values }, app);
+
+    expect(await set({ image: { mediaId: photo.id } })).toMatchObject({
+      label: "AI (Claude): Edited Hero image",
+    });
+    expect(await set({ image: { mediaId: photo.id, alt: "Our bench" } })).toMatchObject({
+      label: "AI (Claude): Edited Hero alt text",
+    });
   });
 
   it("names a change to several fields after the element, and leaves Custom Code alone", async () => {

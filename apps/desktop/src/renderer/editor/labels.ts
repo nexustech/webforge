@@ -1,3 +1,4 @@
+import { fieldInLabel } from "@webforge/commands";
 import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import {
@@ -170,16 +171,21 @@ export function deviceLabelFor(
   });
 }
 
+/** A field's value before and after a change, where it's known. */
+export type FieldChange = { readonly from: unknown; readonly to: unknown };
+
 /**
  * The undo label for a canvas edit (D2), e.g. "Moved Heading", "Edited Heading text" or "Edited
  * 'Opening times' text". `before` is the page as it was, where a removed element is still found;
  * `shared`, the site's shared sections, names a linked copy as Layers does ("Moved 'Opening hours'").
+ * `change` names the part of an image a change set: "Changed Image alt text" (#1370).
  */
 export function labelFor(
   edit: EngineEdit,
   library: ComponentLibrary,
   before?: PageDoc,
   shared: SharedSectionsDoc = {},
+  change?: FieldChange,
 ): string {
   const item = itemName(
     edit,
@@ -216,7 +222,10 @@ export function labelFor(
       const field = fieldOf(edit, library);
       return field === undefined
         ? t("history.editedPage")
-        : t("history.changed", { item, field: field.label.toLowerCase() });
+        : t("history.changed", {
+            item,
+            field: fieldInLabel(item, field, change?.from, change?.to),
+          });
     }
     case "root":
       return t("history.changedPage");
