@@ -104,9 +104,10 @@ export type ContentWidth = (typeof CONTENT_WIDTHS)[number];
 
 /**
  * A section's content width (3.21, PF-4): how wide its content is at most, inside its padding. Its
- * background still spans the page. Each kind's default is the width it used before.
+ * background still spans the page. Each kind's default is the width it used before. The Header and
+ * the Footer have it too (HF-10).
  */
-const CONTENT_WIDTH_FIELD = {
+export const CONTENT_WIDTH_FIELD = {
   kind: "select",
   label: t("field.contentWidth"),
   help: t("field.contentWidth.help"),

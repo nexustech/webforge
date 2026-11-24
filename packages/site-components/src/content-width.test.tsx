@@ -90,9 +90,12 @@ describe("a section's content width (3.21, PF-4)", () => {
       ).toEqual(["Narrow", "Medium", "Wide", "Full"]);
       expect(def?.defaults.contentWidth, type).toBe(DEFAULTS[type]);
     }
-    // The Header and Footer are unchanged.
-    expect(siteLibrary.components.Header?.fields).not.toHaveProperty("contentWidth");
-    expect(siteLibrary.components.Footer?.fields).not.toHaveProperty("contentWidth");
+    // The Header and Footer have the same field, at Full by default (HF-10): see below.
+    for (const type of ["Header", "Footer"]) {
+      const def = siteLibrary.components[type];
+      expect(def?.fields.contentWidth, type).toBe(siteLibrary.components.Hero?.fields.contentWidth);
+      expect(def?.defaults.contentWidth, type).toBe("full");
+    }
     // A Section's Full width toggle is now its Full.
     expect(siteLibrary.components.Section?.fields).not.toHaveProperty("fullWidth");
   });
@@ -298,4 +301,114 @@ describe("a section's content width (3.21, PF-4)", () => {
     expect(hero("wide")).toContain('sizes="(min-width: 1152px) 1152px, 100vw"');
     expect(hero("full")).toContain('sizes="100vw"');
   });
+});
+
+describe("the Header's and the Footer's content width (HF-10)", () => {
+  const header = (props: Readonly<Record<string, unknown>>) =>
+    render([
+      {
+        type: "Header",
+        props: {
+          ...siteLibrary.components.Header?.defaults,
+          id: "h",
+          siteName: "Rosa's",
+          ...props,
+        },
+      },
+    ]);
+  const footer = (props: Readonly<Record<string, unknown>>) =>
+    render([
+      {
+        type: "Footer",
+        props: { ...siteLibrary.components.Footer?.defaults, id: "f", text: "Thanks", ...props },
+      },
+    ]);
+  const column = {
+    type: "FooterColumn",
+    props: { id: "c", content: [{ type: "Text", props: { id: "t", text: "<p>Open daily</p>" } }] },
+  };
+  const capped = CONTENT_WIDTHS.filter((width) => width !== "full");
+
+  it("draws both at Full as before they had one, with no bar inside", () => {
+    // A site saved before has no width: Full, and the same HTML (the golden tests check the export).
+    expect(header({ contentWidth: "full" })).toBe(header({ contentWidth: undefined }));
+    expect(header({})).toMatch(
+      /^<header class="site-header relative z-30 navbar gap-2 px-4 bg-base-100 shadow-sm">/,
+    );
+    expect(header({})).not.toContain("site-header-bar");
+    expect(footer({ contentWidth: "full" })).toBe(footer({ contentWidth: undefined }));
+    expect(footer({})).toMatch(
+      /^<footer class="site-footer footer footer-center bg-base-200 p-8 text-base-content"><p>/,
+    );
+    expect(footer({})).not.toContain("site-footer-content");
+  });
+
+  it.for(capped)(
+    "caps the Header's bar at %s in every layout, the <header> across the page",
+    (width) => {
+      const bars: Readonly<Record<string, string>> = {
+        left: "navbar gap-2 px-0",
+        centred: "flex items-center justify-between gap-2 py-3 md:flex-col md:justify-center",
+        split: "navbar gap-2 px-0",
+      };
+      for (const [variant, bar] of Object.entries(bars)) {
+        const html = header({ variant, contentWidth: width });
+        // The page's padding on the <header>, as a section's, so the bar lines up with one's content.
+        expect(html, variant).toMatch(
+          new RegExp(
+            `^<header class="site-header relative z-30 px-4 bg-base-100 shadow-sm"><div class="site-header-bar mx-auto w-full ${CLASS[width]} ${bar}">`,
+          ),
+        );
+        // The phone menu is placed against the <header>, across the page: the bar isn't positioned.
+        expect(html, variant).toContain('<ul class="menu absolute inset-x-0 top-full');
+        expect(/<div class="site-header-bar [^"]*"/.exec(html)?.[0], variant).not.toMatch(
+          /relative|absolute|sticky/,
+        );
+      }
+    },
+  );
+
+  it("keeps a sticky Header's scroll style on the <header>, and Shrink on the bar it shrinks", () => {
+    for (const scrollStyle of ["shadow", "solid", "none"]) {
+      const html = header({ sticky: true, scrollStyle, contentWidth: "wide" });
+      expect(html, scrollStyle).toMatch(
+        /^<header class="site-header relative z-30 px-4 sticky top-0 [^"]*" data-wf-sticky="">/,
+      );
+      expect(html, scrollStyle).not.toContain("in-data-scrolled");
+    }
+    const shrink = header({ sticky: true, scrollStyle: "shrink", contentWidth: "wide" });
+    expect(shrink).toMatch(
+      /^<header class="site-header relative z-30 px-4 sticky top-0 bg-base-100 shadow-sm \[:root:has\(&amp;\)\]:scroll-pt-20" data-wf-sticky=""><div class="site-header-bar mx-auto w-full max-w-6xl navbar gap-2 px-0 transition-\[min-height,padding\] in-data-scrolled:min-h-12 in-data-scrolled:py-1">/,
+    );
+    // At Full, on the <header> as before.
+    expect(header({ sticky: true, scrollStyle: "shrink" })).toContain(
+      "transition-[min-height,padding] data-scrolled:min-h-12 data-scrolled:py-1",
+    );
+  });
+
+  it.for(capped)(
+    "caps the Footer's content at %s in both layouts, with and without columns",
+    (width) => {
+      const grids: readonly [Readonly<Record<string, unknown>>, string][] = [
+        [{ variant: "columns", columns: [] }, "footer sm:footer-horizontal"],
+        [{ variant: "columns", columns: [column] }, "footer"],
+        [{ variant: "centred", columns: [] }, "footer footer-center"],
+        [{ variant: "centred", columns: [column] }, "footer footer-center grid-flow-row"],
+      ];
+      for (const [props, grid] of grids) {
+        const html = footer({ ...props, contentWidth: width });
+        const name = JSON.stringify(props);
+        expect(html, name).toMatch(
+          new RegExp(
+            `^<footer class="site-footer bg-base-200 p-8 text-base-content"><div class="site-footer-content mx-auto ${CLASS[width]} ${grid}">`,
+          ),
+        );
+        // The same parts as at Full, inside it: its columns and the bottom line under them (HF-5).
+        const full = footer({ ...props, contentWidth: "full" });
+        const inner = (markup: string) =>
+          markup.replace(/^<footer [^>]*>(?:<div class="site-footer-content [^"]*">)?/, "");
+        expect(inner(html).replace(/<\/div><\/footer>$/, "</footer>"), name).toBe(inner(full));
+      }
+    },
+  );
 });

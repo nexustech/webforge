@@ -95,6 +95,20 @@ describe("siteStylesheetSource's accent font (3.22)", () => {
 });
 
 describe("buildSiteCss", () => {
+  it("shrinks a capped Header's bar once its <header> has scrolled (HF-10)", async () => {
+    const css = await buildSiteCss(resources, {
+      theme: DEFAULT_THEME,
+      candidates: ["in-data-scrolled:min-h-12", "in-data-scrolled:py-1"],
+      fontsUrl: "../fonts/",
+    });
+
+    // The bar inside a <header> the sticky script marks, not the bar itself.
+    expect(css).toMatch(
+      /:where\(\[data-scrolled\]\) \.in-data-scrolled\\:min-h-12 \{\s*min-height: calc\(var\(--spacing\) \* 12\);/,
+    );
+    expect(css).toContain(":where([data-scrolled]) .in-data-scrolled\\:py-1 {");
+  });
+
   it("styles Style this ‹component›…'s deeper choices from the theme's tokens (3.13b)", async () => {
     const candidates = appearanceBoxClasses({
       lookGradientDirection: "toBottomRight",

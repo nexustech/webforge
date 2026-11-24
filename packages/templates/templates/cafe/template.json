@@ -348,6 +348,7 @@
           "type": "Header",
           "props": {
             "id": "header",
+            "contentWidth": "wide",
             "siteName": "The Copper Kettle",
             "bindings": {
               "siteName": "general.name"
@@ -360,6 +361,7 @@
           "type": "Footer",
           "props": {
             "id": "footer",
+            "contentWidth": "wide",
             "text": "The Copper Kettle · Coffee, breakfast and lunch by the river",
             "variant": "columns",
             "columns": [

@@ -1240,6 +1240,30 @@
           "label": "Button link",
           "button": "buttonLabel"
         },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
         "sticky": {
           "kind": "toggle",
           "label": "Stay at the top when scrolling"
@@ -1298,6 +1322,7 @@
         "logoSize": "medium",
         "button": false,
         "buttonLabel": "Book now",
+        "contentWidth": "full",
         "sticky": false,
         "scrollStyle": "shadow",
         "sectionHighlight": true
@@ -1336,6 +1361,30 @@
           "help": "Pages linked in the Footer's bottom line, with its text: your Privacy or Terms page, say.",
           "from": "all"
         },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
         "variant": {
           "kind": "select",
           "group": "style",
@@ -1356,7 +1405,8 @@
         "variant": "centred",
         "text": "Thanks for visiting.",
         "columns": [],
-        "links": []
+        "links": [],
+        "contentWidth": "full"
       }
     },
     "FooterColumn": {
