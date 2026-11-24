@@ -1901,6 +1901,24 @@
             "full": null
           }
         },
+        "size": {
+          "kind": "select",
+          "label": "Size",
+          "options": [
+            {
+              "label": "Small",
+              "value": "small"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Large",
+              "value": "large"
+            }
+          ]
+        },
         "shape": {
           "kind": "select",
           "label": "Shape",
@@ -2143,6 +2161,7 @@
       },
       "defaults": {
         "width": "full",
+        "size": "medium",
         "shape": "original",
         "height": "medium",
         "alignment": "centre",
@@ -2150,7 +2169,12 @@
         "caption": "",
         "enlarge": false,
         "hover": "none"
-      }
+      },
+      "columnHides": [
+        "width",
+        "shape",
+        "height"
+      ]
     },
     "Button": {
       "label": "Button",

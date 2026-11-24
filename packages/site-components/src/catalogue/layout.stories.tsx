@@ -164,3 +164,41 @@ export const FooterFull: Story = {
     ],
   },
 };
+
+/**
+ * A logo in a Footer column, Small as the Header's can be (HF-9), over the column's text, beside
+ * the menu's links under a title.
+ */
+export const FooterLogo: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Footer",
+        props: {
+          id: "footer",
+          text: "© Rosa's Bakery, Hightown",
+          variant: "columns",
+          columns: [
+            column("brand", [
+              {
+                type: "Image",
+                props: { id: "logo", image: { mediaId: "logo" }, size: "small", alignment: "left" },
+              },
+              {
+                type: "Text",
+                props: {
+                  id: "about",
+                  text: "<p>Bread and cakes, baked on Mill Street since 1998.</p>",
+                },
+              },
+            ]),
+            column("links", [
+              { type: "Heading", props: { id: "links-title", text: "Explore", size: "small" } },
+              { type: "MenuLinks", props: { id: "menu" } },
+            ]),
+          ],
+        },
+      },
+    ],
+  },
+};

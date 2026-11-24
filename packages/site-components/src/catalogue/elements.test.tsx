@@ -182,6 +182,52 @@ describe("an Image's sizes under a shape (3.19)", () => {
   });
 });
 
+describe("an Image in a Footer column (HF-9)", () => {
+  const inFooter = (props: Record<string, unknown>) =>
+    render("Footer", {
+      variant: "columns",
+      columns: [
+        {
+          type: "FooterColumn",
+          props: {
+            id: "column",
+            content: [
+              { type: "Image", props: { id: "logo", image: { mediaId: "shop" }, ...props } },
+            ],
+          },
+        },
+      ],
+    });
+
+  it("is as high as the Header's logo at its size, Medium unless set, and as wide as that makes it", () => {
+    const html = inFooter({ width: "full", shape: "square", alignment: "left" });
+    expect(html).toContain('<figure class="site-image w-fit max-w-full mr-auto">');
+    expect(html).toContain('class="h-10 md:h-12 w-auto max-w-full object-contain"');
+    expect(html).toContain('sizes="320px"');
+    expect(inFooter({ size: "small" })).toContain('class="h-8 w-auto max-w-full object-contain"');
+    expect(inFooter({ size: "large", rounded: true })).toContain(
+      'class="h-10 md:h-16 w-auto max-w-full object-contain rounded-box"',
+    );
+  });
+
+  it("offers Size there in place of Width, Shape and Height, and only there", () => {
+    const image = siteLibrary.components.Image;
+    if (image === undefined) throw new Error("no Image");
+    const values = { ...image.defaults };
+    const column = { menuLinksToSections: false, parent: { type: "FooterColumn", values: {} } };
+    const shown = (site?: typeof column) => {
+      const hidden = fieldsHiddenBy(image, values, site);
+      return ["size", "width", "shape", "height"].filter(
+        (name) =>
+          !hidden.has(name) &&
+          image.fields[name]?.shownWhen?.(values, site ?? { menuLinksToSections: false }) !== false,
+      );
+    };
+    expect(shown(column)).toEqual(["size"]);
+    expect(shown()).toEqual(["width", "shape"]);
+  });
+});
+
 describe("the Image element's shapes (3.19)", () => {
   const tall: ResolvedImage = { ...shop, width: 400, height: 600 };
   const of = (image: ResolvedImage): RenderContext => ({ ...context, image: () => image });

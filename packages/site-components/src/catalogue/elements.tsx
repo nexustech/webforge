@@ -2,8 +2,10 @@ import { t } from "@webforge/i18n/components";
 import { type Breakpoint, hasLink, type Responsive, resolveResponsive } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
 import { whereOwnColour } from "../appearance.js";
+import { FooterColumnContext } from "../column-form.js";
 import { defineComponent, LOOK_TARGET } from "../define.js";
 import { MARGIN_FIELD, marginClasses, SectionWidthContext } from "../frame.js";
+import { FOOTER_COLUMN } from "../hidden-fields.js";
 import { isIconName, LucideIcon } from "../icons.js";
 import {
   boundImage,
@@ -14,6 +16,7 @@ import {
   responsiveClasses,
 } from "../library.js";
 import { ENLARGE_ATTRIBUTE } from "../lightbox.js";
+import { LOGO_HEIGHTS, LOGO_SIZES } from "../logo-sizes.js";
 import {
   ENTRANCE_FIELDS,
   entranceAttributes,
@@ -193,6 +196,14 @@ const image = defineComponent({
         IMAGE_WIDTHS.map((value) => [value, IMAGE_WIDTH_PX[value] ?? null]),
       ),
     },
+    // In a Footer column, a logo's sizes, as the Header's (HF-9): there they take the place of
+    // Width, Shape and Height, so a logo isn't twice the height of the columns' titles.
+    size: {
+      kind: "select",
+      label: t("field.size"),
+      options: LOGO_SIZES.map((value) => ({ label: t(`field.logoSize.${value}`), value })),
+      shownWhen: (_values, site) => site.parent?.type === FOOTER_COLUMN,
+    },
     shape: {
       kind: "select",
       label: t("field.imageShape"),
@@ -221,8 +232,10 @@ const image = defineComponent({
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
+  columnHides: ["width", "shape", "height"],
   defaults: {
     width: "full",
+    size: "medium",
     shape: "original",
     height: "medium",
     alignment: "centre",
@@ -237,8 +250,14 @@ const image = defineComponent({
   render: ({ values, context }) => {
     const placed = boundImage(values, "image", context);
     const resolved = placed === undefined ? null : context.image(placed.mediaId);
-    const width = responsiveClasses(values.width, (value) => IMAGE_WIDTH_CLASS[value]);
-    const frame = `site-image w-full ${IMAGE_ALIGN_CLASS[values.alignment]} ${width}${marginClasses(values.margin)}${entranceClasses(values)}`;
+    // In a Footer column, as high as the Header's logo at its size, as wide as that makes it (HF-9);
+    // elsewhere as wide as its width token, its classes as before.
+    const inFooter = useContext(FooterColumnContext);
+    const align = IMAGE_ALIGN_CLASS[values.alignment];
+    const sized = inFooter
+      ? `w-fit max-w-full ${align}`
+      : `w-full ${align} ${responsiveClasses(values.width, (value) => IMAGE_WIDTH_CLASS[value])}`;
+    const frame = `site-image ${sized}${marginClasses(values.margin)}${entranceClasses(values)}`;
     const entrance = entranceAttributes(values);
     if (resolved === null) {
       const hint = context.emptyImage?.();
@@ -253,7 +272,15 @@ const image = defineComponent({
     }
     const caption = values.caption.trim();
     const alt = placed?.alt ?? resolved.alt;
-    const picture = (
+    const picture = inFooter ? (
+      <Picture
+        image={resolved}
+        alt={alt}
+        // A Large logo is 64 px high: twice that covers a wide one, as the Header's does.
+        sizes="320px"
+        className={`${LOGO_HEIGHTS[values.size]} w-auto max-w-full object-contain${values.rounded ? " rounded-box" : ""}`}
+      />
+    ) : (
       <ImagePicture
         image={resolved}
         alt={alt}
