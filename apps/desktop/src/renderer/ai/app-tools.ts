@@ -1,8 +1,17 @@
 import { isMessageKey, t } from "@webforge/i18n";
-import { type FormUnset, parseColorRef, type SiteDoc } from "@webforge/model";
+import {
+  type FormUnset,
+  type ImageMeta,
+  mediaItem,
+  parseColorRef,
+  type SiteDoc,
+} from "@webforge/model";
 import { checkSite } from "@webforge/site-check";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { TEMPLATE_IMAGE_HASHES } from "@webforge/templates";
+import { hexOf, imageColours, oklchCss } from "@webforge/themes";
+import { z } from "zod";
+import { pictureColoursInput } from "../../shared/ai-tools.js";
 import type { AiRequest, AiResponse } from "../../shared/ipc/ai.js";
 
 /** How long after one Open Preview another opens nothing more, so an app can't flood the browser. */
@@ -26,8 +35,13 @@ export type AppToolsDeps = {
    * address of the page it opened (#1255), or `null` if it didn't open.
    */
   readonly openPreview: () => Promise<string | null>;
+  /** The pixels (RGBA) of a small copy of Media picture `item`, as Theme Studio reads them. */
+  readonly readPixels: (item: ImageMeta) => Promise<ArrayLike<number>>;
   readonly now?: () => number;
 };
+
+/** One of a picture's main colours, as an AI app is told it (#1373). */
+type PictureColour = { readonly oklch: string; readonly hex: string; readonly share: number };
 
 /** A string fact that is one of `names`. */
 const oneOf =
@@ -96,22 +110,63 @@ const ruleTitle = (rule: string) => {
 };
 
 /**
- * The window's answers to two of the tools it has itself (4.9, `WINDOW_TOOLS`), each taking
- * nothing.
+ * The window's answers to three of the tools it has itself (4.9, `WINDOW_TOOLS`).
  * - **runSiteCheck:** the export's check, by rule id, title and level, and each finding's place by
  *   id, with its facts (#1253): numbers and listed names, such as a contrast finding's colours and
  *   ratios. Never a value that can hold the site's text ({@link factsOf}). A held reply's (6.9e)
  *   checks its draft, so what it reports is what its changes would leave (5.18).
  * - **openPreview:** the Preview command, once in {@link PREVIEW_AGAIN_MS}, with the address of the
  *   page it opened (#1255): on this computer only, for the app to look at its work.
+ * - **pictureColours:** a Media picture's main colours (#1373), from a small copy of it read here,
+ *   as Theme Studio's palette from an image reads them: in OKLCH and hex, with their shares. The
+ *   app never sees the picture.
  */
 export function createAppTools(deps: AppToolsDeps): {
   readonly runSiteCheck: (request?: Pick<AiRequest, "stage">) => AiResponse;
   readonly openPreview: () => AiResponse | Promise<AiResponse>;
+  readonly pictureColours: (request: AiRequest) => Promise<AiResponse>;
 } {
   const now = deps.now ?? Date.now;
   let previewedAt = Number.NEGATIVE_INFINITY;
+  /** Each picture's colours, by its bytes' hash: the same picture is read once (#1373). */
+  const read = new Map<string, Promise<readonly PictureColour[]>>();
+  const coloursOf = (item: ImageMeta) => {
+    let colours = read.get(item.hash);
+    if (colours === undefined) {
+      colours = deps.readPixels(item).then((pixels) =>
+        imageColours(pixels).map(({ color, share }) => ({
+          oklch: oklchCss(color),
+          hex: hexOf(color),
+          share: Number(share.toFixed(3)),
+        })),
+      );
+      read.set(item.hash, colours);
+      // One that couldn't be read is tried again next time.
+      colours.catch(() => read.delete(item.hash));
+    }
+    return colours;
+  };
   return {
+    pictureColours: async (request) => {
+      const parsed = pictureColoursInput.safeParse(request.input);
+      if (!parsed.success) return { status: "invalid", message: z.prettifyError(parsed.error) };
+      const { mediaId } = parsed.data;
+      const item = mediaItem(deps.site(request.stage).media, mediaId);
+      if (item === undefined) {
+        return {
+          status: "not-found",
+          message: `There is no "${mediaId}" in Media. The media query lists what there is.`,
+        };
+      }
+      if (item.kind !== "image") {
+        return { status: "invalid", message: `"${mediaId}" is a file, not a picture.` };
+      }
+      try {
+        return { status: "done", data: { mediaId, colours: await coloursOf(item) } };
+      } catch {
+        return { status: "refused", message: `"${mediaId}" couldn't be read for its colours.` };
+      }
+    },
     runSiteCheck: (request) => {
       const report = checkSite(
         {
