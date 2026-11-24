@@ -29,6 +29,10 @@ export const layout = {
   "element.footerColumn": "Footer column",
   "element.menuLinks": "Menu links",
   // What Menu links leaves out of the menu, and adds to it, in the Footer (HF-8).
+  // The Footer's own small links, in its bottom line (HF-5).
+  "field.footerLinks": "Links",
+  "field.footerLinks.help":
+    "Pages linked in the Footer's bottom line, with its text: your Privacy or Terms page, say.",
   "field.menuLinksLeaveOut": "Leave out",
   "field.menuLinksLeaveOut.help": "Pages in your menu that the Footer doesn't list.",
   "field.menuLinksAdd": "Add",
@@ -48,6 +52,8 @@ export const layout = {
   "siteText.navigation": "Main navigation",
   "siteText.menu": "Menu",
   "siteText.footerNavigation": "Footer navigation",
+  // The Footer's own small links, in its bottom line (HF-5).
+  "siteText.footerLinks": "Footer links",
   "starter.footer": "Thanks for visiting.",
   // The title over the menu's links in a Footer started from *Full* (5.39).
   "starter.footerLinksTitle": "Explore",

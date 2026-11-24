@@ -132,7 +132,7 @@ type FieldSpecs = {
    * Drawn by the app: some of the site's pages, as checkboxes (HF-8, fields/pages/): the menu's
    * pages (`menu`) or the others (`others`), the value their ids.
    */
-  readonly pages: { readonly from: "menu" | "others" };
+  readonly pages: { readonly from: "menu" | "others" | "all" };
 };
 
 /** A kind of field: the renderer that draws it. */

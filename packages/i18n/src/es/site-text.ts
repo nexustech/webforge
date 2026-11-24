@@ -86,6 +86,7 @@ export const es = {
   "siteText.navigation": "Navegación principal",
   "siteText.menu": "Menú",
   "siteText.footerNavigation": "Navegación del pie de página",
+  "siteText.footerLinks": "Enlaces del pie de página",
   "siteText.logo": "Logotipo",
   "siteText.postTags": "Etiquetas",
   "siteText.shareButtons": "Compartir esta entrada",

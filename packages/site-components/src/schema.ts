@@ -222,11 +222,16 @@ export type FieldDef = {
       readonly button?: string;
     }
   /**
-   * Some of the site's pages, stored as their ids in the order chosen (HF-8): the menu's pages to
-   * leave out (`from: "menu"`) or other pages to add (`from: "others"`), for the Footer's Menu
-   * links. The Edit panel lists them as checkboxes; a page deleted since is skipped.
+   * Some of the site's pages, stored as their ids (HF-8): the menu's pages to leave out
+   * (`from: "menu"`) or other pages to add (`from: "others"`), for the Footer's Menu links, or
+   * any page (`from: "all"`), for the Footer's bottom line (HF-5). The Edit panel lists them as
+   * checkboxes; a page deleted since is skipped.
    */
-  | { readonly kind: "pages"; readonly label: string; readonly from: "menu" | "others" }
+  | {
+      readonly kind: "pages";
+      readonly label: string;
+      readonly from: "menu" | "others" | "all";
+    }
   /**
    * Code the person writes themselves (Custom Code's HTML, F-ED-15), stored as written: edited in a
    * monospace box of its own lines, never on the canvas.

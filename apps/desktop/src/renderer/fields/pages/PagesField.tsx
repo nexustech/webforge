@@ -9,8 +9,9 @@ import { useDocument } from "../../editor/use-document.js";
 type PageChoice = { readonly value: string; readonly label: string };
 
 /**
- * The pages a pages field offers (HF-8): the pages the menu shows, as it names them (`menu`), or
- * every other page, in Pages panel order (`others`). "Page not found" is never one.
+ * The pages a pages field offers (HF-8): the pages the menu shows, as it names them (`menu`),
+ * every other page (`others`), or every page (`all`, HF-5), in Pages panel order. "Page not found"
+ * and a Blog's posts never are.
  */
 export function pageChoices(site: SiteDoc, from: FieldSpec<"pages">["from"]): PageChoice[] {
   const menu = (canvasNavigation(site, site.homePageId) ?? []).flatMap((item) =>
@@ -24,10 +25,10 @@ export function pageChoices(site: SiteDoc, from: FieldSpec<"pages">["from"]): Pa
     (each, index) => inMenu.findIndex((other) => other.value === each.value) === index,
   );
   if (from === "menu") return unique;
+  const every = (canvasPageLinks(site, site.homePageId) ?? []).flatMap(choice);
+  if (from === "all") return every;
   const shown = new Set(unique.map((each) => each.value));
-  return (canvasPageLinks(site, site.homePageId) ?? [])
-    .flatMap(choice)
-    .filter((each) => !shown.has(each.value));
+  return every.filter((each) => !shown.has(each.value));
 }
 
 /**

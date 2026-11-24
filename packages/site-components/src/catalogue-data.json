@@ -1330,6 +1330,12 @@
             "MenuLinks"
           ]
         },
+        "links": {
+          "kind": "pages",
+          "label": "Links",
+          "help": "Pages linked in the Footer's bottom line, with its text: your Privacy or Terms page, say.",
+          "from": "all"
+        },
         "variant": {
           "kind": "select",
           "group": "style",
@@ -1349,7 +1355,8 @@
       "defaults": {
         "variant": "centred",
         "text": "Thanks for visiting.",
-        "columns": []
+        "columns": [],
+        "links": []
       }
     },
     "FooterColumn": {
