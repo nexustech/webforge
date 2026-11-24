@@ -683,7 +683,7 @@ describe("renderNodesToHtml", () => {
     expect(html).toMatch(/^<footer class="[^"]*footer-center grid-flow-row[^"]*">/);
     expect(html.indexOf("site-footer-columns")).toBeLessThan(html.indexOf("site-footer-line"));
     expect(html).toContain(
-      '<div class="site-footer-line w-full grid-flow-col justify-center gap-x-4 border-base-content/15 border-t pt-6"><p>© 2026 nexustech</p><button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button></div></footer>',
+      '<div class="site-footer-line flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-1 border-base-content/15 border-t pt-6"><p>© 2026 nexustech</p><button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button></div></footer>',
     );
   });
 

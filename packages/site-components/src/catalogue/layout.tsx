@@ -595,7 +595,7 @@ const footer = defineComponent({
     const cookies =
       context.cookieSettings === true ? <CookieSettings siteText={context.siteText} /> : null;
     // Its own small links (HF-5), in page order: none, and it draws as it did before them.
-    const chosen = pageIdsOf((values as Readonly<Record<string, unknown>>).links);
+    const chosen = pageIdsOf(values.links);
     const linked = (context.pageLinks ?? []).filter(
       (link) => link.pageId !== undefined && chosen.has(link.pageId),
     );
@@ -644,11 +644,11 @@ const footer = defineComponent({
         );
       }
       // With them, its bottom line under them (#1368, HF-5): its text, links and Cookie settings
-      // side by side over a rule. daisyUI's footer-center lays its children out in a row, so the
-      // Footer flows by rows.
+      // side by side over a rule, wrapping on a phone. daisyUI's footer-center lays its children
+      // out in a row, so the Footer flows by rows.
       const line =
         text === null && links === null && cookies === null ? null : (
-          <div className="site-footer-line w-full grid-flow-col justify-center gap-x-4 border-base-content/15 border-t pt-6">
+          <div className="site-footer-line flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-1 border-base-content/15 border-t pt-6">
             {text}
             {links}
             {cookies}
