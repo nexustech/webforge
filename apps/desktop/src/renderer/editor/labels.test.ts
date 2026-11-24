@@ -74,6 +74,27 @@ describe("labelFor", () => {
     ).toBe("Edited Question text");
   });
 
+  it("names the part of an image a change set, never 'Image image' (#1370)", () => {
+    const image = (componentType: string, from: unknown, to: unknown) =>
+      labelFor(
+        edit("props", { componentType, field: "image" }),
+        siteLibrary,
+        undefined,
+        {},
+        {
+          from,
+          to,
+        },
+      );
+    const shop = { mediaId: "shop" };
+
+    expect(image("Image", shop, { ...shop, alt: "Our shop" })).toBe("Changed Image alt text");
+    expect(image("Image", shop, { mediaId: "door" })).toBe("Changed Image picture");
+    expect(image("Image", undefined, shop)).toBe("Changed Image picture");
+    expect(image("Hero", { ...shop, alt: "Old" }, shop)).toBe("Changed Hero alt text");
+    expect(image("Hero", shop, { mediaId: "door" })).toBe("Changed Hero image");
+  });
+
   it("says when an edit is to the shared Header or Footer (F-ED-7)", () => {
     const footer = { type: "Footer", props: { id: "f", text: "Bye", layerName: "Small print" } };
     const shared = (extra: Partial<EngineEdit>) =>

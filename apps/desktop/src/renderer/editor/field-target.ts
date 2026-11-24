@@ -14,7 +14,7 @@ import {
 } from "@webforge/model";
 import type { ComponentDef, ComponentLibrary, FieldDef } from "@webforge/site-components";
 import { updateField } from "./apply-patch.js";
-import { deviceLabelFor, labelFor } from "./labels.js";
+import { deviceLabelFor, type FieldChange, labelFor } from "./labels.js";
 import {
   canvasLayout,
   designLabel,
@@ -65,9 +65,16 @@ export type FieldTarget = {
   editOf(kind: EngineEdit["kind"], field: string): EngineEdit;
   /**
    * The undo label for a change to `name` on `breakpoint`; "… on Mobile" where it sets one
-   * device's value, or with `reset` drops it.
+   * device's value, or with `reset` drops it. `change`, the field's value before and after where
+   * it's known, names the part of an image a change set (#1370).
    */
-  labelOf(name: string, field: FieldDef, breakpoint: Breakpoint, reset?: boolean): string;
+  labelOf(
+    name: string,
+    field: FieldDef,
+    breakpoint: Breakpoint,
+    reset?: boolean,
+    change?: FieldChange,
+  ): string;
   /** Sets field `name` of the element to what `next` makes of it, in `draft`. */
   write(draft: SiteDoc, name: string, next: (stored: unknown) => unknown): void;
   /** Sets field `name` to what `next` makes of its stored value ({@link storedOr}). */
@@ -135,12 +142,18 @@ export function fieldTarget(
       : design === undefined
         ? undefined
         : designLabel(site, pageId, nodeId);
-  const labelOf = (name: string, field: FieldDef, breakpoint: Breakpoint, reset = false) => {
+  const labelOf = (
+    name: string,
+    field: FieldDef,
+    breakpoint: Breakpoint,
+    reset = false,
+    change?: FieldChange,
+  ) => {
     if (copyLabel !== undefined) return copyLabel;
     const edit = editOf(field.kind === "text" ? "text" : "props", name);
     return field.responsive === true && (reset || breakpoint !== "desktop")
       ? deviceLabelFor(edit, library, t(`device.${breakpoint}`), reset)
-      : labelFor(edit, library);
+      : labelFor(edit, library, undefined, undefined, change);
   };
   const write = (draft: SiteDoc, name: string, next: (stored: unknown) => unknown) => {
     if (home !== undefined) {

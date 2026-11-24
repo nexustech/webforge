@@ -15,6 +15,10 @@ export const history = {
   // For components with several text fields: "Edited Hero button text".
   "history.editedField": "Edited {item} {field}",
   "history.changed": "Changed {item} {field}",
+  // What a change to an image field set (#1370): "Changed Hero alt text", and for a field named
+  // like its element, "Changed Image picture" rather than "Changed Image image".
+  "history.part.alt": "alt text",
+  "history.part.picture": "picture",
   "history.pastedStyle": "Pasted style on {item}",
   // An option group's values, copied from another element (SP-7): "Pasted Spacing on Heading".
   "history.pastedGroup": "Pasted {group} on {item}",

@@ -145,6 +145,18 @@ export const imageValueSchema = z.strictObject({
 /** See {@link imageValueSchema}. */
 export type ImageValue = z.infer<typeof imageValueSchema>;
 
+/**
+ * What a change to an image field set (#1370), to name its undo step by it: `alt` when only the
+ * placement's alt text changed, `image` when the image did. `undefined` when the new value isn't
+ * an image field's.
+ */
+export function imageChangeOf(before: unknown, after: unknown): "alt" | "image" | undefined {
+  const next = imageValueSchema.safeParse(after);
+  if (!next.success) return undefined;
+  const previous = imageValueSchema.safeParse(before);
+  return previous.success && previous.data.mediaId === next.data.mediaId ? "alt" : "image";
+}
+
 /** The alt text a placement shows: its own override, or the image's alt text from Media. */
 export function altTextFor(value: ImageValue, media: ImageMeta | undefined): string {
   return value.alt ?? media?.alt ?? "";
