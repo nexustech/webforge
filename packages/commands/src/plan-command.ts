@@ -188,6 +188,8 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
       let working: SiteDoc = site;
       const recipes: ((draft: SiteDoc) => void)[] = [];
       const removesPages: PageId[] = [];
+      // What its steps tell the app to pass on, each by its step and element (#1371).
+      const notes: string[] = [];
       const summary: PlanSummary = {
         pagesAdded: [],
         pagesRemoved: [],
@@ -223,6 +225,11 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         }
         structural ||= planned.structural;
         if (planned.removesPages !== undefined) removesPages.push(...planned.removesPages);
+        if (planned.note !== undefined) {
+          const { nodeId } = parsed.data as { readonly nodeId?: unknown };
+          const element = typeof nodeId === "string" ? `, element "${nodeId}"` : "";
+          notes.push(`${where}${element}: ${planned.note}`);
+        }
         recipes.push(planned.recipe);
         // Frozen as each step leaves it, so nothing a recipe keeps from it can change under it.
         working = produce(working, (draft) => {
@@ -252,6 +259,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
           ...(alwaysAsk ? { alwaysAsk: true as const } : {}),
         }),
         ...(removesPages.length === 0 ? {} : { removesPages }),
+        ...(notes.length === 0 ? {} : { note: notes.join("\n") }),
         recipe: (draft) => {
           for (const recipe of recipes) recipe(draft);
         },

@@ -515,6 +515,30 @@ describe("copy and paste (1.25)", () => {
       expect(site(session).media).toEqual({});
     });
 
+    it("says when the pasted picture cleared the alt text that described the old one (#1371)", async () => {
+      const session = withHero();
+      session.edit("props", "Described the Hero's picture", (draft) => {
+        const hero = draft.pages[draft.homePageId]?.doc.content.at(-1);
+        if (hero !== undefined) hero.props.image = { mediaId: "old", alt: "Our old shop" };
+      });
+      select(session, "hero");
+      const notify = vi.fn();
+
+      expect(await pasteElements(session, media([photo]), notify)).toBe(true);
+
+      expect(content(session).at(-1)?.props.image).toEqual({ mediaId: photo.id });
+      expect(notify).toHaveBeenCalledWith(
+        "The old picture's alt text was cleared, as it doesn't describe this one. Describe the new picture here.",
+      );
+      // Without alt text of its own to clear, and the new picture described in Media: nothing said.
+      const quiet = vi.fn();
+      select(session, "hero");
+      expect(
+        await pasteElements(session, media([{ ...photo, id: "other" as MediaId }]), quiet),
+      ).toBe(true);
+      expect(quiet).not.toHaveBeenCalled();
+    });
+
     it("puts one image in an Image element of its own when nothing selected takes one (2.9)", async () => {
       const session = sessionWith();
       const notify = vi.fn();

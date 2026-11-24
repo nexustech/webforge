@@ -1,4 +1,4 @@
-import type { SiteDoc } from "@webforge/model";
+import type { MediaId, SiteDoc } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createCommandApi } from "./api.js";
@@ -66,6 +66,57 @@ describe("a plan (4.12a, AIB-6)", () => {
     expect(content(history).map(({ type }) => type)).toContain("Hero");
     history.undo();
     expect(history.document.getState()).toEqual(before);
+  });
+
+  it("passes on each step's note: a plan of two picture swaps says both (#1371)", async () => {
+    const picture = (id: string) =>
+      ({
+        id: id as MediaId,
+        kind: "image",
+        hash: "a".repeat(64),
+        name: id,
+        fileName: `${id}.png`,
+        mimeType: "image/png",
+        width: 400,
+        height: 100,
+        alt: "",
+      }) as const;
+    const charcoal = picture("media-charcoal");
+    const white = picture("media-white");
+    const { host, history } = setup(true, (doc) => {
+      doc.media[charcoal.id] = charcoal;
+      doc.media[white.id] = white;
+    });
+    const api = createCommandApi(host);
+    const set = (image: object) => ({
+      name: "updateFields",
+      input: { location: home(history), nodeId: "hero", values: { image } },
+    });
+
+    const result = await api.run(
+      "plan",
+      {
+        title: "Change the logo twice",
+        commands: [
+          set({ mediaId: charcoal.id, alt: "Webforge" }),
+          set({ mediaId: white.id }),
+          set({ mediaId: charcoal.id, alt: "Webforge again" }),
+          set({ mediaId: white.id }),
+        ],
+      },
+      app,
+    );
+
+    expect(result).toMatchObject({ status: "done" });
+    const note = "note" in result ? (result.note ?? "") : "";
+    const lines = note.split("\n");
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatch(
+      /^Command 2 \(updateFields\), element "hero": The new picture in "image"/,
+    );
+    expect(lines[1]).toMatch(
+      /^Command 4 \(updateFields\), element "hero": The new picture in "image"/,
+    );
   });
 
   it("names the pages it renames, moves and hides, which ask nothing on their own", async () => {
