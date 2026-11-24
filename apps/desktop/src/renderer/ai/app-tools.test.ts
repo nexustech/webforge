@@ -36,20 +36,37 @@ function siteWithBareImage(): SiteDoc {
   return site;
 }
 
+/** A picture's pixels (RGBA): three red ones, one blue, and one see-through, as a logo's background. */
+const PIXELS = [
+  ...[200, 30, 30, 255],
+  ...[200, 30, 30, 255],
+  ...[200, 30, 30, 255],
+  ...[20, 40, 200, 255],
+  ...[255, 255, 255, 0],
+];
+
+/** For a test that reads no picture. */
+const NO_PIXELS = async (): Promise<ArrayLike<number>> => {
+  throw new Error("Not read in this test");
+};
+
 function setUp(site = siteWithBareImage()) {
   let time = 0;
   const openPreview = vi.fn(async (): Promise<string | null> => PAGE_ADDRESS);
+  const readPixels = vi.fn(async (_item: ImageMeta): Promise<ArrayLike<number>> => PIXELS);
   const tools = createAppTools({
     site: () => site,
     allowListConfirmed: () => false,
     ignored: () => [],
     openPreview,
+    readPixels,
     now: () => time,
   });
   return {
     site,
     tools,
     openPreview,
+    readPixels,
     later: (ms: number) => {
       time += ms;
     },
@@ -69,6 +86,7 @@ describe("the window's own AI tools (4.9)", () => {
       allowListConfirmed: () => false,
       ignored: () => [],
       openPreview: async () => null,
+      readPixels: NO_PIXELS,
     });
     const rules = (answer: ReturnType<typeof tools.runSiteCheck>) =>
       answer.status === "done" && "data" in answer
@@ -148,6 +166,7 @@ describe("the window's own AI tools (4.9)", () => {
         allowListConfirmed: () => false,
         ignored: () => [],
         openPreview: async () => null,
+        readPixels: NO_PIXELS,
         onNetlify: () => onNetlify,
       }).runSiteCheck();
       const data = answer?.status === "done" && "data" in answer ? answer.data : undefined;
@@ -165,6 +184,7 @@ describe("the window's own AI tools (4.9)", () => {
       allowListConfirmed: () => false,
       ignored: () => [`altText:${site.homePageId}/pic/image`],
       openPreview: async () => null,
+      readPixels: NO_PIXELS,
     }).runSiteCheck();
 
     expect(JSON.stringify(ignored)).not.toContain('"altText"');
@@ -188,6 +208,53 @@ describe("the window's own AI tools (4.9)", () => {
       data: { opened: false, reason: "The preview didn't open." },
     });
     expect(openPreview).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("a picture's main colours for an AI app (#1373)", () => {
+  it("gives a Media picture's main colours, commonest first, reading each picture once", async () => {
+    const { tools, readPixels } = setUp();
+    const ask = (input: unknown) =>
+      tools.pictureColours({ kind: "query", name: "pictureColours", input });
+
+    const answer = await ask({ mediaId: "bare" });
+    expect(answer.status).toBe("done");
+    const data =
+      "data" in answer
+        ? (answer.data as { colours: { hex: string; share: number; oklch: string }[] })
+        : undefined;
+    expect(data?.colours.map(({ share }) => share)).toEqual([0.75, 0.25]);
+    expect(data?.colours[0]?.oklch).toMatch(/^oklch\(/);
+    expect(data?.colours[0]?.hex).toMatch(/^#[0-9a-f]{6}$/);
+    // The see-through pixel is left out: nothing white.
+    expect(data?.colours.some(({ hex }) => hex === "#ffffff")).toBe(false);
+
+    expect(await ask({ mediaId: "bare" })).toEqual(answer);
+    expect(readPixels).toHaveBeenCalledOnce();
+  });
+
+  it("says what's wrong with an id that isn't a picture, or one it can't read", async () => {
+    const site = siteWithBareImage();
+    site.media["doc" as MediaId] = {
+      id: "doc" as MediaId,
+      hash: "b".repeat(64),
+      name: "menu",
+      fileName: "menu.pdf",
+      kind: "file",
+      mimeType: "application/pdf",
+    };
+    const { tools, readPixels } = setUp(site);
+    const ask = (input: unknown) =>
+      tools.pictureColours({ kind: "query", name: "pictureColours", input });
+
+    expect((await ask({ mediaId: "none" })).status).toBe("not-found");
+    expect((await ask({ mediaId: "constructor" })).status).toBe("not-found");
+    expect((await ask({ mediaId: "doc" })).status).toBe("invalid");
+    expect((await ask({})).status).toBe("invalid");
+    readPixels.mockRejectedValueOnce(new Error("The image didn't load"));
+    expect((await ask({ mediaId: "bare" })).status).toBe("refused");
+    // One that couldn't be read is read again next time.
+    expect((await ask({ mediaId: "bare" })).status).toBe("done");
   });
 });
 

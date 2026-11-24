@@ -56,6 +56,26 @@ describe("the media query (4.12b, AIB-7)", () => {
     });
   });
 
+  it("says which picture is the logo or the icon, which the settings query gives too (#1373)", () => {
+    const { host } = setup(true, (doc) => {
+      doc.media[photo.id] = photo;
+      doc.settings.general.logo = photo.id;
+      doc.settings.general.icon = photo.id;
+    });
+    const api = createCommandApi(host);
+
+    const media = api.query("media", {});
+    expect(media).toMatchObject({
+      status: "done",
+      data: [{ id: photo.id, usedAs: ["logo", "icon"] }],
+    });
+    const settings = api.query("settings", {});
+    expect(settings).toMatchObject({
+      status: "done",
+      data: { general: { logo: photo.id, icon: photo.id } },
+    });
+  });
+
   it("answers an empty list for a site with no Media, and takes nothing", () => {
     const api = createCommandApi(setup().host);
     expect(api.query("media", {})).toEqual({ status: "done", data: [] });
