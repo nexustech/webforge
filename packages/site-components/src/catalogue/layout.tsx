@@ -571,15 +571,36 @@ const footer = defineComponent({
             holdsShown(column.props.content, context),
         ));
     const Columns = slots.columns;
+    // Centred, its columns' tops line up, as in the Columns layout: daisyUI's footer-center would
+    // centre each column down the height of the tallest (#1368).
     const columns = shown ? (
-      <Columns className="site-footer-columns grid w-full gap-8 sm:grid-flow-col sm:auto-cols-fr" />
+      <Columns
+        className={`site-footer-columns grid w-full gap-8 sm:grid-flow-col sm:auto-cols-fr${values.variant === "centred" ? " items-start" : ""}`}
+      />
     ) : null;
     if (values.variant === "centred") {
+      // Without columns, as it was before them: its text and Cookie settings side by side, centred.
+      if (columns === null) {
+        return (
+          <footer className="site-footer footer footer-center bg-base-200 p-8 text-base-content">
+            {text}
+            {cookies}
+          </footer>
+        );
+      }
+      // With them, its text and Cookie settings under them, still side by side (#1368):
+      // daisyUI's footer-center lays its children out in a row, so the Footer flows by rows.
+      const line =
+        text === null && cookies === null ? null : (
+          <div className="site-footer-line grid-flow-col gap-x-4">
+            {text}
+            {cookies}
+          </div>
+        );
       return (
-        <footer className="site-footer footer footer-center bg-base-200 p-8 text-base-content">
+        <footer className="site-footer footer footer-center grid-flow-row bg-base-200 p-8 text-base-content">
           {columns}
-          {text}
-          {cookies}
+          {line}
         </footer>
       );
     }
