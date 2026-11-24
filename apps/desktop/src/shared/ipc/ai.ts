@@ -90,13 +90,15 @@ const aiResponseSchema = z.union([
   /**
    * What the person is still deciding, by its id, for the app to ask about later: a brief they're
    * checking (4.12a), main's own answer, which `briefStatus` tells; or a request for files they're
-   * choosing (#1252), the window's, which `mediaStatus` tells.
+   * choosing (#1252), the window's, which `mediaStatus` tells; or a change whose question they're
+   * answering (#1364), main's bridge's, which `changeStatus` tells.
    */
   z.strictObject({
     status: z.literal("waiting"),
     data: z.union([
       z.strictObject({ briefId: z.int().positive() }),
       z.strictObject({ requestId: z.int().positive() }),
+      z.strictObject({ changeId: z.int().positive() }),
     ]),
     message: z.string(),
   }),

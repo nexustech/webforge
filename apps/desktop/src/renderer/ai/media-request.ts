@@ -1,3 +1,4 @@
+import { APP_PARSE } from "@webforge/commands";
 import type { MediaMeta } from "@webforge/model";
 import { z } from "zod";
 import { mediaStatusInput, requestMediaInput } from "../../shared/ai-tools.js";
@@ -137,7 +138,7 @@ export function createMediaRequests(deps: MediaRequestDeps): MediaRequests {
   };
 
   const requestMedia = async (app: string, input: unknown): Promise<AiResponse> => {
-    const parsed = requestMediaInput.safeParse(input);
+    const parsed = requestMediaInput.safeParse(input, APP_PARSE);
     if (!parsed.success) return { status: "invalid", message: z.prettifyError(parsed.error) };
     if (open !== undefined) {
       if (open.app !== app) return OTHER_APP;
@@ -175,7 +176,7 @@ export function createMediaRequests(deps: MediaRequestDeps): MediaRequests {
         ? requestMedia(request.app, request.input)
         : { status: "invalid", message: "requestMedia is a command." },
     mediaStatus: (request) => {
-      const parsed = mediaStatusInput.safeParse(request.input);
+      const parsed = mediaStatusInput.safeParse(request.input, APP_PARSE);
       if (!parsed.success) return { status: "invalid", message: z.prettifyError(parsed.error) };
       const { requestId } = parsed.data;
       if (open?.id === requestId && parked.has(requestId))

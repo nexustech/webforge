@@ -109,10 +109,12 @@ describe("aiAppsFeature (4.9, #985)", () => {
     feature.register?.(ipc, () => true);
     const request = { kind: "command", name: "setThemeTokens", input: {}, app: "Claude" } as const;
 
-    // No window here: the answer is that no site is open, but the bridge heard who asked.
-    await mcp.options?.ask(request, "app-1");
+    // No window here: the answer is that no site is open, but the bridge heard who asked, and
+    // where a change that waits on the person tells its outcome (#1364).
+    const late = vi.fn();
+    await mcp.options?.ask(request, "app-1", late);
 
-    expect(bridge.asked).toEqual([[request, "app-1"]]);
+    expect(bridge.asked).toEqual([[request, "app-1", late]]);
   });
 
   it("gives the assistant the MCP server's tools, and closes the server when asked", async () => {

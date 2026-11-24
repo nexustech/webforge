@@ -4,7 +4,7 @@ id: ai-apps
 title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
 related: [undo-and-history, version-history, site-check]
-updated: 2026-11-23
+updated: 2026-11-24
 ---
 
 # AI apps
@@ -96,7 +96,7 @@ An app works on the site you have open in {appName}, and only that one. It can:
 - add, change, move and delete sections and elements, and change text;
 - add, rename, move and delete pages, and change a page's title, description, **Hide in menu** and **Hide this page from search engines**, as [Page Settings](pages.md) does. When an app renames a page of a site you've published, the page's old address keeps working, as **Rename…** does, in the same step: see [Keeping old addresses working](pages.md#keeping-old-addresses-working);
 - change your business's details in [Site Settings](site-settings.md): its name, description, language and type, web address, contact details, opening hours, social profiles and search engine settings;
-- change the theme;
+- change the theme, all of it or one part, such as the line spacing of your headings;
 - see what's in [Media](media.md), and place your pictures in elements;
 - ask you to add pictures or files (see [Pictures](#pictures));
 - run [Site Check](site-check.md), and open the [Preview](preview.md) in your browser. The app is told the page's address, which works on this computer only, so it can look at its work: how the page looks at desktop and phone widths, and whether its pictures show. It sees the Preview only when it opens it in your browser, so you see it too.
@@ -114,7 +114,7 @@ Some changes ask you first, with **Allow**:
 
 Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or _Page not found_.
 
-The question waits for your answer, however long you're away: walking away isn't a no. The app is told it's still waiting, and **Allow** makes the change when you come back. If the app gives up first, or you close the site, the question closes and nothing changes. Only **Cancel** is a no, and after one the app waits a little before it asks you again.
+The question waits for your answer, however long you're away: walking away isn't a no. **Allow** makes the change when you come back. If you haven't answered within about 45 seconds, the app is told the change is waiting, with a number it can ask about later, so it can find out whether you allowed it without asking you to look. If it sends the same change again meanwhile, it isn't made twice. Until then, it waits to send other changes. If the app gives up within those 45 seconds, or you close the site, the question closes and nothing changes. Only **Cancel** is a no, and after one the app waits a little before it asks you again.
 
 In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings. It can still see Media and ask you for pictures.
 
@@ -179,15 +179,15 @@ Unlike Claude Desktop's extension, these tools can't check who answers at the ad
 
 You need [Claude Code](https://code.claude.com/docs/en/setup) installed.
 
-1. Click **Add AI App**, choose **Claude Code**, and click **Add**. {appName} shows three steps, each with what it copies, and the commands for your computer's terminal.
-2. **Add {appName} to Claude Code:** click **Copy the add command**, and run it in a terminal (Bash, Zsh or PowerShell). It adds {appName}'s server, named `webforge`, to Claude Code for all your projects:
+1. Click **Add AI App**, choose **Claude Code**, and click **Add**. {appName} shows three steps, each with what it copies, and the commands for your computer's terminal. On Windows the steps say PowerShell: run them there, not in Command Prompt, which splits the add command at its spaces.
+2. **Add {appName} to Claude Code:** click **Copy the add command**, and run it in a terminal (Bash or Zsh), or in PowerShell on Windows. It adds {appName}'s server, named `webforge`, to Claude Code for all your projects:
 
    ```
    claude mcp add --transport http --scope user webforge http://127.0.0.1:<port>/mcp --header 'Authorization: Bearer ${WEBFORGE_KEY}'
    ```
 
    The key isn't in it. Claude Code reads it from `WEBFORGE_KEY` each time it connects, so the key isn't in your terminal's history or in Claude Code's settings.
-3. **Give that terminal the key:** in the same terminal, click **Copy the key command** and run it. Then click **Copy the key**, paste it when the terminal waits for it, and press Return (Enter on Windows). The key doesn't show as you paste it, and it isn't typed on the command line. {appName} shows the command for your computer:
+3. **Give that terminal the key:** in the same terminal (the same PowerShell window on Windows), click **Copy the key command** and run it. Then click **Copy the key**, paste it when the terminal waits for it, and press Return (Enter on Windows). The key doesn't show as you paste it, and it isn't typed on the command line. {appName} shows the command for your computer:
    - On a Mac or Linux:
 
      ```
@@ -200,7 +200,7 @@ You need [Claude Code](https://code.claude.com/docs/en/setup) installed.
      $env:WEBFORGE_KEY = [Net.NetworkCredential]::new('', (Read-Host 'Key' -AsSecureString)).Password
      ```
 
-4. **Start Claude Code** in that terminal before the key runs out: {appName} shows how long it has left, from 5 minutes. When Claude Code connects, {appName} says so, without you closing anything, and in Claude Code `/mcp` lists `webforge` as connected. Then click **Done**.
+4. **Start Claude Code** in that terminal (that PowerShell window on Windows) before the key runs out: {appName} shows how long it has left, from 5 minutes. When Claude Code connects, {appName} says so, without you closing anything, and in Claude Code `/mcp` lists `webforge` as connected. Then click **Done**.
 
 If the key runs out first, {appName} says so and removes Claude Code: add it again for a new key.
 
