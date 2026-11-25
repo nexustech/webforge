@@ -57,3 +57,30 @@ export const Windows: Story = {};
 
 /** A Mac: ⌘ ⌥ ⇧, and Cmd+Backspace where Windows has Delete. */
 export const Mac: Story = { args: { commands: commands(true), mac: true } };
+
+/** A wide window, where the dialog is wider: three columns. */
+export const Wide: Story = {
+  render: (args) => (
+    <div className="w-[1024px] p-4">
+      <SheetGroups {...args} />
+    </div>
+  ),
+};
+
+/** A narrow one: one column, never wider than the dialog. */
+export const Narrow: Story = {
+  render: (args) => (
+    <div className="w-[320px] p-4">
+      <SheetGroups {...args} />
+    </div>
+  ),
+};
+
+/** Searched for "zoom": the rows that match, under their groups' headings. */
+export const Searched: Story = { args: { search: "zoom" } };
+
+/** Searched by keys. */
+export const SearchedByKeys: Story = { args: { search: "Ctrl+D" } };
+
+/** Nothing matches the search. */
+export const NoMatch: Story = { args: { search: "sparkle" } };

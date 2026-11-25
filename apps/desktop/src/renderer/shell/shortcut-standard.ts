@@ -200,17 +200,22 @@ export const OTHER_SHORTCUTS: readonly OtherShortcut[] = [
   { label: "shortcuts.link", group: "text", keys: ["Mod+K"] },
   { label: "shortcuts.splitText", group: "text", keys: ["Alt+Enter"] },
   { label: "shortcuts.nonBreakingSpace", group: "text", keys: ["Shift+Space"] },
-  { label: "shortcuts.layersFocus", group: "layers", keys: ["ArrowUp", "ArrowDown"] },
+  // One action a row, as Editing has Move Up and Move Down, so no row has more than two keys; an
+  // action that is also a command's has the command's name (#1410).
+  { label: "shortcuts.layersPrevious", group: "layers", keys: ["ArrowUp"] },
+  { label: "shortcuts.layersNext", group: "layers", keys: ["ArrowDown"] },
   { label: "shortcuts.layersOpen", group: "layers", keys: ["ArrowRight", "ArrowLeft"] },
-  { label: "shortcuts.layersParent", group: "layers", keys: ["Mod+ArrowUp"] },
-  { label: "shortcuts.layersChild", group: "layers", keys: ["Mod+ArrowDown"] },
-  { label: "shortcuts.layersSibling", group: "layers", keys: ["Mod+ArrowLeft", "Mod+ArrowRight"] },
+  { label: "canvas.selectParent", group: "layers", keys: ["Mod+ArrowUp"] },
+  { label: "canvas.selectChild", group: "layers", keys: ["Mod+ArrowDown"] },
+  { label: "canvas.selectPreviousSibling", group: "layers", keys: ["Mod+ArrowLeft"] },
+  { label: "canvas.selectNextSibling", group: "layers", keys: ["Mod+ArrowRight"] },
+  // Alt+arrows were Layers' first keys and still move a layer on every platform, so they're
+  // shared; on Windows they're also the alternative where Ctrl+Alt+arrows rotate the screen.
+  { label: "canvas.moveUp.command", group: "layers", keys: ["Mod+Alt+ArrowUp", "Alt+ArrowUp"] },
   {
-    label: "shortcuts.layersMove",
+    label: "canvas.moveDown.command",
     group: "layers",
-    // Alt+arrows were Layers' first keys and still move a layer on every platform, so they're
-    // shared; on Windows they're also the alternative where Ctrl+Alt+arrows rotate the screen.
-    keys: ["Mod+Alt+ArrowUp", "Mod+Alt+ArrowDown", "Alt+ArrowUp", "Alt+ArrowDown"],
+    keys: ["Mod+Alt+ArrowDown", "Alt+ArrowDown"],
   },
   // Held while dragging a layer (1.35), from before the press too (#271).
   { label: "shortcuts.layersCopy", group: "layers", keys: ["Mod"] },
