@@ -552,7 +552,13 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
         id: COMMAND_IDS.toggleDrawer,
         label: t("command.toggleDrawer"),
         menu: "view",
-        run: byCommand(() => toggleDrawer(drawer.current)),
+        run: byCommand(() => {
+          toggleDrawer(drawer.current);
+          // Shown or hidden now, not when its size is next observed, as when one of its panels
+          // is asked for: what's in it can be focused or read at once.
+          const shown = drawer.current?.isCollapsed() === false;
+          flushSync(() => setDrawerShown(shown));
+        }),
       }),
       registry.register({
         id: COMMAND_IDS.resetPanels,

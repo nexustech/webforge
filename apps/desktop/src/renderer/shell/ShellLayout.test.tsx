@@ -343,6 +343,20 @@ describe("ShellLayout", () => {
       expect(focused).toBe(true);
       expect(screen.queryByRole("navigation", { name: "Bottom panel, collapsed" })).toBeNull();
     });
+
+    it("shows and hides the bottom panel at once from its command, so what's in it can be read", () => {
+      const { commands } = renderLayout();
+      expect(bottomPanel().hidden).toBe(true);
+      act(() => {
+        commands.run(COMMAND_IDS.toggleDrawer);
+        expect(bottomPanel().hidden).toBe(false);
+      });
+      act(() => {
+        commands.run(COMMAND_IDS.toggleDrawer);
+        expect(bottomPanel().hidden).toBe(true);
+      });
+      expect(screen.getByRole("navigation", { name: "Bottom panel, collapsed" })).toBeTruthy();
+    });
   });
 
   it("shows a column only once one of its slots has a panel", () => {
