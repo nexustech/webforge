@@ -15,6 +15,8 @@ import { insertBlog } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   copyLayer,
+  keepUnchanged,
+  type Layer,
   layerItem,
   layerShown,
   layersOf,
@@ -129,6 +131,51 @@ describe("layersOf (F-ED-12)", () => {
 
     expect(footer?.children[0]?.children[0]?.animated).toBeUndefined();
     expect(layersOf([contact], siteLibrary)[0]?.animated).toBe(true);
+  });
+});
+
+describe("keepUnchanged (#1406)", () => {
+  const layer = (id: string, extra: Partial<Layer> = {}): Layer => ({
+    id,
+    kind: "Heading",
+    name: undefined,
+    hidden: false,
+    children: [],
+    ...extra,
+  });
+  const tree = (name?: string) => [
+    layer("s1", { kind: "Section", children: [layer("a"), layer("b", { name })] }),
+    layer("s2", { kind: "Section", children: [layer("c")] }),
+  ];
+
+  it("keeps the whole tree when nothing changed", () => {
+    const before = tree();
+
+    expect(keepUnchanged(before, tree())).toBe(before);
+  });
+
+  it("keeps the layers that didn't change, and makes new ones of those that did and holding them", () => {
+    const before = tree();
+
+    const after = keepUnchanged(before, tree("Hours"));
+
+    expect(after).not.toBe(before);
+    expect(after[1]).toBe(before[1]);
+    expect(after[0]).not.toBe(before[0]);
+    expect(after[0]?.children[0]).toBe(before[0]?.children[0]);
+    expect(after[0]?.children[1]?.name).toBe("Hours");
+  });
+
+  it("tells apart a field set and one left out, and a layer moved", () => {
+    const before = [layer("a"), layer("b")];
+
+    expect(keepUnchanged(before, [layer("a", { note: "Check" }), layer("b")])[0]).not.toBe(
+      before[0],
+    );
+    const moved = keepUnchanged(before, [layer("b"), layer("a")]);
+    expect(moved).not.toBe(before);
+    expect(moved).toEqual([before[1], before[0]]);
+    expect(moved[0]).toBe(before[1]);
   });
 });
 

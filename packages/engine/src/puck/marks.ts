@@ -86,20 +86,21 @@ function addChip(
 
 /**
  * Names the outlined element `nodeId` in a chip above its top-left corner, as its bar names a
- * hovered one (SP-10); `null`, or no name, takes the chip away.
+ * hovered one (SP-10); `null`, or no name, takes the chip away. `zoom` gives the canvas's scale,
+ * which reads the layout: asked only for a chip it draws, so taking one away reads none (#1406).
  */
 export function showOutlineChip(
   doc: Document | undefined,
   nodeId: string | null,
   name: string | undefined,
-  zoom: number,
+  zoom: () => number,
 ): void {
   if (doc === undefined) return;
   clear(doc, "outline");
   if (nodeId === null || name === undefined) return;
   const box = boxOf(doc, nodeId);
   if (box === undefined) return;
-  addChip(doc, "outline", name, box.left, box.top, zoom);
+  addChip(doc, "outline", name, box.left, box.top, zoom());
 }
 
 /**
@@ -119,16 +120,22 @@ function besideSiblings(doc: Document, nodeId: string, box: DOMRect): boolean {
 /**
  * Marks where a layer dragged in Layers would land (SP-8): a 1 px line in the accent along the
  * edge of element `mark.nodeId` it would go before or after, with the dragged element's chip at
- * the start of the line. `null` takes the mark away.
+ * the start of the line. `null` takes the mark away. `zoom` gives the canvas's scale, as for
+ * `showOutlineChip`: asked only for a mark it draws.
  */
-export function showDropMark(doc: Document | undefined, mark: DropMark | null, zoom: number): void {
+export function showDropMark(
+  doc: Document | undefined,
+  mark: DropMark | null,
+  zoom: () => number,
+): void {
   if (doc === undefined) return;
   clear(doc, "drop");
   if (mark === null) return;
   const box = boxOf(doc, mark.nodeId);
   const view = doc.defaultView;
   if (box === undefined || view === null) return;
-  const thickness = 1 / zoom;
+  const scale = zoom();
+  const thickness = 1 / scale;
   const line = addMark(doc, "drop", "wf-mark-line");
   const upright = besideSiblings(doc, mark.nodeId, box);
   const after = mark.place === "after";
@@ -139,5 +146,5 @@ export function showDropMark(doc: Document | undefined, mark: DropMark | null, z
   line.style.top = `${top + view.scrollY}px`;
   line.style.width = `${upright ? thickness : box.width}px`;
   line.style.height = `${upright ? box.height : thickness}px`;
-  addChip(doc, "drop", mark.name, left, top, zoom);
+  addChip(doc, "drop", mark.name, left, top, scale);
 }
