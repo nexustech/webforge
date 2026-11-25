@@ -27,7 +27,8 @@ import {
   PanelRightOpenIcon,
   SearchIcon,
 } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { Preferences } from "../../shared/ipc-contract.js";
 import { CanvasErrorBoundary } from "./CanvasErrorBoundary.js";
 import { useCommandRegistry } from "./command-context.js";
@@ -128,6 +129,15 @@ const AREA_BUTTONS = {
   },
 } as const satisfies Record<keyof typeof AREAS, AreaButtons>;
 
+/** What {@link AreaButton} names its element with: `left-hide`, `drawer-show`. */
+const AREA_BUTTON_ATTRIBUTE = "data-area-button";
+
+/**
+ * The area button to focus once the window's parts have folded or opened: the one that undoes the
+ * button just pressed, which was hidden with its part or removed with its strip (#1412).
+ */
+const RefocusContext = createContext<{ current: string | null }>({ current: null });
+
 /**
  * The button that folds (`hide`) or opens (`show`) part `area` of the window (#1412), named for
  * what it does, its tooltip with the command's shortcut from the standard: "Hide Left Panels
@@ -141,6 +151,7 @@ function AreaButton({
   readonly action: "hide" | "show";
 }) {
   const registry = useCommandRegistry();
+  const refocus = useContext(RefocusContext);
   const { command } = AREA_BUTTONS[area];
   const { name: key, icon: Icon } = AREA_BUTTONS[area][action];
   const name = t(key);
@@ -151,7 +162,11 @@ function AreaButton({
       size="icon-sm"
       aria-label={name}
       tooltip={withShortcut(name, command)}
-      onClick={() => registry.run(command)}
+      {...{ [AREA_BUTTON_ATTRIBUTE]: `${area}-${action}` }}
+      onClick={() => {
+        refocus.current = `${area}-${action === "hide" ? "show" : "hide"}`;
+        registry.run(command);
+      }}
     >
       <Icon />
     </Button>
@@ -485,8 +500,22 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
     left: leftStartsCollapsed || savedCollapsed(layout[PANEL_GROUPS.columns]?.left),
     right: savedCollapsed(layout[PANEL_GROUPS.columns]?.right),
   }));
-  // Whether the bottom panel is shown, for the Panels menu's checkbox (#1195).
-  const [drawerShown, setDrawerShown] = useState(false);
+  // Whether the bottom panel is shown, for the Panels menu's checkbox (#1195) and its bar (#1412):
+  // as it was left, so a window opened with it open doesn't draw the bar for a frame.
+  const [drawerShown, setDrawerShown] = useState(
+    () => (layout[PANEL_GROUPS.center]?.["drawer"] ?? 0) > 0,
+  );
+  const refocus = useRef<string | null>(null);
+  // The button that undoes the one just pressed, once its part has folded or opened (#1412).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: run when a part folds or opens.
+  useEffect(() => {
+    const target = refocus.current;
+    if (target === null) return;
+    const button = document.querySelector<HTMLElement>(`[${AREA_BUTTON_ATTRIBUTE}="${target}"]`);
+    if (button === null || button.closest("[hidden]") !== null) return;
+    refocus.current = null;
+    button.focus();
+  }, [collapsed.left, collapsed.right, drawerShown]);
   // The columns not yet opened since the window started ({@link NeverOpened}).
   const neverOpened = useRef<NeverOpened>({ left: leftStartsCollapsed, right: false });
   const followCollapsed = (side: "left" | "right") => (size: { readonly inPixels: number }) => {
@@ -562,8 +591,12 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
           );
           if (holds && column?.isCollapsed() === true) {
             // A side column shown in a narrow window folds the other first (#1166).
-            if (side === "drawer") toggle(column, DEFAULTS.drawer);
-            else openSide({ left, right }, side, neverOpened.current);
+            if (side === "drawer") {
+              toggle(column, DEFAULTS.drawer);
+              // Shown now, not when its size is next observed: a panel that takes the focus as
+              // it's shown, as Find and Replace does, can't focus inside a `hidden` section.
+              flushSync(() => setDrawerShown(true));
+            } else openSide({ left, right }, side, neverOpened.current);
           }
           // The drawer at a height to read at, however small it was left (#1164).
           if (holds && side === "drawer") readable(column);
@@ -619,161 +652,167 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
     };
 
   return (
-    <ResizablePanelGroup
-      id={PANEL_GROUPS.columns}
-      orientation="horizontal"
-      className="bg-panel-group"
-      {...(columnsLayout === undefined ? {} : { defaultLayout: columnsLayout })}
-      onLayoutChanged={remember(PANEL_GROUPS.columns)}
-    >
-      {showLeft && (
-        <>
-          <ResizablePanel
-            id="left"
-            panelRef={left}
-            defaultSize={leftStartsCollapsed ? `${STRIP_PX}px` : DEFAULTS.sideWidth}
-            minSize={DEFAULTS.sideMin}
-            maxSize={DEFAULTS.sideMax}
-            collapsible
-            collapsedSize={`${STRIP_PX}px`}
-            onResize={followCollapsed("left")}
-            groupResizeBehavior="preserve-pixel-size"
-          >
-            {/* Kept while collapsed, so the panel chosen and the panels asked for are kept too. */}
-            <section
-              aria-label={t("panels.left")}
-              {...{ [REGION_ATTRIBUTE]: "" }}
-              className="h-full"
-              hidden={collapsed.left}
+    <RefocusContext value={refocus}>
+      <ResizablePanelGroup
+        id={PANEL_GROUPS.columns}
+        orientation="horizontal"
+        className="bg-panel-group"
+        {...(columnsLayout === undefined ? {} : { defaultLayout: columnsLayout })}
+        onLayoutChanged={remember(PANEL_GROUPS.columns)}
+      >
+        {showLeft && (
+          <>
+            <ResizablePanel
+              id="left"
+              panelRef={left}
+              defaultSize={leftStartsCollapsed ? `${STRIP_PX}px` : DEFAULTS.sideWidth}
+              minSize={DEFAULTS.sideMin}
+              maxSize={DEFAULTS.sideMax}
+              collapsible
+              collapsedSize={`${STRIP_PX}px`}
+              onResize={followCollapsed("left")}
+              groupResizeBehavior="preserve-pixel-size"
             >
-              {showLower ? (
-                // The tabs over the lower pane, both shown at once (ADR 0011).
-                <ResizablePanelGroup
-                  id={PANEL_GROUPS.left}
-                  groupRef={leftSplit}
-                  orientation="vertical"
-                  defaultLayout={layout[PANEL_GROUPS.left] ?? LEFT_SPLIT}
-                  onLayoutChanged={remember(PANEL_GROUPS.left)}
-                >
-                  <ResizablePanel id="tabs" minSize={DEFAULTS.lowerMin}>
-                    <PanelTabs
-                      slots={SLOTS.left}
-                      editorLevel={editorLevel}
-                      iconTabs
-                      end={<AreaButton area="left" action="hide" />}
-                    />
-                  </ResizablePanel>
-                  <ResizableHandle aria-label={t("panels.resizeLower")} />
-                  <ResizablePanel
-                    id="lower"
-                    minSize={DEFAULTS.lowerMin}
-                    maxSize={DEFAULTS.lowerMax}
+              {/* Kept while collapsed, so the panel chosen and the panels asked for are kept too. */}
+              <section
+                aria-label={t("panels.left")}
+                {...{ [REGION_ATTRIBUTE]: "" }}
+                className="h-full"
+                hidden={collapsed.left}
+              >
+                {showLower ? (
+                  // The tabs over the lower pane, both shown at once (ADR 0011).
+                  <ResizablePanelGroup
+                    id={PANEL_GROUPS.left}
+                    groupRef={leftSplit}
+                    orientation="vertical"
+                    defaultLayout={layout[PANEL_GROUPS.left] ?? LEFT_SPLIT}
+                    onLayoutChanged={remember(PANEL_GROUPS.left)}
                   >
-                    <PanelTabs slots={SLOTS.leftLower} editorLevel={editorLevel} />
-                  </ResizablePanel>
-                </ResizablePanelGroup>
-              ) : (
-                <PanelTabs
-                  slots={SLOTS.left}
+                    <ResizablePanel id="tabs" minSize={DEFAULTS.lowerMin}>
+                      <PanelTabs
+                        slots={SLOTS.left}
+                        editorLevel={editorLevel}
+                        iconTabs
+                        end={<AreaButton area="left" action="hide" />}
+                      />
+                    </ResizablePanel>
+                    <ResizableHandle aria-label={t("panels.resizeLower")} />
+                    <ResizablePanel
+                      id="lower"
+                      minSize={DEFAULTS.lowerMin}
+                      maxSize={DEFAULTS.lowerMax}
+                    >
+                      <PanelTabs slots={SLOTS.leftLower} editorLevel={editorLevel} />
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                ) : (
+                  <PanelTabs
+                    slots={SLOTS.left}
+                    editorLevel={editorLevel}
+                    iconTabs
+                    end={<AreaButton area="left" action="hide" />}
+                  />
+                )}
+              </section>
+              {collapsed.left ? (
+                <PanelStrip
+                  side="left"
                   editorLevel={editorLevel}
-                  iconTabs
-                  end={<AreaButton area="left" action="hide" />}
+                  label={t("panels.leftCollapsed")}
                 />
-              )}
-            </section>
-            {collapsed.left ? (
-              <PanelStrip side="left" editorLevel={editorLevel} label={t("panels.leftCollapsed")} />
-            ) : null}
-          </ResizablePanel>
-          <ResizableHandle aria-label={t("panels.resizeLeft")} />
-        </>
-      )}
-      <ResizablePanel id="center" minSize={DEFAULTS.centerMin} className="flex flex-col">
-        <ResizablePanelGroup
-          id={PANEL_GROUPS.center}
-          orientation="vertical"
-          className="min-h-0 flex-1"
-          {...(layout[PANEL_GROUPS.center] === undefined
-            ? { defaultLayout: { canvas: 100, drawer: 0 } }
-            : { defaultLayout: layout[PANEL_GROUPS.center] })}
-          onLayoutChanged={remember(PANEL_GROUPS.center)}
-        >
-          <ResizablePanel id="canvas" minSize="30%" className="canvas-backdrop">
-            <CanvasErrorBoundary>{center}</CanvasErrorBoundary>
-          </ResizablePanel>
-          <ResizableHandle aria-label={t("panels.resizeDrawer")} />
-          <ResizablePanel
-            id="drawer"
-            panelRef={drawer}
-            minSize="10%"
-            maxSize="60%"
-            collapsible
-            onResize={(size) => setDrawerShown(size.inPixels > 0)}
-          >
-            {/* Kept while collapsed, as the side columns are, its bar standing in for it. */}
-            <section
-              aria-label={t("panels.drawer")}
-              {...{ [REGION_ATTRIBUTE]: "" }}
-              className="h-full"
-              hidden={!drawerShown}
-            >
-              <PanelTabs
-                slots={SLOTS.drawer}
-                editorLevel={editorLevel}
-                end={<AreaButton area="drawer" action="hide" />}
-              />
-            </section>
-          </ResizablePanel>
-        </ResizablePanelGroup>
-        {drawerShown ? null : (
-          // Where the collapsed bottom panel was, the button that opens it (#1412): 32 px the
-          // canvas can spare, as the side columns keep a strip.
-          <nav
-            aria-label={t("panels.drawerCollapsed")}
-            {...{ [REGION_ATTRIBUTE]: "" }}
-            className="flex h-8 shrink-0 items-center justify-end border-t border-border bg-panel px-1"
-          >
-            <AreaButton area="drawer" action="show" />
-          </nav>
+              ) : null}
+            </ResizablePanel>
+            <ResizableHandle aria-label={t("panels.resizeLeft")} />
+          </>
         )}
-      </ResizablePanel>
-      {showRight && (
-        <>
-          <ResizableHandle aria-label={t("panels.resizeRight")} />
-          <ResizablePanel
-            id="right"
-            panelRef={right}
-            defaultSize={DEFAULTS.sideWidth}
-            minSize={DEFAULTS.sideMin}
-            maxSize={DEFAULTS.sideMax}
-            collapsible
-            collapsedSize={`${STRIP_PX}px`}
-            onResize={followCollapsed("right")}
-            groupResizeBehavior="preserve-pixel-size"
+        <ResizablePanel id="center" minSize={DEFAULTS.centerMin} className="flex flex-col">
+          <ResizablePanelGroup
+            id={PANEL_GROUPS.center}
+            orientation="vertical"
+            className="min-h-0 flex-1"
+            {...(layout[PANEL_GROUPS.center] === undefined
+              ? { defaultLayout: { canvas: 100, drawer: 0 } }
+              : { defaultLayout: layout[PANEL_GROUPS.center] })}
+            onLayoutChanged={remember(PANEL_GROUPS.center)}
           >
-            {/* Kept while collapsed, so the panel chosen and the panels asked for are kept too. */}
-            <section
-              aria-label={t("panels.right")}
-              {...{ [REGION_ATTRIBUTE]: "" }}
-              className="h-full"
-              hidden={collapsed.right}
+            <ResizablePanel id="canvas" minSize="30%" className="canvas-backdrop">
+              <CanvasErrorBoundary>{center}</CanvasErrorBoundary>
+            </ResizablePanel>
+            <ResizableHandle aria-label={t("panels.resizeDrawer")} />
+            <ResizablePanel
+              id="drawer"
+              panelRef={drawer}
+              minSize="10%"
+              maxSize="60%"
+              collapsible
+              onResize={(size) => setDrawerShown(size.inPixels > 0)}
             >
-              <PanelTabs
-                slots={SLOTS.right}
-                editorLevel={editorLevel}
-                start={<AreaButton area="right" action="hide" />}
-              />
-            </section>
-            {collapsed.right ? (
-              <PanelStrip
-                side="right"
-                editorLevel={editorLevel}
-                label={t("panels.rightCollapsed")}
-              />
-            ) : null}
-          </ResizablePanel>
-        </>
-      )}
-    </ResizablePanelGroup>
+              {/* Kept while collapsed, as the side columns are, its bar standing in for it. */}
+              <section
+                aria-label={t("panels.drawer")}
+                {...{ [REGION_ATTRIBUTE]: "" }}
+                className="h-full"
+                hidden={!drawerShown}
+              >
+                <PanelTabs
+                  slots={SLOTS.drawer}
+                  editorLevel={editorLevel}
+                  end={<AreaButton area="drawer" action="hide" />}
+                />
+              </section>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+          {drawerShown ? null : (
+            // Where the collapsed bottom panel was, the button that opens it (#1412): 32 px the
+            // canvas can spare, as the side columns keep a strip.
+            <nav
+              aria-label={t("panels.drawerCollapsed")}
+              {...{ [REGION_ATTRIBUTE]: "" }}
+              className="flex h-8 shrink-0 items-center justify-end border-t border-border bg-panel px-1"
+            >
+              <AreaButton area="drawer" action="show" />
+            </nav>
+          )}
+        </ResizablePanel>
+        {showRight && (
+          <>
+            <ResizableHandle aria-label={t("panels.resizeRight")} />
+            <ResizablePanel
+              id="right"
+              panelRef={right}
+              defaultSize={DEFAULTS.sideWidth}
+              minSize={DEFAULTS.sideMin}
+              maxSize={DEFAULTS.sideMax}
+              collapsible
+              collapsedSize={`${STRIP_PX}px`}
+              onResize={followCollapsed("right")}
+              groupResizeBehavior="preserve-pixel-size"
+            >
+              {/* Kept while collapsed, so the panel chosen and the panels asked for are kept too. */}
+              <section
+                aria-label={t("panels.right")}
+                {...{ [REGION_ATTRIBUTE]: "" }}
+                className="h-full"
+                hidden={collapsed.right}
+              >
+                <PanelTabs
+                  slots={SLOTS.right}
+                  editorLevel={editorLevel}
+                  start={<AreaButton area="right" action="hide" />}
+                />
+              </section>
+              {collapsed.right ? (
+                <PanelStrip
+                  side="right"
+                  editorLevel={editorLevel}
+                  label={t("panels.rightCollapsed")}
+                />
+              ) : null}
+            </ResizablePanel>
+          </>
+        )}
+      </ResizablePanelGroup>
+    </RefocusContext>
   );
 }

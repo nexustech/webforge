@@ -162,14 +162,20 @@ test.describe("window layout", () => {
     );
     await left.getByRole("tab", { name: "Add" }).click();
 
+    // From the keyboard: the focus goes to the button that undoes the one pressed, which went
+    // with its part or its strip.
     const right = page.getByRole("region", { name: "Right panels" });
-    await right.getByRole("button", { name: "Hide Right Panels" }).click();
+    const hideRight = right.getByRole("button", { name: "Hide Right Panels" });
+    await hideRight.focus();
+    await page.keyboard.press("Enter");
     await expect(right).toBeHidden();
-    await page
+    const showRight = page
       .getByRole("navigation", { name: "Right panels, collapsed" })
-      .getByRole("button", { name: "Show Right Panels" })
-      .click();
+      .getByRole("button", { name: "Show Right Panels" });
+    await expect(showRight).toBeFocused();
+    await page.keyboard.press("Enter");
     await expect(right).toBeVisible();
+    await expect(hideRight).toBeFocused();
 
     // The bottom panel: a bar while it's collapsed, its button at the end of its tabs when open.
     const bottom = page.getByRole("region", { name: "Bottom panel" });
@@ -178,9 +184,10 @@ test.describe("window layout", () => {
     await bar.getByRole("button", { name: "Show Bottom Panel" }).click();
     await expect(bottom).toBeVisible();
     await expect(bar).toHaveCount(0);
-    await bottom.getByRole("button", { name: "Hide Bottom Panel" }).click();
+    await expect(bottom.getByRole("button", { name: "Hide Bottom Panel" })).toBeFocused();
+    await page.keyboard.press("Enter");
     await expect(bottom).toBeHidden();
-    await expect(bar).toBeVisible();
+    await expect(bar.getByRole("button", { name: "Show Bottom Panel" })).toBeFocused();
   });
 
   test("hides and shows the right panels with Ctrl+Alt+Shift+B (#1412)", async () => {

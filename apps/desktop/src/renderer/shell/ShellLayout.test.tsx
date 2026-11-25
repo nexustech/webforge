@@ -318,6 +318,31 @@ describe("ShellLayout", () => {
       });
       expect(run).toHaveBeenLastCalledWith(COMMAND_IDS.toggleDrawer);
     });
+
+    it("shows the bottom panel at once when one of its panels is asked for, so it can take the focus", () => {
+      const { panels } = renderLayout();
+      act(() => {
+        panels.register({
+          id: "find",
+          slot: "drawer",
+          title: "Find and Replace",
+          component: () => <input aria-label="Find" />,
+        });
+      });
+      expect(bottomPanel().hidden).toBe(true);
+
+      // Before the panel library next measures it, as Find and Replace focuses its field then.
+      let focused = false;
+      act(() => {
+        panels.show("find");
+        const field = within(bottomPanel()).getByRole("textbox", { name: "Find" });
+        field.focus();
+        focused = document.activeElement === field;
+      });
+      expect(bottomPanel().hidden).toBe(false);
+      expect(focused).toBe(true);
+      expect(screen.queryByRole("navigation", { name: "Bottom panel, collapsed" })).toBeNull();
+    });
   });
 
   it("shows a column only once one of its slots has a panel", () => {
