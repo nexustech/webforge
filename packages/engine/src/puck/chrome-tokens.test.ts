@@ -23,7 +23,7 @@ describe("the chrome's colours (R8)", () => {
       grid: "#f028f3",
       popover: "#ffffff",
       popoverForeground: "#26292b",
-      borderStrong: "#c4c9cf",
+      borderStrong: "#acb1b7",
     });
   });
 

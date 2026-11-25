@@ -250,8 +250,10 @@ export function Form<V extends FormValues, Out>({
   // Groups with headings are listed down the side, under them (LF-12): a tab list per heading.
   const headings = [...new Set(groups.flatMap((group) => group.heading ?? []))];
   if (headings.length > 0) {
+    // As tall as the dialog lets it be: the nav stays put, and the section's fields scroll beside
+    // it (#1409).
     return (
-      <div ref={root} className="grid gap-3">
+      <div ref={root} className="flex min-h-0 flex-1 flex-col gap-3">
         {general}
         <Tabs
           orientation="vertical"
@@ -260,11 +262,12 @@ export function Form<V extends FormValues, Out>({
           activationMode="manual"
           value={tab}
           onValueChange={setTab}
-          className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)] gap-4"
+          className="grid min-h-0 flex-1 grid-cols-[minmax(0,10rem)_minmax(0,1fr)] grid-rows-[minmax(0,1fr)] gap-4"
         >
+          {/* Each scrolls on its own; the padding keeps a focus ring from being cut off. */}
           <nav
             {...(groupsLabel === undefined ? {} : { "aria-label": groupsLabel })}
-            className="flex flex-col gap-3"
+            className="-m-1 flex flex-col gap-3 overflow-y-auto p-1"
           >
             {headings.map((heading, index) => (
               <div key={heading} className="flex flex-col gap-0.5">
@@ -294,7 +297,11 @@ export function Form<V extends FormValues, Out>({
               </div>
             ))}
           </nav>
-          <div className="min-w-0">
+          {/* To the dialog's edge, so its scroll bar is there. */}
+          <div
+            data-slot="form-section"
+            className="-my-1 -mr-4 -ml-1 min-w-0 overflow-y-auto py-1 pr-4 pl-1"
+          >
             {groups.map((group) => (
               <TabsContent key={group.id} value={group.id} className="bg-transparent">
                 {helpOf(group.id)}

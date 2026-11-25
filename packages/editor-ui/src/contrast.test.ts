@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { dialogStyles } from "./components/ui/dialog.js";
 import themeCss from "./theme.css?raw";
 
 type Theme = "dark" | "light";
@@ -104,6 +105,34 @@ const DISABLED_PAIRS: Readonly<Record<string, readonly string[]>> = {
   disabled: ["background", "panel", "panel-group", "tabs", "titlebar", "card", "popover", "muted"],
 };
 
+/** The surfaces either side of a divider: between the panels, the canvas and the title bar. */
+const BESIDE_DIVIDERS = [
+  "background",
+  "panel",
+  "panel-group",
+  "tabs",
+  "titlebar",
+  "toolbar",
+  "canvas-backdrop",
+];
+
+/**
+ * The dividers (`ResizableHandle`, the title bar's and the toolbars' lower edges) → the surfaces
+ * either side of them: at least 1.5:1, so each panel reads as a panel (#1409).
+ */
+const DIVIDER_PAIRS: Readonly<Record<string, readonly string[]>> = {
+  "border-strong": BESIDE_DIVIDERS,
+};
+
+/**
+ * The edge of a dialog, Theme Studio and a popover → the editor around a dialog, dimmed by its
+ * overlay (`scrim`): at least 3:1, so a dialog reads as one (#1409). Dark only: in light, the
+ * white dialog itself stands out from the grey around it.
+ */
+const EDGE_PAIRS: Readonly<Record<string, readonly string[]>> = {
+  "border-strong": BESIDE_DIVIDERS.map((surface) => `scrim@${surface}`),
+};
+
 /** A token's colour; `top@base` is a translucent token shown over an opaque one. */
 function colour(tokens: ReadonlyMap<string, Rgba>, name: string): Rgba | undefined {
   const [topName = "", baseName] = name.split("@");
@@ -116,7 +145,12 @@ function colour(tokens: ReadonlyMap<string, Rgba>, name: string): Rgba | undefin
 }
 
 function failures(theme: Theme, pairs: Readonly<Record<string, readonly string[]>>, min: number) {
-  const tokens = new Map([...tokensOf(theme), ["page", [255, 255, 255, 1] as const]]);
+  const tokens = new Map([
+    ...tokensOf(theme),
+    ["page", [255, 255, 255, 1] as const],
+    // A dialog's overlay (`bg-black/50`).
+    ["scrim", [0, 0, 0, 0.5] as const],
+  ]);
   return Object.entries(pairs).flatMap(([foreground, backgrounds]) =>
     backgrounds.flatMap((background) => {
       const fg = colour(tokens, foreground);
@@ -159,4 +193,18 @@ describe("theme contrast (WCAG AA)", () => {
       expect(failures(theme, DISABLED_PAIRS, 3)).toEqual([]);
     },
   );
+
+  it.each(["dark", "light"] as const)(
+    "has dividers at 1.5:1 or more on either side in the %s theme",
+    (theme) => {
+      expect(failures(theme, DIVIDER_PAIRS, 1.5)).toEqual([]);
+    },
+  );
+
+  it("has a dialog's edge at 3:1 or more on the dimmed editor in the dark theme", () => {
+    // The scrim is the dialog's overlay.
+    expect(dialogStyles.overlay).toContain("bg-black/50");
+    expect(dialogStyles.content).toContain("border-border-strong");
+    expect(failures("dark", EDGE_PAIRS, 3)).toEqual([]);
+  });
 });
