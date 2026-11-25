@@ -198,6 +198,33 @@ export function pageLayers(
   ];
 }
 
+/**
+ * `next`, with each layer that is as it was in `before` (every field, and its children) kept as
+ * that same object, so the row showing it needn't draw again (#1406); `before` itself when nothing
+ * changed. A layer is matched by its id, and kept only when it's equal in value: a match among
+ * layers sharing an id (a shared section's elements, twice on a page) is as good as any.
+ */
+export function keepUnchanged(before: readonly Layer[], next: readonly Layer[]): readonly Layer[] {
+  const old = new Map(before.map((layer) => [layer.id, layer]));
+  const kept = next.map((layer) => {
+    const was = old.get(layer.id);
+    return was === undefined ? layer : keptLayer(was, layer);
+  });
+  return kept.length === before.length && kept.every((layer, index) => layer === before[index])
+    ? before
+    : kept;
+}
+
+/** `layer`, or `was` where they're equal in value, with its unchanged children kept. */
+function keptLayer(was: Layer, layer: Layer): Layer {
+  const children = keepUnchanged(was.children, layer.children);
+  const keys = new Set([...Object.keys(was), ...Object.keys(layer)]);
+  keys.delete("children");
+  const same = [...keys].every((key) => was[key as keyof Layer] === layer[key as keyof Layer]);
+  if (same && children === was.children) return was;
+  return children === layer.children ? layer : { ...layer, children };
+}
+
 /** How undo labels name a layer: its own name in quotes, else its component ("Heading"). */
 export const layerItem = (layer: Pick<Layer, "kind" | "name">) =>
   quotedName(layer.kind, layer.name);

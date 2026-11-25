@@ -4,8 +4,16 @@ declare module "vitest" {
   export interface ProvidedContext {
     /** How much longer than on CI a test may take in this run (`vitest.load.ts`, ADR 0014). */
     readonly timeoutScale: number;
+    /** The code under test was compiled by the React Compiler (`pnpm test:compiled`, ADR 0010). */
+    readonly reactCompiled?: boolean;
   }
 }
+
+/**
+ * Whether this run's code was compiled by the React Compiler, as the app's is: for a test of what
+ * only the compiler gives, such as a component that its parent's memoised props let skip a render.
+ */
+export const reactCompiled = (): boolean => inject("reactCompiled") === true;
 
 /**
  * A test's own timeout, set for CI's runners, scaled to the run's workers (ADR 0014): for a test

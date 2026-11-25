@@ -30,6 +30,7 @@ export default defineConfig({
         plugins: [compiled()],
         test: {
           name: "desktop renderer (compiled)",
+          provide: { timeoutScale: TIMEOUT_SCALE, reactCompiled: true },
           root: "./apps/desktop",
           include: ["src/renderer/**/*.test.{ts,tsx}"],
         },
@@ -39,6 +40,7 @@ export default defineConfig({
         plugins: [compiled()],
         test: {
           name: "editor-ui (compiled)",
+          provide: { timeoutScale: TIMEOUT_SCALE, reactCompiled: true },
           root: "./packages/editor-ui",
           include: ["src/**/*.test.{ts,tsx}"],
         },
@@ -57,6 +59,7 @@ export default defineConfig({
         plugins: [compiled()],
         test: {
           name: "engine (compiled)",
+          provide: { timeoutScale: TIMEOUT_SCALE, reactCompiled: true },
           root: "./packages/engine",
           include: ["src/**/*.test.{ts,tsx}"],
         },
