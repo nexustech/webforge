@@ -145,6 +145,21 @@ describe("filterSheet", () => {
     expect(labels("⌥⌘↓")).toEqual(["Move Down"]);
   });
 
+  it("finds keys with more modifiers too, the same on a Mac, whose modifiers come first", () => {
+    const labels = (mac: boolean, search: string) => {
+      const registry = createCommandRegistry({ mac });
+      registry.register({ id: COMMAND_IDS.undo, label: "Undo", run: vi.fn() });
+      registry.register({ id: COMMAND_IDS.redo, label: "Redo", run: vi.fn() });
+      return filterSheet(shortcutSheet(registry.list(), mac, []), search).flatMap(({ rows }) =>
+        rows.map((row) => row.label),
+      );
+    };
+    expect(labels(false, "ctrl+z")).toEqual(["Undo", "Redo"]);
+    expect(labels(true, "cmd+z")).toEqual(["Undo", "Redo"]);
+    expect(labels(false, "shift+ctrl+z")).toEqual(["Redo"]);
+    expect(labels(true, "⇧⌘Z")).toEqual(["Redo"]);
+  });
+
   it("leaves no group when nothing matches", () => {
     expect(found("nothing like this")).toEqual([]);
   });

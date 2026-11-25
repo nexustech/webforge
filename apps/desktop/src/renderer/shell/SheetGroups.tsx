@@ -93,14 +93,16 @@ const keyParts = (key: string) =>
     .map((part) => MODIFIER_NAMES[part] ?? part);
 
 /**
- * Whether a key is what was searched for: the same parts in a row (`Alt+S` finds `Ctrl+Alt+S`,
- * `Ctrl+B` doesn't find `Ctrl+Backspace`), or, for one word, part of a part (`del`).
+ * Whether a key is what was searched for. One word is in any of its parts (`del`, `ctrl`). More
+ * are all among its parts, in any order, as a Mac writes its modifiers in its own: `Ctrl+Z` finds
+ * `Ctrl+Shift+Z` too, as `⌘Z` finds `⇧⌘Z`, and `Alt+S` finds `Ctrl+Alt+S`, but `Ctrl+B` doesn't
+ * find `Ctrl+Backspace`.
  */
 function keyMatches(key: string, query: readonly string[]): boolean {
   const parts = keyParts(key);
   const [word] = query;
   if (query.length === 1 && word !== undefined) return parts.some((part) => part.includes(word));
-  return parts.some((_, at) => query.every((part, offset) => parts[at + offset] === part));
+  return query.every((part) => parts.includes(part));
 }
 
 /**
@@ -139,21 +141,21 @@ export function SheetGroups({
   readonly search?: string;
 }) {
   const groups = filterSheet(shortcutSheet(commands, mac, others), search);
-  const searching = search.trim() !== "";
+  const query = search.trim();
   const found = groups.reduce((count, { rows }) => count + rows.length, 0);
   return (
     <div className="@container">
       {/* How many match, read out as the person types; the rows themselves aren't. */}
       <p role="status" className="sr-only">
-        {!searching
+        {query === ""
           ? ""
           : found === 0
-            ? t("shortcuts.noMatch", { query: search.trim() })
+            ? t("shortcuts.noMatch", { query })
             : plural("shortcuts.match", found)}
       </p>
-      {searching && found === 0 ? (
+      {query !== "" && found === 0 ? (
         <p className="m-0 py-4 text-center text-sm text-muted-foreground">
-          {t("shortcuts.noMatch", { query: search.trim() })}
+          {t("shortcuts.noMatch", { query })}
         </p>
       ) : null}
       <div className="columns-1 gap-8 @lg:columns-2 @4xl:columns-3">
