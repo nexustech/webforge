@@ -126,8 +126,10 @@ test.describe("window layout", () => {
     const toggle = page.getByRole("button", { name: "Show or Hide Left Panels" });
     await toggle.click();
     const strip = page.getByRole("navigation", { name: "Left panels, collapsed" });
-    // Layers too, from the column's lower pane (ADR 0011), and the Assistant (6.9c).
-    await expect(strip.getByRole("button")).toHaveText(["", "", "", "", ""]);
+    // Its own button that opens it (#1412), then the panels' icons: Layers too, from the column's
+    // lower pane (ADR 0011), and the Assistant (6.9c).
+    await expect(strip.getByRole("button")).toHaveText(["", "", "", "", "", ""]);
+    await expect(strip.getByRole("button").first()).toHaveAccessibleName("Show Left Panels");
     await expect(strip.getByRole("button", { name: "Add" })).toBeVisible();
     await expect(strip.getByRole("button", { name: "Layers" })).toBeVisible();
 
@@ -140,6 +142,64 @@ test.describe("window layout", () => {
       "true",
     );
     await expect.poll(leftWidth).toBeGreaterThan(150);
+  });
+
+  test("collapses each part from its own button and opens it again where it was (#1412)", async () => {
+    const left = page.getByRole("region", { name: "Left panels" });
+    await left.getByRole("tab", { name: "Version History" }).click();
+    await left.getByRole("button", { name: "Hide Left Panels" }).click();
+    await expect.poll(leftWidth).toBeLessThan(2);
+
+    // The strip's button opens the column on the panel it last showed.
+    await page
+      .getByRole("navigation", { name: "Left panels, collapsed" })
+      .getByRole("button", { name: "Show Left Panels" })
+      .click();
+    await expect.poll(leftWidth).toBeGreaterThan(150);
+    await expect(left.getByRole("tab", { name: "Version History" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await left.getByRole("tab", { name: "Add" }).click();
+
+    // From the keyboard: the focus goes to the button that undoes the one pressed, which went
+    // with its part or its strip.
+    const right = page.getByRole("region", { name: "Right panels" });
+    const hideRight = right.getByRole("button", { name: "Hide Right Panels" });
+    await hideRight.focus();
+    await page.keyboard.press("Enter");
+    await expect(right).toBeHidden();
+    const showRight = page
+      .getByRole("navigation", { name: "Right panels, collapsed" })
+      .getByRole("button", { name: "Show Right Panels" });
+    await expect(showRight).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(right).toBeVisible();
+    await expect(hideRight).toBeFocused();
+
+    // The bottom panel: a bar while it's collapsed, its button at the end of its tabs when open.
+    const bottom = page.getByRole("region", { name: "Bottom panel" });
+    const bar = page.getByRole("navigation", { name: "Bottom panel, collapsed" });
+    await expect(bottom).toBeHidden();
+    await bar.getByRole("button", { name: "Show Bottom Panel" }).click();
+    await expect(bottom).toBeVisible();
+    await expect(bar).toHaveCount(0);
+    await expect(bottom.getByRole("button", { name: "Hide Bottom Panel" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(bottom).toBeHidden();
+    await expect(bar.getByRole("button", { name: "Show Bottom Panel" })).toBeFocused();
+  });
+
+  test("hides and shows the right panels with Ctrl+Alt+Shift+B (#1412)", async () => {
+    const right = page.getByRole("region", { name: "Right panels" });
+    await expect(right).toBeVisible();
+    await page.keyboard.press("ControlOrMeta+Alt+Shift+B");
+    await expect(right).toBeHidden();
+    await expect(page.getByRole("navigation", { name: "Right panels, collapsed" })).toBeVisible();
+    await page.keyboard.press("ControlOrMeta+Alt+Shift+B");
+    await expect(right).toBeVisible();
+    // The left panels keep their own key.
+    await expect(page.getByRole("region", { name: "Left panels" })).toBeVisible();
   });
 
   test("switches to the light theme and remembers it", async () => {

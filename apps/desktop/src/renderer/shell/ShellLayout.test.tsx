@@ -21,6 +21,13 @@ function windowWidth(width: number): void {
 beforeEach(() => windowWidth(1440));
 afterEach(() => cleanup());
 
+/** The bottom panel's part, shown or not: collapsed, it's hidden, so it has no role to find. */
+function bottomPanel(): HTMLElement {
+  const section = document.querySelector<HTMLElement>('section[aria-label="Bottom panel"]');
+  if (section === null) throw new Error("No bottom panel");
+  return section;
+}
+
 /** A panel in each column, as once 1.13 (Add) and 1.14 (Edit) have contributed theirs. */
 function fillColumns(panels: PanelRegistry): void {
   panels.register({ id: "add", slot: "left.top", title: "Add", component: () => <p>Add</p> });
@@ -212,9 +219,144 @@ describe("ShellLayout", () => {
         selector: "p",
       }),
     ).toBeTruthy();
-    expect(
-      within(screen.getByRole("region", { name: "Bottom panel" })).getByText("Nothing here yet"),
-    ).toBeTruthy();
+    // Collapsed at first: kept, hidden, with its bar where it was (#1412).
+    expect(within(bottomPanel()).getByText("Nothing here yet")).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Bottom panel" })).toBeNull();
+    expect(screen.getByRole("navigation", { name: "Bottom panel, collapsed" })).toBeTruthy();
+  });
+
+  describe("the panels' own buttons that collapse and expand them (#1412)", () => {
+    /** The tooltip `control` shows on the keyboard's focus. */
+    async function tooltipOf(control: HTMLElement): Promise<string | null> {
+      await act(async () => {
+        control.focus();
+      });
+      await screen.findByRole("tooltip");
+      return document.querySelector('[data-slot="tooltip-content"]')?.textContent ?? null;
+    }
+
+    it("folds each side column from a button at its tabs' outer end, as the title bar's does", async () => {
+      const { commands } = renderLayout();
+      const run = vi.spyOn(commands, "run");
+      const user = userEvent.setup();
+
+      for (const [column, name, command] of [
+        ["Left panels", "Hide Left Panels", COMMAND_IDS.toggleLeftPanels],
+        ["Right panels", "Hide Right Panels", COMMAND_IDS.toggleRightPanels],
+      ] as const) {
+        const region = within(screen.getByRole("region", { name: column }));
+        await user.click(region.getByRole("button", { name }));
+        expect(run).toHaveBeenLastCalledWith(command);
+      }
+
+      // The left column's after its tabs, the right column's before them: on the side each folds.
+      const after = (button: HTMLElement, tabs: HTMLElement) =>
+        (tabs.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+      const left = within(screen.getByRole("region", { name: "Left panels" }));
+      const right = within(screen.getByRole("region", { name: "Right panels" }));
+      expect(
+        after(left.getByRole("button", { name: "Hide Left Panels" }), left.getByRole("tablist")),
+      ).toBe(true);
+      expect(
+        after(right.getByRole("button", { name: "Hide Right Panels" }), right.getByRole("tablist")),
+      ).toBe(false);
+    });
+
+    it("shows the command's shortcut from the standard in each button's tooltip", async () => {
+      renderLayout();
+
+      expect(await tooltipOf(screen.getByRole("button", { name: "Hide Left Panels" }))).toBe(
+        "Hide Left Panels (Ctrl+Alt+B)",
+      );
+      expect(await tooltipOf(screen.getByRole("button", { name: "Hide Right Panels" }))).toBe(
+        "Hide Right Panels (Ctrl+Alt+Shift+B)",
+      );
+      expect(await tooltipOf(screen.getByRole("button", { name: "Show Bottom Panel" }))).toBe(
+        "Show Bottom Panel (Ctrl+J)",
+      );
+    });
+
+    it("opens a collapsed side column from the button at the top of its strip", async () => {
+      const width = (36 / window.innerWidth) * 100;
+      const { commands } = renderLayout({
+        layout: { [PANEL_GROUPS.columns]: { left: width, center: 100 - width - 20, right: 20 } },
+      });
+      const run = vi.spyOn(commands, "run");
+      const strip = within(screen.getByRole("navigation", { name: "Left panels, collapsed" }));
+
+      // First, above the panels' own icons, which still open the column at their panel.
+      expect(
+        strip.getAllByRole("button").map((button) => button.getAttribute("aria-label")),
+      ).toEqual(["Show Left Panels", "Add"]);
+      expect(await tooltipOf(strip.getByRole("button", { name: "Show Left Panels" }))).toBe(
+        "Show Left Panels (Ctrl+Alt+B)",
+      );
+      await userEvent.setup().click(strip.getByRole("button", { name: "Show Left Panels" }));
+      expect(run).toHaveBeenLastCalledWith(COMMAND_IDS.toggleLeftPanels);
+    });
+
+    it("leaves a collapsed bottom panel a bar that opens it, and folds an open one from its tabs", async () => {
+      const { commands, panels } = renderLayout();
+      const run = vi.spyOn(commands, "run");
+      act(() => {
+        panels.register({
+          id: "check",
+          slot: "drawer",
+          title: "Site Check",
+          component: () => null,
+        });
+      });
+
+      const bar = within(screen.getByRole("navigation", { name: "Bottom panel, collapsed" }));
+      await userEvent.setup().click(bar.getByRole("button", { name: "Show Bottom Panel" }));
+      expect(run).toHaveBeenLastCalledWith(COMMAND_IDS.toggleDrawer);
+
+      // Its own folding button, at the end of its tabs, kept with it while it's collapsed.
+      const drawer = within(bottomPanel());
+      act(() => {
+        drawer.getByRole("button", { name: "Hide Bottom Panel", hidden: true }).click();
+      });
+      expect(run).toHaveBeenLastCalledWith(COMMAND_IDS.toggleDrawer);
+    });
+
+    it("shows the bottom panel at once when one of its panels is asked for, so it can take the focus", () => {
+      const { panels } = renderLayout();
+      act(() => {
+        panels.register({
+          id: "find",
+          slot: "drawer",
+          title: "Find and Replace",
+          component: () => <input aria-label="Find" />,
+        });
+      });
+      expect(bottomPanel().hidden).toBe(true);
+
+      // Before the panel library next measures it, as Find and Replace focuses its field then.
+      let focused = false;
+      act(() => {
+        panels.show("find");
+        const field = within(bottomPanel()).getByRole("textbox", { name: "Find" });
+        field.focus();
+        focused = document.activeElement === field;
+      });
+      expect(bottomPanel().hidden).toBe(false);
+      expect(focused).toBe(true);
+      expect(screen.queryByRole("navigation", { name: "Bottom panel, collapsed" })).toBeNull();
+    });
+
+    it("shows and hides the bottom panel at once from its command, so what's in it can be read", () => {
+      const { commands } = renderLayout();
+      expect(bottomPanel().hidden).toBe(true);
+      act(() => {
+        commands.run(COMMAND_IDS.toggleDrawer);
+        expect(bottomPanel().hidden).toBe(false);
+      });
+      act(() => {
+        commands.run(COMMAND_IDS.toggleDrawer);
+        expect(bottomPanel().hidden).toBe(true);
+      });
+      expect(screen.getByRole("navigation", { name: "Bottom panel, collapsed" })).toBeTruthy();
+    });
   });
 
   it("shows a column only once one of its slots has a panel", () => {

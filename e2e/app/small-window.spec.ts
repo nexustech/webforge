@@ -289,8 +289,15 @@ test("folds the right column when the left one opens there, the page at half or 
 test("opens the left column from its strip at its full width, folding the right (#1166)", async () => {
   await page
     .getByRole("navigation", { name: "Left panels, collapsed" })
-    .getByRole("button")
-    .first()
+    .getByRole("button", { name: "Add" })
+    .click();
+  await expectLeftOpen();
+});
+
+test("opens the left column from its strip's own button, folding the right (#1412)", async () => {
+  await page
+    .getByRole("navigation", { name: "Left panels, collapsed" })
+    .getByRole("button", { name: "Show Left Panels" })
     .click();
   await expectLeftOpen();
 });
