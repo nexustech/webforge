@@ -3,7 +3,13 @@ import { createContext, type ReactNode, useContext } from "react";
 import { gradientLayerClasses } from "../appearance.js";
 import { defineComponent } from "../define.js";
 import { Disclosure } from "../disclosure.js";
-import { CONTENT_WIDTH_PX, contentWidthClass, defineSection, narrowerWidth } from "../frame.js";
+import {
+  CONTENT_WIDTH_PX,
+  type ContentWidth,
+  contentWidthClass,
+  defineSection,
+  narrowerWidth,
+} from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
 import { BodyText, ButtonLink, SectionIntro, SectionLead, SectionTitle } from "../typography.js";
@@ -17,6 +23,18 @@ type FaqLayout = (typeof FAQ_LAYOUTS)[number];
 
 /** The layout of the FAQ a question is in, which draws it: to open, or open already. */
 const FaqLayoutContext = createContext<FaqLayout>("accordion");
+
+/**
+ * The cap of the Hero's `hero-content` at each content width (#1404): a section's, plus the 1rem
+ * of padding daisyUI gives it on each side. So at a capped width its content lines up with other
+ * sections' and the Header's, and on a phone that padding still gives the space it had.
+ */
+const HERO_CONTENT_WIDTH_CLASS: Readonly<Record<ContentWidth, string>> = {
+  narrow: "max-w-[50rem]",
+  medium: "max-w-[58rem]",
+  wide: "max-w-[74rem]",
+  full: "max-w-none",
+};
 
 /**
  * The large opening section of a page: title, short text, a button and an image, in one of four
@@ -77,6 +95,7 @@ const hero = defineSection({
     const aligned =
       values.alignment === "centre" || layout === "centred" ? "text-center" : "text-left";
     const width = contentWidthClass(values.contentWidth);
+    const heroWidth = HERO_CONTENT_WIDTH_CLASS[values.contentWidth];
     const placed = layout === "minimal" ? undefined : values.image;
     const image = placed === undefined ? null : context.image(placed.mediaId);
     const alt = placed?.alt ?? image?.alt ?? "";
@@ -106,7 +125,7 @@ const hero = defineSection({
             <div aria-hidden="true" className={`absolute inset-0 ${gradient}`} />
           )}
           <div className="absolute inset-0 bg-neutral/70" />
-          <div className={`hero-content relative ${width} text-neutral-content ${aligned}`}>
+          <div className={`hero-content relative ${heroWidth} text-neutral-content ${aligned}`}>
             {copy}
           </div>
         </>
@@ -119,7 +138,7 @@ const hero = defineSection({
     const widthPx = CONTENT_WIDTH_PX[values.contentWidth];
     return (
       <div
-        className={`hero-content ${width} ${centred ? "flex-col gap-10" : "flex-col gap-10 lg:flex-row-reverse"} ${aligned}`}
+        className={`hero-content ${heroWidth} ${centred ? "flex-col gap-10" : "flex-col gap-10 lg:flex-row-reverse"} ${aligned}`}
       >
         {centred ? copy : null}
         {image !== null && (
