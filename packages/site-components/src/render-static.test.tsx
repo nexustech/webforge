@@ -858,7 +858,7 @@ describe("renderNodesToHtml", () => {
     const html = renderNodesToHtml(nodes, siteLibrary, { ...context, firstSection: "hero" });
 
     expect(html).toContain(
-      '<div class="hero-content max-w-6xl flex-col gap-10 lg:flex-row-reverse text-left">',
+      '<div class="hero-content max-w-[74rem] flex-col gap-10 lg:flex-row-reverse text-left">',
     );
     expect(html).toContain(
       '<source type="image/webp" srcSet="assets/img/hero-640.webp 640w" sizes="(min-width: 1024px) 50vw, 100vw"/>',
@@ -903,7 +903,9 @@ describe("renderNodesToHtml", () => {
       // Medium, as centred Heroes were before 3.21 and format 10 keeps them.
       const html = heroIn("centred", { contentWidth: "medium" });
 
-      expect(html).toContain('<div class="hero-content max-w-4xl flex-col gap-10 text-center">');
+      expect(html).toContain(
+        '<div class="hero-content max-w-[58rem] flex-col gap-10 text-center">',
+      );
       expect(html.indexOf("<h1")).toBeLessThan(html.indexOf("<picture>"));
       expect(html).toContain('sizes="(min-width: 896px) 896px, 100vw"');
     });
@@ -921,7 +923,7 @@ describe("renderNodesToHtml", () => {
       // The overlay comes after the image, the text after both: drawn in that order.
       expect(html.indexOf("<picture>")).toBeLessThan(html.indexOf("bg-neutral/70"));
       expect(html).toContain(
-        '<div class="hero-content relative max-w-6xl text-neutral-content text-left">',
+        '<div class="hero-content relative max-w-[74rem] text-neutral-content text-left">',
       );
     });
 

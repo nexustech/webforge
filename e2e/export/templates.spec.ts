@@ -134,20 +134,35 @@ for (const { template } of readTemplates()) {
       }
 
       // On a wide screen, the Header's bar and the Footer's content line up with a Wide section's,
-      // each template starting both at Wide (HF-10).
+      // each template starting both at Wide (HF-10), and so does a Wide Hero's content, inside the
+      // padding of its own (#1404). Over its picture (`relative`), a Hero's text is a narrower block,
+      // centred, which never reaches the cap. A Hero's content is as wide as what's in it, up to the
+      // cap, and its picture loads a larger source at this width: the check waits for that.
       await page.setViewportSize({ width: 1920, height: 1080 });
-      const edges = await page
-        .locator(".site-header-bar, .site-footer-content, main .mx-auto.max-w-6xl")
-        .evaluateAll((parts) =>
-          parts
-            .map((part) => part.getBoundingClientRect())
-            .filter(({ width }) => width > 0)
-            .map(({ left, right }) => `${Math.round(left)}–${Math.round(right)}`),
+      await expect(async () => {
+        const edges = await page
+          .locator(
+            '.site-header-bar, .site-footer-content, main .mx-auto.max-w-6xl, main .hero-content:not(.relative)[class~="max-w-[74rem]"]',
+          )
+          .evaluateAll((parts) =>
+            parts
+              .filter((part) => part.getBoundingClientRect().width > 0)
+              .map((part) => {
+                const { left, right } = part.getBoundingClientRect();
+                const style = getComputedStyle(part);
+                const inside = [
+                  left + Number.parseFloat(style.paddingLeft),
+                  right - Number.parseFloat(style.paddingRight),
+                ];
+                // Only the Hero's content has padding at its sides: its edges are inside it.
+                return inside.map(Math.round).join("–");
+              }),
+          );
+        expect(new Set(edges), `${path}'s Header, Footer, Wide sections and Hero`).toHaveProperty(
+          "size",
+          1,
         );
-      expect(new Set(edges), `${path}'s Header, Footer and Wide sections`).toHaveProperty(
-        "size",
-        1,
-      );
+      }).toPass({ timeout: 10_000 });
 
       // On a phone, the menu opens with its button and shows the pages (2.6).
       await page.setViewportSize({ width: 390, height: 844 });
