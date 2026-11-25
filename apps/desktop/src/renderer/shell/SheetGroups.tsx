@@ -20,7 +20,7 @@ const GROUP_LABELS: Readonly<Record<ShortcutGroup, MessageKey>> = {
 };
 
 /** One line of the sheet: what the keys do, and the keys (any of them), as people read them. */
-export type SheetRow = { readonly label: string; readonly keys: readonly string[] };
+type SheetRow = { readonly label: string; readonly keys: readonly string[] };
 
 /** The sheet: its groups, each with its lines. */
 export type Sheet = readonly {
