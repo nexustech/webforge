@@ -49,8 +49,9 @@ type StylingFrameProps = Omit<ComponentProps<typeof DialogContent>, "title" | "c
 };
 
 /**
- * Theme Studio's and *Style this ‹kind›…*'s frame (CT-11): a dialog that fills the window but for a
- * 1rem margin (still a dialog in the window, F-DS-7), with a preview strip fixed at the top, the
+ * Theme Studio's and *Style this ‹kind›…*'s frame (CT-11): a dialog that fills the window under its
+ * title bar but for a 1rem margin (still a dialog in the window, F-DS-7), so the window's own
+ * controls are never over its close button (#1411), with a preview strip fixed at the top, the
  * controls below it at full width, and the actions fixed at the bottom. The divider between the
  * preview and the controls moves by mouse and by the arrow keys; the controls keep a least height.
  */
@@ -70,7 +71,7 @@ export function StylingFrame({
   return (
     <DialogContent
       className={cn(
-        "flex h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-none flex-col gap-3 sm:max-w-none",
+        "flex h-(--dialog-max-height) w-[calc(100vw-2rem)] max-w-none flex-col gap-3 sm:max-w-none",
         className,
       )}
       {...content}

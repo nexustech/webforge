@@ -88,7 +88,7 @@ export function LicencesDialog({ open, onOpenChange, licences }: LicencesDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl">
+      <DialogContent className="flex flex-col sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t("licences.title")}</DialogTitle>
           <DialogDescription>{t("licences.description")}</DialogDescription>

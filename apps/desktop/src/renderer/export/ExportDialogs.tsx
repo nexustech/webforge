@@ -139,7 +139,7 @@ function Report({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("export.report.title")}</DialogTitle>
           <DialogDescription>{where}</DialogDescription>

@@ -4,7 +4,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-22
+updated: 2026-11-25
 ---
 
 # The editor
@@ -27,6 +27,8 @@ When a site is open, the editor fills the window, and the window's title names t
 - **Bottom panel:** [Site Check](site-check.md). Show or hide it with Ctrl+J (Cmd+J on a Mac).
 
 In a narrower window still, such as a large **Text size** on a small screen, a few more fold to leave room: **New** and **Open** are only in the **Menu** button's **File**, the three panel buttons become one **Panels** button that lists them, ticked while each is shown, and _Saved_ shows as a tick, its words in its tooltip. **Design | Content**, Site Check's count and **Publish** keep their words.
+
+Dialogs, such as **Settings** and **Theme Studio**, open below the title bar, never under the window's own buttons to minimise, maximise and close it. Those buttons work while a dialog is open, and a dialog's own **×** closes only the dialog.
 
 Before a site is open, on the start screen, the title bar has only the menus, **New** and **Open**. **File › Close Site** goes back there, the site saved.
 
