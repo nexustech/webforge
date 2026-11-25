@@ -343,6 +343,7 @@
           "type": "Header",
           "props": {
             "id": "header",
+            "contentWidth": "wide",
             "siteName": "Brightside Electrical",
             "bindings": {
               "siteName": "general.name"
@@ -361,6 +362,7 @@
           "type": "Footer",
           "props": {
             "id": "footer",
+            "contentWidth": "wide",
             "text": "Brightside Electrical · Registered and insured electricians in Leeds",
             "variant": "columns",
             "columns": [

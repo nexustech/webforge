@@ -133,6 +133,22 @@ for (const { template } of readTemplates()) {
         await expect(carousel.locator("[data-wf-carousel-status]")).toHaveText(/^2 of \d+$/);
       }
 
+      // On a wide screen, the Header's bar and the Footer's content line up with a Wide section's,
+      // each template starting both at Wide (HF-10).
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      const edges = await page
+        .locator(".site-header-bar, .site-footer-content, main .mx-auto.max-w-6xl")
+        .evaluateAll((parts) =>
+          parts
+            .map((part) => part.getBoundingClientRect())
+            .filter(({ width }) => width > 0)
+            .map(({ left, right }) => `${Math.round(left)}–${Math.round(right)}`),
+        );
+      expect(new Set(edges), `${path}'s Header, Footer and Wide sections`).toHaveProperty(
+        "size",
+        1,
+      );
+
       // On a phone, the menu opens with its button and shows the pages (2.6).
       await page.setViewportSize({ width: 390, height: 844 });
       const menu = page.locator("details[data-wf-menu]");
@@ -144,9 +160,12 @@ for (const { template } of readTemplates()) {
         ).toBeVisible();
       }
       // The Footer's text and columns one under another, in reading order (HF-4, 5.39): its text
-      // first without columns, in the bottom line under them with them (HF-5).
+      // first without columns, in the bottom line under them with them (HF-5). At a capped width
+      // they are inside the Footer's content (HF-10).
       const columns = await page
-        .locator(".site-footer > aside, .site-footer > p, .site-footer-column, .site-footer-line")
+        .locator(
+          ":is(.site-footer, .site-footer-content) > :is(aside, p), .site-footer-column, .site-footer-line",
+        )
         .evaluateAll((parts) =>
           parts
             .map((part) => part.getBoundingClientRect())

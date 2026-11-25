@@ -330,6 +330,7 @@
           "type": "Header",
           "props": {
             "id": "header",
+            "contentWidth": "wide",
             "siteName": "Hartley Advisory",
             "bindings": {
               "siteName": "general.name"
@@ -342,6 +343,7 @@
           "type": "Footer",
           "props": {
             "id": "footer",
+            "contentWidth": "wide",
             "text": "Hartley Advisory · Business advice for small firms",
             "variant": "columns",
             "columns": [

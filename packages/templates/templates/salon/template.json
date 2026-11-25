@@ -348,6 +348,7 @@
           "type": "Header",
           "props": {
             "id": "header",
+            "contentWidth": "wide",
             "siteName": "Willow Hair & Beauty",
             "bindings": {
               "siteName": "general.name"
@@ -366,6 +367,7 @@
           "type": "Footer",
           "props": {
             "id": "footer",
+            "contentWidth": "wide",
             "text": "Willow Hair & Beauty · Hair, nails, brows and lashes",
             "variant": "columns",
             "columns": [

@@ -260,3 +260,64 @@ export const FooterBottomLine: Story = {
     ],
   },
 };
+
+/**
+ * The Header, a section and the Footer at the same content width (HF-10): the Header's name, menu
+ * and button, and the Footer's columns and bottom line, line up with the section's content, their
+ * backgrounds still across the page.
+ */
+const alignedAt = (contentWidth: string): Story => ({
+  args: {
+    nodes: [
+      ...header({ contentWidth, button: true, buttonLabel: "Order a cake" }),
+      {
+        type: "Section",
+        props: {
+          id: "section",
+          contentWidth,
+          content: [
+            {
+              type: "Heading",
+              props: { id: "heading", text: "Fresh every morning", size: "medium" },
+            },
+            {
+              type: "Text",
+              props: { id: "text", text: "<p>Bread, cakes and pastries, baked in Hightown.</p>" },
+            },
+          ],
+        },
+      },
+      {
+        type: "Footer",
+        props: {
+          id: "footer",
+          text: "© Rosa's Bakery, Hightown",
+          variant: "columns",
+          contentWidth,
+          links: ["privacy"],
+          columns: [
+            column("links", [
+              { type: "Heading", props: { id: "links-title", text: "Explore", size: "small" } },
+              { type: "MenuLinks", props: { id: "menu" } },
+            ]),
+            column("about", [
+              {
+                type: "Text",
+                props: { id: "about-text", text: "<p>Fresh bread every morning since 1998.</p>" },
+              },
+            ]),
+          ],
+        },
+      },
+    ],
+  },
+});
+
+/** The Header and Footer at Narrow, over a Narrow section (HF-10). */
+export const LayoutNarrow: Story = alignedAt("narrow");
+
+/** The Header and Footer at Medium, over a Medium section (HF-10). */
+export const LayoutMedium: Story = alignedAt("medium");
+
+/** The Header and Footer at Wide, as every template starts them, over a Wide section (HF-10). */
+export const LayoutWide: Story = alignedAt("wide");

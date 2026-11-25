@@ -42,6 +42,14 @@ To check that a test waiting on timing, such as a drag, holds on a busy runner, 
 WEBFORGE_E2E_CPU_SLOWDOWN=3 pnpm --filter @webforge/e2e exec playwright test --project=app app/shared-layout.spec.ts --repeat-each 20
 ```
 
+In PowerShell:
+
+```powershell
+$env:WEBFORGE_E2E_CPU_SLOWDOWN=3; pnpm --filter @webforge/e2e exec playwright test --project=app app/shared-layout.spec.ts --repeat-each 20
+```
+
+That stays set for the rest of the session: `Remove-Item Env:WEBFORGE_E2E_CPU_SLOWDOWN` turns it off.
+
 ```sh
 pnpm e2e:packaged
 ```
