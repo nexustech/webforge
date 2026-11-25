@@ -13,6 +13,15 @@ export const panels = {
   "panels.leftCollapsed": "Left panels, collapsed",
   "panels.rightCollapsed": "Right panels, collapsed",
   "panels.drawer": "Bottom panel",
+  // What a collapsed bottom panel leaves: a bar with the button that opens it (#1412).
+  "panels.drawerCollapsed": "Bottom panel, collapsed",
+  // The buttons on each part that fold it, and where it was that open it again (#1412).
+  "panels.hideLeft": "Hide Left Panels",
+  "panels.showLeft": "Show Left Panels",
+  "panels.hideRight": "Hide Right Panels",
+  "panels.showRight": "Show Right Panels",
+  "panels.hideDrawer": "Hide Bottom Panel",
+  "panels.showDrawer": "Show Bottom Panel",
   "panels.empty": "Nothing here yet",
   // A tab strip's magnifier (LF-5): "Search Layers".
   "panels.search": "Search {panel}",

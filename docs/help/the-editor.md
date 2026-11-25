@@ -4,7 +4,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-22
+updated: 2026-11-25
 ---
 
 # The editor
@@ -28,6 +28,8 @@ When a site is open, the editor fills the window, and the window's title names t
 
 In a narrower window still, such as a large **Text size** on a small screen, a few more fold to leave room: **New** and **Open** are only in the **Menu** button's **File**, the three panel buttons become one **Panels** button that lists them, ticked while each is shown, and _Saved_ shows as a tick, its words in its tooltip. **Design | Content**, Site Check's count and **Publish** keep their words.
 
+Dialogs, such as **Settings** and **Theme Studio**, open below the title bar, never under the window's own buttons to minimise, maximise and close it. Those buttons work while a dialog is open, and a dialog's own **×** closes only the dialog.
+
 Before a site is open, on the start screen, the title bar has only the menus, **New** and **Open**. **File › Close Site** goes back there, the site saved.
 
 A button or menu item you can't use at the moment is greyed out, and most say why: hover over the button, or look under the item in a menu or in the command search. Undo says there's nothing to undo, for example, Paste Style asks you to copy a style first, and the Edit menu's Duplicate, Delete and moves ask you to select an element first.
@@ -35,7 +37,8 @@ A button or menu item you can't use at the moment is greyed out, and most say wh
 ## Moving the panels
 
 - Drag the edges between columns to make a column wider or narrower. The side columns start at 300 px, wide enough for every field in the Edit panel; a width you've chosen stays.
-- Collapse a side column with its button in the title bar. It leaves a strip of panel icons; click one to open the column again on that panel.
+- Collapse the left, right or bottom panels with the button at the end of their row of tabs, which points the way they fold. A side column leaves a strip of panel icons: the button at its top opens the column again on the panel it last showed, and a panel's icon opens it on that panel. The bottom panel leaves a slim bar with the button that opens it again.
+- The title bar's three panel buttons, and the **View** menu, collapse and open them too, as do the keys: **Ctrl+Alt+B** for the left panels, **Ctrl+Alt+Shift+B** for the right panels and **Ctrl+J** for the bottom panel (on a Mac, **Cmd+Option+B**, **Cmd+Option+Shift+B** and **Cmd+J**).
 - **View › Reset Panels** puts everything back as it was.
 - **In a small window** (narrower than about 1100 px), the side columns take turns, so your page stays big enough to read. Until you change the panels yourself, the editor opens in a small window with the left column as its strip, and opening one side column folds the other. Dragging a column wider still works, and once you've changed the panels, your layout is kept.
 

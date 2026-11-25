@@ -2,7 +2,7 @@ import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { imageSizes } from "./catalogue/column-layouts.js";
 import { siteLibrary } from "./catalogue/index.js";
-import { CONTENT_WIDTHS, type ContentWidth, narrowerWidth } from "./frame.js";
+import { CONTENT_WIDTH_PX, CONTENT_WIDTHS, type ContentWidth, narrowerWidth } from "./frame.js";
 import { EDITOR_RENDER_CONTEXT, fieldsHiddenBy } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
 import type { RenderContext, ResolvedImage } from "./schema.js";
@@ -33,6 +33,17 @@ const CLASS: Readonly<Record<ContentWidth, string>> = {
   narrow: "max-w-3xl",
   medium: "max-w-4xl",
   wide: "max-w-6xl",
+  full: "max-w-none",
+};
+
+/**
+ * The Hero's: a section's cap plus the 1rem of padding daisyUI's `hero-content` has on each side,
+ * so its content is as wide as other sections' (#1404).
+ */
+const HERO_CLASS: Readonly<Record<ContentWidth, string>> = {
+  narrow: "max-w-[50rem]",
+  medium: "max-w-[58rem]",
+  wide: "max-w-[74rem]",
   full: "max-w-none",
 };
 
@@ -131,9 +142,36 @@ describe("a section's content width (3.21, PF-4)", () => {
         if (!(type === "Section" && width === "medium")) {
           expect(frame, `${type} ${width}`).not.toMatch(/max-w-/);
         }
-        expect(own, `${type} ${width}`).toContain(` ${CLASS[width]}`);
+        const cap = type === "Hero" ? HERO_CLASS[width] : CLASS[width];
+        expect(own, `${type} ${width}`).toContain(` ${cap}`);
         // Its default draws as it did, with no width saved.
         if (width === DEFAULTS[type]) expect(own, type).toBe(html);
+      }
+    },
+  );
+
+  it.each(["split", "centred", "background"])(
+    "gives a %s Hero's content a section's width inside its own padding (#1404)",
+    (variant) => {
+      for (const width of CONTENT_WIDTHS) {
+        const own = render([
+          {
+            type: "Hero",
+            props: {
+              ...siteLibrary.components.Hero?.defaults,
+              id: "s",
+              variant,
+              contentWidth: width,
+            },
+          },
+        ]);
+        const content = /<div class="hero-content [^"]*"/.exec(own)?.[0] ?? "";
+        expect(content, `${variant} ${width}`).toContain(` ${HERO_CLASS[width]} `);
+        const px = CONTENT_WIDTH_PX[width];
+        if (px === undefined) continue;
+        // 1rem of padding on each side, outside a section's cap.
+        const rem = Number(/max-w-\[(\d+)rem\]/.exec(HERO_CLASS[width])?.[1]);
+        expect(rem * 16, `${variant} ${width}`).toBe(px + 32);
       }
     },
   );

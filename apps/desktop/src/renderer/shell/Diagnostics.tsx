@@ -99,7 +99,7 @@ export function DiagnosticsDialog(props: DiagnosticsDialogProps) {
   return (
     <>
       <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-        <DialogContent className="flex max-h-[min(44rem,calc(100dvh-2rem))] flex-col sm:max-w-xl">
+        <DialogContent className="flex max-h-[min(44rem,var(--dialog-max-height))] flex-col sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{t("diagnostics.title")}</DialogTitle>
             <DialogDescription>{t("diagnostics.about")}</DialogDescription>

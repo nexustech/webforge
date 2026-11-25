@@ -41,6 +41,23 @@ export const Open: Story = {
   },
 };
 
+/**
+ * Another colour shown (#1408): the colour it opened on, "before", beside it, which goes back to
+ * it; Cancel and Done at the foot.
+ */
+export const Changed: Story = {
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "Brand" }));
+    const page = within(canvasElement.ownerDocument.body);
+    // Full saturation and brighter: far enough from the colour before to tell them apart.
+    await userEvent.keyboard("{End}{Shift>}{ArrowUp}{ArrowUp}{ArrowUp}{/Shift}");
+    await expect(page.getByRole("img", { name: /^Now: / })).not.toHaveAccessibleName(
+      "Now: #1a7f5a",
+    );
+    await expect(page.getByRole("button", { name: "Done" })).toBeVisible();
+  },
+};
+
 /** A hex code that isn't one, refused with the reason. */
 export const RefusedCode: Story = {
   play: async ({ canvasElement }) => {

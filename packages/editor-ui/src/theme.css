@@ -125,6 +125,17 @@
   --scrollbar-thumb-hover: #a3aab1;
 }
 
+/*
+ * Where dialogs may go (#1411): the window under its title bar, whose native controls Windows
+ * draws over everything the page draws, a dialog's overlay included. The desktop app sets the
+ * title bar's height; with none (Storybook), dialogs have the whole window. A dialog is centred
+ * in that area and never taller than it, less a 1rem margin above and below.
+ */
+:root {
+  --title-bar-height: 0px;
+  --dialog-max-height: calc(100dvh - var(--title-bar-height) - 2rem);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

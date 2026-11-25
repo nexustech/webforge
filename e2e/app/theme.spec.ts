@@ -195,7 +195,7 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
   );
 });
 
-test("Theme Studio's colour picker chooses a colour in its dialog, and Escape leaves it (5.26)", async () => {
+test("Theme Studio's colour picker chooses a colour in its dialog, and Escape and Cancel leave it (5.26, #1408)", async () => {
   const page = await openTheme();
   await chooseFromMenu(running(), page, "Site", "Theme Studio…");
   const studio = page.getByRole("dialog", { name: "Theme Studio" });
@@ -212,6 +212,23 @@ test("Theme Studio's colour picker chooses a colour in its dialog, and Escape le
   await expect(picker).toHaveCount(0);
   await expect(studio).toBeVisible();
   expect((await themeOf(page)).colors.primary).toEqual(before);
+
+  // Cancel does as Escape does, and closes the picker only, not Theme Studio (#1408).
+  await brand.click();
+  await picker.getByRole("slider", { name: "Hue" }).press("End");
+  await picker.getByRole("button", { name: "Cancel" }).click();
+  await expect(picker).toHaveCount(0);
+  await expect(studio).toBeVisible();
+  expect((await themeOf(page)).colors.primary).toEqual(before);
+
+  // Done chooses the colour shown, and closes the picker only.
+  await brand.click();
+  await picker.getByRole("slider", { name: "Hue" }).press("End");
+  const shown = await picker.getByRole("textbox", { name: "Hex code" }).inputValue();
+  await picker.getByRole("button", { name: "Done" }).click();
+  await expect(picker).toHaveCount(0);
+  await expect(studio).toBeVisible();
+  await expect(brand).toHaveAccessibleDescription(new RegExp(shown));
 
   // A code typed in: chosen once the picker closes.
   await chooseColour(page, brand, "#c0392b");
