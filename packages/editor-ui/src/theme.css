@@ -42,7 +42,10 @@
   --popover-foreground: #ffffff;
   --input: #41474c;
   --border: #3b4144;
-  --border-strong: #24282b;
+  /* The edge of what floats (dialogs, Theme Studio, popovers, menus) and the dividers between the
+     panels, the canvas and the title bar: 3:1 on the dimmed editor around a dialog, 1.5:1 on the
+     surfaces either side of a divider (#1409). Grey, not the accent, which means selected. */
+  --border-strong: #6c757b;
   --muted: #353b3f;
   --muted-foreground: #b3babd;
   --secondary: #41474c;
@@ -97,7 +100,9 @@
   --popover-foreground: #26292b;
   --input: #ffffff;
   --border: #dadada;
-  --border-strong: #c4c9cf;
+  /* Darker than UI1's #c4c9cf, which was 1.17:1 on the title bar: 1.5:1 on each side of a
+     divider (#1409). */
+  --border-strong: #acb1b7;
   --muted: #e5e9ef;
   --muted-foreground: #575d65;
   --secondary: #e5e9ef;

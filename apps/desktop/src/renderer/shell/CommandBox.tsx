@@ -116,7 +116,11 @@ export function CommandBox({ siteName }: CommandBoxProps) {
         )}
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent showClose={false} className="top-24 translate-y-0 gap-0 p-0 sm:max-w-lg">
+        {/* Near the top, not centred: no taller than the window below it, less a margin. */}
+        <DialogContent
+          showClose={false}
+          className="top-24 max-h-[calc(100dvh-7rem)] translate-y-0 gap-0 p-0 sm:max-w-lg"
+        >
           <DialogTitle className="sr-only">{t("shell.commandBox.title")}</DialogTitle>
           <DialogDescription className="sr-only">
             {t("shell.commandBox.description")}

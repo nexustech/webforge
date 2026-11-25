@@ -49,6 +49,8 @@ export type FormDialogProps<V extends FormValues, Out> = {
  * keeps Save off until its values pass; others show what to fix when Save is pressed. Dialogs
  * declare a {@link FormSpec} instead of drawing their own fields. In a window too short for the
  * whole form, the fields scroll between the title and the buttons, which stay in view (#1172).
+ * With a side nav (`size="xl"`, Settings) it keeps one height whichever section is shown, no
+ * taller than the window allows, and only the section's fields scroll (#1409).
  */
 export function FormDialog<V extends FormValues, Out>({
   open,
@@ -73,8 +75,8 @@ export function FormDialog<V extends FormValues, Out>({
           // A column, so the form can shrink to the window and scroll its fields (#1172).
           "flex flex-col",
           size === "lg" && "sm:max-w-2xl",
-          // A form with a side nav (LF-12's Settings).
-          size === "xl" && "sm:max-w-3xl",
+          // A form with a side nav (LF-12's Settings): one height for every section (#1409).
+          size === "xl" && "h-[min(44rem,var(--dialog-max-height))] sm:max-w-3xl",
         )}
       >
         <FormDialogBody {...body} onCancel={onCancel} />
@@ -102,7 +104,7 @@ function FormDialogBody<V extends FormValues, Out>({
   const [saveTried, setSaveTried] = useState(false);
   return (
     <form
-      className="flex min-h-0 flex-col gap-3"
+      className="flex min-h-0 flex-1 flex-col gap-3"
       // What to fix shows in the editor's own words, never the browser's bubble.
       noValidate
       onSubmit={(event) => {
@@ -118,9 +120,10 @@ function FormDialogBody<V extends FormValues, Out>({
       </DialogHeader>
       {/*
         The fields scroll; the title and the buttons don't (#1172). It reaches the dialog's edges,
-        so its scroll bar is at the edge and a field's focus ring isn't cut off.
+        so its scroll bar is at the edge and a field's focus ring isn't cut off. A form with a side
+        nav fills it, and scrolls its section's fields itself, the nav staying put (#1409).
       */}
-      <div className="-mx-4 -my-1 min-h-0 overflow-y-auto px-4 py-1">
+      <div className="-mx-4 -my-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-1">
         <Form
           form={form}
           {...(groupsLabel === undefined ? {} : { groupsLabel })}
