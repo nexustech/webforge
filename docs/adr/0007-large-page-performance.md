@@ -296,6 +296,25 @@ The follow-up part 3 names above. On the i7 a drag had 6–7 long tasks, the lon
 - **The drag's start and drop are about 30% shorter**, which was the longest task. The number of long tasks doesn't fall: the rest are the pointer moves' hit-testing.
 - **The budget:** the drag's longest task is now held under 250 ms (`DRAG_LONGEST_TASK_MS`), down from part 3's 350 ms, as agreed with stream B. CI's runners measured 94–170 ms before this change, so it leaves room. The number of long tasks per drag stays reported, not asserted: §10's "no dropped frames" needs the hit-testing cut, which Puck's `_experimentalVirtualization` would do by leaving off-screen sections out of the page ("What next" above).
 
+## Addendum: a jump in Undo History draws less (#1406, 2026-11-25)
+
+A jump to the start or end of Undo History sat close to U7's 100 ms, and some nights macOS' runner missed it on unchanged code (#1338: 46–214 ms). A jump undoes or redoes the test's steps and moves the selection, and cost about three times an undo. Counting which components drew in each commit (a stand-in for React DevTools' hook in the perf build) showed where the work went:
+
+- **Puck's own fields, unseen.** Puck hides its right sidebar for us (`rightSideBarVisible: false`) but still drew every field of the selected element in it, each time the selection moved: about 1,060 components and 1,150 elements mounted per jump, as many again unmounted. The app's Edit panel shows the fields (1.14), so Puck's `fields` override now draws nothing. Puck's rich-text menu is drawn over the canvas text being edited, as before.
+- **Every Layers row.** A change to the page made every layer a new object, and the rows' handlers changed with the selection, so all 227 rows drew again, with their names, eyes and tooltips. The layers that didn't change now stay the same objects (`keepUnchanged`), and so do their rows; a row is memoised by hand, as is the object of handlers the rows share (ADR 0010 allows it where a measurement shows the compiler's memoising isn't enough). About 5 rows draw per jump.
+- **A forced layout to draw nothing.** Taking the breadcrumbs' outline away read the canvas's zoom, a layout read, with nothing to outline. Now the outline's chip and the drop mark ask for the zoom only when they draw. The page still lays out once after the change: the selection outline's own read pays for it, so this saves the second pass, about 3–4 ms per jump, not the 8 ms the read cost.
+
+**Before and after**, on the same i7, `main` and the branch built once each and run in alternate rounds. Streams A and B were running their checks on the same machine, so the times swing widely and CI's nightly perf run is the deciding number; the counts don't depend on the machine.
+
+| Per jump (225 nodes)                                    | `main`                | After                 |
+| ------------------------------------------------------- | --------------------- | --------------------- |
+| Components drawn again                                  | about 2,160           | about 760             |
+| Components mounted                                      | about 1,060           | about 250             |
+| Elements created                                        | about 1,150           | about 120             |
+| Elements' attributes changed                            | about 1,090           | about 500             |
+| React's work (`performWorkOnRoot`, profiled, two jumps) | 219–412 ms            | 172–208 ms            |
+| A jump (`large-page.perf.ts`, 24 runs each)             | 99–300 ms, median 138 | 65–216 ms, median 104 |
+
 ## Upstream reports (drafts)
 
 **1. `InlineTextField` moves the caret to the start when its value changes from outside**
@@ -313,3 +332,7 @@ The follow-up part 3 names above. On the i7 a drag had 6–7 long tasks, the lon
 **4. The fields slice re-publishes unchanged fields on every change of the selected element**
 
 > Without `resolveFields`, `resolveFields()` still calls `setState` with a new `fields` object on every change of the selected element (every keystroke in it), with the same `fields` and `id` as before. Every `useAppStore` selector re-runs; on a 225-element page that's a second full selector pass per keystroke. Expected: skip `setState` when nothing changed. Puck 0.23.0.
+
+**5. The hidden right sidebar still draws its fields**
+
+> With `ui.rightSideBarVisible: false`, `Layout` still renders `<Sidebar position="right">` with `FieldSideBar`, and `Sidebar` hides it with CSS only, so every field of the selected item mounts on each selection change. On a 225-element page that was about 1,000 components per selection change, never shown. Expected: skip rendering the sidebar's content while it's hidden. Workaround today: an `overrides.fields` that renders nothing, where the app draws its own fields. Puck 0.24.0.
