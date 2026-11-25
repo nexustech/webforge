@@ -407,11 +407,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       const doc = canvasDocument();
       outlineElement(doc, nodeId);
       const name = nodeId === null ? undefined : names(page.docs()).get(nodeId);
-      showOutlineChip(doc, nodeId, name, zoomOf(doc));
+      showOutlineChip(doc, nodeId, name, () => zoomOf(doc));
     },
     markDrop: (mark) => {
       const doc = canvasDocument();
-      showDropMark(doc, mark, zoomOf(doc));
+      showDropMark(doc, mark, () => zoomOf(doc));
     },
 
     select(id) {

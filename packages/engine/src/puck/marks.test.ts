@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { showDropMark, showOutlineChip } from "./marks.js";
 
 /** Element `id`, drawn at `box` by its first child, as Puck wraps each element. */
@@ -12,6 +12,9 @@ function element(id: string, box: { x: number; y: number; width: number; height:
   wrapper.append(drawn);
   return wrapper;
 }
+
+/** The canvas at its real size. */
+const one = () => 1;
 
 const marks = (kind: string) => [
   ...document.querySelectorAll<HTMLElement>(`[data-wf-mark="${kind}"]`),
@@ -26,15 +29,15 @@ describe("the canvas's marks (SP-8, SP-10)", () => {
       element("b", { x: 10, y: 160, width: 200, height: 50 }),
     );
 
-    showOutlineChip(document, "a", "Hero", 1);
-    showOutlineChip(document, "b", "Text", 1);
+    showOutlineChip(document, "a", "Hero", one);
+    showOutlineChip(document, "b", "Text", one);
     const [chip] = marks("outline");
     expect(marks("outline")).toHaveLength(1);
     expect(chip?.textContent).toBe("Text");
     // 18 px above its top, at its left edge.
     expect([chip?.style.left, chip?.style.top]).toEqual(["10px", "142px"]);
 
-    showOutlineChip(document, null, undefined, 1);
+    showOutlineChip(document, null, undefined, one);
     expect(marks("outline")).toHaveLength(0);
   });
 
@@ -42,7 +45,7 @@ describe("the canvas's marks (SP-8, SP-10)", () => {
     document.body.append(element("a", { x: 0, y: 4, width: 200, height: 50 }));
 
     // At half size the chip is 36 frame pixels tall on screen's 18: no room above.
-    showOutlineChip(document, "a", "Header", 0.5);
+    showOutlineChip(document, "a", "Header", () => 0.5);
     expect(marks("outline")[0]?.style.top).toBe("4px");
   });
 
@@ -52,7 +55,7 @@ describe("the canvas's marks (SP-8, SP-10)", () => {
       element("b", { x: 10, y: 160, width: 200, height: 50 }),
     );
 
-    showDropMark(document, { nodeId: "a", place: "after", name: "Gallery" }, 1);
+    showDropMark(document, { nodeId: "a", place: "after", name: "Gallery" }, one);
 
     const line = document.querySelector<HTMLElement>(".wf-mark-line");
     expect([line?.style.left, line?.style.top, line?.style.width, line?.style.height]).toEqual([
@@ -63,8 +66,25 @@ describe("the canvas's marks (SP-8, SP-10)", () => {
     ]);
     expect(document.querySelector(".wf-mark-chip")?.textContent).toBe("Gallery");
 
-    showDropMark(document, null, 1);
+    showDropMark(document, null, one);
     expect(marks("drop")).toHaveLength(0);
+  });
+
+  it("reads no layout to take a mark away, or for an element that isn't there (#1406)", () => {
+    document.body.append(element("a", { x: 10, y: 100, width: 200, height: 50 }));
+    const zoom = vi.fn(one);
+    const box = vi.spyOn(Element.prototype, "getBoundingClientRect");
+
+    showOutlineChip(document, null, undefined, zoom);
+    showOutlineChip(document, "gone", "Text", zoom);
+    showDropMark(document, null, zoom);
+    showDropMark(document, { nodeId: "gone", place: "after", name: "Gallery" }, zoom);
+
+    expect(zoom).not.toHaveBeenCalled();
+    expect(box).not.toHaveBeenCalled();
+    showOutlineChip(document, "a", "Hero", zoom);
+    expect(zoom).toHaveBeenCalledOnce();
+    box.mockRestore();
   });
 
   it("draws the line upright for an element beside its siblings, as a Columns' column", () => {
@@ -73,7 +93,7 @@ describe("the canvas's marks (SP-8, SP-10)", () => {
       element("right", { x: 300, y: 100, width: 300, height: 200 }),
     );
 
-    showDropMark(document, { nodeId: "left", place: "before", name: "Column" }, 1);
+    showDropMark(document, { nodeId: "left", place: "before", name: "Column" }, one);
 
     const line = document.querySelector<HTMLElement>(".wf-mark-line");
     expect([line?.style.left, line?.style.top, line?.style.width, line?.style.height]).toEqual([
