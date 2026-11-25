@@ -20,7 +20,7 @@ exports[`the cafe template's export > writes the reviewed pages and files 1`] = 
 [
   "404.html",
   "about.html",
-  "assets/css/site.c791c7f764.css",
+  "assets/css/site.4a7b2b7055.css",
   "assets/fonts/playfair-display-latin-ext-wght-normal.woff2",
   "assets/fonts/playfair-display-latin-wght-normal.woff2",
   "assets/fonts/source-sans-3-latin-ext-wght-italic.woff2",
@@ -71,7 +71,7 @@ exports[`the consultant template's export > writes the reviewed pages and files 
 [
   "404.html",
   "about.html",
-  "assets/css/site.f3ee26bd98.css",
+  "assets/css/site.e078075df7.css",
   "assets/fonts/lora-latin-ext-wght-normal.woff2",
   "assets/fonts/lora-latin-wght-normal.woff2",
   "assets/fonts/work-sans-latin-ext-wght-italic.woff2",
@@ -100,7 +100,7 @@ exports[`the personal template's export > writes the reviewed pages and files 1`
 [
   "404.html",
   "about.html",
-  "assets/css/site.245e50fc6d.css",
+  "assets/css/site.b8de863195.css",
   "assets/fonts/dm-sans-latin-ext-wght-italic.woff2",
   "assets/fonts/dm-sans-latin-ext-wght-normal.woff2",
   "assets/fonts/dm-sans-latin-wght-italic.woff2",
@@ -153,7 +153,7 @@ exports[`the photographer template's export > writes the reviewed pages and file
 [
   "404.html",
   "about.html",
-  "assets/css/site.f6740cd88b.css",
+  "assets/css/site.ee17bc4243.css",
   "assets/fonts/figtree-latin-ext-wght-italic.woff2",
   "assets/fonts/figtree-latin-ext-wght-normal.woff2",
   "assets/fonts/figtree-latin-wght-italic.woff2",
@@ -215,7 +215,7 @@ exports[`the salon template's export > writes the reviewed pages and files 1`] =
 [
   "404.html",
   "about.html",
-  "assets/css/site.c19ef80912.css",
+  "assets/css/site.097de38730.css",
   "assets/fonts/montserrat-latin-ext-wght-normal.woff2",
   "assets/fonts/montserrat-latin-wght-normal.woff2",
   "assets/fonts/open-sans-latin-ext-wght-italic.woff2",
@@ -270,7 +270,7 @@ exports[`the shop template's export > writes the reviewed pages and files 1`] = 
 [
   "404.html",
   "about.html",
-  "assets/css/site.b6a5f34d3f.css",
+  "assets/css/site.c1c2507a38.css",
   "assets/fonts/caveat-latin-ext-wght-normal.woff2",
   "assets/fonts/caveat-latin-wght-normal.woff2",
   "assets/fonts/rubik-latin-ext-wght-italic.woff2",
@@ -331,7 +331,7 @@ exports[`the trades template's export > writes the reviewed pages and files 1`] 
 [
   "404.html",
   "about.html",
-  "assets/css/site.751339217f.css",
+  "assets/css/site.bac5bb5869.css",
   "assets/fonts/bebas-neue-latin-400-normal.woff2",
   "assets/fonts/bebas-neue-latin-ext-400-normal.woff2",
   "assets/fonts/roboto-latin-ext-wght-italic.woff2",
