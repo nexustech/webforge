@@ -4,7 +4,7 @@ id: layers
 title: Layers
 summary: See everything on the page as a list, and select, reorder, hide, leave off your website and rename it.
 related: [editing-on-the-page, header-and-footer, blog, keyboard-shortcuts]
-updated: 2026-11-20
+updated: 2026-11-25
 ---
 
 # Layers
@@ -40,15 +40,19 @@ The toolbar at the bottom has **Move up**, **Move down**, **Duplicate**, **Don't
 
 ## Keys in Layers
 
-| Keys                                      | What they do                                 |
-| ----------------------------------------- | -------------------------------------------- |
-| ↑ ↓                                       | Previous or next row                         |
-| → ←                                       | Open or close a row                          |
-| Ctrl+↑ · Ctrl+↓                           | What contains it · the first thing inside it |
-| Ctrl+← · Ctrl+→                           | The previous or next item beside it          |
-| Ctrl+Alt+↑ · Ctrl+Alt+↓, or Alt+↑ · Alt+↓ | Move it up or down                           |
-| Enter                                     | Change its text, on the page                 |
-| F2                                        | Rename                                       |
-| Delete or Backspace                       | Delete                                       |
+| Keys                 | What they do                          |
+| -------------------- | ------------------------------------- |
+| ↑                    | Previous row                          |
+| ↓                    | Next row                              |
+| → ←                  | Open or close a row                   |
+| Ctrl+↑               | **Select Parent**                     |
+| Ctrl+↓               | **Select First Element Inside**       |
+| Ctrl+←               | **Select Previous Element Beside It** |
+| Ctrl+→               | **Select Next Element Beside It**     |
+| Ctrl+Alt+↑, or Alt+↑ | **Move Up**                           |
+| Ctrl+Alt+↓, or Alt+↓ | **Move Down**                         |
+| Enter                | Change its text, on the page          |
+| F2                   | Rename                                |
+| Delete or Backspace  | Delete                                |
 
 On a Mac, use Cmd instead of Ctrl.

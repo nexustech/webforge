@@ -63,6 +63,77 @@ test("lists every shortcut in a sheet, from the Help menu and from ?", async () 
   await expect(sheet()).toBeVisible();
 });
 
+/** Gives the window a size, its CSS pixels the same at the default interface zoom. */
+async function resizeWindow(width: number, height: number): Promise<void> {
+  await app.evaluate(
+    ({ BrowserWindow }, size) => {
+      const window = BrowserWindow.getAllWindows()[0];
+      window?.unmaximize();
+      window?.setBounds({ x: 40, y: 40, ...size });
+    },
+    { width, height },
+  );
+  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBeLessThanOrEqual(width);
+}
+
+/** The left edges of the sheet's groups: one for each column. */
+const columns = () =>
+  sheet()
+    .getByRole("region")
+    .evaluateAll(
+      (groups) => new Set(groups.map((group) => group.getBoundingClientRect().left)).size,
+    );
+
+/** Rows wider than their group, and how much wider the dialog's content is than the dialog. */
+const overflow = () =>
+  sheet().evaluate((dialog) => ({
+    sideways: dialog.scrollWidth - dialog.clientWidth,
+    rows: [...dialog.querySelectorAll("section dl > div")]
+      .filter(
+        (row) =>
+          row.scrollWidth > row.clientWidth ||
+          row.getBoundingClientRect().right >
+            (row.closest("section")?.getBoundingClientRect().right ?? 0) + 0.5,
+      )
+      .map((row) => row.textContent),
+  }));
+
+test("lays the sheet out in columns that fit the window, never scrolling sideways (#1410)", async () => {
+  for (const [width, height, wide] of [
+    [1280, 800, 3],
+    [960, 600, 2],
+  ] as const) {
+    await resizeWindow(width, height);
+    await page.keyboard.press("Shift+Slash");
+    await expect(sheet()).toBeVisible();
+    await expect.poll(columns, `${width} px`).toBe(wide);
+    expect(await overflow(), `${width} px`).toEqual({ sideways: 0, rows: [] });
+    await page.keyboard.press("Escape");
+    await expect(sheet()).toBeHidden();
+  }
+});
+
+test("finds shortcuts by name or keys, and Esc clears the search before it closes (#1410)", async () => {
+  await page.keyboard.press("Shift+Slash");
+  const search = sheet().getByRole("searchbox", { name: "Search shortcuts" });
+  await expect(search).toBeFocused();
+  const headings = sheet().getByRole("heading", { level: 3 });
+  const groups = await headings.count();
+
+  await search.fill("zoom");
+  await expect(headings).toHaveText(["View"]);
+  await search.fill(mac ? "⌘D" : "Ctrl+D");
+  await expect(headings).toHaveText(["Editing"]);
+  await expect(sheet().getByRole("status")).toHaveText("1 shortcut");
+
+  await page.keyboard.press("Escape");
+  await expect(search).toHaveValue("");
+  await expect(search).toBeFocused();
+  await expect(headings).toHaveCount(groups);
+  await page.keyboard.press("Escape");
+  await expect(sheet()).toBeHidden();
+});
+
 test("switches device views and zooms the canvas from the keyboard, not the window", async () => {
   const zoom = toolbar().getByRole("combobox", { name: "Zoom" });
   // The size readout, once the canvas has measured the page: in its name, shown or not (#1008).

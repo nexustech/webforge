@@ -75,6 +75,14 @@ describe("the shortcut standard (F-ED-27)", () => {
     }
   });
 
+  it("gives no shortcut more than two keys on a platform, so a row of the sheet fits (#1410)", () => {
+    for (const mac of [true, false]) {
+      for (const [what, entry] of EVERY_SHORTCUT) {
+        expect(platformKeys(entry, mac).length, what).toBeLessThanOrEqual(2);
+      }
+    }
+  });
+
   it("names text keys among a command's own keys, and only groups the sheet shows", () => {
     for (const { keys, text, group } of Object.values(COMMAND_SHORTCUTS)) {
       expect(SHORTCUT_GROUPS).toContain(group);

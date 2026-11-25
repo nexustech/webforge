@@ -1,5 +1,4 @@
-import { type MessageKey, t } from "@webforge/i18n";
-import { Fragment } from "react";
+import { type MessageKey, plural, t } from "@webforge/i18n";
 import { type Command, formatShortcut, isMac, onKeyboard } from "./commands.js";
 import {
   COMMAND_SHORTCUTS,
@@ -23,6 +22,12 @@ const GROUP_LABELS: Readonly<Record<ShortcutGroup, MessageKey>> = {
 /** One line of the sheet: what the keys do, and the keys (any of them), as people read them. */
 export type SheetRow = { readonly label: string; readonly keys: readonly string[] };
 
+/** The sheet: its groups, each with its lines. */
+export type Sheet = readonly {
+  readonly group: ShortcutGroup;
+  readonly rows: readonly SheetRow[];
+}[];
+
 /**
  * The sheet's groups and lines: the registered commands with keys, by their group in the standard,
  * then the keys handled elsewhere (saving, text, Layers). Made from the registry, so the sheet lists
@@ -32,7 +37,7 @@ export function shortcutSheet(
   commands: readonly Command[],
   mac: boolean,
   others: readonly OtherShortcut[] = OTHER_SHORTCUTS,
-): readonly { readonly group: ShortcutGroup; readonly rows: readonly SheetRow[] }[] {
+): Sheet {
   const shown = (keys: readonly string[]) =>
     keys.filter((key) => onKeyboard(key, mac)).map((key) => formatShortcut(key, mac));
   return SHORTCUT_GROUPS.map((group) => ({
@@ -59,50 +64,131 @@ export function shortcutSheet(
   })).filter(({ rows }) => rows.length > 0);
 }
 
-/** The sheet's groups, in two columns. */
+/**
+ * Modifiers by the names people search for them, so a Mac's symbols and their spelled names match
+ * each other (`⌘Z`, `cmd+z`), and Option is also Alt.
+ */
+const MODIFIER_NAMES: Readonly<Record<string, string>> = {
+  "⌘": "cmd",
+  command: "cmd",
+  "⌥": "alt",
+  option: "alt",
+  opt: "alt",
+  "⇧": "shift",
+  "⌃": "ctrl",
+  control: "ctrl",
+};
+
+/**
+ * A key's parts as the search compares them: `Ctrl+Alt+S` is `ctrl`, `alt`, `s`, and a Mac's `⇧⌘Z`
+ * is `shift`, `cmd`, `z`.
+ */
+const keyParts = (key: string) =>
+  key
+    .toLocaleLowerCase()
+    .replaceAll(/\s/g, "")
+    .replaceAll(/([⌘⌥⇧⌃])/gu, "$1+")
+    .split("+")
+    .filter((part) => part !== "")
+    .map((part) => MODIFIER_NAMES[part] ?? part);
+
+/**
+ * Whether a key is what was searched for: the same parts in a row (`Alt+S` finds `Ctrl+Alt+S`,
+ * `Ctrl+B` doesn't find `Ctrl+Backspace`), or, for one word, part of a part (`del`).
+ */
+function keyMatches(key: string, query: readonly string[]): boolean {
+  const parts = keyParts(key);
+  const [word] = query;
+  if (query.length === 1 && word !== undefined) return parts.some((part) => part.includes(word));
+  return parts.some((_, at) => query.every((part, offset) => parts[at + offset] === part));
+}
+
+/**
+ * The sheet's lines whose name or keys hold what was searched for, ignoring case, under the
+ * headings of the groups that still have some.
+ */
+export function filterSheet(sheet: Sheet, search: string): Sheet {
+  const name = search.trim().toLocaleLowerCase();
+  if (name === "") return sheet;
+  const keys = keyParts(name);
+  const matches = (row: SheetRow) =>
+    row.label.toLocaleLowerCase().includes(name) ||
+    (keys.length > 0 && row.keys.some((key) => keyMatches(key, keys)));
+  return sheet
+    .map(({ group, rows }) => ({ group, rows: rows.filter(matches) }))
+    .filter(({ rows }) => rows.length > 0);
+}
+
+/**
+ * The sheet's groups, in as many columns as fit (three, two or one), filtered by a search. A row's
+ * second key goes under its first when there isn't room beside it, so no row is wider than its
+ * column and the sheet never scrolls sideways (#1410).
+ */
 export function SheetGroups({
   commands,
   idPrefix,
   mac = isMac(),
   others = OTHER_SHORTCUTS,
+  search = "",
 }: {
   readonly commands: readonly Command[];
   readonly idPrefix: string;
   readonly mac?: boolean;
   readonly others?: readonly OtherShortcut[];
+  /** What the sheet's search box holds. */
+  readonly search?: string;
 }) {
+  const groups = filterSheet(shortcutSheet(commands, mac, others), search);
+  const searching = search.trim() !== "";
+  const found = groups.reduce((count, { rows }) => count + rows.length, 0);
   return (
-    <div className="columns-1 gap-8 sm:columns-2">
-      {shortcutSheet(commands, mac, others).map(({ group, rows }) => (
-        <section
-          key={group}
-          aria-labelledby={`${idPrefix}-${group}`}
-          className="mb-4 break-inside-avoid"
-        >
-          <h3 id={`${idPrefix}-${group}`} className="mb-1 text-xs font-semibold">
-            {t(GROUP_LABELS[group])}
-          </h3>
-          <dl className="text-xs">
-            {rows.map((row) => (
-              <div key={row.label} className="flex items-baseline justify-between gap-4 py-0.5">
-                <dt className="text-muted-foreground">{row.label}</dt>
-                <dd className="shrink-0 text-right">
-                  {row.keys.map((key, index) => (
-                    <Fragment key={key}>
-                      {index > 0 && (
-                        <span className="px-1 text-muted-foreground">{t("keys.or")}</span>
-                      )}
-                      <kbd className="rounded border border-border bg-muted px-1 font-sans">
-                        {key}
-                      </kbd>
-                    </Fragment>
-                  ))}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      ))}
+    <div className="@container">
+      {/* How many match, read out as the person types; the rows themselves aren't. */}
+      <p role="status" className="sr-only">
+        {!searching
+          ? ""
+          : found === 0
+            ? t("shortcuts.noMatch", { query: search.trim() })
+            : plural("shortcuts.match", found)}
+      </p>
+      {searching && found === 0 ? (
+        <p className="m-0 py-4 text-center text-sm text-muted-foreground">
+          {t("shortcuts.noMatch", { query: search.trim() })}
+        </p>
+      ) : null}
+      <div className="columns-1 gap-8 @lg:columns-2 @4xl:columns-3">
+        {groups.map(({ group, rows }) => (
+          <section
+            key={group}
+            aria-labelledby={`${idPrefix}-${group}`}
+            className="mb-4 break-inside-avoid"
+          >
+            <h3 id={`${idPrefix}-${group}`} className="mb-1 text-xs font-semibold">
+              {t(GROUP_LABELS[group])}
+            </h3>
+            <dl className="text-xs">
+              {rows.map((row) => (
+                <div key={row.label} className="flex items-baseline justify-between gap-4 py-0.5">
+                  <dt className="min-w-0 text-muted-foreground">{row.label}</dt>
+                  <dd className="flex flex-wrap justify-end gap-x-1 gap-y-0.5 text-right">
+                    {row.keys.map((key, index) => (
+                      // A key with the "or" before it, kept together when the second wraps.
+                      <span key={key} className="whitespace-nowrap">
+                        {index > 0 && (
+                          <span className="pe-1 text-muted-foreground">{t("keys.or")}</span>
+                        )}
+                        <kbd className="rounded border border-border bg-muted px-1 font-sans">
+                          {key}
+                        </kbd>
+                      </span>
+                    ))}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

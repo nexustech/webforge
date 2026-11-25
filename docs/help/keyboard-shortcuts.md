@@ -11,6 +11,8 @@ updated: 2026-11-25
 
 Press **?** in {appName}, or choose **Help › Keyboard Shortcuts**, to see these keys for your own computer. Menus show them too.
 
+To find a shortcut there, type in the search box at the top: part of its name, such as _zoom_, or its keys, such as _Ctrl+D_. Esc clears the search, and pressed again, closes the list.
+
 On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt**.
 
 ## Site
