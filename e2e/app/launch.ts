@@ -405,10 +405,16 @@ export async function waitForCanvas(page: Page): Promise<void> {
  * How many times slower the renderer runs from the canvas showing, when the run asks
  * (`WEBFORGE_E2E_CPU_SLOWDOWN=3`): a busy runner on a fast computer, to check a test that waits on
  * timing, such as a drag, doesn't depend on it (anti-pattern 22). Unset, it runs at full speed.
+ * Each page is slowed once: its DevTools session stays open, holding the throttle, while a test
+ * waits for the canvas again.
  */
 async function slowWhenAsked(page: Page): Promise<void> {
   const rate = Number(process.env.WEBFORGE_E2E_CPU_SLOWDOWN ?? "1");
-  if (!(rate > 1)) return;
+  if (!(rate > 1) || slowed.has(page)) return;
+  slowed.add(page);
   const session = await page.context().newCDPSession(page);
   await session.send("Emulation.setCPUThrottlingRate", { rate });
 }
+
+/** The pages `slowWhenAsked` has slowed. */
+const slowed = new WeakSet<Page>();

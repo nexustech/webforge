@@ -328,6 +328,7 @@
           "type": "Header",
           "props": {
             "id": "header",
+            "contentWidth": "wide",
             "siteName": "My site",
             "bindings": {
               "siteName": "general.name"
@@ -340,6 +341,7 @@
           "type": "Footer",
           "props": {
             "id": "footer",
+            "contentWidth": "wide",
             "text": "Thanks for visiting."
           }
         }

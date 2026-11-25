@@ -343,6 +343,7 @@
           "type": "Header",
           "props": {
             "id": "header",
+            "contentWidth": "wide",
             "siteName": "Fern & Clay",
             "bindings": {
               "siteName": "general.name"
@@ -355,6 +356,7 @@
           "type": "Footer",
           "props": {
             "id": "footer",
+            "contentWidth": "wide",
             "text": "Fern & Clay · Handmade pots for happy plants",
             "variant": "columns",
             "columns": [

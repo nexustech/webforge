@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { FooterColumnContext } from "../column-form.js";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
+import { CONTENT_WIDTH_FIELD, type ContentWidth, contentWidthClass } from "../frame.js";
 import { FOOTER_COLUMN } from "../hidden-fields.js";
 import { boundString, boundText, type ComponentDef } from "../library.js";
 import { LOGO_HEIGHTS, LOGO_SIZES } from "../logo-sizes.js";
@@ -181,6 +182,25 @@ const HEADER_CLASSES: Readonly<Record<(typeof HEADER_LAYOUTS)[number], string>> 
 };
 
 /**
+ * The same on the bar inside a Header whose content width is capped (HF-10): the `<header>` around
+ * it has the padding, so the bar's edges line up with a section's content at the same width.
+ */
+const HEADER_BAR_CLASSES: Readonly<Record<(typeof HEADER_LAYOUTS)[number], string>> = {
+  left: "navbar gap-2 px-0",
+  centred: "flex items-center justify-between gap-2 py-3 md:flex-col md:justify-center",
+  split: "navbar gap-2 px-0",
+};
+
+/**
+ * A sticky header's *Shrink* style at a capped content width (HF-10): the `<header>` keeps its
+ * place, background and shadow, and the bar inside it, which holds its height, shrinks once the
+ * page has scrolled. `data-scrolled` stays on the `<header>`, a `group` the bar's variants follow.
+ */
+const SHRINK_HEADER = "group sticky top-0 bg-base-100 shadow-sm";
+const SHRINK_BAR =
+  "transition-[min-height,padding] group-data-scrolled:min-h-12 group-data-scrolled:py-1";
+
+/**
  * The shared Header (C5): the site name or its logo (HF-1), and the navigation, from the site's
  * menu (F-ED-17), in one of three layouts: the name left and the menu right, everything centred
  * with the menu below, or split with the menu's last link as a button on the right (2.6). It can
@@ -224,6 +244,7 @@ const header = defineComponent({
       button: "buttonLabel",
       shownWhen: (values) => values.button === true,
     },
+    contentWidth: CONTENT_WIDTH_FIELD,
     sticky: { kind: "toggle", label: t("field.sticky") },
     scrollStyle: {
       kind: "select",
@@ -245,6 +266,8 @@ const header = defineComponent({
     logoSize: "medium",
     button: false,
     buttonLabel: t("starter.headerButton"),
+    // Full, as it was before it had a content width (HF-10); the templates start at Wide.
+    contentWidth: "full",
     sticky: false,
     scrollStyle: "shadow",
     sectionHighlight: true,
@@ -254,8 +277,12 @@ const header = defineComponent({
     const layout = values.variant;
     const items = context.navigation;
     const { button, menuButton } = headerButton(values, context);
+    // At Full, drawn as it was before it had a content width (HF-10): the `<header>` is the bar.
+    const width: ContentWidth = values.contentWidth;
+    const capped = width !== "full";
+    const shrinks = values.sticky && values.scrollStyle === "shrink";
     const look = values.sticky
-      ? `${STICKY_CLASSES[values.scrollStyle]} ${STICKY_OFFSET[layout]}`
+      ? `${capped && shrinks ? SHRINK_HEADER : STICKY_CLASSES[values.scrollStyle]} ${STICKY_OFFSET[layout]}`
       : "bg-base-100 shadow-sm";
     // The logo in Site Settings (HF-1), in place of the name or beside it; the name, while there's
     // no logo or its picture is gone from Media.
@@ -280,11 +307,8 @@ const header = defineComponent({
         {logo === null || beside ? boundText(values, "siteName", context) : null}
       </a>
     );
-    return (
-      <header
-        className={`site-header relative z-30 ${HEADER_CLASSES[layout]} ${look}`}
-        {...(values.sticky ? { "data-wf-sticky": "" } : {})}
-      >
+    const bar = (
+      <>
         {layout === "centred" ? (
           name
         ) : layout === "split" ? (
@@ -300,6 +324,28 @@ const header = defineComponent({
           {...(layout === "left" ? {} : { className: "md:flex md:flex-1 md:justify-center" })}
         />
         {button}
+      </>
+    );
+    const sticky = values.sticky ? { "data-wf-sticky": "" } : {};
+    if (!capped) {
+      return (
+        <header
+          className={`site-header relative z-30 ${HEADER_CLASSES[layout]} ${look}`}
+          {...sticky}
+        >
+          {bar}
+        </header>
+      );
+    }
+    // Capped (HF-10): the `<header>` spans the page, with its background, scroll style and the
+    // phone menu, placed against it; the bar inside it is no wider than a section at that width.
+    return (
+      <header className={`site-header relative z-30 px-4 ${look}`} {...sticky}>
+        <div
+          className={`site-header-bar mx-auto w-full ${contentWidthClass(width)} ${HEADER_BAR_CLASSES[layout]}${shrinks ? ` ${SHRINK_BAR}` : ""}`}
+        >
+          {bar}
+        </div>
       </header>
     );
   },
@@ -587,9 +633,13 @@ const footer = defineComponent({
       help: t("field.footerLinks.help"),
       from: "all",
     },
+    contentWidth: CONTENT_WIDTH_FIELD,
   },
-  defaults: { text: t("starter.footer"), columns: [], links: [] },
+  // Full, as it was before it had a content width (HF-10); the templates start at Wide.
+  defaults: { text: t("starter.footer"), columns: [], links: [], contentWidth: "full" },
   render: ({ values, slots, context }) => {
+    const frame = (grid: string, children: ReactNode) =>
+      footerFrame(values.contentWidth, grid, children);
     const content = boundText(values, "text", context);
     const text = content === null ? null : <p>{content}</p>;
     const cookies =
@@ -635,12 +685,13 @@ const footer = defineComponent({
       // Without columns, as it was before them: its text, links and Cookie settings side by side,
       // centred.
       if (columns === null) {
-        return (
-          <footer className="site-footer footer footer-center bg-base-200 p-8 text-base-content">
+        return frame(
+          "footer footer-center",
+          <>
             {text}
             {links}
             {cookies}
-          </footer>
+          </>,
         );
       }
       // With them, its bottom line under them (#1368, HF-5): its text, links and Cookie settings
@@ -654,23 +705,23 @@ const footer = defineComponent({
             {cookies}
           </div>
         );
-      return (
-        <footer className="site-footer footer footer-center grid-flow-row bg-base-200 p-8 text-base-content">
+      return frame(
+        "footer footer-center grid-flow-row",
+        <>
           {columns}
           {line}
-        </footer>
+        </>,
       );
     }
     // Without columns, as it was before them: its text, links and Cookie settings to one side.
     if (columns === null) {
-      return (
-        <footer className="site-footer footer sm:footer-horizontal bg-base-200 p-8 text-base-content">
-          <aside>
-            {text}
-            {links}
-            {cookies}
-          </aside>
-        </footer>
+      return frame(
+        "footer sm:footer-horizontal",
+        <aside>
+          {text}
+          {links}
+          {cookies}
+        </aside>,
       );
     }
     // With them, its bottom line under them (HF-5): the © line where it belongs, not a narrow
@@ -687,14 +738,37 @@ const footer = defineComponent({
           )}
         </div>
       );
-    return (
-      <footer className="site-footer footer bg-base-200 p-8 text-base-content">
+    return frame(
+      "footer",
+      <>
         {columns}
         {line}
-      </footer>
+      </>,
     );
   },
 });
+
+/**
+ * The Footer's `<footer>`, its background spanning the page, around `children` laid out by daisyUI's
+ * footer grid (`grid`). At Full, the `<footer>` is the grid, as it was before the Footer had a
+ * content width; capped, the grid is inside it, no wider than a section at that width (HF-10).
+ */
+function footerFrame(width: ContentWidth, grid: string, children: ReactNode): ReactNode {
+  if (width === "full") {
+    return (
+      <footer className={`site-footer ${grid} bg-base-200 p-8 text-base-content`}>
+        {children}
+      </footer>
+    );
+  }
+  return (
+    <footer className="site-footer bg-base-200 p-8 text-base-content">
+      <div className={`site-footer-content mx-auto ${contentWidthClass(width)} ${grid}`}>
+        {children}
+      </div>
+    </footer>
+  );
+}
 
 /**
  * The shared Header and Footer (C5), on every page and never added to one, and what the Footer's

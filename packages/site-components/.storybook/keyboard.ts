@@ -38,6 +38,16 @@ function looks(control: Element): string {
   );
 }
 
+/** Whether `element` is inside a closed `<details>`, not its summary: hidden until it opens. */
+function shut(element: Element): boolean {
+  for (let details = element.closest("details"); details !== null; ) {
+    const summary = details.querySelector(":scope > summary");
+    if (!details.open && !(summary?.contains(element) ?? false)) return true;
+    details = details.parentElement?.closest("details") ?? null;
+  }
+  return false;
+}
+
 /** No transitions while checking, so a control's look is read as it ends, not halfway. */
 const STILL = "*, *::before, *::after { transition: none !important; animation: none !important; }";
 
@@ -59,6 +69,13 @@ export async function checkKeyboard(root: HTMLElement): Promise<void> {
     (element) =>
       element.checkVisibility({ visibilityProperty: true }) && element.closest("[inert]") === null,
   );
+  // A browser's Tab skips what a closed `<details>` hides (the phone menu's links); the simulated
+  // one doesn't know it is hidden and stops there, so it is out of its way while checking: the
+  // phone menu's summary is then followed by the page's next control, as it is in a browser (HF-10).
+  const skipped = [...root.querySelectorAll<HTMLElement>(FOCUSABLE)]
+    .filter(shut)
+    .map((element) => ({ element, tabIndex: element.getAttribute("tabindex") }));
+  for (const { element } of skipped) element.tabIndex = -1;
   const active = document.activeElement;
   if (active instanceof HTMLElement) active.blur();
   const still = document.createElement("style");
@@ -86,6 +103,10 @@ export async function checkKeyboard(root: HTMLElement): Promise<void> {
       }
     }
   } finally {
+    for (const { element, tabIndex } of skipped) {
+      if (tabIndex === null) element.removeAttribute("tabindex");
+      else element.setAttribute("tabindex", tabIndex);
+    }
     still.remove();
     const focused = document.activeElement;
     if (focused instanceof HTMLElement) focused.blur();

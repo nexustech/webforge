@@ -329,6 +329,7 @@
           "type": "Header",
           "props": {
             "id": "header",
+            "contentWidth": "wide",
             "siteName": "Alex Morgan",
             "bindings": {
               "siteName": "general.name"
@@ -341,6 +342,7 @@
           "type": "Footer",
           "props": {
             "id": "footer",
+            "contentWidth": "wide",
             "text": "Alex Morgan · Designer and illustrator"
           }
         }
