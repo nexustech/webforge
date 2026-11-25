@@ -4,7 +4,7 @@ id: themes
 title: Themes, colours and fonts
 summary: Change your whole site's colours, fonts, corners and spacing at once, in the Theme panel or Theme Studio.
 related: [styling, templates, media]
-updated: 2026-11-22
+updated: 2026-11-25
 ---
 
 # Themes, colours and fonts
@@ -57,12 +57,13 @@ The Theme panel lists the theme's settings:
 
 Clicking a colour's swatch opens {appName}'s colour picker, the same on Windows and on a Mac:
 
+- At the top, **Before** shows the colour you started with and **Now** the one you've made. Click **Before** to go back to it; the picker stays open.
 - Drag in the large square to make the colour paler or richer (left and right) and lighter or darker (up and down). Drag the strip under it to change the colour itself.
 - Type a colour's code, such as #1a7f5a, in the box under them, and press Enter. If your brand colour has a code, this is the easiest way to use it, in Simple mode too. A code has 6 digits and letters from a to f; {appName} says so if what you typed isn't one.
 - Click the eyedropper beside the code, then click a colour on your screen, such as your logo, to take it. Press Escape to stop without taking one.
 - With the keyboard, the arrow keys move in the square and along the strip; hold Shift to move further.
 
-While you drag, type or pick a theme colour, or one of [your colours](#your-colours), your pages show it straight away, on the canvas and in Theme Studio's sample page, so you can see it on your own site before you settle on it. The colour is chosen when the picker closes: click the swatch again, or anywhere outside it. Press Escape to close it and keep the colour you had: your pages show it again. Each colour you choose is one step you can undo, however long you dragged.
+While you drag, type or pick a theme colour, or one of [your colours](#your-colours), your pages show it straight away, on the canvas and in Theme Studio's sample page, so you can see it on your own site before you settle on it. Click **Done** to choose the colour, or **Cancel** to keep the colour you had: your pages show it again. Clicking the swatch again, or anywhere outside the picker, chooses the colour as **Done** does, and Escape keeps the one you had as **Cancel** does. In Theme Studio and in [**Style This…**](styling.md#style-this), **Done** and **Cancel** close only the picker. Each colour you choose is one step you can undo, however long you dragged.
 
 ### In Advanced mode
 
