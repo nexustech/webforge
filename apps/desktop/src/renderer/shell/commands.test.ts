@@ -343,6 +343,50 @@ describe("shortcuts", () => {
       expect(run.moveUp).toHaveBeenCalledOnce();
     });
 
+    it("tells the right panels' Ctrl+Alt+Shift+B from the left panels' Ctrl+Alt+B, on an AltGr layout too (#1412)", () => {
+      const registry = withKeys({
+        left: { keys: ["Mod+Alt+B"] },
+        right: { keys: ["Mod+Alt+Shift+B"] },
+      });
+      const run = { left: vi.fn(), right: vi.fn() };
+      for (const [id, fn] of Object.entries(run)) registry.register({ id, label: id, run: fn });
+      remove = installCommandShortcuts(window, registry);
+      const ctrl = !isMac();
+      // As Chromium reports Ctrl+Alt on Windows with an AltGr layout (Czech, Hungarian): AltGraph
+      // set. Shift+AltGr+B types nothing there, so the key is the letter's own.
+      const chromium = (init: { key: string; shiftKey: boolean }) => {
+        const event = key({ ...init, code: "KeyB", ctrlKey: ctrl, metaKey: !ctrl, altKey: true });
+        Object.defineProperty(event, "getModifierState", {
+          value: (modifier: string) => modifier === "AltGraph",
+        });
+        return event;
+      };
+
+      window.dispatchEvent(chromium({ key: "B", shiftKey: true }));
+      expect(run.right).toHaveBeenCalledOnce();
+      expect(run.left).not.toHaveBeenCalled();
+      window.dispatchEvent(chromium({ key: "b", shiftKey: false }));
+      expect(run.left).toHaveBeenCalledOnce();
+      expect(run.right).toHaveBeenCalledOnce();
+    });
+
+    it("matches Cmd+Option+Shift+B on a Mac by the key's place, as Option types ı (#1412)", () => {
+      expect(
+        matchesShortcut(
+          key({ key: "ı", code: "KeyB", metaKey: true, altKey: true, shiftKey: true }),
+          "Mod+Alt+Shift+B",
+          true,
+        ),
+      ).toBe(true);
+      expect(
+        matchesShortcut(
+          key({ key: "ı", code: "KeyB", metaKey: true, altKey: true, shiftKey: true }),
+          "Mod+Alt+B",
+          true,
+        ),
+      ).toBe(false);
+    });
+
     it("runs the interface zoom's Ctrl+Alt+= and Ctrl+Alt+− on an AltGr layout, but leaves AltGr+ß to the text", () => {
       const registry = withKeys({
         zoomIn: { keys: ["Mod+Alt+="] },

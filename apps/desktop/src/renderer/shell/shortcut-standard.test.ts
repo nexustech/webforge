@@ -99,6 +99,16 @@ describe("the shortcut standard (F-ED-27)", () => {
     }
   });
 
+  it("gives the right panels the left panels' key with Shift, and nothing else that key (#1412)", () => {
+    expect(COMMAND_SHORTCUTS[COMMAND_IDS.toggleRightPanels]?.keys).toEqual(["Mod+Alt+Shift+B"]);
+    for (const mac of [true, false]) {
+      const others = EVERY_SHORTCUT.filter(
+        ([name]) => name !== COMMAND_IDS.toggleRightPanels,
+      ).flatMap(([, entry]) => platformKeys(entry, mac).map(normal));
+      expect(others).not.toContain(normal("Mod+Alt+Shift+B"));
+    }
+  });
+
   it("leaves a command's keys that text has too to the text: Mod+K, Mod+I, Mod+U", () => {
     expect(COMMAND_SHORTCUTS[COMMAND_IDS.commandBox]?.text).toEqual(["Mod+K"]);
     expect(COMMAND_SHORTCUTS[COMMAND_IDS.preview]?.text).toBe(true);
