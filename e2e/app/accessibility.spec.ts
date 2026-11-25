@@ -70,8 +70,8 @@ test("the core flows work from the keyboard alone", async () => {
   await waitForCanvas(page);
   const canvas = page.frameLocator(".editor__canvas iframe");
 
-  // F6 goes from part to part: the title bar, the left panels, the page, the bottom panel, the right
-  // panels.
+  // F6 goes from part to part: the title bar, the left panels, the page, the bottom panel (its bar
+  // while it's collapsed, #1412), the right panels.
   await page.keyboard.press("F6");
   expect(await focused(page)).toMatchObject({ region: "header" });
   await page.keyboard.press("F6");
@@ -92,16 +92,16 @@ test("the core flows work from the keyboard alone", async () => {
   await page.keyboard.press("ControlOrMeta+z");
   await expect(canvas.getByText(/Typed from the keyboard/)).toHaveCount(0);
 
-  // The bottom panel, then the Edit panel: Tab reaches its options.
+  // The bottom panel's bar, then the Edit panel: Tab reaches its options.
   await page.keyboard.press("F6");
-  expect(await focused(page)).toMatchObject({ region: "Bottom panel" });
+  expect(await focused(page)).toMatchObject({ region: "Bottom panel, collapsed" });
   await page.keyboard.press("F6");
   expect(await focused(page)).toMatchObject({ region: "Right panels" });
   await page.keyboard.press("Tab");
   expect((await focused(page)).region).toBe("Right panels");
 
   // Back to the left panels, where the Add panel adds a section with Enter.
-  for (const region of ["Bottom panel", "Page", "Left panels"]) {
+  for (const region of ["Bottom panel, collapsed", "Page", "Left panels"]) {
     await page.keyboard.press("Shift+F6");
     expect(await focused(page)).toMatchObject({ region });
   }

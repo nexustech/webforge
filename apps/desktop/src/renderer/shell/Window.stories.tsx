@@ -123,7 +123,15 @@ const PANELS: readonly Panel[] = [
   },
 ];
 
-function Window() {
+/** The strip a collapsed side column leaves, as a share of the stories' 1280 px window. */
+const STRIP = (36 / 1280) * 100;
+
+function Window({
+  layout = {},
+}: {
+  /** Remembered sizes, by panel group id: none, the default layout. */
+  readonly layout?: Record<string, Record<string, number>>;
+}) {
   const [commands] = useState(() => {
     const registry = createCommandRegistry();
     for (const command of COMMANDS) registry.register(command);
@@ -161,7 +169,7 @@ function Window() {
           />
           <main className="min-h-0 flex-1">
             <ShellLayout
-              layout={{}}
+              layout={layout}
               onLayoutChange={noop}
               editorLevel="simple"
               center={
@@ -191,3 +199,11 @@ type Story = StoryObj<typeof meta>;
 
 /** UI1 parity: title bar, Add and Undo History left, the canvas, Edit and Site right. */
 export const Parity: Story = {};
+
+/**
+ * Every part collapsed (#1412): each side column a strip with the button that opens it above its
+ * panels' icons, and the bottom panel a bar with its own.
+ */
+export const Collapsed: Story = {
+  args: { layout: { "shell.columns": { left: STRIP, center: 100 - 2 * STRIP, right: STRIP } } },
+};
