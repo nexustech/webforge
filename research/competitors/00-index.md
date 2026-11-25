@@ -93,7 +93,7 @@ Compared as building blocks for Webforge, not as products the owner would choose
 
 ## 8. Added since
 
-- **[product/25](../product/25-hero-and-header.md) (24 Nov 2026), the hero and the Header:** compares Squarespace, Wix, Hostinger, Webnode, GoDaddy, Durable, Shopify's themes, Google Sites, Webflow, Framer, WordPress block themes, Bootstrap Studio, Pinegrow, Elements, Blocs, Mobirise, Nicepage and Sitely again, and for the first time **Square Online and Weebly**, the WordPress themes **Astra**, **Kadence** and **GeneratePress**, **Elementor**, and **Bootstrap**'s own examples. Jimdo and Carrd were looked at and had nothing to compare.
+- **[product/25](../product/25-hero-and-header.md) (24 Nov 2026), the hero and the Header:** compares Squarespace, Wix, Hostinger, Webnode, GoDaddy (from search results only), Durable, Shopify's themes, Google Sites, Webflow, Framer, WordPress block themes, Bootstrap Studio, Pinegrow, Elements, Blocs, Mobirise, Nicepage and Sitely again, and for the first time **Square Online and Weebly**, the WordPress themes **Astra**, **Kadence** and **GeneratePress**, **Elementor**, and **Bootstrap**'s own examples. Jimdo's help pages couldn't be read, and Carrd has no header without custom CSS, so neither is compared.
 
 ## 9. Limits
 
