@@ -245,7 +245,7 @@ const DEFAULT_TOKENS: ChromeTokens = {
   grid: "#f028f3",
   popover: "#ffffff",
   popoverForeground: "#26292b",
-  borderStrong: "#c4c9cf",
+  borderStrong: "#acb1b7",
 };
 
 /** The chrome's colours in `editor`, the editor window's document, as its theme sets them now. */
