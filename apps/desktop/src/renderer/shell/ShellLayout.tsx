@@ -16,13 +16,23 @@ import {
   TooltipTrigger,
   WithTooltip,
 } from "@webforge/editor-ui";
-import { t } from "@webforge/i18n";
-import { SearchIcon } from "lucide-react";
+import { type MessageKey, t } from "@webforge/i18n";
+import {
+  type LucideIcon,
+  PanelBottomCloseIcon,
+  PanelBottomOpenIcon,
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
+  PanelRightCloseIcon,
+  PanelRightOpenIcon,
+  SearchIcon,
+} from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Preferences } from "../../shared/ipc-contract.js";
 import { CanvasErrorBoundary } from "./CanvasErrorBoundary.js";
 import { useCommandRegistry } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
+import { withShortcut } from "./commands.js";
 import { type Side, sideToClose, startsLeftCollapsed } from "./narrow-window.js";
 import { PanelErrorBoundary } from "./PanelErrorBoundary.js";
 import { usePanelRegistry, usePanels } from "./panel-context.js";
@@ -88,6 +98,66 @@ const AREAS = {
   drawer: SLOTS.drawer,
 } as const satisfies Record<string, readonly PanelSlot[]>;
 
+/** What a collapsible part's own buttons do (#1412): its command, and what each button is named. */
+type AreaButtons = {
+  readonly command: string;
+  readonly hide: { readonly name: MessageKey; readonly icon: LucideIcon };
+  readonly show: { readonly name: MessageKey; readonly icon: LucideIcon };
+};
+
+/**
+ * The buttons on each collapsible part (#1412): one on its tabs that folds it, pointing the way it
+ * folds, and one where it was that opens it again. Each runs the title bar's command, so its
+ * button, the Panels menu's tick and the saved layout stay in step.
+ */
+const AREA_BUTTONS = {
+  left: {
+    command: COMMAND_IDS.toggleLeftPanels,
+    hide: { name: "panels.hideLeft", icon: PanelLeftCloseIcon },
+    show: { name: "panels.showLeft", icon: PanelLeftOpenIcon },
+  },
+  right: {
+    command: COMMAND_IDS.toggleRightPanels,
+    hide: { name: "panels.hideRight", icon: PanelRightCloseIcon },
+    show: { name: "panels.showRight", icon: PanelRightOpenIcon },
+  },
+  drawer: {
+    command: COMMAND_IDS.toggleDrawer,
+    hide: { name: "panels.hideDrawer", icon: PanelBottomCloseIcon },
+    show: { name: "panels.showDrawer", icon: PanelBottomOpenIcon },
+  },
+} as const satisfies Record<keyof typeof AREAS, AreaButtons>;
+
+/**
+ * The button that folds (`hide`) or opens (`show`) part `area` of the window (#1412), named for
+ * what it does, its tooltip with the command's shortcut from the standard: "Hide Left Panels
+ * (Ctrl+Alt+B)".
+ */
+function AreaButton({
+  area,
+  action,
+}: {
+  readonly area: keyof typeof AREA_BUTTONS;
+  readonly action: "hide" | "show";
+}) {
+  const registry = useCommandRegistry();
+  const { command } = AREA_BUTTONS[area];
+  const { name: key, icon: Icon } = AREA_BUTTONS[area][action];
+  const name = t(key);
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label={name}
+      tooltip={withShortcut(name, command)}
+      onClick={() => registry.run(command)}
+    >
+      <Icon />
+    </Button>
+  );
+}
+
 /** Props of {@link ShellLayout}. */
 export type ShellLayoutProps = {
   /** The canvas: the middle of the window. */
@@ -134,16 +204,21 @@ function IconTab({
  * The panels of some slots as tabs, one shown at a time, or an empty state when no area has put a
  * panel there yet. A side column shows its top slot's panels first, then its bottom slot's. With
  * `iconTabs`, a tab whose panel has an icon shows only that, with a tooltip (#898): the left
- * column's three titles didn't fit its width.
+ * column's three titles didn't fit its width. `start` and `end` go at the tab strip's ends: the
+ * button that folds the part (#1412).
  */
 function PanelTabs({
   slots,
   editorLevel,
   iconTabs = false,
+  start,
+  end,
 }: {
   readonly slots: readonly PanelSlot[];
   readonly editorLevel: Preferences["editorLevel"];
   readonly iconTabs?: boolean;
+  readonly start?: ReactNode;
+  readonly end?: ReactNode;
 }) {
   const registry = usePanelRegistry();
   const registered = usePanels();
@@ -208,6 +283,7 @@ function PanelTabs({
   return (
     <Tabs ref={setTabs} value={active.id} onValueChange={setChosen} className="h-full">
       <div className="flex shrink-0 items-center bg-tabs">
+        {start === undefined ? null : <div className="ml-1 flex">{start}</div>}
         <TabsList className="min-w-0 flex-1">
           {panels.map((panel) =>
             iconTabs && panel.icon !== undefined ? (
@@ -233,6 +309,7 @@ function PanelTabs({
             <SearchIcon />
           </Button>
         ) : null}
+        {end === undefined ? null : <div className="mr-1 flex">{end}</div>}
       </div>
       {panels.map((panel) => (
         <TabsContent
@@ -252,26 +329,29 @@ function PanelTabs({
 
 /**
  * What a collapsed side column leaves (UX-13): a strip with a button for each of its panels, which
- * opens the column at that panel.
+ * opens the column at that panel, under the button that opens it at the panel it last showed
+ * (#1412).
  */
 function PanelStrip({
-  slots,
+  side,
   editorLevel,
   label,
 }: {
-  readonly slots: readonly PanelSlot[];
+  readonly side: Side;
   readonly editorLevel: Preferences["editorLevel"];
   readonly label: string;
 }) {
   const registry = usePanelRegistry();
   const registered = usePanels();
-  const panels = slots.flatMap((slot) => panelsInSlot(registered, slot, editorLevel));
+  const panels = AREAS[side].flatMap((slot) => panelsInSlot(registered, slot, editorLevel));
   return (
     <nav
       aria-label={label}
       {...{ [REGION_ATTRIBUTE]: "" }}
       className="flex h-full flex-col items-center gap-1 bg-panel py-2"
     >
+      <AreaButton area={side} action="show" />
+      <div aria-hidden className="my-1 h-px w-5 shrink-0 bg-border" />
       {panels.map((panel) => (
         <WithTooltip key={panel.id} tooltip={panel.title}>
           <button
@@ -576,7 +656,12 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
                   onLayoutChanged={remember(PANEL_GROUPS.left)}
                 >
                   <ResizablePanel id="tabs" minSize={DEFAULTS.lowerMin}>
-                    <PanelTabs slots={SLOTS.left} editorLevel={editorLevel} iconTabs />
+                    <PanelTabs
+                      slots={SLOTS.left}
+                      editorLevel={editorLevel}
+                      iconTabs
+                      end={<AreaButton area="left" action="hide" />}
+                    />
                   </ResizablePanel>
                   <ResizableHandle aria-label={t("panels.resizeLower")} />
                   <ResizablePanel
@@ -588,24 +673,26 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
                   </ResizablePanel>
                 </ResizablePanelGroup>
               ) : (
-                <PanelTabs slots={SLOTS.left} editorLevel={editorLevel} iconTabs />
+                <PanelTabs
+                  slots={SLOTS.left}
+                  editorLevel={editorLevel}
+                  iconTabs
+                  end={<AreaButton area="left" action="hide" />}
+                />
               )}
             </section>
             {collapsed.left ? (
-              <PanelStrip
-                slots={AREAS.left}
-                editorLevel={editorLevel}
-                label={t("panels.leftCollapsed")}
-              />
+              <PanelStrip side="left" editorLevel={editorLevel} label={t("panels.leftCollapsed")} />
             ) : null}
           </ResizablePanel>
           <ResizableHandle aria-label={t("panels.resizeLeft")} />
         </>
       )}
-      <ResizablePanel id="center" minSize={DEFAULTS.centerMin}>
+      <ResizablePanel id="center" minSize={DEFAULTS.centerMin} className="flex flex-col">
         <ResizablePanelGroup
           id={PANEL_GROUPS.center}
           orientation="vertical"
+          className="min-h-0 flex-1"
           {...(layout[PANEL_GROUPS.center] === undefined
             ? { defaultLayout: { canvas: 100, drawer: 0 } }
             : { defaultLayout: layout[PANEL_GROUPS.center] })}
@@ -623,15 +710,32 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             collapsible
             onResize={(size) => setDrawerShown(size.inPixels > 0)}
           >
+            {/* Kept while collapsed, as the side columns are, its bar standing in for it. */}
             <section
               aria-label={t("panels.drawer")}
               {...{ [REGION_ATTRIBUTE]: "" }}
               className="h-full"
+              hidden={!drawerShown}
             >
-              <PanelTabs slots={SLOTS.drawer} editorLevel={editorLevel} />
+              <PanelTabs
+                slots={SLOTS.drawer}
+                editorLevel={editorLevel}
+                end={<AreaButton area="drawer" action="hide" />}
+              />
             </section>
           </ResizablePanel>
         </ResizablePanelGroup>
+        {drawerShown ? null : (
+          // Where the collapsed bottom panel was, the button that opens it (#1412): 32 px the
+          // canvas can spare, as the side columns keep a strip.
+          <nav
+            aria-label={t("panels.drawerCollapsed")}
+            {...{ [REGION_ATTRIBUTE]: "" }}
+            className="flex h-8 shrink-0 items-center justify-end border-t border-border bg-panel px-1"
+          >
+            <AreaButton area="drawer" action="show" />
+          </nav>
+        )}
       </ResizablePanel>
       {showRight && (
         <>
@@ -654,11 +758,15 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
               className="h-full"
               hidden={collapsed.right}
             >
-              <PanelTabs slots={SLOTS.right} editorLevel={editorLevel} />
+              <PanelTabs
+                slots={SLOTS.right}
+                editorLevel={editorLevel}
+                start={<AreaButton area="right" action="hide" />}
+              />
             </section>
             {collapsed.right ? (
               <PanelStrip
-                slots={SLOTS.right}
+                side="right"
                 editorLevel={editorLevel}
                 label={t("panels.rightCollapsed")}
               />

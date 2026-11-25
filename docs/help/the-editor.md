@@ -4,7 +4,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-22
+updated: 2026-11-25
 ---
 
 # The editor
@@ -35,7 +35,8 @@ A button or menu item you can't use at the moment is greyed out, and most say wh
 ## Moving the panels
 
 - Drag the edges between columns to make a column wider or narrower. The side columns start at 300 px, wide enough for every field in the Edit panel; a width you've chosen stays.
-- Collapse a side column with its button in the title bar. It leaves a strip of panel icons; click one to open the column again on that panel.
+- Collapse the left, right or bottom panels with the button at the end of their row of tabs, which points the way they fold. A side column leaves a strip of panel icons: the button at its top opens the column again on the panel it last showed, and a panel's icon opens it on that panel. The bottom panel leaves a slim bar with the button that opens it again.
+- The title bar's three panel buttons, and the **View** menu, collapse and open them too, as do the keys: **Ctrl+Alt+B** for the left panels, **Ctrl+Alt+Shift+B** for the right panels and **Ctrl+J** for the bottom panel (on a Mac, **Cmd+Option+B**, **Cmd+Option+Shift+B** and **Cmd+J**).
 - **View › Reset Panels** puts everything back as it was.
 - **In a small window** (narrower than about 1100 px), the side columns take turns, so your page stays big enough to read. Until you change the panels yourself, the editor opens in a small window with the left column as its strip, and opening one side column folds the other. Dragging a column wider still works, and once you've changed the panels, your layout is kept.
 

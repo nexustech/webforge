@@ -134,6 +134,10 @@ export const COMMAND_SHORTCUTS: Readonly<Record<string, StandardShortcut>> = {
   [COMMAND_IDS.showOutlines]: { group: "view", keys: ["Mod+Shift+O"] },
   [COMMAND_IDS.elementNames]: { group: "view", keys: ["Mod+Shift+N"] },
   [COMMAND_IDS.toggleLeftPanels]: { group: "view", keys: ["Mod+Alt+B"] },
+  // The left column's with Shift (#1412). Shift+AltGr+B types nothing on Windows' European
+  // layouts (Czech, Hungarian and Polish 214's AltGr+B types `{`), and neither Windows nor macOS
+  // keeps Ctrl+Alt+Shift+B or Cmd+Option+Shift+B for itself.
+  [COMMAND_IDS.toggleRightPanels]: { group: "view", keys: ["Mod+Alt+Shift+B"] },
   [COMMAND_IDS.toggleDrawer]: { group: "view", keys: ["Mod+J"] },
   [COMMAND_IDS.shortcuts]: { group: "view", keys: ["?"] },
   // Between the window's parts, as in Office and VS Code (5.5).
