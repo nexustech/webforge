@@ -130,7 +130,8 @@ export function LayersPanel({
     shownClosed: focusRowOnly,
   };
   // The rows get the same handlers every render, calling the panel's as they are now: so a row
-  // draws again only when it changed, not whenever the selection does (#1406).
+  // draws again only when it changed, not whenever the selection does (#1406). Memoised by hand
+  // (ADR 0010): the compiler makes this object again with `events`, and every row drew again.
   const latest = useRef(events);
   useLayoutEffect(() => {
     latest.current = events;

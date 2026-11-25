@@ -49,6 +49,8 @@ type LayerRowProps = {
  * when something it shows changed: the selection moving, or a change to the page, leaves the
  * other rows as they are (#1406). So its props are values, or kept the same between renders:
  * `events`, `drag`, and its row, which the tree gives again while its layer is unchanged.
+ * Memoised by hand (ADR 0010): the compiler draws the panel's list of rows again whole, and on the
+ * large page a jump in Undo History drew every one of its 227 rows; now it draws about 5.
  */
 export const LayerRow = memo(LayerRowView);
 
