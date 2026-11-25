@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n/components";
 import { createContext, type ReactNode, useContext } from "react";
 import { gradientLayerClasses } from "../appearance.js";
+import { overlayLayer } from "../background.js";
 import { defineComponent } from "../define.js";
 import { Disclosure } from "../disclosure.js";
 import {
@@ -47,15 +48,16 @@ const hero = defineSection({
   mainHeading: { field: "title" },
   studioSample: 1,
   name: "hero",
-  // Its image field draws its own background, behind the text, with its own overlay.
-  background: false,
+  // Its image field draws its own background, behind the text, under the overlay's fields (HH-3).
+  background: "own",
   // There, the text is on the picture: its contrast can't be measured (#670).
   pictureBehind: [{ field: "image", variants: ["background"] }],
   category: t("category.heroes"),
   variants: HERO_LAYOUTS.map((value) => ({
     label: t(`field.heroLayout.${value}`),
     value,
-    // Text only has no image; centred is always centred (#311).
+    // Text only has no image; centred is always centred (#311). Its overlay shows only over its
+    // picture behind the text (`pictureBehind`, HH-3).
     ...(value === "minimal" ? { hides: ["image"] as const } : {}),
     ...(value === "centred" ? { hides: ["alignment"] as const } : {}),
   })),
@@ -79,12 +81,17 @@ const hero = defineSection({
     buttonLabel: t("starter.heroButton"),
     alignment: "centre",
     contentWidth: "wide",
+    // Strong, the step nearest the 70% every Hero had, lighter so the picture shows (HH-3); in the
+    // Neutral colour it had, so its text keeps its colour. Format 21 keeps 70% for those saved.
+    overlay: "60",
+    overlayColor: "neutral",
   },
-  // The image behind the text fills the whole section, its padding too, behind a dark overlay. It
-  // doesn't use daisyUI's `hero` grid, whose grid areas would keep the overlay inside the padding.
+  // The image behind the text fills the whole section, its padding too, behind its overlay, in the
+  // overlay's colour without a picture. It doesn't use daisyUI's `hero` grid, whose grid areas
+  // would keep the overlay inside the padding.
   frame: (values) =>
     values.variant === "background"
-      ? "relative flex min-h-[28rem] items-center justify-center overflow-hidden bg-neutral"
+      ? `relative flex min-h-[28rem] items-center justify-center overflow-hidden ${values.overlayColor === "base" ? "bg-base-100" : "bg-neutral"}`
       : values.variant === "minimal"
         ? "bg-base-200"
         : "hero bg-base-200",
@@ -109,7 +116,8 @@ const hero = defineSection({
     if (layout === "background") {
       // Over its picture, the gradient, which the picture would cover (CT-12), then the overlay.
       const gradient = image === null ? "" : gradientLayerClasses(values);
-      // The text is set on the overlay.
+      const overlay = overlayLayer(values);
+      // The text is set on the overlay, in its colour's own text colour.
       return (
         <>
           {image !== null && (
@@ -124,8 +132,9 @@ const hero = defineSection({
           {gradient === "" ? null : (
             <div aria-hidden="true" className={`absolute inset-0 ${gradient}`} />
           )}
-          <div className="absolute inset-0 bg-neutral/70" />
-          <div className={`hero-content relative ${heroWidth} text-neutral-content ${aligned}`}>
+          {/* As every Hero's was before HH-3, so a saved one's export is unchanged. */}
+          {overlay.layer === "" ? null : <div className={`absolute inset-0 ${overlay.layer}`} />}
+          <div className={`hero-content relative ${heroWidth} ${overlay.text} ${aligned}`}>
             {copy}
           </div>
         </>

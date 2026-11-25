@@ -61,6 +61,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   17: headerLogo,
   18: headerButtons,
   19: footerColumns,
+  20: heroOverlays,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -510,6 +511,23 @@ function footerColumns(site: RawSite): RawSite {
     return { ...node, props: { ...node.props, columns: [links] } };
   });
   return { ...site, layout: { ...layout, footer }, formatVersion: 20 };
+}
+
+/**
+ * Format 20 → 21 (HH-3, #1423): the Hero's picture behind its text has an Overlay and an Overlay
+ * colour, as other sections' background pictures have. Before, it was always the theme's Neutral
+ * colour at 70%, which isn't one of the Overlay's steps (0, 20, 40, 60, 80), so every Hero saved
+ * before gets that, `"70"`, which the Overlay still draws and shows while it's chosen: whatever
+ * its layout, so one changed to the picture behind its text later looks as it would have. A Hero
+ * that already has an overlay is left alone.
+ */
+function heroOverlays(site: RawSite): RawSite {
+  walkSite(site, (node) => {
+    if (node.type !== "Hero" || Object.hasOwn(node.props, "overlay")) return;
+    node.props.overlay = "70";
+    node.props.overlayColor = "neutral";
+  });
+  return { ...site, formatVersion: 21 };
 }
 
 /**

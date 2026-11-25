@@ -42,4 +42,28 @@ describe("overlayWarning (2.26)", () => {
     // Text the person coloured is checked in their colour, whatever the layout draws.
     expect(warn({ ...banner, overlayColor: "base", lookColor: "base-content" })).toBeUndefined();
   });
+
+  it("checks a Hero's overlay over its picture behind the text, and only there (HH-3)", () => {
+    const hero = siteLibrary.components.Hero;
+    if (hero === undefined) throw new Error("No Hero");
+    const photo = { image: { mediaId: "shop" } };
+    const warn = (values: Readonly<Record<string, unknown>>) =>
+      overlayWarning(
+        BACKGROUND_FIELDS.overlay,
+        { ...hero.defaults, ...values },
+        DEFAULT_THEME,
+        hero,
+      );
+
+    // A light overlay over its picture: its text may be hard to read.
+    expect(warn({ variant: "background", ...photo, overlay: "20" })).toMatch(
+      /^The text may be hard to read/,
+    );
+    // Very strong, or the 70% Neutral it had before (format 21): readable.
+    expect(warn({ variant: "background", ...photo, overlay: "80" })).toBeUndefined();
+    expect(warn({ variant: "background", ...photo, overlay: "70" })).toBeUndefined();
+    // No picture behind its text: nothing to check.
+    expect(warn({ variant: "background", overlay: "0" })).toBeUndefined();
+    expect(warn({ variant: "split", ...photo, overlay: "0" })).toBeUndefined();
+  });
 });

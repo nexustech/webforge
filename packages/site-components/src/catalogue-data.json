@@ -3335,6 +3335,57 @@
             }
           ]
         },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "padding": {
           "kind": "box",
           "label": "Space inside",
@@ -3437,6 +3488,8 @@
       "defaults": {
         "variant": "split",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "neutral",
         "title": "Fresh ideas, made by hand",
         "text": "Say in one sentence what makes your business special.",
         "buttonLabel": "Get in touch",

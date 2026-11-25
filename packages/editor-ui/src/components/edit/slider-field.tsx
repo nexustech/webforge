@@ -23,7 +23,8 @@ export function SliderField({
   onChange,
   onCommit,
 }: FieldRendererProps<"slider">) {
-  const { steps } = field;
+  // A step no longer offered is there only while it's the value: moving off it is for good.
+  const steps = field.steps.filter((step) => step.kept !== true || step.value === value);
   const index = Math.max(
     0,
     steps.findIndex((step) => step.value === value),

@@ -135,11 +135,12 @@ export function hiddenFieldsOf(
   ) {
     hidden.add("lookGradientOpacity");
   }
-  // A section's overlay, only once it has a background image to lie over (2.26).
-  if (
-    Object.hasOwn(fields, "overlay") &&
-    !imageValueSchema.safeParse(values.backgroundImage).success
-  ) {
+  // A section's overlay, only once it has a picture to lie over (2.26): its background image, or
+  // the one a section draws itself (the Hero's, behind its text, HH-3).
+  const under = Object.hasOwn(fields, "backgroundImage")
+    ? imageValueSchema.safeParse(values.backgroundImage).success
+    : drawsPictureBehind(component, values);
+  if (Object.hasOwn(fields, "overlay") && !under) {
     hidden.add("overlay");
     hidden.add("overlayColor");
   }
