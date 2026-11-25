@@ -1,6 +1,6 @@
 # The Hero and the Header as one piece
 
-**Status:** 🟡 For decision ([§6](#6-proposals)): HH-1…HH-8 proposed, none planned. HH-1 would take the place of HF-6, which was not taken on 20 Nov 2026. [§7](#7-the-owners-journey), added 25 Nov 2026, walks through what the owner does and sees.
+**Status:** ✅ Decided 2026-11-25 ([§6](#6-proposals-and-decisions)): HH-1 to HH-8 are adopted (8.5 days), with the three choices as proposed: the setting is on the Header for the whole site, the templates that suit it start joined, and its name is _The first section's_. HH-1 takes the place of HF-6, which was not taken on 20 Nov 2026. Planned as eight out-of-plan issues in Phase 5's milestone, [#1422](https://github.com/nexustech/webforge/issues/1422)–[#1429](https://github.com/nexustech/webforge/issues/1429) (MVP §7 item 65). [§7](#7-the-owners-journey), added 25 Nov 2026, walks through what the owner does and sees.
 
 **Date:** 2026-11-24
 
@@ -105,7 +105,7 @@ Of 1 to 3, Webforge has the switch that keeps the Header at the top, and with th
 - **The Announcement bar stays a solid band above,** as on Pinegrow's own page.
 - **The Hero catches up on its own account:** an overlay it can set, a height, a second button, a place for its text. They matter more once the Header is on the picture, because the join draws the eye to the Hero.
 
-## 6. Proposals
+## 6. Proposals and decisions
 
 Sizes are rough ideal days.
 
@@ -124,11 +124,11 @@ Sizes are rough ideal days.
 
 **About HH-1's size:** the Header is drawn once for the site, so its render needs to know the page's first section and what is behind it (the render context has the first section's id already, for the first picture). The export's CSS does the join without script: the Header overlays the section and the section's padding grows by the Header's height for its layout, which the script then corrects to the real height, as it does today for links to a section. Then the three layouts, with and without HF-10's content width, each device, the canvas, the catalogue data for AI apps, stories, E2E on the exported site in three browsers, and the help page. HF-6 was sized 1.5 for pictures alone, with none of the colour-following or the padding.
 
-**Choices for the product owner:**
+**Choices for the product owner** (all three decided as proposed, 25 Nov 2026; see [Decisions](#decisions)):
 
-1. **Where the setting lives.** On the Header for the whole site, following each page's first section (proposed; Squarespace, Hostinger), or a switch on the Hero (Durable). On the Header it is one decision and every page follows; on the Hero it must be made again on each page, and a Header that stays would change between pages.
-2. **Whether a new site starts joined.** Proposed: the templates that suit it do (HH-8), and a site saved before keeps _Its own_ with no migration, as with HF-10.
-3. **The name.** _The first section's_ is plain but long. Others say "transparent", which describes the mechanism, not what the owner sees, and is wrong for B.
+1. **Where the setting lives.** On the Header for the whole site, following each page's first section (proposed; Squarespace, Hostinger), or a switch on the Hero (Durable). On the Header it is one decision and every page follows; on the Hero it must be made again on each page, and a Header that stays would change between pages. **Decided:** on the Header, for the whole site.
+2. **Whether a new site starts joined.** Proposed: the templates that suit it do (HH-8), and a site saved before keeps _Its own_ with no migration, as with HF-10. **Decided:** as proposed.
+3. **The name.** _The first section's_ is plain but long. Others say "transparent", which describes the mechanism, not what the owner sees, and is wrong for B. **Decided:** _The first section's_.
 
 **Not proposed:**
 
@@ -142,9 +142,26 @@ Sizes are rough ideal days.
 
 **What changes if adopted:** the Header's and the Hero's fields, with a format migration for HH-3; Site Settings for HH-2; the templates; the catalogue data for AI apps; the help pages [Header and Footer](../../docs/help/header-and-footer.md), [Sections](../../docs/help/sections.md) and [Site Settings](../../docs/help/site-settings.md).
 
+### Decisions
+
+Product owner, 2026-11-25, asked which proposals to adopt: "Adopt all". The three choices above are taken as proposed.
+
+| #    | Decision                                                                                                                                                                                                                                         |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| HH-1 | ✅ **Adopted:** the Header joins the first section: **Background**, _Its own_ or _The first section's_, on the Header for the whole site, each page following its own first section ([#1427](https://github.com/nexustech/webforge/issues/1427)) |
+| HH-2 | ✅ **Adopted:** a logo for dark backgrounds, in Site Settings ([#1428](https://github.com/nexustech/webforge/issues/1428))                                                                                                                       |
+| HH-3 | ✅ **Adopted:** the Hero's picture gets the Overlay settings, with a format migration that keeps saved Heroes' look ([#1423](https://github.com/nexustech/webforge/issues/1423))                                                                 |
+| HH-4 | ✅ **Adopted:** a height for the Hero, up to the whole screen ([#1424](https://github.com/nexustech/webforge/issues/1424))                                                                                                                       |
+| HH-5 | ✅ **Adopted:** a second button in the Hero ([#1426](https://github.com/nexustech/webforge/issues/1426))                                                                                                                                         |
+| HH-6 | ✅ **Adopted:** a place for the Hero's text, _Middle_ or _Bottom_ ([#1425](https://github.com/nexustech/webforge/issues/1425))                                                                                                                   |
+| HH-7 | ✅ **Adopted:** the scroll style _Hide when scrolling down_ ([#1422](https://github.com/nexustech/webforge/issues/1422))                                                                                                                         |
+| HH-8 | ✅ **Adopted:** the templates that open with a picture or a coloured Hero start joined; a site saved before keeps _Its own_ ([#1429](https://github.com/nexustech/webforge/issues/1429))                                                         |
+
+8.5 days, out of plan in Phase 5's milestone ([the plan's §3](../../spec/04-implementation-plan.md#3-timeline), MVP §7 item 65), so the dates are unchanged (PH5-2). Stream C: [#1427](https://github.com/nexustech/webforge/issues/1427) (HH-1, 3) → [#1429](https://github.com/nexustech/webforge/issues/1429) (HH-8, 1), which waits for HH-1, HH-3 and HH-4. Stream B: [#1423](https://github.com/nexustech/webforge/issues/1423) (HH-3, 1) → [#1424](https://github.com/nexustech/webforge/issues/1424) (HH-4, 0.5) → [#1425](https://github.com/nexustech/webforge/issues/1425) (HH-6, 0.5) → [#1426](https://github.com/nexustech/webforge/issues/1426) (HH-5, 0.5). Stream A: [#1422](https://github.com/nexustech/webforge/issues/1422) (HH-7, 1) → [#1428](https://github.com/nexustech/webforge/issues/1428) (HH-2, 1), which waits for HH-1. HH-1 offers HH-7's style while joined once both have merged. Each updates the catalogue data for AI apps where its fields change, and its help page.
+
 ## 7. The owner's journey
 
-Added 25 Nov 2026, at the product owner's request: how the owner meets HH-1…HH-8, what they can set, and what differs from today. It assumes the proposals as written in [§6](#6-proposals), with the setting on the Header.
+Added 25 Nov 2026, at the product owner's request: how the owner meets HH-1…HH-8, what they can set, and what differs from today. It assumes the proposals as written in [§6](#6-proposals-and-decisions), with the setting on the Header.
 
 ### A new site
 
@@ -205,7 +222,7 @@ The Header's layouts, logo, button and stay-at-top switch are unchanged, and so 
 
 ### Three gaps the journey shows
 
-Each is now part of HH-1 in [§6](#6-proposals), within its size.
+Each is now part of HH-1 in [§6](#6-proposals-and-decisions), within its size.
 
 1. **Finding the setting.** The owner is looking at the Hero when they want this, and the setting is on the Header. A Hero that is its page's first section shows one line in its settings that leads to the Header's **Background**. A second switch on the Hero would give one thing two places to be set.
 2. **The scroll styles while joined.** A joined Header that stays must turn solid, or the menu ends up on the page's text. So _Solid background_ is implied and _None_ can't mean "stay see-through": neither is offered while joined, which leaves _Shadow_, _Shrink_ and HH-7's _Hide when scrolling down_. A Header saved with one of the two draws as _Shadow_ while joined and keeps its choice for _Its own_.
