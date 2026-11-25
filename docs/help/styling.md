@@ -4,7 +4,7 @@ id: styling
 title: Styling
 summary: Change how a section or element looks, and give the same look to others like it.
 related: [edit-panel, themes, sections, elements]
-updated: 2026-11-22
+updated: 2026-11-25
 ---
 
 # Styling
@@ -64,6 +64,8 @@ It offers more than the Style tab: gradients, a border on each side, each corner
 - **To give the previews more room**, drag the line under them, or select it and use the arrow keys.
 - **Below**, the settings fill the window's width, in as many columns as fit.
 - **At the bottom**, **Where it applies**, **Cancel** and **Apply** are always in view.
+
+A colour picker here has its own **Done** and **Cancel**, which close only the picker. The window's **Cancel** and **Apply** are for everything you changed in it.
 
 ### Gradients
 

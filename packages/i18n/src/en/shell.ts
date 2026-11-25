@@ -48,6 +48,13 @@ export const shell = {
   "ui.colourPicker.hexRefused": "A hex code is 6 digits and letters from a to f, such as #1a7f5a",
   "ui.colourPicker.pick": "Pick a Colour from the Screen",
   "ui.colourPicker.used": "Colours on this site",
+  // The colour it opened on beside the one shown, and the picker's own buttons (#1408).
+  "ui.colourPicker.before": "Before",
+  "ui.colourPicker.beforeName": "Before: {hex}. Go back to it",
+  "ui.colourPicker.now": "Now",
+  "ui.colourPicker.nowName": "Now: {hex}",
+  "ui.colourPicker.cancel": "Cancel",
+  "ui.colourPicker.done": "Done",
   // Makes the colour shown one of the person's colours (TC-3, #1221).
   "ui.colourPicker.addToColours": "Add to Your Colours…",
   // A count: plural("ui.picker.match", n) picks one or other (B10).

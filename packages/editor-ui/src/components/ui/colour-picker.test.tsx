@@ -344,3 +344,109 @@ describe("the colour picker (5.26, OL-19)", () => {
     expect(onChoose).not.toHaveBeenCalled();
   });
 });
+
+describe("Done, Cancel, and the colour before beside the colour now (#1408)", () => {
+  /** The picker on `value`, open, with each colour previewed, and what it reports. */
+  async function opened(value = "#1f6feb") {
+    const onChoose = vi.fn();
+    const onPreview = vi.fn();
+    const onPreviewEnd = vi.fn();
+    render(
+      <ColourPicker
+        value={value}
+        aria-label="Brand"
+        onChoose={onChoose}
+        onPreview={onPreview}
+        onPreviewEnd={onPreviewEnd}
+      />,
+    );
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole("button", { name: "Brand" }));
+    const hex = () => screen.getByRole("textbox", { name: "Hex code" }) as HTMLInputElement;
+    /** Moves the hue to its end: another colour. */
+    const change = async () => {
+      screen.getByRole("slider", { name: "Hue" }).focus();
+      await user.keyboard("{End}");
+    };
+    return { onChoose, onPreview, onPreviewEnd, user, hex, change };
+  }
+
+  it("starts on the area, and reaches Cancel and Done by Tab after the other controls", async () => {
+    const { user } = await opened();
+    expect(document.activeElement).toBe(
+      screen.getByRole("slider", { name: "Saturation and brightness" }),
+    );
+
+    await user.tab(); // the hue
+    await user.tab(); // the code
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Done" }));
+  });
+
+  it("closes on Cancel as on Escape: nothing chosen, and the page shows its own colour again", async () => {
+    const { onChoose, onPreviewEnd, user, change } = await opened();
+    await change();
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(onChoose).not.toHaveBeenCalled();
+    expect(onPreviewEnd).toHaveBeenCalledExactlyOnceWith(false);
+  });
+
+  it("closes on Done as on a click away: the colour shown chosen once, then the preview ended", async () => {
+    const { onChoose, onPreview, onPreviewEnd, user, change } = await opened();
+    await change();
+    const shown = onPreview.mock.lastCall?.[0] as string;
+
+    await user.click(screen.getByRole("button", { name: "Done" }));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(onChoose).toHaveBeenCalledExactlyOnceWith(shown);
+    expect(onPreviewEnd).toHaveBeenCalledExactlyOnceWith(true);
+  });
+
+  it("chooses nothing on Done when the colour is the one it opened on", async () => {
+    const { onChoose, user } = await opened();
+
+    await user.click(screen.getByRole("button", { name: "Done" }));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(onChoose).not.toHaveBeenCalled();
+  });
+
+  it("takes a code typed in on Done, and refuses one that isn't a code, saying why, staying open", async () => {
+    const { onChoose, user, hex } = await opened();
+    await user.clear(hex());
+    await user.type(hex(), "zz");
+
+    await user.click(screen.getByRole("button", { name: "Done" }));
+
+    expect(onChoose).not.toHaveBeenCalled();
+    expect(hex().getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByRole("dialog", { name: "Colour picker" })).toBeTruthy();
+
+    await user.clear(hex());
+    await user.type(hex(), "#abcdef");
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    expect(onChoose).toHaveBeenCalledExactlyOnceWith("#abcdef");
+  });
+
+  it("shows the colour before beside the colour now, each named, and goes back to it, staying open", async () => {
+    const { onChoose, onPreview, user, hex, change } = await opened("#1f6feb");
+    expect(screen.getByRole("img", { name: "Now: #1f6feb" })).toBeTruthy();
+    await change();
+    expect(hex().value).not.toBe("#1f6feb");
+    expect(screen.queryByRole("img", { name: "Now: #1f6feb" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Before: #1f6feb. Go back to it" }));
+
+    expect(hex().value).toBe("#1f6feb");
+    expect(screen.getByRole("img", { name: "Now: #1f6feb" })).toBeTruthy();
+    expect(onPreview).toHaveBeenLastCalledWith("#1f6feb");
+    expect(screen.getByRole("dialog", { name: "Colour picker" })).toBeTruthy();
+    expect(onChoose).not.toHaveBeenCalled();
+  });
+});

@@ -14,6 +14,7 @@ import {
   shownHue,
 } from "../../lib/colour.js";
 import { fieldControlClass } from "../edit/text-field.js";
+import { Button } from "./button.js";
 import { WithTooltip } from "./tooltip.js";
 
 /** Chromium's eyedropper, where the window has it (5.26): a colour from anywhere on the screen. */
@@ -69,8 +70,10 @@ export type ColourPickerProps = {
 /**
  * Webforge's own colour picker (5.26, OL-19): a swatch that opens a saturation and brightness area,
  * a hue slider, the hex code and, where the window has one, the eyedropper, the same on Windows and
- * macOS. Each works by keyboard and is named for a screen reader. The colour is chosen once, when
- * it closes; Escape leaves it as it was. A hex code that isn't one is refused, saying why. Where
+ * macOS. Each works by keyboard and is named for a screen reader. The colour it opened on shows
+ * beside the one shown, and goes back to it (#1408). The colour is chosen once, when it closes by
+ * Done or a click away; Cancel and Escape leave it as it was. A hex code that isn't one is refused,
+ * saying why. Where
  * the page can show a colour at once, each one shown is offered to it while it's chosen (5.30).
  */
 export function ColourPicker({
@@ -99,8 +102,9 @@ export function ColourPicker({
   const [refused, setRefused] = useState(false);
   // The colours offered, as they were when it opened.
   const [offered, setOffered] = useState<readonly string[]>([]);
-  // The colour it opened on, and whether the person went back to it with Escape.
-  const opened = useRef(value);
+  // The colour it opened on, shown as "before" (#1408), and whether the person went back to it with
+  // Escape or Cancel.
+  const [opened, setOpened] = useState(value);
   const cancelled = useRef(false);
   // Whether a colour has been shown to `onPreview` since it opened.
   const previewed = useRef(false);
@@ -135,7 +139,7 @@ export function ColourPicker({
 
   const onOpenChange = (next: boolean) => {
     if (next) {
-      opened.current = value;
+      setOpened(value);
       cancelled.current = false;
       previewed.current = false;
       setHeld(hsvFor(value, undefined));
@@ -147,7 +151,7 @@ export function ColourPicker({
     }
     setOpen(false);
     const chosen = shown();
-    const choosing = !cancelled.current && chosen !== opened.current;
+    const choosing = !cancelled.current && chosen !== opened;
     if (choosing) onChoose(chosen);
     if (previewed.current) {
       previewed.current = false;
@@ -161,17 +165,23 @@ export function ColourPicker({
   const shown = () => (typed === undefined ? undefined : parseHex(typed)) ?? hex;
 
   /**
-   * Closes on the colour shown, choosing it, and offers it as one of the person's colours: not a
+   * Closes on the colour shown, choosing it as a click away does, and gives it to `then`: not on a
    * code in its box that isn't one, which is refused, saying why, as Enter refuses it.
    */
-  const addToColours = (add: (hex: string) => void) => {
+  const done = (then?: (hex: string) => void) => {
     if (typed !== undefined && parseHex(typed) === undefined) {
       setRefused(true);
       return;
     }
     const chosen = shown();
     onOpenChange(false);
-    add(chosen);
+    then?.(chosen);
+  };
+
+  /** Closes on the colour it opened on, as Escape does (#1408). */
+  const cancel = () => {
+    cancelled.current = true;
+    onOpenChange(false);
   };
 
   /** Uses what's typed in the hex box, or refuses it, saying why. */
@@ -291,6 +301,11 @@ export function ColourPicker({
             "text-popover-foreground shadow-lg outline-none animate-in fade-in-0",
             "data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
           )}
+          // The focus starts on the area, not on "before" above it.
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            area.current?.focus();
+          }}
           onEscapeKeyDown={() => {
             cancelled.current = true;
           }}
@@ -301,6 +316,36 @@ export function ColourPicker({
             if (picking.current) event.preventDefault();
           }}
         >
+          {/* The colour it opened on beside the one shown (#1408): "before" goes back to it. */}
+          <div className="grid grid-cols-2 gap-1.5 text-2xs text-muted-foreground">
+            <button
+              type="button"
+              aria-label={t("ui.colourPicker.beforeName", { hex: opened })}
+              data-slot="colour-picker-before"
+              className="flex cursor-pointer flex-col gap-0.5 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => show(hsvFor(opened, undefined))}
+            >
+              <span aria-hidden>{t("ui.colourPicker.before")}</span>
+              <span
+                aria-hidden
+                className="block h-6 w-full rounded-sm border border-border"
+                style={{ backgroundColor: opened }}
+              />
+            </button>
+            <div
+              role="img"
+              aria-label={t("ui.colourPicker.nowName", { hex })}
+              data-slot="colour-picker-now"
+              className="flex flex-col gap-0.5"
+            >
+              <span aria-hidden>{t("ui.colourPicker.now")}</span>
+              <span
+                aria-hidden
+                className="block h-6 w-full rounded-sm border border-border"
+                style={{ backgroundColor: hex }}
+              />
+            </div>
+          </div>
           <div
             ref={area}
             role="slider"
@@ -432,11 +477,20 @@ export function ColourPicker({
             <button
               type="button"
               className={cn(fieldControlClass, "h-7 w-auto self-start px-2 text-xs")}
-              onClick={() => addToColours(onAddToColours)}
+              onClick={() => done(onAddToColours)}
             >
               {t("ui.colourPicker.addToColours")}
             </button>
           )}
+          {/* What Escape and a click away do, said as buttons (#1408). */}
+          <div className="flex justify-end gap-2 border-t border-border pt-3">
+            <Button type="button" variant="secondary" size="sm" onClick={cancel}>
+              {t("ui.colourPicker.cancel")}
+            </Button>
+            <Button type="button" size="sm" onClick={() => done()}>
+              {t("ui.colourPicker.done")}
+            </Button>
+          </div>
         </PopoverPrimitive.Content>
       </PopoverPrimitive.Portal>
     </PopoverPrimitive.Root>
