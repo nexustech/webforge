@@ -19,7 +19,7 @@ export const OVERLAYS = ["0", "20", "40", "60", "80"] as const;
  * The Hero's overlay before it had a choice (HH-3): Neutral at 70%, between Strong and Very strong.
  * Format 21 gives it to every Hero saved before, so it looks as it did; it isn't offered.
  */
-export const KEPT_OVERLAY = "70";
+const KEPT_OVERLAY = "70";
 
 type Overlay = (typeof OVERLAYS)[number] | typeof KEPT_OVERLAY;
 const DRAWN_OVERLAYS: readonly Overlay[] = [...OVERLAYS, KEPT_OVERLAY];
@@ -139,11 +139,15 @@ const OVERLAY_CLASSES: Readonly<Record<OverlayColor, Readonly<Record<Overlay, st
 export function overlayLayer(values: BackgroundValues): {
   readonly layer: string;
   readonly text: string;
+  /** The overlay's colour as a background, for the section where it has no picture. */
+  readonly ground: string;
 } {
   const { opacity, color } = overlayOf(values);
+  const neutral = color === "neutral";
   return {
     layer: OVERLAY_CLASSES[color][opacity],
-    text: color === "neutral" ? "text-neutral-content" : "text-base-content",
+    text: neutral ? "text-neutral-content" : "text-base-content",
+    ground: neutral ? "bg-neutral" : "bg-base-100",
   };
 }
 

@@ -91,7 +91,7 @@ const hero = defineSection({
   // would keep the overlay inside the padding.
   frame: (values) =>
     values.variant === "background"
-      ? `relative flex min-h-[28rem] items-center justify-center overflow-hidden ${values.overlayColor === "base" ? "bg-base-100" : "bg-neutral"}`
+      ? `relative flex min-h-[28rem] items-center justify-center overflow-hidden ${overlayLayer(values).ground}`
       : values.variant === "minimal"
         ? "bg-base-200"
         : "hero bg-base-200",
