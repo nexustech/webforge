@@ -45,7 +45,7 @@ export function AssistantExamplesDialog({
       }}
     >
       <DialogContent
-        className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-xl"
+        className="flex flex-col sm:max-w-xl"
         onCloseAutoFocus={(event) => {
           if (tried.current) event.preventDefault();
           tried.current = false;

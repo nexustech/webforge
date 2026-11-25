@@ -67,7 +67,7 @@ export function BusinessDraftDialog(props: BusinessDraftDialogProps) {
         if (!next) props.onCancel();
       }}
     >
-      <DialogContent className="flex max-h-[min(44rem,calc(100dvh-2rem))] flex-col sm:max-w-2xl">
+      <DialogContent className="flex max-h-[min(44rem,var(--dialog-max-height))] flex-col sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t("assistant.business.title")}</DialogTitle>
           <DialogDescription>{t("assistant.business.about")}</DialogDescription>

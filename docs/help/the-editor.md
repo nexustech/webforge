@@ -28,6 +28,8 @@ When a site is open, the editor fills the window, and the window's title names t
 
 In a narrower window still, such as a large **Text size** on a small screen, a few more fold to leave room: **New** and **Open** are only in the **Menu** button's **File**, the three panel buttons become one **Panels** button that lists them, ticked while each is shown, and _Saved_ shows as a tick, its words in its tooltip. **Design | Content**, Site Check's count and **Publish** keep their words.
 
+Dialogs, such as **Settings** and **Theme Studio**, open below the title bar, never under the window's own buttons to minimise, maximise and close it. Those buttons work while a dialog is open, and a dialog's own **×** closes only the dialog.
+
 Before a site is open, on the start screen, the title bar has only the menus, **New** and **Open**. **File › Close Site** goes back there, the site saved.
 
 A button or menu item you can't use at the moment is greyed out, and most say why: hover over the button, or look under the item in a menu or in the command search. Undo says there's nothing to undo, for example, Paste Style asks you to copy a style first, and the Edit menu's Duplicate, Delete and moves ask you to select an element first.

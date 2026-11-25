@@ -2,6 +2,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { TITLE_BAR_HEIGHT } from "../shared/title-bar.js";
 import indexHtml from "./index.html?raw";
 import themeScript from "./public/startup-theme.js?raw";
 import {
@@ -9,6 +10,7 @@ import {
   EDITOR_PRELOAD_TIMEOUT_MS,
   markFirstRender,
   preloadEditorWhenIdle,
+  reserveTitleBar,
   StartFailed,
 } from "./startup.js";
 
@@ -60,6 +62,18 @@ describe("index.html's start-up screen", () => {
     expect(root).toContain("%WEBFORGE_STARTING%");
     expect(root).toMatch(/role="progressbar" aria-labelledby="startup-label"/);
     expect(root).not.toContain("aria-valuenow");
+  });
+});
+
+describe("reserveTitleBar", () => {
+  it("gives dialogs the title bar's height to stay below, or the window controls' where taller (#1411)", () => {
+    const root = document.createElement("div");
+
+    reserveTitleBar(root);
+
+    expect(root.style.getPropertyValue("--title-bar-height")).toBe(
+      `max(env(titlebar-area-height, 0px), ${TITLE_BAR_HEIGHT}px)`,
+    );
   });
 });
 

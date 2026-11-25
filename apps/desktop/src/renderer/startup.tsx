@@ -1,6 +1,7 @@
 import { ErrorFallback } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { ShownTheme } from "../shared/editor-theme.js";
+import { TITLE_BAR_HEIGHT } from "../shared/title-bar.js";
 
 /** The computer's light or dark setting, as the window's page sees it (Electron follows it). */
 const DARK_QUERY = "(prefers-color-scheme: dark)";
@@ -34,6 +35,19 @@ export function applyTheme(
   if (address.searchParams.get("theme") === theme) return;
   address.searchParams.set("theme", theme);
   page.history.replaceState(page.history.state, "", address.href);
+}
+
+/**
+ * Keeps dialogs under the editor window's title bar (#1411), whose native controls Windows draws
+ * over everything the page draws: `--title-bar-height` (editor-ui's theme.css) is the bar's
+ * {@link TITLE_BAR_HEIGHT}, or the controls' area where that's taller. Both are the page's own
+ * pixels, so the interface zoom scales them alike.
+ */
+export function reserveTitleBar(root: HTMLElement): void {
+  root.style.setProperty(
+    "--title-bar-height",
+    `max(env(titlebar-area-height, 0px), ${TITLE_BAR_HEIGHT}px)`,
+  );
 }
 
 /**

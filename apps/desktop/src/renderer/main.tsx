@@ -12,6 +12,7 @@ import {
   computerDark,
   markFirstRender,
   preloadEditorWhenIdle,
+  reserveTitleBar,
   StartFailed,
 } from "./startup.js";
 import "./styles.css";
@@ -36,6 +37,8 @@ setUsageLog(window.webforge.app.recordUsage);
 document.title = t("app.name");
 // Shift+F10 opens context menus on macOS too, as it does on Windows (#287).
 installMenuKeys(document);
+// Dialogs open under the title bar, clear of the window's own controls (#1411).
+reserveTitleBar(document.documentElement);
 
 // The start-up screen in index.html shows until this root's first render replaces it (#887).
 // While developing, React's errors also show in the console, as they would without these options.

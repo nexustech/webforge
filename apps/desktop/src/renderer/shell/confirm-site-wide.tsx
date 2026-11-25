@@ -269,7 +269,7 @@ export function SiteWideConfirmDialog({ confirm }: { readonly confirm: SiteWideC
       }}
     >
       {/* Never taller than the window: a long question scrolls, and the buttons stay (S30). */}
-      <AlertDialogContent className="flex max-h-[calc(100vh-2rem)] flex-col">
+      <AlertDialogContent className="flex flex-col">
         <AlertDialogHeader className="min-h-0">
           <AlertDialogTitle>{action?.action}</AlertDialogTitle>
           {/*

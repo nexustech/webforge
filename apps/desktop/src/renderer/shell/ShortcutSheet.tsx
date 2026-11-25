@@ -37,7 +37,7 @@ export function ShortcutSheet({ editor = true }: { readonly editor?: boolean }) 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="max-h-[min(85vh,var(--dialog-max-height))] sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{t("shortcuts.title")}</DialogTitle>
           <DialogDescription>{t("shortcuts.description")}</DialogDescription>
