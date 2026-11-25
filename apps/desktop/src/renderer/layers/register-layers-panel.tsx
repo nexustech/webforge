@@ -1,13 +1,13 @@
 import { toast } from "@webforge/editor-ui";
 import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
-import { sameJson } from "@webforge/model";
 import { LayersIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import type { CanvasPointer } from "../editor/canvas-pointer.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import {
   copyLayer,
+  keepUnchanged,
   type Layer,
   moveLayer,
   pageLayers,
@@ -98,7 +98,7 @@ export function registerLayersPanel(
     shared: unknown;
     layout: unknown;
     collections: unknown;
-    layers: Layer[];
+    layers: readonly Layer[];
   } = {
     page: undefined,
     shared: undefined,
@@ -122,10 +122,13 @@ export function registerLayersPanel(
     ) {
       return shown.layers;
     }
-    const layers = page === undefined ? [] : pageLayers(site, pageId, library);
-    shown = sameJson(layers, shown.layers)
-      ? { ...shown, page, shared, layout, collections }
-      : { page, shared, layout, collections, layers };
+    // The layers that haven't changed stay the same objects, and their rows draw only when
+    // something about them changed: not on every change to the page (#1406).
+    const layers = keepUnchanged(
+      shown.layers,
+      page === undefined ? [] : pageLayers(site, pageId, library),
+    );
+    shown = { page, shared, layout, collections, layers };
     return shown.layers;
   };
 

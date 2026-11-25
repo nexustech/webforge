@@ -12,7 +12,14 @@ import {
   PencilIcon,
   Trash2Icon,
 } from "lucide-react";
-import { type ComponentType, type ReactNode, useState } from "react";
+import {
+  type ComponentType,
+  type ReactNode,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { CanvasPointer } from "../editor/canvas-pointer.js";
 import { type Layer, layerItem } from "../editor/layers.js";
 import type { MenuPoint } from "../element-menu/index.js";
@@ -122,6 +129,28 @@ export function LayersPanel({
     setShown: (id, shown) => actions.setShown(id, shown),
     shownClosed: focusRowOnly,
   };
+  // The rows get the same handlers every render, calling the panel's as they are now: so a row
+  // draws again only when it changed, not whenever the selection does (#1406).
+  const latest = useRef(events);
+  useLayoutEffect(() => {
+    latest.current = events;
+  });
+  const hasMenu = Menu !== undefined;
+  const rowEvents = useMemo(
+    (): LayerRowEvents => ({
+      click: (event, row) => latest.current.click(event, row),
+      keyDown: (event, row) => latest.current.keyDown(event, row),
+      startRename: (id) => latest.current.startRename(id),
+      renamed: (id, name) => latest.current.renamed(id, name),
+      openMenu: hasMenu ? (id, at) => latest.current.openMenu?.(id, at) : undefined,
+      setExpanded: (id, expanded) => latest.current.setExpanded(id, expanded),
+      hover: (id) => latest.current.hover(id),
+      leave: (id) => latest.current.leave(id),
+      setShown: (id, shown) => latest.current.setShown(id, shown),
+      shownClosed: (id) => latest.current.shownClosed(id),
+    }),
+    [hasMenu],
+  );
 
   if (layers.length === 0) {
     return (
@@ -158,7 +187,7 @@ export function LayersPanel({
               <LayerRow
                 key={layer.id}
                 row={row}
-                events={events}
+                events={rowEvents}
                 selected={isSelected}
                 focusable={isSelected || (selectedRow === undefined && row === rows[0])}
                 // One drag moving several selected layers is for later (1.31): until then a

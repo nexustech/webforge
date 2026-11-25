@@ -57,6 +57,26 @@ const anyMatch = (layer: Layer, filter: string): boolean =>
   matches(layer, filter) || layer.children.some((child) => anyMatch(child, filter));
 
 /**
+ * The row last made for each layer, given again while the layer is where it was: with the layers
+ * that didn't change kept (`keepUnchanged`), so are their rows, and the rows that show them needn't
+ * draw again (#1406).
+ */
+const madeRows = new WeakMap<Layer, TreeRow>();
+
+/** `row`, or the row made for its layer before where that one is the same. */
+function kept(row: TreeRow): TreeRow {
+  const made = madeRows.get(row.layer);
+  if (
+    made !== undefined &&
+    (Object.keys(row) as (keyof TreeRow)[]).every((key) => made[key] === row[key])
+  ) {
+    return made;
+  }
+  madeRows.set(row.layer, row);
+  return row;
+}
+
+/**
  * The rows shown: every layer, except those inside a collapsed one; with a filter, the layers
  * that match it and the layers they are in, whatever is collapsed.
  */
@@ -71,7 +91,7 @@ export function rowsOf(
     const expanded =
       layer.children.length > 0 && (view.filter !== "" || !view.collapsed.has(layer.id));
     return [
-      { layer, depth, parent, index, siblings: layers.length, expanded },
+      kept({ layer, depth, parent, index, siblings: layers.length, expanded }),
       ...(expanded ? rowsOf(layer.children, view, depth + 1, layer.id) : []),
     ];
   });

@@ -2,7 +2,7 @@ import { cn, fieldControlClass, WithTooltip } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { LAYER_NAME_MAX } from "@webforge/model";
 import { ChevronRightIcon, Link2Icon, LockIcon, SparklesIcon, StickyNoteIcon } from "lucide-react";
-import { type KeyboardEvent, type MouseEvent, type ReactNode, useRef, useState } from "react";
+import { type KeyboardEvent, type MouseEvent, memo, type ReactNode, useRef, useState } from "react";
 import { type Layer, type LayerShown, layerItem } from "../editor/layers.js";
 import type { MenuPoint } from "../element-menu/index.js";
 import { DRAGGABLE_ROW_CLASS, type RowDrag } from "../shell/use-row-drag.js";
@@ -45,9 +45,14 @@ type LayerRowProps = {
 
 /**
  * A layer's row in the Layers panel's tree: its arrow, its name with what marks it (linked,
- * shared, locked, animated, a note), or the field renaming it, and its eye.
+ * shared, locked, animated, a note), or the field renaming it, and its eye. It draws again only
+ * when something it shows changed: the selection moving, or a change to the page, leaves the
+ * other rows as they are (#1406). So its props are values, or kept the same between renders:
+ * `events`, `drag`, and its row, which the tree gives again while its layer is unchanged.
  */
-export function LayerRow({
+export const LayerRow = memo(LayerRowView);
+
+function LayerRowView({
   row,
   events,
   selected,
