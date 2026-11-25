@@ -91,7 +91,11 @@ Compared as building blocks for Webforge, not as products the owner would choose
 - **Editor engines:** GrapesJS (the main alternative to Puck), with Webstudio, Silex, Builder.io and Plasmic alongside it ([stack/04](../stack/04-canvas-engine.md)).
 - **Export formats:** Astro and Eleventy ([stack/07](../stack/07-export-pipeline.md)).
 
-## 8. Limits
+## 8. Added since
+
+- **[product/25](../product/25-hero-and-header.md) (24 Nov 2026), the hero and the Header:** compares Squarespace, Wix, Hostinger, Webnode, GoDaddy, Durable, Shopify's themes, Google Sites, Webflow, Framer, WordPress block themes, Bootstrap Studio, Pinegrow, Elements, Blocs, Mobirise, Nicepage and Sitely again, and for the first time **Square Online and Weebly**, the WordPress themes **Astra**, **Kadence** and **GeneratePress**, **Elementor**, and **Bootstrap**'s own examples. Jimdo and Carrd were looked at and had nothing to compare.
+
+## 9. Limits
 
 - Most hosted builders were read from their help pages and reviews, not run; each note says how its own comparison was made.
 - Only Bootstrap Studio, Webflow, Pinegrow, Onlook and Webnode have a review of their own. The others appear in comparison tables, so what is known about them is limited to those tables' topics.
