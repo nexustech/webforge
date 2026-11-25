@@ -140,11 +140,19 @@ describe("Puck's DOM contract (R8)", () => {
     expect(element.querySelector(`${ACTION_BAR} ${ACTION_BAR_ACTION}[title]`)).not.toBeNull();
   });
 
-  it("draws the rich-text menu over a selected rich text (A20)", async () => {
+  it("draws the rich-text menu over a rich text being edited (A20)", async () => {
     await act(async () => engine.select("t"));
     await settle();
+    // Over the canvas only: Puck's own fields, which had a menu of their own, aren't drawn (#1406).
+    expect(element.querySelector(RICH_TEXT_MENU)).toBeNull();
+    const editor = element.querySelector<HTMLElement>(`${componentSelector("t")} ${RICH_TEXT}`);
+    await act(async () => {
+      editor?.focus();
+      editor?.dispatchEvent(new FocusEvent("focus"));
+    });
+    await settle();
 
-    expect(element.querySelector(RICH_TEXT_MENU)).not.toBeNull();
+    expect(element.querySelector(`${ACTION_BAR} ${RICH_TEXT_MENU}`)).not.toBeNull();
   });
 
   it("hovers an element with the pointer over its text, one element at a time (#399)", async () => {

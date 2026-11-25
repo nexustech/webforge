@@ -168,6 +168,10 @@ export function createPuckOverrides(options: PuckOverridesOptions): Partial<Over
   return {
     // Replaces Puck's header, which holds Puck's own Undo/Redo buttons.
     header: () => <></>,
+    // Puck's own fields, in its right sidebar, which is hidden: the app's Edit panel shows them
+    // (1.14). Puck still drew every field of the selected element there, unseen, each time the
+    // selection moved: over 1,000 components on the large page, half a jump's work (#1406).
+    fields: () => <></>,
     puck: Bridge,
     iframe: CanvasFrame,
     // Selection chrome (1.12): magenta outlines and the selected element's quick actions.
