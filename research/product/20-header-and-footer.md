@@ -96,15 +96,15 @@ Sizes are rough ideal days.
 
 Product owner, 2026-11-20, asked which proposals to adopt: "The recommended ones".
 
-| #    | Decision                                                                                                        |
-| ---- | --------------------------------------------------------------------------------------------------------------- |
-| HF-1 | ✅ **Adopted:** a logo in the Header                                                                            |
-| HF-2 | ✅ **Adopted:** the Header's button is its own; the menu's last link moves into the button (owner, 22 Nov 2026) |
-| HF-3 | ❌ **Not taken for now:** a phone number and social icons in the Header                                         |
-| HF-4 | ✅ **Adopted:** the Footer takes elements, in up to four columns                                                |
-| HF-5 | ❌ **Not taken for now:** a bottom line in the Footer. Next in line after HF-4. Adopted on 23 Nov: see below    |
-| HF-6 | ❌ **Not taken for now:** a see-through Header                                                                  |
-| HF-7 | ❌ **Not taken for now:** two more Header layouts                                                               |
+| #    | Decision                                                                                                                                                                                                                  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HF-1 | ✅ **Adopted:** a logo in the Header                                                                                                                                                                                      |
+| HF-2 | ✅ **Adopted:** the Header's button is its own; the menu's last link moves into the button (owner, 22 Nov 2026)                                                                                                           |
+| HF-3 | ❌ **Not taken for now:** a phone number and social icons in the Header                                                                                                                                                   |
+| HF-4 | ✅ **Adopted:** the Footer takes elements, in up to four columns                                                                                                                                                          |
+| HF-5 | ❌ **Not taken for now:** a bottom line in the Footer. Next in line after HF-4. Adopted on 23 Nov: see below                                                                                                              |
+| HF-6 | ❌ **Not taken for now:** a see-through Header. On 25 Nov 2026 HH-1 of [product/25](25-hero-and-header.md#6-proposals-and-decisions) took its place, adopted ([#1427](https://github.com/nexustech/webforge/issues/1427)) |
+| HF-7 | ❌ **Not taken for now:** two more Header layouts                                                                                                                                                                         |
 
 6 days in all, in the order HF-1, HF-2, HF-4. **Planned as PH5-5** (20 Nov 2026; [the plan's §3](../../spec/04-implementation-plan.md#3-timeline), MVP §7 item 59): asked when they ship, the product owner answered "Both before v1.0", so all three join Phase 5. Stream A, after 5.30: 5.37 [#1236](https://github.com/nexustech/webforge/issues/1236) (HF-1, 1.5) → 5.38 [#1237](https://github.com/nexustech/webforge/issues/1237) (HF-2, 1), which share one site format migration if they land together; stream C, after 5.32: 5.39 [#1238](https://github.com/nexustech/webforge/issues/1238) (HF-4, 3.5). Each updates the catalogue data for AI apps, the templates where it fits and the help page.
 
