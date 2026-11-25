@@ -58,6 +58,20 @@ export const HeaderSticky: Story = {
   args: { nodes: header({ sticky: true, scrollStyle: "shadow" }) },
 };
 
+/** A Header that hides on the way down the page (HH-7), in view as the page opens. */
+export const HeaderHides: Story = {
+  args: { nodes: header({ sticky: true, scrollStyle: "hide" }) },
+};
+
+/** The same once the page has scrolled down: slid up out of view, until the visitor scrolls up. */
+export const HeaderHidden: Story = {
+  args: { nodes: header({ sticky: true, scrollStyle: "hide" }) },
+  play: async ({ canvasElement }) => {
+    // As the "sticky" behaviour marks it on the way down.
+    canvasElement.querySelector("header.site-header")?.setAttribute("data-hidden", "");
+  },
+};
+
 /** The shared Footer, its text centred. */
 export const Footer: Story = {
   args: {

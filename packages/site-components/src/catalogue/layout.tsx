@@ -147,12 +147,14 @@ function HeaderNavigation({
 }
 
 const HEADER_LAYOUTS = ["left", "centred", "split"] as const;
-const SCROLL_STYLES = ["shadow", "shrink", "solid", "none"] as const;
+const SCROLL_STYLES = ["shadow", "shrink", "solid", "hide", "none"] as const;
 const LOGO_PLACES = ["instead", "beside"] as const;
 
 /**
  * A sticky header's classes for its scroll style (F-DS-6), applied once the page has scrolled 80 px
- * (`data-scrolled`, set by `webforge.js`'s "sticky" behaviour).
+ * (`data-scrolled`, set by `webforge.js`'s "sticky" behaviour). *Hide when scrolling down* (HH-7)
+ * slides up out of view while the behaviour says so (`data-hidden`), and back on the way up; for
+ * visitors who ask for less motion it goes and comes back without sliding.
  */
 const STICKY_CLASSES: Readonly<Record<(typeof SCROLL_STYLES)[number], string>> = {
   shadow: "sticky top-0 bg-base-100 shadow-none transition-shadow data-scrolled:shadow-md",
@@ -160,6 +162,7 @@ const STICKY_CLASSES: Readonly<Record<(typeof SCROLL_STYLES)[number], string>> =
     "sticky top-0 bg-base-100 shadow-sm transition-[min-height,padding] data-scrolled:min-h-12 data-scrolled:py-1",
   solid:
     "sticky top-0 bg-base-100/80 shadow-sm backdrop-blur transition-colors data-scrolled:bg-base-100",
+  hide: "sticky top-0 bg-base-100 shadow-sm transition-transform duration-300 motion-reduce:transition-none data-hidden:-translate-y-full data-hidden:shadow-none",
   none: "sticky top-0 bg-base-100 shadow-sm",
 };
 
@@ -326,7 +329,10 @@ const header = defineComponent({
         {button}
       </>
     );
-    const sticky = values.sticky ? { "data-wf-sticky": "" } : {};
+    // The behaviour hides a Header that hides on the way down (HH-7); the others it only marks.
+    const sticky = values.sticky
+      ? { "data-wf-sticky": values.scrollStyle === "hide" ? "hide" : "" }
+      : {};
     if (!capped) {
       return (
         <header
