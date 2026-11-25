@@ -73,8 +73,8 @@ export type ColourPickerProps = {
  * macOS. Each works by keyboard and is named for a screen reader. The colour it opened on shows
  * beside the one shown, and goes back to it (#1408). The colour is chosen once, when it closes by
  * Done or a click away; Cancel and Escape leave it as it was. A hex code that isn't one is refused,
- * saying why. Where
- * the page can show a colour at once, each one shown is offered to it while it's chosen (5.30).
+ * saying why. Where the page can show a colour at once, each one shown is offered to it while it's
+ * chosen (5.30).
  */
 export function ColourPicker({
   id,

@@ -49,7 +49,8 @@ export const Changed: Story = {
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole("button", { name: "Brand" }));
     const page = within(canvasElement.ownerDocument.body);
-    await userEvent.keyboard("{ArrowLeft}{ArrowLeft}{ArrowLeft}{ArrowLeft}");
+    // Full saturation and brighter: far enough from the colour before to tell them apart.
+    await userEvent.keyboard("{End}{Shift>}{ArrowUp}{ArrowUp}{ArrowUp}{/Shift}");
     await expect(page.getByRole("img", { name: /^Now: / })).not.toHaveAccessibleName(
       "Now: #1a7f5a",
     );
