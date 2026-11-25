@@ -136,7 +136,7 @@ const AREA_BUTTON_ATTRIBUTE = "data-area-button";
  * The area button to focus once the window's parts have folded or opened: the one that undoes the
  * button just pressed, which was hidden with its part or removed with its strip (#1412).
  */
-const RefocusContext = createContext<{ current: string | null }>({ current: null });
+const RefocusContext = createContext<(target: string) => void>(() => {});
 
 /**
  * The button that folds (`hide`) or opens (`show`) part `area` of the window (#1412), named for
@@ -151,7 +151,7 @@ function AreaButton({
   readonly action: "hide" | "show";
 }) {
   const registry = useCommandRegistry();
-  const refocus = useContext(RefocusContext);
+  const refocusAfter = useContext(RefocusContext);
   const { command } = AREA_BUTTONS[area];
   const { name: key, icon: Icon } = AREA_BUTTONS[area][action];
   const name = t(key);
@@ -164,7 +164,7 @@ function AreaButton({
       tooltip={withShortcut(name, command)}
       {...{ [AREA_BUTTON_ATTRIBUTE]: `${area}-${action}` }}
       onClick={() => {
-        refocus.current = `${area}-${action === "hide" ? "show" : "hide"}`;
+        refocusAfter(`${area}-${action === "hide" ? "show" : "hide"}`);
         registry.run(command);
       }}
     >
@@ -506,6 +506,9 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
     () => (layout[PANEL_GROUPS.center]?.["drawer"] ?? 0) > 0,
   );
   const refocus = useRef<string | null>(null);
+  const refocusAfter = (target: string) => {
+    refocus.current = target;
+  };
   // The button that undoes the one just pressed, once its part has folded or opened (#1412).
   // biome-ignore lint/correctness/useExhaustiveDependencies: run when a part folds or opens.
   useEffect(() => {
@@ -652,7 +655,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
     };
 
   return (
-    <RefocusContext value={refocus}>
+    <RefocusContext value={refocusAfter}>
       <ResizablePanelGroup
         id={PANEL_GROUPS.columns}
         orientation="horizontal"
