@@ -102,7 +102,7 @@ export function QuickStartDialog({ open, ...body }: QuickStartDialogProps) {
       }}
     >
       {/* The content mounts with each opening, so the quick start starts afresh every time. */}
-      <DialogContent className="flex h-[min(44rem,calc(100dvh-2rem))] flex-col sm:max-w-5xl">
+      <DialogContent className="flex h-[min(44rem,var(--dialog-max-height))] flex-col sm:max-w-5xl">
         <QuickStartBody
           {...body}
           onCancel={cancel}

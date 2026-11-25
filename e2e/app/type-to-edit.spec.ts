@@ -76,7 +76,14 @@ test("types a letter into the selected element's text, as one undo step", async 
   await expect(heroHeading()).toHaveText("Fresh ideas, made by hand! Daily");
   await page.keyboard.press("Escape");
 
-  // The first character and what follows it before the pause: one step, as typing's always is.
+  // Once something else is selected, the typing is one step, as typing's always is (D1). Not
+  // before: while the Hero stays selected, typing after a pause of a second or more is undone
+  // chunk by chunk, as on a slow runner between the first character and the rest.
+  await canvas()
+    .locator(".site-section")
+    .first()
+    .click({ position: { x: 8, y: 8 }, force: true });
+  await expect(right().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
   await expect(steps()).toHaveCount(before + 1);
   await expect(steps().first()).toHaveText("Edited Hero title");
   await page.keyboard.press("ControlOrMeta+z");

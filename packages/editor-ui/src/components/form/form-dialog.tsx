@@ -71,7 +71,7 @@ export function FormDialog<V extends FormValues, Out>({
       <DialogContent
         className={cn(
           // A column, so the form can shrink to the window and scroll its fields (#1172).
-          "flex max-h-[calc(100dvh-2rem)] flex-col",
+          "flex flex-col",
           size === "lg" && "sm:max-w-2xl",
           // A form with a side nav (LF-12's Settings).
           size === "xl" && "sm:max-w-3xl",

@@ -76,7 +76,7 @@ export function NewSiteDialog({ open, templates, onCreate, onCancel }: NewSiteDi
       }}
     >
       {/* The content mounts with each opening, so the dialog starts afresh every time. */}
-      <DialogContent className="flex h-[min(44rem,calc(100dvh-2rem))] flex-col sm:max-w-5xl">
+      <DialogContent className="flex h-[min(44rem,var(--dialog-max-height))] flex-col sm:max-w-5xl">
         <NewSiteBody templates={templates} onCreate={onCreate} onCancel={onCancel} />
       </DialogContent>
     </Dialog>

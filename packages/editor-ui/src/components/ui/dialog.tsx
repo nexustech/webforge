@@ -5,12 +5,17 @@ import type { ComponentProps } from "react";
 import { cn } from "../../lib/cn.js";
 import { useReturnFocus } from "./return-focus.js";
 
-/** Overlay and panel classes shared with AlertDialog. */
+/**
+ * Overlay and panel classes shared with AlertDialog. The panel is centred in the window under the
+ * title bar, and no taller than that less a margin (`--dialog-max-height`, theme.css), so the
+ * window's own controls are never over it (#1411); a taller one scrolls, its rows kept at their
+ * own height rather than squashed (a template's preview over its caption).
+ */
 export const dialogStyles = {
   overlay:
     "fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
   content:
-    "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-3 rounded-lg border border-border-strong bg-card p-4 text-card-foreground shadow-xl outline-none sm:max-w-md data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+    "fixed top-[calc(50%+var(--title-bar-height)/2)] left-1/2 z-50 grid max-h-(--dialog-max-height) auto-rows-max w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-3 overflow-y-auto rounded-lg border border-border-strong bg-card p-4 text-card-foreground shadow-xl outline-none sm:max-w-md data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
   header: "flex flex-col gap-1",
   footer: "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
   title: "text-lg font-semibold",

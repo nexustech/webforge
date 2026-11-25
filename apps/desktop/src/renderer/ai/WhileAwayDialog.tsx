@@ -39,7 +39,7 @@ export function WhileAwayDialog({
 }: WhileAwayDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
-      <DialogContent className="flex max-h-[calc(100vh-2rem)] flex-col">
+      <DialogContent className="flex flex-col">
         <DialogHeader>
           <DialogTitle>{t("ai.away.title")}</DialogTitle>
           <DialogDescription>{t("ai.away.description")}</DialogDescription>
