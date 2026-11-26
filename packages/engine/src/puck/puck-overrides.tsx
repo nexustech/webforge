@@ -17,6 +17,7 @@ import { showFrameTooltips } from "./frame-tooltips.js";
 import { followJoinedHeight } from "./joined-height.js";
 import { CANVAS_INNER, CANVAS_ROOT } from "./puck-dom.js";
 import { boxHandleFields } from "./spacing-handles.js";
+import { followViewportHeight } from "./viewport-height.js";
 import { widthHandleField } from "./width-handles.js";
 
 type GetPuck = ReturnType<typeof useGetPuck>;
@@ -157,10 +158,20 @@ export function createPuckOverrides(options: PuckOverridesOptions): Partial<Over
       const stopTooltips = document === undefined ? undefined : showFrameTooltips(document);
       // A Header joined to its first section's real height, as the site's script gives it (HH-1).
       const stopJoined = document === undefined ? undefined : followJoinedHeight(document);
+      // The window's height a visitor would see, which a Whole screen Hero fills (HH-4).
+      const stopViewport =
+        document === undefined
+          ? undefined
+          : followViewportHeight(
+              document,
+              view.onSize,
+              options.host()?.ownerDocument.defaultView?.innerHeight,
+            );
       return () => {
         stopListening();
         stopTooltips?.();
         stopJoined?.();
+        stopViewport?.();
         stopColours?.();
         frame.detach();
         options.frameWindows.emit(null);

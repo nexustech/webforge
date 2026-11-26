@@ -2,9 +2,10 @@
 const HEIGHT = "--wf-header-h";
 
 /**
- * Gives the canvas's page the height of a Header joined to its first section (HH-1), as the
- * exported site's `joined.js` does: where the Header sits over the section, and the room the
- * section makes for it, read `--wf-header-h`. Without it they'd keep the CSS's estimate for the
+ * Gives the canvas's page the height of a Header joined to its first section (HH-1), or with its
+ * own band over a first section that fills the window (HH-4, `data-wf-height`), as the exported
+ * site's `joined.js` does: where the Header sits over the section, and the room the section makes
+ * for it, read `--wf-header-h`. Without it they'd keep the CSS's estimate for the
  * Header's layout, which a large logo or a long name outgrows. It follows the Header as Puck draws
  * it again (another page shown, a layout chosen) and as it changes size. Returns what stops it.
  */
@@ -19,7 +20,7 @@ export function followJoinedHeight(doc: Document): () => void {
   };
   const resized = new view.ResizeObserver(measure);
   const find = () => {
-    const found = doc.querySelector("[data-wf-joined]");
+    const found = doc.querySelector("[data-wf-joined], [data-wf-height]");
     const next = found instanceof view.HTMLElement ? found : null;
     if (next === shown) return;
     if (shown !== null) resized.unobserve(shown);
@@ -33,7 +34,7 @@ export function followJoinedHeight(doc: Document): () => void {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ["data-wf-joined"],
+    attributeFilter: ["data-wf-joined", "data-wf-height"],
   });
   find();
   return () => {

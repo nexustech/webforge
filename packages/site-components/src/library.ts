@@ -120,6 +120,12 @@ export type ComponentDef = {
    * joined to the section reads it (HH-1): on the page's own colours, it keeps its band.
    */
   readonly sectionGround?: (values: Readonly<Record<string, unknown>>) => string | undefined;
+  /**
+   * Whether a section with `values` fills the window's height (a Hero at _Whole screen_, HH-4): as
+   * a page's first section under a Header with its own band, it leaves the Header's room
+   * (`RenderContext.belowHeader`).
+   */
+  readonly fillsWindow?: (values: Readonly<Record<string, unknown>>) => boolean;
   readonly render: (props: ComponentRenderProps) => ReactNode;
   /**
    * Scripts the exported site must include when this component is used: always, or as its values

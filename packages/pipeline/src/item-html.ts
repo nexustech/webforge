@@ -1,5 +1,6 @@
 import { DOCUMENT_EXTENSIONS, isNodeDoc, type NodeDoc, type SiteSnapshot } from "@webforge/model";
 import {
+  belowHeaderOf,
   type ComponentLibrary,
   inFooterColumn,
   joinedHeaderOf,
@@ -95,7 +96,13 @@ export function itemHtml(
   const shown = withPageHeading(regions, library, context);
   // The Header on its first section (HH-1), which both draw (`renderPage`).
   const joined = joinedHeaderOf(regions, library, context.looks);
-  const placed = joined === undefined ? shown : { ...shown, joinedHeader: joined };
+  // A first section filling the window under the Header's own band (HH-4), as `renderPage`.
+  const below = belowHeaderOf(regions, library, context.looks);
+  const placed = {
+    ...shown,
+    ...(joined === undefined ? {} : { joinedHeader: joined }),
+    ...(below === undefined ? {} : { belowHeader: below }),
+  };
   const html = renderNodesToHtml(
     [node],
     library,
