@@ -25,14 +25,30 @@ const placed = (page: Page) =>
   });
 
 /**
- * Opens the exported page in `folder`, once its fonts have loaded: the Header grows as its fonts
- * come (by up to 8 px in macOS WebKit), and the Hero follows it, so a size read earlier can change.
+ * Waits until the page stops moving: the Hero starts at the same place twice, 300 ms apart. What's
+ * above it can still grow after the page loads (in CI, by 8 px in macOS WebKit and 21 px in Linux
+ * WebKit, the fonts' load not settling it), and the Hero follows, so a size read earlier changes. Synchronous reads only:
+ * an awaited promise never settles in Firefox with JavaScript off.
  */
+const settled = (page: Page) => {
+  let last = Number.NaN;
+  return expect
+    .poll(
+      async () => {
+        const now = (await placed(page)).heroTop;
+        const still = now === last;
+        last = now;
+        return still;
+      },
+      { intervals: [300] },
+    )
+    .toBe(true);
+};
+
+/** Opens the exported page in `folder`, once it has stopped moving. */
 const open = async (page: Page, folder: string) => {
   await page.goto(pathToFileURL(join(HERO_HEIGHT_SITE_DIR, folder, "index.html")).href);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
+  await settled(page);
 };
 
 for (const [width, height] of [
@@ -95,9 +111,7 @@ for (const [width, height] of [
 
       // The next page, with the bar closed already: the same from the start.
       await page.reload();
-      await page.evaluate(async () => {
-        await document.fonts.ready;
-      });
+      await settled(page);
       await expect.poll(async () => (await placed(page)).heroBottom).toBeCloseTo(height, 0);
       const next = await placed(page);
       expect(next.barShown).toBe(false);
@@ -140,8 +154,8 @@ test("keeps its height under a Header that shrinks once scrolled, below a bar", 
     page.locator("header.site-header").evaluate((header) => header.getBoundingClientRect().height);
   const fullHeader = await headerHeight();
   // Scrolled, the Header shrinks (by 16 px) and the page moves up under it; the Hero's height
-  // stays. Within 4 px: in macOS WebKit, something above the Hero can still settle by a pixel or
-  // so after it's first measured, which the script then follows.
+  // stays. Within 4 px: in macOS WebKit, what's above the Hero can still settle by a pixel or so
+  // after the page has stopped moving, which the script then follows.
   await page.mouse.wheel(0, 300);
   await expect.poll(async () => fullHeader - (await headerHeight())).toBeGreaterThan(8);
   const scrolled = await placed(page);
