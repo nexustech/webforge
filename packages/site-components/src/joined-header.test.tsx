@@ -130,6 +130,25 @@ describe("a Header joined to its first section, drawn (HH-1)", () => {
     expect(section?.className).toContain("pb-16");
   });
 
+  it("shrinks its bar at a capped width, solid once scrolled, as a Header with its own does", () => {
+    const drawn = rendered(
+      [header({ sticky: true, scrollStyle: "shrink", contentWidth: "wide" })],
+      [hero()],
+    );
+    expect(drawn.querySelector("header")?.className).toContain(
+      "group sticky top-0 transition-colors data-scrolled:bg-base-100",
+    );
+    expect(drawn.querySelector(".site-header-bar")?.className).toContain(
+      "group-data-scrolled:min-h-12",
+    );
+  });
+
+  it("gives a section whose column holds its padding the Header's height above it", () => {
+    const buttons: NodeDoc = { type: "ContactButtons", props: { id: "buttons" } };
+    const section = rendered([header()], [buttons]).querySelector("main > *");
+    expect(section?.className).toContain("pt-(--wf-header-h)");
+  });
+
   it("takes a reversed section's colours as its own theme", () => {
     const drawn = rendered([header()], [text("story", { colors: "inverse" })]).querySelector(
       "header",

@@ -457,7 +457,15 @@ setup("export a site whose Header joins each page's first section (HH-1)", async
       documents: [],
       layout: {
         ...sample.layout,
-        header: [{ ...header, props: { ...header.props, background: "section" } }, ...rest],
+        // An Announcement bar above it, which stays a solid band (6.4).
+        header: [
+          {
+            type: "AnnouncementBar",
+            props: { id: "news", text: "Closed 24–26 December", lastDay: "2099-12-31" },
+          },
+          { ...header, props: { ...header.props, background: "section" } },
+          ...rest,
+        ],
       },
       pages: sample.pages.map((page) =>
         page.path !== "index"

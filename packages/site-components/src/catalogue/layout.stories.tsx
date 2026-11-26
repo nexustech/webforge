@@ -374,6 +374,9 @@ export const HeaderJoinedSplitWide: Story = page(
   [pictureHero({ contentWidth: "wide" })],
 );
 
+/** The Header with its own band over a Hero with its picture beside the text, as before HH-1. */
+export const HeaderOwnOnColoured: Story = page(header(), [pictureHero({ variant: "split" })]);
+
 /** Joined to a Hero with its picture beside the text (HH-1), on the theme's second surface. */
 export const HeaderJoinedColoured: Story = page(header({ background: "section" }), [
   pictureHero({ variant: "split" }),

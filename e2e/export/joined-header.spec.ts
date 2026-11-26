@@ -42,6 +42,15 @@ test("sits on the first section, in its text colour, which makes room for it und
     expect(Math.round(shown.section.y)).toBe(Math.round(shown.header.y));
     expect(shown.headerBackground).toBe("rgba(0, 0, 0, 0)");
     expect(shown.headerText).toBe(shown.sectionText);
+    // The Announcement bar stays a solid band above it (6.4), the section starting below it.
+    const bar = page.getByRole("region", { name: "Announcement" });
+    const above = await bar.boundingBox();
+    expect((above?.y ?? Number.NaN) + (above?.height ?? Number.NaN)).toBeLessThanOrEqual(
+      shown.header.y + 1,
+    );
+    expect(await bar.evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe(
+      "rgba(0, 0, 0, 0)",
+    );
     // The script measured the Header, and the section's title is below it.
     expect(shown.measured).toBe(`${Math.round(shown.header.height)}px`);
     expect(shown.title.y).toBeGreaterThan(shown.header.y + shown.header.height);
