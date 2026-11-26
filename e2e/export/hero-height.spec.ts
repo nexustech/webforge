@@ -78,12 +78,13 @@ for (const [width, height] of [
       );
       expect(shown.heroTop).toBeGreaterThan(folder === "own-bar" ? shown.barBottom : 0);
 
-      // Closed: the Hero starts higher and still reaches the window's foot.
+      // Closed: the Hero starts higher and still reaches the window's foot. It moves up at once and
+      // grows once the bar's resize is reported, before the next paint: wait for both.
       await page.locator("[data-wf-announcement-close]").click();
       await expect.poll(async () => (await placed(page)).heroTop).toBeLessThan(shown.heroTop);
+      await expect.poll(async () => (await placed(page)).heroBottom).toBeCloseTo(height, 0);
       const closed = await placed(page);
       expect(closed.barShown).toBe(false);
-      expect(closed.heroBottom).toBeCloseTo(height, 0);
 
       // The next page, with the bar closed already: the same from the start.
       await page.reload();
@@ -141,15 +142,18 @@ test("keeps its height under a Header that shrinks once scrolled, below a bar", 
 test.describe("without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
 
-  test("reaches within a few pixels of the window's foot, under a bar and the Header's band", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 960, height: 600 });
-    await open(page, "own-bar");
+  for (const [folder, under] of [
+    ["own-bar", "a bar and the Header's band"],
+    ["bar-only", "a bar with the Header hidden"],
+  ] as const) {
+    test(`reaches within a few pixels of the window's foot, under ${under}`, async ({ page }) => {
+      await page.setViewportSize({ width: 960, height: 600 });
+      await open(page, folder);
 
-    // The CSS's estimates of the bar's height and the Header's.
-    const at = await placed(page);
-    expect(at.barShown).toBe(true);
-    expect(Math.abs(at.heroBottom - 600)).toBeLessThanOrEqual(4);
-  });
+      // The CSS's estimates of the bar's height and the Header's.
+      const at = await placed(page);
+      expect(at.barShown).toBe(true);
+      expect(Math.abs(at.heroBottom - 600)).toBeLessThanOrEqual(4);
+    });
+  }
 });

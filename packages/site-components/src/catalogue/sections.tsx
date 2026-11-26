@@ -48,11 +48,12 @@ const FIRST_SCREEN: Readonly<Record<Exclude<HeroPlace, "free">, readonly [string
 
 /**
  * An Announcement bar's height, one line of small text with its padding (2.25 rem), where one is
- * above the Header (#1489): {@link FIRST_SCREEN}'s estimate before `joined.js` measures. Without
+ * above the page's `<main>`, with or without a Header after it (#1489); a bar placed on a page is
+ * inside `<main>`, not above it: {@link FIRST_SCREEN}'s estimate before `joined.js` measures. Without
  * the script the bar is always shown, so the Hero ends within a few pixels of the window's foot
  * (more where the bar's text wraps).
  */
-const BAR_ESTIMATE = "[:root:has([data-wf-announcement]~header)_&]:[--wf-bar-h:2.25rem]";
+const BAR_ESTIMATE = "[:root:has([data-wf-announcement]~main)_&]:[--wf-bar-h:2.25rem]";
 
 /**
  * Every class a Whole screen Hero has only as its page's first section ({@link FIRST_SCREEN} and

@@ -157,7 +157,7 @@ describe("siteClasses", () => {
     expect(classes).toContain(
       "min-h-[calc(var(--wf-viewport-h,100svh)_-_var(--wf-above-h,var(--wf-bar-h,0px)))]",
     );
-    expect(classes).toContain("[:root:has([data-wf-announcement]~header)_&]:[--wf-bar-h:2.25rem]");
+    expect(classes).toContain("[:root:has([data-wf-announcement]~main)_&]:[--wf-bar-h:2.25rem]");
   });
 
   it("collects a colour field's own hex colours, which no safelist has (2.1)", () => {

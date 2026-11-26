@@ -7,7 +7,8 @@
 // That section (data-wf-fills) is the window's height less what's above it (#1489): the page's
 // --wf-above-h is where it starts, below the Header's band and any Announcement bar. It's measured
 // again as the Header or a bar changes size, as when a bar is closed or hidden after its last day,
-// whichever script runs first, and at the top of the page only, as the Header's height is.
+// whichever script runs first. Then only at the top of the page, as the Header's height is, but
+// also on opening a page already scrolled, unless its Header has shrunk already.
 //
 // A joined Header that stays at the top takes the page's colours once the page has scrolled 80 px,
 // as sticky.js marks it (data-scrolled). The section's reversed colours, which the Header has as
@@ -20,10 +21,14 @@
   );
   const fills = document.querySelector("[data-wf-fills]");
   const anySticky = headers.some((header) => header.hasAttribute("data-wf-sticky"));
-  const above = () => {
-    if (!(fills instanceof HTMLElement) || (anySticky && window.scrollY > THRESHOLD)) return;
+  /** @param {boolean} [first] The first measurement, which a page opened scrolled needs too. */
+  const above = (first = false) => {
+    if (!(fills instanceof HTMLElement)) return;
+    // Not while a Header that stays is scrolled, as it may have shrunk; on opening, unless it has.
+    const shrunk = headers.some((header) => header.hasAttribute("data-scrolled"));
+    if (anySticky && (first ? shrunk : window.scrollY > THRESHOLD)) return;
     const top = fills.getBoundingClientRect().top + window.scrollY;
-    root.style.setProperty("--wf-above-h", `${Math.max(0, Math.round(top))}px`);
+    root.style.setProperty("--wf-above-h", `${Math.max(0, top)}px`);
   };
   // Each one's whole box: a Header easing back from Shrink changes its padding, not its content.
   const BOX = { box: /** @type {const} */ ("border-box") };
@@ -55,5 +60,5 @@
     window.addEventListener("scroll", scrolled, { passive: true });
     scrolled();
   }
-  above();
+  above(true);
 })();

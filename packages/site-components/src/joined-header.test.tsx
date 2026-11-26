@@ -339,7 +339,7 @@ describe("a Hero's height (HH-4)", () => {
     const section = under.querySelector(".site-hero");
     expect(section?.hasAttribute("data-wf-fills")).toBe(true);
     expect(section?.className).toContain(
-      "[:root:has([data-wf-announcement]~header)_&]:[--wf-bar-h:2.25rem]",
+      "[:root:has([data-wf-announcement]~main)_&]:[--wf-bar-h:2.25rem]",
     );
     const band = under.querySelector("header.site-header");
     expect(band?.hasAttribute("data-wf-height")).toBe(true);

@@ -24,7 +24,7 @@ export function followJoinedHeight(doc: Document): () => void {
     if (fills === null) root.style.removeProperty(ABOVE);
     else {
       const top = fills.getBoundingClientRect().top + view.scrollY;
-      root.style.setProperty(ABOVE, `${Math.max(0, Math.round(top))}px`);
+      root.style.setProperty(ABOVE, `${Math.max(0, top)}px`);
     }
   };
   const measure = () => {
@@ -33,20 +33,25 @@ export function followJoinedHeight(doc: Document): () => void {
     above();
   };
   const resized = new view.ResizeObserver(measure);
+  // Each one's whole box: a change of padding alone doesn't change its content's.
+  const BOX: ResizeObserverOptions = { box: "border-box" };
   const find = () => {
     // The Announcement bars above the Header: one closed, edited or wrapping moves the section.
     const nextBars = [...doc.querySelectorAll("[data-wf-announcement]")];
     for (const bar of bars) if (!nextBars.includes(bar)) resized.unobserve(bar);
-    for (const bar of nextBars) if (!bars.includes(bar)) resized.observe(bar);
+    for (const bar of nextBars) if (!bars.includes(bar)) resized.observe(bar, BOX);
     bars = nextBars;
     const found = doc.querySelector("[data-wf-joined], [data-wf-height]");
     const next = found instanceof view.HTMLElement ? found : null;
     if (next !== shown) {
       if (shown !== null) resized.unobserve(shown);
       shown = next;
-      if (shown !== null) resized.observe(shown);
+      if (shown !== null) resized.observe(shown, BOX);
+      measure();
+    } else {
+      // The Header as it was: only the section's start may have moved (a section added above it).
+      above();
     }
-    measure();
   };
   // One look per change Puck commits: whether the joined Header came, went or was drawn anew, and
   // whether a section filling the window, or a bar, did.

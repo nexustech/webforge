@@ -103,10 +103,11 @@ describe("the joined behaviour (HH-1)", () => {
  * `joined.js` run on it and a ResizeObserver whose callbacks the test calls; the Hero starts
  * `top` px down the page, which the test can change.
  */
-function filledPage(props: Record<string, unknown>) {
+function filledPage(props: Record<string, unknown>, openedAt = 0) {
   const happy = new Window({ width: 960, height: 600 });
   windows.push(happy);
   const window = happy as unknown as typeof globalThis;
+  Object.defineProperty(window, "scrollY", { value: openedAt, configurable: true });
   const { document } = window;
   const [header] = starterLayout("Bakery").header;
   if (header === undefined) throw new Error("No Header");
@@ -172,6 +173,12 @@ describe("where a section filling the window starts (#1489)", () => {
     place.top = 80;
     resize(header);
     expect(above()).toBe("80px");
+  });
+
+  it("measures on opening a page already scrolled, under a Header that stays", () => {
+    const { above } = filledPage({ background: "own", sticky: true }, 500);
+
+    expect(above()).toBe("100px");
   });
 
   it("measures under a joined Header too", () => {
