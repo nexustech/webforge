@@ -337,7 +337,18 @@ describe("the colours a joined Header sits on (HH-2)", () => {
           }),
         ],
       )?.grounds,
-    ).toEqual(["neutral", "secondary-800/80"]);
+    ).toEqual(["neutral", "secondary-800/80", "base-100"]);
+  });
+
+  it("counts what's under a see-through background too, so a faint tint isn't dark", () => {
+    expect(
+      joined([header()], [text("story", { colors: "page", lookBackground: "neutral/10" })])
+        ?.grounds,
+    ).toEqual(["neutral/10", "base-100"]);
+    // On the theme's second surface, a Hero beside its picture.
+    expect(
+      joined([header()], [hero({ variant: "split", lookBackground: "primary/50" })])?.grounds,
+    ).toEqual(["primary/50", "base-200"]);
   });
 });
 

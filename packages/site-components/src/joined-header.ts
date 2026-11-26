@@ -65,7 +65,9 @@ export function joinedHeaderOf(
 /**
  * The colours a joined Header sits on (HH-2), from the top layer down: a picture's overlay, whose
  * colour the text takes too (a photo's own colours can't be known); else the person's background
- * or gradient on each device; else the section's own colour, `ground`, or the page's.
+ * or gradient on each device; else the section's own colour, `ground`, or the page's. A colour at
+ * an opacity shows what's under it, so that counts too: a faint tint of a dark colour on a light
+ * section isn't dark.
  */
 function groundsOf(
   values: Readonly<Record<string, unknown>>,
@@ -75,15 +77,17 @@ function groundsOf(
   if (picture) return [overlayOf(values).color === "neutral" ? "neutral" : "base-100"];
   const own = ground ?? "base-100";
   const each = backgroundColoursOf(values).flatMap((colours) =>
-    colours.length === 0 ? [own] : colours,
+    colours.length === 0
+      ? [own]
+      : colours.flatMap((colour) => (colour.includes("/") ? [colour, own] : [colour])),
   );
   return [...new Set(each)];
 }
 
 /**
  * Whether every one of `grounds` is dark (HH-2): one of the theme's dark colours, `dark`, in its
- * reversed colours where `inverse` is set. A colour at an opacity counts as the colour. None is dark
- * without `dark`, or without a ground.
+ * reversed colours where `inverse` is set. A colour at an opacity counts as the colour: `grounds`
+ * lists what's under it too. None is dark without `dark`, or without a ground.
  */
 export function onDarkGround(
   grounds: readonly string[],
