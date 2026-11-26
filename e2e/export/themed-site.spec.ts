@@ -61,3 +61,28 @@ test("draws its buttons, shadows and links as the theme says (#423)", async ({ p
     "none",
   );
 });
+
+test("draws a Hero's second button as a link beside the theme's outlined buttons (HH-5)", async ({
+  page,
+}) => {
+  await page.goto(themedPageUrl("index.html"));
+  const hero = page.locator(".site-hero");
+
+  const look = (name: string) =>
+    hero.getByRole("link", { name }).evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        background: style.backgroundColor,
+        border: style.borderTopColor,
+        underline: style.textDecorationLine,
+      };
+    });
+  // The first is outlined, as the theme's main buttons are; the second, a link, never alike.
+  const first = await look("About us");
+  expect(first.border).not.toBe("rgba(0, 0, 0, 0)");
+  expect(first.underline).toBe("none");
+  const second = await look("Book a table");
+  expect(second.background).toBe("rgba(0, 0, 0, 0)");
+  expect(second.border).toBe("rgba(0, 0, 0, 0)");
+  expect(second.underline).toBe("underline");
+});

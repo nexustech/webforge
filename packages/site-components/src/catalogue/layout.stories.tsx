@@ -405,6 +405,21 @@ export const HeaderJoinedSplitWide: Story = page(
   [pictureHero({ contentWidth: "wide" })],
 );
 
+/**
+ * Joined and split, with its own button, over a Hero with two (HH-1, HH-5): three buttons at the
+ * top of the page, the Header's on the right and the Hero's under its text.
+ */
+export const HeaderJoinedThreeButtons: Story = page(
+  header({ background: "section", variant: "split", contentWidth: "wide", button: true }),
+  [
+    pictureHero({
+      contentWidth: "wide",
+      secondButtonLabel: "Book a table",
+      secondButtonLink: { kind: "url", href: "https://example.com/book" },
+    }),
+  ],
+);
+
 /** The Header with its own band over a Hero with its picture beside the text, as before HH-1. */
 export const HeaderOwnOnColoured: Story = page(header(), [pictureHero({ variant: "split" })]);
 

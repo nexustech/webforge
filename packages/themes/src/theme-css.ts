@@ -310,6 +310,11 @@ function buttonRules(tokens: ThemeTokens): string[] {
           "    --btn-fg: var(--color-neutral);",
           "  }",
         ]),
+    // A Hero's second button is outlined (HH-5): beside main buttons already outlined, it's a text
+    // link, so the two never look alike.
+    ...(look === "btn-outline"
+      ? ["  .btn-outline.wf-second-button {", "    @apply btn-link;", "  }"]
+      : []),
     "}",
   ];
 }

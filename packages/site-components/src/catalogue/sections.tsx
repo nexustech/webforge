@@ -70,6 +70,18 @@ const hero = defineSection({
     text: { kind: "text", label: t("field.text"), inline: true },
     buttonLabel: { kind: "text", label: t("field.buttonLabel") },
     buttonLink: { kind: "link", label: t("field.buttonLink"), button: "buttonLabel" },
+    // A second button beside the first, empty until given text (HH-5). Its link is a button's, so
+    // Site Check finds one with no link, and AI apps know its label, as the first's (#1256).
+    secondButtonLabel: {
+      kind: "text",
+      label: t("field.secondButtonLabel"),
+      help: t("field.secondButtonLabel.help"),
+    },
+    secondButtonLink: {
+      kind: "link",
+      label: t("field.secondButtonLink"),
+      button: "secondButtonLabel",
+    },
     alignment: {
       kind: "select",
       label: t("field.alignment"),
@@ -92,6 +104,7 @@ const hero = defineSection({
     title: t("starter.heroTitle"),
     text: t("starter.heroText"),
     buttonLabel: t("starter.heroButton"),
+    secondButtonLabel: "",
     alignment: "centre",
     textPlace: "middle",
     contentWidth: "wide",
@@ -120,11 +133,38 @@ const hero = defineSection({
     const placed = layout === "minimal" ? undefined : values.image;
     const image = placed === undefined ? null : context.image(placed.mediaId);
     const alt = placed?.alt ?? image?.alt ?? "";
+    const firstButton = (
+      <ButtonLink label={values.buttonLabel} link={values.buttonLink} context={context} />
+    );
+    // A second button, outlined, beside the first (HH-5), wrapping under it on a phone. A theme whose
+    // main buttons are outlined already draws it as a text link (`wf-second-button`), so the two
+    // never look alike; on the picture it takes the text's colour, which a brand colour can lack.
+    const buttons =
+      values.secondButtonLabel === "" ? (
+        firstButton
+      ) : (
+        <div
+          className={`flex flex-wrap gap-3 ${aligned === "text-center" ? "justify-center" : ""}`}
+        >
+          {firstButton}
+          <ButtonLink
+            label={values.secondButtonLabel}
+            link={values.secondButtonLink}
+            context={context}
+            kind="outline"
+            className={
+              layout === "background"
+                ? `wf-second-button ${overlayLayer(values).button}`
+                : "wf-second-button"
+            }
+          />
+        </div>
+      );
     const copy = (
       <div className={layout === "centred" ? "mx-auto max-w-2xl" : "max-w-xl"}>
         <SectionTitle size="page">{values.title}</SectionTitle>
         <SectionLead className="py-6">{values.text}</SectionLead>
-        <ButtonLink label={values.buttonLabel} link={values.buttonLink} context={context} />
+        {buttons}
       </div>
     );
     if (layout === "background") {

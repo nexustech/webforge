@@ -243,6 +243,40 @@ describe("contrast on what the text is drawn on (#670)", () => {
     ).toEqual([`${site.homePageId}/beside/lookTitleColor`]);
   });
 
+  it("holds a Hero's second button to the main colour on the page, and measures nothing of it on the picture (HH-5)", () => {
+    const { passing } = themeWithLightAccent();
+    // A main colour too light to read on the page: an outlined button's label in it (2.13a).
+    const pale = {
+      ...passing,
+      colors: { ...passing.colors, primary: { l: 0.9, c: 0.05, h: 250 } },
+    };
+    const hero = (id: string, variant: string) =>
+      element("Hero", id, {
+        variant,
+        image: { mediaId: "loaves" },
+        buttonLabel: "See the menu",
+        buttonLink: { kind: "url", href: "https://example.com/menu" },
+        secondButtonLabel: "Book a table",
+        secondButtonLink: { kind: "url", href: "https://example.com/book" },
+      });
+    const site = siteWith([hero("beside", "split"), hero("behind", "background")], {
+      theme: pale,
+    });
+    const found = findIn(contrastRule, site);
+
+    // Beside the picture, the second button's label is the main colour on the page: the theme's
+    // pair says so, once, as for any outlined button.
+    expect(found).toContainEqual(
+      expect.objectContaining({
+        place: { kind: "theme" },
+        values: expect.objectContaining({ background: "base-100", foreground: "primary" }),
+      }),
+    );
+    // On the picture, it takes the Hero's text colour, which the overlay's warning measures (HH-3):
+    // nothing here for either Hero's elements.
+    expect(found.filter(({ place }) => place.kind === "element")).toEqual([]);
+  });
+
   it("measures an element's text on its own Appearance background", () => {
     const { passing } = themeWithLightAccent();
     const site = siteWith(

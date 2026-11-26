@@ -69,3 +69,32 @@ test("sets a Hero's text at the bottom of its picture, inside its padding (HH-6)
   expect(low.below).toBeCloseTo(low.padding, 0);
   expect(low.above).toBeGreaterThan(low.below);
 });
+
+test("draws a Hero's two buttons beside each other, each to its link, the second in the text's colour (HH-5)", async ({
+  page,
+}) => {
+  await page.goto(pathToFileURL(join(HERO_OVERLAY_SITE_DIR, "index.html")).href);
+  const hero = page.locator(".site-hero").nth(3);
+  const first = hero.getByRole("link", { name: "See the menu" });
+  const second = hero.getByRole("link", { name: "Book a table" });
+
+  await expect(first).toHaveAttribute("href", "https://example.com/menu");
+  await expect(second).toHaveAttribute("href", "https://example.com/book");
+  // Side by side on a wide window, the second after the first.
+  const [one, two] = [await first.boundingBox(), await second.boundingBox()];
+  expect(two?.x ?? 0).toBeGreaterThan((one?.x ?? 0) + (one?.width ?? 0));
+  expect(Math.abs((two?.y ?? 0) - (one?.y ?? 0))).toBeLessThan(2);
+  // Outlined, in the text's colour on the picture, not the brand colour.
+  const looks = await second.evaluate((link) => {
+    const style = getComputedStyle(link);
+    const text = getComputedStyle(link.closest(".hero-content") ?? link).color;
+    return { color: style.color, border: style.borderTopColor, text };
+  });
+  expect(looks.color).toBe(looks.text);
+  expect(looks.border).toBe(looks.text);
+
+  // On a phone, the second moves under the first rather than overlapping it.
+  await page.setViewportSize({ width: 320, height: 640 });
+  const [narrowOne, narrowTwo] = [await first.boundingBox(), await second.boundingBox()];
+  expect(narrowTwo?.y ?? 0).toBeGreaterThanOrEqual((narrowOne?.y ?? 0) + (narrowOne?.height ?? 0));
+});

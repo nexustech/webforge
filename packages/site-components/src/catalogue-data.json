@@ -3298,6 +3298,16 @@
           "label": "Button link",
           "button": "buttonLabel"
         },
+        "secondButtonLabel": {
+          "kind": "text",
+          "label": "Second button text",
+          "help": "Shown, outlined, beside the first button once it has text."
+        },
+        "secondButtonLink": {
+          "kind": "link",
+          "label": "Second button link",
+          "button": "secondButtonLabel"
+        },
         "alignment": {
           "kind": "select",
           "label": "Alignment",
@@ -3528,6 +3538,7 @@
         "title": "Fresh ideas, made by hand",
         "text": "Say in one sentence what makes your business special.",
         "buttonLabel": "Get in touch",
+        "secondButtonLabel": "",
         "alignment": "centre",
         "textPlace": "middle",
         "contentWidth": "wide"
