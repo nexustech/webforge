@@ -9,7 +9,7 @@ import {
 import { OPEN_WAIT } from "./budget.js";
 import { clickOnCanvas, editOnCanvas, stillBox } from "./canvas-click.js";
 import { drag } from "./drag.js";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, MOTION_TAG, waitForCanvas } from "./launch.js";
 
 // The Table (6.16c): placed from the Add panel, its rows laid out on the canvas as the export lays
 // them out, though Puck wraps each in a div of its own; each row selected by a click, its cells
@@ -214,7 +214,10 @@ test("lays its rows out as the table's, selects a row and shows its Table's colu
     .toBe(true);
 });
 
-test("outlines a row, names its size, opens its menu where it is, edits a cell and moves the row", async () => {
+// Motion on until #1497: with reduced motion, a row's menu opens away from its row.
+test("outlines a row, names its size, opens its menu where it is, edits a cell and moves the row", {
+  tag: MOTION_TAG,
+}, async () => {
   await placeTable();
 
   // Selected, the row's own outline fits it, and no other element's is drawn: the pointer is on

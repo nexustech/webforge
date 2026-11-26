@@ -11,6 +11,7 @@ import {
   expect,
   type Frame,
   type Page,
+  test,
 } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
 import { addNoMotionSheet, NO_MOTION_SHEET } from "../no-motion.js";
@@ -167,7 +168,8 @@ export async function launchDesktopApp(
     /**
      * Whether its windows move as people see them. Off by default (#1493): reduced motion, and every
      * transition and animation over at once (`e2e/no-motion.ts`), so a test never reads the screen
-     * mid-change. A test about motion itself, or a timing, turns it on.
+     * mid-change. A test about motion itself, or a timing, turns it on, here or with
+     * {@link MOTION_TAG} when a shared hook launches the app.
      */
     readonly motion?: boolean;
   } = {},
@@ -189,7 +191,7 @@ export async function launchDesktopApp(
     cwd: desktopDir,
     env: { ...env, ...options.env },
   });
-  if (options.motion !== true) await stillWindows(app);
+  if (!(options.motion ?? taggedForMotion())) await stillWindows(app);
   const temporary = [
     ...(options.userDataDir === undefined ? [userData] : []),
     ...(siteDir === undefined ? [] : [siteDir]),
@@ -200,6 +202,21 @@ export async function launchDesktopApp(
     });
   }
   return closingWithin(app);
+}
+
+/**
+ * The tag of a test that runs with motion as people see it, when a shared hook launches the app
+ * (#1493): `test("…", { tag: MOTION_TAG }, …)`, with a comment saying why.
+ */
+export const MOTION_TAG = "@motion";
+
+/** Whether the test running has {@link MOTION_TAG}; false outside a test. */
+function taggedForMotion(): boolean {
+  try {
+    return test.info().tags.includes(MOTION_TAG);
+  } catch {
+    return false;
+  }
 }
 
 /**
