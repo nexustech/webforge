@@ -69,3 +69,53 @@ test("sets a Hero's text at the bottom of its picture, inside its padding (HH-6)
   expect(low.below).toBeCloseTo(low.padding, 0);
   expect(low.above).toBeGreaterThan(low.below);
 });
+
+test("draws a Hero's two buttons beside each other, each to its link, the second in the text's colour (HH-5)", async ({
+  page,
+}) => {
+  await page.goto(pathToFileURL(join(HERO_OVERLAY_SITE_DIR, "index.html")).href);
+  const hero = page.locator(".site-hero").nth(3);
+  const first = hero.getByRole("link", { name: "See the menu" });
+  const second = hero.getByRole("link", { name: "Book a table" });
+
+  await expect(first).toHaveAttribute("href", "https://example.com/menu");
+  await expect(second).toHaveAttribute("href", "https://example.com/book");
+  // Side by side on a wide window, the second after the first.
+  const [one, two] = [await first.boundingBox(), await second.boundingBox()];
+  expect(two?.x ?? 0).toBeGreaterThan((one?.x ?? 0) + (one?.width ?? 0));
+  expect(Math.abs((two?.y ?? 0) - (one?.y ?? 0))).toBeLessThan(2);
+  // Outlined, in the text's colour on the picture, not the brand colour.
+  // As pixels: browsers write the same colour in different spaces (WebKit's oklab, others' oklch).
+  const looks = await second.evaluate((link) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    const pixel = (color: string) => {
+      if (context === null) return [];
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      return [...context.getImageData(0, 0, 1, 1).data];
+    };
+    const style = getComputedStyle(link);
+    const text = getComputedStyle(link.closest(".hero-content") ?? link).color;
+    return { color: pixel(style.color), border: pixel(style.borderTopColor), text: pixel(text) };
+  });
+  const near = (a: readonly number[], b: readonly number[]) =>
+    a.length === 4 && a.every((channel, at) => Math.abs(channel - (b[at] ?? -10)) <= 2);
+  expect(near(looks.color, looks.text), `${looks.color} vs ${looks.text}`).toBe(true);
+  expect(near(looks.border, looks.text), `${looks.border} vs ${looks.text}`).toBe(true);
+
+  // On a phone, the two never overlap and stay in the window: side by side while they fit, the
+  // second under the first when they don't.
+  for (const width of [320, 280]) {
+    await page.setViewportSize({ width, height: 640 });
+    const [a, b] = [await first.boundingBox(), await second.boundingBox()];
+    if (a === null || b === null) throw new Error("A button isn't shown");
+    const beside = b.x >= a.x + a.width;
+    const under = b.y >= a.y + a.height;
+    expect(beside || under, `${width} px`).toBe(true);
+    expect(Math.max(a.x + a.width, b.x + b.width), `${width} px`).toBeLessThanOrEqual(width);
+  }
+});

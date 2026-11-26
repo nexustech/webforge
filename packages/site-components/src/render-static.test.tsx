@@ -899,6 +899,69 @@ describe("renderNodesToHtml", () => {
         context,
       );
 
+    it("draws one button as it always has, and a second beside it, outlined, wrapping (HH-5)", () => {
+      const first = '<a class="btn btn-primary" href="about.html">About us</a>';
+      // What follows the Hero's text, up to the end of its first block.
+      const buttonsOf = (html: string) => /Daily<\/p>([\s\S]*?<\/div>)/.exec(html)?.[1] ?? "";
+
+      // One button: exactly the markup it had, in every layout.
+      for (const layout of ["split", "centred", "background", "minimal"]) {
+        expect(buttonsOf(heroIn(layout)), layout).toBe(`${first}</div>`);
+        expect(buttonsOf(heroIn(layout, { secondButtonLabel: "" })), layout).toBe(`${first}</div>`);
+      }
+
+      // Two: in a row that wraps, the second outlined, at the start for a left alignment.
+      const two = buttonsOf(
+        heroIn("split", { secondButtonLabel: "See the menu", secondButtonLink: "about" }),
+      );
+      expect(two).toBe(
+        `<div class="flex flex-wrap gap-3">${first}<a class="btn btn-outline btn-primary wf-second-button" href="about.html">See the menu</a></div>`,
+      );
+      // Centred: the row too.
+      expect(
+        buttonsOf(
+          heroIn("split", {
+            alignment: "centre",
+            secondButtonLabel: "See the menu",
+            secondButtonLink: "about",
+          }),
+        ),
+      ).toContain('<div class="flex flex-wrap justify-center gap-3">');
+      expect(
+        buttonsOf(
+          heroIn("centred", { secondButtonLabel: "See the menu", secondButtonLink: "about" }),
+        ),
+      ).toContain("justify-center");
+      // With text and no link, the export leaves it out, as the first (#1256).
+      expect(buttonsOf(heroIn("split", { secondButtonLabel: "See the menu" }))).not.toContain(
+        "See the menu",
+      );
+    });
+
+    it("gives the second button the text's colour on the picture, as its overlay's (HH-5)", () => {
+      const second = (props: Record<string, unknown>) =>
+        /<a class="([^"]*wf-second-button[^"]*)"/.exec(
+          heroIn("background", {
+            secondButtonLabel: "See the menu",
+            secondButtonLink: "about",
+            ...props,
+          }),
+        )?.[1];
+
+      expect(second({ overlayColor: "neutral" })).toBe(
+        "btn btn-outline btn-primary wf-second-button [--btn-color:var(--color-neutral-content)] [--btn-fg:var(--color-neutral)]",
+      );
+      expect(second({ overlayColor: "base" })).toBe(
+        "btn btn-outline btn-primary wf-second-button [--btn-color:var(--color-base-content)] [--btn-fg:var(--color-base-100)]",
+      );
+      // Off the picture, in the brand colour, as an outline button is.
+      expect(
+        /<a class="([^"]*wf-second-button[^"]*)"/.exec(
+          heroIn("split", { secondButtonLabel: "See the menu", secondButtonLink: "about" }),
+        )?.[1],
+      ).toBe("btn btn-outline btn-primary wf-second-button");
+    });
+
     it("centres the text with the image below it, whatever the alignment", () => {
       // Medium, as centred Heroes were before 3.21 and format 10 keeps them.
       const html = heroIn("centred", { contentWidth: "medium" });

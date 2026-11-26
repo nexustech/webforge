@@ -201,7 +201,11 @@ test.describe("editor modes", () => {
     await page.getByRole("button", { name: "Image Choose an image…" }).click();
     await page.getByRole("option", { name: "Shop front.jpg" }).dblclick();
     await expect(frame.locator(".site-hero img")).toHaveAttribute("alt", "Our shop front");
-    await edit.getByRole("button", { name: "Add Link…" }).click();
+    // The first button's link: the Hero has a second button's too (HH-5).
+    await edit
+      .locator('[data-field="buttonLink"]')
+      .getByRole("button", { name: "Add Link…" })
+      .click();
     const dialog = page.getByRole("dialog", { name: "Link" });
     await dialog.getByRole("radio", { name: "Web address" }).click();
     await dialog.getByRole("textbox", { name: "Web address" }).fill("book.example");

@@ -180,6 +180,7 @@ describe("the catalogue as data (4.8)", () => {
       "CallToAction.buttonLink",
       "Header.buttonLink",
       "Hero.buttonLink",
+      "Hero.secondButtonLink",
       "PricingPlan.link",
     ]);
     for (const { label } of buttons) expect(label).toBe("text");

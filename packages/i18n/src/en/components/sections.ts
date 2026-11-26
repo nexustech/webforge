@@ -15,6 +15,10 @@ export const sections = {
   "field.heroLayout.centred": "Centred, image below",
   "field.heroLayout.background": "Image behind the text",
   // Where the Hero's text sits on its picture (HH-6).
+  // A second button beside the first, outlined (HH-5).
+  "field.secondButtonLabel": "Second button text",
+  "field.secondButtonLabel.help": "Shown, outlined, beside the first button once it has text.",
+  "field.secondButtonLink": "Second button link",
   "field.heroTextPlace": "Text on the picture",
   "field.heroTextPlace.help":
     "Where the title, text and button sit on the picture. At the bottom, the picture's subject stays in view above them, most on a tall Hero.",

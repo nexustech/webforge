@@ -393,6 +393,9 @@
     --btn-fg: var(--color-neutral);
   }
 }
+@utility wf-second-button {
+  @apply btn-link;
+}
 @layer components {
   #main > section:nth-child(even of section):not([data-theme]) {
     background-color: var(--color-base-200);
