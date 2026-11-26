@@ -93,8 +93,15 @@ test("draws a Hero's two buttons beside each other, each to its link, the second
   expect(looks.color).toBe(looks.text);
   expect(looks.border).toBe(looks.text);
 
-  // On a phone, the second moves under the first rather than overlapping it.
-  await page.setViewportSize({ width: 320, height: 640 });
-  const [narrowOne, narrowTwo] = [await first.boundingBox(), await second.boundingBox()];
-  expect(narrowTwo?.y ?? 0).toBeGreaterThanOrEqual((narrowOne?.y ?? 0) + (narrowOne?.height ?? 0));
+  // On a phone, the two never overlap and stay in the window: side by side while they fit, the
+  // second under the first when they don't.
+  for (const width of [320, 280]) {
+    await page.setViewportSize({ width, height: 640 });
+    const [a, b] = [await first.boundingBox(), await second.boundingBox()];
+    if (a === null || b === null) throw new Error("A button isn't shown");
+    const beside = b.x >= a.x + a.width;
+    const under = b.y >= a.y + a.height;
+    expect(beside || under, `${width} px`).toBe(true);
+    expect(Math.max(a.x + a.width, b.x + b.width), `${width} px`).toBeLessThanOrEqual(width);
+  }
 });

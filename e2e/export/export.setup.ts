@@ -514,7 +514,7 @@ setup("export a site whose Header joins each page's first section (HH-1)", async
 });
 
 setup(
-  "export a page of Heroes over a picture, with their Overlay and text place (HH-3, HH-6)",
+  "export a page of Heroes over a picture, with their Overlay, text place and buttons (HH-3, HH-5, HH-6)",
   async () => {
     const sample = sampleSite();
     const [home] = sample.pages;
