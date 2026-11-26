@@ -275,7 +275,30 @@ function themed(site: SiteSnapshot): SiteSnapshot {
       bodyEnd: "<p id='own-note' class='tracking-widest'>Thanks for visiting</p>",
     },
     pages: [
-      { ...home, doc: { ...home.doc, content: [...home.doc.content, linked, filled, reversed] } },
+      {
+        ...home,
+        doc: {
+          ...home.doc,
+          // The Hero with a second button (HH-5): beside the theme's outlined buttons, a text link.
+          content: [
+            ...home.doc.content.map((node) =>
+              node.type === "Hero"
+                ? {
+                    ...node,
+                    props: {
+                      ...node.props,
+                      secondButtonLabel: "Book a table",
+                      secondButtonLink: { kind: "url", href: "https://example.com/book" },
+                    },
+                  }
+                : node,
+            ),
+            linked,
+            filled,
+            reversed,
+          ],
+        },
+      },
       ...rest,
     ],
   };
@@ -552,7 +575,7 @@ setup(
 );
 
 setup(
-  "export a page of Heroes over a picture, with their Overlay and text place (HH-3, HH-6)",
+  "export a page of Heroes over a picture, with their Overlay, text place and buttons (HH-3, HH-5, HH-6)",
   async () => {
     const sample = sampleSite();
     const [home] = sample.pages;
@@ -593,6 +616,13 @@ setup(
                 hero("chosen", "40", "base"),
                 hero("before", "70", "neutral"),
                 hero("bottom", "60", "neutral", { textPlace: "bottom", alignment: "left" }),
+                // Two buttons on the picture, each with its link (HH-5).
+                hero("two", "60", "neutral", {
+                  buttonLabel: "See the menu",
+                  buttonLink: { kind: "url", href: "https://example.com/menu" },
+                  secondButtonLabel: "Book a table",
+                  secondButtonLink: { kind: "url", href: "https://example.com/book" },
+                }),
               ],
             },
           },

@@ -61,3 +61,41 @@ test("draws its buttons, shadows and links as the theme says (#423)", async ({ p
     "none",
   );
 });
+
+test("draws a Hero's second button as a link beside the theme's outlined buttons (HH-5)", async ({
+  page,
+}) => {
+  await page.goto(themedPageUrl("index.html"));
+  const hero = page.locator(".site-hero");
+
+  // Each colour's opacity, read as a pixel: browsers write colours in different spaces.
+  const look = (name: string) =>
+    hero.getByRole("link", { name }).evaluate((element) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1;
+      canvas.height = 1;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      const alpha = (color: string) => {
+        if (context === null) return Number.NaN;
+        context.clearRect(0, 0, 1, 1);
+        context.fillStyle = color;
+        context.fillRect(0, 0, 1, 1);
+        return (context.getImageData(0, 0, 1, 1).data[3] ?? 0) / 255;
+      };
+      const style = getComputedStyle(element);
+      return {
+        background: alpha(style.backgroundColor),
+        border: alpha(style.borderTopColor),
+        underline: style.textDecorationLine,
+      };
+    });
+  // The first is outlined, as the theme's main buttons are; the second, a link, never alike.
+  const first = await look("About us");
+  expect(first.border).toBeGreaterThan(0.9);
+  expect(first.underline).toBe("none");
+  // No box: Linux's WebKit leaves a faint tint (0.15) where Safari, Chrome and Firefox leave none.
+  const second = await look("Book a table");
+  expect(second.background).toBeLessThan(0.2);
+  expect(second.border).toBeLessThan(0.2);
+  expect(second.underline).toBe("underline");
+});

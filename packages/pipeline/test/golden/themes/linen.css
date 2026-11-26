@@ -400,6 +400,9 @@
     --btn-fg: var(--color-neutral);
   }
 }
+@utility wf-second-button {
+  @apply btn-link;
+}
 @layer utilities {
   :is(h1, h2, h3, h4, h5, h6).font-heading {
     font-variant-caps: all-small-caps;
