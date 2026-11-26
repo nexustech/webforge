@@ -1355,6 +1355,33 @@ describe("createPuckEngine with linked copies of a shared section (F-ED-23)", ()
     element.remove();
   });
 
+  it("joins the Header to a linked copy that opens the page, as drawn, past a hidden one (HH-1)", async () => {
+    const BAND = "shared-band" as SharedSectionId;
+    const bands: SharedSectionsDoc = {
+      ...shared,
+      [BAND]: { id: BAND, name: "Band", section: { type: "Band", props: { id: "band" } } },
+    };
+    await act(async () =>
+      engine.applyChange({
+        page: {
+          root: { props: {} },
+          content: [
+            { type: SHARED_COPY_TYPE, props: { id: "c0", sharedSectionId: BAND, hidden: true } },
+            { type: SHARED_COPY_TYPE, props: { id: "c1", sharedSectionId: BAND } },
+            { type: SHARED_COPY_TYPE, props: { id: "c2", sharedSectionId: HOURS } },
+          ],
+        },
+        layout: {
+          header: [{ type: "Header", props: { id: "h", background: "section" } }],
+          footer: [],
+        },
+        shared: bands,
+      }),
+    );
+    await settle();
+    expect(element.querySelector(".t-joined")?.textContent).toBe(copiedNodeId("c1", "band"));
+  });
+
   const headings = () => [...element.querySelectorAll(".t-heading")].map((h) => h.textContent);
   const typeInto = async (index: number, text: string) => {
     const field = element.querySelectorAll<HTMLElement>(".t-heading [data-puck-overlay-portal]")[
