@@ -1,6 +1,7 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { ACTION_BAR_ACTION, ACTION_BAR_LABEL, SELECTED_COMPONENT } from "@webforge/engine/puck-dom";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { clickSettled } from "./settled.js";
 
 // Undo History panel and Undo toasts (1.11, D3, D4): deleting shows "Deleted … · Undo"; jumping to
 // a step brings back the page and the selection of that moment (U3).
@@ -39,11 +40,14 @@ const selected = () => canvas().locator(`${SELECTED_COMPONENT} ${ACTION_BAR_LABE
 async function deleteHeading(): Promise<void> {
   await canvas().locator("h1").click();
   await expect(selected()).toHaveText("Heading");
-  await canvas()
-    .locator(ACTION_BAR_ACTION)
-    .and(canvas().getByRole("button", { name: "Delete", exact: true }))
-    .click();
-  await expect(canvas().locator("h1")).toHaveCount(0);
+  // Once the bar has taken its place (#1462).
+  const where = await clickSettled(
+    canvas()
+      .locator(ACTION_BAR_ACTION)
+      .and(canvas().getByRole("button", { name: "Delete", exact: true })),
+    "Delete",
+  );
+  await expect(canvas().locator("h1"), where).toHaveCount(0);
 }
 
 test.describe("Undo History and Undo toasts", () => {
@@ -83,11 +87,14 @@ test.describe("Undo History and Undo toasts", () => {
     await deleteHeading();
     await canvas().getByText(STARTER_TEXT).click();
     await expect(selected()).toHaveText("Text");
-    await canvas()
-      .locator(ACTION_BAR_ACTION)
-      .and(canvas().getByRole("button", { name: "Delete", exact: true }))
-      .click();
-    await expect(canvas().getByText(STARTER_TEXT)).toHaveCount(0);
+    // Once the bar has taken its place, the Text's format menu in it (#1462).
+    const where = await clickSettled(
+      canvas()
+        .locator(ACTION_BAR_ACTION)
+        .and(canvas().getByRole("button", { name: "Delete", exact: true })),
+      "Delete",
+    );
+    await expect(canvas().getByText(STARTER_TEXT), where).toHaveCount(0);
 
     await page.getByRole("button", { name: "Undo several steps" }).click();
     const menu = page.getByRole("menu");

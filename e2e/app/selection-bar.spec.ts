@@ -10,6 +10,7 @@ import {
   type WebforgeApp,
   waitForCanvas,
 } from "./launch.js";
+import { clickSettled } from "./settled.js";
 import { stubFileDialogs } from "./sites.js";
 import { createFromTemplate, TEMPLATES } from "./templates.js";
 
@@ -238,8 +239,12 @@ test("acts on the element from its bar where it has moved", async () => {
   await expect(moved).toHaveAttribute("style", /translate/);
   await expect.poll(barProblem).toBe("");
 
-  await canvas().locator(SELECTED_COMPONENT).getByRole("button", { name: "Duplicate" }).click();
-  await expect(heroes).toHaveCount(2);
+  // Once the bar has settled where it was moved to (#1462).
+  const where = await clickSettled(
+    canvas().locator(SELECTED_COMPONENT).getByRole("button", { name: "Duplicate" }),
+    "Duplicate",
+  );
+  await expect(heroes, where).toHaveCount(2);
 });
 
 for (const device of ["Desktop", "Mobile"] as const) {
