@@ -932,6 +932,9 @@ describe("renderNodesToHtml", () => {
           heroIn("centred", { secondButtonLabel: "See the menu", secondButtonLink: "about" }),
         ),
       ).toContain("justify-center");
+      // Text of spaces only is no text, for either button: no empty box.
+      expect(buttonsOf(heroIn("split", { secondButtonLabel: "   " }))).toBe(`${first}</div>`);
+      expect(buttonsOf(heroIn("split", { buttonLabel: "  " }))).not.toContain("btn");
       // With text and no link, the export leaves it out, as the first (#1256).
       expect(buttonsOf(heroIn("split", { secondButtonLabel: "See the menu" }))).not.toContain(
         "See the menu",

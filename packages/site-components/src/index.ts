@@ -47,7 +47,7 @@ export { acceptsFieldValue, fieldValueSchema, MAX_TEXT_LENGTH } from "./field-va
 export { PADDED_COLUMN_CLASS } from "./frame.js";
 export { secondOfOne } from "./held-once.js";
 export { ICON_NAMES, iconNameOf, isIconName, LucideIcon } from "./icons.js";
-export { joinedHeaderOf } from "./joined-header.js";
+export { belowHeaderOf, joinedHeaderOf } from "./joined-header.js";
 export type {
   ComponentDef,
   ComponentLibrary,
