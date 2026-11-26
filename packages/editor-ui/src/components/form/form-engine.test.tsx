@@ -444,7 +444,7 @@ describe("FormDialog (2.21, B4)", () => {
     // inputs to it, stretching its own scroll from below its edge.
     const headed = {
       ...spec,
-      groups: spec.groups?.map((group) => ({ ...group, heading: "This site" })),
+      groups: (spec.groups ?? []).map((group) => ({ ...group, heading: "This site" })),
     };
     render(
       <FormDialog
