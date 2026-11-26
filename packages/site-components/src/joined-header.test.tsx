@@ -3,7 +3,7 @@ import { Window } from "happy-dom";
 import { afterEach, describe, expect, it } from "vitest";
 import { siteLibrary } from "./catalogue/index.js";
 import { joinedHeaderOf } from "./joined-header.js";
-import { EDITOR_RENDER_CONTEXT, fieldsHiddenBy } from "./library.js";
+import { type ComponentLibrary, EDITOR_RENDER_CONTEXT, fieldsHiddenBy } from "./library.js";
 import { renderNodesToHtml, renderPage } from "./render-static.js";
 
 // A Header joined to its page's first section (HH-1): what it takes from the section, how both are
@@ -110,6 +110,30 @@ describe("joinedHeaderOf (HH-1)", () => {
       joined([header()], [text("story", { colors: "page", lookGradientDirection: "toBottom" })])
         ?.section,
     ).toBe("story");
+  });
+
+  it("sits on a picture a section draws behind its content, whatever colour is over it (HH-3)", () => {
+    // A Hero whose overlay is the page's colour: its frame fills with the page's colour.
+    const library: ComponentLibrary = {
+      components: {
+        ...siteLibrary.components,
+        Photo: {
+          label: "Photo",
+          fields: {},
+          defaults: { variant: "background" },
+          pictureBehind: [{ field: "image", variants: ["background"] }],
+          sectionGround: () => "base-100",
+          render: () => null,
+        },
+      },
+    };
+    const photo: NodeDoc = { type: "Photo", props: { id: "photo", image: { mediaId: "photo" } } };
+    expect(joinedHeaderOf({ header: [header()], content: [photo] }, library)?.section).toBe(
+      "photo",
+    );
+    // Without its picture, it's on the page's colour, and the Header keeps its band.
+    const bare: NodeDoc = { type: "Photo", props: { id: "photo" } };
+    expect(joinedHeaderOf({ header: [header()], content: [bare] }, library)).toBeUndefined();
   });
 
   it("takes a section's background picture's overlay colour, and the person's Colour per device", () => {

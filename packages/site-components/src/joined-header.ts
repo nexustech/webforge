@@ -2,6 +2,7 @@ import type { NodeDoc } from "@webforge/model";
 import { appearanceColourClasses, hasOwnBackground } from "./appearance.js";
 import { backgroundText, hasBackground } from "./background.js";
 import { type ComponentLibrary, withLook } from "./library.js";
+import { drawsPictureBehind } from "./picture-behind.js";
 import type { JoinedHeader, RenderContext } from "./schema.js";
 
 /** The Header's type, in the site's layout (C5). */
@@ -47,6 +48,8 @@ export function joinedHeaderOf(
     !inverse &&
     (ground === undefined || ground === "base-100") &&
     !hasBackground(values) &&
+    // A picture behind its content, as a Hero draws one, whatever colour its overlay is (HH-3).
+    !drawsPictureBehind(def, values) &&
     !hasOwnBackground(values)
   ) {
     return undefined;
