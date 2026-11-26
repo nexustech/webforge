@@ -278,7 +278,7 @@ function frameGround(classes: string): string | undefined {
 }
 
 /** Where a section is on its page, for its frame (`SectionSpec.frame`). */
-export type SectionPlace = {
+type SectionPlace = {
   /**
    * It's the page's first section, filling the window under a Header with its own band
    * (`RenderContext.belowHeader`, HH-4): its height leaves the Header's room.
