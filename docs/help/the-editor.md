@@ -4,7 +4,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # The editor
@@ -19,6 +19,7 @@ When a site is open, the editor fills the window, and the window's title names t
   - the command search;
   - the **Design | Content** switch;
   - buttons to show or hide the side panels and the bottom panel;
+  - while your phone can open the preview, **Phone preview on** with **Stop**, or, in a window narrower than about 1440 px, a phone with a green dot: click it to see the [phone preview](preview.md#on-your-phone)'s code again and to stop it;
   - [Site Check](site-check.md)'s button, showing what it found, such as _5 to fix · 13 tips_ or _No problems_. In a window narrower than about 1200 px it shows only what most needs doing, such as _5 to fix_, or _13 tips_ when there's nothing to fix; hover over it for the whole count. Click it to open Site Check;
   - **Preview**, **Export** and **Publish**, with **Publish** filled in colour. In a window narrower than about 1200 px, **Preview** and **Export** show only their icons, an eye and a down arrow; hover over one to see its name. **Publish** and Site Check's count keep their words at every width.
 - **Left column:** the [Add](add-panel.md) panel, [Undo History](undo-and-history.md), [Version History](version-history.md) and the [Assistant](assistant.md) as tabs, with [Layers](layers.md) underneath. These four tabs show icons: a square with a plus for Add, a clock with an arrow for Undo History, a box with an arrow for Version History and sparkles for the Assistant. Hover over one, or move to it with the keyboard, to see its name and what it's for.

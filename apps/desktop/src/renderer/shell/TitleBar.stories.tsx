@@ -141,21 +141,35 @@ export const NoProblems: Story = {
   ),
 };
 
-/** A phone can open the preview (3.2): the cue says so, with Stop beside it. */
+/** The phone preview's commands, as the preview registers them while a phone can open it. */
+const PHONE_ON: readonly CommandSpec[] = [
+  ...COMMANDS,
+  { id: COMMAND_IDS.stopPhonePreview, label: "Stop Phone Preview", menu: "file", run: noop },
+  { id: COMMAND_IDS.showPhonePreview, label: "Show Phone Preview…", run: noop },
+];
+
+/**
+ * A phone can open the preview (3.2): in a wide window the cue says so, with Stop beside it,
+ * never wrapping (#1438).
+ */
 export const PhonePreviewOn: Story = {
-  render: () => (
-    <WithCommands
-      commands={[
-        ...COMMANDS,
-        {
-          id: COMMAND_IDS.stopPhonePreview,
-          label: "Stop Phone Preview",
-          menu: "file",
-          run: noop,
-        },
-      ]}
-    />
-  ),
+  tags: ["wide-window"],
+  render: () => <WithCommands commands={PHONE_ON} width={1440} />,
+};
+
+/**
+ * The phone preview on in a 1366 px window: the cue is the phone's icon, tagged as on, and
+ * Publish clear of the window's buttons (#1438).
+ */
+export const PhonePreviewOnAt1366: Story = {
+  tags: ["wide-window"],
+  render: () => <WithCommands commands={PHONE_ON} width={1366} />,
+};
+
+/** The phone preview on in a 960 px window: the icon, everything else as at 960 (#1438). */
+export const PhonePreviewOnAt960: Story = {
+  tags: ["wide-window"],
+  render: () => <WithCommands commands={PHONE_ON} width={960} />,
 };
 
 /**
