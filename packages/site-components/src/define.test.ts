@@ -266,12 +266,14 @@ describe("defineComponent (2.5)", () => {
     ).toThrow(`'Card' hides "colour" in its "plain" layout, which isn't a field`);
   });
 
-  it("hides the Hero's image in its text-only layout, and its alignment when centred", () => {
+  it("hides the Hero's image in its text-only layout, its alignment when centred, and where its text sits but on a picture", () => {
     const hero = siteLibrary.components.Hero;
     if (hero === undefined) throw new Error("no Hero");
-    expect(layoutHides(hero, { variant: "minimal" })).toEqual(new Set(["image"]));
-    expect(layoutHides(hero, { variant: "centred" })).toEqual(new Set(["alignment"]));
-    expect(layoutHides(hero, { variant: "split" })).toEqual(new Set());
+    expect(layoutHides(hero, { variant: "minimal" })).toEqual(new Set(["image", "textPlace"]));
+    expect(layoutHides(hero, { variant: "centred" })).toEqual(new Set(["alignment", "textPlace"]));
+    expect(layoutHides(hero, { variant: "split" })).toEqual(new Set(["textPlace"]));
+    // Where its text sits, with its alignment, only over its picture (HH-6).
+    expect(layoutHides(hero, { variant: "background" })).toEqual(new Set());
   });
 
   it("knows the behaviours of behaviours/, by file name", () => {

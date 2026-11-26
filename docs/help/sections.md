@@ -34,6 +34,7 @@ The large opening section of a page: a title, a short text, a button and an imag
 
 - **Layouts:** _Image beside the text_, _Centred, image below_, _Image behind the text_, _Text only_.
 - **Alignment:** _Centre_ or _Left_.
+- **Text on the picture**, in _Image behind the text_: _Middle_ or _Bottom_, with the **Alignment** you chose. At the bottom, the picture's subject stays in view above the title, text and button. It shows most on a tall Hero.
 - **Overlay** and **Overlay colour**, in _Image behind the text_ once it has a picture: how strongly a layer of colour covers the picture (_None_ to _Very strong_), in the theme's _Neutral_ colour or the _Page background_, so the title and text stay readable. The text takes the colour that suits the overlay's. A new Hero starts at _Strong_, in _Neutral_. A Hero made before you could choose keeps the overlay it had, shown as _As before_; once you choose another, _As before_ isn't offered again. {appName} warns you when the text would be hard to read.
 - **Header** (at the top of the **Style** tab's Options, on a Hero that opens its page): says whether the Header sits on this Hero or has its own band. **Change in the Header** selects the Header, where its **Background** is set for every page. See [The Header on the first section](header-and-footer.md#the-header-on-the-first-section).
 

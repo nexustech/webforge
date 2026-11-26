@@ -97,7 +97,8 @@ const CALIBRATION_ROUNDS = 40;
  * How fast this run's runner is (#677): the CPU seconds Webforge's main process takes to read and
  * write a JSON document {@link CALIBRATION_RECORDS} records long, {@link CALIBRATION_ROUNDS} times
  * over, the quickest of three tries, so one stall doesn't make the runner look slow. Done once a
- * worker, when its first opening is checked, after that opening is measured.
+ * worker, when its first opening is checked, after that opening is measured; and again, with
+ * `fresh`, for each opening that misses its CPU budget (#1466), which is judged against both.
  *
  * Only the thread doing it is timed: the process's other threads may still be saving the new site
  * (the storage writer, libuv's pool), and counting their work would make the runner look slow, so
@@ -137,13 +138,15 @@ let calibration: Promise<number> | undefined;
  */
 async function runnerFactor(
   app: ElectronApplication,
+  fresh = false,
 ): Promise<{ factor: number; seconds: number }> {
   // Measured again if it failed, so one closed app doesn't fail every later budget.
   calibration ??= calibrate(app).catch((error: unknown) => {
     calibration = undefined;
     throw error;
   });
-  const seconds = await calibration;
+  // A fresh one for this budget alone (#1466): the worker's stays for its later openings.
+  const seconds = fresh ? await calibrate(app) : await calibration;
   const usual = CI_CALIBRATION_SECONDS[process.platform];
   if (process.env.CI !== "true" || usual === undefined) return { factor: 1, seconds };
   return { factor: Math.min(MAX_RUNNER_FACTOR, Math.max(1, seconds / usual)), seconds };
@@ -206,13 +209,22 @@ export type Budget = {
  * ({@link runnerFactor}) or scaled when local, and the wall-clock backstop. Worked out when a test
  * checks it, so a spec that never does (spellcheck) loads whatever the platform or settings.
  */
-export async function openBudget(app: ElectronApplication): Promise<Budget> {
+export async function openBudget(
+  app: ElectronApplication,
+  options: {
+    /**
+     * From a calibration measured now, not the worker's (#1466): for an opening that missed its
+     * budget, judged again against the runner as it is. The worker's calibration stays as it was.
+     */
+    readonly fresh?: boolean;
+  } = {},
+): Promise<Budget> {
   const ci = CI_OPEN_CPU_SECONDS[process.platform];
   const wallMs = CI_OPEN_WALL_BACKSTOP_MS[process.platform];
   if (ci === undefined || wallMs === undefined) {
     throw new Error(`No budget for opening a site on ${process.platform}`);
   }
-  const { factor, seconds } = await runnerFactor(app);
+  const { factor, seconds } = await runnerFactor(app, options.fresh === true);
   const calibrated = `calibration ${seconds.toFixed(3)} CPU-s`;
   if (process.env.CI === "true") {
     return {
@@ -295,26 +307,68 @@ export async function measureWork(app: ElectronApplication): Promise<() => Promi
   };
 }
 
+/** What {@link checkWork} found: the line to log, and why the work failed its budget, if it did. */
+export type WorkVerdict = { readonly line: string; readonly failure?: string };
+
+/** `budget`'s CPU part as a line shows it: its seconds and where they come from. */
+const cpuOf = (budget: Budget) => `${budget.cpuSeconds} (${budget.source})`;
+
 /**
- * Checks an operation's work against its CPU budget and its wall-clock backstop, and prints both
- * (in the report and the log), so CI's runs show what each costs.
+ * Judges an operation's work against its budget (#1466): its CPU time, then its wall-clock
+ * backstop. Over its CPU budget, and with `recalibrate`, it asks for the budget again from a
+ * calibration measured now, and judges the same cost against that, where it differs: a runner that slowed down after
+ * its first calibration gets the budget a slow runner gets, up to `MAX_RUNNER_FACTOR`. Both budgets
+ * and both verdicts go in the line, and a miss against the second fails, so a real regression,
+ * which costs more at either calibration, can't hide behind a slower second one.
  */
-export function expectWorkWithin(work: Work, budget: Budget, what: string): void {
+export async function checkWork(
+  work: Work,
+  budget: Budget,
+  what: string,
+  recalibrate?: () => Promise<Budget>,
+): Promise<WorkVerdict> {
   const cpu = work.cpuSeconds.toFixed(2);
   const lost =
     work.exited.length === 0 ? "" : `; exited meanwhile, not counted: ${work.exited.join(", ")}`;
   const by = work.byProcess.map(([type, used]) => `${type} ${used.toFixed(2)}`).join(", ");
-  const line = `${what}: ${cpu} CPU-s of ${budget.cpuSeconds} (${by}), ${work.wallMs} ms of ${budget.wallMs} (${budget.source})${lost}`;
+  const over = work.cpuSeconds > budget.cpuSeconds;
+  const second = over && recalibrate !== undefined ? await recalibrate() : undefined;
+  // A budget that doesn't follow the calibration (off CI) comes out the same: no second verdict.
+  const again = second?.cpuSeconds === budget.cpuSeconds ? undefined : second;
+  const judged =
+    again === undefined
+      ? `${cpu} CPU-s of ${cpuOf(budget)}`
+      : `${cpu} CPU-s of ${cpuOf(budget)}: over; again: of ${cpuOf(again)}: ${work.cpuSeconds > again.cpuSeconds ? "over" : "within"}`;
+  const line = `${what}: ${judged} (${by}), ${work.wallMs} ms of ${budget.wallMs}${lost}`;
+  const cpuFailure =
+    !over || (again !== undefined && work.cpuSeconds <= again.cpuSeconds)
+      ? undefined
+      : again === undefined
+        ? `${what} cost ${cpu} CPU-s, over its ${cpuOf(budget)}`
+        : `${what} cost ${cpu} CPU-s, over its ${cpuOf(budget)}, and over ${cpuOf(again)} calibrated again`;
+  const failure =
+    cpuFailure ??
+    (work.wallMs > budget.wallMs
+      ? `${what} took ${work.wallMs} ms, over its ${budget.wallMs} ms backstop`
+      : undefined);
+  return failure === undefined ? { line } : { line, failure };
+}
+
+/**
+ * Checks an operation's work against its CPU budget and its wall-clock backstop ({@link checkWork},
+ * calibrating again on a CPU miss with `recalibrate`), and prints the line (in the report and the
+ * log), so CI's runs show what each costs.
+ */
+export async function expectWorkWithin(
+  work: Work,
+  budget: Budget,
+  what: string,
+  recalibrate?: () => Promise<Budget>,
+): Promise<void> {
+  const { line, failure } = await checkWork(work, budget, what, recalibrate);
   test.info().annotations.push({ type: "work", description: line });
   console.log(`[work] ${line}`);
-  if (work.cpuSeconds > budget.cpuSeconds) {
-    throw new Error(
-      `${what} cost ${cpu} CPU-s, over its ${budget.cpuSeconds} CPU-s (${budget.source})`,
-    );
-  }
-  if (work.wallMs > budget.wallMs) {
-    throw new Error(`${what} took ${work.wallMs} ms, over its ${budget.wallMs} ms backstop`);
-  }
+  if (failure !== undefined) throw new Error(failure);
 }
 
 /**
