@@ -13,8 +13,9 @@ name: Merge queue
 # "Behind" comes from comparing the PR's head with `main`, not from GitHub's merge state, which
 # reads UNKNOWN for a while after every merge.
 # It runs after every push to `main` (a merge), every finished CI run, when auto-merge is turned
-# on, and once an hour as a safety net (every 15 minutes until 31 Oct 2026: the schedule made 256 of
-# the 440 runs from 28 to 31 Oct; research/stack/09).
+# on, and once an hour as a safety net (every 15 minutes until 31 Oct 2026: the schedule made 256
+# of the 440 runs from 28 to 31 Oct; research/stack/09). The hourly run also reports every PR that
+# has waited more than an hour, and whose move it is: the `report` job below (#1523).
 on:
   push:
     branches: [main]
@@ -179,3 +180,115 @@ jobs:
             echo "#$number couldn't take main (a conflict): its stream resolves it."
           done
           echo "Nothing to update: every queued pull request is waiting on its stream."
+
+  # Each hour, and on "Run workflow": the open, ready PRs into main whose last push is more than an
+  # hour old, what each waits for and whose move it is (#1523). The queue above takes only a PR
+  # with auto-merge on, no conflict and no failed CI; any other waits for someone, and this says
+  # who. Written to the run's summary and, unless a dry run, as the body of the pinned issue
+  # "Stuck pull requests" (an edit notifies nobody). The runs a merge, a CI run or auto-merge
+  # starts don't write it.
+  report:
+    name: Report the pull requests that are waiting
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      issues: write
+    steps:
+      - name: Write the report
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DRY_RUN: ${{ inputs.dry-run == true }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          TITLE="Stuck pull requests"
+          now=$(date -u +%s)
+          # The latest pull-request CI run on commit `$1`, as the queue's job reads it: NONE,
+          # WAITING, RUNNING, SUCCESS or the failure's conclusion.
+          ci_of() {
+            gh run list --workflow ci.yml --commit "$1" --event pull_request \
+              --json status,conclusion,createdAt \
+              --jq 'sort_by(.createdAt) | last
+                | if . == null then "NONE"
+                  elif .conclusion == "action_required" then "WAITING"
+                  elif .status != "completed" then "RUNNING"
+                  else (.conclusion | ascii_upcase) end'
+          }
+          # Open, ready PRs into main from this repository, oldest first, one per line:
+          # number, head, mergeable, auto-merge, branch, URL and title, tab-separated. (Asking for
+          # their commits here exceeds GraphQL's limit, so each head's date is fetched below.)
+          prs=$(gh pr list --base main --state open --limit 100 \
+            --json number,title,url,isDraft,isCrossRepository,headRefName,headRefOid,mergeable,autoMergeRequest \
+            --jq 'map(select((.isDraft | not) and (.isCrossRepository | not))) | sort_by(.number) | .[]
+              | [.number, .headRefOid, .mergeable, (.autoMergeRequest != null), .headRefName, .url,
+                 (.title | gsub("[|\t]"; " "))]
+              | @tsv')
+          rows=""
+          release=""
+          while IFS=$'\t' read -r number head mergeable auto branch url title; do
+            [ -n "$number" ] || continue
+            # The release pull request waits for a release on purpose (docs/releasing.md).
+            if [[ "$branch" == release-please--* ]]; then
+              release="$number"
+              continue
+            fi
+            # Its last push: when its head was committed (main merged in by the queue counts).
+            pushed=$(gh api "repos/$GH_REPO/commits/$head" --jq .commit.committer.date)
+            hours=$(( (now - $(date -u -d "$pushed" +%s)) / 3600 ))
+            [ "$hours" -ge 1 ] || continue
+            ci=$(ci_of "$head")
+            behind=$(gh api "repos/$GH_REPO/compare/main...$head" --jq .behind_by)
+            if [ "$mergeable" = CONFLICTING ]; then
+              state="Conflicts with main"
+              move="Its stream: merge main in"
+            elif [[ "$ci" =~ ^(FAILURE|TIMED_OUT|STARTUP_FAILURE|CANCELLED)$ ]]; then
+              state="CI ${ci,,}"
+              move="Its stream: fix and push (a flaky test: the flaky-test rule first)"
+            elif [ "$auto" != true ]; then
+              state="No auto-merge (CI ${ci,,}, behind by $behind)"
+              move="The coordinator: its merge review, or held on purpose"
+            elif [ "$behind" -gt 0 ]; then
+              state="Behind main by $behind"
+              move="The merge queue: it goes when the PRs ahead of it have"
+            elif [ "$ci" = SUCCESS ]; then
+              state="Up to date and green, not merged"
+              move="The coordinator: look, as auto-merge should have merged it"
+            else
+              state="Up to date, CI ${ci,,}"
+              move="The merge queue: waiting for its CI"
+            fi
+            rows+="| [#$number]($url) $title | $hours h | $state | $move |"$'\n'
+          done <<< "$prs"
+          {
+            echo "Open, ready pull requests into \`main\` whose last push is more than an hour old,"
+            echo "at $(date -u '+%Y-%m-%d %H:%M') UTC. Written each hour by the [Merge queue workflow]($RUN_URL) (#1523), which replaces anything written here."
+            echo
+            if [ -z "$rows" ]; then
+              echo "None: nothing has waited more than an hour."
+            else
+              echo "| Pull request | Since its last push | State | Whose move |"
+              echo "| --- | --- | --- | --- |"
+              printf '%s' "$rows"
+            fi
+            if [ -n "$release" ]; then
+              echo
+              echo "Left out: the release pull request, #$release, which waits for a release on purpose."
+            fi
+          } > report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+          cat report.md
+          if [ "$DRY_RUN" = true ]; then exit 0; fi
+          issue=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title \
+            --jq "map(select(.title == \"$TITLE\")) | first | .number // empty")
+          if [ -z "$issue" ]; then
+            gh issue create --title "$TITLE" --body-file report.md
+          else
+            gh issue edit "$issue" --body-file report.md > /dev/null
+            echo "Updated #$issue."
+          fi
