@@ -49,12 +49,24 @@ type CanvasClickOptions = Omit<NonNullable<Parameters<Locator["click"]>[0]>, "fo
  * - `target` is visible and enabled, and stable: its box the same across two animation frames;
  * - the point clicked hits `target`, something in it, or the wrapper around it, so a click that
  *   something else would catch (another element's bar) still fails;
- * - in the editor's window, that point is the canvas, not a dialog or panel over it.
+ * - in the editor's window, that point is the canvas, not a dialog or panel over it, once any
+ *   dialog that has just closed is gone (#1478).
  */
 export async function clickOnCanvas(
   target: Locator,
   options: CanvasClickOptions = {},
 ): Promise<void> {
+  // A dialog fades out over the editor once it has closed, and until it's gone the window takes no
+  // clicks: its overlay holds the pointer, and the page has it turned off. An open dialog's overlay
+  // isn't waited for: the check below says the canvas is covered.
+  await expect(
+    target
+      .page()
+      .locator(
+        '[data-slot="dialog-overlay"][data-state="closed"], [data-slot="alert-dialog-overlay"][data-state="closed"]',
+      ),
+    "a closed dialog fading out over the canvas",
+  ).toHaveCount(0);
   await expect(target).toBeEnabled();
   const box = await stillBox(target);
   const position = options.position ?? { x: box.width / 2, y: box.height / 2 };
