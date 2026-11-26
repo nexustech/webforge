@@ -41,9 +41,9 @@ describe("the site Storybook's CSS", () => {
   it("compiles every spacing class boxClasses can give, as the export does for its pages", () => {
     expect(inline.size).toBeGreaterThan(0);
     fc.assert(
-      fc.property(stored, fc.boolean(), (value, section) => {
+      fc.property(stored, fc.boolean(), fc.boolean(), (value, section, underHeader) => {
         const classes = [
-          boxClasses(value, "padding", section ? SECTION_PADDING : {}),
+          boxClasses(value, "padding", section ? SECTION_PADDING : {}, undefined, underHeader),
           boxClasses(value, "margin", {}, ["top", "bottom"]),
           boxClasses(value, "margin"),
         ]

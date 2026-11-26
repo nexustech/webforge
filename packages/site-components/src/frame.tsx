@@ -38,9 +38,13 @@ import {
 /** A section's own padding (`px-4 py-16`), for the sides left unset (1.32). */
 export const SECTION_PADDING = { top: 16, right: 4, bottom: 16, left: 4 } as const;
 
-/** A section's padding classes ({@link PADDING_FIELD}), {@link SECTION_PADDING} for unset sides. */
-export function sectionPadding(value: unknown): string {
-  return boxClasses(value, "padding", SECTION_PADDING);
+/**
+ * A section's padding classes ({@link PADDING_FIELD}), {@link SECTION_PADDING} for unset sides;
+ * with `underHeader`, the Header's height above them too, for the section a Header is joined to
+ * (HH-1).
+ */
+export function sectionPadding(value: unknown, underHeader = false): string {
+  return boxClasses(value, "padding", SECTION_PADDING, undefined, underHeader);
 }
 
 /**
@@ -240,13 +244,23 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
 };
 
 /**
+ * The room a section whose column holds its padding makes for a Header joined to it (HH-1): the
+ * Header's height, above the column's own padding.
+ */
+const UNDER_HEADER = "pt-(--wf-header-h)";
+
+/**
  * The text colour role a frame's `classes` set, as a colour ref (#544): `text-neutral-content`
- * gives `neutral-content`; `undefined` when they set none, and the section's text is the page's.
+ * gives `neutral-content`. Without one, on a theme colour the frame fills with, that colour's own
+ * text colour, which the section sets on its content (the Hero's picture behind the text, on
+ * Neutral). `undefined` when they set neither, and the section's text is the page's.
  */
 function frameText(classes: string): string | undefined {
-  return /(?:^|\s)text-((?:base|primary|secondary|accent|neutral|info|success|warning|error)-content)(?=\s|$)/.exec(
-    classes,
-  )?.[1];
+  const roles = "primary|secondary|accent|neutral|info|success|warning|error";
+  return (
+    new RegExp(`(?:^|\\s)text-((?:base|${roles})-content)(?=\\s|$)`).exec(classes)?.[1] ??
+    new RegExp(`(?:^|\\s)bg-(${roles})(?=\\s|$)`).exec(classes)?.[1]?.concat("-content")
+  );
 }
 
 /**
@@ -362,10 +376,12 @@ export function defineSection<const F extends Fields, const Variant extends stri
       const { values } = props;
       // Every section's values have the frame's fields, which generic types can't see through.
       const stored: Readonly<Record<string, unknown>> = values;
+      // The section a Header is joined to (HH-1) makes room for it above its own padding.
+      const underHeader = props.id === props.context.joinedHeader?.section;
       const classes = [
         `site-${name}`,
         frame?.(values) ?? "",
-        `${paddedColumn?.(values) === true ? "" : sectionPadding(stored.padding)}${marginClasses(stored.margin)}${entranceClasses(stored)}`.trim(),
+        `${paddedColumn?.(values) === true ? (underHeader ? UNDER_HEADER : "") : sectionPadding(stored.padding, underHeader)}${marginClasses(stored.margin)}${entranceClasses(stored)}`.trim(),
         appearanceBoxClasses(stored),
         backgroundClasses(stored),
       ].filter((part) => part !== "");

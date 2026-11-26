@@ -2,6 +2,7 @@ import { t } from "@webforge/i18n";
 import { PaletteIcon } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useId, useState } from "react";
 import { cn } from "../../lib/cn.js";
+import { ActionField } from "../form/form-fields.js";
 import { Button } from "../ui/button.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs.js";
 import { BoxField } from "./box-field.js";
@@ -18,7 +19,13 @@ import { fieldControlClass } from "./text-field.js";
  * The renderers every Edit panel has; the ones the app gives it ({@link FieldRenderersProvider})
  * add kinds or replace these.
  */
-const BUILT_IN: FieldRenderers = { ...PLAIN_RENDERERS, list: ListField, box: BoxField };
+const BUILT_IN: FieldRenderers = {
+  ...PLAIN_RENDERERS,
+  list: ListField,
+  box: BoxField,
+  // A line that leads elsewhere: a Hero's to the Header's Background (HH-1).
+  action: ActionField,
+};
 
 /** Whether every Edit panel draws fields of `kind` itself, without the app giving it a renderer. */
 export function hasBuiltInRenderer(kind: FieldKind): boolean {

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { SiteNodes } from "../stories/site-nodes.js";
+import type { NodeDoc } from "@webforge/model";
+import { SiteNodes, SitePage } from "../stories/site-nodes.js";
 
 const meta = {
   title: "Site components/Layout",
@@ -321,3 +322,70 @@ export const LayoutMedium: Story = alignedAt("medium");
 
 /** The Header and Footer at Wide, as every template starts them, over a Wide section (HF-10). */
 export const LayoutWide: Story = alignedAt("wide");
+
+/** The Hero with its picture behind the text, as a page opens with it. */
+const pictureHero = (props: Record<string, unknown> = {}) => ({
+  type: "Hero",
+  props: {
+    id: "hero",
+    variant: "background",
+    title: "Baked fresh every morning",
+    text: "Sourdough, cakes and pastries from our oven to your table.",
+    buttonLabel: "See the menu",
+    buttonLink: { kind: "url", href: "https://example.com" },
+    alignment: "left",
+    image: { mediaId: "photo" },
+    ...props,
+  },
+});
+
+/** A Text section, in the page's colours or reversed (2.4). */
+const textSection = (colors: "page" | "inverse") => ({
+  type: "TextSection",
+  props: {
+    id: `text-${colors}`,
+    title: "Our story",
+    text: "<p>Rosa opened the bakery in 1998 with one oven and a starter from her grandmother.</p>",
+    colors,
+  },
+});
+
+/** A page: `header` over `content`, as the export draws it (HH-1). */
+const page = (header: readonly NodeDoc[], content: readonly NodeDoc[]): Story => ({
+  args: { nodes: [] },
+  render: () => <SitePage header={header} content={content} />,
+});
+
+/** The Header with its own band over a Hero's picture, as before HH-1. */
+export const HeaderOwnOnPicture: Story = page(header(), [pictureHero()]);
+
+/** The Header on the first section's picture (HH-1), in the Hero's text colour. */
+export const HeaderJoinedPicture: Story = page(header({ background: "section" }), [pictureHero()]);
+
+/** Joined and centred (HH-1), staying at the top: see-through until the page scrolls. */
+export const HeaderJoinedCentredSticky: Story = page(
+  header({ background: "section", variant: "centred", sticky: true, scrollStyle: "shrink" }),
+  [pictureHero({ alignment: "centre" })],
+);
+
+/** Joined and split at Wide (HH-1, HF-10), with its button, on the picture. */
+export const HeaderJoinedSplitWide: Story = page(
+  header({ background: "section", variant: "split", contentWidth: "wide", button: true }),
+  [pictureHero({ contentWidth: "wide" })],
+);
+
+/** Joined to a Hero with its picture beside the text (HH-1), on the theme's second surface. */
+export const HeaderJoinedColoured: Story = page(header({ background: "section" }), [
+  pictureHero({ variant: "split" }),
+]);
+
+/** Joined to a section in reversed colours (HH-1): the Header takes them, with no line between. */
+export const HeaderJoinedReversed: Story = page(
+  header({ background: "section", sticky: true, scrollStyle: "solid" }),
+  [textSection("inverse")],
+);
+
+/** Joined to a section in the page's colours (HH-1): drawn as with its own, without the line. */
+export const HeaderJoinedPageColours: Story = page(header({ background: "section" }), [
+  textSection("page"),
+]);

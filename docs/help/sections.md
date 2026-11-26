@@ -34,6 +34,7 @@ The large opening section of a page: a title, a short text, a button and an imag
 
 - **Layouts:** _Image beside the text_, _Centred, image below_, _Image behind the text_, _Text only_.
 - **Alignment:** _Centre_ or _Left_.
+- **Header background** (in the **Style** tab, on a Hero that opens its page): says whether the Header sits on this Hero or has its own band. **Change in the Header** selects the Header, where its **Background** is set for every page. See [The Header on the first section](header-and-footer.md#the-header-on-the-first-section).
 
 ## Text
 

@@ -133,6 +133,15 @@ const library: ComponentLibrary = {
       mainHeading: { field: "title" },
       render: ({ values }) => <p className="t-banner">{textValue(values.title)}</p>,
     },
+    // The Header, which joins the page's first section with its Background (HH-1).
+    Header: {
+      label: "Header",
+      fields: {},
+      defaults: { background: "own" },
+      render: ({ context }) => (
+        <p className="t-joined">{context.joinedHeader?.section ?? "none"}</p>
+      ),
+    },
     Hours: {
       label: "Hours",
       fields: {},
@@ -916,6 +925,40 @@ describe("createPuckEngine", () => {
     );
     await settle();
     expect(levels()).toEqual(["Our story: h2"]);
+  });
+
+  it("joins the Header to the page's first section as the export does, following it (HH-1)", async () => {
+    const joined = () => element.querySelector(".t-joined")?.textContent;
+    const header = (background: string) => ({
+      header: [{ type: "Header", props: { id: "h", background } }],
+      footer: [],
+    });
+    const heading = (id: string) => ({ type: "Heading", props: { id, text: id } });
+    await act(async () =>
+      engine.applyChange({
+        page: { ...page, content: [heading("first"), heading("second")] },
+        layout: header("section"),
+      }),
+    );
+    await settle();
+    expect(joined()).toBe("first");
+
+    // Another section moved to the top: the Header follows it.
+    await act(async () =>
+      engine.applyChange({ page: { ...page, content: [heading("second"), heading("first")] } }),
+    );
+    await settle();
+    expect(joined()).toBe("second");
+
+    // Its own background again: joined to none.
+    await act(async () =>
+      engine.applyChange({
+        page: { ...page, content: [heading("second"), heading("first")] },
+        layout: header("own"),
+      }),
+    );
+    await settle();
+    expect(joined()).toBe("none");
   });
 
   it("moves the page's main heading only once text on the canvas loses the focus (#1173)", async () => {

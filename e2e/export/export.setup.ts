@@ -26,6 +26,7 @@ import {
   CHECK_TEMPLATES,
   CONTACT_BUTTONS_SITE_DIR,
   EXPORTED_SITE_DIR,
+  JOINED_SITE_DIR,
   NO_BANNER_SITE_DIR,
   TEMPLATES_DIR,
   THEMED_SITE_DIR,
@@ -437,6 +438,44 @@ setup("export a site with an Announcement bar above the Header (6.4)", async () 
       layout: { ...sample.layout, header: [bar, ...sample.layout.header] },
     },
     ANNOUNCEMENT_SITE_DIR,
+  );
+  expect(pages).toEqual(expect.arrayContaining(["index.html", "about.html"]));
+});
+
+setup("export a site whose Header joins each page's first section (HH-1)", async () => {
+  const sample = sampleSite();
+  rmSync(JOINED_SITE_DIR, { recursive: true, force: true });
+  // Its pages without their files, through the pipeline alone: only the Header and the first
+  // section matter here. The home page opens with a Hero whose text is over its picture, on
+  // Neutral without it; the About page with its Hero beside its picture, on the second surface.
+  const [header, ...rest] = sample.layout.header;
+  if (header === undefined) throw new Error("No Header");
+  const pages = await exportSnapshot(
+    {
+      ...sample,
+      media: [],
+      documents: [],
+      layout: {
+        ...sample.layout,
+        header: [{ ...header, props: { ...header.props, background: "section" } }, ...rest],
+      },
+      pages: sample.pages.map((page) =>
+        page.path !== "index"
+          ? page
+          : {
+              ...page,
+              doc: {
+                ...page.doc,
+                content: page.doc.content.map((node) =>
+                  node.type === "Hero"
+                    ? { ...node, props: { ...node.props, variant: "background" } }
+                    : node,
+                ),
+              },
+            },
+      ),
+    },
+    JOINED_SITE_DIR,
   );
   expect(pages).toEqual(expect.arrayContaining(["index.html", "about.html"]));
 });

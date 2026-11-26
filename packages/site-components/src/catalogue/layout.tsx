@@ -1,6 +1,6 @@
 import { t } from "@webforge/i18n/components";
 import type { SiteText } from "@webforge/i18n/site-text";
-import { hasLink, isNodeDoc, type NodeDoc } from "@webforge/model";
+import { hasLink, INVERSE_THEME, isNodeDoc, type NodeDoc } from "@webforge/model";
 import type { ReactNode } from "react";
 import { FooterColumnContext } from "../column-form.js";
 import { defineComponent } from "../define.js";
@@ -72,7 +72,14 @@ const CURRENT_DROPDOWN_CLASSES =
  * which its `<summary>` opens without the script too; `webforge.js`'s "menu" behaviour keeps one
  * open at a time and closes it with Escape, a click outside or focus moving on.
  */
-function NavItems({ items }: { readonly items: readonly NavItem[] }) {
+function NavItems({
+  items,
+  joined = false,
+}: {
+  readonly items: readonly NavItem[];
+  /** In a Header joined to a section (HH-1): a dropdown's panel sets its own text colour. */
+  readonly joined?: boolean;
+}) {
   return (
     <>
       {items.map((item, index) => {
@@ -83,7 +90,7 @@ function NavItems({ items }: { readonly items: readonly NavItem[] }) {
           <li key={item.id ?? `${index}:${item.label}`}>
             <details className="site-submenu" data-wf-dropdown="">
               <summary className={CURRENT_DROPDOWN_CLASSES}>{item.label}</summary>
-              <ul className="md:z-20 md:w-48">
+              <ul className={`md:z-20 md:w-48${joined ? " text-base-content" : ""}`}>
                 {item.children.map((link, childIndex) => (
                   <NavLinkItem key={link.id ?? `${childIndex}:${link.href}`} link={link} />
                 ))}
@@ -111,6 +118,7 @@ function HeaderNavigation({
   items,
   menuButton,
   menuOpen,
+  joined,
   className,
   siteText,
 }: {
@@ -120,25 +128,35 @@ function HeaderNavigation({
   readonly menuButton?: ReactNode;
   /** Shows the small screens' menu open: the canvas's *Show mobile menu* preview (UX-26). */
   readonly menuOpen: boolean;
+  /**
+   * In a Header joined to a section (HH-1), which has the section's text colour: the phone menu's
+   * panel and the dropdowns, solid as always, set their own.
+   */
+  readonly joined: boolean;
   readonly className?: string;
   readonly siteText: SiteText;
 }) {
   return (
     <nav aria-label={siteText("siteText.navigation")} className={className}>
       <ul className="menu menu-horizontal hidden p-0 md:flex">
-        <NavItems items={items} />
+        <NavItems items={items} joined={joined} />
       </ul>
       <details
         className="site-menu md:hidden"
         data-wf-menu=""
         {...(menuOpen ? { open: true, [PREVIEW_ATTRIBUTE]: "mobile-menu" } : {})}
       >
-        <summary className={`${BUTTON_CLASSES.menu} list-none [&::-webkit-details-marker]:hidden`}>
+        <summary
+          // In a joined Header (HH-1), in its colour on the section, as the links are.
+          className={`${BUTTON_CLASSES.menu} list-none [&::-webkit-details-marker]:hidden${joined ? " text-inherit" : ""}`}
+        >
           <MenuIcon />
           <span className="sr-only">{siteText("siteText.menu")}</span>
         </summary>
-        <ul className="menu absolute inset-x-0 top-full z-10 w-full bg-base-100 p-2 shadow">
-          <NavItems items={items} />
+        <ul
+          className={`menu absolute inset-x-0 top-full z-10 w-full bg-base-100 p-2 shadow${joined ? " text-base-content" : ""}`}
+        >
+          <NavItems items={items} joined={joined} />
           {menuButton}
         </ul>
       </details>
@@ -147,14 +165,16 @@ function HeaderNavigation({
 }
 
 const HEADER_LAYOUTS = ["left", "centred", "split"] as const;
+type HeaderLayout = (typeof HEADER_LAYOUTS)[number];
 const SCROLL_STYLES = ["shadow", "shrink", "solid", "none"] as const;
+type ScrollStyle = (typeof SCROLL_STYLES)[number];
 const LOGO_PLACES = ["instead", "beside"] as const;
 
 /**
  * A sticky header's classes for its scroll style (F-DS-6), applied once the page has scrolled 80 px
  * (`data-scrolled`, set by `webforge.js`'s "sticky" behaviour).
  */
-const STICKY_CLASSES: Readonly<Record<(typeof SCROLL_STYLES)[number], string>> = {
+const STICKY_CLASSES: Readonly<Record<ScrollStyle, string>> = {
   shadow: "sticky top-0 bg-base-100 shadow-none transition-shadow data-scrolled:shadow-md",
   shrink:
     "sticky top-0 bg-base-100 shadow-sm transition-[min-height,padding] data-scrolled:min-h-12 data-scrolled:py-1",
@@ -199,6 +219,50 @@ const HEADER_BAR_CLASSES: Readonly<Record<(typeof HEADER_LAYOUTS)[number], strin
 const SHRINK_HEADER = "group sticky top-0 bg-base-100 shadow-sm";
 const SHRINK_BAR =
   "transition-[min-height,padding] group-data-scrolled:min-h-12 group-data-scrolled:py-1";
+
+/** The Header's backgrounds (HH-1): a band of its own, or the first section's picture or colour. */
+const HEADER_BACKGROUNDS = ["own", "section"] as const;
+
+/**
+ * The scroll styles a joined Header offers (HH-1): it turns solid once scrolled anyway, so
+ * *Solid background* and *None* aren't offered, and a Header saved with one draws as *Shadow*.
+ */
+const JOINED_SCROLL_STYLES = ["shadow", "shrink"] as const satisfies readonly ScrollStyle[];
+type JoinedScrollStyle = (typeof JOINED_SCROLL_STYLES)[number];
+
+/**
+ * A Header joined to the page's first section (HH-1): no band of its own, and its height taken off
+ * below it, so the section starts behind it. Its text takes the section's colours (`joined.text`,
+ * and its reversed ones as its `data-theme`) until it has scrolled, when it has the page's.
+ */
+const JOINED_CLASSES = "-mb-(--wf-header-h) bg-transparent data-scrolled:text-base-content!";
+
+/**
+ * A joined Header's height until the page's script measures it (`joined.js`), by layout: where it
+ * sits over the first section, and the room the section makes for it. The centred layout is taller
+ * on wide screens, its menu below the name.
+ */
+const JOINED_HEIGHT: Readonly<Record<(typeof HEADER_LAYOUTS)[number], string>> = {
+  left: "[:root:has(&)]:[--wf-header-h:4rem]",
+  centred: "[:root:has(&)]:[--wf-header-h:4rem] md:[:root:has(&)]:[--wf-header-h:5.8125rem]",
+  split: "[:root:has(&)]:[--wf-header-h:4rem]",
+};
+
+/**
+ * A joined Header that stays at the top (HH-1): see-through over the section at first, solid in the
+ * page's colours once the page has scrolled 80 px. Without the script nothing marks the scroll, so
+ * it doesn't stay: it scrolls away with the section.
+ */
+const JOINED_STICKY_CLASSES: Readonly<Record<JoinedScrollStyle, string>> = {
+  shadow:
+    "sticky top-0 shadow-none transition-[background-color,box-shadow] data-scrolled:bg-base-100 data-scrolled:shadow-md noscript:relative",
+  shrink:
+    "sticky top-0 transition-[background-color,min-height,padding] data-scrolled:bg-base-100 data-scrolled:shadow-sm data-scrolled:min-h-12 data-scrolled:py-1 noscript:relative",
+};
+
+/** {@link SHRINK_HEADER} for a joined Header (HH-1): the bar inside it shrinks, as there. */
+const JOINED_SHRINK_HEADER =
+  "group sticky top-0 transition-colors data-scrolled:bg-base-100 data-scrolled:shadow-sm noscript:relative";
 
 /**
  * The shared Header (C5): the site name or its logo (HF-1), and the navigation, from the site's
@@ -245,11 +309,22 @@ const header = defineComponent({
       shownWhen: (values) => values.button === true,
     },
     contentWidth: CONTENT_WIDTH_FIELD,
+    // On every page, on its first section's picture or colour (HH-1), or a band of its own.
+    background: {
+      kind: "select",
+      label: t("field.headerBackground"),
+      help: t("field.headerBackground.help"),
+      options: HEADER_BACKGROUNDS.map((value) => ({
+        label: t(`field.headerBackground.${value}`),
+        value,
+      })),
+    },
     sticky: { kind: "toggle", label: t("field.sticky") },
     scrollStyle: {
       kind: "select",
       label: t("field.scrollStyle"),
       options: SCROLL_STYLES.map((value) => ({ label: t(`field.scrollStyle.${value}`), value })),
+      offered: (values) => (values.background === "section" ? JOINED_SCROLL_STYLES : undefined),
     },
     // The section in view (5.10b, GA10-1): the export leaves "section-spy" out when it's off
     // (`highlightsSectionInView`). Offered only while the menu links to a section.
@@ -268,11 +343,17 @@ const header = defineComponent({
     buttonLabel: t("starter.headerButton"),
     // Full, as it was before it had a content width (HF-10); the templates start at Wide.
     contentWidth: "full",
+    // Its own band, as before HH-1; the templates that open with a picture start joined.
+    background: "own",
     sticky: false,
     scrollStyle: "shadow",
     sectionHighlight: true,
   },
-  behaviours: (values) => (values.sticky ? ["menu", "sticky"] : ["menu"]),
+  behaviours: (values) => [
+    "menu",
+    ...(values.sticky ? (["sticky"] as const) : []),
+    ...(values.background === "section" ? (["joined"] as const) : []),
+  ],
   render: ({ values, context }) => {
     const layout = values.variant;
     const items = context.navigation;
@@ -280,10 +361,15 @@ const header = defineComponent({
     // At Full, drawn as it was before it had a content width (HF-10): the `<header>` is the bar.
     const width: ContentWidth = values.contentWidth;
     const capped = width !== "full";
-    const shrinks = values.sticky && values.scrollStyle === "shrink";
-    const look = values.sticky
-      ? `${capped && shrinks ? SHRINK_HEADER : STICKY_CLASSES[values.scrollStyle]} ${STICKY_OFFSET[layout]}`
-      : "bg-base-100 shadow-sm";
+    // On this page's first section (HH-1), where the page has one.
+    const joined = values.background === "section" ? context.joinedHeader : undefined;
+    const look =
+      joined === undefined
+        ? ownLook(values, layout, capped)
+        : [joinedLook(values, layout, capped), JOINED_CLASSES, JOINED_HEIGHT[layout], joined.text]
+            .filter((part) => part !== "")
+            .join(" ");
+    const shrinks = values.sticky && scrollStyleOf(values, joined !== undefined) === "shrink";
     // The logo in Site Settings (HF-1), in place of the name or beside it; the name, while there's
     // no logo or its picture is gone from Media.
     const logo = context.logo === undefined ? null : context.image(context.logo);
@@ -320,13 +406,19 @@ const header = defineComponent({
           items={items}
           menuButton={menuButton}
           menuOpen={context.previews?.mobileMenu === true}
+          joined={joined !== undefined}
           siteText={context.siteText}
           {...(layout === "left" ? {} : { className: "md:flex md:flex-1 md:justify-center" })}
         />
         {button}
       </>
     );
-    const sticky = values.sticky ? { "data-wf-sticky": "" } : {};
+    const sticky = {
+      ...(values.sticky ? { "data-wf-sticky": "" } : {}),
+      // Its height measured, and its reversed colours taken off once scrolled (`joined.js`).
+      ...(joined === undefined ? {} : { "data-wf-joined": "" }),
+      ...(joined?.inverse === true ? { "data-theme": INVERSE_THEME } : {}),
+    };
     if (!capped) {
       return (
         <header
@@ -350,6 +442,38 @@ const header = defineComponent({
     );
   },
 });
+
+/** Whether `style` is one a joined Header offers (HH-1). */
+const offeredJoined = (style: ScrollStyle): style is JoinedScrollStyle =>
+  (JOINED_SCROLL_STYLES as readonly ScrollStyle[]).includes(style);
+
+/** The scroll style a Header draws with: a joined one's not offered draws as *Shadow* (HH-1). */
+function scrollStyleOf(
+  values: { readonly scrollStyle: ScrollStyle },
+  joined: boolean,
+): ScrollStyle {
+  return joined && !offeredJoined(values.scrollStyle) ? "shadow" : values.scrollStyle;
+}
+
+/** What a Header's look depends on: whether it stays at the top, and how it changes then. */
+type LookValues = { readonly sticky: boolean; readonly scrollStyle: ScrollStyle };
+
+/** A Header's classes with a band of its own: its scroll style, if it stays at the top (F-DS-6). */
+function ownLook(values: LookValues, layout: HeaderLayout, capped: boolean): string {
+  if (!values.sticky) return "bg-base-100 shadow-sm";
+  const shrinks = values.scrollStyle === "shrink";
+  return `${capped && shrinks ? SHRINK_HEADER : STICKY_CLASSES[values.scrollStyle]} ${STICKY_OFFSET[layout]}`;
+}
+
+/** A joined Header's classes for its scroll style, if it stays at the top (HH-1). */
+function joinedLook(values: LookValues, layout: HeaderLayout, capped: boolean): string {
+  if (!values.sticky) return "";
+  const style = scrollStyleOf(values, true);
+  const classes = offeredJoined(style)
+    ? JOINED_STICKY_CLASSES[style]
+    : JOINED_STICKY_CLASSES.shadow;
+  return `${capped && style === "shrink" ? JOINED_SHRINK_HEADER : classes} ${STICKY_OFFSET[layout]}`;
+}
 
 /**
  * The Header's own button (HF-2): on the right on wide screens, and last in the phone menu. Without

@@ -143,7 +143,20 @@ export type FieldDef = {
        */
       readonly itemBindable?: true;
     }
-  | { readonly kind: "select"; readonly label: string; readonly options: readonly FieldOption[] }
+  | {
+      readonly kind: "select";
+      readonly label: string;
+      readonly options: readonly FieldOption[];
+      /**
+       * The options offered with these `values`, by value, where not all are; `undefined` for all
+       * (HH-1: a Header joined to its first section turns solid once scrolled, so it offers no
+       * *Solid background* or *None*). A stored value not offered is kept, for when it is again,
+       * and draws as the first one offered, which the Edit panel shows.
+       */
+      readonly offered?: (
+        values: Readonly<Record<string, unknown>>,
+      ) => readonly string[] | undefined;
+    }
   /** On or off, stored as a boolean. */
   | { readonly kind: "toggle"; readonly label: string }
   /** A step along a token scale (C4), smallest first, stored as the step's value. */
@@ -392,6 +405,22 @@ export type ElementHint =
  */
 export type { FormUnset };
 
+/**
+ * A page's Header joined to its first section (HH-1): it has no band of its own there, sits on the
+ * section's picture, gradient or colour, and takes its colours until the page scrolls.
+ */
+export type JoinedHeader = {
+  /** The first section's id: it gains the Header's height as padding, so nothing is under the menu. */
+  readonly section: string;
+  /** The section's colours are the theme's reversed ones (2.4), which the Header takes too. */
+  readonly inverse: boolean;
+  /**
+   * The text colour classes the section has, which the Header takes too: the same classes, which
+   * the site's stylesheet has for the section already. Empty where its text is its colours' own.
+   */
+  readonly text: string;
+};
+
 /** What a component may need from outside its own props while rendering. */
 export type RenderContext = SiteBindings & {
   /**
@@ -435,6 +464,12 @@ export type RenderContext = SiteBindings & {
    * image is above the fold, so it loads at once rather than lazily.
    */
   readonly firstSection?: string;
+  /**
+   * The page's Header joined to its first section (HH-1), set by `renderPage`, and by the canvas
+   * for the page it shows: the Header draws on the section, and the section makes room for it.
+   * Left out where the Header has its own background, is hidden, or the page has no sections.
+   */
+  readonly joinedHeader?: JoinedHeader;
   /**
    * The id of the section whose title is the page's main heading, `<h1>`, on a page with none of
    * its own (#1173): its first section with a title, as `pageHeadings` decides. Set by
