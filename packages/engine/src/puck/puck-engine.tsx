@@ -2,7 +2,12 @@ import { type Config, Puck, type PuckAction, type useGetPuck } from "@puckeditor
 // Puck's default stylesheet loads the Inter font from rsms.me; Webforge makes no external requests.
 import "@puckeditor/core/no-external.css";
 import { t } from "@webforge/i18n";
-import { expandSharedCopies } from "@webforge/model";
+import {
+  expandSharedCopies,
+  type NodeDoc,
+  SHARED_COPY_TYPE,
+  type SharedSectionsDoc,
+} from "@webforge/model";
 import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
@@ -70,6 +75,19 @@ export type PuckEngineOptions = {
 };
 
 type GetPuck = ReturnType<typeof useGetPuck>;
+
+/**
+ * The page's first node shown, a linked copy of a shared section expanded as the export draws it,
+ * or none: all a joined Header needs of the page's content (HH-1). The copies after it stay as
+ * they are, unexpanded.
+ */
+function firstShown(content: readonly NodeDoc[], shared: SharedSectionsDoc): readonly NodeDoc[] {
+  for (const node of content) {
+    const [drawn] = node.type === SHARED_COPY_TYPE ? expandSharedCopies([node], shared) : [node];
+    if (drawn !== undefined && drawn.props.hidden !== true) return [drawn];
+  }
+  return [];
+}
 
 /** The canvas's looks while the theme has none (see `setLooks`). */
 const NO_LOOKS: NonNullable<RenderContext["looks"]> = {};
@@ -253,27 +271,35 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /**
    * Finds again the page's Header joined to its first section (HH-1), as `renderPage` does for the
-   * export, when the docs or the library change: only when what it says changes, which draws every
-   * component again (the Header and the section both read it), never while text is typed.
+   * export, once the docs or the library have changed for this turn: only when what it says
+   * changes, which draws every component again (the Header and the section both read it).
    */
+  /** Whether the page's joined Header is to be found again (see {@link followJoinedHeader}). */
+  let joinedDue = false;
   const followJoinedHeader = () => {
-    if (library === null) return;
-    const { page: shown, layout, shared } = page.docs();
-    const joined = joinedHeaderOf(
-      { header: layout.header, content: expandSharedCopies(shown.content, shared) },
-      library,
-      parts.looks,
-    );
-    const was = parts.joinedHeader;
-    if (
-      was?.section === joined?.section &&
-      was?.inverse === joined?.inverse &&
-      was?.text === joined?.text
-    ) {
-      return;
-    }
-    const { joinedHeader: _was, ...rest } = parts;
-    changeContext({ parts: joined === undefined ? rest : { ...rest, joinedHeader: joined } });
+    if (joinedDue) return;
+    joinedDue = true;
+    // Once the docs have stopped changing for this turn: a drag or an undo changes them often.
+    queueMicrotask(() => {
+      joinedDue = false;
+      if (library === null) return;
+      const { page: shown, layout, shared } = page.docs();
+      const joined = joinedHeaderOf(
+        { header: layout.header, content: firstShown(shown.content, shared) },
+        library,
+        parts.looks,
+      );
+      const was = parts.joinedHeader;
+      if (
+        was?.section === joined?.section &&
+        was?.inverse === joined?.inverse &&
+        was?.text === joined?.text
+      ) {
+        return;
+      }
+      const { joinedHeader: _was, ...rest } = parts;
+      changeContext({ parts: joined === undefined ? rest : { ...rest, joinedHeader: joined } });
+    });
   };
 
   /** The canvas's width, zoom and size (see `canvas-view.ts`). */
