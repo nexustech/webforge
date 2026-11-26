@@ -121,6 +121,7 @@ export { sanitizeRichText } from "./rich-text-html.js";
 export type {
   BehaviourName,
   ComponentPlace,
+  DarkGrounds,
   DefaultsOf,
   FieldDef,
   FieldOption,

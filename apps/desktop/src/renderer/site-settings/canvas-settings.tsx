@@ -47,6 +47,8 @@ export function connectCanvasSettings(
       socialProfiles: shown.social.profiles,
       // The Header's logo (HF-1): resolved as any Media image the canvas shows.
       logo: shown.general.logo,
+      // In its place on a dark colour (HH-2).
+      logoOnDark: shown.general.logoOnDark,
       socialHint: () => hint(t("site.binding.socialHint")),
       language: shown.general.language,
       siteText: siteTextFor(shown.general.language, siteLabelsOf(shown)),

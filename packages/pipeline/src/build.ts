@@ -386,6 +386,8 @@ export async function* buildEvents(
     mediaIds = mediaUsedBy(allNodes(site), library);
     // The Header's logo from Site Settings (HF-1), as any picture a page shows: WebP and a fallback.
     if (site.logo !== undefined) mediaIds.add(site.logo);
+    // And its logo for dark backgrounds (HH-2), which it shows on a dark colour.
+    if (site.logoOnDark !== undefined) mediaIds.add(site.logoOnDark);
     // The pictures of posts their Blog's design shows (6.10a).
     for (const id of site.pages.flatMap(itemPicturesShown)) mediaIds.add(id);
     // And every published post's picture, which Latest posts' cards and the Blog's own pages
@@ -449,6 +451,10 @@ export async function* buildEvents(
   // (`pageRender` leaves it out of each page's).
   if (site.logo !== undefined && missing.has(site.logo)) {
     warnings.push({ code: "missing-logo", page: "", detail: site.logo });
+  }
+  // The logo for dark backgrounds gone (HH-2): one for the site too, the Header showing the logo.
+  if (site.logoOnDark !== undefined && missing.has(site.logoOnDark)) {
+    warnings.push({ code: "missing-logo-on-dark", page: "", detail: site.logoOnDark });
   }
 
   // The favicon set from Site Settings' icon, and each page's share picture (3.4).

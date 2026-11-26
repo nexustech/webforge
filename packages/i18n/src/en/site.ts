@@ -265,8 +265,13 @@ export const site = {
     "Type your wording, or remove this label to keep the standard one.",
   "site.settings.error.labelTwice": "This label is changed above already. Remove one of them.",
   "site.settings.history.labels": "Changed Labels on your site",
+  // One of General's pictures alone (HF-1, HH-2): "Changed Logo for dark backgrounds".
+  "site.settings.history.picture": "Changed {setting}",
   "site.settings.logo": "Logo",
   "site.settings.logoHint": "Shown in the Header, in place of the site's name or beside it.",
+  "site.settings.logoOnDark": "Logo for dark backgrounds",
+  "site.settings.logoOnDarkHint":
+    "A light version of your logo, shown in its place where the Header is on a dark colour or photo. Without one, your logo shows there too.",
   "site.settings.icon": "Site icon",
   "site.settings.iconHint": "Shown in browser tabs and bookmarks.",
   "site.settings.backToTop": "Show a back-to-top button",

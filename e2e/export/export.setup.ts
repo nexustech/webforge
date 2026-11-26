@@ -29,6 +29,7 @@ import {
   HERO_OVERLAY_SITE_DIR,
   HIDING_HEADER_SITE_DIR,
   JOINED_SITE_DIR,
+  LOGO_ON_DARK_SITE_DIR,
   NO_BANNER_SITE_DIR,
   TEMPLATES_DIR,
   THEMED_SITE_DIR,
@@ -274,7 +275,30 @@ function themed(site: SiteSnapshot): SiteSnapshot {
       bodyEnd: "<p id='own-note' class='tracking-widest'>Thanks for visiting</p>",
     },
     pages: [
-      { ...home, doc: { ...home.doc, content: [...home.doc.content, linked, filled, reversed] } },
+      {
+        ...home,
+        doc: {
+          ...home.doc,
+          // The Hero with a second button (HH-5): beside the theme's outlined buttons, a text link.
+          content: [
+            ...home.doc.content.map((node) =>
+              node.type === "Hero"
+                ? {
+                    ...node,
+                    props: {
+                      ...node.props,
+                      secondButtonLabel: "Book a table",
+                      secondButtonLink: { kind: "url", href: "https://example.com/book" },
+                    },
+                  }
+                : node,
+            ),
+            linked,
+            filled,
+            reversed,
+          ],
+        },
+      },
       ...rest,
     ],
   };
@@ -491,7 +515,67 @@ setup("export a site whose Header joins each page's first section (HH-1)", async
 });
 
 setup(
-  "export a page of Heroes over a picture, with their Overlay and text place (HH-3, HH-6)",
+  "export a site with a logo for dark backgrounds, its Header joined and sticky (HH-2)",
+  async () => {
+    const sample = sampleSite();
+    rmSync(LOGO_ON_DARK_SITE_DIR, { recursive: true, force: true });
+    // The home page opens with a Hero over its picture, under the Hero's dark overlay; the About page
+    // with its Hero beside its picture, on the theme's light second surface. The two logos are the
+    // fixture's photo under two names, so each has its own files.
+    const [photo] = sample.media;
+    const [header, ...rest] = sample.layout.header;
+    if (photo === undefined || header === undefined) throw new Error("No photo or Header");
+    const pages = await exportSnapshot(
+      {
+        ...sample,
+        media: [
+          { ...photo, id: "logo", name: "logo" },
+          { ...photo, id: "logo-light", name: "logo-light" },
+          photo,
+        ],
+        documents: [],
+        logo: "logo",
+        logoOnDark: "logo-light",
+        layout: {
+          ...sample.layout,
+          header: [
+            {
+              ...header,
+              props: {
+                ...header.props,
+                background: "section",
+                sticky: true,
+                scrollStyle: "shadow",
+                logoPlace: "instead",
+              },
+            },
+            ...rest,
+          ],
+        },
+        pages: sample.pages.map((page) =>
+          page.path !== "index"
+            ? page
+            : {
+                ...page,
+                doc: {
+                  ...page.doc,
+                  content: page.doc.content.map((node) =>
+                    node.type === "Hero"
+                      ? { ...node, props: { ...node.props, variant: "background" } }
+                      : node,
+                  ),
+                },
+              },
+        ),
+      },
+      LOGO_ON_DARK_SITE_DIR,
+    );
+    expect(pages).toEqual(expect.arrayContaining(["index.html", "about.html"]));
+  },
+);
+
+setup(
+  "export a page of Heroes over a picture, with their Overlay, text place and buttons (HH-3, HH-5, HH-6)",
   async () => {
     const sample = sampleSite();
     const [home] = sample.pages;
@@ -532,6 +616,13 @@ setup(
                 hero("chosen", "40", "base"),
                 hero("before", "70", "neutral"),
                 hero("bottom", "60", "neutral", { textPlace: "bottom", alignment: "left" }),
+                // Two buttons on the picture, each with its link (HH-5).
+                hero("two", "60", "neutral", {
+                  buttonLabel: "See the menu",
+                  buttonLink: { kind: "url", href: "https://example.com/menu" },
+                  secondButtonLabel: "Book a table",
+                  secondButtonLink: { kind: "url", href: "https://example.com/book" },
+                }),
               ],
             },
           },

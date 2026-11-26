@@ -370,6 +370,11 @@ export type SiteBindings = {
    * none if left out.
    */
   readonly logo?: string | undefined;
+  /**
+   * The Media id of Site Settings' logo for dark backgrounds (HH-2), which the Header shows in
+   * place of `logo` where it sits on a colour of `darkGrounds`; none if left out.
+   */
+  readonly logoOnDark?: string | undefined;
   /** Site Settings' social profiles, for the Social links element (2.9b); none if left out. */
   readonly socialProfiles?: readonly SocialProfile[];
   /** What Social links show without any profiles: a hint on the canvas; nothing in the export. */
@@ -428,6 +433,24 @@ export type JoinedHeader = {
    * the site's stylesheet has for the section already. Empty where its text is its colours' own.
    */
   readonly text: string;
+  /**
+   * The colours the Header sits on at the top of the page, as colour refs (HH-2): the overlay's
+   * over a picture, else the person's background or gradient on each device, else the section's
+   * own. In its reversed colours where `inverse` is set. The Header shows the logo for dark
+   * backgrounds where every one is dark.
+   */
+  readonly grounds: readonly string[];
+};
+
+/**
+ * The theme's colours that are dark (HH-2), in the page's colours and in reversed sections' (2.4),
+ * as colour refs without an opacity: the roles, their shades and the person's own colours. The
+ * export and the editor work them out from the theme (`darkGroundsOf` in `@webforge/themes`); a
+ * field's own hex colour isn't among them, so it counts as light.
+ */
+export type DarkGrounds = {
+  readonly colors: readonly string[];
+  readonly inverse: readonly string[];
 };
 
 /** What a component may need from outside its own props while rendering. */
@@ -500,6 +523,11 @@ export type RenderContext = SiteBindings & {
    * doesn't set itself (`withLook`). None for a theme without looks.
    */
   readonly looks?: Looks;
+  /**
+   * The theme's dark colours (HH-2), where the Header shows Site Settings' logo for dark
+   * backgrounds. None left out: every colour counts as light, and the Header shows the logo.
+   */
+  readonly darkGrounds?: DarkGrounds;
   /**
    * The address of the site's thank-you page (3.7), set by the export when the form service can
    * send a visitor there after sending and the site has its web address: forms tell the service.

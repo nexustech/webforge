@@ -22,6 +22,7 @@ import v18Site from "../test/fixtures/v18/site.json" with { type: "json" };
 import v19Site from "../test/fixtures/v19/site.json" with { type: "json" };
 import v20Site from "../test/fixtures/v20/site.json" with { type: "json" };
 import v21Site from "../test/fixtures/v21/site.json" with { type: "json" };
+import v22Site from "../test/fixtures/v22/site.json" with { type: "json" };
 import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
 import type { PageId, SharedSectionId } from "./ids.js";
 import {
@@ -159,6 +160,13 @@ const heroOverlays =
     throw new Error("No migration from format 20");
   });
 
+/** Format 21 → 22 (`MIGRATIONS[21]`). */
+const logoOnDark =
+  MIGRATIONS[21] ??
+  ((): never => {
+    throw new Error("No migration from format 21");
+  });
+
 /** Format 5 → 16, each step's own fixture tested below: what the later steps do to an older one. */
 function latest(site: Record<string, unknown> & { formatVersion: 5 }): unknown {
   return exampleMarks(
@@ -201,14 +209,14 @@ const asFormat16 = (site: Record<string, unknown>) =>
 
 /**
  * `site` as format 16 had it: format 17 gives its theme an empty list of the person's own colours
- * (TC-1a, #1217), and formats 18 to 21 change nothing a site without a split Header or a
- * _Columns_ Footer has (HF-1, HF-2, HF-4) but its Heroes' overlay, which they had always drawn
+ * (TC-1a, #1217), and formats 18 to 22 change nothing a site without a split Header or a
+ * _Columns_ Footer has (HF-1, HF-2, HF-4, HH-2) but its Heroes' overlay, which they had always drawn
  * (HH-3), so what the steps before made of it is compared as it was.
  */
 function atFormat16<T extends { formatVersion: number; theme: object }>(site: T) {
   const { ownColors, ...theme } = site.theme as { ownColors?: unknown };
   expect(ownColors).toEqual([]);
-  expect(site.formatVersion).toBe(21);
+  expect(site.formatVersion).toBe(22);
   return { ...withoutHeroOverlays(withoutFooterColumns(site)), theme, formatVersion: 16 };
 }
 
@@ -308,18 +316,27 @@ function widthsOf(...nodes: { type: string; props: Record<string, unknown> }[]):
 }
 
 describe("migrateSite", () => {
-  it("opens the format 21 fixture unchanged, its Hero with an overlay of its own (HH-3)", () => {
-    const site = migrateSite(v21Site);
+  it("opens the format 22 fixture unchanged, with its logo for dark backgrounds (HH-2)", () => {
+    const site = migrateSite(v22Site);
 
-    expect(site).toEqual(v21Site);
+    expect(site).toEqual(v22Site);
     expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
-    expect(heroPropsIn(site)[0]).toMatchObject({ overlay: "40", overlayColor: "base" });
+    expect(site.settings.general.logoOnDark).toBe("logodark00000000");
   });
 
-  it("opens the format 20 fixture as format 21, its Hero's overlay the 70% Neutral it had (HH-3)", () => {
+  it("opens the format 21 fixture as format 22, as it was, with no logo for dark backgrounds", () => {
+    const site = migrateSite(v21Site);
+
+    expect(site).toEqual({ ...v21Site, formatVersion: 22 });
+    expect(site.settings.general.logoOnDark).toBeUndefined();
+    expect(heroPropsIn(site)[0]).toMatchObject({ overlay: "40", overlayColor: "base" });
+    expect(logoOnDark({ formatVersion: 21 })).toEqual({ formatVersion: 22 });
+  });
+
+  it("opens the format 20 fixture as format 22, its Hero's overlay the 70% Neutral it had (HH-3)", () => {
     const site = migrateSite(v20Site);
 
-    expect(site).toEqual(withHeroOverlays({ ...v20Site, formatVersion: 21 }));
+    expect(site).toEqual(withHeroOverlays({ ...v20Site, formatVersion: 22 }));
     expect(heroPropsIn(site)[0]).toMatchObject({ overlay: "70", overlayColor: "neutral" });
     const footer = site.layout.footer.find((node) => node.type === "Footer");
     expect(footer?.props).toMatchObject({ variant: "columns", text: "© Rosa's Bakery, Hightown" });
@@ -330,7 +347,7 @@ describe("migrateSite", () => {
     const site = migrateSite(v19Site);
 
     // Its Footer, Centred, as it was, with no columns.
-    expect(site).toEqual(withHeroOverlays(withFooterColumns({ ...v19Site, formatVersion: 21 })));
+    expect(site).toEqual(withHeroOverlays(withFooterColumns({ ...v19Site, formatVersion: 22 })));
     expect(site.layout.header[0]?.props).toMatchObject({ variant: "split", button: true });
   });
 
@@ -413,7 +430,7 @@ describe("migrateSite", () => {
     const site = migrateSite(v18Site);
 
     // Its logo kept (HF-1); the link hidden in the menu, as the menu editor hides one.
-    expect(site).toEqual(withHeroOverlays(withFooterColumns({ ...v19Site, formatVersion: 21 })));
+    expect(site).toEqual(withHeroOverlays(withFooterColumns({ ...v19Site, formatVersion: 22 })));
     expect(site.settings.general.logo).toBe("logo0000000000aa");
     expect(site.menu.items.map((item) => item.hidden)).toEqual([false, false, false, true]);
   });
@@ -503,7 +520,7 @@ describe("migrateSite", () => {
   it("opens the format 17 fixture as format 20, as it was, with no logo (HF-1)", () => {
     const site = migrateSite(v17Site);
 
-    expect(site).toEqual(withHeroOverlays(withFooterColumns({ ...v17Site, formatVersion: 21 })));
+    expect(site).toEqual(withHeroOverlays(withFooterColumns({ ...v17Site, formatVersion: 22 })));
     expect(headerLogo({ formatVersion: 17 })).toEqual({ formatVersion: 18 });
     expect(site.settings.general.logo).toBeUndefined();
     expect(site.theme.ownColors).toEqual([
@@ -517,7 +534,7 @@ describe("migrateSite", () => {
 
     expect(withoutHeroOverlays(withoutFooterColumns(site))).toEqual({
       ...v16Site,
-      formatVersion: 21,
+      formatVersion: 22,
       theme: { ...v16Site.theme, ownColors: [] },
     });
     // A list already there is kept, and a theme that isn't a record is left for validation.
@@ -1255,6 +1272,9 @@ const LAYOUT_WIDTHS: Readonly<Record<string, Readonly<Record<string, string>>>> 
 
 /** Each step's inverse, keyed by the version it goes down *to*. */
 const DOWN: Readonly<Record<number, (site: Raw) => Raw>> = {
+  // 22 → 21: Site Settings had no logo for dark backgrounds; a site with one keeps it, as format
+  // 22 reads it.
+  21: (site) => ({ ...site, formatVersion: 21 }),
   // 21 → 20: a Hero had no overlay of its own; the 70% Neutral it drew goes (the arbitrary sites'
   // Hero has it, as format 21 gives it).
   20: (site) => ({ ...withoutHeroOverlays(site), formatVersion: 20 }),
