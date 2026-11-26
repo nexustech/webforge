@@ -163,13 +163,7 @@ export function FieldList({
   const groups = optionGroupsOf(tab, fields);
   const all = groups.map(({ key }) => key);
   return (
-    <div
-      className={cn(
-        "flex flex-col pb-2",
-        // The headings' height, for the scroller's padding that keeps the focus clear of them.
-        stickyHeadings && "[--field-group-heading:1.75rem]",
-      )}
-    >
+    <div className="flex flex-col pb-2">
       {groups.map(({ key, id, label: name, fields: inGroup }, index) => {
         const actions = groupActions?.(id) ?? [];
         // Searching shows every group with a match open.
@@ -213,8 +207,9 @@ export function FieldList({
                   name,
                 );
         return (
-          <div key={key} className="border-b border-border">
+          <div key={key} className="border-b border-border" data-field-group="">
             <div
+              data-field-group-heading=""
               className={cn(
                 "group/header flex items-center gap-0.5 pr-1.5 hover:bg-hover",
                 // In view at the top while its fields are, over them (H3); opaque, in the panel's

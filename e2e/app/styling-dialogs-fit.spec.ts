@@ -76,26 +76,40 @@ async function expectPreviewBeside(
 }
 
 /**
- * Tabs through the controls in `scroller` from its first, checking each field the focus reaches is
- * below its group's heading, which stays at the top as the fields scroll under it (WCAG 2.4.11).
+ * Moves the focus to every field's control in `scroller`, top to bottom and then back up, as the
+ * keyboard would, checking each one scrolls clear of its group's heading, which stays at the top as
+ * the fields scroll under it (WCAG 2.4.11). Going up, each control scrolls in at the top, where the
+ * heading is.
  */
 async function expectFocusClearOfHeadings(scroller: Locator, name: string): Promise<void> {
-  await scroller.locator("button[aria-expanded]").first().focus();
-  for (let step = 0; step < 40; step += 1) {
-    await page.keyboard.press("Tab");
-    const place = await scroller.evaluate((area) => {
-      const focused = document.activeElement;
-      if (focused === null || !area.contains(focused)) return "out";
-      // A group's heading row: the first child of the group (its bordered box).
-      const heading = focused.closest(".border-b")?.firstElementChild;
-      if (heading === null || heading === undefined || heading.contains(focused)) return "heading";
-      const top = focused.getBoundingClientRect().top;
-      const under = heading.getBoundingClientRect().bottom;
-      return top >= under - 1 ? "clear" : `under its heading by ${Math.round(under - top)} px`;
-    });
-    if (place === "out") break;
-    expect(["clear", "heading"], `${name}, Tab ${step + 1}`).toContain(place);
-  }
+  const hidden = await scroller.evaluate((area) => {
+    const controls = [
+      ...area.querySelectorAll<HTMLElement>(
+        "[data-field] :is(input, select, textarea, button):not([disabled]):not([tabindex='-1'])",
+      ),
+    ].filter((control) => control.getClientRects().length > 0);
+    const found: string[] = [];
+    for (const [order, list] of [
+      ["down", controls],
+      ["up", [...controls].reverse()],
+    ] as const) {
+      for (const control of list) {
+        control.focus();
+        const heading = control
+          .closest("[data-field-group]")
+          ?.querySelector(":scope > [data-field-group-heading]");
+        if (heading === null || heading === undefined) continue;
+        const under = heading.getBoundingClientRect().bottom - control.getBoundingClientRect().top;
+        if (under > 1) {
+          const field = control.closest("[data-field]")?.getAttribute("data-field");
+          found.push(`${order}: ${field} under its heading by ${Math.round(under)} px`);
+        }
+      }
+    }
+    return { checked: controls.length, found };
+  });
+  expect(hidden.checked, `${name}: controls to focus`).toBeGreaterThan(5);
+  expect(hidden.found, `${name}: the focus is never under a heading`).toEqual([]);
 }
 
 for (const size of SIZES) {

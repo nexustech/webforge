@@ -466,10 +466,7 @@ export function ThemeStudio({
             </TabsContent>
             {/* The kind's look, its tokens and its fields scroll here, as one (H3): a field the focus
                 moves to scrolls clear of its group's heading, which stays in view. */}
-            <TabsContent
-              value="components"
-              className="min-h-0 scroll-pt-(--field-group-heading) overflow-auto pr-1 [--field-group-heading:1.75rem]"
-            >
+            <TabsContent value="components" className="min-h-0 scroll-pt-8 overflow-auto pr-1">
               {shown === undefined ? null : (
                 <StudioComponents
                   theme={theme}

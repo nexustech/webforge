@@ -122,7 +122,7 @@ describe("EditPanel", () => {
     expect(list?.className).not.toContain("columns-");
     expect(header()?.className).toContain("sticky top-0");
     expect(header()?.className).toContain("bg-panel");
-    expect(scroller().className).toContain("scroll-pt-(--field-group-heading)");
+    expect(scroller().className).toContain("scroll-pt-8");
 
     // Without scrolling of its own, its place scrolls it: no scroller in it, nor its height.
     rerender(

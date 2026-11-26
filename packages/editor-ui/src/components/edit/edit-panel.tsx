@@ -131,8 +131,9 @@ export function EditPanel({
       value={group}
       className={cn(
         scrolls && "overflow-auto",
-        // A field the focus moves to scrolls clear of its group's heading (WCAG 2.4.11, H3).
-        scrolls && stickyHeadings && "scroll-pt-(--field-group-heading)",
+        // A field the focus moves to scrolls clear of its group's heading, 1.75rem and its line
+        // (WCAG 2.4.11, H3).
+        scrolls && stickyHeadings && "scroll-pt-8",
       )}
       onKeyDown={(event) => resetFromKeys(event, groupFields)}
     >
