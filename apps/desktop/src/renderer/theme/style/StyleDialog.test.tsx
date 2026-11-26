@@ -9,6 +9,7 @@ import { createPreferencesStore } from "../../shell/preferences-store.js";
 import { sessionWith } from "../../testing/fixtures.js";
 import { followersOf } from "../../testing/followers.test-helper.js";
 import { StyleDialog } from "./StyleDialog.js";
+import type { StyleScope } from "./style-apply.js";
 import { openStyle } from "./style-apply.js";
 import { createStyleDialog } from "./style-state.js";
 
@@ -19,8 +20,15 @@ const button = (id: string): NodeDoc => ({
   props: { id, label: "Book", link: "about" },
 });
 
-/** The dialog open on the Button `styled` of a page with another Button, previews recorded. */
-function setUp(editorLevel: "simple" | "advanced" = "simple", css = false) {
+/**
+ * The dialog open on the Button `styled` of a page with another Button, previews recorded, its
+ * changes applying to `scope`.
+ */
+function setUp(
+  editorLevel: "simple" | "advanced" = "simple",
+  css = false,
+  scope: StyleScope = "this",
+) {
   const site = starterSite();
   const home = site.pages[site.homePageId];
   if (home === undefined) throw new Error("no home page");
@@ -30,7 +38,7 @@ function setUp(editorLevel: "simple" | "advanced" = "simple", css = false) {
   const session = sessionWith(site);
   session.select("styled");
   const state = createStyleDialog();
-  state.setState({ open: true, since: openStyle(session), scope: "this" });
+  state.setState({ open: true, since: openStyle(session), scope });
   const previews = vi.fn((node: NodeDoc, device: string) => (
     <span data-testid={`preview-${device}`}>{String(node.props.lookShadow ?? "none")}</span>
   ));
@@ -103,12 +111,15 @@ describe("StyleDialog (3.13a, CT-2)", () => {
     await vi.waitFor(() =>
       expect(dialog().getByTestId("preview-desktop").textContent).toBe("large"),
     );
+    await user.click(dialog().getByRole("button", { name: "Change" }));
     const scopes = within(dialog().getByRole("group", { name: "Where it applies" }));
     const page = scopes.getByRole("radio", { name: /^Every Button on this page/ });
     expect(document.getElementById(page.getAttribute("aria-describedby") ?? "")?.textContent).toBe(
       "1 other",
     );
     await user.click(page);
+    // Chosen, the choices close to their one line again.
+    expect(dialog().getByText("Applies to: Every Button on this page")).toBeTruthy();
     await user.click(dialog().getByRole("button", { name: "Apply" }));
 
     expect(state.getState().open).toBe(false);
@@ -168,9 +179,15 @@ describe("StyleDialog (3.13a, CT-2)", () => {
     expect(followers.map((count) => count())).toEqual([0, 0]);
   });
 
-  it("offers the four places a change applies", () => {
-    const { dialog } = setUp();
+  it("says where it applies on one line, and offers the four places on Change (H3)", async () => {
+    const { dialog, user } = setUp();
+    expect(dialog().getByText("Applies to: This Button only")).toBeTruthy();
+    expect(dialog().queryByRole("group", { name: "Where it applies" })).toBeNull();
+    const change = dialog().getByRole("button", { name: "Change" });
+    expect(change.getAttribute("aria-expanded")).toBe("false");
 
+    // Opened, the focus is on the one chosen.
+    await user.click(change);
     const scopes = within(dialog().getByRole("group", { name: "Where it applies" }));
     expect(scopes.getAllByRole("radio").map((radio) => radio.getAttribute("value"))).toEqual([
       "this",
@@ -178,9 +195,41 @@ describe("StyleDialog (3.13a, CT-2)", () => {
       "site",
       "theme",
     ]);
-    expect(scopes.getByRole("radio", { name: /^This Button only/ })).toHaveProperty(
-      "checked",
-      true,
-    );
+    const chosen = scopes.getByRole("radio", { name: /^This Button only/ });
+    expect(chosen).toHaveProperty("checked", true);
+    expect(document.activeElement).toBe(chosen);
+
+    // The arrows choose and leave them open; Escape closes them, not the dialog, and the focus is
+    // back on Change.
+    await user.keyboard("{ArrowDown}");
+    expect(dialog().getByRole("group", { name: "Where it applies" })).toBeTruthy();
+    await user.keyboard("{Escape}");
+    expect(dialog().queryByRole("group", { name: "Where it applies" })).toBeNull();
+    expect(dialog().getByText("Applies to: Every Button on this page")).toBeTruthy();
+    expect(document.activeElement).toBe(dialog().getByRole("button", { name: "Change" }));
+  });
+
+  it("says a place chosen before it opened, as Style Every… chooses one (H3)", () => {
+    const { dialog } = setUp("simple", false, "site");
+    expect(dialog().getByText("Applies to: Every Button on the site")).toBeTruthy();
+  });
+
+  it("previews one device at a time in a short window, drawing only the one shown (H3)", async () => {
+    const height = vi.spyOn(window, "innerHeight", "get").mockReturnValue(600);
+    try {
+      const { dialog, user } = setUp();
+      const devices = within(dialog().getByRole("radiogroup", { name: "Preview" }));
+      expect(devices.getByRole("radio", { name: "Desktop" }).getAttribute("aria-checked")).toBe(
+        "true",
+      );
+      expect(dialog().getByTestId("preview-desktop")).toBeTruthy();
+      expect(dialog().queryByTestId("preview-mobile")).toBeNull();
+
+      await user.click(devices.getByRole("radio", { name: "Mobile" }));
+      expect(dialog().getByTestId("preview-mobile")).toBeTruthy();
+      expect(dialog().queryByTestId("preview-desktop")).toBeNull();
+    } finally {
+      height.mockRestore();
+    }
   });
 });

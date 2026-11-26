@@ -159,11 +159,15 @@ export type EditPanelProps = {
   /** Drawn after the Advanced tab's fields: the item's CSS, read only (3.14). */
   readonly advancedFooter?: ReactNode | undefined;
   /**
-   * Flows the option groups into as many columns as fit, for a panel as wide as a dialog (*Style
-   * this Feature…*, Theme Studio, CT-11). Each is at least 37rem wide (481 px): wide enough for a
-   * colour field's names in full, so a 1024 px window has one column, 1280 px two and 1920 px three.
-   * A long group goes on in the next column, as in a newspaper, so the columns come out even; a
-   * field, and a group's name with its first field, are never split.
+   * Keeps each option group's heading in view at the top of what scrolls while its fields are,
+   * for a panel in a dialog (*Style this Feature…*, Theme Studio, H3): one column, every group under
+   * its heading, in place of CT-11's flowing columns. The focus scrolls clear of the heading.
    */
-  readonly columns?: boolean | undefined;
+  readonly stickyHeadings?: boolean | undefined;
+  /**
+   * Whether the panel scrolls its own fields (the default), at the height of its place; without,
+   * it is as tall as its fields and the place it is in scrolls them (Theme Studio's Components,
+   * H3), so there's one scroll area.
+   */
+  readonly scrolls?: boolean | undefined;
 };

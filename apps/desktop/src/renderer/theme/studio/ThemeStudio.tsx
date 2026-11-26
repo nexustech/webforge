@@ -464,7 +464,9 @@ export function ThemeStudio({
                 onChange={(control, value) => void setToken(session, asks, control, value)}
               />
             </TabsContent>
-            <TabsContent value="components" className="min-h-0 overflow-auto pr-1">
+            {/* The kind's look, its tokens and its fields scroll here, as one (H3): a field the focus
+                moves to scrolls clear of its group's heading, which stays in view. */}
+            <TabsContent value="components" className="min-h-0 scroll-pt-8 overflow-auto pr-1">
               {shown === undefined ? null : (
                 <StudioComponents
                   theme={theme}

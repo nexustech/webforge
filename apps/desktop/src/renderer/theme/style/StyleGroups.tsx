@@ -27,7 +27,7 @@ export function StyleGroups({ session }: StyleGroupsProps) {
         flush={() => session.flush()}
         appearanceOnly
         dialogGroups={STYLE_DIALOG_GROUPS}
-        columns
+        stickyHeadings
       />
     </FieldRenderersProvider>
   );
