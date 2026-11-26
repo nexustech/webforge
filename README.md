@@ -36,6 +36,7 @@ Requires Node 24 and pnpm 12 (`npm install -g pnpm@12`; the exact version is pin
 ```sh
 pnpm install   # also installs the git hooks (lefthook)
 pnpm dev       # start the desktop app with hot reload
+pnpm check:quick  # the static checks, and the unit tests the branch's changes can reach, without coverage: before a PR
 pnpm check     # lint, typecheck, package boundaries, unused code, licences, UI strings, help pages, React Compiler, tests with coverage, compiled tests
 ```
 

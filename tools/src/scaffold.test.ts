@@ -614,7 +614,7 @@ describe("pnpm scaffold", () => {
     const printed = output.mock.calls.map(([text]) => String(text)).join("");
     expect(printed).toContain("wrote apps/desktop/src/renderer/bookings/BookingsPanel.tsx");
     expect(printed).toContain("changed apps/desktop/src/renderer/areas.ts");
-    expect(printed).toContain("Then pnpm check.");
+    expect(printed).toContain("Then pnpm check:quick.");
     expect(read(root, "apps/desktop/src/renderer/bookings/area.ts")).toContain(
       "Area<WindowContext>",
     );

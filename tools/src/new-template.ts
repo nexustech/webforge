@@ -192,7 +192,7 @@ export function main(
         "Next: fill it in, its pages, theme and pictures (docs/extending.md), and word its strings",
         "and its row on the templates help page. Then draw its thumbnail with",
         "pnpm template-thumbnails, which needs Docker running: until then it has Blank's, which",
-        "CI's Storybook job finds out of date. Then pnpm check, which writes its export's golden",
+        "CI's Storybook job finds out of date. Then pnpm check:quick, which writes its export's golden",
         "files and Site Check's snapshot the first time: commit them with it.\n",
       ].join("\n"),
     );
