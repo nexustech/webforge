@@ -6,8 +6,10 @@ import {
   type SiteCollection,
   type SitePage,
   type SiteSnapshot,
+  type Theme,
 } from "@webforge/model";
 import {
+  type DarkGrounds,
   hrefFor,
   listPathOf,
   navigationFor,
@@ -15,17 +17,31 @@ import {
   type RenderContext,
   type ResolvedImage,
 } from "@webforge/site-components";
+import { darkGroundsOf } from "@webforge/themes";
 import { imageAt } from "./images.js";
 import { toBundled, withCustomCode } from "./site-code.js";
 import { NOT_FOUND_PATH, siteAddress } from "./site-files.js";
 import { siteTextOf } from "./site-text.js";
+
+/** Each theme's dark colours (HH-2), worked out once for an export's pages. */
+const darkGroundsByTheme = new WeakMap<Theme, DarkGrounds>();
+
+/** `theme`'s dark colours (HH-2), where the Header shows the logo for dark backgrounds. */
+function darkGroundsFor(theme: Theme): DarkGrounds {
+  const known = darkGroundsByTheme.get(theme);
+  if (known !== undefined) return known;
+  const grounds = darkGroundsOf(theme);
+  darkGroundsByTheme.set(theme, grounds);
+  return grounds;
+}
 
 /**
  * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, an
  * image deleted from Media that a page still places (that place is left out), a page *Minify
  * output* couldn't make smaller, as its HTML can't be read (it's written readable, 3.3), or a site
  * icon that gives no favicon (3.4): deleted from Media, or under 16 pixels once cut square; a logo
- * deleted from Media (`missing-logo`, HF-1), once for the site, the Header showing the name; or a
+ * deleted from Media (`missing-logo`, HF-1), once for the site, the Header showing the name, or its
+ * logo for dark backgrounds (`missing-logo-on-dark`, HH-2), the Header showing the logo; or a
  * form with nowhere to send (`form-unset`, 3.7: no form service, Netlify Forms before its
  * publisher, an address that isn't `https://`, or a Newsletter without its address; `detail` says
  * which), the site's `custom.js` with a mistake that stops browsers running it (`custom-script`,
@@ -39,6 +55,7 @@ export type BuildWarning = {
     | "not-minified"
     | "missing-icon"
     | "missing-logo"
+    | "missing-logo-on-dark"
     | "small-icon"
     | "form-unset"
     | "custom-script"
@@ -179,8 +196,9 @@ export function pageRender(
     image: (id) => {
       const image = images.get(id);
       if (image === undefined) {
-        // The logo's is the site's one `missing-logo` (HF-1), not a warning on every page.
-        if (missing.has(id) && id !== site.logo) {
+        // The logos' are the site's one `missing-logo` (HF-1) and `missing-logo-on-dark` (HH-2),
+        // not a warning on every page.
+        if (missing.has(id) && id !== site.logo && id !== site.logoOnDark) {
           warnings.push({ code: "missing-image", page: page.path, detail: id });
         }
         return null;
@@ -191,6 +209,9 @@ export function pageRender(
     setting: (key) => site.settings?.[key],
     // The Header's logo (HF-1), resolved through `image` as any other picture.
     logo: site.logo,
+    // And its logo for dark backgrounds (HH-2), on the theme's dark colours.
+    logoOnDark: site.logoOnDark,
+    darkGrounds: darkGroundsFor(site.theme),
     // A post's fields, which its Blog's design shows (6.10a); an empty one shows nothing.
     ...(page.item === undefined ? {} : { item: itemOf(page.item) }),
     // The page's whole address, which Share buttons share (6.17b): none without a web address.

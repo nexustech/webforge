@@ -77,6 +77,8 @@ export {
   TEXT_PX,
 } from "./surface.js";
 export {
+  darkGroundsOf,
+  isDarkColour,
   oklchCss,
   radiusCss,
   shadowCss,

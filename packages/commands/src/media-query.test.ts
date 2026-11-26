@@ -56,10 +56,11 @@ describe("the media query (4.12b, AIB-7)", () => {
     });
   });
 
-  it("says which picture is the logo or the icon, which the settings query gives too (#1373)", () => {
+  it("says which picture is a logo or the icon, which the settings query gives too (#1373)", () => {
     const { host } = setup(true, (doc) => {
       doc.media[photo.id] = photo;
       doc.settings.general.logo = photo.id;
+      doc.settings.general.logoOnDark = photo.id;
       doc.settings.general.icon = photo.id;
     });
     const api = createCommandApi(host);
@@ -67,7 +68,8 @@ describe("the media query (4.12b, AIB-7)", () => {
     const media = api.query("media", {});
     expect(media).toMatchObject({
       status: "done",
-      data: [{ id: photo.id, usedAs: ["logo", "icon"] }],
+      // And the logo for dark backgrounds (HH-2).
+      data: [{ id: photo.id, usedAs: ["logo", "logoOnDark", "icon"] }],
     });
     const settings = api.query("settings", {});
     expect(settings).toMatchObject({

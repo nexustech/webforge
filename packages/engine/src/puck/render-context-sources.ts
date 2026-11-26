@@ -7,6 +7,7 @@ type Source =
   | "setImages"
   | "setPreviews"
   | "setLooks"
+  | "setDarkGrounds"
   | "setSettings"
   | "setItem"
   | "setPosts"
@@ -31,6 +32,9 @@ export const RENDER_CONTEXT_SOURCES = {
   previews: "setPreviews",
   // The theme's looks (3.12): the editor sets them again when the theme changes.
   looks: "setLooks",
+  // The theme's dark colours, where the Header shows the logo for dark backgrounds (HH-2): the
+  // editor sets them again when the theme changes.
+  darkGrounds: "setDarkGrounds",
   // Never on the canvas, which always shows Custom Code sanitised.
   rawCustomCode: "export",
   // The Footer's Cookie settings: only an exported site has a consent banner to reopen.
@@ -61,6 +65,7 @@ export const RENDER_CONTEXT_SOURCES = {
   openingHours: "setSettings",
   socialProfiles: "setSettings",
   logo: "setSettings",
+  logoOnDark: "setSettings",
   socialHint: "setSettings",
   language: "setSettings",
   siteText: "setSettings",
