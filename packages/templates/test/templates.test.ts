@@ -412,6 +412,7 @@ describe("siteFromTemplate (2.14a)", () => {
       // As New Site and the quick start make it.
       const site = siteFromTemplate(template, images, { name: "x", theme: DEFAULT_THEME });
       const header = site.layout.header.find((node) => node.type === "Header");
+      expect(header, template.id).toBeDefined();
       expect(header?.props.background === "section", template.id).toBe(
         template.id === "photographer",
       );
