@@ -194,6 +194,22 @@ describe("a Header joined to its first section, drawn (HH-1)", () => {
     expect(own?.className).toContain("backdrop-blur");
   });
 
+  it("hides on the way down while joined, solid as it comes back (HH-7)", () => {
+    const def = siteLibrary.components.Header;
+    const drawn = rendered([header({ sticky: true, scrollStyle: "hide" })], [hero()]).querySelector(
+      "header",
+    );
+    expect(drawn?.getAttribute("data-wf-sticky")).toBe("hide");
+    expect(drawn?.className).toContain("data-hidden:-translate-y-full");
+    expect(drawn?.className).toContain("data-scrolled:bg-base-100");
+    const behaviours = def?.behaviours;
+    if (typeof behaviours !== "function")
+      throw new Error("The Header's behaviours follow its values");
+    expect(
+      behaviours({ ...def?.defaults, background: "section", sticky: true, scrollStyle: "hide" }),
+    ).toEqual(["menu", "sticky", "header-hide", "joined"]);
+  });
+
   it("keeps the phone menu's panel solid, in the page's text colour", () => {
     const panel = rendered([header()], [hero()]).querySelector("details[data-wf-menu] > ul");
     expect(panel?.className).toContain("bg-base-100");
@@ -232,10 +248,10 @@ describe("a Header joined to its first section, drawn (HH-1)", () => {
 describe("the joined Header's scroll styles (HH-1)", () => {
   const scrollStyle = siteLibrary.components.Header?.fields.scrollStyle;
 
-  it("offers Shadow and Shrink while joined, and every style with its own background", () => {
+  it("offers Shadow, Shrink and Hide when scrolling down while joined, and every style with its own", () => {
     expect(
       scrollStyle?.kind === "select" && scrollStyle.offered?.({ background: "section" }),
-    ).toEqual(["shadow", "shrink"]);
+    ).toEqual(["shadow", "shrink", "hide"]);
     expect(scrollStyle?.kind === "select" && scrollStyle.offered?.({ background: "own" })).toBe(
       undefined,
     );

@@ -49,6 +49,8 @@ export const layout = {
   "field.scrollStyle.shadow": "Shadow",
   "field.scrollStyle.shrink": "Shrink",
   "field.scrollStyle.solid": "Solid background",
+  // Slides out of view on the way down the page, and back on the way up (HH-7).
+  "field.scrollStyle.hide": "Hide when scrolling down",
   "field.scrollStyle.none": "None",
   // The section in view (5.10b, GA10-1).
   "field.sectionHighlight": "Highlight the section in view",

@@ -166,13 +166,15 @@ function HeaderNavigation({
 
 const HEADER_LAYOUTS = ["left", "centred", "split"] as const;
 type HeaderLayout = (typeof HEADER_LAYOUTS)[number];
-const SCROLL_STYLES = ["shadow", "shrink", "solid", "none"] as const;
+const SCROLL_STYLES = ["shadow", "shrink", "solid", "hide", "none"] as const;
 type ScrollStyle = (typeof SCROLL_STYLES)[number];
 const LOGO_PLACES = ["instead", "beside"] as const;
 
 /**
  * A sticky header's classes for its scroll style (F-DS-6), applied once the page has scrolled 80 px
- * (`data-scrolled`, set by `webforge.js`'s "sticky" behaviour).
+ * (`data-scrolled`, set by `webforge.js`'s "sticky" behaviour). *Hide when scrolling down* (HH-7)
+ * slides up out of view while "header-hide" says so (`data-hidden`), and back on the way up; for
+ * visitors who ask for less motion it goes and comes back without sliding.
  */
 const STICKY_CLASSES: Readonly<Record<ScrollStyle, string>> = {
   shadow: "sticky top-0 bg-base-100 shadow-none transition-shadow data-scrolled:shadow-md",
@@ -180,6 +182,7 @@ const STICKY_CLASSES: Readonly<Record<ScrollStyle, string>> = {
     "sticky top-0 bg-base-100 shadow-sm transition-[min-height,padding] data-scrolled:min-h-12 data-scrolled:py-1",
   solid:
     "sticky top-0 bg-base-100/80 shadow-sm backdrop-blur transition-colors data-scrolled:bg-base-100",
+  hide: "sticky top-0 bg-base-100 shadow-sm transition-transform duration-300 motion-reduce:transition-none data-hidden:-translate-y-full data-hidden:shadow-none",
   none: "sticky top-0 bg-base-100 shadow-sm",
 };
 
@@ -224,10 +227,11 @@ const SHRINK_BAR =
 const HEADER_BACKGROUNDS = ["own", "section"] as const;
 
 /**
- * The scroll styles a joined Header offers (HH-1): it turns solid once scrolled anyway, so
- * *Solid background* and *None* aren't offered, and a Header saved with one draws as *Shadow*.
+ * The scroll styles a joined Header offers (HH-1): *Shadow*, *Shrink* and *Hide when scrolling
+ * down* (HH-7). It turns solid once scrolled anyway, so *Solid background* and *None* aren't
+ * offered, and a Header saved with one draws as *Shadow*.
  */
-const JOINED_SCROLL_STYLES = ["shadow", "shrink"] as const satisfies readonly ScrollStyle[];
+const JOINED_SCROLL_STYLES = ["shadow", "shrink", "hide"] as const satisfies readonly ScrollStyle[];
 type JoinedScrollStyle = (typeof JOINED_SCROLL_STYLES)[number];
 
 /**
@@ -258,6 +262,8 @@ const JOINED_STICKY_CLASSES: Readonly<Record<JoinedScrollStyle, string>> = {
     "sticky top-0 shadow-none transition-[background-color,box-shadow] data-scrolled:bg-base-100 data-scrolled:shadow-md noscript:relative",
   shrink:
     "sticky top-0 transition-[background-color,min-height,padding] data-scrolled:bg-base-100 data-scrolled:shadow-sm data-scrolled:min-h-12 data-scrolled:py-1 noscript:relative",
+  // Out of view on the way down (HH-7), solid when it comes back on the way up.
+  hide: "sticky top-0 transition-[background-color,box-shadow,transform] duration-300 motion-reduce:transition-none data-scrolled:bg-base-100 data-scrolled:shadow-sm data-hidden:-translate-y-full data-hidden:shadow-none noscript:relative",
 };
 
 /** {@link SHRINK_HEADER} for a joined Header (HH-1): the bar inside it shrinks, as there. */
@@ -349,9 +355,12 @@ const header = defineComponent({
     scrollStyle: "shadow",
     sectionHighlight: true,
   },
+  // Hiding on the way down (HH-7), and joining the first section (HH-1), are behaviours of their
+  // own, so other Headers' exports don't change.
   behaviours: (values) => [
     "menu",
     ...(values.sticky ? (["sticky"] as const) : []),
+    ...(values.sticky && values.scrollStyle === "hide" ? (["header-hide"] as const) : []),
     ...(values.background === "section" ? (["joined"] as const) : []),
   ],
   render: ({ values, context }) => {
@@ -414,7 +423,8 @@ const header = defineComponent({
       </>
     );
     const sticky = {
-      ...(values.sticky ? { "data-wf-sticky": "" } : {}),
+      // "header-hide" finds a Header that hides on the way down (HH-7) by its value.
+      ...(values.sticky ? { "data-wf-sticky": values.scrollStyle === "hide" ? "hide" : "" } : {}),
       // Its height measured, and its reversed colours taken off once scrolled (`joined.js`).
       ...(joined === undefined ? {} : { "data-wf-joined": "" }),
       ...(joined?.inverse === true ? { "data-theme": INVERSE_THEME } : {}),

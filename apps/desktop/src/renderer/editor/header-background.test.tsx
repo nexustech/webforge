@@ -54,7 +54,7 @@ describe("the Header's Background (HH-1)", () => {
     expect(header()?.background).toBeUndefined();
   });
 
-  it("offers Shadow and Shrink while joined, showing a saved Solid background as Shadow", async () => {
+  it("offers Shadow, Shrink and Hide when scrolling down while joined, showing a saved Solid background as Shadow", async () => {
     const { header, session, user } = setup("header");
     act(() => {
       session.history.run("Changed shared Header", (draft) => {
@@ -65,11 +65,11 @@ describe("the Header's Background (HH-1)", () => {
       });
     });
     await user.click(screen.getByRole("tab", { name: "Style" }));
-    expect(scrollStyles()).toEqual(["shadow", "shrink", "solid", "none"]);
+    expect(scrollStyles()).toEqual(["shadow", "shrink", "solid", "hide", "none"]);
 
     await user.selectOptions(screen.getByLabelText("Background"), "section");
 
-    expect(scrollStyles()).toEqual(["shadow", "shrink"]);
+    expect(scrollStyles()).toEqual(["shadow", "shrink", "hide"]);
     expect(screen.getByLabelText<HTMLSelectElement>("Change style when scrolling").value).toBe(
       "shadow",
     );

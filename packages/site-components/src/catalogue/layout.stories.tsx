@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { NodeDoc } from "@webforge/model";
+import { within } from "storybook/test";
 import { SiteNodes, SitePage } from "../stories/site-nodes.js";
 
 const meta = {
@@ -57,6 +58,36 @@ export const HeaderLogoBeside: Story = {
 /** A sticky Header (F-DS-6), as it is before the page scrolls: its shadow comes once it has. */
 export const HeaderSticky: Story = {
   args: { nodes: header({ sticky: true, scrollStyle: "shadow" }) },
+};
+
+/** A Header that hides on the way down (HH-7), over the top of a page's first section. */
+const hidingHeader = [
+  ...header({ sticky: true, scrollStyle: "hide" }),
+  {
+    type: "Section",
+    props: {
+      id: "section",
+      content: [
+        { type: "Heading", props: { id: "heading", text: "Fresh every morning", size: "large" } },
+      ],
+    },
+  },
+];
+
+/** A Header that hides on the way down the page (HH-7), in view as the page opens. */
+export const HeaderHides: Story = { args: { nodes: hidingHeader } };
+
+/** What the story sets on the Header: the package has no DOM types (it renders in Node). */
+type Marked = { setAttribute(name: string, value: string): void };
+
+/** The same once the page has scrolled down: slid up out of view, until the visitor scrolls up. */
+export const HeaderHidden: Story = {
+  args: { nodes: hidingHeader },
+  play: async ({ canvasElement }) => {
+    // As the "header-hide" behaviour marks it on the way down.
+    const header = within(canvasElement).getByRole("banner") as unknown as Marked;
+    header.setAttribute("data-hidden", "");
+  },
 };
 
 /** The shared Footer, its text centred. */
