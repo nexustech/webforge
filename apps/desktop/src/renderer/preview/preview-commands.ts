@@ -112,28 +112,41 @@ export function registerPreviewCommands(
   let following: (() => void) | undefined;
 
   // Stop Phone Preview (3.2): registered while a phone can open the preview, so the title bar
-  // shows it is on, and in the File menu; it stops only the phone's listener.
+  // shows it is on, and in the File menu; it stops only the phone's listener. Show Phone Preview…
+  // goes with it, in the command box: the dialog again, with the running preview's address, for the
+  // title bar's cue in a narrow window, without taking the site again (#1438).
   let stopping: (() => void) | undefined;
   const phoneOff = () => {
     stopping?.();
     stopping = undefined;
   };
-  const phoneOn = () => {
-    if (stopping !== undefined) return;
-    stopping = registry.register({
-      id: COMMAND_IDS.stopPhonePreview,
-      label: t("command.stopPhonePreview"),
-      menu: "file",
-      run: () => {
-        api
-          .stopPhone()
-          .then(() => {
-            phoneOff();
-            if (phone.getState().status === "ready") phone.setState({ status: "closed" }, true);
-          })
-          .catch((error: unknown) => reportFailure("preview.stopPhone", error));
-      },
-    });
+  const phoneOn = (address: Extract<PhoneState, { status: "ready" }>) => {
+    // A new address replaces the last: the commands show the one a phone can open now.
+    phoneOff();
+    const removers = [
+      registry.register({
+        id: COMMAND_IDS.stopPhonePreview,
+        label: t("command.stopPhonePreview"),
+        menu: "file",
+        run: () => {
+          api
+            .stopPhone()
+            .then(() => {
+              phoneOff();
+              if (phone.getState().status === "ready") phone.setState({ status: "closed" }, true);
+            })
+            .catch((error: unknown) => reportFailure("preview.stopPhone", error));
+        },
+      }),
+      registry.register({
+        id: COMMAND_IDS.showPhonePreview,
+        label: t("command.showPhonePreview"),
+        run: () => phone.setState(address, true),
+      }),
+    ];
+    stopping = () => {
+      for (const remove of removers) remove();
+    };
   };
   // Main stops the phone's listener by itself once no phone has used it for a while, or the
   // computer left its network (S9): the cue goes, the address shown goes, and the person is told.
@@ -258,7 +271,7 @@ export function registerPreviewCommands(
             .phone(sessionId(), content(), page())
             .then((address) => {
               // A phone can open it now, dialog open or not: the title bar says so until it stops.
-              if (address.status === "ready") phoneOn();
+              if (address.status === "ready") phoneOn(address);
               // Closed while it started: it stays closed.
               if (phone.getState().status === "starting") phone.setState(address, true);
             })

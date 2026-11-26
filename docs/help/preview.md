@@ -4,7 +4,7 @@ id: preview
 title: Preview
 summary: See your site in your web browser and on your phone, as visitors will, while you edit, and save a page as an image or a PDF.
 related: [export, site-check, custom-code, pages, layers]
-updated: 2026-11-22
+updated: 2026-11-26
 ---
 
 # Preview
@@ -33,7 +33,7 @@ Anything set to **Don't publish** in [Layers](layers.md#what-you-can-do) isn't i
 
 Choose **File › Preview on Phone…**, then point your phone's camera at the code that appears. Or type the address shown into your phone's browser. Your phone needs to be on the same Wi-Fi as your computer.
 
-While it's on, the title bar shows **Phone preview on**, with a button to stop it. Anyone on your Wi-Fi who has the address can see the preview, so stop it when you're done. It also stops by itself after 10 minutes without use, or if your computer leaves the Wi-Fi.
+While it's on, the title bar shows **Phone preview on**, with **Stop**. In a narrower window it shows a phone with a green dot instead: click it to see the code and the address again, and to stop the preview. **Stop Phone Preview** is also in the dialog, and in the **File** menu. Anyone on your Wi-Fi who has the address can see the preview, so stop it when you're done. It also stops by itself after 10 minutes without use, or if your computer leaves the Wi-Fi.
 
 Phone preview needs a home or office Wi-Fi. It may not work on public Wi-Fi.
 

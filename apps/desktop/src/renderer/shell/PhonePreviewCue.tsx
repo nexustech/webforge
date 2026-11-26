@@ -5,41 +5,75 @@ import { useId } from "react";
 import { useCommand, useCommandRegistry } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 
+/** The cue's look: a filled tag, so it reads as "on", not as one more button in the bar. */
+const TAG = "shrink-0 items-center rounded-sm bg-accent text-xs text-accent-foreground";
+
 /**
- * The title bar's cue while a phone can open the preview (3.2): "Phone preview on", with Stop, for
- * as long as Stop Phone Preview is registered, which the preview does while its listener on the
- * local network is on. Nothing otherwise.
+ * The title bar's cue while a phone can open the preview (3.2): for as long as Stop Phone Preview
+ * is registered, which the preview does while its listener on the local network is on. Nothing
+ * otherwise. It never wraps, and it folds before anything else in the bar does (#1438):
+ * - in a wide title bar, "Phone preview on" with **Stop**;
+ * - in a narrower one, the phone's icon with a dot, which opens Preview on Your Phone for the
+ *   preview as it is, its address and Stop (Show Phone Preview…). Its name says it's on.
  *
- * Its tooltip says who can see the preview, on pointing at the cue and on Stop's keyboard focus
- * (which reaches the cue): what to know before stopping it. Stop is described by it too, so a
- * screen reader hears it there.
+ * Its tooltip says who can see the preview, on pointing at the cue and on its button's keyboard
+ * focus: what to know before stopping it. The button is described by it too, so a screen reader
+ * hears it there.
  */
 export function PhonePreviewCue() {
   const registry = useCommandRegistry();
   const stop = useCommand(COMMAND_IDS.stopPhonePreview);
+  const show = useCommand(COMMAND_IDS.showPhonePreview);
   const description = useId();
   if (stop === undefined) return null;
   return (
-    <WithTooltip tooltip={t("preview.phone.onDescription")}>
-      <div
-        role="status"
-        className="flex h-7 items-center gap-1.5 rounded-sm bg-accent px-2 text-xs text-accent-foreground"
-      >
-        <SmartphoneIcon aria-hidden className="size-3.5" />
-        <span>{t("preview.phone.on")}</span>
-        <span id={description} hidden>
-          {t("preview.phone.onDescription")}
-        </span>
-        <Button
-          size="sm"
-          variant="secondary"
-          className="h-5 px-1.5"
-          aria-describedby={description}
-          onClick={() => void registry.run(stop.id)}
+    // One status for both forms: what it says, as it appears, is the form shown's words.
+    <div role="status" className="flex shrink-0">
+      <span id={description} hidden>
+        {t("preview.phone.onDescription")}
+      </span>
+      <WithTooltip tooltip={t("preview.phone.onDescription")}>
+        <div
+          className={`${TAG} hidden h-8 gap-1.5 pr-0.5 pl-2 whitespace-nowrap @min-[1440px]/title-bar:flex`}
         >
-          {stop.label}
-        </Button>
-      </div>
-    </WithTooltip>
+          <SmartphoneIcon aria-hidden className="size-3.5" />
+          <span>{t("preview.phone.on")}</span>
+          <Button
+            // Its least, 24 px (L4, #1454): the small button's height.
+            size="sm"
+            variant="secondary"
+            aria-label={stop.label}
+            aria-describedby={description}
+            onClick={() => void registry.run(stop.id)}
+          >
+            {t("preview.phone.stop")}
+          </Button>
+        </div>
+      </WithTooltip>
+      {show === undefined ? null : (
+        <div className={`${TAG} flex @min-[1440px]/title-bar:hidden`}>
+          <WithTooltip tooltip={t("preview.phone.onDescription")}>
+            <Button
+              variant="ghost"
+              // An icon button's size, the least a target may be (L4, #1454).
+              size="icon"
+              className="relative text-accent-foreground hover:bg-accent-foreground/10"
+              aria-describedby={description}
+              aria-haspopup="dialog"
+              onClick={() => void registry.run(show.id)}
+            >
+              <SmartphoneIcon aria-hidden className="size-3.5" />
+              {/* Its name, and what the status says as it appears (an aria-label isn't read there). */}
+              <span className="sr-only">{t("preview.phone.on")}</span>
+              {/* On: a dot, as a recording light is. */}
+              <span
+                aria-hidden
+                className="absolute top-1 right-1 size-1.5 rounded-full bg-success"
+              />
+            </Button>
+          </WithTooltip>
+        </div>
+      )}
+    </div>
   );
 }
