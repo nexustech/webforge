@@ -46,6 +46,7 @@ With the Header's **Background** at _The first section's_, each page follows its
 - On a dark colour, or a photo under a dark overlay, the Header shows your [Logo for dark backgrounds](site-settings.md#general), if you chose one. A Header that stays at the top changes to your logo as it turns solid in the page's colours, and back at the top of the page.
 - The menu is as easy to read as the section's own text: if the section's text is hard to read on its picture, {appName} warns you, and a stronger overlay helps both.
 - A Hero that opens its page has a **Header** line at the top of its **Style** tab's Options: **Change in the Header** selects the Header.
+- A new site from the [Photographer / Portfolio template](templates.md), whose Hero has a picture behind its text, starts with _The first section's_. A new site from any other template starts with _Its own_.
 - A site made before this setting keeps _Its own_, so nothing moves until you change it.
 
 On phones the menu folds into a button. To see and edit it open, view Mobile, select the Header and turn on **Show mobile menu**.
