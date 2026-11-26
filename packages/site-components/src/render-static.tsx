@@ -10,7 +10,7 @@ import {
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { FooterColumnContext } from "./column-form.js";
-import { joinedHeaderOf } from "./joined-header.js";
+import { belowHeaderOf, joinedHeaderOf } from "./joined-header.js";
 import {
   type ComponentDef,
   type ComponentLibrary,
@@ -284,7 +284,13 @@ export function renderPage(
   const { joinedHeader: _was, ...shown } = withPageHeading(regions, library, context);
   // The Header on its first section (HH-1): both draw it.
   const joined = joinedHeaderOf(regions, library, context.looks);
-  const placed = joined === undefined ? shown : { ...shown, joinedHeader: joined };
+  // A first section filling the window under the Header's own band (HH-4): both draw it too.
+  const below = belowHeaderOf(regions, library, context.looks);
+  const placed = {
+    ...shown,
+    ...(joined === undefined ? {} : { joinedHeader: joined }),
+    ...(below === undefined ? {} : { belowHeader: below }),
+  };
   return {
     header: renderNodesToHtml(regions.header, library, placed),
     main: renderNodesToHtml(

@@ -70,6 +70,38 @@ export const HeroTextBottom: Story = {
   },
 };
 
+/** The Hero in each layout at a `height` (HH-4), its text at the bottom of its picture (HH-6). */
+const heights = (height: string) => [
+  hero("left", {
+    id: `hero-${height}-background`,
+    variant: "background",
+    height,
+    textPlace: "bottom",
+  }),
+  hero("left", { id: `hero-${height}-split`, height }),
+  hero("centre", {
+    id: `hero-${height}-centred`,
+    variant: "centred",
+    contentWidth: "medium",
+    height,
+  }),
+  hero("centre", {
+    id: `hero-${height}-minimal`,
+    variant: "minimal",
+    contentWidth: "narrow",
+    height,
+  }),
+];
+
+/** Each layout Tall (HH-4): 70% of the window, never below its own floor, the content centred. */
+export const HeroTall: Story = { args: { nodes: heights("tall") } };
+
+/**
+ * Each layout at Whole screen (HH-4): as tall as the window, here with no Header above it; the
+ * picture's with its text at the bottom (HH-6), where it shows most.
+ */
+export const HeroWholeScreen: Story = { args: { nodes: heights("screen") } };
+
 /** The Hero with text only (2.6). */
 export const HeroMinimal: Story = {
   args: { nodes: [hero("centre", { variant: "minimal", contentWidth: "narrow" })] },

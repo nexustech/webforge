@@ -372,9 +372,14 @@ const header = defineComponent({
     const capped = width !== "full";
     // On this page's first section (HH-1), where the page has one.
     const joined = values.background === "section" ? context.joinedHeader : undefined;
+    // Over a first section that fills the window (HH-4), its band's height, which the section leaves
+    // room for: the same estimate, measured by the same script, as a joined Header's.
+    const above = joined === undefined && context.belowHeader !== undefined;
     const look =
       joined === undefined
-        ? ownLook(values, layout, capped)
+        ? above
+          ? `${ownLook(values, layout, capped)} ${JOINED_HEIGHT[layout]}`
+          : ownLook(values, layout, capped)
         : [joinedLook(values, layout, capped), JOINED_CLASSES, JOINED_HEIGHT[layout], joined.text]
             .filter((part) => part !== "")
             .join(" ");
@@ -427,6 +432,8 @@ const header = defineComponent({
       ...(values.sticky ? { "data-wf-sticky": values.scrollStyle === "hide" ? "hide" : "" } : {}),
       // Its height measured, and its reversed colours taken off once scrolled (`joined.js`).
       ...(joined === undefined ? {} : { "data-wf-joined": "" }),
+      // Its height measured for the section below that fills the window (HH-4, `joined.js`).
+      ...(above ? { "data-wf-height": "" } : {}),
       ...(joined?.inverse === true ? { "data-theme": INVERSE_THEME } : {}),
     };
     if (!capped) {

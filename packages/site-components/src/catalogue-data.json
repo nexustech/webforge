@@ -3316,6 +3316,25 @@
           "kind": "media",
           "label": "Image"
         },
+        "height": {
+          "kind": "select",
+          "label": "Height",
+          "help": "Whole screen fills the window, under the Header unless the Header is on the Hero. Content taller than that still shows whole.",
+          "options": [
+            {
+              "label": "Fits its content",
+              "value": "fit"
+            },
+            {
+              "label": "Tall",
+              "value": "tall"
+            },
+            {
+              "label": "Whole screen",
+              "value": "screen"
+            }
+          ]
+        },
         "textPlace": {
           "kind": "select",
           "label": "Text on the picture",
@@ -3529,6 +3548,7 @@
         "text": "Say in one sentence what makes your business special.",
         "buttonLabel": "Get in touch",
         "alignment": "centre",
+        "height": "fit",
         "textPlace": "middle",
         "contentWidth": "wide"
       },

@@ -9,6 +9,7 @@ import {
   type SharedSectionsDoc,
 } from "@webforge/model";
 import {
+  belowHeaderOf,
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   joinedHeaderOf,
@@ -284,21 +285,27 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       joinedDue = false;
       if (library === null) return;
       const { page: shown, layout, shared } = page.docs();
-      const joined = joinedHeaderOf(
-        { header: layout.header, content: firstShown(shown.content, shared) },
-        library,
-        parts.looks,
-      );
+      const regions = { header: layout.header, content: firstShown(shown.content, shared) };
+      const joined = joinedHeaderOf(regions, library, parts.looks);
+      // A first section filling the window under the Header's own band (HH-4), found with it.
+      const below = belowHeaderOf(regions, library, parts.looks);
       const was = parts.joinedHeader;
       if (
         was?.section === joined?.section &&
         was?.inverse === joined?.inverse &&
-        was?.text === joined?.text
+        was?.text === joined?.text &&
+        parts.belowHeader === below
       ) {
         return;
       }
-      const { joinedHeader: _was, ...rest } = parts;
-      changeContext({ parts: joined === undefined ? rest : { ...rest, joinedHeader: joined } });
+      const { joinedHeader: _was, belowHeader: _below, ...rest } = parts;
+      changeContext({
+        parts: {
+          ...rest,
+          ...(joined === undefined ? {} : { joinedHeader: joined }),
+          ...(below === undefined ? {} : { belowHeader: below }),
+        },
+      });
     });
   };
 

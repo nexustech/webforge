@@ -221,8 +221,13 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
    * draws itself with `overlayLayer`.
    */
   readonly background?: false | "own";
-  /** The frame's classes from its values: its background and layout ("hero bg-base-200"). */
-  readonly frame?: (values: ValuesOf<F & FrameFields, Variant>) => string;
+  /**
+   * The frame's classes from its values: its background and layout ("hero bg-base-200"), and,
+   * from where the section is, its height under a Header with its own band (HH-4).
+   */
+  readonly frame?: (values: ValuesOf<F & FrameFields, Variant>, place?: SectionPlace) => string;
+  /** Whether the section fills the window's height with `values` (`ComponentDef.fillsWindow`). */
+  readonly fillsWindow?: (values: ValuesOf<F & FrameFields, Variant>) => boolean;
   /**
    * Attributes on the frame from its values, for its behaviour (`data-wf-gallery`), and its name
    * in the site's words (`context.siteText`).
@@ -271,6 +276,15 @@ function frameGround(classes: string): string | undefined {
     classes,
   )?.[1];
 }
+
+/** Where a section is on its page, for its frame (`SectionSpec.frame`). */
+export type SectionPlace = {
+  /**
+   * It's the page's first section, filling the window under a Header with its own band
+   * (`RenderContext.belowHeader`, HH-4): its height leaves the Header's room.
+   */
+  readonly belowHeader: boolean;
+};
 
 /**
  * A section (2.19): {@link defineComponent} for a page band, which adds what every section has.
@@ -392,7 +406,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
       const underHeader = props.id === props.context.joinedHeader?.section;
       const classes = [
         `site-${name}`,
-        frame?.(values) ?? "",
+        frame?.(values, { belowHeader: props.context.belowHeader === props.id }) ?? "",
         `${paddedColumn?.(values) === true ? (underHeader ? UNDER_HEADER : "") : sectionPadding(stored.padding, underHeader)}${marginClasses(stored.margin)}${entranceClasses(stored)}`.trim(),
         appearanceBoxClasses(stored),
         backgroundClasses(stored),

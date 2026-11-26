@@ -26,6 +26,7 @@ import {
   CHECK_TEMPLATES,
   CONTACT_BUTTONS_SITE_DIR,
   EXPORTED_SITE_DIR,
+  HERO_HEIGHT_SITE_DIR,
   HERO_OVERLAY_SITE_DIR,
   HIDING_HEADER_SITE_DIR,
   JOINED_SITE_DIR,
@@ -540,6 +541,51 @@ setup(
       HERO_OVERLAY_SITE_DIR,
     );
     expect(pages).toContain("index.html");
+  },
+);
+
+setup(
+  "export a page opening with a Whole screen Hero, under the Header and joined (HH-4)",
+  async () => {
+    const sample = sampleSite();
+    const [home] = sample.pages;
+    const [header, ...rest] = sample.layout.header;
+    if (home === undefined || header === undefined) throw new Error("The fixture site has no home");
+    rmSync(HERO_HEIGHT_SITE_DIR, { recursive: true, force: true });
+    // One page and no files, through the pipeline alone: the Hero's height under the Header is what
+    // matters here, with its own band and joined to it (HH-1), and a section after it.
+    const content: NodeDoc[] = [
+      {
+        type: "Hero",
+        props: {
+          id: "hero",
+          title: "Baked fresh every morning",
+          text: "Sourdough, cakes and pastries.",
+          variant: "background",
+          height: "screen",
+        },
+      },
+      {
+        type: "TextSection",
+        props: { id: "story", title: "Our story", text: "<p>Since 1998.</p>" },
+      },
+    ];
+    for (const background of ["own", "section"] as const) {
+      const pages = await exportSnapshot(
+        {
+          ...sample,
+          media: [],
+          documents: [],
+          layout: {
+            ...sample.layout,
+            header: [{ ...header, props: { ...header.props, background } }, ...rest],
+          },
+          pages: [{ ...home, doc: { root: { props: {} }, content } }],
+        },
+        join(HERO_HEIGHT_SITE_DIR, background === "own" ? "own" : "joined"),
+      );
+      expect(pages).toContain("index.html");
+    }
   },
 );
 

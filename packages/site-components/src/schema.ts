@@ -480,6 +480,13 @@ export type RenderContext = SiteBindings & {
    */
   readonly joinedHeader?: JoinedHeader;
   /**
+   * The id of the page's first section where it fills the window under a Header with its own band
+   * (a Hero at _Whole screen_, HH-4), set as {@link joinedHeader} is: its height leaves the Header's
+   * room, which the Header gives the page then (`--wf-header-h`, its estimate and `joined.js`), as
+   * a joined one does. Left out where the Header is joined, hidden, or the section doesn't fill it.
+   */
+  readonly belowHeader?: string;
+  /**
    * The id of the section whose title is the page's main heading, `<h1>`, on a page with none of
    * its own (#1173): its first section with a title, as `pageHeadings` decides. Set by
    * `renderPage`, and by the canvas for the page it shows.

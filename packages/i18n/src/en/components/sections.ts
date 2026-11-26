@@ -14,6 +14,13 @@ export const sections = {
   "field.heroLayout.split": "Image beside the text",
   "field.heroLayout.centred": "Centred, image below",
   "field.heroLayout.background": "Image behind the text",
+  // How tall the Hero is (HH-4).
+  "field.heroHeight": "Height",
+  "field.heroHeight.help":
+    "Whole screen fills the window, under the Header unless the Header is on the Hero. Content taller than that still shows whole.",
+  "field.heroHeight.fit": "Fits its content",
+  "field.heroHeight.tall": "Tall",
+  "field.heroHeight.screen": "Whole screen",
   // Where the Hero's text sits on its picture (HH-6).
   "field.heroTextPlace": "Text on the picture",
   "field.heroTextPlace.help":

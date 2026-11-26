@@ -2,7 +2,7 @@ import { INVERSE_THEME, type NodeDoc } from "@webforge/model";
 import { Window } from "happy-dom";
 import { afterEach, describe, expect, it } from "vitest";
 import { siteLibrary } from "./catalogue/index.js";
-import { joinedHeaderOf } from "./joined-header.js";
+import { belowHeaderOf, joinedHeaderOf } from "./joined-header.js";
 import { type ComponentLibrary, EDITOR_RENDER_CONTEXT, fieldsHiddenBy } from "./library.js";
 import { renderNodesToHtml, renderPage } from "./render-static.js";
 
@@ -288,5 +288,81 @@ describe("the joined Header's scroll styles (HH-1)", () => {
     expect(fieldsHiddenBy(def, { ...def.defaults, background: "section" }).has("background")).toBe(
       false,
     );
+  });
+});
+
+describe("a Hero's height (HH-4)", () => {
+  const own = (props: Record<string, unknown> = {}) => header({ background: "own", ...props });
+  const below = (headerNodes: readonly NodeDoc[], content: readonly NodeDoc[]) =>
+    belowHeaderOf({ header: headerNodes, content }, siteLibrary);
+  /** The Hero's frame's least height, as its classes say it. */
+  const minHeight = (document: Document) =>
+    [...(document.querySelector(".site-hero")?.classList ?? [])].find((name) =>
+      name.startsWith("min-h-"),
+    );
+
+  it("finds the first section filling the window under a Header with its own band, only there", () => {
+    const screen = hero({ height: "screen" });
+    expect(below([own()], [screen])).toBe("hero");
+    // Joined, the Hero holds the Header: nothing to leave room for.
+    expect(below([header()], [screen])).toBeUndefined();
+    // Not first, at another height, or with no Header shown.
+    expect(below([own()], [text("story"), screen])).toBeUndefined();
+    expect(below([own()], [hero({ height: "tall" })])).toBeUndefined();
+    expect(below([own({ hidden: true })], [screen])).toBeUndefined();
+    expect(below([], [screen])).toBeUndefined();
+  });
+
+  it("fills the window less the Header's band, or all of it when joined or further down", () => {
+    // Under the Header's own band: the window less its height, which the Header gives the page.
+    const under = rendered([own()], [hero({ height: "screen" })]);
+    expect(minHeight(under)).toBe(
+      "min-h-[max(28rem,calc(var(--wf-viewport-h,100svh)_-_var(--wf-header-h,0px)))]",
+    );
+    const band = under.querySelector("header.site-header");
+    expect(band?.hasAttribute("data-wf-height")).toBe(true);
+    expect(band?.className).toContain("[:root:has(&)]:[--wf-header-h:4rem]");
+    // Joined: the whole window, the Header's room inside it.
+    const joinedPage = rendered([header()], [hero({ height: "screen" })]);
+    expect(minHeight(joinedPage)).toBe("min-h-[max(28rem,var(--wf-viewport-h,100svh))]");
+    expect(joinedPage.querySelector("header")?.hasAttribute("data-wf-height")).toBe(false);
+    // Further down: the whole window, and the Header gives nothing.
+    const lower = rendered([own()], [text("story"), hero({ height: "screen" })]);
+    expect(minHeight(lower)).toBe("min-h-[max(28rem,var(--wf-viewport-h,100svh))]");
+    expect(lower.querySelector("header")?.hasAttribute("data-wf-height")).toBe(false);
+  });
+
+  it("is Tall at 70% of the window, never below its layout's floor, and Fits as before", () => {
+    const at = (props: Record<string, unknown>) => minHeight(rendered([own()], [hero(props)]));
+    expect(at({ height: "tall" })).toBe("min-h-[max(28rem,calc(var(--wf-viewport-h,100svh)*0.7))]");
+    expect(at({ height: "tall", variant: "split" })).toBe(
+      "min-h-[calc(var(--wf-viewport-h,100svh)*0.7)]",
+    );
+    // As its content: the picture behind the text keeps its 28 rem, the others none.
+    expect(at({})).toBe("min-h-[28rem]");
+    expect(at({ variant: "split" })).toBeUndefined();
+  });
+
+  it("centres a text-only Hero's content in its height, and draws it as before at Fits", () => {
+    const page = (height: string) =>
+      rendered([own()], [hero({ variant: "minimal", contentWidth: "narrow", height })]);
+    const tall = page("tall");
+    expect(tall.querySelector(".site-hero")?.className).toContain("flex items-center bg-base-200");
+    expect(tall.querySelector(".site-hero > div")?.className).toMatch(/^mx-auto w-full /);
+    const fits = page("fit");
+    expect(fits.querySelector(".site-hero")?.className).not.toContain("flex");
+    expect(fits.querySelector(".site-hero > div")?.className).not.toContain("w-full");
+  });
+
+  it("ships the script that measures the Header only at Whole screen", () => {
+    const def = siteLibrary.components.Hero;
+    if (def === undefined) throw new Error("No Hero");
+    const behaviours = (height: string) =>
+      typeof def.behaviours === "function"
+        ? def.behaviours({ ...def.defaults, height })
+        : (def.behaviours ?? []);
+    expect(behaviours("screen")).toContain("joined");
+    expect(behaviours("tall")).not.toContain("joined");
+    expect(behaviours("fit")).not.toContain("joined");
   });
 });

@@ -17,6 +17,34 @@ import { BodyText, ButtonLink, SectionIntro, SectionLead, SectionTitle } from ".
 
 const ALIGNMENTS = ["centre", "left"] as const;
 const HERO_LAYOUTS = ["split", "centred", "background", "minimal"] as const;
+/** How tall the Hero is (HH-4): as its content, most of the window, or all of it. */
+const HERO_HEIGHTS = ["fit", "tall", "screen"] as const;
+type HeroHeight = (typeof HERO_HEIGHTS)[number];
+
+/**
+ * The Hero's least height (HH-4), never below its layout's floor (28 rem with its picture behind
+ * the text), and always a minimum: content taller still shows whole. The window's height is the
+ * canvas's in the editor (`--wf-viewport-h`, its frame growing with the page), the small viewport's
+ * elsewhere, so a phone's toolbar doesn't hide its foot. Under a Header with its own band, the
+ * Whole screen leaves the Header's room (`--wf-header-h`); a joined Header is in it.
+ */
+function heroMinHeight(height: HeroHeight, floored: boolean, belowHeader: boolean): string {
+  if (height === "fit") return floored ? "min-h-[28rem]" : "";
+  if (height === "tall") {
+    return floored
+      ? "min-h-[max(28rem,calc(var(--wf-viewport-h,100svh)*0.7))]"
+      : "min-h-[calc(var(--wf-viewport-h,100svh)*0.7)]";
+  }
+  if (belowHeader) {
+    return floored
+      ? "min-h-[max(28rem,calc(var(--wf-viewport-h,100svh)_-_var(--wf-header-h,0px)))]"
+      : "min-h-[calc(var(--wf-viewport-h,100svh)_-_var(--wf-header-h,0px))]";
+  }
+  return floored
+    ? "min-h-[max(28rem,var(--wf-viewport-h,100svh))]"
+    : "min-h-[var(--wf-viewport-h,100svh)]";
+}
+
 /** Where the Hero's text sits on its picture, from top to bottom (HH-6). */
 const HERO_TEXT_PLACES = ["middle", "bottom"] as const;
 const TEXT_IMAGE_LAYOUTS = ["imageRight", "imageLeft"] as const;
@@ -76,6 +104,12 @@ const hero = defineSection({
       options: ALIGNMENTS.map((value) => ({ label: t(`field.alignment.${value}`), value })),
     },
     image: { kind: "media", label: t("field.image") },
+    height: {
+      kind: "select",
+      label: t("field.heroHeight"),
+      help: t("field.heroHeight.help"),
+      options: HERO_HEIGHTS.map((value) => ({ label: t(`field.heroHeight.${value}`), value })),
+    },
     textPlace: {
       kind: "select",
       label: t("field.heroTextPlace"),
@@ -93,6 +127,7 @@ const hero = defineSection({
     text: t("starter.heroText"),
     buttonLabel: t("starter.heroButton"),
     alignment: "centre",
+    height: "fit",
     textPlace: "middle",
     contentWidth: "wide",
     // Strong, the step nearest the 70% every Hero had, lighter so the picture shows (HH-3); in the
@@ -103,12 +138,21 @@ const hero = defineSection({
   // The image behind the text fills the whole section, its padding too, behind its overlay, in the
   // overlay's colour without a picture. It doesn't use daisyUI's `hero` grid, whose grid areas
   // would keep the overlay inside the padding.
-  frame: (values) =>
-    values.variant === "background"
-      ? `relative flex min-h-[28rem] ${values.textPlace === "bottom" ? "items-end" : "items-center"} justify-center overflow-hidden ${overlayLayer(values).ground}`
-      : values.variant === "minimal"
-        ? "bg-base-200"
-        : "hero bg-base-200",
+  // Its height (HH-4): as its content, Tall or Whole screen, the content centred from top to bottom.
+  fillsWindow: (values) => values.height === "screen",
+  // At Whole screen, the script that measures the Header above it (`joined.js`, HH-4).
+  behaviours: (values) => (values.height === "screen" ? ["joined"] : []),
+  frame: (values, place) => {
+    const behind = values.variant === "background";
+    const tall = heroMinHeight(values.height, behind, place?.belowHeader === true);
+    if (behind) {
+      return `relative flex ${tall} ${values.textPlace === "bottom" ? "items-end" : "items-center"} justify-center overflow-hidden ${overlayLayer(values).ground}`;
+    }
+    if (values.variant === "minimal") {
+      return tall === "" ? "bg-base-200" : `flex items-center bg-base-200 ${tall}`;
+    }
+    return tall === "" ? "hero bg-base-200" : `hero bg-base-200 ${tall}`;
+  },
   render: ({ id, values, context }) => {
     const layout = values.variant;
     // Its image is the page's first picture when it is the page's first section (3.15, SEO-4).
@@ -155,7 +199,9 @@ const hero = defineSection({
       );
     }
     if (layout === "minimal") {
-      return <div className={`mx-auto ${width} ${aligned}`}>{copy}</div>;
+      // Taller than its content (HH-4), it's centred in the frame's row: full width, as before.
+      const full = values.height === "fit" ? "" : "w-full ";
+      return <div className={`mx-auto ${full}${width} ${aligned}`}>{copy}</div>;
     }
     const centred = layout === "centred";
     const widthPx = CONTENT_WIDTH_PX[values.contentWidth];

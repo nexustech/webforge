@@ -47,6 +47,8 @@ export const RENDER_CONTEXT_SOURCES = {
   pageHeading: "page",
   // The Header joined to the page's first section (HH-1): found again as the page changes.
   joinedHeader: "page",
+  // The first section filling the window under the Header's own band (HH-4): found with it.
+  belowHeader: "page",
   // The post shown, on a Blog's post (6.10a): set again when the page shown or its fields change.
   item: "setItem",
   emptyItem: "setItem",

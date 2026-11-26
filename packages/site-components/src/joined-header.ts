@@ -60,3 +60,26 @@ export function joinedHeaderOf(
     .join(" ");
   return { section: first.props.id, inverse, text };
 }
+
+/**
+ * The id of the page's first section where it fills the window's height (`fillsWindow`, a Hero at
+ * _Whole screen_, HH-4) under a Header with its own band: shown, not joined to it (that's
+ * {@link joinedHeaderOf}'s). Its height then leaves the Header's room, which the Header gives the
+ * page. The export's pages and the canvas both take it from here.
+ */
+export function belowHeaderOf(
+  regions: { readonly header: readonly NodeDoc[]; readonly content: readonly NodeDoc[] },
+  library: ComponentLibrary,
+  looks?: RenderContext["looks"],
+): string | undefined {
+  const at = regions.header.findIndex((node) => node.type === HEADER && node.props.hidden !== true);
+  if (at < 0 || joinedHeaderOf(regions, library, looks) !== undefined) return undefined;
+  const shown = (node: NodeDoc) => node.props.hidden !== true;
+  const first = regions.header.slice(at + 1).find(shown) ?? regions.content.find(shown);
+  const def = first === undefined ? undefined : library.components[first.type];
+  if (first === undefined || def?.fillsWindow === undefined || typeof first.props.id !== "string") {
+    return undefined;
+  }
+  const values = { ...def.defaults, ...withLook(first.props, first.type, looks) };
+  return def.fillsWindow(values) ? first.props.id : undefined;
+}

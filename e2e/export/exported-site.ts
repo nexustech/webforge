@@ -57,6 +57,12 @@ export const CONTACT_BUTTONS_SITE_DIR = join(EXPORTED_SITE_DIR, "contact-buttons
 export const HERO_OVERLAY_SITE_DIR = join(EXPORTED_SITE_DIR, "hero-overlay");
 
 /**
+ * Where the setup exports a home page opening with a Whole screen Hero (HH-4), under a Header with
+ * its own band (`own/`) and joined to it (`joined/`), inside the fixture's folder so CI uploads it.
+ */
+export const HERO_HEIGHT_SITE_DIR = join(EXPORTED_SITE_DIR, "hero-height");
+
+/**
  * Where the setup exports the fixture's pages with a Header that hides on the way down (HH-7),
  * inside the fixture's folder so CI uploads it with it.
  */
