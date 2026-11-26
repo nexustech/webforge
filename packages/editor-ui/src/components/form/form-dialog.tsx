@@ -123,7 +123,12 @@ function FormDialogBody<V extends FormValues, Out>({
         so its scroll bar is at the edge and a field's focus ring isn't cut off. A form with a side
         nav fills it, and scrolls its section's fields itself, the nav staying put (#1409).
       */}
-      <div className="-mx-4 -my-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-1">
+      <div
+        // Positioned, so what's positioned in its fields is held here, not by the `fixed` dialog,
+        // which would scroll itself too (#1437).
+        data-slot="form-fields"
+        className="relative -mx-4 -my-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-1"
+      >
         <Form
           form={form}
           {...(groupsLabel === undefined ? {} : { groupsLabel })}

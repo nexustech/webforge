@@ -297,10 +297,14 @@ export function Form<V extends FormValues, Out>({
               </div>
             ))}
           </nav>
-          {/* To the dialog's edge, so its scroll bar is there. */}
+          {/*
+            To the dialog's edge, so its scroll bar is there. Positioned, so it holds what's
+            positioned in its fields (a picture field's hidden inputs): the dialog is `fixed`, and
+            would otherwise hold them and scroll itself beside it (#1437).
+          */}
           <div
             data-slot="form-section"
-            className="-my-1 -mr-4 -ml-1 min-w-0 overflow-y-auto py-1 pr-4 pl-1"
+            className="relative -my-1 -mr-4 -ml-1 min-w-0 overflow-y-auto py-1 pr-4 pl-1"
           >
             {groups.map((group) => (
               <TabsContent key={group.id} value={group.id} className="bg-transparent">

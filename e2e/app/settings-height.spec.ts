@@ -4,7 +4,7 @@ import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Settings keeps one height whichever section is shown (#1409): it no longer jumps as a short
 // section and a long one take turns. Its side nav and its buttons stay put, and only the section's
-// fields scroll, in a short window too.
+// fields scroll, in a short window too. The dialog never scrolls itself beside them (#1437).
 
 let app: ElectronApplication;
 let page: Page;
@@ -31,6 +31,13 @@ async function box(locator: Locator): Promise<{ top: number; bottom: number; hei
   });
 }
 
+/**
+ * How far the dialog itself scrolls: none, when only its section's fields do (#1437). A picture
+ * field's hidden inputs used to stretch it from below its edge.
+ */
+const ownScroll = () =>
+  settings().evaluate((element) => element.scrollHeight - element.clientHeight);
+
 /** Shows `name`'s section, and checks the dialog is still `height` tall. */
 async function expectSameHeight(name: string, height: number): Promise<void> {
   await settings().getByRole("tab", { name, exact: true }).click();
@@ -46,6 +53,7 @@ test("Settings is one height on every section, its nav and buttons fixed (#1409)
   const { height } = await box(settings());
   for (const name of ["Updates", "Devices", "General", "Interface"]) {
     await expectSameHeight(name, height);
+    expect(await ownScroll(), `Settings scrolls itself on ${name}`).toBe(0);
   }
 
   // The shortest window (MIN_WINDOW_SIZE): no taller than it allows, and General's fields scroll,
@@ -60,6 +68,7 @@ test("Settings is one height on every section, its nav and buttons fixed (#1409)
   expect(short.height).toBeLessThanOrEqual(600 - 32);
   await expectSameHeight("Updates", short.height);
   await expectSameHeight("General", short.height);
+  expect(await ownScroll(), "Settings scrolls itself on General").toBe(0);
 
   const nav = settings().getByRole("navigation");
   const cancel = settings().getByRole("button", { name: "Cancel" });
