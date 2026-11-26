@@ -161,6 +161,9 @@ test("shows a section an undo moves back and selects, from the far end of the pa
 });
 
 test("shows the text Find selects, from the bottom of a long page", async () => {
+  // Quarantined: failed once on Linux, the page 328 px short of its bottom after its one scroll, and
+  // passed on a re-run (#1474). Fixed or deleted within a week, under the flaky-test rule.
+  test.fixme(true, "flaky: #1474");
   await page.keyboard.press("ControlOrMeta+F");
   await expect(drawer().getByRole("searchbox", { name: "Find" })).toBeVisible();
   await scrollTo("bottom");
