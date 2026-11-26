@@ -26,7 +26,7 @@ The **Appearance** group, at the top of the Style tab, is on every section and e
 
 _Same as theme_ means the item follows the theme. Every option except Font can be [different on each device](edit-panel.md#different-on-each-device).
 
-The items inside a section, such as a Feature, a Step, a Testimonial, a team member, a price plan or an FAQ question, have no Appearance group, and no **Style** on their bar. They take their look from their section and the theme, so every item in a section looks alike:
+The items inside a section, such as a Feature, a Step, a Testimonial, a team member, a pricing plan or an FAQ question, have no Appearance group, and no **Style** on their bar. They take their look from their section and the theme, so every item in a section looks alike:
 
 - **For one section's items:** select the section and change its Style tab, or open **Style This…** for it. Its **Background** is behind the items, and sections of cards have **Cards when hovered** ([Hover effects](#hover-effects)). Its text settings change only its own title.
 - **For every card on the site:** change **Card style** in the [theme](themes.md), or the Card look in Theme Studio's **Components**.
