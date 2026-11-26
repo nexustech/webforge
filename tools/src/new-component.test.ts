@@ -385,7 +385,7 @@ describe("pnpm new-component", () => {
     main(args, { root: at, steps: { format: () => true, catalogueData: () => true } });
 
     expect(printed(output)).toContain("wrote docs/help/elements.md");
-    expect(printed(output)).toContain("word its help page's heading, then pnpm check");
+    expect(printed(output)).toContain("word its help page's heading, then pnpm check:quick");
     expect(process.exitCode).toBeUndefined();
   });
 
