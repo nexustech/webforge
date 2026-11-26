@@ -35,15 +35,22 @@ export type { EditorSelection } from "./selection.js";
 /** What kind of change an entry records; 1.11's Undo toasts pick the ones they announce. */
 export type EditKind = EngineEditKind;
 
+/**
+ * How a step asks for its Undo toast (`EditOptions.announce`): not at all, with its label (`true`),
+ * in its own words, or in its own words in place of the toast with the same `id`, still showing or
+ * not: one notice for a run of changes to one thing (Theme Studio's look for Button, M1).
+ */
+export type Announcement = boolean | string | { readonly message: string; readonly id: string };
+
 /** Called for each new history entry (not for edits that merge into the current one). */
 type EntryListener = (
   entry: HistoryEntry<EditorSelection>,
   kind: EditKind,
   /**
    * Whether the edit asked for its Undo toast, whatever its kind (`EditOptions.announce`): `true`,
-   * or the toast's own words.
+   * or the toast's own words, with the toast it replaces.
    */
-  announced: boolean | string,
+  announced: Announcement,
 ) => void;
 
 /** Called with a piece of the site's code as it was, and as the owner wrote it (#649). */
@@ -70,9 +77,10 @@ type EditOptions = RunOptions<EditorSelection> & {
    * Shows the step's Undo toast, as a delete does (1.11): a change made for the person by a button
    * that doesn't say beforehand what it will do, such as Site Check's *Fix* (#1164), or one that
    * changes every page without asking first, as a theme's colour does (LF-15). `true` says the
-   * step's label; a string says that instead ("Brand colour changed on 6 pages").
+   * step's label; a string says that instead ("Brand colour changed on 6 pages"), and with an
+   * `id`, in place of that toast ("Changed every Button on your site (12)", M1).
    */
-  readonly announce?: boolean | string;
+  readonly announce?: Announcement;
 };
 
 /**
@@ -186,7 +194,7 @@ export function createEditorSession(
     return entries[cursor - 1];
   };
   /** Runs `change` and reports the entry it added, if any. */
-  const reporting = (kind: EditKind, change: () => void, announced: boolean | string = false) => {
+  const reporting = (kind: EditKind, change: () => void, announced: Announcement = false) => {
     const before = currentEntry();
     change();
     const entry = currentEntry();

@@ -1584,6 +1584,8 @@ From the product owner's review of Theme Studio's Components page (28 Oct 2026).
 - [ ] The preview follows the draft; the larger preview shows Desktop and Mobile and toggles between the current look and the draft
 - [ ] Strings through `t()`; stories with axe; `pnpm visual:docker` screenshots committed
 
+_Superseded 26 Nov 2026 by M1 ([#1442](https://github.com/nexustech/webforge/issues/1442), product owner): Components no longer holds a draft. Each change applies at once as one step, with no question, and a notice with Undo follows, as on Theme Studio's other tabs._
+
 **4.11 AI apps: settings, pages and the catalogue** (added 7 Nov 2026, AIB-1…AIB-4, [product/16](../research/product/16-ai-site-from-a-brief.md) §5.2–§5.4, §5.8, §5.10)  
 What an AI app needs to finish an ordinary site. The catalogue (`catalogue-data.json`) as an MCP resource and a `components` query, and "There is no component…" listing the valid types (0.5 day). `updateSettings` for the business part of Site Settings only (general, address, contact, social, search; never publishing, forms, analytics or code), one undo step after one D7 question, a contact or social change naming the old and new value as S18 does (1.5 days). `removePage` (never the home page or _Page not found_; it asks, and says so when other pages link to it), `renamePage`, `movePage` and `updatePageSettings` (1.5 days). `AutoRepair`, _Vehicle repair_, in Trades' business kinds (0.25 day). Content mode allows the reads, `updateSettings` for name, description, contact, opening hours and social profiles, and `updatePageSettings` for the search title and description, and refuses the rest. Stream C after 4.9.
 
