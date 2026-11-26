@@ -51,6 +51,12 @@ export const CONTACT_BUTTONS_SITE_DIR = join(EXPORTED_SITE_DIR, "contact-buttons
 export const HERO_OVERLAY_SITE_DIR = join(EXPORTED_SITE_DIR, "hero-overlay");
 
 /**
+ * Where the setup exports the fixture's pages with a Header that hides on the way down (HH-7),
+ * inside the fixture's folder so CI uploads it with it.
+ */
+export const HIDING_HEADER_SITE_DIR = join(EXPORTED_SITE_DIR, "hiding-header");
+
+/**
  * Where the setup exports the fixture's pages with a Blog's post (6.10a), inside the fixture's
  * folder so CI uploads it with it.
  */

@@ -27,6 +27,7 @@ import {
   CONTACT_BUTTONS_SITE_DIR,
   EXPORTED_SITE_DIR,
   HERO_OVERLAY_SITE_DIR,
+  HIDING_HEADER_SITE_DIR,
   NO_BANNER_SITE_DIR,
   TEMPLATES_DIR,
   THEMED_SITE_DIR,
@@ -479,6 +480,29 @@ setup("export a page of Heroes over a picture, each with its own Overlay (HH-3)"
     HERO_OVERLAY_SITE_DIR,
   );
   expect(pages).toContain("index.html");
+});
+
+setup("export a site whose Header hides on the way down (HH-7)", async () => {
+  const sample = sampleSite();
+  rmSync(HIDING_HEADER_SITE_DIR, { recursive: true, force: true });
+  // Its pages without their files, through the pipeline alone: only the Header matters here.
+  const pages = await exportSnapshot(
+    {
+      ...sample,
+      media: [],
+      documents: [],
+      layout: {
+        ...sample.layout,
+        header: sample.layout.header.map((node) =>
+          node.type === "Header"
+            ? { ...node, props: { ...node.props, sticky: true, scrollStyle: "hide" } }
+            : node,
+        ),
+      },
+    },
+    HIDING_HEADER_SITE_DIR,
+  );
+  expect(pages).toEqual(expect.arrayContaining(["index.html", "about.html"]));
 });
 
 setup("export a site with Contact buttons after the Footer (6.16d)", async () => {

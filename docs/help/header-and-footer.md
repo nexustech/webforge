@@ -5,7 +5,7 @@ title: Header, Footer, announcements and shared sections
 summary: The parts that are the same on every page, an announcement bar above them, and sections you share between pages.
 components: [Header, Footer, FooterColumn, MenuLinks, AnnouncementBar]
 related: [pages, layers, add-panel, site-check]
-updated: 2026-11-24
+updated: 2026-11-25
 ---
 
 # Header, Footer, announcements and shared sections
@@ -22,7 +22,7 @@ The **Header**, at the top, and the **Footer**, at the bottom, are the same on e
 - **Layout:** _Name left, menu right_, _Centred_ or _Name left, menu centred_.
 - **Show a button:** a button such as "Book now" or "Get a quote", in any layout: on the right on a computer, and last in the menu on phones. Give it its **Button text** and **Button link**. If your menu also links to the same page, hide that link in the [Menu](pages.md#the-menu), so it isn't there twice.
 - **Stay at the top when scrolling:** keeps the Header in view as visitors scroll.
-- **Change style when scrolling** (with _Stay at the top_ on): _Shadow_, _Shrink_, _Solid background_ or _None_.
+- **Change style when scrolling** (with _Stay at the top_ on): _Shadow_, _Shrink_, _Solid background_, _Hide when scrolling down_ or _None_. _Hide when scrolling down_ slides the Header out of view as visitors scroll down the page, leaving more of a phone's screen for your content, and brings it back as soon as they scroll up. It stays in view at the top of the page, while the menu on phones is open, and for visitors moving around with the keyboard. For visitors who ask their device for less motion it goes and comes back without sliding.
 - **Highlight the section in view** (when your menu links to a section): as visitors scroll, the menu lights up the section they're looking at. On unless you turn it off. See [Menu links to sections](links.md#menu-links-to-sections).
 - **Content width** (in the **Style** tab): _Narrow_, _Medium_, _Wide_ or _Full_, as for a [section](sections.md). It sets how wide the name, menu and button spread on a computer: at _Wide_ they line up with a Wide section's content. The Header's background, its style when scrolling and the menu on phones still fill the page's width, and phones look the same at every width. New sites start at _Wide_; a site made before this setting keeps _Full_, so nothing moves until you change it.
 

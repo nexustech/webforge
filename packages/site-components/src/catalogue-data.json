@@ -1285,6 +1285,10 @@
               "value": "solid"
             },
             {
+              "label": "Hide when scrolling down",
+              "value": "hide"
+            },
+            {
               "label": "None",
               "value": "none"
             }
