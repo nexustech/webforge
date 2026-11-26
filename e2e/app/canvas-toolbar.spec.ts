@@ -1,6 +1,12 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { CANVAS_INNER } from "@webforge/engine/puck-dom";
-import { launchDesktopApp, newUserDataDir, removeWhenFree, waitForCanvas } from "./launch.js";
+import {
+  launchDesktopApp,
+  MOTION_TAG,
+  newUserDataDir,
+  removeWhenFree,
+  waitForCanvas,
+} from "./launch.js";
 
 // The canvas toolbar (1.15, F-ED-8): device views, a custom width and the page shown, none of
 // them an undo step (U6).
@@ -195,7 +201,10 @@ test("keeps a zoom above Fit, though the page then overflows the canvas (#134)",
     .toEqual(["1.5", "1.5", "1.5", "1.5", "1.5"]);
 });
 
-test("fills the canvas in Desktop view as the window grows and shrinks, and keeps fixed widths (PH2-18)", async () => {
+// Motion on until #1498: with motion off it fails in CI only (macOS, once).
+test("fills the canvas in Desktop view as the window grows and shrinks, and keeps fixed widths (PH2-18)", {
+  tag: MOTION_TAG,
+}, async () => {
   const width = toolbar().getByRole("spinbutton", { name: "Canvas width in pixels" });
 
   await windowWidth(1800);
@@ -349,7 +358,10 @@ async function zoom(): Promise<number> {
   return Number(/@ (\d+)%/.exec(readout ?? "")?.[1] ?? "100") / 100;
 }
 
-test("drags the canvas's edge to a width that snaps to Tablet, without an undo step (F-ED-25)", async () => {
+// Motion on until #1498: with motion off it fails in CI only (Windows).
+test("drags the canvas's edge to a width that snaps to Tablet, without an undo step (F-ED-25)", {
+  tag: MOTION_TAG,
+}, async () => {
   const before = await steps().count();
   await toolbar().getByRole("radio", { name: "Mobile" }).click();
   await expect.poll(pageWidth).toBe(375);

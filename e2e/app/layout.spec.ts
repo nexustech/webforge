@@ -4,7 +4,6 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import {
   APP_START_TIMEOUT_MS,
   launchDesktopApp,
-  MOTION_TAG,
   newUserDataDir,
   removeWhenFree,
   waitForCanvas,
@@ -18,7 +17,9 @@ let app: ElectronApplication;
 let page: Page;
 
 async function start(): Promise<void> {
-  app = await launchDesktopApp({ userDataDir });
+  // Motion on until #1497: one app for the file, and with reduced motion a part opened again
+  // doesn't take the focus where it was (layout:149).
+  app = await launchDesktopApp({ userDataDir, motion: true });
   page = await app.firstWindow();
   await expect(page.getByRole("region", { name: "Left panels" })).toBeVisible({
     timeout: APP_START_TIMEOUT_MS,
@@ -145,10 +146,7 @@ test.describe("window layout", () => {
     await expect.poll(leftWidth).toBeGreaterThan(150);
   });
 
-  // Motion on until #1497: with reduced motion, a part opened again doesn't take the focus where it was.
-  test("collapses each part from its own button and opens it again where it was (#1412)", {
-    tag: MOTION_TAG,
-  }, async () => {
+  test("collapses each part from its own button and opens it again where it was (#1412)", async () => {
     const left = page.getByRole("region", { name: "Left panels" });
     await left.getByRole("tab", { name: "Version History" }).click();
     await left.getByRole("button", { name: "Hide Left Panels" }).click();
