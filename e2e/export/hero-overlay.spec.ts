@@ -85,28 +85,36 @@ test("draws a Hero's two buttons beside each other, each to its link, the second
   const [one, two] = [await first.boundingBox(), await second.boundingBox()];
   expect(two?.x ?? 0).toBeGreaterThan((one?.x ?? 0) + (one?.width ?? 0));
   expect(Math.abs((two?.y ?? 0) - (one?.y ?? 0))).toBeLessThan(2);
-  // Outlined, in the text's colour on the picture, not the brand colour.
-  // As pixels: browsers write the same colour in different spaces (WebKit's oklab, others' oklch).
-  const looks = await second.evaluate((link) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1;
-    canvas.height = 1;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    const pixel = (color: string) => {
-      if (context === null) return [];
-      context.clearRect(0, 0, 1, 1);
-      context.fillStyle = color;
-      context.fillRect(0, 0, 1, 1);
-      return [...context.getImageData(0, 0, 1, 1).data];
-    };
-    const style = getComputedStyle(link);
-    const text = getComputedStyle(link.closest(".hero-content") ?? link).color;
-    return { color: pixel(style.color), border: pixel(style.borderTopColor), text: pixel(text) };
-  });
+  // Outlined, in the text's colour on the picture, not the brand colour, once it has settled:
+  // daisyUI's buttons ease their colour and border over 0.2 s, and WebKit can be read mid-way
+  // (#1488). As pixels: browsers write the same colour in different spaces (oklab, oklch).
+  const looks = () =>
+    second.evaluate((link) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1;
+      canvas.height = 1;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      const pixel = (color: string) => {
+        if (context === null) return [];
+        context.clearRect(0, 0, 1, 1);
+        context.fillStyle = color;
+        context.fillRect(0, 0, 1, 1);
+        return [...context.getImageData(0, 0, 1, 1).data];
+      };
+      const style = getComputedStyle(link);
+      const text = getComputedStyle(link.closest(".hero-content") ?? link).color;
+      return { color: pixel(style.color), border: pixel(style.borderTopColor), text: pixel(text) };
+    });
   const near = (a: readonly number[], b: readonly number[]) =>
     a.length === 4 && a.every((channel, at) => Math.abs(channel - (b[at] ?? -10)) <= 2);
-  expect(near(looks.color, looks.text), `${looks.color} vs ${looks.text}`).toBe(true);
-  expect(near(looks.border, looks.text), `${looks.border} vs ${looks.text}`).toBe(true);
+  await expect
+    .poll(async () => {
+      const seen = await looks();
+      return near(seen.color, seen.text) && near(seen.border, seen.text)
+        ? "the text's colour"
+        : `${seen.color} and ${seen.border} vs ${seen.text}`;
+    })
+    .toBe("the text's colour");
 
   // On a phone, the two never overlap and stay in the window: side by side while they fit, the
   // second under the first when they don't.

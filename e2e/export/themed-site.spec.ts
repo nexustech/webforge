@@ -94,8 +94,11 @@ test("draws a Hero's second button as a link beside the theme's outlined buttons
   expect(first.border).toBeGreaterThan(0.9);
   expect(first.underline).toBe("none");
   // No box: Linux's WebKit leaves a faint tint (0.15) where Safari, Chrome and Firefox leave none.
-  const second = await look("Book a table");
-  expect(second.background).toBeLessThan(0.2);
-  expect(second.border).toBeLessThan(0.2);
-  expect(second.underline).toBe("underline");
+  // Once settled: the button eases its colours over 0.2 s (#1488).
+  await expect
+    .poll(async () => {
+      const second = await look("Book a table");
+      return second.background < 0.2 && second.border < 0.2 && second.underline === "underline";
+    })
+    .toBe(true);
 });

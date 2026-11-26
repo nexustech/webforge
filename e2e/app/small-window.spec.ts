@@ -183,6 +183,73 @@ for (const [zoom, screen] of [
   });
 }
 
+/** The title bar's width from which its phone preview cue shows its words and Stop (#1438). */
+const PHONE_CUE_WORDS = 1440;
+
+// The window's least is 960 px times the text size (#1195): at 125%, 1200 px, or a 1024 px
+// screen's width, the smallest the title bar is drawn at.
+for (const [width, height, zoom] of [
+  [960, 600, 1],
+  [1366, 768, 1],
+  [1200, 750, 1.25],
+  [1366, 768, 1.25],
+  [1024, 700, 1.25],
+] as const) {
+  test(`fits the title bar with the phone preview on, ${width} × ${height} at ${zoom * 100}% text (#1438)`, async () => {
+    if (zoom !== 1) {
+      await page.evaluate(
+        (interfaceZoom) =>
+          (
+            window as unknown as {
+              webforge: { prefs: { set(change: unknown): Promise<unknown> } };
+            }
+          ).webforge.prefs.set({ interfaceZoom }),
+        zoom,
+      );
+    }
+    const css = Math.floor(width / zoom);
+    await sizeWindow(width, height, css);
+
+    // On, its dialog closed: the cue stays in the title bar.
+    await chooseFromMenu(app, page, "File", "Preview on Phone…");
+    const dialog = page.getByRole("dialog", { name: "Preview on your phone" });
+    await expect(dialog.getByRole("img", { name: "QR code of the preview's address" })).toBeVisible(
+      { timeout: 15_000 },
+    );
+    // Its close button: Escape would first close the tooltip of Help, which has the focus.
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(dialog).toHaveCount(0);
+
+    const banner = page.getByRole("banner");
+    const words = banner.getByRole("button", { name: "Stop Phone Preview" });
+    const icon = banner.getByRole("button", { name: "Phone preview on" });
+    if (css >= PHONE_CUE_WORDS) {
+      await expect(words).toBeVisible();
+      await expect(icon).toBeHidden();
+    } else {
+      await expect(icon).toBeVisible();
+      await expect(words).toBeHidden();
+    }
+    for (const count of ["99 to fix", "99 tips", "No problems"]) {
+      // The narrowest, with Site Check's widest short count beside the cue: nothing over anything
+      // else or cut off, though with less than the usual room to spare (1.6 px on Windows).
+      await expectTitleBarFits(count, css, css === 960 && count === "No problems" ? 0 : 4);
+    }
+    await expect(banner.getByRole("button", { name: "Publish" })).toHaveText("Publish");
+
+    // The icon opens the dialog for the preview as it is, with Stop, which stops it.
+    if (css < PHONE_CUE_WORDS) {
+      await icon.click();
+      await expect(
+        dialog.getByRole("img", { name: "QR code of the preview's address" }),
+      ).toBeVisible();
+      await dialog.getByRole("button", { name: "Stop Phone Preview" }).click();
+      await expect(dialog).toHaveCount(0);
+      await expect(icon).toHaveCount(0);
+    }
+  });
+}
+
 test("folds the panel buttons into one Panels menu in a narrow title bar, ticked as shown (#1195)", async () => {
   await atTextSize(1.5, 1280);
   const banner = page.getByRole("banner");

@@ -126,6 +126,8 @@ export const shell = {
     "A phone can open the preview only on a home or office network. Connect this computer to your Wi-Fi and try again.",
   // The title bar's cue while a phone can open the preview, with a button that stops it (3.2).
   "preview.phone.on": "Phone preview on",
+  // Stop, in the cue and in the phone's dialog: its name is Stop Phone Preview (#1438).
+  "preview.phone.stop": "Stop",
   "preview.phone.onDescription":
     "Anyone on this Wi-Fi who has the address can see the preview. Stop it when you're done.",
   // Main stopped the phone's preview by itself (S9): unused for 10 minutes, or off the Wi-Fi.
@@ -219,6 +221,7 @@ export const shell = {
   "command.preview": "Preview",
   "command.previewOnPhone": "Preview on Phone…",
   "command.stopPhonePreview": "Stop Phone Preview",
+  "command.showPhonePreview": "Show Phone Preview…",
   // A page as Preview draws it, saved as a picture or a PDF to show someone (5.22, OL-9).
   "command.savePageImage": "Save Page as Image…",
   "command.savePagePdf": "Save Page as PDF…",

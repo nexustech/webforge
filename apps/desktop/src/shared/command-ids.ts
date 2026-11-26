@@ -21,6 +21,8 @@ export const COMMAND_IDS = {
   preview: "site.preview",
   previewOnPhone: "site.previewOnPhone",
   stopPhonePreview: "site.stopPhonePreview",
+  // Shows the running phone preview's address again, from the title bar's cue (#1438).
+  showPhonePreview: "site.showPhonePreview",
   // Save Page as Image… and as PDF… (5.22, OL-9).
   savePageImage: "site.savePageImage",
   savePagePdf: "site.savePagePdf",
