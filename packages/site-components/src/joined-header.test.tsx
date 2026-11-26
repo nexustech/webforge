@@ -296,7 +296,7 @@ describe("a Hero's height (HH-4)", () => {
   const below = (headerNodes: readonly NodeDoc[], content: readonly NodeDoc[]) =>
     belowHeaderOf({ header: headerNodes, content }, siteLibrary);
   /** The Hero's frame's least height, as its classes say it. */
-  const minHeight = (document: Document) =>
+  const minHeight = (document: ReturnType<typeof rendered>) =>
     [...(document.querySelector(".site-hero")?.classList ?? [])].find((name) =>
       name.startsWith("min-h-"),
     );
