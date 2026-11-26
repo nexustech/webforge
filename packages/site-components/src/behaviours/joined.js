@@ -25,8 +25,10 @@
     const top = fills.getBoundingClientRect().top + window.scrollY;
     root.style.setProperty("--wf-above-h", `${Math.max(0, Math.round(top))}px`);
   };
+  // Each one's whole box: a Header easing back from Shrink changes its padding, not its content.
+  const BOX = { box: /** @type {const} */ ("border-box") };
   const watch = typeof ResizeObserver === "function" ? new ResizeObserver(() => above()) : null;
-  for (const bar of document.querySelectorAll("[data-wf-announcement]")) watch?.observe(bar);
+  for (const bar of document.querySelectorAll("[data-wf-announcement]")) watch?.observe(bar, BOX);
   for (const header of headers) {
     const theme = header.getAttribute("data-theme");
     const sticky = header.hasAttribute("data-wf-sticky");
@@ -36,7 +38,7 @@
       above();
     };
     if (typeof ResizeObserver === "function") {
-      new ResizeObserver(measure).observe(header);
+      new ResizeObserver(measure).observe(header, BOX);
     }
     measure();
     if (!sticky) {
