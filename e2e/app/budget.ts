@@ -299,15 +299,28 @@ export async function measureWork(app: ElectronApplication): Promise<() => Promi
  * Checks an operation's work against its CPU budget and its wall-clock backstop, and prints both
  * (in the report and the log), so CI's runs show what each costs.
  */
-export function expectWorkWithin(work: Work, budget: Budget, what: string): void {
+export function expectWorkWithin(
+  work: Work,
+  budget: Budget,
+  what: string,
+  options: {
+    /**
+     * Why the CPU budget is only reported, not checked, on this run: a quarantined flaky check's
+     * issue ("#1466"), per the flaky-test rule. The wall-clock backstop is checked whatever this says.
+     */
+    readonly cpuQuarantined?: string | undefined;
+  } = {},
+): void {
   const cpu = work.cpuSeconds.toFixed(2);
   const lost =
     work.exited.length === 0 ? "" : `; exited meanwhile, not counted: ${work.exited.join(", ")}`;
   const by = work.byProcess.map(([type, used]) => `${type} ${used.toFixed(2)}`).join(", ");
-  const line = `${what}: ${cpu} CPU-s of ${budget.cpuSeconds} (${by}), ${work.wallMs} ms of ${budget.wallMs} (${budget.source})${lost}`;
+  const quarantined =
+    options.cpuQuarantined === undefined ? "" : `; CPU not checked (${options.cpuQuarantined})`;
+  const line = `${what}: ${cpu} CPU-s of ${budget.cpuSeconds} (${by}), ${work.wallMs} ms of ${budget.wallMs} (${budget.source})${lost}${quarantined}`;
   test.info().annotations.push({ type: "work", description: line });
   console.log(`[work] ${line}`);
-  if (work.cpuSeconds > budget.cpuSeconds) {
+  if (options.cpuQuarantined === undefined && work.cpuSeconds > budget.cpuSeconds) {
     throw new Error(
       `${what} cost ${cpu} CPU-s, over its ${budget.cpuSeconds} CPU-s (${budget.source})`,
     );
