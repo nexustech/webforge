@@ -580,8 +580,13 @@ describe("themeCss (2.1)", () => {
         ".bg-neutral .btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {\n    --btn-color: var(--color-neutral-content);",
       );
     }
+    // A Hero's second button, outlined, is a text link beside outlined main buttons (HH-5), and
+    // stays outlined beside filled or ghost ones.
+    expect(square).toContain("@utility wf-second-button {\n  @apply btn-link;\n}");
+    expect(ghost).not.toContain("wf-second-button");
     const filled = css({ buttons: { shape: "pill", size: "m", style: "filled" } });
     expect(filled).not.toContain("@apply");
+    expect(filled).not.toContain("wf-second-button");
     // Rounded buttons keep the theme's field corners, as they always had.
     const rounded = css({ buttons: { shape: "rounded", size: "m", style: "filled" } });
     expect(rounded).not.toContain("--radius-field: var(--wf-button-radius);");

@@ -141,6 +141,11 @@ export function overlayLayer(values: BackgroundValues): {
   readonly text: string;
   /** The overlay's colour as a background, for the section where it has no picture. */
   readonly ground: string;
+  /**
+   * An outlined (or text link) button's colour in the text's, its hover in the overlay's: daisyUI's
+   * `--btn-color` and `--btn-fg`, so it reads on the picture as the text does (HH-5).
+   */
+  readonly button: string;
 } {
   const { opacity, color } = overlayOf(values);
   const neutral = color === "neutral";
@@ -148,6 +153,9 @@ export function overlayLayer(values: BackgroundValues): {
     layer: OVERLAY_CLASSES[color][opacity],
     text: neutral ? "text-neutral-content" : "text-base-content",
     ground: neutral ? "bg-neutral" : "bg-base-100",
+    button: neutral
+      ? "[--btn-color:var(--color-neutral-content)] [--btn-fg:var(--color-neutral)]"
+      : "[--btn-color:var(--color-base-content)] [--btn-fg:var(--color-base-100)]",
   };
 }
 

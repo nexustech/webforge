@@ -14,8 +14,12 @@ import { type ComponentDetail, catalogueResourceText } from "./catalogue.js";
 import { COMMANDS } from "./commands.js";
 import { QUERIES } from "./queries.js";
 
-/** The most a Hero's answer may be, in characters, without its shared styling fields (#1250). */
-const HERO_ANSWER_MAX = 10_000;
+/**
+ * The most a Hero's answer may be, in characters, without its shared styling fields (#1250). 12,000
+ * since its second button (HH-5): each link field spells out a link's value, about 1,700
+ * characters, and the Hero has two.
+ */
+const HERO_ANSWER_MAX = 12_000;
 
 describe("the catalogue, offered (4.11, AIB-1)", () => {
   it("lists the types AI apps may add, by place, never the Header, Footer or Custom Code", () => {
@@ -147,7 +151,7 @@ describe("the catalogue, offered (4.11, AIB-1)", () => {
     expect(Object.keys(full.fields).sort()).toEqual(
       [...Object.keys(own.fields), ...(own.styleFields ?? [])].sort(),
     );
-    // Under a written-down size: about 7,900 now, where the trial's Hero took about 30,000 (#1230).
+    // Under a written-down size: about 10,700 now, where the trial's Hero took about 30,000 (#1230).
     expect(JSON.stringify(own).length).toBeLessThan(HERO_ANSWER_MAX);
     expect(JSON.stringify(full).length).toBeGreaterThan(JSON.stringify(own).length * 2);
   });

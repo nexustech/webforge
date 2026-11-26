@@ -70,6 +70,43 @@ export const HeroTextBottom: Story = {
   },
 };
 
+/** A second button, outlined, beside the first (HH-5). */
+const twoButtons = {
+  secondButtonLabel: "Book a table",
+  secondButtonLink: { kind: "url", href: "https://example.com/book" },
+};
+
+/**
+ * Two buttons in each of the Hero's layouts (HH-5): the second outlined beside the first, wrapping
+ * under it on a phone, in the text's colour on the picture.
+ */
+export const HeroTwoButtons: Story = {
+  args: {
+    nodes: [
+      hero("left", { id: "hero-two-split", ...twoButtons }),
+      hero("centre", {
+        id: "hero-two-centred",
+        variant: "centred",
+        contentWidth: "medium",
+        ...twoButtons,
+      }),
+      hero("left", { id: "hero-two-background", variant: "background", ...twoButtons }),
+      hero("centre", {
+        id: "hero-two-background-page",
+        variant: "background",
+        overlayColor: "base",
+        ...twoButtons,
+      }),
+      hero("centre", {
+        id: "hero-two-minimal",
+        variant: "minimal",
+        contentWidth: "narrow",
+        ...twoButtons,
+      }),
+    ],
+  },
+};
+
 /** The Hero in each layout at a `height` (HH-4), its text at the bottom of its picture (HH-6). */
 const heights = (height: string) => [
   hero("left", {
