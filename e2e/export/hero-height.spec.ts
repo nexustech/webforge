@@ -153,15 +153,23 @@ test("keeps its height under a Header that shrinks once scrolled, below a bar", 
   const headerHeight = () =>
     page.locator("header.site-header").evaluate((header) => header.getBoundingClientRect().height);
   const fullHeader = await headerHeight();
+  // Scrolls the page to `y`. The scroll events are the ones a wheel makes, which the Shrink script
+  // listens to; a wheel itself was lost now and then in macOS WebKit, leaving the page where it was
+  // (#1521).
+  const scrollTo = (y: number) => page.evaluate((to) => window.scrollTo(0, to), y);
+  const scrollY = () => page.evaluate(() => window.scrollY);
   // Scrolled, the Header shrinks (by 16 px) and the page moves up under it; the Hero's height
   // stays. Within 4 px: in macOS WebKit, what's above the Hero can still settle by a pixel or so
-  // after the page has stopped moving, which the script then follows.
-  await page.mouse.wheel(0, 300);
+  // after the page has stopped moving, which the script then follows. The page is then 16 px
+  // shorter, so it stops short of 300 px: past the Shrink script's 80 px is what counts.
+  await scrollTo(300);
+  await expect.poll(scrollY).toBeGreaterThan(200);
   await expect.poll(async () => fullHeader - (await headerHeight())).toBeGreaterThan(8);
   const scrolled = await placed(page);
   expect(Math.abs(scrolled.heroBottom - scrolled.heroTop - tall)).toBeLessThan(4);
   // Back at the top, to the window's foot again, once the Header has eased back to its height.
-  await page.mouse.wheel(0, -300);
+  await scrollTo(0);
+  await expect.poll(scrollY).toBe(0);
   await expect
     .poll(async () => Math.abs((await placed(page)).heroTop - top.heroTop))
     .toBeLessThan(4);
