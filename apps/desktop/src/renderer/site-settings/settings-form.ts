@@ -44,6 +44,8 @@ export type SettingsForm = {
   readonly icon: MediaId | undefined;
   /** The business's logo, which the Header shows (HF-1). */
   readonly logo: MediaId | undefined;
+  /** The logo for dark backgrounds, which the Header shows on a dark colour (HH-2). */
+  readonly logoOnDark: MediaId | undefined;
   /** A back-to-top button on every page that doesn't hide it (F-CM-9). */
   readonly backToTop: boolean;
   /** The business type (SEO-9), or `""` for none chosen. */
@@ -114,6 +116,7 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     language: general.language,
     icon: general.icon,
     logo: general.logo,
+    logoOnDark: general.logoOnDark,
     backToTop: general.backToTop === true,
     businessType: general.businessType ?? "",
     businessKind: general.businessKind ?? "",
@@ -275,6 +278,7 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       language: form.language.trim(),
       ...(form.icon === undefined ? {} : { icon: form.icon }),
       ...(form.logo === undefined ? {} : { logo: form.logo }),
+      ...(form.logoOnDark === undefined ? {} : { logoOnDark: form.logoOnDark }),
       // Absent when off, as in files from before it.
       ...(form.backToTop ? { backToTop: true } : {}),
       ...businessOf(form),
@@ -400,6 +404,13 @@ export const SECTIONS = [
 /** One of {@link SECTIONS}. */
 export type Section = (typeof SECTIONS)[number];
 
+/** General's pictures, each with the name the dialog gives it, for the undo label of one alone. */
+const PICTURES = [
+  { key: "logo", label: "site.settings.logo" },
+  { key: "logoOnDark", label: "site.settings.logoOnDark" },
+  { key: "icon", label: "site.settings.icon" },
+] as const;
+
 /**
  * The undo label for a change from `before` to `after`: the sections it changed, as the dialog
  * names them ("Changed Site Settings: Contact & hours"), or the plain label for a change outside
@@ -415,6 +426,20 @@ function savedLabel(before: SiteSettings, after: SiteSettings): string {
     sameJson({ ...before, general: undefined }, { ...after, general: undefined })
   ) {
     return t("site.settings.history.labels");
+  }
+  // One of General's pictures alone (HF-1, HH-2): named for it, as the dialog names it.
+  const pictures = PICTURES.filter(({ key }) => before.general[key] !== after.general[key]);
+  const [picture] = pictures;
+  if (
+    picture !== undefined &&
+    pictures.length === 1 &&
+    sameJson(
+      { ...before.general, [picture.key]: undefined },
+      { ...after.general, [picture.key]: undefined },
+    ) &&
+    sameJson({ ...before, general: undefined }, { ...after, general: undefined })
+  ) {
+    return t("site.settings.history.picture", { setting: t(picture.label) });
   }
   const sections = SECTIONS.filter((section) => !sameJson(before[section], after[section]));
   const earlier: Readonly<Record<string, unknown>> = before;

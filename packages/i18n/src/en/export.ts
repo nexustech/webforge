@@ -50,6 +50,8 @@ export const exportSite = {
     "The site icon was deleted from Media, so pages have no icon in the browser tab. Choose another in Site Settings.",
   "export.report.missingLogo":
     "The logo was deleted from Media, so the Header shows the site's name. Choose another in Site Settings.",
+  "export.report.missingLogoOnDark":
+    "The logo for dark backgrounds was deleted from Media, so the Header shows your logo there. Choose another in Site Settings.",
   "export.report.smallIcon":
     "The site icon is smaller than 16 pixels, so pages have no icon in the browser tab. Choose a larger image in Site Settings.",
   "export.report.customScript":

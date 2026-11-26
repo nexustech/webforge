@@ -103,6 +103,7 @@ export function createFakeEngine(options: { readonly unstyled?: boolean } = {}):
     setViewOptions: vi.fn(),
     setPreviews: vi.fn(),
     setLooks: vi.fn(),
+    setDarkGrounds: vi.fn(),
     setItem: vi.fn(),
     setPosts: vi.fn(),
     staticPage: vi.fn(() => undefined),

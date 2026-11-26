@@ -54,7 +54,8 @@ function drawing(
 
 /**
  * Pictures of either shape for the Image's shapes (3.19), `landscape` and `portrait`, and a
- * business's `logo` for the Header's (HF-1).
+ * business's `logo` for the Header's (HF-1), with its light version for dark backgrounds
+ * (`logoLight`, HH-2).
  */
 const DRAWINGS: Readonly<Record<string, ResolvedImage>> = {
   // A loaf in a circle beside a wordmark's bars: wider than tall, as most logos are.
@@ -63,6 +64,14 @@ const DRAWINGS: Readonly<Record<string, ResolvedImage>> = {
     80,
     "50% 50%",
     '<circle cx="40" cy="40" r="34" fill="#b5542c"/><ellipse cx="40" cy="44" rx="20" ry="12" fill="#f4e6d0"/><rect x="88" y="22" width="136" height="16" rx="4" fill="#3b2a1e"/><rect x="88" y="46" width="96" height="10" rx="3" fill="#b5542c"/>',
+    "Rosa's Bakery",
+  ),
+  // The same logo in light colours, for dark backgrounds (HH-2).
+  logoLight: drawing(
+    240,
+    80,
+    "50% 50%",
+    '<circle cx="40" cy="40" r="34" fill="#f4e6d0"/><ellipse cx="40" cy="44" rx="20" ry="12" fill="#b5542c"/><rect x="88" y="22" width="136" height="16" rx="4" fill="#ffffff"/><rect x="88" y="46" width="96" height="10" rx="3" fill="#f4e6d0"/>',
     "Rosa's Bakery",
   ),
   // A sun a quarter of the way across, over hills.
@@ -161,11 +170,17 @@ const storyContext: RenderContext = {
 export function SitePage({
   header,
   content,
+  context,
 }: {
   readonly header: readonly NodeDoc[];
   readonly content: readonly NodeDoc[];
+  /** Beside the stories' own: the logos and the theme's dark colours, for the Header's (HH-2). */
+  readonly context?: Partial<RenderContext>;
 }) {
-  const page = renderPage({ header, content, footer: [] }, siteLibrary, storyContext);
+  const page = renderPage({ header, content, footer: [] }, siteLibrary, {
+    ...storyContext,
+    ...context,
+  });
   return (
     <div
       className="flex flex-col bg-base-100 text-base-content"

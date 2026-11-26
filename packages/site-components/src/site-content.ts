@@ -52,11 +52,12 @@ function contentOf(site: SiteDoc, library: ComponentLibrary): SiteContent {
     ...snapshot.pages.flatMap((page) => page.doc.content),
   ];
   const used = mediaUsedBy(nodes, library);
-  // The favicon set's source, the Header's logo (HF-1) and the share pictures (3.4), from Site
+  // The favicon set's source, the Header's logos (HF-1, HH-2) and the share pictures (3.4), from Site
   // Settings and Page Settings, and the pictures of posts their design shows (6.10a).
   for (const id of [
     site.settings.general.icon,
     site.settings.general.logo,
+    site.settings.general.logoOnDark,
     site.settings.social.shareImage,
     ...snapshot.pages.map((page) => page.shareImage),
     ...snapshot.pages.flatMap(itemPicturesShown),

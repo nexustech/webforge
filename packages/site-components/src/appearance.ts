@@ -728,6 +728,32 @@ export function hasOwnBackground(values: AppearanceValues): boolean {
   return BOX_CLASSES.lookBackground(values.lookBackground, values) !== "" || hasGradient(values);
 }
 
+/**
+ * The colours the Appearance group fills an item with on each device, smallest first, as colour
+ * refs (HH-2): a gradient's two ends where it draws one (each its default without its own), else
+ * its Background; none on a device where it leaves the item's own. A Header joined to a section
+ * sits on them.
+ */
+export function backgroundColoursOf(values: AppearanceValues): readonly (readonly string[])[] {
+  const ref = (value: unknown) => colorClass("bg", value).slice("bg-".length);
+  return DEVICES.map((device) => {
+    const on = (value: unknown) =>
+      isResponsiveValue(value as Responsive<unknown>)
+        ? resolveResponsive(value as Responsive<unknown>, device)
+        : value;
+    if (pick(GRADIENT_CLASSES)(on(values.lookGradientDirection)) !== "") {
+      return (Object.keys(GRADIENT_END_DEFAULTS) as (keyof typeof GRADIENT_END_DEFAULTS)[]).map(
+        (name) => {
+          const end = on(values[name]);
+          return ref(isEndColour(end) ? end : GRADIENT_END_DEFAULTS[name]);
+        },
+      );
+    }
+    const background = ref(on(values.lookBackground));
+    return background === "" ? [] : [background];
+  });
+}
+
 /** The fields that draw a gradient (CT-4). */
 const GRADIENT_FIELDS: ReadonlySet<string> = new Set([
   "lookGradientDirection",

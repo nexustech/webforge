@@ -316,6 +316,31 @@ describe("saveSiteSettings", () => {
     expect(labels().at(-1)).toBe("Changed Site Settings");
   });
 
+  it("names the undo step for one of General's pictures changed alone (HF-1, HH-2)", () => {
+    const session = sessionWith();
+    const before = session.history.document.getState().settings;
+    const labels = () => session.history.state.getState().entries.map((entry) => entry.label);
+
+    saveSiteSettings(session, {
+      ...before,
+      general: { ...before.general, logoOnDark: "media-light" as MediaId },
+    });
+    expect(labels()).toEqual(["Changed Logo for dark backgrounds"]);
+    const now = () => session.history.document.getState().settings;
+    saveSiteSettings(session, {
+      ...now(),
+      general: { ...now().general, logo: "media-logo" as MediaId },
+    });
+    expect(labels().at(-1)).toBe("Changed Logo");
+
+    // With anything else: the sections, as before.
+    saveSiteSettings(session, {
+      ...now(),
+      general: { ...now().general, name: "Rosa's", icon: "media-mark" as MediaId },
+    });
+    expect(labels().at(-1)).toBe("Changed Site Settings: General");
+  });
+
   it("saves as one labelled undo step, and does nothing when nothing changed", () => {
     const session = sessionWith();
     const before = session.history.document.getState().settings;
