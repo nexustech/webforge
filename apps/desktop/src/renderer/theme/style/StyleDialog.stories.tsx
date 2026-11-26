@@ -72,13 +72,16 @@ const openWith = (scope: StyleDialogState["scope"]): Story =>
   );
 
 /**
- * Its preview at the top, its groups below in columns with their sources, and *This Button only*
- * in the bar at the bottom, at 1280 × 800 px.
+ * Its groups with their sources, its preview beside them, and *Applies to: This Button only* in
+ * the bar at the bottom, at 1280 × 800 px.
  */
 export const ThisOne: Story = openWith("this");
 
-/** At 1920 × 1080 px: the dialog fills the window, its groups in more columns (CT-11). */
+/** At 1920 × 1080 px: the dialog fills the window, its preview wider beside its groups (H3). */
 export const ThisOneWide: Story = { ...openWith("this"), tags: ["wide-window"] };
+
+/** In the app's smallest window, 960 × 600 px: one preview at a time, Desktop or Mobile (H3). */
+export const ThisOneShort: Story = { ...openWith("this"), tags: ["short-window"] };
 
 /** *Every Button on the site*, with how many others it reaches. */
 export const EveryOne: Story = openWith("site");

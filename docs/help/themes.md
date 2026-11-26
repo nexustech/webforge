@@ -4,7 +4,7 @@ id: themes
 title: Themes, colours and fonts
 summary: Change your whole site's colours, fonts, corners and spacing at once, in the Theme panel or Theme Studio.
 related: [styling, templates, media]
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # Themes, colours and fonts
@@ -89,9 +89,9 @@ Built-in themes never change. The first time you change one, {appName} saves **y
 - **Styles:** corners, shadows and the other settings, drawn as examples.
 - **Components:** the look of every kind of section and element across the site, such as every Button or every card. Choose which kind from the list beside the tabs. A gradient is added as in **Style This…**: choose its direction, and it starts as Brand to Accent ([Gradients](styling.md#gradients)).
 
-Above Colours, Text and Styles, a sample page shows your theme on Desktop and Mobile as you change it. It stays in view while you scroll the settings. To give it more room, drag the line under it, or select the line and use the arrow keys.
+Beside Colours, Text and Styles, on the right, a sample page shows your theme on Desktop and Mobile as you change it, while the settings use the window's full height on the left. In a smaller window, one shows at a time: choose **Desktop** or **Mobile** above it. To give it more room, drag the line between it and the settings, or select the line and use the arrow keys.
 
-In **Components**, the kind you chose is shown in the same place. Your changes stay a draft until you click **Apply Changes** in the bar at the bottom, or **Discard** them. **Theme now** and **With your changes** above the preview compare the look before and after.
+In **Components**, the kind you chose is shown in the same place, and each group's name stays at the top while you scroll through its settings. Your changes stay a draft until you click **Apply Changes** in the bar at the bottom, or **Discard** them. **Theme now** and **With your changes** above the preview compare the look before and after.
 
 ### Your colours
 

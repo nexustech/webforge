@@ -1,7 +1,7 @@
 import { Button, Dialog, Tabs, TabsContent, TabsList, TabsTrigger } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import type { NodeDoc } from "@webforge/model";
-import { type ReactNode, useId, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
 import { lookChangeIn } from "../../clipboard/index.js";
@@ -37,10 +37,10 @@ export type StyleDialogProps = {
 };
 
 /**
- * *Style this ‹kind›…* (3.13a, CT-2), in Theme Studio's frame (CT-11): a live preview of the item on
- * Desktop and Mobile at the top, and under it, as wide as the window, the selected item's Appearance
- * fields as the Style tab has them and 3.13b's deeper groups, in columns, with their provenance
- * (3.12); a change shows in the preview and on the canvas at once. At the bottom, always in view,
+ * *Style this ‹kind›…* (3.13a, CT-2), in Theme Studio's frame (CT-11): the selected item's Appearance
+ * fields as the Style tab has them and 3.13b's deeper groups, in one column at the dialog's full
+ * height with their groups' headings in view and their provenance (3.12), and beside them a live
+ * preview of the item on Desktop and Mobile (H3); a change shows in the preview and on the canvas at once. At the bottom, always in view,
  * where it applies: this one only, every one of its kind on the page or the site (2.27), or the
  * theme's look for its kind (3.12). Apply makes it one labelled step; Cancel takes it back.
  */
@@ -96,6 +96,12 @@ function OpenStyleDialog({
       <StylingFrame
         title={t("style.title", { item: name })}
         description={t("style.description")}
+        // Escape in the open choices of where it applies closes them, not the dialog (H3).
+        onEscapeKeyDown={(event) => {
+          if (event.target instanceof Element && event.target.closest("[data-scope-choices]")) {
+            event.preventDefault();
+          }
+        }}
         preview={
           <PreviewStrip
             label={t("style.preview")}
@@ -155,8 +161,11 @@ function OpenStyleDialog({
 }
 
 /**
- * Where the changes apply (3.13a): each choice with how many others it reaches on the page or the
- * site, as 2.27 counts them, and what the theme's look does.
+ * Where the changes apply (3.13a): one line, "Applies to: ‹the choice› · Change" (H3), so the
+ * controls keep the height; **Change** opens the choices in place, each with how many others it
+ * reaches on the page or the site, as 2.27 counts them, and what the theme's look does. Opening them
+ * moves the focus to the one chosen; choosing one with the pointer, or Escape, closes them and gives
+ * the focus back to **Change**. The keyboard's arrows choose as they move, so they leave them open.
  */
 function ScopeChoice({
   others: count,
@@ -171,6 +180,42 @@ function ScopeChoice({
   readonly onChange: (scope: StyleScope) => void;
 }) {
   const id = useId();
+  const [open, setOpen] = useState(false);
+  const change = useRef<HTMLButtonElement>(null);
+  const choices = useRef<HTMLFieldSetElement>(null);
+  // Opened, the focus goes to the choice made; closed by a choice or Escape, back to Change.
+  const [focusChange, setFocusChange] = useState(false);
+  useEffect(() => {
+    if (open) choices.current?.querySelector<HTMLInputElement>("input:checked")?.focus();
+    else if (focusChange) change.current?.focus();
+  }, [open, focusChange]);
+  const close = () => {
+    setFocusChange(true);
+    setOpen(false);
+  };
+  if (!open) {
+    return (
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 text-sm text-foreground">
+        <span id={`${id}-summary`}>{t(`style.scope.summary.${scope}`, { item })}</span>
+        <span aria-hidden className="text-muted-foreground">
+          ·
+        </span>
+        <Button
+          ref={change}
+          variant="link"
+          className="h-auto px-0"
+          aria-expanded={false}
+          aria-describedby={`${id}-summary`}
+          onClick={() => {
+            setFocusChange(false);
+            setOpen(true);
+          }}
+        >
+          {t("style.scope.change")}
+        </Button>
+      </div>
+    );
+  }
   const others = (reach: "page" | "site") => {
     const reached = count(reach);
     return reached === 0 ? t("style.scope.noOthers") : plural("style.scope.others", reached);
@@ -182,7 +227,18 @@ function ScopeChoice({
     theme: t("style.scope.theme.hint", { item }),
   };
   return (
-    <fieldset className="flex min-w-0 flex-1 flex-col gap-1.5">
+    <fieldset
+      ref={choices}
+      data-scope-choices=""
+      className="flex min-w-0 flex-1 flex-col gap-1.5"
+      // Escape closes the choices, not the dialog (which leaves it to them, above).
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        event.stopPropagation();
+        close();
+      }}
+    >
       <legend className="mb-1 text-sm font-medium text-foreground">{t("style.scope")}</legend>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] gap-x-4 gap-y-1.5">
         {STYLE_SCOPES.map((each) => {
@@ -196,6 +252,16 @@ function ScopeChoice({
                 value={each}
                 checked={scope === each}
                 onChange={() => onChange(each)}
+                // A click (by the pointer, or Space) chooses and closes; arrows only choose.
+                onClick={(event) => {
+                  if (event.detail > 0 || event.clientX !== 0 || event.clientY !== 0) close();
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === " " || event.key === "Enter") {
+                    onChange(each);
+                    close();
+                  }
+                }}
                 className="mt-0.5 accent-primary"
                 {...(said === undefined ? {} : { "aria-describedby": detailId })}
               />

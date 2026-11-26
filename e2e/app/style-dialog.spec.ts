@@ -47,9 +47,13 @@ test("styles a Hero in the dialog, live on the canvas, as one step on Apply (3.1
   await dialog().getByRole("switch", { name: "Underline" }).click();
   // On the canvas at once, while the dialog is open.
   await expect(title).toHaveClass(/(^| )underline!( |$)/);
+  // Where it applies, on one line until Change opens the choices (H3).
+  await dialog().getByRole("button", { name: "Change" }).click();
+  // Chosen with the pointer, even as it was: the choices close again.
   await dialog()
     .getByRole("radio", { name: /^This Hero only/ })
-    .check();
+    .click();
+  await expect(dialog().getByText("Applies to: This Hero only")).toBeVisible();
   await dialog().getByRole("button", { name: "Apply" }).click();
 
   await expect(dialog()).toBeHidden();
