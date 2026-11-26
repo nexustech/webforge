@@ -167,9 +167,17 @@ export function ThemeStudio({
     // Read now, not as drawn: a choice changes the run and leaves its field in the same moment.
     const run = studio.getState().draft;
     const now = session.history.document.getState().theme;
-    studio.setState({ draft: undefined });
-    if (!draftChanges(now, run)) return true;
-    return setLook(session, asks, run.type, run.item, draftChange(now, run), { notice: true });
+    if (!draftChanges(now, run)) {
+      studio.setState({ draft: undefined });
+      return true;
+    }
+    // Kept until written, so the preview never flicks back to the look before it; a change made
+    // meanwhile makes another run, which stays.
+    const applied = await setLook(session, asks, run.type, run.item, draftChange(now, run), {
+      notice: true,
+    });
+    if (studio.getState().draft === run) studio.setState({ draft: undefined });
+    return applied;
   };
   /** Closes, writing a run still open first, then does `then`: goes to a colour's use (TC-4). */
   const closeThen = (then?: () => void) => {
@@ -232,200 +240,196 @@ export function ThemeStudio({
   })();
 
   return (
-    <>
-      <Dialog
-        open={open}
-        onOpenChange={(next) => {
-          // Closing writes a run of changes still open first (M1).
-          if (next) studio.setState({ open: true });
-          else closeThen();
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        // Closing writes a run of changes still open first (M1).
+        if (next) studio.setState({ open: true });
+        else closeThen();
+      }}
+    >
+      {/* The sections' tabs are in the bar at the top, their content under the preview: the
+            tabs' root holds the whole frame. */}
+      <Tabs
+        asChild
+        value={section}
+        onValueChange={(next) => {
+          const chosen = STUDIO_SECTIONS.find((each) => each === next);
+          if (chosen === undefined) return;
+          void apply().then(() => studio.setState({ section: chosen as StudioSection }));
         }}
       >
-        {/* The sections' tabs are in the bar at the top, their content under the preview: the
-            tabs' root holds the whole frame. */}
-        <Tabs
-          asChild
-          value={section}
-          onValueChange={(next) => {
-            const chosen = STUDIO_SECTIONS.find((each) => each === next);
-            if (chosen === undefined) return;
-            void apply().then(() => studio.setState({ section: chosen as StudioSection }));
+        <StylingFrame
+          // Ctrl/Cmd+Z with a run of changes still open writes it, then undoes it, so the person
+          // sees their own change reversed, as in the Edit panel (M1).
+          onKeyDownCapture={(event) => {
+            if (studio.getState().draft === undefined) return;
+            if (!(event.ctrlKey || event.metaKey) || event.shiftKey) return;
+            if (event.key.toLowerCase() !== "z") return;
+            event.preventDefault();
+            event.stopPropagation();
+            void apply().then((applied) => {
+              if (applied) session.history.undo();
+            });
           }}
+          title={t("theme.studio.title")}
+          description={t("theme.studio.description")}
+          bar={
+            <>
+              <TabsList aria-label={t("theme.studio.sections")} className="rounded-sm">
+                {STUDIO_SECTIONS.map((each) => (
+                  <TabsTrigger key={each} value={each}>
+                    {t(`theme.studio.section.${each}`)}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              {section === "components" && shown !== undefined ? (
+                <KindChoice groups={groups} shown={shown} onKind={chooseKind} />
+              ) : null}
+            </>
+          }
+          preview={preview}
         >
-          <StylingFrame
-            // Ctrl/Cmd+Z with a run of changes still open writes it, then undoes it, so the person
-            // sees their own change reversed, as in the Edit panel (M1).
-            onKeyDownCapture={(event) => {
-              if (studio.getState().draft === undefined) return;
-              if (!(event.ctrlKey || event.metaKey) || event.shiftKey) return;
-              if (event.key.toLowerCase() !== "z") return;
-              event.preventDefault();
-              event.stopPropagation();
-              void apply().then((applied) => {
-                if (applied) session.history.undo();
-              });
-            }}
-            title={t("theme.studio.title")}
-            description={t("theme.studio.description")}
-            bar={
-              <>
-                <TabsList aria-label={t("theme.studio.sections")} className="rounded-sm">
-                  {STUDIO_SECTIONS.map((each) => (
-                    <TabsTrigger key={each} value={each}>
-                      {t(`theme.studio.section.${each}`)}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                {section === "components" && shown !== undefined ? (
-                  <KindChoice groups={groups} shown={shown} onKind={chooseKind} />
-                ) : null}
-              </>
-            }
-            preview={preview}
-          >
-            <TabsContent value="themes" className="min-h-0 overflow-auto pr-1">
-              <StudioThemes
-                theme={theme}
-                own={own}
-                onChoose={(chosen) => void switchPreset(session, asks, chosen)}
-                {...(ownThemes === undefined
-                  ? {}
-                  : {
-                      onNew: async () => {
-                        const created = await ownThemes.askNew();
-                        if (created !== undefined) {
-                          await createOwnTheme(session, asks, created.base, created.name);
-                        }
-                      },
-                      onRename: async (mine) => {
-                        const name = await ownThemes.askName({
-                          title: t("theme.own.renameTitle"),
-                          initial: mine.own.name,
-                          confirm: t("theme.own.renameButton"),
-                        });
-                        if (name !== undefined) {
-                          renameOwnTheme(session, mine, name, (kept) => ownThemes.keep(kept));
-                        }
-                      },
-                      onDelete: async (mine) => {
-                        const inUse = theme.own?.id === mine.own.id;
-                        if (await ownThemes.confirmDelete(mine.own.name, inUse)) {
-                          ownThemes.remove(mine.own.id);
-                        }
-                      },
-                    })}
-              />
-            </TabsContent>
-            <TabsContent value="colors" className="min-h-0 overflow-auto pr-1">
-              <StudioImagePalette
-                media={media}
-                theme={theme}
-                onUse={(proposal, image) =>
-                  setBrandColours(session, asks, proposal, image.fileName)
+          <TabsContent value="themes" className="min-h-0 overflow-auto pr-1">
+            <StudioThemes
+              theme={theme}
+              own={own}
+              onChoose={(chosen) => void switchPreset(session, asks, chosen)}
+              {...(ownThemes === undefined
+                ? {}
+                : {
+                    onNew: async () => {
+                      const created = await ownThemes.askNew();
+                      if (created !== undefined) {
+                        await createOwnTheme(session, asks, created.base, created.name);
+                      }
+                    },
+                    onRename: async (mine) => {
+                      const name = await ownThemes.askName({
+                        title: t("theme.own.renameTitle"),
+                        initial: mine.own.name,
+                        confirm: t("theme.own.renameButton"),
+                      });
+                      if (name !== undefined) {
+                        renameOwnTheme(session, mine, name, (kept) => ownThemes.keep(kept));
+                      }
+                    },
+                    onDelete: async (mine) => {
+                      const inUse = theme.own?.id === mine.own.id;
+                      if (await ownThemes.confirmDelete(mine.own.name, inUse)) {
+                        ownThemes.remove(mine.own.id);
+                      }
+                    },
+                  })}
+            />
+          </TabsContent>
+          <TabsContent value="colors" className="min-h-0 overflow-auto pr-1">
+            <StudioImagePalette
+              media={media}
+              theme={theme}
+              onUse={(proposal, image) => setBrandColours(session, asks, proposal, image.fileName)}
+            />
+            <StudioOwnColours
+              colors={theme.ownColors ?? []}
+              startColor={theme.colors.primary}
+              issues={ownColorIssues(theme)}
+              onAdd={(name, color) => void addOwnColor(session, asks, name, color)}
+              onRename={(id, name) => void renameOwnColor(session, asks, id, name)}
+              onSetColor={(id, color) =>
+                void followThemeChange(session, setOwnColor(session, asks, id, color))
+              }
+              usesOf={(id) => ownColorUseCount(session, id, colorFieldsOf(session.library))}
+              onDelete={(id, uses) =>
+                void deleteOwnColor(session, asks, id, uses, colorFieldsOf(session.library))
+              }
+              preview={(id) =>
+                previewOf((tokens, color) => withOwnColor(tokens, id, color), session)
+              }
+            />
+            <StudioOneOffColours
+              colours={oneOffs.map(({ hex, uses }) => ({
+                hex,
+                uses: uses.map((use) => ({
+                  key: keyOfUse(use),
+                  where:
+                    doc === undefined ? "" : elementPlaceName(doc, library, use.on, use.nodeId),
+                  canShow: canShowElement(session, use.on, use.nodeId),
+                })),
+              }))}
+              own={theme.ownColors ?? []}
+              nearest={(hex) => nearestColour(hexToOklch(hex), theme.ownColors ?? [])}
+              onAdd={async (hex, name) =>
+                (await addOneOffToOwnColors(session, asks, hex, name, isColorField)) !== undefined
+              }
+              onUseNearest={(hex) => void applyNearestOwnColor(session, asks, hex, isColorField)}
+              onShow={(hex, key) => {
+                const use = oneOffs
+                  .find((each) => each.hex === hex)
+                  ?.uses.find((each) => keyOfUse(each) === key);
+                if (use !== undefined && canShowElement(session, use.on, use.nodeId)) {
+                  closeThen(() => showElement(session, use.on, use.nodeId));
                 }
-              />
-              <StudioOwnColours
-                colors={theme.ownColors ?? []}
-                startColor={theme.colors.primary}
-                issues={ownColorIssues(theme)}
-                onAdd={(name, color) => void addOwnColor(session, asks, name, color)}
-                onRename={(id, name) => void renameOwnColor(session, asks, id, name)}
-                onSetColor={(id, color) =>
-                  void followThemeChange(session, setOwnColor(session, asks, id, color))
-                }
-                usesOf={(id) => ownColorUseCount(session, id, colorFieldsOf(session.library))}
-                onDelete={(id, uses) =>
-                  void deleteOwnColor(session, asks, id, uses, colorFieldsOf(session.library))
-                }
-                preview={(id) =>
-                  previewOf((tokens, color) => withOwnColor(tokens, id, color), session)
-                }
-              />
-              <StudioOneOffColours
-                colours={oneOffs.map(({ hex, uses }) => ({
-                  hex,
-                  uses: uses.map((use) => ({
-                    key: keyOfUse(use),
-                    where:
-                      doc === undefined ? "" : elementPlaceName(doc, library, use.on, use.nodeId),
-                    canShow: canShowElement(session, use.on, use.nodeId),
-                  })),
-                }))}
-                own={theme.ownColors ?? []}
-                nearest={(hex) => nearestColour(hexToOklch(hex), theme.ownColors ?? [])}
-                onAdd={async (hex, name) =>
-                  (await addOneOffToOwnColors(session, asks, hex, name, isColorField)) !== undefined
-                }
-                onUseNearest={(hex) => void applyNearestOwnColor(session, asks, hex, isColorField)}
-                onShow={(hex, key) => {
-                  const use = oneOffs
-                    .find((each) => each.hex === hex)
-                    ?.uses.find((each) => keyOfUse(each) === key);
-                  if (use !== undefined && canShowElement(session, use.on, use.nodeId)) {
-                    closeThen(() => showElement(session, use.on, use.nodeId));
-                  }
-                }}
-              />
-              <StudioColours
-                theme={theme}
-                onChange={(palette, role, color) =>
-                  void followThemeChange(
-                    session,
-                    setPaletteColor(session, asks, palette, role, color),
-                  )
-                }
-                preview={(palette, role) =>
-                  previewOf(
-                    (tokens, color) => withPaletteColor(tokens, palette, role, color),
-                    session,
-                  )
-                }
-              />
-            </TabsContent>
-            <TabsContent value="text" className="min-h-0 overflow-auto pr-1">
-              <StudioText
-                theme={theme}
-                onStep={(style, change) => void setTextStep(session, asks, style, change)}
-                onLinks={(underline) => {
-                  if (LINKS !== undefined) void setToken(session, asks, LINKS, underline);
-                }}
-              />
-            </TabsContent>
-            <TabsContent value="styles" className="min-h-0 overflow-auto pr-1">
-              <StudioStyles
-                theme={theme}
-                onChange={(control, value) => void setToken(session, asks, control, value)}
-              />
-            </TabsContent>
-            {/* The kind's look, its tokens and its fields scroll here, as one (H3): a field the focus
+              }}
+            />
+            <StudioColours
+              theme={theme}
+              onChange={(palette, role, color) =>
+                void followThemeChange(
+                  session,
+                  setPaletteColor(session, asks, palette, role, color),
+                )
+              }
+              preview={(palette, role) =>
+                previewOf(
+                  (tokens, color) => withPaletteColor(tokens, palette, role, color),
+                  session,
+                )
+              }
+            />
+          </TabsContent>
+          <TabsContent value="text" className="min-h-0 overflow-auto pr-1">
+            <StudioText
+              theme={theme}
+              onStep={(style, change) => void setTextStep(session, asks, style, change)}
+              onLinks={(underline) => {
+                if (LINKS !== undefined) void setToken(session, asks, LINKS, underline);
+              }}
+            />
+          </TabsContent>
+          <TabsContent value="styles" className="min-h-0 overflow-auto pr-1">
+            <StudioStyles
+              theme={theme}
+              onChange={(control, value) => void setToken(session, asks, control, value)}
+            />
+          </TabsContent>
+          {/* The kind's look, its tokens and its fields scroll here, as one (H3): a field the focus
                 moves to scrolls clear of its group's heading, which stays in view. */}
-            <TabsContent value="components" className="min-h-0 scroll-pt-8 overflow-auto pr-1">
-              {shown === undefined ? null : (
-                <StudioComponents
-                  theme={theme}
-                  library={library}
-                  shown={shown}
-                  draft={drafted}
-                  onChange={(type, item, change) =>
-                    studio.setState((state) => ({
-                      draft: changeDraft(
-                        session.history.document.getState().theme,
-                        state.draft,
-                        type,
-                        item,
-                        change,
-                      ),
-                    }))
-                  }
-                  onCommit={() => void apply()}
-                  onToken={(control, value) => void setToken(session, asks, control, value)}
-                  renderers={renderers}
-                />
-              )}
-            </TabsContent>
-          </StylingFrame>
-        </Tabs>
-      </Dialog>
-    </>
+          <TabsContent value="components" className="min-h-0 scroll-pt-8 overflow-auto pr-1">
+            {shown === undefined ? null : (
+              <StudioComponents
+                theme={theme}
+                library={library}
+                shown={shown}
+                draft={drafted}
+                onChange={(type, item, change) =>
+                  studio.setState((state) => ({
+                    draft: changeDraft(
+                      session.history.document.getState().theme,
+                      state.draft,
+                      type,
+                      item,
+                      change,
+                    ),
+                  }))
+                }
+                onCommit={() => void apply()}
+                onToken={(control, value) => void setToken(session, asks, control, value)}
+                renderers={renderers}
+              />
+            )}
+          </TabsContent>
+        </StylingFrame>
+      </Tabs>
+    </Dialog>
   );
 }
