@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { NodeDoc } from "@webforge/model";
+import { DEFAULT_THEME, type NodeDoc } from "@webforge/model";
+import { darkGroundsOf, THEME_PRESETS } from "@webforge/themes";
 import { within } from "storybook/test";
 import { SiteNodes, SitePage } from "../stories/site-nodes.js";
 
@@ -421,5 +422,55 @@ export const HeaderJoinedReversed: Story = page(
 
 /** Joined to a section in the page's colours (HH-1): it keeps its own band, as it looks the same. */
 export const HeaderJoinedPageColours: Story = page(header({ background: "section" }), [
+  textSection("page"),
+]);
+
+/**
+ * The logo and its light version for dark backgrounds (HH-2), with the dark colours of the theme
+ * the story is shown in, as the export works them out from the site's.
+ */
+const logosIn = (theme: unknown) => ({
+  logo: "logo",
+  logoOnDark: "logoLight",
+  darkGrounds: darkGroundsOf(
+    THEME_PRESETS.find((preset) => preset.preset === theme) ?? DEFAULT_THEME,
+  ),
+});
+
+/** A page whose Header shows the logos (HH-2), in the story's theme. */
+const logoPage = (header: readonly NodeDoc[], content: readonly NodeDoc[]): Story => ({
+  args: { nodes: [] },
+  render: (_args, { globals }) => (
+    <SitePage header={header} content={content} context={logosIn(globals.theme)} />
+  ),
+});
+
+/**
+ * The Header on a Hero's picture under a dark overlay (HH-2): the logo for dark backgrounds, in its
+ * light colours.
+ */
+export const HeaderLogoOnDark: Story = logoPage(
+  header({ background: "section", sticky: true, scrollStyle: "shadow", logoPlace: "instead" }),
+  [pictureHero()],
+);
+
+/**
+ * The same once the page has scrolled (HH-2): solid in the page's colours, with the logo on a light
+ * page and still the light one on a dark page.
+ */
+export const HeaderLogoOnDarkScrolled: Story = {
+  ...HeaderLogoOnDark,
+  play: async ({ canvasElement }) => {
+    // As the "sticky" behaviour marks it once the page has scrolled.
+    const header = within(canvasElement).getByRole("banner") as unknown as Marked;
+    header.setAttribute("data-scrolled", "");
+  },
+};
+
+/**
+ * The Header with its own band (HH-2): the logo on a light theme, the logo for dark backgrounds on
+ * a dark one.
+ */
+export const HeaderLogoOnDarkTheme: Story = logoPage(header({ logoPlace: "beside" }), [
   textSection("page"),
 ]);

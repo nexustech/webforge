@@ -57,7 +57,9 @@ const PLACEHOLDER_IMAGE: ResolvedImage = {
  * new Gallery image), so both are compiled before it does. With the editor's context alone, images
  * rendered nothing, so none of their classes were compiled. Only whether an image resolves changes
  * an element's classes, never which image or its alt text, so a change to Media collects nothing
- * again. The first has a logo too, for the Header's (HF-1), so choosing one collects nothing again.
+ * again. The first has a logo too, for the Header's (HF-1), so choosing one collects nothing again,
+ * and a logo for dark backgrounds on a joined Header over a dark colour (HH-2), which a Header that
+ * stays at the top swaps for the logo once scrolled: its classes are collected with the logo's.
  * The second draws a Header joined to its first section (HH-1) as joined, with the classes of its
  * own it then has; the section's text colours it takes are the section's, and its room for the
  * Header is in `BOX_CLASS_SAFELIST`, so a page whose first section changes collects nothing again.
@@ -68,13 +70,16 @@ const CLASS_CONTEXTS: readonly RenderContext[] = [
     image: () => PLACEHOLDER_IMAGE,
     emptyImage: () => "",
     logo: "logo",
+    logoOnDark: "logo",
+    darkGrounds: { colors: ["neutral"], inverse: [] },
+    joinedHeader: { section: "", inverse: false, text: "", grounds: ["neutral"] },
   },
   // A Header joined to a first section (HH-1) has classes of its own: the section's are its own.
   {
     ...EDITOR_RENDER_CONTEXT,
     image: () => null,
     emptyImage: () => "",
-    joinedHeader: { section: "", inverse: false, text: "" },
+    joinedHeader: { section: "", inverse: false, text: "", grounds: [] },
   },
 ];
 

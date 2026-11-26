@@ -47,6 +47,8 @@ export type PictureProps = {
    */
   readonly inView?: boolean;
   readonly className?: string;
+  /** Classes for the `<picture>` itself: to hide it whole, so a flex gap doesn't keep its place. */
+  readonly pictureClassName?: string;
   /**
    * Its classes cut it to a shape of their own (3.19), the crop's being `--picture-ratio`, where
    * there is one, for the devices that keep it.
@@ -67,11 +69,12 @@ export function Picture({
   eager = false,
   inView = false,
   className,
+  pictureClassName,
   shaped = false,
   id,
 }: PictureProps) {
   return (
-    <picture>
+    <picture className={pictureClassName}>
       {image.sources.map((source) => (
         <source key={source.type} type={source.type} srcSet={source.srcset} sizes={sizes} />
       ))}

@@ -2,9 +2,10 @@ import { INVERSE_THEME, type NodeDoc } from "@webforge/model";
 import { Window } from "happy-dom";
 import { afterEach, describe, expect, it } from "vitest";
 import { siteLibrary } from "./catalogue/index.js";
-import { joinedHeaderOf } from "./joined-header.js";
+import { joinedHeaderOf, onDarkGround } from "./joined-header.js";
 import { type ComponentLibrary, EDITOR_RENDER_CONTEXT, fieldsHiddenBy } from "./library.js";
 import { renderNodesToHtml, renderPage } from "./render-static.js";
+import type { ResolvedImage } from "./schema.js";
 
 // A Header joined to its page's first section (HH-1): what it takes from the section, how both are
 // drawn, and the scroll styles it offers.
@@ -87,6 +88,7 @@ describe("joinedHeaderOf (HH-1)", () => {
       section: "story",
       inverse: true,
       text: "",
+      grounds: ["base-100"],
     });
   });
 
@@ -288,5 +290,171 @@ describe("the joined Header's scroll styles (HH-1)", () => {
     expect(fieldsHiddenBy(def, { ...def.defaults, background: "section" }).has("background")).toBe(
       false,
     );
+  });
+});
+
+describe("the colours a joined Header sits on (HH-2)", () => {
+  it("is the overlay's colour over a picture, whatever is under it", () => {
+    expect(joined([header()], [hero()])?.grounds).toEqual(["neutral"]);
+    expect(joined([header()], [hero({ overlayColor: "base" })])?.grounds).toEqual(["base-100"]);
+    expect(
+      joined([header()], [text("story", { backgroundImage: { mediaId: "photo" } })])?.grounds,
+    ).toEqual(["base-100"]);
+    // The picture covers the person's background.
+    expect(joined([header()], [hero({ lookBackground: "primary" })])?.grounds).toEqual(["neutral"]);
+  });
+
+  it("is the section's own colour, else the page's, without a picture", () => {
+    // A Hero with its picture beside the text, on the theme's second surface.
+    expect(joined([header()], [hero({ variant: "split" })])?.grounds).toEqual(["base-200"]);
+    expect(joined([header()], [text("story")])?.grounds).toEqual(["base-100"]);
+  });
+
+  it("is the person's background on each device, or a gradient's two colours", () => {
+    expect(
+      joined([header()], [text("story", { colors: "page", lookBackground: "neutral" })])?.grounds,
+    ).toEqual(["neutral"]);
+    expect(
+      joined(
+        [header()],
+        [
+          text("story", {
+            colors: "page",
+            lookBackground: { $responsive: { mobile: "theme", desktop: "primary" } },
+          }),
+        ],
+      )?.grounds,
+    ).toEqual(["base-100", "primary"]);
+    expect(
+      joined(
+        [header()],
+        [
+          text("story", {
+            colors: "page",
+            lookGradientDirection: "toBottom",
+            lookGradientFrom: "neutral",
+            lookGradientTo: "secondary-800/80",
+          }),
+        ],
+      )?.grounds,
+    ).toEqual(["neutral", "secondary-800/80"]);
+  });
+});
+
+describe("onDarkGround (HH-2)", () => {
+  const dark = { colors: ["neutral", "primary-800"], inverse: ["base-100"] };
+
+  it("is dark only where every colour is one of the theme's dark ones", () => {
+    expect(onDarkGround(["neutral"], false, dark)).toBe(true);
+    expect(onDarkGround(["neutral", "base-100"], false, dark)).toBe(false);
+    // At an opacity, as the colour.
+    expect(onDarkGround(["primary-800/80"], false, dark)).toBe(true);
+  });
+
+  it("reads reversed sections' colours in the reversed list", () => {
+    expect(onDarkGround(["base-100"], true, dark)).toBe(true);
+    expect(onDarkGround(["base-100"], false, dark)).toBe(false);
+  });
+
+  it("is never dark without the theme's dark colours, or without a colour", () => {
+    expect(onDarkGround(["neutral"], false, undefined)).toBe(false);
+    expect(onDarkGround([], false, dark)).toBe(false);
+  });
+});
+
+describe("the Header's logo for dark backgrounds (HH-2)", () => {
+  /** A picture by its id, as the export resolves one: `gone` is no longer in Media. */
+  const image = (id: string): ResolvedImage | null =>
+    id === "gone"
+      ? null
+      : {
+          sources: [{ type: "image/webp", srcset: `${id}.webp 320w` }],
+          src: `${id}.png`,
+          fallback: { type: "image/png", srcset: `${id}.png 320w` },
+          width: 320,
+          height: 120,
+          alt: "",
+        };
+  /** The theme's dark colours: the light theme's, where the page's surface is light. */
+  const lightTheme = { colors: ["neutral"], inverse: ["base-100"] };
+  const darkTheme = { colors: ["neutral", "base-100"], inverse: [] };
+
+  /** The Header's logos' `src`s, and the classes of each `<picture>`, on a page of `content`. */
+  function logos(
+    headerProps: Record<string, unknown>,
+    content: readonly NodeDoc[],
+    context: Record<string, unknown> = {},
+  ) {
+    const page = renderPage({ header: [header(headerProps)], content, footer: [] }, siteLibrary, {
+      ...EDITOR_RENDER_CONTEXT,
+      image,
+      logo: "logo",
+      logoOnDark: "light",
+      darkGrounds: lightTheme,
+      ...context,
+    });
+    const happy = new Window();
+    windows.push(happy);
+    happy.document.body.innerHTML = page.header;
+    return [...happy.document.querySelectorAll("header picture")].map((picture) => ({
+      src: picture.querySelector("img")?.getAttribute("src"),
+      alt: picture.querySelector("img")?.getAttribute("alt"),
+      webp: picture.querySelector("source")?.getAttribute("srcset"),
+      classes: picture.getAttribute("class"),
+    }));
+  }
+
+  it("shows the logo on a light colour, and the logo for dark backgrounds on a dark one", () => {
+    expect(logos({}, [hero()]).map(({ src }) => src)).toEqual(["light.png"]);
+    expect(logos({}, [hero({ overlayColor: "base" })]).map(({ src }) => src)).toEqual(["logo.png"]);
+    // Its own band, on the page's surface.
+    expect(logos({ background: "own" }, [hero()]).map(({ src }) => src)).toEqual(["logo.png"]);
+    expect(
+      logos({ background: "own" }, [hero()], { darkGrounds: darkTheme }).map(({ src }) => src),
+    ).toEqual(["light.png"]);
+  });
+
+  it("draws as before without one, or without the theme's dark colours", () => {
+    const without = logos({}, [hero()], { logoOnDark: undefined });
+    expect(without).toEqual([
+      { src: "logo.png", alt: "Rosa's Bakery", webp: "logo.webp 320w", classes: null },
+    ]);
+    expect(logos({}, [hero()], { darkGrounds: undefined }).map(({ src }) => src)).toEqual([
+      "logo.png",
+    ]);
+  });
+
+  it("shows the logo where the one for dark backgrounds is gone from Media, and none without a logo", () => {
+    expect(logos({}, [hero()], { logoOnDark: "gone" }).map(({ src }) => src)).toEqual(["logo.png"]);
+    expect(logos({}, [hero()], { logo: undefined })).toEqual([]);
+  });
+
+  it("swaps them as a Header that stays at the top changes colours, both named and in WebP", () => {
+    const swapped = logos({ sticky: true, scrollStyle: "shrink" }, [hero()]);
+    expect(swapped).toEqual([
+      {
+        src: "light.png",
+        alt: "Rosa's Bakery",
+        webp: "light.webp 320w",
+        classes: "in-data-scrolled:hidden",
+      },
+      {
+        src: "logo.png",
+        alt: "Rosa's Bakery",
+        webp: "logo.webp 320w",
+        classes: "hidden in-data-scrolled:block",
+      },
+    ]);
+    // On a dark theme it's on a dark colour either way: one picture.
+    expect(
+      logos({ sticky: true }, [hero()], { darkGrounds: darkTheme }).map(({ classes }) => classes),
+    ).toEqual([null]);
+  });
+
+  it("reads a reversed section in its reversed colours", () => {
+    expect(logos({}, [text("story")]).map(({ src }) => src)).toEqual(["light.png"]);
+    expect(logos({}, [text("story")], { darkGrounds: darkTheme }).map(({ src }) => src)).toEqual([
+      "logo.png",
+    ]);
   });
 });
