@@ -179,12 +179,14 @@ export function FieldList({
             : undefined;
         const bodyId = `${idPrefix}-group-${index}`;
         // Copy takes the group's values; paste sets those of them that this group has too, of the
-        // same kind, and that can change now (SP-7).
+        // same kind, and that can change now (SP-7). A line that leads elsewhere holds none.
         const copy = () =>
           onCopy({
             group: key,
             values: new Map(
-              inGroup.map((field) => [field.name, { kind: field.kind, value: field.value }]),
+              inGroup
+                .filter((field) => field.kind !== "action")
+                .map((field) => [field.name, { kind: field.kind, value: field.value }]),
             ),
           });
         const pasted =

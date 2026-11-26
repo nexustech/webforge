@@ -44,7 +44,7 @@ With the Header's **Background** at _The first section's_, each page follows its
 - A Header that stays at the top turns solid, in the page's colours, once the page has scrolled a little. If you chose _Solid background_ or _None_ before, it shows as _Shadow_, and your choice comes back if you change the Background to _Its own_. A Header that doesn't stay at the top scrolls away with the section.
 - On phones the menu's button sits on the section, and the opened menu is solid. The [Announcement bar](#announcement-bar) stays a solid band above the Header.
 - The menu is as easy to read as the section's own text: if the section's text is hard to read on its picture, {appName} warns you, and a stronger overlay helps both.
-- A Hero that opens its page has a **Header background** line in its **Style** tab: **Change in the Header** selects the Header.
+- A Hero that opens its page has a **Header** line at the top of its **Style** tab's Options: **Change in the Header** selects the Header.
 - A site made before this setting keeps _Its own_, so nothing moves until you change it.
 
 On phones the menu folds into a button. To see and edit it open, view Mobile, select the Header and turn on **Show mobile menu**.

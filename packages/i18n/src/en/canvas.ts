@@ -132,7 +132,7 @@ export const canvas = {
   // While several elements are selected (1.31).
   "editPanel.several": "{count} elements selected",
   // A Hero that opens its page leads to the Header's Background, set for every page (HH-1).
-  "editPanel.headerBackground": "Header background",
+  "editPanel.headerBackground": "Header",
   "editPanel.headerBackground.own": "The Header has a band of its own above this section.",
   "editPanel.headerBackground.joined":
     "The Header sits on this section, as it does on each page's first section.",

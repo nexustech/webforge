@@ -553,6 +553,33 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(onResetToDefault).toHaveBeenCalledExactlyOnceWith(["padding"], "Spacing");
   });
 
+  it("draws a line that leads elsewhere, and leaves it out of its group's copy (HH-1)", async () => {
+    const onPaste = vi.fn();
+    const run = vi.fn();
+    const action: EditPanelField = {
+      name: "headerBackground",
+      kind: "action",
+      label: "Header",
+      group: "style",
+      optionGroup: { id: "spacing", label: "Spacing" },
+      value: undefined,
+      button: "Change in the Header",
+      run,
+    };
+    const props = { heading: "Hero", onChange: vi.fn(), onCommit: vi.fn(), onPaste };
+    const fields = [action, ...styleFields];
+    const view = render(<EditPanel {...props} fields={fields} itemKey="a" />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: "Style" }));
+    await user.click(screen.getByRole("button", { name: "Change in the Header" }));
+    expect(run).toHaveBeenCalledOnce();
+
+    await user.click(screen.getByRole("button", { name: "Copy Spacing" }));
+    view.rerender(<EditPanel {...props} fields={fields} itemKey="b" />);
+    await user.click(screen.getByRole("button", { name: "Paste Spacing" }));
+    expect(onPaste).toHaveBeenCalledExactlyOnceWith({ padding: "medium" }, "Spacing");
+  });
+
   it("makes one change and commits it for a choice, keeping the chosen one when clicked again", async () => {
     const { onChange, onCommit, user } = renderStyle();
     const group = screen.getByRole("radiogroup", { name: "Padding" });

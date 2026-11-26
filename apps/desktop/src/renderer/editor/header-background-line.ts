@@ -58,6 +58,8 @@ export function headerBackgroundField(
     kind: "action",
     name: "headerBackground",
     group: "style",
+    // At the top of the Hero's own options, as the Header's setting is about where it opens.
+    optionGroup: { id: "options", label: t("editPanel.optionGroup.options") },
     value: undefined,
     label: t("editPanel.headerBackground"),
     help: t(line.joined ? "editPanel.headerBackground.joined" : "editPanel.headerBackground.own"),
