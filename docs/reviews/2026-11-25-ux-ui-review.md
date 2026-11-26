@@ -1,6 +1,6 @@
 # UX/UI review of the desktop app: dialogs, panels and consistency
 
-**Date:** 2026-11-25 · **Build:** production build of `apps/desktop`, run unpackaged (version 0.3.0). The sweep ran at commit `289d9daa1`; Keyboard Shortcuts and Settings were re-checked at `510ae7244`, the only later commit that changes the app · **OS:** Windows 11 Pro 10.0.26300 · **Status:** findings only; no source was changed and no issues were filed.
+**Date:** 2026-11-25 · **Build:** production build of `apps/desktop`, run unpackaged (version 0.3.0). The sweep ran at commit `289d9daa1`; Keyboard Shortcuts and Settings were re-checked at `510ae7244`, the only later commit that changes the app · **OS:** Windows 11 Pro 10.0.26300 · **Status:** findings only; no source was changed. The findings were filed as issues on 26 Nov 2026 ([Issues filed](#issues-filed)).
 
 Commissioned by the product owner after a manual pass found usability faults that were then built as six issues (#1404, #1408, #1409, #1410, #1411, #1412). This review checks those six in the running app, then looks for **the same class of fault everywhere else**: dialogs that change size or outgrow the window, controls that sit where they can be hit by accident, content that clips or scrolls sideways, and dialogs that behave or read differently from each other.
 
@@ -312,3 +312,39 @@ A plan, not a result.
 - **Tasks:** start a site with the quick start; change the brand colour and one section's look with Style This…; rename a page and change its description; turn on the phone preview and then publish to a test host; open Site Check and deal with one finding.
 - **Measures per task:** completed without help or not; wrong turns; time; any dialog closed by accident (count them, and what was lost).
 - **Proposed targets:** no accidental loss of typed work in any session; four of five complete Style This… without help at 1366 × 768; four of five find a page's actions within 30 seconds.
+
+## Issues filed
+
+Each finding was filed on 26 Nov 2026 in Phase 5's milestone, out of plan, with its cause, acceptance criteria and tests: 22 issues, 15.25 days. With them goes #1433 (1.5 days), the check §6 proposes: an E2E that opens each dialog and panel at 960 × 600 and 1366 × 768 and checks it fits the window, below the title bar, without jumping. The product owner queued all 23 (16.75 days) after each stream's hero and header items, high severity first ([the plan's §3](../../spec/04-implementation-plan.md#3-timeline), MVP §7 item 66), so the dates are unchanged (PH5-2).
+
+| Finding | Severity | Issue | What                                                                            | Stream    | Days |
+| ------- | -------- | ----- | ------------------------------------------------------------------------------- | --------- | ---- |
+| S1      | Medium   | #1437 | Settings › General scrolls as well as its field list                            | A, 2 of 7 | 0.5  |
+| H1      | High     | #1438 | The phone preview's cue wraps and pushes Publish under the window controls      | A, 1 of 7 | 0.5  |
+| H2      | High     | #1439 | Esc or a click outside throws typed work away without asking                    | A, 5 of 7 | 1    |
+| H3      | High     | #1440 | Style This… and Theme Studio leave 150 to 210 px for the controls               | C, 1 of 8 | 2    |
+| H4      | High     | #1441 | The web host form and the Link dialog change height under the pointer           | A, 3 of 7 | 1    |
+| M1      | Medium   | #1442 | Theme Studio's Components waits for Apply Changes; the other tabs apply at once | C, 2 of 8 | 1    |
+| M2      | Medium   | #1443 | Page Settings: two scrollbars, and a long form in a narrow column               | A, 4 of 7 | 1    |
+| M3      | Medium   | #1444 | Cancel and Close differ from one dialog to the next                             | A, 6 of 7 | 1    |
+| M4      | Medium   | #1445 | Confirmations: red buttons, quotation marks and "…" follow no one rule          | A, 7 of 7 | 0.5  |
+| M5      | Medium   | #1446 | A page's actions button is invisible until the pointer is on its row            | C, 4 of 8 | 0.5  |
+| M6      | Medium   | #1447 | Diagnostics: internal names, and text against the box's edge                    | B, 8 of 8 | 0.5  |
+| M7      | Medium   | #1448 | New Site: Sort parts, a list that hides that it scrolls, a cut template name    | B, 7 of 8 | 0.5  |
+| M8      | Medium   | #1449 | Site Check: identical rows under Examples to check                              | B, 3 of 8 | 0.5  |
+| M9      | Medium   | #1450 | Theme Studio › Components: the Section preview is empty                         | C, 3 of 8 | 0.5  |
+| L1      | Low      | #1451 | Disabled buttons don't say why                                                  | C, 6 of 8 | 0.5  |
+| L2      | Low      | #1452 | The logo picker breaks file names, and its thumbnails come late                 | B, 4 of 8 | 0.5  |
+| L3      | Low      | #1453 | Start a Site: business types, a placeholder, mixed label layouts                | B, 6 of 8 | 0.5  |
+| L4      | Low      | #1454 | Controls under 24 × 24 px                                                       | C, 8 of 8 | 0.5  |
+| L5      | Low      | #1455 | AI Apps is narrower than its code asks                                          | B, 5 of 8 | 0.25 |
+| L6      | Low      | #1456 | The web host form opens on top of Publish                                       | B, 2 of 8 | 1    |
+| L7      | Low      | #1457 | Wording: "Save now", "Ctrl++", and Theme… beside Theme Studio…                  | C, 7 of 8 | 0.5  |
+| L8      | Low      | #1458 | An empty grey band above the page                                               | C, 5 of 8 | 0.5  |
+
+The product owner's decisions on the four that needed one (26 Nov 2026):
+
+- **H2 (#1439): ask first.** A dialog with unsaved changes doesn't close on a click outside; Esc and the X ask "Discard your changes?" (Keep Editing / Discard) only when something changed.
+- **H3 (#1440): previews beside.** Style This… and Theme Studio put their previews beside the settings where the window is wide enough, so the settings get the full height.
+- **M1 (#1442): apply at once.** Every Theme Studio tab applies at once, and Undo reverses it; Components stops being a draft.
+- **L6 (#1456): one dialog with Back.** Publish to Your Web Host replaces Publish's content, with a Back button, instead of opening on top.
