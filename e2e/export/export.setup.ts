@@ -443,44 +443,58 @@ setup("export a site with an Announcement bar above the Header (6.4)", async () 
   expect(pages).toEqual(expect.arrayContaining(["index.html", "about.html"]));
 });
 
-setup("export a page of Heroes over a picture, each with its own Overlay (HH-3)", async () => {
-  const sample = sampleSite();
-  const [home] = sample.pages;
-  if (home === undefined) throw new Error("The fixture site has no pages");
-  rmSync(HERO_OVERLAY_SITE_DIR, { recursive: true, force: true });
-  // One page and no files, through the pipeline alone: the overlays and the text over them, in the
-  // stylesheet the export makes for them, are what matter here.
-  const hero = (id: string, overlay: string, overlayColor: string): NodeDoc => ({
-    type: "Hero",
-    props: {
-      id,
-      title: `Hero ${id}`,
-      text: "Fresh bread.",
-      variant: "background",
-      overlay,
-      overlayColor,
-    },
-  });
-  const pages = await exportSnapshot(
-    {
-      ...sample,
-      media: [],
-      documents: [],
-      pages: [
-        {
-          ...home,
-          doc: {
-            root: { props: {} },
-            // Chosen: Medium in the page's colour. Saved before HH-3: Neutral at 70% (format 21).
-            content: [hero("chosen", "40", "base"), hero("before", "70", "neutral")],
+setup(
+  "export a page of Heroes over a picture, with their Overlay and text place (HH-3, HH-6)",
+  async () => {
+    const sample = sampleSite();
+    const [home] = sample.pages;
+    if (home === undefined) throw new Error("The fixture site has no pages");
+    rmSync(HERO_OVERLAY_SITE_DIR, { recursive: true, force: true });
+    // One page and no files, through the pipeline alone: the overlays and the text over them, in the
+    // stylesheet the export makes for them, are what matter here.
+    const hero = (
+      id: string,
+      overlay: string,
+      overlayColor: string,
+      more: Record<string, unknown> = {},
+    ): NodeDoc => ({
+      type: "Hero",
+      props: {
+        id,
+        title: `Hero ${id}`,
+        text: "Fresh bread.",
+        variant: "background",
+        overlay,
+        overlayColor,
+        ...more,
+      },
+    });
+    const pages = await exportSnapshot(
+      {
+        ...sample,
+        media: [],
+        documents: [],
+        pages: [
+          {
+            ...home,
+            doc: {
+              root: { props: {} },
+              // Chosen: Medium in the page's colour. Saved before HH-3: Neutral at 70% (format 21).
+              // Then one with its text at the bottom, on the left (HH-6).
+              content: [
+                hero("chosen", "40", "base"),
+                hero("before", "70", "neutral"),
+                hero("bottom", "60", "neutral", { textPlace: "bottom", alignment: "left" }),
+              ],
+            },
           },
-        },
-      ],
-    },
-    HERO_OVERLAY_SITE_DIR,
-  );
-  expect(pages).toContain("index.html");
-});
+        ],
+      },
+      HERO_OVERLAY_SITE_DIR,
+    );
+    expect(pages).toContain("index.html");
+  },
+);
 
 setup("export a site whose Header hides on the way down (HH-7)", async () => {
   const sample = sampleSite();

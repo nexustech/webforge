@@ -3300,6 +3300,21 @@
           "kind": "media",
           "label": "Image"
         },
+        "textPlace": {
+          "kind": "select",
+          "label": "Text on the picture",
+          "help": "Where the title, text and button sit on the picture. At the bottom, the picture's subject stays in view above them, most on a tall Hero.",
+          "options": [
+            {
+              "label": "Middle",
+              "value": "middle"
+            },
+            {
+              "label": "Bottom",
+              "value": "bottom"
+            }
+          ]
+        },
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
@@ -3498,14 +3513,20 @@
         "text": "Say in one sentence what makes your business special.",
         "buttonLabel": "Get in touch",
         "alignment": "centre",
+        "textPlace": "middle",
         "contentWidth": "wide"
       },
       "variantHides": {
+        "split": [
+          "textPlace"
+        ],
         "centred": [
-          "alignment"
+          "alignment",
+          "textPlace"
         ],
         "minimal": [
-          "image"
+          "image",
+          "textPlace"
         ]
       },
       "pictureBehind": [
