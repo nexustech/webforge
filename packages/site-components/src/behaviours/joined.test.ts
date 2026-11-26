@@ -128,6 +128,9 @@ function filledPage(props: Record<string, unknown>, openedAt = 0) {
   if (hero === null) throw new Error("No section filling the window");
   const place = { top: 100 };
   hero.getBoundingClientRect = () => new window.DOMRect(0, place.top - window.scrollY, 960, 600);
+  // The page's own box, scrolled as the window is.
+  document.documentElement.getBoundingClientRect = () =>
+    new window.DOMRect(0, -window.scrollY, 960, 2000);
   const watched: { readonly target: Element; readonly callback: () => void }[] = [];
   class Watch {
     readonly #callback: () => void;

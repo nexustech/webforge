@@ -23,7 +23,8 @@ export function followJoinedHeight(doc: Document): () => void {
     const fills = doc.querySelector("[data-wf-fills]");
     if (fills === null) root.style.removeProperty(ABOVE);
     else {
-      const top = fills.getBoundingClientRect().top + view.scrollY;
+      // Against the page's own box, from the same layout: scrollY can lag it while a scroll runs.
+      const top = fills.getBoundingClientRect().top - root.getBoundingClientRect().top;
       root.style.setProperty(ABOVE, `${Math.max(0, top)}px`);
     }
   };
