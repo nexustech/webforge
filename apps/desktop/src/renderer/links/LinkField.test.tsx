@@ -47,10 +47,17 @@ function setUp(buttonLink?: unknown, times: Record<string, unknown> = {}) {
       (n: NodeDoc) => n.props.id === id,
     )?.props;
   const labels = () => session.history.entries().map((entry) => entry.label);
+  // The first button's link field: the Hero has a second button's too (HH-5).
+  const field = () => {
+    const row = document.querySelector<HTMLElement>('[data-field="buttonLink"]');
+    if (row === null) throw new Error("No button link field");
+    return within(row);
+  };
   return {
     session,
     node,
     labels,
+    field,
     home: site.homePageId,
     // No wait between events, and addresses pasted rather than typed: each typed character waited
     // a timer tick and redrew the dialog, which took these tests past 5 s under a busy full run.
@@ -60,7 +67,7 @@ function setUp(buttonLink?: unknown, times: Record<string, unknown> = {}) {
 
 describe("LinkField and LinkDialog (F-ED-18)", () => {
   it("links to a Blog's own page, chosen among the pages, with no section (#940)", async () => {
-    const { session, node, user } = setUp();
+    const { session, node, user, field } = setUp();
     const blog = "blog" as CollectionId;
     session.edit("insert", "Added a blog", (draft) => {
       draft.collections[blog] = {
@@ -74,7 +81,7 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
     });
     session.select("hero");
 
-    await user.click(await screen.findByRole("button", { name: "Add Link…" }));
+    await user.click(await field().findByRole("button", { name: "Add Link…" }));
     const dialog = within(screen.getByRole("dialog", { name: "Link" }));
     await user.selectOptions(dialog.getByRole("combobox", { name: "Page" }), "Blog (all posts)");
     expect(dialog.queryByRole("combobox", { name: "Section" })).toBeNull();
@@ -85,10 +92,10 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
   });
 
   it("links to a section, giving it an anchor in the same undo step", async () => {
-    const { session, node, labels, home, user } = setUp();
-    expect(screen.getByText("No link")).toBeTruthy();
+    const { session, node, labels, home, user, field } = setUp();
+    expect(field().getByText("No link")).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "Add Link…" }));
+    await user.click(field().getByRole("button", { name: "Add Link…" }));
     const dialog = within(screen.getByRole("dialog", { name: "Link" }));
     await user.selectOptions(dialog.getByRole("combobox", { name: "Section" }), "Opening times");
     await user.click(dialog.getByRole("checkbox", { name: "Open in a new tab" }));
@@ -111,9 +118,9 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
   it("says when a section's anchor ID can't be linked to, under Section, and won't save", async () => {
     // An anchor ID the link schema refuses (typed in the Advanced tab): before, Save stayed off
     // with nothing said, since no field showed the anchor's problem (#435 review).
-    const { node, user } = setUp(undefined, { advanced: { anchorId: "Opening Times!" } });
+    const { node, user, field } = setUp(undefined, { advanced: { anchorId: "Opening Times!" } });
 
-    await user.click(screen.getByRole("button", { name: "Add Link…" }));
+    await user.click(field().getByRole("button", { name: "Add Link…" }));
     const dialog = within(screen.getByRole("dialog", { name: "Link" }));
     const section = dialog.getByRole("combobox", { name: "Section" });
     await user.selectOptions(section, "Opening times");
@@ -130,9 +137,9 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
   });
 
   it("checks addresses before saving, and adds https:// to a bare web address", async () => {
-    const { node, user } = setUp();
+    const { node, user, field } = setUp();
 
-    await user.click(screen.getByRole("button", { name: "Add Link…" }));
+    await user.click(field().getByRole("button", { name: "Add Link…" }));
     const dialog = within(screen.getByRole("dialog"));
     await user.click(dialog.getByRole("radio", { name: "Email" }));
     await user.click(dialog.getByRole("textbox", { name: "Email address" }));
@@ -155,23 +162,23 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
   });
 
   it("edits a phone link, and removes a link", async () => {
-    const { node, labels, user } = setUp({ kind: "phone", number: "01234 567890" });
+    const { node, labels, user, field } = setUp({ kind: "phone", number: "01234 567890" });
     expect(screen.getByText("01234 567890")).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "Change Link…" }));
+    await user.click(field().getByRole("button", { name: "Change Link…" }));
     const number = within(screen.getByRole("dialog")).getByRole("textbox", {
       name: "Phone number",
     });
     expect((number as HTMLInputElement).value).toBe("01234 567890");
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" }));
-    await user.click(screen.getByRole("button", { name: "Remove Link" }));
+    await user.click(field().getByRole("button", { name: "Remove Link" }));
 
     expect(node("hero")?.buttonLink).toBeUndefined();
     expect(labels()).toEqual(["Changed Hero button link"]);
   });
 
   it("sets the link of an element in the shared Footer in the site's layout (F-ED-7)", async () => {
-    const { session, user } = setUp();
+    const { session, user, field } = setUp();
     act(() => {
       session.edit("insert", "Added Hero", (draft) => {
         const hero = draft.pages[draft.homePageId]?.doc.content.find((n) => n.props.id === "hero");
@@ -181,7 +188,7 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
       session.select("shared-hero");
     });
 
-    await user.click(screen.getByRole("button", { name: "Add Link…" }));
+    await user.click(field().getByRole("button", { name: "Add Link…" }));
     const dialog = within(screen.getByRole("dialog"));
     await user.click(dialog.getByRole("radio", { name: "Web address" }));
     await user.click(dialog.getByRole("textbox", { name: "Web address" }));
@@ -194,10 +201,10 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
   });
 
   it("shows a page path typed before link fields until it is replaced", () => {
-    setUp("about");
+    const { field } = setUp("about");
 
     expect(screen.getByText("about")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Change Link…" })).toBeTruthy();
+    expect(field().getByRole("button", { name: "Change Link…" })).toBeTruthy();
   });
 
   describe("links to documents in Media (1.28)", () => {
@@ -215,10 +222,10 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
       });
 
     it("links to a document, in a new tab by default, or as a download", async () => {
-      const { session, node, user } = setUp();
+      const { session, node, user, field } = setUp();
       act(() => addPrices(session));
 
-      await user.click(screen.getByRole("button", { name: "Add Link…" }));
+      await user.click(field().getByRole("button", { name: "Add Link…" }));
       const dialog = within(screen.getByRole("dialog", { name: "Link" }));
       await user.click(dialog.getByRole("radio", { name: "File" }));
       expect(
@@ -239,9 +246,9 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
     });
 
     it("asks for a document in Media first when there is none", async () => {
-      const { user } = setUp();
+      const { user, field } = setUp();
 
-      await user.click(screen.getByRole("button", { name: "Add Link…" }));
+      await user.click(field().getByRole("button", { name: "Add Link…" }));
       const dialog = within(screen.getByRole("dialog", { name: "Link" }));
       await user.click(dialog.getByRole("radio", { name: "File" }));
 

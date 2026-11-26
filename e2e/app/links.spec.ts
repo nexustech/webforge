@@ -88,7 +88,11 @@ test("links a button to a section, and the exported link follows a renamed page"
   await left.getByRole("treeitem", { name: /^Hero/ }).click();
   await expect(right().getByRole("heading", { name: "Hero", exact: true })).toBeVisible();
 
-  await right().getByRole("button", { name: "Add Link…" }).click();
+  // The first button's link: the Hero has a second button's too (HH-5).
+  await right()
+    .locator('[data-field="buttonLink"]')
+    .getByRole("button", { name: "Add Link…" })
+    .click();
   const dialog = page.getByRole("dialog", { name: "Link" });
   await dialog.getByRole("combobox", { name: "Page" }).selectOption("About");
   await dialog.getByRole("combobox", { name: "Section" }).selectOption("Opening times");
