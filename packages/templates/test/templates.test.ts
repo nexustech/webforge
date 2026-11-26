@@ -22,7 +22,13 @@ import {
   siteDocSchema,
 } from "@webforge/model";
 import { checkSite } from "@webforge/site-check";
-import { isIconName, sectionOverlay, siteLibrary, walkNodes } from "@webforge/site-components";
+import {
+  isIconName,
+  joinedHeaderOf,
+  sectionOverlay,
+  siteLibrary,
+  walkNodes,
+} from "@webforge/site-components";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { overlayContrastIssue, THEME_PRESETS } from "@webforge/themes";
@@ -398,6 +404,31 @@ describe("siteFromTemplate (2.14a)", () => {
       siteFromTemplate(own, images, { name: "x", theme: DEFAULT_THEME }).settings.general
         .businessType,
     ).toBe("shop");
+  });
+
+  it("joins the Header to the Hero in Photographer only, where its picture is behind the text (HH-8)", () => {
+    const joinedPages: Record<string, string[]> = {};
+    for (const { template, images } of templates) {
+      // As New Site and the quick start make it.
+      const site = siteFromTemplate(template, images, { name: "x", theme: DEFAULT_THEME });
+      const header = site.layout.header.find((node) => node.type === "Header");
+      expect(header?.props.background === "section", template.id).toBe(
+        template.id === "photographer",
+      );
+      joinedPages[template.id] = site.pageOrder.filter(
+        (id) =>
+          joinedHeaderOf(
+            { header: site.layout.header, content: site.pages[id]?.doc.content ?? [] },
+            siteLibrary,
+          ) !== undefined,
+      );
+    }
+    // Its other pages open on the page's own colours, so the Header keeps its band there (HH-1).
+    const photographer = templates.find(({ template }) => template.id === "photographer");
+    expect(joinedPages).toEqual({
+      ...Object.fromEntries(TEMPLATE_IDS.map((id) => [id, []])),
+      photographer: [photographer?.template.site.homePageId],
+    });
   });
 
   it("makes the template's site, named and in the chosen theme, with its images in Media", () => {
