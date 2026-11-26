@@ -97,7 +97,8 @@ const CALIBRATION_ROUNDS = 40;
  * How fast this run's runner is (#677): the CPU seconds Webforge's main process takes to read and
  * write a JSON document {@link CALIBRATION_RECORDS} records long, {@link CALIBRATION_ROUNDS} times
  * over, the quickest of three tries, so one stall doesn't make the runner look slow. Done once a
- * worker, when its first opening is checked, after that opening is measured.
+ * worker, when its first opening is checked, after that opening is measured; and again, with
+ * `fresh`, for each opening that misses its CPU budget (#1466), which is judged against both.
  *
  * Only the thread doing it is timed: the process's other threads may still be saving the new site
  * (the storage writer, libuv's pool), and counting their work would make the runner look slow, so
@@ -315,7 +316,7 @@ const cpuOf = (budget: Budget) => `${budget.cpuSeconds} (${budget.source})`;
 /**
  * Judges an operation's work against its budget (#1466): its CPU time, then its wall-clock
  * backstop. Over its CPU budget, and with `recalibrate`, it asks for the budget again from a
- * calibration measured now, and judges the same cost against that: a runner that slowed down after
+ * calibration measured now, and judges the same cost against that, where it differs: a runner that slowed down after
  * its first calibration gets the budget a slow runner gets, up to `MAX_RUNNER_FACTOR`. Both budgets
  * and both verdicts go in the line, and a miss against the second fails, so a real regression,
  * which costs more at either calibration, can't hide behind a slower second one.
@@ -331,7 +332,9 @@ export async function checkWork(
     work.exited.length === 0 ? "" : `; exited meanwhile, not counted: ${work.exited.join(", ")}`;
   const by = work.byProcess.map(([type, used]) => `${type} ${used.toFixed(2)}`).join(", ");
   const over = work.cpuSeconds > budget.cpuSeconds;
-  const again = over && recalibrate !== undefined ? await recalibrate() : undefined;
+  const second = over && recalibrate !== undefined ? await recalibrate() : undefined;
+  // A budget that doesn't follow the calibration (off CI) comes out the same: no second verdict.
+  const again = second?.cpuSeconds === budget.cpuSeconds ? undefined : second;
   const judged =
     again === undefined
       ? `${cpu} CPU-s of ${cpuOf(budget)}`

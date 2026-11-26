@@ -81,6 +81,14 @@ test("fails an opening over both budgets, naming both", async () => {
   );
 });
 
+test("gives no second verdict where calibrating again doesn't change the budget, as off CI", async () => {
+  const second = recalibrated(budget(4.4, 0.163));
+  const verdict = await checkWork(work(5.22), budget(4.4, 0.163), "Opening", second.again);
+  expect(second.calls()).toBe(1);
+  expect(verdict.line).not.toContain("again");
+  expect(verdict.failure).toBe("Opening cost 5.22 CPU-s, over its 4.4 (calibration 0.163)");
+});
+
 test("fails an opening over its budget when there is no calibrating again", async () => {
   const verdict = await checkWork(work(5.22), budget(4.4, 0.163), "Opening");
   expect(verdict.failure).toBe("Opening cost 5.22 CPU-s, over its 4.4 (calibration 0.163)");
