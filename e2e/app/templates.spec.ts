@@ -67,11 +67,13 @@ for (const template of TEMPLATES) {
     if (opened === undefined) throw new Error("Not measured");
     const work = await opened();
     openings.push(work.wallMs);
-    expectWorkWithin(work, await openBudget(running()), `Opening the ${template.title} site`, {
-      // Quarantined on Linux while #1466 is looked into: four templates went 2–24% over once and
-      // passed on a re-run. Each opening's cost is still logged; axe and the backstop still run.
-      cpuQuarantined: process.platform === "linux" ? "#1466" : undefined,
-    });
+    // Over its budget, judged again against the runner as it is then (#1466).
+    await expectWorkWithin(
+      work,
+      await openBudget(running()),
+      `Opening the ${template.title} site`,
+      () => openBudget(running(), { fresh: true }),
+    );
     await expect(canvas.locator("main img, section img").first()).not.toHaveJSProperty(
       "naturalWidth",
       0,
