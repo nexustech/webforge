@@ -1,4 +1,11 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -607,6 +614,16 @@ describe("Resizable", () => {
 });
 
 describe("Toaster", () => {
+  // A closing toast leaves 200 ms later, on a timer of Sonner's that unmounting doesn't cancel. A
+  // test that ends before then lets the timer fire after the environment's teardown, failing the
+  // run on "window is not defined" (#1477). Before the file's cleanup, no toast is still closing.
+  afterEach(() => {
+    expect(
+      document.querySelector('[data-sonner-toast][data-removed="true"]'),
+      "a toast is still closing as the test ends (#1477)",
+    ).toBeNull();
+  });
+
   it("shows toasts with an action", async () => {
     const onUndo = vi.fn();
     render(<Toaster theme="light" />);
@@ -616,5 +633,7 @@ describe("Toaster", () => {
     expect(await screen.findByText("Deleted Heading")).toBeTruthy();
     await userEvent.setup().click(screen.getByRole("button", { name: "Undo" }));
     expect(onUndo).toHaveBeenCalledOnce();
+    // Its action closes the toast, which then leaves.
+    await waitForElementToBeRemoved(() => screen.queryByText("Deleted Heading"));
   });
 });
