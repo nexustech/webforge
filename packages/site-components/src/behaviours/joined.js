@@ -27,7 +27,7 @@
     // Not while a Header that stays is scrolled, as it may have shrunk; on opening, unless it has.
     const shrunk = headers.some((header) => header.hasAttribute("data-scrolled"));
     if (anySticky && (first ? shrunk : window.scrollY > THRESHOLD)) return;
-    // Against the page's own box, from the same layout: scrollY can lag it while a scroll runs.
+    // Where it starts on the page: against the page's own box, both from the same layout.
     const top = fills.getBoundingClientRect().top - root.getBoundingClientRect().top;
     root.style.setProperty("--wf-above-h", `${Math.max(0, top)}px`);
   };

@@ -24,9 +24,16 @@ const placed = (page: Page) =>
     };
   });
 
-/** Opens the exported page in `folder`. */
-const open = (page: Page, folder: string) =>
-  page.goto(pathToFileURL(join(HERO_HEIGHT_SITE_DIR, folder, "index.html")).href);
+/**
+ * Opens the exported page in `folder`, once its fonts have loaded: the Header grows as its fonts
+ * come (by up to 8 px in macOS WebKit), and the Hero follows it, so a size read earlier can change.
+ */
+const open = async (page: Page, folder: string) => {
+  await page.goto(pathToFileURL(join(HERO_HEIGHT_SITE_DIR, folder, "index.html")).href);
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+};
 
 for (const [width, height] of [
   [960, 600],
@@ -88,6 +95,9 @@ for (const [width, height] of [
 
       // The next page, with the bar closed already: the same from the start.
       await page.reload();
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+      });
       await expect.poll(async () => (await placed(page)).heroBottom).toBeCloseTo(height, 0);
       const next = await placed(page);
       expect(next.barShown).toBe(false);
