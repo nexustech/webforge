@@ -230,7 +230,7 @@ for (const [width, height, zoom] of [
     for (const count of ["99 to fix", "99 tips", "No problems"]) {
       // The narrowest, with Site Check's widest short count beside the cue: nothing over anything
       // else or cut off, though with less than the usual room to spare (1.6 px on Windows).
-      await expectTitleBarFits(count, css, css <= 960 && count === "No problems" ? 0 : 4);
+      await expectTitleBarFits(count, css, css === 960 && count === "No problems" ? 0 : 4);
     }
     await expect(banner.getByRole("button", { name: "Publish" })).toHaveText("Publish");
 

@@ -27,13 +27,13 @@ export function PhonePreviewCue() {
   const description = useId();
   if (stop === undefined) return null;
   return (
-    <>
+    // One status for both forms: what it says, as it appears, is the form shown's words.
+    <div role="status" className="flex shrink-0">
       <span id={description} hidden>
         {t("preview.phone.onDescription")}
       </span>
       <WithTooltip tooltip={t("preview.phone.onDescription")}>
         <div
-          role="status"
           className={`${TAG} hidden h-8 gap-1.5 pr-0.5 pl-2 whitespace-nowrap @min-[1440px]/title-bar:flex`}
         >
           <SmartphoneIcon aria-hidden className="size-3.5" />
@@ -51,19 +51,20 @@ export function PhonePreviewCue() {
         </div>
       </WithTooltip>
       {show === undefined ? null : (
-        <div role="status" className={`${TAG} flex @min-[1440px]/title-bar:hidden`}>
+        <div className={`${TAG} flex @min-[1440px]/title-bar:hidden`}>
           <WithTooltip tooltip={t("preview.phone.onDescription")}>
             <Button
               variant="ghost"
               // An icon button's size, the least a target may be (L4, #1454).
               size="icon"
               className="relative text-accent-foreground hover:bg-accent-foreground/10"
-              aria-label={t("preview.phone.on")}
               aria-describedby={description}
               aria-haspopup="dialog"
               onClick={() => void registry.run(show.id)}
             >
               <SmartphoneIcon aria-hidden className="size-3.5" />
+              {/* Its name, and what the status says as it appears (an aria-label isn't read there). */}
+              <span className="sr-only">{t("preview.phone.on")}</span>
               {/* On: a dot, as a recording light is. */}
               <span
                 aria-hidden
@@ -73,6 +74,6 @@ export function PhonePreviewCue() {
           </WithTooltip>
         </div>
       )}
-    </>
+    </div>
   );
 }

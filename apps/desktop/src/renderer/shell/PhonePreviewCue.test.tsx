@@ -53,9 +53,11 @@ describe("PhonePreviewCue (3.2)", () => {
     expect(screen.queryByRole("status")).toBeNull();
 
     const turnOff = turnOn();
-    // Both forms are drawn; the title bar's width shows one (#1438), which happy-dom doesn't.
-    const [wide] = screen.getAllByRole("status");
-    expect(wide?.textContent).toContain("Phone preview on");
+    // One status, around both forms; the title bar's width shows one (#1438), which happy-dom
+    // doesn't. Each says it's on in words a screen reader hears as the status appears.
+    const status = screen.getByRole("status");
+    expect(status.textContent).toContain("Phone preview on");
+    const wide = status.querySelector(".whitespace-nowrap");
     // Stop says "Stop" and is named for what it stops, described by who can see the preview, for
     // a screen reader on it (#1011).
     const button = screen.getByRole("button", { name: "Stop Phone Preview" });
@@ -74,6 +76,9 @@ describe("PhonePreviewCue (3.2)", () => {
     const { show, stop, turnOn } = renderCue();
     turnOn();
     const icon = screen.getByRole("button", { name: "Phone preview on" });
+    // Named by its own text, not an aria-label, so the status says it as it appears.
+    expect(icon.getAttribute("aria-label")).toBeNull();
+    expect(icon.textContent).toBe("Phone preview on");
     expect(icon.getAttribute("aria-haspopup")).toBe("dialog");
     expect(describing(icon)?.textContent).toContain("Anyone on this Wi-Fi");
     // An icon button's size, the least a target may be (L4).

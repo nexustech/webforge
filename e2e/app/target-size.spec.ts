@@ -213,7 +213,8 @@ test("the phone preview's cue is 24 px or more, with its words and as an icon (#
 
   const banner = page.getByRole("banner");
   for (const [width, form] of [
-    [1600, banner.getByRole("button", { name: "Stop Phone Preview" })],
+    // As wide as the words need, and as wide as any E2E window (title-bar-menu.spec.ts).
+    [1440, banner.getByRole("button", { name: "Stop Phone Preview" })],
     [960, banner.getByRole("button", { name: "Phone preview on" })],
   ] as const) {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.unmaximize());
