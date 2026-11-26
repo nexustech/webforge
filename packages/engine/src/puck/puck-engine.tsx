@@ -89,6 +89,17 @@ function firstShown(content: readonly NodeDoc[], shared: SharedSectionsDoc): rea
   return [];
 }
 
+/** Whether two lists of the theme's dark colours (HH-2) are the same, in the same order. */
+function sameDarkGrounds(
+  one: RenderContext["darkGrounds"],
+  other: RenderContext["darkGrounds"],
+): boolean {
+  const same = (a: readonly string[], b: readonly string[]) =>
+    a.length === b.length && a.every((each, at) => each === b[at]);
+  if (one === undefined || other === undefined) return one === other;
+  return same(one.colors, other.colors) && same(one.inverse, other.inverse);
+}
+
 /** The canvas's looks while the theme has none (see `setLooks`). */
 const NO_LOOKS: NonNullable<RenderContext["looks"]> = {};
 
@@ -558,6 +569,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       changeContext({ parts: { ...parts, looks: next } });
       // A look's Colour can be the first section's text colour, which a joined Header takes.
       followJoinedHeader();
+    },
+
+    setDarkGrounds(darkGrounds) {
+      // A theme change that leaves its dark colours as they were draws nothing again.
+      if (sameDarkGrounds(parts.darkGrounds, darkGrounds)) return;
+      const { darkGrounds: _was, ...rest } = parts;
+      changeContext({ parts: darkGrounds === undefined ? rest : { ...rest, darkGrounds } });
     },
 
     setItem(next) {

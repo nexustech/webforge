@@ -198,7 +198,7 @@ export const QUERIES = {
   /** Site Settings that say what the business is: never publishing, forms or analytics. */
   settings: {
     description:
-      "Site Settings that say what the business is: its name, address, social profiles, contact details and search settings. general holds the logo the Header shows and the site's icon, as Media ids, when they're set: pictureColours gives their colours, and updateSettings sets or clears them, choosing a picture in Media, once the person allows it. Never publishing, forms or analytics.",
+      "Site Settings that say what the business is: its name, address, social profiles, contact details and search settings. general holds the logo the Header shows, its logo for dark backgrounds (logoOnDark: a light version the Header shows on a dark colour or photo) and the site's icon, as Media ids, when they're set: pictureColours gives their colours, and updateSettings sets or clears them, choosing a picture in Media, once the person allows it. Never publishing, forms or analytics.",
     input: z.strictObject({}),
     read: (site: SiteDoc) => {
       const { general, address, social, contact, search } = site.settings;
@@ -243,7 +243,7 @@ export const QUERIES = {
    * fields as `{ mediaId }`; requestMedia asks the person for more.
    */
   media: {
-    description: `The site's Media: each picture and file by id, with its file name, kind ("image" or "file"), type, a picture's width, height and alt text, and a file's size in bytes. The picture Site Settings use as the logo, or the site's icon, says so (usedAs). Put a picture in an Image field with updateFields, as { "mediaId": id }; pictureColours gives its main colours. runSiteCheck's templateImages tip lists those still the template's; requestMedia asks the person for their own.`,
+    description: `The site's Media: each picture and file by id, with its file name, kind ("image" or "file"), type, a picture's width, height and alt text, and a file's size in bytes. The picture Site Settings use as the logo, the logo for dark backgrounds, or the site's icon, says so (usedAs). Put a picture in an Image field with updateFields, as { "mediaId": id }; pictureColours gives its main colours. runSiteCheck's templateImages tip lists those still the template's; requestMedia asks the person for their own.`,
     input: z.strictObject({}),
     read: (site: SiteDoc) =>
       Object.values(site.media).map((item) => {
@@ -257,9 +257,10 @@ export const QUERIES = {
           };
         }
         // What Site Settings use it as (#1373); updateSettings sets them, always asking (UA-8).
-        const { logo, icon } = site.settings.general;
+        const { logo, logoOnDark, icon } = site.settings.general;
         const usedAs = [
           ...(logo === item.id ? ["logo"] : []),
+          ...(logoOnDark === item.id ? ["logoOnDark"] : []),
           ...(icon === item.id ? ["icon"] : []),
         ];
         return {

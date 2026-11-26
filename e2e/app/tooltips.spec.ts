@@ -4,6 +4,7 @@ import { OPEN_WAIT } from "./budget.js";
 import { clickOnCanvas } from "./canvas-click.js";
 import { hoverUntilShown } from "./hover.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { settled } from "./settled.js";
 
 // The editor's tooltips (#1011): on pointing at a control and on the keyboard's focus, with its
 // shortcut, and why it's off when it is; the canvas's own controls and Puck's too, in the frame.
@@ -101,6 +102,8 @@ test("shows the canvas's own controls' tooltips, and Puck's, in place of the bro
   const remove = canvas()
     .locator(ACTION_BAR_ACTION)
     .and(canvas().getByRole("button", { name: "Delete", exact: true }));
+  // Once the bar has taken its place (#1462): a tip shows where the pointer rests.
+  await settled(remove, "Delete");
   await remove.hover();
   await expect(frameTip()).toHaveText("Delete");
   // The browser's own tooltip is gone; the button keeps its name.

@@ -20,8 +20,11 @@ import { desktopDir } from "./launch.js";
  * (5.41): its IPC calls, which main registers as it starts, and its window's words, in the English
  * strings main holds for `t()`; what it does is loaded when first used, with 1% to spare. 1.46 MB
  * once main reads its own strings only (#1317), not the editor's whole catalogue, with 2% to spare.
+ * 1.49 MB with the logo for dark backgrounds (HH-2): its setting and site format 22's migration,
+ * in the model's chunk main reads site files with, and its export warning in the IPC contract;
+ * again with 2% to spare.
  */
-const BUDGET_BYTES = 1_488_000;
+const BUDGET_BYTES = 1_519_000;
 
 /** Packages only the export worker, a publish, the MCP server or Site Check needs. */
 const NOT_AT_START = [

@@ -63,6 +63,13 @@ export const HERO_OVERLAY_SITE_DIR = join(EXPORTED_SITE_DIR, "hero-overlay");
 export const HIDING_HEADER_SITE_DIR = join(EXPORTED_SITE_DIR, "hiding-header");
 
 /**
+ * Where the setup exports the fixture's home and About pages with a logo and a logo for dark
+ * backgrounds, the Header joined to each page's first section and staying at the top (HH-2),
+ * inside the fixture's folder so CI uploads it with it.
+ */
+export const LOGO_ON_DARK_SITE_DIR = join(EXPORTED_SITE_DIR, "logo-on-dark");
+
+/**
  * Where the setup exports the fixture's pages with a Blog's post (6.10a), inside the fixture's
  * folder so CI uploads it with it.
  */
