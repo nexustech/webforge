@@ -22,23 +22,66 @@ const HERO_HEIGHTS = ["fit", "tall", "screen"] as const;
 type HeroHeight = (typeof HERO_HEIGHTS)[number];
 
 /**
+ * Where a Whole screen Hero is (HH-4): anywhere it keeps the whole window; first on its page,
+ * under a Header with its own band, or with a Header joined to it, it leaves the room of what's
+ * above it.
+ */
+type HeroPlace = "free" | "belowHeader" | "joined";
+
+/**
+ * The least height of a Whole screen Hero that's first on its page (#1489), floored or not: the
+ * window less where it starts, which `joined.js` measures (`--wf-above-h`, the canvas too). Until
+ * then, an estimate: an Announcement bar above the Header (`--wf-bar-h`, {@link BAR_ESTIMATE}),
+ * and the Header's band (`--wf-header-h`, its own estimate) unless the Header is joined to it.
+ * Written out whole, as Tailwind finds classes so.
+ */
+const FIRST_SCREEN: Readonly<Record<Exclude<HeroPlace, "free">, readonly [string, string]>> = {
+  belowHeader: [
+    "min-h-[max(28rem,calc(var(--wf-viewport-h,100svh)_-_var(--wf-above-h,calc(var(--wf-bar-h,0px)_+_var(--wf-header-h,0px)))))]",
+    "min-h-[calc(var(--wf-viewport-h,100svh)_-_var(--wf-above-h,calc(var(--wf-bar-h,0px)_+_var(--wf-header-h,0px))))]",
+  ],
+  joined: [
+    "min-h-[max(28rem,calc(var(--wf-viewport-h,100svh)_-_var(--wf-above-h,var(--wf-bar-h,0px))))]",
+    "min-h-[calc(var(--wf-viewport-h,100svh)_-_var(--wf-above-h,var(--wf-bar-h,0px)))]",
+  ],
+};
+
+/**
+ * An Announcement bar's height, one line of small text with its padding (2.25 rem), where one is
+ * above the Header (#1489): {@link FIRST_SCREEN}'s estimate before `joined.js` measures. Without
+ * the script the bar is always shown, so the Hero ends within a few pixels of the window's foot
+ * (more where the bar's text wraps).
+ */
+const BAR_ESTIMATE = "[:root:has([data-wf-announcement]~header)_&]:[--wf-bar-h:2.25rem]";
+
+/**
+ * Every class a Whole screen Hero has only as its page's first section ({@link FIRST_SCREEN} and
+ * {@link BAR_ESTIMATE}), which the canvas compiles whatever the page (#1489): it collects a page's
+ * classes without its Header, so it never draws the Hero first under one.
+ */
+export const FIRST_SCREEN_CLASSES: readonly string[] = [
+  ...FIRST_SCREEN.belowHeader,
+  ...FIRST_SCREEN.joined,
+  BAR_ESTIMATE,
+];
+
+/**
  * The Hero's least height (HH-4), never below its layout's floor (28 rem with its picture behind
  * the text), and always a minimum: content taller still shows whole. The window's height is the
  * canvas's in the editor (`--wf-viewport-h`, its frame growing with the page), the small viewport's
- * elsewhere, so a phone's toolbar doesn't hide its foot. Under a Header with its own band, the
- * Whole screen leaves the Header's room (`--wf-header-h`); a joined Header is in it.
+ * elsewhere, so a phone's toolbar doesn't hide its foot. First on its page, the Whole screen leaves
+ * the room above it ({@link FIRST_SCREEN}): an Announcement bar's, and a Header's with its own band.
  */
-function heroMinHeight(height: HeroHeight, floored: boolean, belowHeader: boolean): string {
+function heroMinHeight(height: HeroHeight, floored: boolean, place: HeroPlace): string {
   if (height === "fit") return floored ? "min-h-[28rem]" : "";
   if (height === "tall") {
     return floored
       ? "min-h-[max(28rem,calc(var(--wf-viewport-h,100svh)*0.7))]"
       : "min-h-[calc(var(--wf-viewport-h,100svh)*0.7)]";
   }
-  if (belowHeader) {
-    return floored
-      ? "min-h-[max(28rem,calc(var(--wf-viewport-h,100svh)_-_var(--wf-header-h,0px)))]"
-      : "min-h-[calc(var(--wf-viewport-h,100svh)_-_var(--wf-header-h,0px))]";
+  if (place !== "free") {
+    const [withFloor, without] = FIRST_SCREEN[place];
+    return `${floored ? withFloor : without} ${BAR_ESTIMATE}`;
   }
   return floored
     ? "min-h-[max(28rem,var(--wf-viewport-h,100svh))]"
@@ -157,7 +200,11 @@ const hero = defineSection({
   behaviours: (values) => (values.height === "screen" ? ["joined"] : []),
   frame: (values, place) => {
     const behind = values.variant === "background";
-    const tall = heroMinHeight(values.height, behind, place?.belowHeader === true);
+    const tall = heroMinHeight(
+      values.height,
+      behind,
+      place?.belowHeader === true ? "belowHeader" : place?.joined === true ? "joined" : "free",
+    );
     if (behind) {
       return `relative flex ${tall} ${values.textPlace === "bottom" ? "items-end" : "items-center"} justify-center overflow-hidden ${overlayLayer(values).ground}`;
     }

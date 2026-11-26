@@ -4,21 +4,36 @@
 // the page only, so a Header that shrinks once scrolled leaves the section as it was. A Header with
 // its own band over a first section that fills the window (HH-4, data-wf-height) is measured too.
 //
+// That section (data-wf-fills) is the window's height less what's above it (#1489): the page's
+// --wf-above-h is where it starts, below the Header's band and any Announcement bar. It's measured
+// again as the Header or a bar changes size, as when a bar is closed or hidden after its last day,
+// whichever script runs first, and at the top of the page only, as the Header's height is.
+//
 // A joined Header that stays at the top takes the page's colours once the page has scrolled 80 px,
 // as sticky.js marks it (data-scrolled). The section's reversed colours, which the Header has as
 // its data-theme, come off then and come back at the top.
 (() => {
   const THRESHOLD = 80;
   const root = document.documentElement;
-  for (const header of document.querySelectorAll("[data-wf-joined], [data-wf-height]")) {
-    if (!(header instanceof HTMLElement)) {
-      continue;
-    }
+  const headers = [...document.querySelectorAll("[data-wf-joined], [data-wf-height]")].filter(
+    (header) => header instanceof HTMLElement,
+  );
+  const fills = document.querySelector("[data-wf-fills]");
+  const anySticky = headers.some((header) => header.hasAttribute("data-wf-sticky"));
+  const above = () => {
+    if (!(fills instanceof HTMLElement) || (anySticky && window.scrollY > THRESHOLD)) return;
+    const top = fills.getBoundingClientRect().top + window.scrollY;
+    root.style.setProperty("--wf-above-h", `${Math.max(0, Math.round(top))}px`);
+  };
+  const watch = typeof ResizeObserver === "function" ? new ResizeObserver(() => above()) : null;
+  for (const bar of document.querySelectorAll("[data-wf-announcement]")) watch?.observe(bar);
+  for (const header of headers) {
     const theme = header.getAttribute("data-theme");
     const sticky = header.hasAttribute("data-wf-sticky");
     const atTop = () => !sticky || window.scrollY <= THRESHOLD;
     const measure = () => {
       if (atTop()) root.style.setProperty("--wf-header-h", `${header.offsetHeight}px`);
+      above();
     };
     if (typeof ResizeObserver === "function") {
       new ResizeObserver(measure).observe(header);
@@ -38,4 +53,5 @@
     window.addEventListener("scroll", scrolled, { passive: true });
     scrolled();
   }
+  above();
 })();

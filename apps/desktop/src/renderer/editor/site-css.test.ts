@@ -147,6 +147,19 @@ describe("siteClasses", () => {
     expect(classes).toEqual(expect.arrayContaining(["pt-32", "md:max-lg:mb-24", "lg:pl-0"]));
   });
 
+  it("adds a Whole screen Hero's height first on its page, which a page drawn alone lacks (#1489)", () => {
+    const session = sessionWith(starterSite());
+    const classes = siteClasses(session.history.document.getState(), session);
+
+    expect(classes).toContain(
+      "min-h-[max(28rem,calc(var(--wf-viewport-h,100svh)_-_var(--wf-above-h,calc(var(--wf-bar-h,0px)_+_var(--wf-header-h,0px)))))]",
+    );
+    expect(classes).toContain(
+      "min-h-[calc(var(--wf-viewport-h,100svh)_-_var(--wf-above-h,var(--wf-bar-h,0px)))]",
+    );
+    expect(classes).toContain("[:root:has([data-wf-announcement]~header)_&]:[--wf-bar-h:2.25rem]");
+  });
+
   it("collects a colour field's own hex colours, which no safelist has (2.1)", () => {
     const session = sessionWith();
     session.history.run("Changed Heading colour", (draft) => {

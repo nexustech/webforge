@@ -315,23 +315,57 @@ describe("a Hero's height (HH-4)", () => {
     expect(below([], [screen])).toBeUndefined();
   });
 
-  it("fills the window less the Header's band, or all of it when joined or further down", () => {
-    // Under the Header's own band: the window less its height, which the Header gives the page.
+  it("finds it under an Announcement bar alone, with no Header shown (#1489)", () => {
+    const screen = hero({ height: "screen" });
+    const bar: NodeDoc = { type: "AnnouncementBar", props: { id: "bar", text: "Closed" } };
+    expect(below([bar, own({ hidden: true })], [screen])).toBe("hero");
+    expect(below([bar], [screen])).toBe("hero");
+    // A hidden bar is nothing above it.
+    expect(below([{ ...bar, props: { ...bar.props, hidden: true } }], [screen])).toBeUndefined();
+    // Under the bar and the Header's band, as before; joined, the Header's own.
+    expect(below([bar, own()], [screen])).toBe("hero");
+    expect(below([bar, header()], [screen])).toBeUndefined();
+    const page = rendered([bar], [screen]);
+    expect(page.querySelector(".site-hero")?.hasAttribute("data-wf-fills")).toBe(true);
+  });
+
+  it("fills the window less what's above it, or all of it further down (#1489)", () => {
+    // Under the Header's own band: the window less where it starts, which `joined.js` measures;
+    // until then, the Header's height (its estimate) and an Announcement bar's above it.
     const under = rendered([own()], [hero({ height: "screen" })]);
     expect(minHeight(under)).toBe(
-      "min-h-[max(28rem,calc(var(--wf-viewport-h,100svh)_-_var(--wf-header-h,0px)))]",
+      "min-h-[max(28rem,calc(var(--wf-viewport-h,100svh)_-_var(--wf-above-h,calc(var(--wf-bar-h,0px)_+_var(--wf-header-h,0px)))))]",
+    );
+    const section = under.querySelector(".site-hero");
+    expect(section?.hasAttribute("data-wf-fills")).toBe(true);
+    expect(section?.className).toContain(
+      "[:root:has([data-wf-announcement]~header)_&]:[--wf-bar-h:2.25rem]",
     );
     const band = under.querySelector("header.site-header");
     expect(band?.hasAttribute("data-wf-height")).toBe(true);
     expect(band?.className).toContain("[:root:has(&)]:[--wf-header-h:4rem]");
-    // Joined: the whole window, the Header's room inside it.
+    // Joined: the window less an Announcement bar's room, the Header's inside it.
     const joinedPage = rendered([header()], [hero({ height: "screen" })]);
-    expect(minHeight(joinedPage)).toBe("min-h-[max(28rem,var(--wf-viewport-h,100svh))]");
+    expect(minHeight(joinedPage)).toBe(
+      "min-h-[max(28rem,calc(var(--wf-viewport-h,100svh)_-_var(--wf-above-h,var(--wf-bar-h,0px))))]",
+    );
+    expect(joinedPage.querySelector(".site-hero")?.hasAttribute("data-wf-fills")).toBe(true);
     expect(joinedPage.querySelector("header")?.hasAttribute("data-wf-height")).toBe(false);
-    // Further down: the whole window, and the Header gives nothing.
+    // Without its picture behind the text, no floor.
+    expect(minHeight(rendered([header()], [hero({ height: "screen", variant: "split" })]))).toBe(
+      "min-h-[calc(var(--wf-viewport-h,100svh)_-_var(--wf-above-h,var(--wf-bar-h,0px)))]",
+    );
+    expect(minHeight(rendered([own()], [hero({ height: "screen", variant: "split" })]))).toBe(
+      "min-h-[calc(var(--wf-viewport-h,100svh)_-_var(--wf-above-h,calc(var(--wf-bar-h,0px)_+_var(--wf-header-h,0px))))]",
+    );
+    // Further down: the whole window, unmarked, and the Header gives nothing.
     const lower = rendered([own()], [text("story"), hero({ height: "screen" })]);
     expect(minHeight(lower)).toBe("min-h-[max(28rem,var(--wf-viewport-h,100svh))]");
+    expect(lower.querySelector(".site-hero")?.hasAttribute("data-wf-fills")).toBe(false);
     expect(lower.querySelector("header")?.hasAttribute("data-wf-height")).toBe(false);
+    // A first Hero at another height isn't marked either.
+    const tall = rendered([own()], [hero({ height: "tall" })]);
+    expect(tall.querySelector(".site-hero")?.hasAttribute("data-wf-fills")).toBe(false);
   });
 
   it("is Tall at 70% of the window, never below its layout's floor, and Fits as before", () => {

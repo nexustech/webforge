@@ -27,7 +27,13 @@ export {
 } from "./catalogue/column-layouts.js";
 export { BELOW_THE_FOOTER } from "./catalogue/contact-buttons.js";
 export { serviceFormLabel } from "./catalogue/forms.js";
-export { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue/index.js";
+export {
+  FIRST_SCREEN_CLASSES,
+  siteLibrary,
+  starterLayout,
+  starterNotFoundPage,
+  starterPage,
+} from "./catalogue/index.js";
 export { POSTS_PER_PAGE } from "./catalogue/latest-posts.js";
 export {
   FOOTER_COLUMN_TYPES,
