@@ -55,7 +55,11 @@ test(`exports a ${PAGES}-page site in under 5 s, its caches warm (§10)`, async 
     settings: { ...site.settings, address: { url: "https://large.example" } },
   });
   store.close();
-  app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), args: [sitePath] });
+  app = await launchDesktopApp({
+    motion: true,
+    userDataDir: join(dir, "user-data"),
+    args: [sitePath],
+  });
   const page = await app.firstWindow();
   await waitForCanvas(page);
 

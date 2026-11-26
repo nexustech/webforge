@@ -9,9 +9,11 @@ import {
   type ElectronApplication,
   _electron as electron,
   expect,
+  type Frame,
   type Page,
 } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
+import { addNoMotionSheet, NO_MOTION_SHEET } from "../no-motion.js";
 
 /** The desktop app's folder; its production build is in `out/`. */
 export const desktopDir = join(import.meta.dirname, "../../apps/desktop");
@@ -162,6 +164,12 @@ export async function launchDesktopApp(
     readonly tips?: boolean;
     /** More of the app's environment: `WEBFORGE_E2E_NETLIFY_API`, the mock Netlify's (#70). */
     readonly env?: Readonly<Record<string, string>>;
+    /**
+     * Whether its windows move as people see them. Off by default (#1493): reduced motion, and every
+     * transition and animation over at once (`e2e/no-motion.ts`), so a test never reads the screen
+     * mid-change. A test about motion itself, or a timing, turns it on.
+     */
+    readonly motion?: boolean;
   } = {},
 ): Promise<WebforgeApp> {
   const { executablePath, env } = electronCommand();
@@ -181,6 +189,7 @@ export async function launchDesktopApp(
     cwd: desktopDir,
     env: { ...env, ...options.env },
   });
+  if (options.motion !== true) await stillWindows(app);
   const temporary = [
     ...(options.userDataDir === undefined ? [userData] : []),
     ...(siteDir === undefined ? [] : [siteDir]),
@@ -191,6 +200,27 @@ export async function launchDesktopApp(
     });
   }
   return closingWithin(app);
+}
+
+/**
+ * Every window of `app`, and each frame in it, asks for reduced motion and has the no-motion sheet
+ * (#1493): from the test's side, so the app carries no test-only code. The sheet is added by an
+ * init script, for each page's document as it's created; to each frame as it navigates, as an init
+ * script doesn't reach the canvas's `about:srcdoc` frame; and at once to what is already open,
+ * which the launch may have loaded before either was in place. Each document then keeps it.
+ */
+async function stillWindows(app: ElectronApplication): Promise<void> {
+  await app.context().addInitScript(addNoMotionSheet, NO_MOTION_SHEET);
+  const sheet = (frame: Frame) =>
+    // A frame gone or navigating meanwhile gets it on its next navigation.
+    frame.evaluate(addNoMotionSheet, NO_MOTION_SHEET).catch(() => undefined);
+  const still = async (page: Page) => {
+    page.on("framenavigated", (frame) => void sheet(frame));
+    await page.emulateMedia({ reducedMotion: "reduce" }).catch(() => undefined);
+    await Promise.all(page.frames().map(sheet));
+  };
+  app.on("window", (page) => void still(page));
+  await Promise.all(app.windows().map(still));
 }
 
 /**

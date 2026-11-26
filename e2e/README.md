@@ -73,3 +73,17 @@ This builds the app in perf mode (`electron-vite build --mode perf`, which adds 
 - Launch the app with `launchDesktopApp()` from `app/launch.ts`.
 - Use `page` for the window (`page.evaluate()` callbacks run in the renderer) and `app.evaluate()` for the main process.
 - Biome's Playwright rules apply here (no missing `await`, no `waitForTimeout`, no `page.pause()`).
+
+### Motion is off (#1493)
+
+Tests run with motion off, so none reads the screen while something on it still moves.
+
+- **What's off:** every page asks for reduced motion, and has a sheet that ends each transition and animation at once (`no-motion.ts`; 0.01 ms, so `transitionend` and `animationend` still fire).
+- **The app:** `launchDesktopApp()` applies both to each window and frame, the canvas's included, from the test's side, as Playwright's `reducedMotion` doesn't reach Electron's windows.
+- **The exported site:** its projects set `reducedMotion: "reduce"`, and `export/test.ts` adds the sheet. Its specs import `test` and `expect` from `./test.js`, never `test` from `@playwright/test`; Biome says so.
+
+A test about motion itself turns it back on, and says why:
+
+- **The app:** `launchDesktopApp({ motion: true })`. The performance suite does, as it measures what people wait for.
+- **The exported site:** `test.use({ motion: true, reducedMotion: "no-preference" })` in its `describe`.
+- **A test of reduced motion itself** still asks for it with `page.emulateMedia({ reducedMotion: "reduce" })`, so it reads the same either way.

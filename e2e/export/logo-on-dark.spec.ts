@@ -1,7 +1,8 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { LOGO_ON_DARK_SITE_DIR } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // Site Settings' logo for dark backgrounds (HH-2) on an exported site, opened from disk: the Header
 // joined to a Hero's picture under a dark overlay shows it, and swaps it for the logo as it turns
