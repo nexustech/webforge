@@ -582,7 +582,7 @@ describe("themeCss (2.1)", () => {
     }
     // A Hero's second button, outlined, is a text link beside outlined main buttons (HH-5), and
     // stays outlined beside filled or ghost ones.
-    expect(square).toContain(".btn-outline.wf-second-button {\n    @apply btn-link;\n  }");
+    expect(square).toContain("@utility wf-second-button {\n  @apply btn-link;\n}");
     expect(ghost).not.toContain("wf-second-button");
     const filled = css({ buttons: { shape: "pill", size: "m", style: "filled" } });
     expect(filled).not.toContain("@apply");

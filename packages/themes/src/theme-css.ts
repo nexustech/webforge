@@ -310,12 +310,11 @@ function buttonRules(tokens: ThemeTokens): string[] {
           "    --btn-fg: var(--color-neutral);",
           "  }",
         ]),
-    // A Hero's second button is outlined (HH-5): beside main buttons already outlined, it's a text
-    // link, so the two never look alike.
-    ...(look === "btn-outline"
-      ? ["  .btn-outline.wf-second-button {", "    @apply btn-link;", "  }"]
-      : []),
     "}",
+    // A Hero's second button is outlined (HH-5): beside main buttons already outlined, it's a text
+    // link, so the two never look alike. A utility, so it's in the stylesheet only where a page has
+    // one: a site without a second button exports as it did.
+    ...(look === "btn-outline" ? ["@utility wf-second-button {", "  @apply btn-link;", "}"] : []),
   ];
 }
 
