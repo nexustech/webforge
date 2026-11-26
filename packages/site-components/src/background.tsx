@@ -115,7 +115,7 @@ const OVERLAY_CLASSES: Readonly<Record<OverlayColor, Readonly<Record<Overlay, st
 };
 
 /** Whether `values` place a background image. */
-const hasBackground = (values: BackgroundValues) =>
+export const hasBackground = (values: BackgroundValues) =>
   placedImage(values.backgroundImage) !== undefined;
 
 /**

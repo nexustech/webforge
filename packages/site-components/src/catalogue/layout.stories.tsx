@@ -388,7 +388,7 @@ export const HeaderJoinedReversed: Story = page(
   [textSection("inverse")],
 );
 
-/** Joined to a section in the page's colours (HH-1): drawn as with its own, without the line. */
+/** Joined to a section in the page's colours (HH-1): it keeps its own band, as it looks the same. */
 export const HeaderJoinedPageColours: Story = page(header({ background: "section" }), [
   textSection("page"),
 ]);

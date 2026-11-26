@@ -1,6 +1,6 @@
 import type { NodeDoc } from "@webforge/model";
-import { appearanceColourClasses } from "./appearance.js";
-import { backgroundText } from "./background.js";
+import { appearanceColourClasses, hasOwnBackground } from "./appearance.js";
+import { backgroundText, hasBackground } from "./background.js";
 import { type ComponentLibrary, withLook } from "./library.js";
 import type { JoinedHeader, RenderContext } from "./schema.js";
 
@@ -12,7 +12,8 @@ const HEADER = "Header";
  * page's Header region: empty where Page Settings hide it) and its `content`: where the Header's
  * **Background** is *The first section's* and the page has a section shown. That's the first shown
  * after the Header, where the canvas draws a Blog's design between it and a post (6.10a), else the
- * content's first. The section's colours
+ * content's first, unless it draws on the page's own colours, where the Header keeps its band, as
+ * it looks the same. The section's colours
  * (its reversed ones, 2.4) and the classes that set its text colour come with it, as the section
  * draws them: the person's Colour (Appearance, per device), else its frame's for its layout or its
  * background image's overlay. The export's pages and the canvas both take it from here.
@@ -39,9 +40,20 @@ export function joinedHeaderOf(
     ...def.defaults,
     ...withLook(first.props, first.type, looks),
   };
+  const inverse = values.colors === "inverse";
+  // On the page's own colours the Header looks as it does with its own background: it keeps it.
+  const ground = def.sectionGround?.(values);
+  if (
+    !inverse &&
+    (ground === undefined || ground === "base-100") &&
+    !hasBackground(values) &&
+    !hasOwnBackground(values)
+  ) {
+    return undefined;
+  }
   const drawn = def.sectionText?.(values) ?? backgroundText(values);
   const text = [drawn === undefined ? "" : `text-${drawn}`, appearanceColourClasses(values)]
     .filter((part) => part !== "")
     .join(" ");
-  return { section: first.props.id, inverse: values.colors === "inverse", text };
+  return { section: first.props.id, inverse, text };
 }

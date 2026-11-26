@@ -25,9 +25,10 @@ const hero = (props: Record<string, unknown> = {}): NodeDoc => ({
   },
 });
 
+/** A Text section, in reversed colours unless `props` say otherwise. */
 const text = (id: string, props: Record<string, unknown> = {}): NodeDoc => ({
   type: "TextSection",
-  props: { id, title: "Our story", text: "<p>Since 1998.</p>", ...props },
+  props: { id, title: "Our story", text: "<p>Since 1998.</p>", colors: "inverse", ...props },
 });
 
 const joined = (headerNodes: readonly NodeDoc[], content: readonly NodeDoc[]) =>
@@ -99,11 +100,29 @@ describe("joinedHeaderOf (HH-1)", () => {
     expect(joined([header()], [hero({ variant: "split" })])?.text).toBe("");
   });
 
+  it("keeps the Header's band on a section in the page's own colours, as it looks the same", () => {
+    expect(joined([header()], [text("story", { colors: "page" })])).toBeUndefined();
+    // Anything of its own under the Header joins it: a colour, a gradient, a picture.
+    expect(
+      joined([header()], [text("story", { colors: "page", lookBackground: "base-200" })])?.section,
+    ).toBe("story");
+    expect(
+      joined([header()], [text("story", { colors: "page", lookGradientDirection: "toBottom" })])
+        ?.section,
+    ).toBe("story");
+  });
+
   it("takes a section's background picture's overlay colour, and the person's Colour per device", () => {
     expect(
       joined(
         [header()],
-        [text("story", { backgroundImage: { mediaId: "photo" }, overlayColor: "neutral" })],
+        [
+          text("story", {
+            colors: "page",
+            backgroundImage: { mediaId: "photo" },
+            overlayColor: "neutral",
+          }),
+        ],
       )?.text,
     ).toBe("text-neutral-content");
     expect(
@@ -144,7 +163,10 @@ describe("a Header joined to its first section, drawn (HH-1)", () => {
   });
 
   it("gives a section whose column holds its padding the Header's height above it", () => {
-    const buttons: NodeDoc = { type: "ContactButtons", props: { id: "buttons" } };
+    const buttons: NodeDoc = {
+      type: "ContactButtons",
+      props: { id: "buttons", colors: "inverse" },
+    };
     const section = rendered([header()], [buttons]).querySelector("main > *");
     expect(section?.className).toContain("pt-(--wf-header-h)");
   });

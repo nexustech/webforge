@@ -133,6 +133,14 @@ const library: ComponentLibrary = {
       mainHeading: { field: "title" },
       render: ({ values }) => <p className="t-banner">{textValue(values.title)}</p>,
     },
+    // A section on the theme's second surface, which a joined Header sits on (HH-1).
+    Band: {
+      label: "Band",
+      fields: {},
+      defaults: {},
+      sectionGround: () => "base-200",
+      render: ({ id }) => <p className="t-band">{id}</p>,
+    },
     // The Header, which joins the page's first section with its Background (HH-1).
     Header: {
       label: "Header",
@@ -933,7 +941,7 @@ describe("createPuckEngine", () => {
       header: [{ type: "Header", props: { id: "h", background } }],
       footer: [],
     });
-    const heading = (id: string) => ({ type: "Heading", props: { id, text: id } });
+    const heading = (id: string) => ({ type: "Band", props: { id } });
     await act(async () =>
       engine.applyChange({
         page: { ...page, content: [heading("first"), heading("second")] },

@@ -263,6 +263,13 @@ function frameText(classes: string): string | undefined {
   );
 }
 
+/** The theme colour a frame's `classes` fill it with (`bg-base-200` gives `base-200`), if any. */
+function frameGround(classes: string): string | undefined {
+  return /(?:^|\s)bg-((?:base-[123]00|primary|secondary|accent|neutral|info|success|warning|error))(?=\s|$)/.exec(
+    classes,
+  )?.[1];
+}
+
 /**
  * A section (2.19): {@link defineComponent} for a page band, which adds what every section has.
  * It gets its content width ({@link CONTENT_WIDTH_FIELD}), whose default each section gives, its
@@ -365,6 +372,9 @@ export function defineSection<const F extends Fields, const Variant extends stri
     },
     // The text colour its frame sets for a layout, if any: the overlay check reads its text so (#544).
     sectionText: (values) => frameText(frame?.(values as ValuesOf<F & FrameFields, Variant>) ?? ""),
+    // The theme colour its frame fills it with for a layout, if any: a joined Header reads it (HH-1).
+    sectionGround: (values) =>
+      frameGround(frame?.(values as ValuesOf<F & FrameFields, Variant>) ?? ""),
     // A new section has the page's colours, as one with no value has: choosing them is no change.
     // Its overlay is set too, so the Edit panel shows what a background image would get (2.26).
     defaults: {

@@ -114,6 +114,12 @@ export type ComponentDef = {
    * its text over a background image's overlay (2.26) reads it against that.
    */
   readonly sectionText?: (values: Readonly<Record<string, unknown>>) => string | undefined;
+  /**
+   * The theme colour a section's frame fills it with, from its values: a colour role, such as a
+   * Hero's `base-200` beside its picture, or `undefined` for none, where the page's shows. A Header
+   * joined to the section reads it (HH-1): on the page's own colours, it keeps its band.
+   */
+  readonly sectionGround?: (values: Readonly<Record<string, unknown>>) => string | undefined;
   readonly render: (props: ComponentRenderProps) => ReactNode;
   /**
    * Scripts the exported site must include when this component is used: always, or as its values
