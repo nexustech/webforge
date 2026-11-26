@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { SiteSnapshot } from "@webforge/model";
+import { DEFAULT_THEME, type SiteSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { scaledTestTimeout } from "@webforge/test-utils/vitest";
@@ -115,6 +115,60 @@ describe("buildSite: a logo deleted from Media (HF-1)", () => {
       ]);
       expect(/<header[\s\S]*?<\/header>/.exec(text(out, "index.html"))?.[0]).toContain(
         "Rosa&#x27;s Bakery</a>",
+      );
+    },
+    scaledTestTimeout(120_000),
+  );
+});
+
+describe("buildSite: the logo for dark backgrounds (HH-2)", () => {
+  /** The sample site without its pages' content, its logo and `logoOnDark`, on a dark theme. */
+  function onDarkTheme(logoOnDark: string): SiteSnapshot {
+    const site = sampleSite();
+    const [photo] = site.media;
+    if (photo === undefined) throw new Error("The sample site has no photo");
+    return {
+      ...site,
+      theme: { ...site.theme, colors: DEFAULT_THEME.inverse ?? site.theme.colors },
+      media: [...site.media, { ...photo, id: "light-logo", name: "light" }],
+      logo: "hero-photo",
+      logoOnDark,
+      pages: site.pages.map((page) => ({ ...page, doc: { ...page.doc, content: [] } })),
+    };
+  }
+
+  it(
+    "writes it as WebP with a fallback, and every Header on the dark page shows it",
+    async () => {
+      const out = await buildSite(onDarkTheme("light-logo"), siteLibrary, {
+        ...resources,
+        imageCache,
+      });
+
+      const written = [...out.files.keys()].filter((path) => path.startsWith("assets/img/light"));
+      expect(written.some((path) => path.endsWith(".webp"))).toBe(true);
+      expect(written.some((path) => /\.(jpg|png)$/.test(path))).toBe(true);
+      for (const page of ["index.html", "about.html"]) {
+        const header = /<header[\s\S]*?<\/header>/.exec(text(out, page))?.[0] ?? "";
+        expect(header).toMatch(/<source type="image\/webp" srcSet="assets\/img\/light/i);
+        expect(header).toMatch(/<img [^>]*src="assets\/img\/light[^"]*\.(jpg|png)"/);
+        expect(header).not.toContain("assets/img/hero");
+      }
+      expect(out.report.warnings.filter((each) => each.code !== "form-unset")).toEqual([]);
+    },
+    scaledTestTimeout(120_000),
+  );
+
+  it(
+    "warns once for the site when it's gone from Media, the Header showing the logo",
+    async () => {
+      const out = await buildSite(onDarkTheme("gone"), siteLibrary, { ...resources, imageCache });
+
+      expect(out.report.warnings.filter((each) => each.code !== "form-unset")).toEqual([
+        { code: "missing-logo-on-dark", page: "", detail: "gone" },
+      ]);
+      expect(/<header[\s\S]*?<\/header>/.exec(text(out, "index.html"))?.[0]).toMatch(
+        /<img [^>]*src="assets\/img\/hero/,
       );
     },
     scaledTestTimeout(120_000),

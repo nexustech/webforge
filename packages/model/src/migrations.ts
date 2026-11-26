@@ -62,6 +62,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   18: headerButtons,
   19: footerColumns,
   20: heroOverlays,
+  21: logoOnDark,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -528,6 +529,15 @@ function heroOverlays(site: RawSite): RawSite {
     node.props.overlayColor = "neutral";
   });
   return { ...site, formatVersion: 21 };
+}
+
+/**
+ * Format 21 → 22 (HH-2, #1428): Site Settings may hold a logo for dark backgrounds. No site has
+ * one, so nothing changes but the version: a build that reads format 21 opens a site with one
+ * read-only rather than refusing it as invalid.
+ */
+function logoOnDark(site: RawSite): RawSite {
+  return { ...site, formatVersion: 22 };
 }
 
 /**

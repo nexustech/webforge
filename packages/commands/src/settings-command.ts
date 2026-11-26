@@ -13,8 +13,8 @@ import { type Failure, fail, type Plan } from "./plan.js";
 import type { ConfirmPicture } from "./types.js";
 
 /**
- * The parts of Site Settings AI apps may change (4.11, AIB-2): what the business is, and its logo
- * and icon among the pictures in Media (UA-8).
+ * The parts of Site Settings AI apps may change (4.11, AIB-2): what the business is, and its logo,
+ * its logo for dark backgrounds (HH-2) and icon among the pictures in Media (UA-8).
  */
 const PARTS = ["general", "address", "contact", "social", "search"] as const;
 
@@ -28,7 +28,7 @@ type Part = (typeof PARTS)[number];
 const notTheirs = {
   error: (issue: { code?: string; keys?: readonly string[] }) =>
     issue.code === "unrecognized_keys"
-      ? `AI apps can't change ${(issue.keys ?? []).join(", ")}: only the business's name, description, language and type, its logo and icon (pictures already in Media), its web address, contact details, opening hours, social profiles and search settings. Publishing, forms, analytics, code and search engines' verification codes stay the person's, and an app adds no picture itself.`
+      ? `AI apps can't change ${(issue.keys ?? []).join(", ")}: only the business's name, description, language and type, its logo, logo for dark backgrounds and icon (pictures already in Media), its web address, contact details, opening hours, social profiles and search settings. Publishing, forms, analytics, code and search engines' verification codes stay the person's, and an app adds no picture itself.`
       : undefined,
 };
 
@@ -51,6 +51,7 @@ const settingsChange = z
             businessKind: general.shape.businessKind.nullable(),
             // A picture already in Media, which the plan checks (UA-8): never one an app adds.
             logo: general.shape.logo.unwrap().nullable().optional(),
+            logoOnDark: general.shape.logoOnDark.unwrap().nullable().optional(),
             icon: general.shape.icon.unwrap().nullable().optional(),
           },
           notTheirs,
@@ -103,8 +104,8 @@ type SettingsChange = z.infer<typeof settingsChange>;
 
 /**
  * What Content mode lets an AI app change (§5.10): the name, description, contact details, opening
- * hours and social profiles. Not the language, business type and kind, logo or icon (UA-8), web
- * address or search.
+ * hours and social profiles. Not the language, business type and kind, logo, logo for dark
+ * backgrounds or icon (UA-8, HH-2), web address or search.
  */
 function structural(change: SettingsChange): boolean {
   const { general } = change;
@@ -115,6 +116,7 @@ function structural(change: SettingsChange): boolean {
     general?.businessType !== undefined ||
     general?.businessKind !== undefined ||
     general?.logo !== undefined ||
+    general?.logoOnDark !== undefined ||
     general?.icon !== undefined
   );
 }
@@ -141,6 +143,7 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 /** The Site Settings that name a picture in Media (UA-8), with what the question calls each. */
 const PICTURES = [
   { key: "logo", label: "site.settings.logo" },
+  { key: "logoOnDark", label: "site.settings.logoOnDark" },
   { key: "icon", label: "site.settings.icon" },
 ] as const;
 
@@ -245,7 +248,7 @@ function namedChanges(site: SiteDoc, before: SiteSettings, after: SiteSettings):
  */
 export const updateSettings = {
   description:
-    "Changes Site Settings that say what the business is: general (name, description, language, businessType, businessKind, logo, icon), address (the web address), contact (business name, email, phone, postal address, opening hours, note, price range, map position), social (profiles, X handle) and search (allowIndexing, includeSitemap, readableByAi). Each as the settings query gives it; null clears an optional one, and what's left out stays. general.logo and general.icon take the id of a picture already in Media (the media query lists them; kind image), or null to clear it: you add no picture yourself. Never publishing, forms, analytics, code or search engines' verification codes. They show on every page, so it waits for the person to allow it, and a changed logo or icon is always asked, with the picture shown, even while you work without asking. Not in Content mode for the logo, icon, language, business type, web address or search. One undo step.",
+    "Changes Site Settings that say what the business is: general (name, description, language, businessType, businessKind, logo, logoOnDark, icon), address (the web address), contact (business name, email, phone, postal address, opening hours, note, price range, map position), social (profiles, X handle) and search (allowIndexing, includeSitemap, readableByAi). Each as the settings query gives it; null clears an optional one, and what's left out stays. general.logo, general.logoOnDark (a light version of the logo, which the Header shows in its place on a dark colour or photo) and general.icon take the id of a picture already in Media (the media query lists them; kind image), or null to clear it: you add no picture yourself. Never publishing, forms, analytics, code or search engines' verification codes. They show on every page, so it waits for the person to allow it, and a changed logo, logo for dark backgrounds or icon is always asked, with the picture shown, even while you work without asking. Not in Content mode for the logo, logo for dark backgrounds, icon, language, business type, web address or search. One undo step.",
   input: settingsChange,
   /** Nothing to count: its question names the settings it changes, first in a plan's (S30). */
   summarize() {},
