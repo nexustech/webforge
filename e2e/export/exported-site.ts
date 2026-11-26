@@ -45,6 +45,12 @@ export const ANNOUNCEMENT_SITE_DIR = join(EXPORTED_SITE_DIR, "announcement");
 export const CONTACT_BUTTONS_SITE_DIR = join(EXPORTED_SITE_DIR, "contact-buttons");
 
 /**
+ * Where the setup exports a home page of Heroes with their text over a picture, each with its own
+ * Overlay (HH-3), inside the fixture's folder so CI uploads it with it.
+ */
+export const HERO_OVERLAY_SITE_DIR = join(EXPORTED_SITE_DIR, "hero-overlay");
+
+/**
  * Where the setup exports the fixture's pages with a Header that hides on the way down (HH-7),
  * inside the fixture's folder so CI uploads it with it.
  */

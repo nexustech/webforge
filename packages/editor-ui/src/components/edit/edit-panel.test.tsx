@@ -580,6 +580,43 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(onCommit.mock.calls).toEqual([["gap"]]);
   });
 
+  it("shows a step kept for a value saved before only while it's the value (HH-3)", () => {
+    const steps = [
+      { label: "Strong", value: "60" },
+      { label: "As before", value: "70", kept: true as const },
+      { label: "Very strong", value: "80" },
+    ];
+    const slider = (value: string) => {
+      cleanup();
+      const onChange = vi.fn();
+      render(
+        <EditPanel
+          heading="Hero"
+          fields={[
+            { name: "overlay", kind: "slider", label: "Overlay", group: "style", value, steps },
+          ]}
+          onChange={onChange}
+          onCommit={vi.fn()}
+          onReset={vi.fn()}
+        />,
+      );
+      return { input: screen.getByLabelText("Overlay") as HTMLInputElement, onChange };
+    };
+
+    // Saved at 70%: in its place, between the two it lies between.
+    const kept = slider("70");
+    expect(kept.input.max).toBe("2");
+    expect(kept.input.value).toBe("1");
+    expect(kept.input.getAttribute("aria-valuetext")).toBe("As before");
+    fireEvent.change(kept.input, { target: { value: "2" } });
+    expect(kept.onChange.mock.calls).toEqual([["overlay", "80"]]);
+
+    // Any other value: only the steps offered.
+    const offered = slider("80");
+    expect(offered.input.max).toBe("1");
+    expect(offered.input.getAttribute("aria-valuetext")).toBe("Very strong");
+  });
+
   it("scrubs a slider by dragging its step's name, finer with Shift, as one change (UX-20)", () => {
     const { onChange, onCommit } = renderStyle();
     const output = screen.getByText("Small", { selector: "output" });

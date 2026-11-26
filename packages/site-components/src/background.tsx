@@ -9,11 +9,20 @@ import {
 } from "@webforge/model";
 import { APPEARANCE_GROUP, gradientLayerClasses } from "./appearance.js";
 import { Picture } from "./picture.js";
+import { drawsPictureBehind } from "./picture-behind.js";
 import type { FieldDef, RenderContext } from "./schema.js";
 
 /** How strongly the overlay covers a section's background image, weakest first (ST-5). */
 export const OVERLAYS = ["0", "20", "40", "60", "80"] as const;
-type Overlay = (typeof OVERLAYS)[number];
+
+/**
+ * The Hero's overlay before it had a choice (HH-3): Neutral at 70%, between Strong and Very strong.
+ * Format 21 gives it to every Hero saved before, so it looks as it did; it isn't offered.
+ */
+const KEPT_OVERLAY = "70";
+
+type Overlay = (typeof OVERLAYS)[number] | typeof KEPT_OVERLAY;
+const DRAWN_OVERLAYS: readonly Overlay[] = [...OVERLAYS, KEPT_OVERLAY];
 
 /** The overlay's colour: the theme's page colour (`base-100`) or its neutral one. */
 const OVERLAY_COLORS = ["base", "neutral"] as const;
@@ -49,7 +58,13 @@ export const BACKGROUND_FIELDS = {
     label: t("field.overlay"),
     help: t("field.overlay.help"),
     ...IN_GROUP,
-    steps: OVERLAYS.map((value) => ({ label: t(`field.overlay.${value}`), value })),
+    // Its kept step in its place, between Strong and Very strong, shown only while it's the value.
+    steps: OVERLAYS.flatMap((value) => [
+      ...(value === "80"
+        ? [{ label: t(`field.overlay.${KEPT_OVERLAY}`), value: KEPT_OVERLAY, kept: true as const }]
+        : []),
+      { label: t(`field.overlay.${value}`), value },
+    ]),
   },
   overlayColor: {
     kind: "select",
@@ -86,7 +101,7 @@ export function overlayOf(values: BackgroundValues): {
   readonly color: OverlayColor;
 } {
   return {
-    opacity: OVERLAYS.find((each) => each === values.overlay) ?? BACKGROUND_DEFAULTS.overlay,
+    opacity: DRAWN_OVERLAYS.find((each) => each === values.overlay) ?? BACKGROUND_DEFAULTS.overlay,
     color:
       OVERLAY_COLORS.find((each) => each === values.overlayColor) ??
       BACKGROUND_DEFAULTS.overlayColor,
@@ -103,6 +118,7 @@ const OVERLAY_CLASSES: Readonly<Record<OverlayColor, Readonly<Record<Overlay, st
     "20": "bg-base-100/20",
     "40": "bg-base-100/40",
     "60": "bg-base-100/60",
+    "70": "bg-base-100/70",
     "80": "bg-base-100/80",
   },
   neutral: {
@@ -110,9 +126,30 @@ const OVERLAY_CLASSES: Readonly<Record<OverlayColor, Readonly<Record<Overlay, st
     "20": "bg-neutral/20",
     "40": "bg-neutral/40",
     "60": "bg-neutral/60",
+    "70": "bg-neutral/70",
     "80": "bg-neutral/80",
   },
 };
+
+/**
+ * The overlay's own layer's classes, "" for none, and the text's colour over it: neutral's content
+ * colour over the neutral colour, the page's own over the page's. For a section that draws its own
+ * picture under the overlay fields (the Hero's, HH-3).
+ */
+export function overlayLayer(values: BackgroundValues): {
+  readonly layer: string;
+  readonly text: string;
+  /** The overlay's colour as a background, for the section where it has no picture. */
+  readonly ground: string;
+} {
+  const { opacity, color } = overlayOf(values);
+  const neutral = color === "neutral";
+  return {
+    layer: OVERLAY_CLASSES[color][opacity],
+    text: neutral ? "text-neutral-content" : "text-base-content",
+    ground: neutral ? "bg-neutral" : "bg-base-100",
+  };
+}
 
 /** Whether `values` place a background image. */
 const hasBackground = (values: BackgroundValues) =>
@@ -147,8 +184,7 @@ export function SectionBackground({
   const placed = placedImage(values.backgroundImage);
   const image = placed === undefined ? null : context.image(placed.mediaId);
   if (image === null) return null;
-  const { opacity, color } = overlayOf(values);
-  const overlay = OVERLAY_CLASSES[color][opacity];
+  const overlay = overlayLayer(values).layer;
   const gradient = gradientLayerClasses(values);
   return (
     <>
@@ -173,7 +209,9 @@ export function SectionBackground({
 
 /**
  * The overlay a section's values draw, for the contrast check of its text over it (2.26: the
- * themes package's `overlayContrastIssue`), or `null` without a background image. A reversed
+ * themes package's `overlayContrastIssue`), or `null` without a picture under it: its background
+ * image, or, given the component, any picture it draws behind its content (the Hero's in _Image
+ * behind the text_, HH-3). A reversed
  * section (2.4) is checked in the reversed colours, and its text in the colour it has on each
  * device: the person's (the Appearance group's Colour), else the one its frame `draws` for its
  * layout (`ComponentDef.sectionText`, #544: a Call to action Banner's `neutral-content`), else the
@@ -182,13 +220,16 @@ export function SectionBackground({
 export function sectionOverlay(
   values: BackgroundValues,
   draws?: string,
+  component?: Parameters<typeof drawsPictureBehind>[0],
 ): {
   readonly color: OverlayColor;
   readonly opacity: number;
   readonly inverse: boolean;
   readonly text: readonly (string | undefined)[];
 } | null {
-  if (!hasBackground(values)) return null;
+  const placed =
+    component === undefined ? hasBackground(values) : drawsPictureBehind(component, values);
+  if (!placed) return null;
   const { opacity, color } = overlayOf(values);
   return {
     color,

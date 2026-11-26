@@ -189,7 +189,19 @@ describe("copied elements across builds (ADR 0012)", () => {
 
   it("takes elements copied before the clipboard named a format as format 12", () => {
     const read = readClipboardPayload({ nodes: [section], media: [] });
-    expect(read).toEqual({ status: "elements", elements: { nodes: [section], media: [] } });
+    // Brought up to this format: its Hero with the 70% Neutral overlay it drew (format 21, HH-3).
+    const [heading, hero] = section.props.content as readonly NodeDoc[];
+    const migrated = {
+      ...section,
+      props: {
+        ...section.props,
+        content: [
+          heading,
+          { ...hero, props: { ...hero?.props, overlay: "70", overlayColor: "neutral" } },
+        ],
+      },
+    };
+    expect(read).toEqual({ status: "elements", elements: { nodes: [migrated], media: [] } });
   });
 
   it("reads as invalid whatever a step leaves of the carrier, never throwing", () => {

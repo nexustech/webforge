@@ -1,7 +1,12 @@
 import type { ComponentType } from "react";
 
 /** One choice a field offers, its label already translated. */
-export type FieldChoice = { readonly label: string; readonly value: string };
+export type FieldChoice = {
+  readonly label: string;
+  readonly value: string;
+  /** A value saved before that is shown only while it's the value, as it's no longer offered. */
+  readonly kept?: true;
+};
 
 /** One image a form's image choice offers (2.21): a Media image's id, name and thumbnail. */
 export type ImageChoiceOption = {

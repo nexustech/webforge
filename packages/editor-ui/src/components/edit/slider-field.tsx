@@ -8,6 +8,24 @@ const SCRUB_STEP = 12;
 const FINE_SCRUB_STEP = 36;
 
 /**
+ * The steps shown, and the value's among them (the first for a value it doesn't have): a step no
+ * longer offered only while it's the value, so moving off it is for good.
+ */
+function shownSteps<Step extends { readonly value: string; readonly kept?: true }>(
+  all: readonly Step[],
+  value: unknown,
+): { readonly steps: readonly Step[]; readonly index: number } {
+  const steps = all.filter((step) => step.kept !== true || step.value === value);
+  return {
+    steps,
+    index: Math.max(
+      0,
+      steps.findIndex((step) => step.value === value),
+    ),
+  };
+}
+
+/**
  * A step along a token scale (C4), as a slider with the step's name beside it. Every step of a drag
  * is a change; letting go (or the key coming up) ends it, so a drag can be one undo step. The step's
  * name can be dragged left and right too (UX-20), a step per 12 pixels or, with Shift, per 36: a
@@ -23,11 +41,7 @@ export function SliderField({
   onChange,
   onCommit,
 }: FieldRendererProps<"slider">) {
-  const { steps } = field;
-  const index = Math.max(
-    0,
-    steps.findIndex((step) => step.value === value),
-  );
+  const { steps, index } = shownSteps(field.steps, value);
   const scrub = (event: PointerEvent<HTMLOutputElement>) => {
     if (disabled || event.button !== 0 || steps.length < 2) return;
     event.preventDefault();
