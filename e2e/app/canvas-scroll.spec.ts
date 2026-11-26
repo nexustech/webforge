@@ -78,14 +78,38 @@ async function settle(): Promise<void> {
 /** Scrolls the canvas's page to its top or its bottom, as the owner might have left it. */
 async function scrollTo(where: "top" | "bottom"): Promise<void> {
   await settle();
-  await canvas()
-    .locator("body")
-    .evaluate((body, end) => {
-      const root = body.ownerDocument.documentElement;
-      root.scrollTop = end === "top" ? 0 : root.scrollHeight;
-    }, where);
-  if (where === "top") await expect.poll(scrolled).toBe(0);
-  else await expect.poll(async () => (await scrollRoom()) - (await scrolled())).toBeLessThan(2);
+  const scroll = () =>
+    canvas()
+      .locator("body")
+      .evaluate((body, end) => {
+        const root = body.ownerDocument.documentElement;
+        root.scrollTop = end === "top" ? 0 : root.scrollHeight;
+      }, where);
+  await scroll();
+  if (where === "top") {
+    await expect.poll(scrolled).toBe(0);
+    return;
+  }
+  // At its bottom across two looks: a canvas that gets shorter after the scroll (a drawer finishing
+  // its opening, the zoom fitted again) leaves room below it (#1474). Scrolled there again, and
+  // logged, so something scrolling the canvas away on its own still shows in the logs.
+  const start = Date.now();
+  let atBottom = 0;
+  await expect
+    .poll(async () => {
+      const short = (await scrollRoom()) - (await scrolled());
+      if (short < 2) {
+        atBottom += 1;
+        return atBottom >= 2;
+      }
+      atBottom = 0;
+      console.log(
+        `[scroll] the page was ${Math.round(short)} px short of its bottom ${Date.now() - start} ms after the first scroll: scrolled there again`,
+      );
+      await scroll();
+      return false;
+    })
+    .toBe(true);
 }
 
 /**
@@ -170,6 +194,12 @@ test("shows the text Find selects, from the bottom of a long page", async () => 
     .click();
 
   await expect(right().getByRole("heading", { name: "Text", exact: true })).toBeVisible();
+  await expect.poll(selectedInView).toBe("in view");
+
+  // Still in view with the canvas made shorter under it, as a drawer opening late makes it (#1474):
+  // the canvas shows a selection near its top, clear of its bar, so a shorter canvas keeps it.
+  await page.getByRole("separator", { name: "Resize the bottom panel" }).focus();
+  for (let step = 0; step < 16; step++) await page.keyboard.press("ArrowUp");
   await expect.poll(selectedInView).toBe("in view");
 });
 
