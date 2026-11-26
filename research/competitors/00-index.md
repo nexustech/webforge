@@ -12,7 +12,7 @@ All the notes under `research/` on `main` of 20 Nov 2026 (commit `966982c0`) wer
 
 Short names in the tables:
 
-- **competitors/01–07:** [Webflow](01-webflow.md), [Pinegrow](02-pinegrow.md), [the November 2026 comparison](03-comparison-2026-11.md), [Onlook](04-onlook.md), [Webnode](05-webnode.md), [Pinegrow's Revisions](06-pinegrow-revisions.md), [version history elsewhere](07-version-history-elsewhere.md).
+- **competitors/01–08:** [Webflow](01-webflow.md), [Pinegrow](02-pinegrow.md), [the November 2026 comparison](03-comparison-2026-11.md), [Onlook](04-onlook.md), [Webnode](05-webnode.md), [Pinegrow's Revisions](06-pinegrow-revisions.md), [version history elsewhere](07-version-history-elsewhere.md), [Pinegrow's Content Workspace](08-pinegrow-content-workspace.md).
 - **product/01–21:**
   - [01 terminology](../product/01-terminology.md), [02 CMS](../product/02-cms.md), [04 editor look and feel](../product/04-editor-look-and-feel.md), [05 feature gap analysis](../product/05-feature-gap-analysis.md)
   - [06 editor UI parity](../product/06-editor-ui-ux-parity.md), [07 look-and-feel pass](../product/07-look-and-feel-pass.md), [08 component styling](../product/08-component-styling.md), [08 start screen](../product/08-start-screen-comparison.md)
@@ -27,7 +27,7 @@ Webforge's own category: buy an app, keep the files.
 | Product                                 | Reviewed in                                                                                                                                                                                                                    |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Bootstrap Studio** (8, 9)             | **BSS** (internals, file format, features, lessons, the 9.0 review BS9-n, the screenshot pass SP-n); product/01, 02, 04, 05, 06, 07, 08 (both), 10, 12, 14, 18, 20; competitors/03; [stack/07](../stack/07-export-pipeline.md) |
-| **Pinegrow** (10.1)                     | **competitors/02** (PG-n), **06** (Revisions); product/05, 08 (both), 09, 10, 12, 14, 20; competitors/03                                                                                                                       |
+| **Pinegrow** (10.1)                     | **competitors/02** (PG-n), **06** (Revisions), **08** (Content Workspace and CMS Mode); product/05, 08 (both), 09, 10, 12, 14, 20; competitors/03                                                                              |
 | **RapidWeaver Elements** (Realmac, Mac) | product/05 (with a section on Elements 3.0), 06, 08 (both), 09, 10, 12, 14; competitors/03                                                                                                                                     |
 | **Blocs** (Mac)                         | product/05, 10, 12; competitors/03                                                                                                                                                                                             |
 | **Mobirise** (with its AI builder)      | product/05, 08 start screen, 09, 10, 12; competitors/03                                                                                                                                                                        |
