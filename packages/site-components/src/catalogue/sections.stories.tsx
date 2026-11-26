@@ -38,6 +38,26 @@ export const HeroBackground: Story = {
   args: { nodes: [hero("left", { variant: "background" })] },
 };
 
+/** The Hero's overlay at each step over its picture, from None to Very strong (HH-3). */
+const overlaySteps = (overlayColor: string) =>
+  ["0", "20", "40", "60", "70", "80"].map((overlay) =>
+    hero("left", {
+      id: `hero-${overlayColor}-${overlay}`,
+      variant: "background",
+      overlay,
+      overlayColor,
+    }),
+  );
+
+/**
+ * The Hero's text over its picture at each Overlay step in the theme's Neutral colour, 70% among
+ * them: what every Hero saved before HH-3 keeps (format 21).
+ */
+export const HeroOverlayNeutral: Story = { args: { nodes: overlaySteps("neutral") } };
+
+/** The same in the page's own colour, the text in the page's text colour (HH-3). */
+export const HeroOverlayPage: Story = { args: { nodes: overlaySteps("base") } };
+
 /** The Hero with text only (2.6). */
 export const HeroMinimal: Story = {
   args: { nodes: [hero("centre", { variant: "minimal", contentWidth: "narrow" })] },

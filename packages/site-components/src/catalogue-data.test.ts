@@ -117,14 +117,21 @@ function libraryAsData(): unknown {
       },
     ];
   });
-  // Through JSON: functions and undefined go, as they would from the file.
+  // Through JSON: functions and undefined go, as they would from the file, and a step or option
+  // kept for values saved before (HH-3's 70% overlay), which AI apps aren't offered.
   return JSON.parse(
-    JSON.stringify({
-      appearance: STYLING,
-      element: DIALOG_ELEMENT_FIELDS,
-      titled: DIALOG_TITLE_FIELDS,
-      components: Object.fromEntries(entries),
-    }),
+    JSON.stringify(
+      {
+        appearance: STYLING,
+        element: DIALOG_ELEMENT_FIELDS,
+        titled: DIALOG_TITLE_FIELDS,
+        components: Object.fromEntries(entries),
+      },
+      (key, value: unknown) =>
+        (key === "steps" || key === "options") && Array.isArray(value)
+          ? value.filter((choice: { kept?: true }) => choice.kept !== true)
+          : value,
+    ),
   );
 }
 

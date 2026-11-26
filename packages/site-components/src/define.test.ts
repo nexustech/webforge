@@ -33,9 +33,12 @@ const base: LooseSpec = {
   render: () => null,
 };
 
-/** Fields every item hides until other values use them: a border's colour, a gradient's. */
+/** Fields every item hides until other values use them: a border's colour, a gradient's, an overlay. */
 const HIDDEN_UNTIL_USED = new Set([
   "lookBorderColor",
+  // The Hero's overlay, until it has a picture behind its text (HH-3).
+  "overlay",
+  "overlayColor",
   "lookGradientFrom",
   "lookGradientTo",
   "lookGradientOpacity",

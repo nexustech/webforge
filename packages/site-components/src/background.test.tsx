@@ -50,13 +50,17 @@ describe("BACKGROUND_FIELDS (2.26)", () => {
       ["select", "style"],
     ]);
     expect(BACKGROUND_FIELDS.overlay.optionGroup.id).toBe("appearance");
-    expect(BACKGROUND_FIELDS.overlay.steps.map((step) => step.value)).toEqual([
+    // The steps offered, and the Hero's 70% from before HH-3 in its place, kept but not offered.
+    const steps = BACKGROUND_FIELDS.overlay.steps;
+    expect(steps.filter((step) => !("kept" in step)).map((step) => step.value)).toEqual([
       "0",
       "20",
       "40",
       "60",
       "80",
     ]);
+    expect(steps.map((step) => step.value)).toEqual(["0", "20", "40", "60", "70", "80"]);
+    expect(steps[4]).toEqual({ label: "As before", value: "70", kept: true });
   });
 });
 
@@ -172,10 +176,11 @@ describe("the section frame's background (2.26)", () => {
     for (const [type, def] of sections) {
       const names = Object.keys(def.fields);
       if (withoutBackground.has(type)) {
+        // The Hero has the overlay's fields, for the picture it draws behind its text (HH-3).
         expect(
-          names.some((name) => BACKGROUND_FIELD_NAMES.includes(name as never)),
+          names.filter((name) => BACKGROUND_FIELD_NAMES.includes(name as never)),
           type,
-        ).toBe(false);
+        ).toEqual(type === "Hero" ? ["overlay", "overlayColor"] : []);
         continue;
       }
       // Its image first, as the Content tab shows it; its overlay straight before the rest of the
@@ -198,10 +203,23 @@ describe("the section frame's background (2.26)", () => {
     const shown = fieldsHiddenBy(text, { ...text.defaults, backgroundImage: { mediaId: "shop" } });
     expect(shown.has("overlay")).toBe(false);
     expect(shown.has("overlayColor")).toBe(false);
-    // The Hero has no overlay of the frame's to hide.
+    // The Hero's, only over its picture behind its text (HH-3).
     const hero = siteLibrary.components.Hero;
     if (hero === undefined) throw new Error("No Hero");
-    expect(fieldsHiddenBy(hero, hero.defaults).has("overlay")).toBe(false);
+    const heroHides = (values: Record<string, unknown>) =>
+      fieldsHiddenBy(hero, { ...hero.defaults, ...values });
+    const photo = { image: { mediaId: "shop" } };
+    expect(heroHides(photo).has("overlay")).toBe(true);
+    expect(heroHides({ variant: "background" }).has("overlayColor")).toBe(true);
+    expect(heroHides({ variant: "background", ...photo }).has("overlay")).toBe(false);
+    expect(heroHides({ variant: "background", ...photo }).has("overlayColor")).toBe(false);
+  });
+
+  it("starts a new Hero at Strong in Neutral, the step nearest the 70% it had (HH-3)", () => {
+    expect(siteLibrary.components.Hero?.defaults).toMatchObject({
+      overlay: "60",
+      overlayColor: "neutral",
+    });
   });
 
   it("gives a new section a strong overlay in the page colour, so the panel shows it", () => {

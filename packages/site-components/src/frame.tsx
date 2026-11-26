@@ -215,10 +215,12 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
   /** Its name in the `site-<name>` class every exported page and test finds it by: "hero". */
   readonly name: string;
   /**
-   * `false` for a section that draws its own background image (the Hero's behind-the-text
-   * layout), which then has no background image field (2.26).
+   * `false` for a section with no background image and no overlay (Contact buttons). `"own"` for
+   * one that draws its own picture behind its content (the Hero's behind-the-text layout): no
+   * background image field (2.26), but the overlay's fields, for that picture (HH-3), which it
+   * draws itself with `overlayLayer`.
    */
-  readonly background?: false;
+  readonly background?: false | "own";
   /** The frame's classes from its values: its background and layout ("hero bg-base-200"). */
   readonly frame?: (values: ValuesOf<F & FrameFields, Variant>) => string;
   /**
@@ -314,7 +316,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
   // Its background image is drawn behind its content, as any picture its own layouts draw (#670).
   const pictureBehind = [
     ...(rest.pictureBehind ?? []),
-    ...(background === false ? [] : [{ field: "backgroundImage" }]),
+    ...(background === undefined ? [{ field: "backgroundImage" }] : []),
   ];
   // Its title, which `SectionTitle` draws: the page's main heading on a page with none of its own,
   // if it is the first section with one (#1173). A Hero's title is one of its own already.
@@ -328,7 +330,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
   // text, then Spacing.
   const withFrame = {
     // A background image (2.26) first on the Content tab, as before.
-    ...(background === false ? {} : { backgroundImage }),
+    ...(background === undefined ? { backgroundImage } : {}),
     ...fields,
     contentWidth: CONTENT_WIDTH_FIELD,
     colors: COLORS_FIELD,

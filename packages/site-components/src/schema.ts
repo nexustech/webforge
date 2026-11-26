@@ -24,7 +24,16 @@ import type { ComponentType, ReactNode } from "react";
 import type { EditPreviews } from "./previews.js";
 
 /** A choice offered by a field: its translated label and the stored value. */
-export type FieldOption = { readonly label: string; readonly value: string };
+export type FieldOption = {
+  readonly label: string;
+  readonly value: string;
+  /**
+   * A value saved before that it still draws but no longer offers (HH-3: a Hero's overlay at 70%,
+   * as every Hero had): the Edit panel shows it, in its place, only while it is the value, and AI
+   * apps aren't offered it.
+   */
+  readonly kept?: true;
+};
 
 /**
  * One editable property of a component, described independently of the canvas engine.

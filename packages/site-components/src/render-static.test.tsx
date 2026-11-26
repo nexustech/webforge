@@ -911,20 +911,42 @@ describe("renderNodesToHtml", () => {
     });
 
     it("sets the text over the image, which fills the section with its focal point in view", () => {
-      const html = heroIn("background");
+      // A Hero saved before HH-3, as format 21 opens it.
+      const html = heroIn("background", { overlay: "70", overlayColor: "neutral" });
 
       expect(html).toContain(
-        '<section class="site-hero relative flex min-h-[28rem] items-center justify-center',
+        '<section class="site-hero relative flex min-h-[28rem] items-center justify-center overflow-hidden bg-neutral',
       );
       expect(html).toContain('sizes="100vw"');
       expect(html).toContain(
         'class="absolute inset-0 h-full w-full object-cover" style="object-position:30% 50%"',
       );
-      // The overlay comes after the image, the text after both: drawn in that order.
+      // The overlay comes after the image, the text after both: drawn in that order, and as every
+      // Hero drew them before HH-3, so a saved one's export is unchanged.
       expect(html.indexOf("<picture>")).toBeLessThan(html.indexOf("bg-neutral/70"));
       expect(html).toContain(
-        '<div class="hero-content relative max-w-[74rem] text-neutral-content text-left">',
+        '</picture><div class="absolute inset-0 bg-neutral/70"></div><div class="hero-content relative max-w-[74rem] text-neutral-content text-left">',
       );
+    });
+
+    it("draws its Overlay at the strength and in the colour chosen, Strong Neutral when new (HH-3)", () => {
+      const overlay = (html: string) => /class="absolute inset-0 (bg-[^"]+)"/.exec(html)?.[1];
+      const text = (html: string) => /hero-content relative max-w-\[74rem\] (\S+)/.exec(html)?.[1];
+
+      const fresh = heroIn("background");
+      expect(overlay(fresh)).toBe("bg-neutral/60");
+      expect(text(fresh)).toBe("text-neutral-content");
+
+      const light = heroIn("background", { overlay: "20", overlayColor: "base" });
+      expect(overlay(light)).toBe("bg-base-100/20");
+      // The text in the page's own colour, on the page's colour where there's no picture.
+      expect(text(light)).toBe("text-base-content");
+      expect(light).toContain("overflow-hidden bg-base-100");
+
+      // None: no layer at all.
+      const none = heroIn("background", { overlay: "0" });
+      expect(overlay(none)).toBeUndefined();
+      expect(none).toContain('class="hero-content relative');
     });
 
     it("draws a gradient over its picture and under its overlay, at its opacity (CT-12, CT-14)", () => {
@@ -939,7 +961,7 @@ describe("renderNodesToHtml", () => {
 
       expect(html).toContain(layer);
       expect(html.indexOf("</picture>")).toBeLessThan(html.indexOf(layer));
-      expect(html.indexOf(layer)).toBeLessThan(html.indexOf("bg-neutral/70"));
+      expect(html.indexOf(layer)).toBeLessThan(html.indexOf("bg-neutral/60"));
       // Without a gradient, no layer.
       expect(heroIn("background")).not.toContain("aria-hidden");
     });

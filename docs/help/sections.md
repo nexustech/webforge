@@ -5,7 +5,7 @@ title: Sections
 summary: Every section you can add to a page, what it's for and what you can change.
 components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat, Steps, Step, ContactButtons, Menu, MenuItem]
 related: [elements, add-panel, edit-panel, forms, header-and-footer]
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # Sections
@@ -22,7 +22,7 @@ Select a section and open the Edit panel's **Style** tab. Its options come first
 - **Colours:** _Page colours_, or _Reversed_, which swaps the theme's light and dark colours to make a dark band on a light page (or a light band on a dark one).
 - **Content width:** _Narrow_, _Medium_, _Wide_ or _Full_. The background always fills the page's width; this sets how wide the content inside is. On a computer, the content of sections at the same width lines up, a Hero's text and image too, and so do the Header and Footer at that width. On a phone, a Hero keeps a little more space at its sides.
 - **Space inside** and **Space outside:** the room inside the section's edges (padding) and above and below it (margin).
-- **Background image** (in the Content tab, on every section but the Hero, which has _Image behind the text_), with an **Overlay** (_None_ to _Very strong_) and **Overlay colour** that darken or lighten the picture so text stays readable. {appName} warns you when the text would be hard to read. A gradient from **Style This…** is drawn over the picture and under the overlay; its **Gradient opacity** sets how much of the picture shows through (50% unless you change it).
+- **Background image** (in the Content tab, on every section but the Hero, which has _Image behind the text_ with the same Overlay settings), with an **Overlay** (_None_ to _Very strong_) and **Overlay colour** that darken or lighten the picture so text stays readable. {appName} warns you when the text would be hard to read. A gradient from **Style This…** is drawn over the picture and under the overlay; its **Gradient opacity** sets how much of the picture shows through (50% unless you change it).
 - **Entrance animation:** _Fade in_, _Slide up_, _Slide in from the left_, _Slide in from the right_ or _Zoom in_, with a _Delay_. It plays once, when a visitor scrolls to the section, and never for visitors whose device asks for less motion.
 - **Appearance:** background colour, corners, border, shadow and opacity, then its text. See [Styling](styling.md).
 
@@ -34,6 +34,7 @@ The large opening section of a page: a title, a short text, a button and an imag
 
 - **Layouts:** _Image beside the text_, _Centred, image below_, _Image behind the text_, _Text only_.
 - **Alignment:** _Centre_ or _Left_.
+- **Overlay** and **Overlay colour**, in _Image behind the text_ once it has a picture: how strongly a layer of colour covers the picture (_None_ to _Very strong_), in the theme's _Neutral_ colour or the _Page background_, so the title and text stay readable. The text takes the colour that suits the overlay's. A new Hero starts at _Strong_, in _Neutral_. A Hero made before you could choose keeps the overlay it had, shown as _As before_; once you choose another, _As before_ isn't offered again. {appName} warns you when the text would be hard to read.
 - **Header background** (in the **Style** tab, on a Hero that opens its page): says whether the Header sits on this Hero or has its own band. **Change in the Header** selects the Header, where its **Background** is set for every page. See [The Header on the first section](header-and-footer.md#the-header-on-the-first-section).
 
 ## Text

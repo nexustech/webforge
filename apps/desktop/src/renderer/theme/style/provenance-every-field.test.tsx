@@ -22,8 +22,12 @@ const ITEMS = [
 
 /** The gradient's fields, which draw the background as a gradient once set (CT-4). */
 const GRADIENT = ["lookGradientDirection", "lookGradientFrom", "lookGradientTo"];
-/** Shown only over a picture behind the content, with a gradient (CT-14). */
-const OVER_PICTURE = ["lookGradientOpacity"];
+/**
+ * Shown only over a picture behind the content: the gradient's opacity, with a gradient (CT-14),
+ * and the Hero's overlay (HH-3), in the order the Edit panel shows them.
+ */
+const overPicture = (type: string) =>
+  type === "Hero" ? ["overlay", "overlayColor", "lookGradientOpacity"] : ["lookGradientOpacity"];
 
 /** `type`'s definition. */
 function defOf(type: string): ComponentDef {
@@ -90,14 +94,16 @@ describe("every Appearance control says where its value comes from (3.12, #622)"
      * Every field but the gradient's, which turn the background into a gradient, and its opacity,
      * which shows only over a picture.
      */
-    const plain = fields.filter((name) => !GRADIENT.includes(name) && !OVER_PICTURE.includes(name));
+    const plain = fields.filter(
+      (name) => !GRADIENT.includes(name) && !overPicture(type).includes(name),
+    );
 
     it("shows every field a look holds", () => {
       expect(fields.length).toBeGreaterThan(20);
       // A border's colour shows once it has a border: everything set, everything shows, but the
       // gradient's opacity without a picture behind.
       const shown = sources(type, { own: values(type, fields) });
-      expect(fields.filter((name) => !shown.has(name))).toEqual(OVER_PICTURE);
+      expect(fields.filter((name) => !shown.has(name))).toEqual(overPicture(type));
     });
 
     it("says each is set here when the item sets it", () => {
@@ -129,6 +135,12 @@ describe("every Appearance control says where its value comes from (3.12, #622)"
           own: { ...picture, ...values(type, GRADIENT), lookGradientOpacity: "75" },
         });
         expect(shown.get("lookGradientOpacity")).toBe("Set here");
+      });
+
+      it("says its overlay is set here, over its picture (HH-3)", () => {
+        const picture = { variant: "background", image: { mediaId: "shop" } };
+        const shown = sources(type, { own: { ...picture, overlay: "20", overlayColor: "base" } });
+        expect([shown.get("overlay"), shown.get("overlayColor")]).toEqual(["Set here", "Set here"]);
       });
     }
 
