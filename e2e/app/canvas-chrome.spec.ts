@@ -1,4 +1,4 @@
-import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
+import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import {
   ACTION_BAR,
   COMPONENT_ATTRIBUTE,
@@ -9,6 +9,7 @@ import {
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { clickSettled } from "./settled.js";
 
 // Selection chrome on the canvas (1.12): magenta outlines and the selected element's quick
 // actions, each one labelled undo step.
@@ -42,39 +43,6 @@ const quickAction = (title: string) =>
     .locator(OVERLAY)
     .filter({ has: canvas().locator('.wf-outline[data-state="selected"]') })
     .getByRole("button", { name: title, exact: true });
-
-/**
- * Waits until `button` is the same element in the same place across two looks 100 ms apart, as a
- * person's eye settles on a button before clicking it (#1462). Logs what changed meanwhile, its
- * place (by how much, how long after the first look) or the element itself, so CI's logs say
- * whether the bar moves or is drawn anew as it settles.
- */
-async function settled(button: Locator, name: string): Promise<void> {
-  const look = () =>
-    button.evaluate((element) => {
-      const marked = element as Element & { wfSettle?: true };
-      const seen = marked.wfSettle === true;
-      marked.wfSettle = true;
-      const { x, y } = element.getBoundingClientRect();
-      return { seen, x: Math.round(x), y: Math.round(y) };
-    });
-  const start = Date.now();
-  let last = await look();
-  for (;;) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const next = await look();
-    const moved = next.x !== last.x || next.y !== last.y;
-    if (next.seen && !moved) return;
-    const after = Date.now() - start;
-    console.log(
-      next.seen
-        ? `[settle] ${name} moved ${next.x - last.x}, ${next.y - last.y} px, ${after} ms after it showed`
-        : `[settle] ${name} was drawn anew, ${after} ms after it showed`,
-    );
-    if (after > 5_000) throw new Error(`${name} didn't settle in 5 s`);
-    last = next;
-  }
-}
 
 /** The selected element's quick-action bar, which names it. */
 const selectedBar = () =>
@@ -129,24 +97,15 @@ test.describe("selection chrome", () => {
   });
 
   test("its buttons work while the element's text is being edited, the format menu with them (LF-3)", async () => {
-    // Diagnostic for #1462, dropped before review: the steps 20 times, logging how the bar settles.
-    test.setTimeout(300_000);
-    for (let round = 0; round < 20; round++) {
-      // Clicking the text edits it: the bar holds the format menu too.
-      await canvas().getByText(STARTER_TEXT).click();
-      await expect(quickAction("Bold")).toBeVisible();
-      // The bar takes the format menu in: clicked once it has settled, as a person would (#1462).
-      await settled(quickAction("Delete"), "Delete");
+    // Clicking the text edits it: the bar holds the format menu too.
+    await canvas().getByText(STARTER_TEXT).click();
+    await expect(quickAction("Bold")).toBeVisible();
 
-      // A press on the bar keeps the text focused, so the menu stays and the button under the
-      // pointer is the one clicked.
-      await quickAction("Delete").click();
+    // A press on the bar keeps the text focused, so the menu stays and the button under the
+    // pointer is the one clicked: once the bar has taken the menu in, as a person would (#1462).
+    const where = await clickSettled(quickAction("Delete"), "Delete");
 
-      await expect(canvas().getByText(STARTER_TEXT)).toHaveCount(0);
-      await page.locator('[data-slot="title-bar"] button[aria-label="Undo"]').click();
-      await expect(canvas().getByText(STARTER_TEXT)).toHaveCount(1);
-      await page.keyboard.press("Escape");
-    }
+    await expect(canvas().getByText(STARTER_TEXT), where).toHaveCount(0);
   });
 
   test("moves, duplicates and deletes the selected element, one undo step each", async () => {
