@@ -32,6 +32,22 @@ export async function boxOf(target: Locator, name: string): Promise<Box> {
 const PRESSES = 3;
 
 /**
+ * How long a press is given to start a drag before it's let go and made again. On a slowed
+ * renderer Puck marks the canvas more than 2 s after the press (#1395): letting go then ended a
+ * real drag, and the next press met it still ending.
+ */
+const START_MS = 6_000;
+
+/** How long a drag dnd-kit has started is given to reach the canvas: never let go of one (#1395). */
+const STARTED_MS = 10_000;
+
+/** Whether dnd-kit has taken the press: its source marked as dragging, in the editor or the canvas. */
+async function dndTook(page: Page, canvas: FrameLocator): Promise<boolean> {
+  const marked = "[data-dnd-dragging]";
+  return (await page.locator(marked).count()) + (await canvas.locator(marked).count()) > 0;
+}
+
+/**
  * Whether Puck can start a drag from `from` now: no drag is still ending (dnd-kit ignores a press
  * until its last one is idle), and the element it is in may be dragged (Puck marks one that may
  * not, as while it is drawn again, with DISABLED_ATTRIBUTE). Puck marks the canvas while something is
@@ -85,19 +101,26 @@ export async function drag(
     const y = box.y + box.height * grabHeight;
     await page.mouse.move(x, y);
     await page.mouse.down();
-    try {
-      await expect
+    const started = (message: string, timeout: number) =>
+      expect
         .poll(
           async () => {
             nudge += 1;
             await page.mouse.move(x + 10 + (nudge % 3), y + 10, { steps: 5 });
             return canvas.locator(DRAGGING).count();
           },
-          { message: "The drag didn't start", timeout: 2_000 },
+          { message, timeout },
         )
         .toBeGreaterThan(0);
+    try {
+      await started("The drag didn't start", START_MS);
       break;
     } catch (error) {
+      // A drag dnd-kit started is waited for, never let go of: the press was taken (#1395).
+      if (await dndTook(page, canvas)) {
+        await started("The drag dnd-kit started never reached the canvas", STARTED_MS);
+        break;
+      }
       // Let go outside the canvas, over the left panels: not the title bar, which moves the window.
       const away = await boxOf(page.getByRole("region", { name: "Left panels" }), "Left panels");
       await page.mouse.move(away.x + away.width / 2, away.y + away.height - 8, { steps: 5 });
