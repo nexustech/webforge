@@ -915,7 +915,7 @@ describe("renderNodesToHtml", () => {
         heroIn("split", { secondButtonLabel: "See the menu", secondButtonLink: "about" }),
       );
       expect(two).toBe(
-        `<div class="flex flex-wrap gap-3 ">${first}<a class="btn btn-outline btn-primary wf-second-button" href="about.html">See the menu</a></div>`,
+        `<div class="flex flex-wrap gap-3">${first}<a class="btn btn-outline btn-primary wf-second-button" href="about.html">See the menu</a></div>`,
       );
       // Centred: the row too.
       expect(
@@ -926,7 +926,7 @@ describe("renderNodesToHtml", () => {
             secondButtonLink: "about",
           }),
         ),
-      ).toContain('<div class="flex flex-wrap gap-3 justify-center">');
+      ).toContain('<div class="flex flex-wrap justify-center gap-3">');
       expect(
         buttonsOf(
           heroIn("centred", { secondButtonLabel: "See the menu", secondButtonLink: "about" }),

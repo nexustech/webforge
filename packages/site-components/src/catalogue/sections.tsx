@@ -144,7 +144,11 @@ const hero = defineSection({
         firstButton
       ) : (
         <div
-          className={`flex flex-wrap gap-3 ${aligned === "text-center" ? "justify-center" : ""}`}
+          className={
+            aligned === "text-center"
+              ? "flex flex-wrap justify-center gap-3"
+              : "flex flex-wrap gap-3"
+          }
         >
           {firstButton}
           <ButtonLink
