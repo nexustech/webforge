@@ -1264,6 +1264,21 @@
             }
           ]
         },
+        "background": {
+          "kind": "select",
+          "label": "Background",
+          "help": "On every page: its own band, or the picture or colour the page's first section opens with.",
+          "options": [
+            {
+              "label": "Its own",
+              "value": "own"
+            },
+            {
+              "label": "The first section's",
+              "value": "section"
+            }
+          ]
+        },
         "sticky": {
           "kind": "toggle",
           "label": "Stay at the top when scrolling"
@@ -1327,6 +1342,7 @@
         "button": false,
         "buttonLabel": "Book now",
         "contentWidth": "full",
+        "background": "own",
         "sticky": false,
         "scrollStyle": "shadow",
         "sectionHighlight": true

@@ -354,10 +354,24 @@ export function fieldsFor(target: FieldTarget, options: FieldsOptions): EditPane
             });
       return [listField(name, field, list, node.props[name], itemHidden)];
     }
-    const spec = specOf(field);
-    if (spec === undefined) {
+    const specified = specOf(field);
+    if (specified === undefined) {
       return [];
     }
+    // Only the options it offers with these values (HH-1: a joined Header's scroll styles); a value
+    // not offered shows as the first one that is, as the element draws it.
+    const offered = field.kind === "select" ? field.offered?.(values) : undefined;
+    const spec =
+      offered === undefined || specified.kind !== "select"
+        ? specified
+        : {
+            ...specified,
+            options: specified.options.filter((option) => offered.includes(option.value)),
+          };
+    const asOffered = (value: unknown) =>
+      offered === undefined || (typeof value === "string" && offered.includes(value))
+        ? value
+        : offered[0];
     // What it draws with (its own value, else its kind's look, else the default), and what it
     // sets itself: only that is set for a device or reset per device (3.12).
     const own = node.props[name];
@@ -378,7 +392,7 @@ export function fieldsFor(target: FieldTarget, options: FieldsOptions): EditPane
           name,
           group: fieldGroupOf(field),
           // A gradient's end without a colour shows the one it draws with (CT-10).
-          value: shownValueOf(field, responsive ? valueAt(stored, breakpoint) : stored),
+          value: asOffered(shownValueOf(field, responsive ? valueAt(stored, breakpoint) : stored)),
           ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
           ...(field.alsoCalled === undefined ? {} : { alsoCalled: field.alsoCalled }),
           ...(help === undefined ? {} : { help }),

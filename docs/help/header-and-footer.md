@@ -21,12 +21,31 @@ The **Header**, at the top, and the **Footer**, at the bottom, are the same on e
 - **Logo size:** _Small_, _Medium_ or _Large_. On phones the logo stays no taller than the menu button, so the Header stays one line high.
 - **Layout:** _Name left, menu right_, _Centred_ or _Name left, menu centred_.
 - **Show a button:** a button such as "Book now" or "Get a quote", in any layout: on the right on a computer, and last in the menu on phones. Give it its **Button text** and **Button link**. If your menu also links to the same page, hide that link in the [Menu](pages.md#the-menu), so it isn't there twice.
+- **Background** (in the **Style** tab): _Its own_, a band above the page, or _The first section's_. With _The first section's_, the Header has no band of its own: on every page it sits on the picture, gradient or colour the page's first section opens with, and its menu takes that section's text colour. The section makes room for it, so its title is never under the menu. See [The Header on the first section](#the-header-on-the-first-section).
 - **Stay at the top when scrolling:** keeps the Header in view as visitors scroll.
-- **Change style when scrolling** (with _Stay at the top_ on): _Shadow_, _Shrink_, _Solid background_, _Hide when scrolling down_ or _None_. _Hide when scrolling down_ slides the Header out of view as visitors scroll down the page, leaving more of a phone's screen for your content, and brings it back as soon as they scroll up. It stays in view at the top of the page, while the menu on phones is open, and for visitors moving around with the keyboard. For visitors who ask their device for less motion it goes and comes back without sliding.
+- **Change style when scrolling** (with _Stay at the top_ on): _Shadow_, _Shrink_, _Solid background_, _Hide when scrolling down_ or _None_. _Hide when scrolling down_ slides the Header out of view as visitors scroll down the page, leaving more of a phone's screen for your content, and brings it back as soon as they scroll up. It stays in view at the top of the page, while the menu on phones is open, and for visitors moving around with the keyboard. For visitors who ask their device for less motion it goes and comes back without sliding. With the Background at _The first section's_, only _Shadow_, _Shrink_ and _Hide when scrolling down_: the Header turns solid anyway as the page scrolls.
 - **Highlight the section in view** (when your menu links to a section): as visitors scroll, the menu lights up the section they're looking at. On unless you turn it off. See [Menu links to sections](links.md#menu-links-to-sections).
 - **Content width** (in the **Style** tab): _Narrow_, _Medium_, _Wide_ or _Full_, as for a [section](sections.md). It sets how wide the name, menu and button spread on a computer: at _Wide_ they line up with a Wide section's content. The Header's background, its style when scrolling and the menu on phones still fill the page's width, and phones look the same at every width. New sites start at _Wide_; a site made before this setting keeps _Full_, so nothing moves until you change it.
 
 The Header's menu lists your pages. Change it in the [Site panel's Menu](pages.md#the-menu).
+
+### The Header on the first section
+
+With the Header's **Background** at _The first section's_, each page follows its own first section:
+
+| The page opens with                                | The Header shows                                   |
+| -------------------------------------------------- | -------------------------------------------------- |
+| A Hero with _Image behind the text_                | The menu on the picture, in the Hero's text colour |
+| A section in a colour of its own, or _Reversed_    | That colour, with no line between the two          |
+| A section in the page's own colour                 | The same as with its own background                |
+| No sections, or the Header hidden in Page Settings | Nothing changes                                    |
+
+- It applies on every page, as every Header setting does. If you move another section to the top, or delete the Hero, the Header follows the new first section. It's one step to undo.
+- A Header that stays at the top turns solid, in the page's colours, once the page has scrolled a little. If you chose _Solid background_ or _None_ before, it shows as _Shadow_, and your choice comes back if you change the Background to _Its own_. A Header that doesn't stay at the top scrolls away with the section.
+- On phones the menu's button sits on the section, and the opened menu is solid. The [Announcement bar](#announcement-bar) stays a solid band above the Header.
+- The menu is as easy to read as the section's own text: if the section's text is hard to read on its picture, {appName} warns you, and a stronger overlay helps both.
+- A Hero that opens its page has a **Header** line at the top of its **Style** tab's Options: **Change in the Header** selects the Header.
+- A site made before this setting keeps _Its own_, so nothing moves until you change it.
 
 On phones the menu folds into a button. To see and edit it open, view Mobile, select the Header and turn on **Show mobile menu**.
 

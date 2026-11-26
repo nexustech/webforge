@@ -2,6 +2,7 @@ import { DOCUMENT_EXTENSIONS, isNodeDoc, type NodeDoc, type SiteSnapshot } from 
 import {
   type ComponentLibrary,
   inFooterColumn,
+  joinedHeaderOf,
   renderNodesToHtml,
   withPageHeading,
 } from "@webforge/site-components";
@@ -92,10 +93,13 @@ export function itemHtml(
   // and its first section title is the page's main heading where it has none of its own (#1173).
   const first = regions.content.find((each) => each.props.hidden !== true)?.props.id;
   const shown = withPageHeading(regions, library, context);
+  // The Header on its first section (HH-1), which both draw (`renderPage`).
+  const joined = joinedHeaderOf(regions, library, context.looks);
+  const placed = joined === undefined ? shown : { ...shown, joinedHeader: joined };
   const html = renderNodesToHtml(
     [node],
     library,
-    typeof first === "string" ? { ...shown, firstSection: first } : shown,
+    typeof first === "string" ? { ...placed, firstSection: first } : placed,
     // A section in a Footer column in its column form, as the export draws it there (5.39).
     { inFooterColumn: inFooterColumn(regions.footer, nodeId) },
   );

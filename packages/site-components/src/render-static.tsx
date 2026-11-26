@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { FooterColumnContext } from "./column-form.js";
+import { joinedHeaderOf } from "./joined-header.js";
 import {
   type ComponentDef,
   type ComponentLibrary,
@@ -280,13 +281,16 @@ export function renderPage(
 ): RenderedPage {
   const first = regions.content.find((node) => node.props.hidden !== true)?.props.id;
   // A page with no main heading of its own writes its first section title as one (#1173).
-  const shown = withPageHeading(regions, library, context);
+  const { joinedHeader: _was, ...shown } = withPageHeading(regions, library, context);
+  // The Header on its first section (HH-1): both draw it.
+  const joined = joinedHeaderOf(regions, library, context.looks);
+  const placed = joined === undefined ? shown : { ...shown, joinedHeader: joined };
   return {
-    header: renderNodesToHtml(regions.header, library, shown),
+    header: renderNodesToHtml(regions.header, library, placed),
     main: renderNodesToHtml(
       regions.content,
       library,
-      typeof first === "string" ? { ...shown, firstSection: first } : shown,
+      typeof first === "string" ? { ...placed, firstSection: first } : placed,
     ),
     footer: renderNodesToHtml(regions.footer, library, shown),
   };

@@ -12,6 +12,12 @@
  */
 @source inline("{,md:,lg:,max-md:,md:max-lg:,max-lg:}{p,m}{x,y,t,r,b,l}-{0,4,8,16,24,32}");
 /*
+ * The top padding of a section a Header is joined to (HH-1), its own and the Header's height, which
+ * boxClasses builds from the same sizes; the test above checks these too.
+ */
+@source inline("{,md:,lg:,max-md:,md:max-lg:,max-lg:}pt-[calc(var(--wf-header-h)+var(--spacing)*{0,4,8,16,24,32})]");
+@source inline("{,md:,lg:,max-md:,md:max-lg:,max-lg:}pt-(--wf-header-h)");
+/*
  * The Columns layouts per device (2.9), which responsiveClasses prefixes with md: and lg:; a test
  * (src/storybook-css.test.ts) checks every class it can give is here.
  */

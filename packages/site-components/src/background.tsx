@@ -152,7 +152,7 @@ export function overlayLayer(values: BackgroundValues): {
 }
 
 /** Whether `values` place a background image. */
-const hasBackground = (values: BackgroundValues) =>
+export const hasBackground = (values: BackgroundValues) =>
   placedImage(values.backgroundImage) !== undefined;
 
 /**
@@ -161,8 +161,18 @@ const hasBackground = (values: BackgroundValues) =>
  */
 export function backgroundClasses(values: BackgroundValues): string {
   if (!hasBackground(values)) return "";
-  const { color } = overlayOf(values);
-  return `relative isolate overflow-hidden${color === "neutral" ? " text-neutral-content" : ""}`;
+  const text = backgroundText(values);
+  return `relative isolate overflow-hidden${text === undefined ? "" : ` text-${text}`}`;
+}
+
+/**
+ * The text colour a section's background image gives its text, as a colour ref: over the neutral
+ * colour, neutral's content colour; `undefined` without an image, or over the base colour.
+ */
+export function backgroundText(values: BackgroundValues): "neutral-content" | undefined {
+  return hasBackground(values) && overlayOf(values).color === "neutral"
+    ? "neutral-content"
+    : undefined;
 }
 
 /**

@@ -6,7 +6,7 @@ import {
 } from "@webforge/model";
 import { siteLibrary } from "../catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
-import { renderNodesToHtml } from "../render-static.js";
+import { renderNodesToHtml, renderPage } from "../render-static.js";
 import type { RenderContext, ResolvedImage } from "../schema.js";
 
 /**
@@ -152,6 +152,27 @@ const storyContext: RenderContext = {
     { network: "custom", url: "https://mastodon.social/@rosasbakery" },
   ],
 };
+
+/**
+ * A page as the export draws it (ADR 0005): its `header` over its `content`, through `renderPage`,
+ * in the exported page's column. So a Header joined to the page's first section (HH-1) is drawn on
+ * it, and the section makes room for it, as on a site.
+ */
+export function SitePage({
+  header,
+  content,
+}: {
+  readonly header: readonly NodeDoc[];
+  readonly content: readonly NodeDoc[];
+}) {
+  const page = renderPage({ header, content, footer: [] }, siteLibrary, storyContext);
+  return (
+    <div
+      className="flex flex-col bg-base-100 text-base-content"
+      dangerouslySetInnerHTML={{ __html: `${page.header}<main id="main">${page.main}</main>` }}
+    />
+  );
+}
 
 /**
  * `nodes` as an exported page shows them (ADR 0005): rendered by the export's own renderer, so a

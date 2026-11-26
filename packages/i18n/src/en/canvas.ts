@@ -131,6 +131,12 @@ export const canvas = {
   "editPanel.empty": "Select an element to edit it",
   // While several elements are selected (1.31).
   "editPanel.several": "{count} elements selected",
+  // A Hero that opens its page leads to the Header's Background, set for every page (HH-1).
+  "editPanel.headerBackground": "Header",
+  "editPanel.headerBackground.own": "The Header has a band of its own above this section.",
+  "editPanel.headerBackground.joined":
+    "The Header sits on this section, as it does on each page's first section.",
+  "editPanel.headerBackground.change": "Change in the Header",
   // Why several selected elements can't be changed at once (1.31).
   "bulk.shared":
     "Elements of the shared Header or Footer, or of a shared section, are changed one at a time.",

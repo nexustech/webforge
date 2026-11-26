@@ -114,6 +114,12 @@ export type ComponentDef = {
    * its text over a background image's overlay (2.26) reads it against that.
    */
   readonly sectionText?: (values: Readonly<Record<string, unknown>>) => string | undefined;
+  /**
+   * The theme colour a section's frame fills it with, from its values: a colour role, such as a
+   * Hero's `base-200` beside its picture, or `undefined` for none, where the page's shows. A Header
+   * joined to the section reads it (HH-1): on the page's own colours, it keeps its band.
+   */
+  readonly sectionGround?: (values: Readonly<Record<string, unknown>>) => string | undefined;
   readonly render: (props: ComponentRenderProps) => ReactNode;
   /**
    * Scripts the exported site must include when this component is used: always, or as its values
@@ -501,14 +507,26 @@ export const BOX_CLASS_SAFELIST: readonly string[] = (() => {
     ...BREAKPOINT_PREFIX.map(([, prefix]) => prefix),
     ...Object.values(DEVICE_RANGE),
   ]);
-  return [...prefixes].flatMap((prefix) =>
-    (["p", "m"] as const).flatMap((kind) =>
+  return [...prefixes].flatMap((prefix) => [
+    ...(["p", "m"] as const).flatMap((kind) =>
       ["x", "y", "t", "r", "b", "l"].flatMap((side) =>
         sizes.map((size) => `${prefix}${kind}${side}-${size}`),
       ),
     ),
-  );
+    // A joined Header's first section (HH-1), which a page's content gets as it changes.
+    ...sizes.map((size) => `${prefix}${underHeaderPadding(size)}`),
+    `${prefix}pt-(--wf-header-h)`,
+  ]);
 })();
+
+/**
+ * The top padding of the section a Header is joined to (HH-1): its own, `size` Tailwind units, and
+ * the Header's height, `--wf-header-h`, which the Header gives the page (an estimate for its layout,
+ * then its real height once the page's script runs), so the section's title is never under the menu.
+ */
+function underHeaderPadding(size: number): string {
+  return `pt-[calc(var(--wf-header-h)+var(--spacing)*${size})]`;
+}
 
 /**
  * The classes for a `box` field (1.32): `pl-`, `pr-`, `pt-` and `pb-` (or `m…` for margin), as
@@ -517,6 +535,9 @@ export const BOX_CLASS_SAFELIST: readonly string[] = (() => {
  *   `py-16`. A side with no default gets no class, so it keeps the spacing around it: an
  *   element's margin is otherwise its section's space between elements.
  * - `sides` limits the sides read, e.g. top and bottom for a margin whose sides are `auto`.
+ *
+ * - `underHeader` adds the Header's height to the top padding, for the section a Header is joined
+ *   to (HH-1, {@link underHeaderPadding}).
  *
  * The classes of a value set per device are mobile first, like {@link responsiveClasses}, while
  * every device gives each side a class. Otherwise each device's classes apply on that device only
@@ -527,6 +548,7 @@ export function boxClasses(
   property: "padding" | "margin",
   defaults: Partial<Record<BoxSide, number>> = {},
   sides: readonly BoxSide[] = BOX_SIDES,
+  underHeader = false,
 ): string {
   const kind = property === "padding" ? "p" : "m";
   const units = BOX_UNITS[kind];
@@ -544,11 +566,18 @@ export function boxClasses(
         return [short, size] as const;
       });
       const [first, second] = sizes;
+      const plusHeader = underHeader && kind === "p" && axis === "y";
       const classes =
-        sizes.length === 2 && first?.[1] !== undefined && first[1] === second?.[1]
+        sizes.length === 2 && first?.[1] !== undefined && first[1] === second?.[1] && !plusHeader
           ? [`${kind}${axis}-${first[1]}`]
           : sizes.flatMap(([short, size]) =>
-              size === undefined ? [] : [`${kind}${short}-${size}`],
+              size === undefined
+                ? []
+                : [
+                    plusHeader && short === "t"
+                      ? underHeaderPadding(size)
+                      : `${kind}${short}-${size}`,
+                  ],
             );
       return { breakpoint, prefix, classes, joined: classes.join(" ") };
     });
