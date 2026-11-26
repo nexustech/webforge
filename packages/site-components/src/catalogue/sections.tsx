@@ -17,6 +17,8 @@ import { BodyText, ButtonLink, SectionIntro, SectionLead, SectionTitle } from ".
 
 const ALIGNMENTS = ["centre", "left"] as const;
 const HERO_LAYOUTS = ["split", "centred", "background", "minimal"] as const;
+/** Where the Hero's text sits on its picture, from top to bottom (HH-6). */
+const HERO_TEXT_PLACES = ["middle", "bottom"] as const;
 const TEXT_IMAGE_LAYOUTS = ["imageRight", "imageLeft"] as const;
 const CTA_LAYOUTS = ["banner", "split"] as const;
 const FAQ_LAYOUTS = ["accordion", "columns", "open"] as const;
@@ -57,9 +59,11 @@ const hero = defineSection({
     label: t(`field.heroLayout.${value}`),
     value,
     // Text only has no image; centred is always centred (#311). Its overlay shows only over its
-    // picture behind the text (`pictureBehind`, HH-3).
-    ...(value === "minimal" ? { hides: ["image"] as const } : {}),
-    ...(value === "centred" ? { hides: ["alignment"] as const } : {}),
+    // picture behind the text (`pictureBehind`, HH-3); where its text sits, only in that layout
+    // (HH-6).
+    ...(value === "minimal" ? { hides: ["image", "textPlace"] as const } : {}),
+    ...(value === "centred" ? { hides: ["alignment", "textPlace"] as const } : {}),
+    ...(value === "split" ? { hides: ["textPlace"] as const } : {}),
   })),
   fields: {
     title: { kind: "text", label: t("field.title"), inline: true },
@@ -72,6 +76,15 @@ const hero = defineSection({
       options: ALIGNMENTS.map((value) => ({ label: t(`field.alignment.${value}`), value })),
     },
     image: { kind: "media", label: t("field.image") },
+    textPlace: {
+      kind: "select",
+      label: t("field.heroTextPlace"),
+      help: t("field.heroTextPlace.help"),
+      options: HERO_TEXT_PLACES.map((value) => ({
+        label: t(`field.heroTextPlace.${value}`),
+        value,
+      })),
+    },
   },
   // Its layouts' widths before 3.21 were Wide, Medium (centred) and Narrow (text only); format 10
   // keeps those saved then.
@@ -80,6 +93,7 @@ const hero = defineSection({
     text: t("starter.heroText"),
     buttonLabel: t("starter.heroButton"),
     alignment: "centre",
+    textPlace: "middle",
     contentWidth: "wide",
     // Strong, the step nearest the 70% every Hero had, lighter so the picture shows (HH-3); in the
     // Neutral colour it had, so its text keeps its colour. Format 21 keeps 70% for those saved.
@@ -91,7 +105,7 @@ const hero = defineSection({
   // would keep the overlay inside the padding.
   frame: (values) =>
     values.variant === "background"
-      ? `relative flex min-h-[28rem] items-center justify-center overflow-hidden ${overlayLayer(values).ground}`
+      ? `relative flex min-h-[28rem] ${values.textPlace === "bottom" ? "items-end" : "items-center"} justify-center overflow-hidden ${overlayLayer(values).ground}`
       : values.variant === "minimal"
         ? "bg-base-200"
         : "hero bg-base-200",

@@ -40,3 +40,32 @@ test("draws each Hero's Overlay at its strength, in its colour, with readable te
   expect(before.alpha).toBeCloseTo(0.7, 2);
   expect(before.text).not.toBe(before.body);
 });
+
+test("sets a Hero's text at the bottom of its picture, inside its padding (HH-6)", async ({
+  page,
+}) => {
+  await page.goto(pathToFileURL(join(HERO_OVERLAY_SITE_DIR, "index.html")).href);
+  const middle = page.locator(".site-hero").nth(0);
+  const bottom = page.locator(".site-hero").nth(2);
+
+  const gap = async (hero: typeof middle) =>
+    hero.evaluate((section) => {
+      const copy = section.querySelector(":scope > .hero-content");
+      if (copy === null) return { below: Number.NaN, above: Number.NaN, padding: Number.NaN };
+      const outer = section.getBoundingClientRect();
+      const inner = copy.getBoundingClientRect();
+      return {
+        below: outer.bottom - inner.bottom,
+        above: inner.top - outer.top,
+        padding: Number.parseFloat(getComputedStyle(section).paddingBottom),
+      };
+    });
+
+  // In the middle: as much room above the text as below.
+  const centred = await gap(middle);
+  expect(Math.abs(centred.above - centred.below)).toBeLessThan(2);
+  // At the bottom: the section's padding below it, and the rest of the picture above.
+  const low = await gap(bottom);
+  expect(low.below).toBeCloseTo(low.padding, 0);
+  expect(low.above).toBeGreaterThan(low.below);
+});

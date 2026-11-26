@@ -929,6 +929,27 @@ describe("renderNodesToHtml", () => {
       );
     });
 
+    it("sets its text at the middle of the picture, or at the bottom with its padding (HH-6)", () => {
+      const frame = (html: string) => /<section class="(site-hero [^"]+)"/.exec(html)?.[1] ?? "";
+
+      // Middle: the frame as every Hero had it before HH-6.
+      expect(frame(heroIn("background"))).toContain(
+        "site-hero relative flex min-h-[28rem] items-center justify-center overflow-hidden",
+      );
+      expect(frame(heroIn("background", { textPlace: "middle" }))).toBe(
+        frame(heroIn("background")),
+      );
+      // Bottom: the text at the frame's end, inside the section's padding, at either alignment.
+      for (const alignment of ["left", "centre"]) {
+        const bottom = frame(heroIn("background", { textPlace: "bottom", alignment }));
+        expect(bottom).toContain("items-end justify-center");
+        expect(bottom).not.toContain("items-center");
+        expect(bottom).toMatch(/(^|\s)py-/);
+      }
+      // Only over its picture: the other layouts' frames are as they were.
+      expect(frame(heroIn("split", { textPlace: "bottom" }))).toBe(frame(heroIn("split")));
+    });
+
     it("draws its Overlay at the strength and in the colour chosen, Strong Neutral when new (HH-3)", () => {
       const overlay = (html: string) => /class="absolute inset-0 (bg-[^"]+)"/.exec(html)?.[1];
       const text = (html: string) => /hero-content relative max-w-\[74rem\] (\S+)/.exec(html)?.[1];
