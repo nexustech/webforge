@@ -96,6 +96,9 @@ test.describe("selection chrome", () => {
   });
 
   test("its buttons work while the element's text is being edited, the format menu with them (LF-3)", async () => {
+    // Quarantined: failed once on Linux, the Text still there after Delete, and passed on a re-run
+    // (#1462). Fixed or deleted within a week, under the flaky-test rule.
+    test.fixme(true, "flaky on Linux CI: #1462");
     // Clicking the text edits it: the bar holds the format menu too.
     await canvas().getByText(STARTER_TEXT).click();
     await expect(quickAction("Bold")).toBeVisible();
