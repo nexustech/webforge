@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, MOTION_TAG, waitForCanvas } from "./launch.js";
 
 // A Whole screen Hero on the canvas (HH-4): as tall as the part of the page in view, less the
 // Header's band, at each device view, and steady. The canvas's frame grows with its page, so a
@@ -74,7 +74,10 @@ const sizes = () =>
       };
     });
 
-test("draws a Whole screen Hero as tall as the canvas shows, less the Header, and steady (HH-4)", async () => {
+// Motion on until #1498: with motion off it fails in CI only (Linux).
+test("draws a Whole screen Hero as tall as the canvas shows, less the Header, and steady (HH-4)", {
+  tag: MOTION_TAG,
+}, async () => {
   await left().getByRole("treeitem", { name: /^Hero/ }).click();
   await expect(right().getByRole("heading", { name: "Hero", exact: true })).toBeVisible();
   await right().getByRole("tab", { name: "Style" }).click();
