@@ -203,8 +203,8 @@ function lookChange(
 
 /**
  * Theme Studio's Components (3.12, CT-1): the chosen kind's look, so a kind is styled without
- * selecting one on a page. A look is the Appearance group's fields, here in columns as wide as the
- * dialog (CT-11); its controls change a draft, which the preview strip above draws, until **Apply
+ * selecting one on a page. A look is the Appearance group's fields, in one column with their
+ * groups' headings in view (H3); its controls change a draft, which the preview strip above draws, until **Apply
  * Changes** in the bar below writes it as one step (4.10), or **Discard** drops it. A Button's look
  * also shows the theme's button tokens, and Card the card style, which stay where they are in the
  * theme and change at once (product/11, 3.12 note 5).
@@ -275,7 +275,8 @@ export function StudioComponents({
           <EditPanel
             heading={t("theme.components.look", { item: shown.label })}
             single
-            columns
+            stickyHeadings
+            scrolls={false}
             itemKey={shown.type}
             fields={fields}
             onChange={(name, value) =>

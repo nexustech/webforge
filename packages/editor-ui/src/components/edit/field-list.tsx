@@ -125,8 +125,8 @@ type FieldListProps = Omit<EditPanelProps, "heading" | "fields"> & {
   onToggle(key: string): void;
   /** Opens every group, or closes them all if all are open (Ctrl/Cmd + Enter). */
   onToggleAll(keys: readonly string[]): void;
-  /** The groups in columns, a long one going on in the next, each field kept whole (CT-11). */
-  readonly columns: boolean;
+  /** Each group's heading kept in view while its fields are, in a dialog (H3). */
+  readonly stickyHeadings: boolean;
   /** The group copied last, from any element (SP-7). */
   readonly copied: CopiedGroup | null;
   onCopy(copied: CopiedGroup): void;
@@ -151,7 +151,7 @@ export function FieldList({
   onToggleAll,
   copied,
   onCopy,
-  columns,
+  stickyHeadings,
 }: FieldListProps) {
   if (fields.length === 0) {
     return (
@@ -163,7 +163,13 @@ export function FieldList({
   const groups = optionGroupsOf(tab, fields);
   const all = groups.map(({ key }) => key);
   return (
-    <div className={cn("pb-2", columns ? "columns-[37rem] gap-x-4" : "flex flex-col")}>
+    <div
+      className={cn(
+        "flex flex-col pb-2",
+        // The headings' height, for the scroller's padding that keeps the focus clear of them.
+        stickyHeadings && "[--field-group-heading:1.75rem]",
+      )}
+    >
       {groups.map(({ key, id, label: name, fields: inGroup }, index) => {
         const actions = groupActions?.(id) ?? [];
         // Searching shows every group with a match open.
@@ -211,8 +217,10 @@ export function FieldList({
             <div
               className={cn(
                 "group/header flex items-center gap-0.5 pr-1.5 hover:bg-hover",
-                // Its name stays with its first field.
-                columns && "break-after-avoid",
+                // In view at the top while its fields are, over them (H3); opaque, in the panel's
+                // colour, as they pass under it.
+                stickyHeadings &&
+                  "sticky top-0 z-10 bg-panel shadow-[0_1px_0_var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-panel),var(--color-foreground)_6%)]",
               )}
             >
               <ContextMenu>
@@ -294,13 +302,7 @@ export function FieldList({
               )}
             </div>
             {open ? (
-              <div
-                id={bodyId}
-                className={cn(
-                  "flex flex-col gap-1.5 px-3 pt-1 pb-2.5",
-                  columns && "*:break-inside-avoid",
-                )}
-              >
+              <div id={bodyId} className="flex flex-col gap-1.5 px-3 pt-1 pb-2.5">
                 {inGroup.map((field) => (
                   <FieldRow
                     key={field.name}

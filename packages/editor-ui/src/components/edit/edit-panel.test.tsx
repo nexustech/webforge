@@ -92,7 +92,7 @@ describe("EditPanel", () => {
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
-  it("flows its groups into columns only when asked, each field kept whole (CT-11)", () => {
+  it("keeps its groups' headings in view, in one column, only when asked (H3)", () => {
     const grouped: EditPanelField[] = [
       { ...(fields[0] as EditPanelField), optionGroup: { id: "a", label: "First" } },
       { name: "more", kind: "text", label: "More", group: "content", value: "" },
@@ -100,27 +100,44 @@ describe("EditPanel", () => {
     const { rerender } = render(
       <EditPanel heading="Heading" single fields={grouped} onChange={vi.fn()} onCommit={vi.fn()} />,
     );
-    const groupOf = (name: string) =>
-      screen.getByRole("button", { name }).closest(".border-b") as HTMLElement;
-    expect(groupOf("First").parentElement?.className).not.toContain("columns-");
+    const header = () => screen.getByRole("button", { name: "First" }).parentElement;
+    const scroller = () => screen.getByRole("tabpanel");
+    expect(header()?.className).not.toContain("sticky");
+    expect(scroller().className).toContain("overflow-auto");
+    expect(scroller().className).not.toContain("scroll-pt-");
 
     rerender(
       <EditPanel
         heading="Heading"
         single
-        columns
+        stickyHeadings
         fields={grouped}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
     );
-    expect(groupOf("First").parentElement?.className).toContain("columns-[37rem]");
-    const header = screen.getByRole("button", { name: "First" }).parentElement;
-    expect(header?.className).toContain("break-after-avoid");
-    const body = document.getElementById(
-      screen.getByRole("button", { name: "First" }).getAttribute("aria-controls") ?? "",
+    // One column, each heading at the top of what scrolls, opaque; the focus scrolls clear of it.
+    const list = header()?.closest(".border-b")?.parentElement;
+    expect(list?.className).toContain("flex-col");
+    expect(list?.className).not.toContain("columns-");
+    expect(header()?.className).toContain("sticky top-0");
+    expect(header()?.className).toContain("bg-panel");
+    expect(scroller().className).toContain("scroll-pt-(--field-group-heading)");
+
+    // Without scrolling of its own, its place scrolls it: no scroller in it, nor its height.
+    rerender(
+      <EditPanel
+        heading="Heading"
+        single
+        stickyHeadings
+        scrolls={false}
+        fields={grouped}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
     );
-    expect(body?.className).toContain("*:break-inside-avoid");
+    expect(scroller().className).not.toContain("overflow-auto");
+    expect(header()?.className).toContain("sticky top-0");
   });
 
   it("shows the Content tab only in Content mode, without Style or Advanced (M3)", () => {

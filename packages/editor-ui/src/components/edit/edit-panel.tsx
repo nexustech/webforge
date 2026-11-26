@@ -57,7 +57,8 @@ export function EditPanel({
   styleAction,
   headingHidden = false,
   advancedFooter,
-  columns = false,
+  stickyHeadings = false,
+  scrolls = true,
 }: EditPanelProps) {
   const idPrefix = useId();
   // The option group copied last (SP-7): kept while other elements are selected, to paste there.
@@ -128,7 +129,11 @@ export function EditPanel({
   ) => (
     <TabsContent
       value={group}
-      className="overflow-auto"
+      className={cn(
+        scrolls && "overflow-auto",
+        // A field the focus moves to scrolls clear of its group's heading (WCAG 2.4.11, H3).
+        scrolls && stickyHeadings && "scroll-pt-(--field-group-heading)",
+      )}
       onKeyDown={(event) => resetFromKeys(event, groupFields)}
     >
       {top}
@@ -147,7 +152,7 @@ export function EditPanel({
         onToggleAll={toggleAll}
         copied={copied}
         onCopy={setCopied}
-        columns={columns}
+        stickyHeadings={stickyHeadings}
         {...(onResetToDefault === undefined ? {} : { onResetToDefault })}
         {...(onPaste === undefined ? {} : { onPaste })}
         {...(groupActions === undefined ? {} : { groupActions })}
@@ -158,7 +163,7 @@ export function EditPanel({
   );
   return (
     <FieldRenderersProvider renderers={renderers}>
-      <div className="flex h-full flex-col">
+      <div className={cn("flex flex-col", scrolls && "h-full")}>
         {headingHidden ? null : (
           <div className="flex items-center gap-1 px-3 pt-2">
             <h2 className="min-w-0 flex-1 truncate text-lg font-semibold text-foreground">
