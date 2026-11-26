@@ -329,6 +329,7 @@
           "type": "Header",
           "props": {
             "id": "header",
+            "background": "section",
             "contentWidth": "wide",
             "siteName": "Rowan Hale Photography",
             "bindings": {
@@ -395,6 +396,7 @@
                 "variant": "background",
                 "colors": "inverse",
                 "alignment": "centre",
+                "height": "tall",
                 "title": "Light, land and people",
                 "text": "Landscape and portrait photography from the north coast.",
                 "buttonLabel": "See the portfolio",
