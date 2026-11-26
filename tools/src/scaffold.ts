@@ -1277,7 +1277,7 @@ export function main(
     const result = scaffold(plan, root, format);
     for (const path of result.written) process.stdout.write(`wrote ${path}\n`);
     for (const path of result.changed) process.stdout.write(`changed ${path}\n`);
-    process.stdout.write(`Next: ${result.next.join(" ")} Then pnpm check.\n`);
+    process.stdout.write(`Next: ${result.next.join(" ")} Then pnpm check:quick.\n`);
     if (!result.formatted) {
       process.stderr.write("formatting failed: run pnpm format\n");
       process.exitCode = 1;

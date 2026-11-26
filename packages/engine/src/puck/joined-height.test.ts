@@ -14,10 +14,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** A joined Header `height` px tall, added to the canvas's document. */
-function addHeader(height: number): HTMLElement {
+/**
+ * A joined Header `height` px tall, added to the canvas's document; or one with its own band over a
+ * first section filling the window (`data-wf-height`, HH-4).
+ */
+function addHeader(height: number, mark = "data-wf-joined"): HTMLElement {
   const header = document.createElement("header");
-  header.setAttribute("data-wf-joined", "");
+  header.setAttribute(mark, "");
   Object.defineProperty(header, "offsetHeight", { value: height, configurable: true });
   document.body.append(header);
   return header;
@@ -60,5 +63,21 @@ describe("followJoinedHeight (HH-1)", () => {
     await settle();
     stop();
     expect(height()).toBe("");
+  });
+
+  it("follows a Header with its own band over a first section filling the window too (HH-4)", async () => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const stop = followJoinedHeight(document);
+    addHeader(64, "data-wf-height");
+    await settle();
+    expect(height()).toBe("64px");
+    stop();
   });
 });
