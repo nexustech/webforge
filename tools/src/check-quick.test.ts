@@ -1,16 +1,21 @@
+import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { TestSpecification, Vitest } from "vitest/node";
 import {
   CONFIGS,
+  changedSinceMain,
   nulSeparated,
   planQuickCheck,
   readsFromDisk,
   runQuickCheck,
+  type StartVitest,
   type Steps,
   testFilesIn,
+  vitestRun,
   workspacesIn,
 } from "./check-quick.js";
 
@@ -209,5 +214,180 @@ describe("runQuickCheck (#1472)", () => {
     const { run, calls } = steps(["pnpm-lock.yaml"], { tests: false });
     expect(await runQuickCheck(run)).toBe(false);
     expect(calls).toHaveLength(1);
+  });
+});
+
+describe("changedSinceMain (#1472)", () => {
+  const made: string[] = [];
+  afterEach(() => {
+    for (const dir of made.splice(0)) rmSync(dir, TEST_DIR_REMOVAL);
+  });
+
+  /** Runs git in `root` as a test author, failing the test if it fails. */
+  const git = (root: string, ...args: string[]) => {
+    const result = spawnSync(
+      "git",
+      [
+        "-c",
+        "user.name=Test",
+        "-c",
+        "user.email=test@example.invalid",
+        "-c",
+        "core.hooksPath=",
+        ...args,
+      ],
+      { cwd: root, encoding: "utf8" },
+    );
+    if (result.status !== 0) throw new Error(result.stderr);
+    return result.stdout;
+  };
+
+  /** A repository with one commit on `branch`. */
+  function repository(branch: string): string {
+    const root = mkdtempSync(join(tmpdir(), "webforge-quick-git-"));
+    made.push(root);
+    git(root, "init", "-q", "-b", branch);
+    writeFileSync(join(root, "kept.ts"), "");
+    writeFileSync(join(root, "moved.ts"), "");
+    git(root, "add", ".");
+    git(root, "commit", "-q", "-m", "first");
+    return root;
+  }
+
+  it("lists what's committed, staged, unstaged and untracked since main, a move as both paths", () => {
+    const root = repository("main");
+    git(root, "switch", "-q", "-c", "work");
+    writeFileSync(join(root, "committed.ts"), "");
+    git(root, "add", "committed.ts");
+    git(root, "mv", "moved.ts", "moved to.ts");
+    git(root, "commit", "-q", "-m", "second");
+    writeFileSync(join(root, "kept.ts"), "changed");
+    writeFileSync(join(root, "staged.ts"), "");
+    git(root, "add", "staged.ts");
+    writeFileSync(join(root, "new file.ts"), "");
+
+    expect(changedSinceMain(root)).toEqual([
+      "committed.ts",
+      "kept.ts",
+      "moved to.ts",
+      "moved.ts",
+      "new file.ts",
+      "staged.ts",
+    ]);
+  });
+
+  it("says so when there's no main to compare with", () => {
+    const root = repository("trunk");
+    expect(() => changedSinceMain(root)).toThrow("No main or origin/main");
+  });
+});
+
+describe("vitestRun (#1472)", () => {
+  type Spec = Pick<TestSpecification, "moduleId"> & { project: { name: string } };
+  const spec = (moduleId: string, project = "app") => ({ moduleId, project: { name: project } });
+
+  /** A Vitest that finds `byGraph` and `byFilter` and whose run ends as `outcome` says. */
+  function fakeVitest(
+    byGraph: Spec[],
+    byFilter: Spec[],
+    outcome: { failed?: boolean; unhandled?: boolean } = {},
+  ) {
+    const calls = {
+      options: [] as unknown[],
+      globs: [] as (string[] | undefined)[],
+      ran: [] as Spec[][],
+      standalone: 0,
+      closed: 0,
+    };
+    const vitest = {
+      getRelevantTestSpecifications: async () => byGraph,
+      globTestSpecifications: async (filters?: string[]) => {
+        calls.globs.push(filters);
+        return filters === undefined ? [...byGraph, ...byFilter] : byFilter;
+      },
+      standalone: async () => {
+        calls.standalone += 1;
+      },
+      runTestSpecifications: async (specs: Spec[]) => {
+        calls.ran.push(specs);
+        return {
+          testModules: specs.map(() => ({ ok: () => outcome.failed !== true })),
+          unhandledErrors: outcome.unhandled === true ? [new Error("late")] : [],
+        };
+      },
+      close: async () => {
+        calls.closed += 1;
+      },
+    };
+    const start: StartVitest = async (options) => {
+      calls.options.push(options);
+      return vitest as unknown as Vitest;
+    };
+    return { start, calls };
+  }
+
+  const root = resolve("/repo");
+
+  it("runs the related tests and the filtered ones once each, without coverage", async () => {
+    const { start, calls } = fakeVitest([spec("a"), spec("b")], [spec("b"), spec("b", "other")]);
+    const log = vi.fn();
+    const passed = await vitestRun(
+      root,
+      "vitest.config.ts",
+      { related: ["x.ts"], extra: ["tools/"] },
+      start,
+      log,
+    );
+
+    expect(passed).toBe(true);
+    expect(calls.options[0]).toMatchObject({
+      related: [resolve(root, "x.ts")],
+      coverage: { enabled: false },
+      passWithNoTests: true,
+    });
+    expect(calls.options[0]).not.toHaveProperty("maxWorkers");
+    expect(calls.globs).toEqual([[resolve(root, "tools/")]]);
+    expect(calls.ran[0]?.map((each) => `${each.project.name}:${each.moduleId}`)).toEqual([
+      "app:a",
+      "app:b",
+      "other:b",
+    ]);
+    expect(calls.standalone).toBe(1);
+    expect(calls.closed).toBe(1);
+    expect(log).toHaveBeenCalledWith("[quick] vitest.config.ts: 3 test file(s).");
+  });
+
+  it("runs every test of the compiled config at its own worker limit", async () => {
+    const { start, calls } = fakeVitest([spec("a")], [spec("c")]);
+    expect(await vitestRun(root, "vitest.compiled.config.ts", { all: true }, start, vi.fn())).toBe(
+      true,
+    );
+    expect(calls.options[0]).toMatchObject({ maxWorkers: "50%" });
+    expect(calls.options[0]).not.toHaveProperty("related");
+    expect(calls.globs).toEqual([undefined]);
+    expect(calls.ran[0]).toHaveLength(2);
+  });
+
+  it("passes without a run when no test reaches the change, and closes Vitest", async () => {
+    const { start, calls } = fakeVitest([], []);
+    const log = vi.fn();
+    expect(await vitestRun(root, "vitest.config.ts", { related: [], extra: [] }, start, log)).toBe(
+      true,
+    );
+    expect(calls.globs).toEqual([]);
+    expect(calls.ran).toEqual([]);
+    expect(calls.closed).toBe(1);
+    expect(log).toHaveBeenCalledWith("[quick] vitest.config.ts: no test reaches the change.");
+  });
+
+  it.each([
+    ["a test fails", { failed: true }],
+    ["an error comes after the tests", { unhandled: true }],
+  ])("fails when %s", async (_, outcome) => {
+    const { start, calls } = fakeVitest([spec("a")], [], outcome);
+    expect(
+      await vitestRun(root, "vitest.config.ts", { related: ["a.ts"], extra: [] }, start, vi.fn()),
+    ).toBe(false);
+    expect(calls.closed).toBe(1);
   });
 });

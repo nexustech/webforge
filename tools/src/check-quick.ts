@@ -25,7 +25,7 @@
 import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { TestSpecification, Vitest } from "vitest/node";
+import type { createVitest as CreateVitest, TestSpecification, Vitest } from "vitest/node";
 
 /** A file a change can reach that no module imports, so every test runs, and why. */
 export const RUN_ALL_TRIGGERS: readonly { readonly match: RegExp; readonly why: string }[] = [
@@ -196,7 +196,7 @@ export async function runQuickCheck(steps: Steps): Promise<boolean> {
 }
 
 /** The files changed since HEAD left `origin/main` (or `main`), from `root`. */
-function changedSinceMain(root: string): string[] {
+export function changedSinceMain(root: string): string[] {
   const git = (...args: string[]) => {
     const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
     if (result.status !== 0) throw new Error(`git ${args.join(" ")}: ${result.stderr}`);
@@ -217,16 +217,29 @@ function changedSinceMain(root: string): string[] {
   ].toSorted();
 }
 
-/** Runs one config's tests through Vitest's API, without coverage: true when they passed. */
-async function vitestRun(
+/** What starts Vitest for a run: its Node API's `createVitest`, in test mode. */
+export type StartVitest = (
+  options: NonNullable<Parameters<typeof CreateVitest>[1]>,
+) => Promise<Vitest>;
+
+/** Vitest's own, loaded when first used. */
+const startVitest: StartVitest = async (options) =>
+  (await import("vitest/node")).createVitest("test", options);
+
+/**
+ * Runs one config's tests through Vitest's API (`start`), without coverage: true when they passed.
+ * `log` says how many test files it runs.
+ */
+export async function vitestRun(
   root: string,
   config: string,
   selection: Parameters<Steps["tests"]>[1],
+  start: StartVitest = startVitest,
+  log: (line: string) => void = console.log,
 ): Promise<boolean> {
-  const { createVitest } = await import("vitest/node");
   const related =
     "related" in selection ? selection.related.map((file) => resolve(root, file)) : [];
-  const vitest: Vitest = await createVitest("test", {
+  const vitest = await start({
     root,
     config: resolve(root, config),
     watch: false,
@@ -254,10 +267,10 @@ async function vitestRun(
       });
     }
     if (specifications.length === 0) {
-      console.log(`[quick] ${config}: no test reaches the change.`);
+      log(`[quick] ${config}: no test reaches the change.`);
       return true;
     }
-    console.log(`[quick] ${config}: ${specifications.length} test file(s).`);
+    log(`[quick] ${config}: ${specifications.length} test file(s).`);
     // The reporters, which only a run Vitest starts itself would set up.
     await vitest.standalone();
     const result = await vitest.runTestSpecifications(specifications);
