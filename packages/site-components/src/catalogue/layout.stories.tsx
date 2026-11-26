@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { within } from "storybook/test";
 import { SiteNodes } from "../stories/site-nodes.js";
 
 const meta = {
@@ -58,17 +59,33 @@ export const HeaderSticky: Story = {
   args: { nodes: header({ sticky: true, scrollStyle: "shadow" }) },
 };
 
+/** A Header that hides on the way down (HH-7), over the top of a page's first section. */
+const hidingHeader = [
+  ...header({ sticky: true, scrollStyle: "hide" }),
+  {
+    type: "Section",
+    props: {
+      id: "section",
+      content: [
+        { type: "Heading", props: { id: "heading", text: "Fresh every morning", size: "large" } },
+      ],
+    },
+  },
+];
+
 /** A Header that hides on the way down the page (HH-7), in view as the page opens. */
-export const HeaderHides: Story = {
-  args: { nodes: header({ sticky: true, scrollStyle: "hide" }) },
-};
+export const HeaderHides: Story = { args: { nodes: hidingHeader } };
+
+/** What the story sets on the Header: the package has no DOM types (it renders in Node). */
+type Marked = { setAttribute(name: string, value: string): void };
 
 /** The same once the page has scrolled down: slid up out of view, until the visitor scrolls up. */
 export const HeaderHidden: Story = {
-  args: { nodes: header({ sticky: true, scrollStyle: "hide" }) },
+  args: { nodes: hidingHeader },
   play: async ({ canvasElement }) => {
-    // As the "sticky" behaviour marks it on the way down.
-    canvasElement.querySelector("header.site-header")?.setAttribute("data-hidden", "");
+    // As the "header-hide" behaviour marks it on the way down.
+    const header = within(canvasElement).getByRole("banner") as unknown as Marked;
+    header.setAttribute("data-hidden", "");
   },
 };
 

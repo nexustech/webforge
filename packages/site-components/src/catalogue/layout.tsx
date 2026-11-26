@@ -153,7 +153,7 @@ const LOGO_PLACES = ["instead", "beside"] as const;
 /**
  * A sticky header's classes for its scroll style (F-DS-6), applied once the page has scrolled 80 px
  * (`data-scrolled`, set by `webforge.js`'s "sticky" behaviour). *Hide when scrolling down* (HH-7)
- * slides up out of view while the behaviour says so (`data-hidden`), and back on the way up; for
+ * slides up out of view while "header-hide" says so (`data-hidden`), and back on the way up; for
  * visitors who ask for less motion it goes and comes back without sliding.
  */
 const STICKY_CLASSES: Readonly<Record<(typeof SCROLL_STYLES)[number], string>> = {
@@ -275,7 +275,13 @@ const header = defineComponent({
     scrollStyle: "shadow",
     sectionHighlight: true,
   },
-  behaviours: (values) => (values.sticky ? ["menu", "sticky"] : ["menu"]),
+  // Hiding on the way down (HH-7) is a behaviour of its own, so other Headers' exports don't change.
+  behaviours: (values) =>
+    values.sticky
+      ? values.scrollStyle === "hide"
+        ? ["menu", "sticky", "header-hide"]
+        : ["menu", "sticky"]
+      : ["menu"],
   render: ({ values, context }) => {
     const layout = values.variant;
     const items = context.navigation;
@@ -329,7 +335,7 @@ const header = defineComponent({
         {button}
       </>
     );
-    // The behaviour hides a Header that hides on the way down (HH-7); the others it only marks.
+    // "header-hide" finds a Header that hides on the way down (HH-7) by its value.
     const sticky = values.sticky
       ? { "data-wf-sticky": values.scrollStyle === "hide" ? "hide" : "" }
       : {};
