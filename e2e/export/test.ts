@@ -1,5 +1,5 @@
 import { test as base, expect } from "@playwright/test";
-import { addNoMotionSheet, NO_MOTION_SHEET } from "../no-motion.js";
+import { addNoMotionSheet, NO_MOTION_SITE_SHEET } from "../no-motion.js";
 
 /** The exported site's tests' options (#1493). */
 type MotionOptions = {
@@ -20,7 +20,7 @@ export const test = base.extend<MotionOptions & { readonly noMotion: undefined }
   motion: [false, { option: true }],
   noMotion: [
     async ({ context, motion }, use) => {
-      if (!motion) await context.addInitScript(addNoMotionSheet, NO_MOTION_SHEET);
+      if (!motion) await context.addInitScript(addNoMotionSheet, NO_MOTION_SITE_SHEET);
       await use(undefined);
     },
     { auto: true },

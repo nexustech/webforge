@@ -53,10 +53,6 @@ function layout(page: Page) {
   });
 }
 
-// Motion on until #1499: with motion off, macOS's WebKit draws the joined Header's text in its
-// solid colours (CI only).
-test.use({ motion: true, reducedMotion: "no-preference" });
-
 test("sits on the first section, in its text colour, which makes room for it under the menu", async ({
   page,
 }) => {

@@ -25,7 +25,8 @@ function motionIn(page: Page) {
 
 test("turns motion off on the exported site's pages, by default", async ({ page }) => {
   await page.goto(exportedPageUrl("index.html"));
-  expect(await motionIn(page)).toEqual({ sheet: true, reduced: true, seconds: 0.00001 });
+  // No transition at all: it ends as it starts.
+  expect(await motionIn(page)).toEqual({ sheet: true, reduced: true, seconds: 0 });
   // The next page too.
   await page.goto(exportedPageUrl("about.html"));
   expect((await motionIn(page)).sheet).toBe(true);

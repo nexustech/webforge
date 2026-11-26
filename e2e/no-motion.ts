@@ -54,5 +54,20 @@ export function addNoMotionSheet({ css, id }: { readonly css: string; readonly i
   document.addEventListener("DOMContentLoaded", watch);
 }
 
-/** {@link addNoMotionSheet}'s argument. */
+/** {@link addNoMotionSheet}'s argument, for the app's windows. */
 export const NO_MOTION_SHEET = { css: NO_MOTION_CSS, id: NO_MOTION_ID } as const;
+
+/**
+ * The exported site's: no transition or animation at all. Its only script waiting for one's end
+ * (animate.js's entrance) does nothing with reduced motion, which its pages ask for. WebKit didn't
+ * always finish a 0.01 ms transition before a test read its style, leaving a colour as it started
+ * (#1499).
+ */
+export const NO_MOTION_SITE_SHEET = {
+  css: `*, *::before, *::after {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
+}`,
+  id: NO_MOTION_ID,
+} as const;
