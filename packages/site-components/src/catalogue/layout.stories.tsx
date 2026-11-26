@@ -446,6 +446,26 @@ const logoPage = (header: readonly NodeDoc[], content: readonly NodeDoc[]): Stor
 });
 
 /**
+ * The Header on a Hero's picture under a dark overlay, with the logo alone (HF-1): as before HH-2,
+ * and as a site without a logo for dark backgrounds still is.
+ */
+export const HeaderLogoOnPicture: Story = {
+  args: { nodes: [] },
+  render: () => (
+    <SitePage
+      header={header({
+        background: "section",
+        sticky: true,
+        scrollStyle: "shadow",
+        logoPlace: "instead",
+      })}
+      content={[pictureHero()]}
+      context={{ logo: "logo" }}
+    />
+  ),
+};
+
+/**
  * The Header on a Hero's picture under a dark overlay (HH-2): the logo for dark backgrounds, in its
  * light colours.
  */
