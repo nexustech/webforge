@@ -6,6 +6,7 @@ import { expandSharedCopies } from "@webforge/model";
 import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
+  joinedHeaderOf,
   pageHeadings,
   type RenderContext,
   renderPage,
@@ -195,7 +196,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     dragKeys,
     editorRevisions,
     frameDocument: frame.document,
-    onDocs: () => followPageHeading(),
+    onDocs: () => {
+      followPageHeading();
+      followJoinedHeader();
+    },
   });
 
   /** Whether the page's main heading is to be found again (see {@link followPageHeading}). */
@@ -245,6 +249,31 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       const { pageHeading: _was, ...rest } = parts;
       changeContext({ parts: promoted === undefined ? rest : { ...rest, pageHeading: promoted } });
     });
+  };
+
+  /**
+   * Finds again the page's Header joined to its first section (HH-1), as `renderPage` does for the
+   * export, when the docs or the library change: only when what it says changes, which draws every
+   * component again (the Header and the section both read it), never while text is typed.
+   */
+  const followJoinedHeader = () => {
+    if (library === null) return;
+    const { page: shown, layout, shared } = page.docs();
+    const joined = joinedHeaderOf(
+      { header: layout.header, content: expandSharedCopies(shown.content, shared) },
+      library,
+      parts.looks,
+    );
+    const was = parts.joinedHeader;
+    if (
+      was?.section === joined?.section &&
+      was?.inverse === joined?.inverse &&
+      was?.text === joined?.text
+    ) {
+      return;
+    }
+    const { joinedHeader: _was, ...rest } = parts;
+    changeContext({ parts: joined === undefined ? rest : { ...rest, joinedHeader: joined } });
   };
 
   /** The canvas's width, zoom and size (see `canvas-view.ts`). */
@@ -357,8 +386,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       );
       slotsOf = (type) => slots.get(type);
       config = configFor(opts.library);
-      // A page given before the library was has its heading found now.
+      // A page given before the library was has its heading, and its joined Header, found now.
       followPageHeading();
+      followJoinedHeader();
       const editorWindow = el.ownerDocument.defaultView;
       stopEditorListeners =
         editorWindow === null
@@ -500,6 +530,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       // A theme change that leaves its looks as they were draws nothing again.
       if (parts.looks === next) return;
       changeContext({ parts: { ...parts, looks: next } });
+      // A look's Colour can be the first section's text colour, which a joined Header takes.
+      followJoinedHeader();
     },
 
     setItem(next) {
@@ -528,6 +560,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         emptyItem: _emptyItem,
         pageAddress: _pageAddress,
         pageHeading: _pageHeading,
+        joinedHeader: _joinedHeader,
         ...drawn
       } = parts;
       const {

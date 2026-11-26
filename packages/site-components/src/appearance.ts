@@ -712,6 +712,22 @@ export function appearanceBoxClasses(values: AppearanceValues): string {
   return classesOf(BOX_CLASSES, values);
 }
 
+/**
+ * The Colour control's classes alone (2.22), on the devices it's set for: the text colour an item's
+ * Appearance gives it, which a Header joined to a section takes too (HH-1).
+ */
+export function appearanceColourClasses(values: AppearanceValues): string {
+  return BOX_CLASSES.lookColor(values.lookColor, values);
+}
+
+/**
+ * Whether the Appearance group gives an item a background of its own on any device: a colour, or a
+ * gradient (CT-4). A Header joined to a section with one sits on it (HH-1).
+ */
+export function hasOwnBackground(values: AppearanceValues): boolean {
+  return BOX_CLASSES.lookBackground(values.lookBackground, values) !== "" || hasGradient(values);
+}
+
 /** The fields that draw a gradient (CT-4). */
 const GRADIENT_FIELDS: ReadonlySet<string> = new Set([
   "lookGradientDirection",

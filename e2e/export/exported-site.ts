@@ -39,6 +39,12 @@ export const NO_BANNER_SITE_DIR = join(EXPORTED_SITE_DIR, "no-banner");
 export const ANNOUNCEMENT_SITE_DIR = join(EXPORTED_SITE_DIR, "announcement");
 
 /**
+ * Where the setup exports the fixture's home and About pages with the Header joined to each page's
+ * first section (HH-1), inside the fixture's folder so CI uploads it with it.
+ */
+export const JOINED_SITE_DIR = join(EXPORTED_SITE_DIR, "joined");
+
+/**
  * Where the setup exports the fixture's home and About pages with Contact buttons after the Footer
  * and the consent banner on (6.16d), inside the fixture's folder so CI uploads it with it.
  */

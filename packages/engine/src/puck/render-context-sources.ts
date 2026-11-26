@@ -45,6 +45,8 @@ export const RENDER_CONTEXT_SOURCES = {
   firstSection: "export",
   // The section whose title is the page's main heading (#1173): found again as the page changes.
   pageHeading: "page",
+  // The Header joined to the page's first section (HH-1): found again as the page changes.
+  joinedHeader: "page",
   // The post shown, on a Blog's post (6.10a): set again when the page shown or its fields change.
   item: "setItem",
   emptyItem: "setItem",

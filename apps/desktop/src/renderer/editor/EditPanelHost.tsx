@@ -5,6 +5,7 @@ import { type ReactNode, useEffect, useMemo } from "react";
 import { createEditPanelController } from "./edit-panel-controller.js";
 import { type DialogGroups, fieldsFor, panelSlice, sameSlice } from "./edit-panel-fields.js";
 import type { EditorSession } from "./editor-session.js";
+import { headerBackgroundField, headerBackgroundLine, sameLine } from "./header-background-line.js";
 import { ItemCss } from "./ItemCss.js";
 import type { ItemCssServices } from "./ItemCssView.js";
 import { breakpointOf, DEVICES } from "./responsive-value.js";
@@ -86,6 +87,12 @@ export function EditPanelHost({
   const menuLinksToSections = useDocument(session, (site) => linksToSections(site.menu));
   // Whether the Header offers its logo's place and size (HF-1).
   const hasLogo = useDocument(session, (site) => site.settings.general.logo !== undefined);
+  // A Hero that opens its page leads to the Header's Background (HH-1).
+  const headerLine = useDocument(
+    session,
+    (site) => headerBackgroundLine(site, pageId, nodeId),
+    sameLine,
+  );
   const breakpoint = breakpointOf(viewport);
 
   const controller = useMemo(() => createEditPanelController(session), [session]);
@@ -112,7 +119,7 @@ export function EditPanelHost({
     return <EditPanel fields={[]} onChange={() => undefined} onCommit={() => undefined} />;
   }
   const { node, component, id } = target;
-  const fields = fieldsFor(target, {
+  const own = fieldsFor(target, {
     library,
     theme,
     breakpoint,
@@ -124,6 +131,11 @@ export function EditPanelHost({
     openStyle: styleAction?.onSelect,
     revealSource,
   });
+  // First on the Style tab, where the section's look is (HH-1).
+  const fields =
+    headerLine === undefined || appearanceOnly
+      ? own
+      : [headerBackgroundField(headerLine, (header) => session.select(header)), ...own];
 
   return (
     <EditPanel

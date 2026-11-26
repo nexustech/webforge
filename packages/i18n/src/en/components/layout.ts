@@ -37,6 +37,12 @@ export const layout = {
   "field.menuLinksLeaveOut.help": "Pages in your menu that the Footer doesn't list.",
   "field.menuLinksAdd": "Add",
   "field.menuLinksAdd.help": "Pages not in your menu that the Footer lists too, after the menu's.",
+  // The Header on its page's first section (HH-1), on every page.
+  "field.headerBackground": "Background",
+  "field.headerBackground.help":
+    "On every page: its own band, or the picture or colour the page's first section opens with.",
+  "field.headerBackground.own": "Its own",
+  "field.headerBackground.section": "The first section's",
   // A sticky header (F-DS-6).
   "field.sticky": "Stay at the top when scrolling",
   "field.scrollStyle": "Change style when scrolling",
