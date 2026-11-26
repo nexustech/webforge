@@ -14,6 +14,12 @@ export const sections = {
   "field.heroLayout.split": "Image beside the text",
   "field.heroLayout.centred": "Centred, image below",
   "field.heroLayout.background": "Image behind the text",
+  // Where the Hero's text sits on its picture (HH-6).
+  "field.heroTextPlace": "Text on the picture",
+  "field.heroTextPlace.help":
+    "Where the title, text and button sit on the picture. At the bottom, the picture's subject stays in view above them, most on a tall Hero.",
+  "field.heroTextPlace.middle": "Middle",
+  "field.heroTextPlace.bottom": "Bottom",
   "field.heroLayout.minimal": "Text only",
   "field.textImageLayout.imageRight": "Image on the right",
   "field.textImageLayout.imageLeft": "Image on the left",

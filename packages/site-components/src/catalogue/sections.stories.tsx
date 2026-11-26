@@ -58,6 +58,18 @@ export const HeroOverlayNeutral: Story = { args: { nodes: overlaySteps("neutral"
 /** The same in the page's own colour, the text in the page's text colour (HH-3). */
 export const HeroOverlayPage: Story = { args: { nodes: overlaySteps("base") } };
 
+/**
+ * The Hero's text at the bottom of its picture (HH-6), centred and on the left, so the picture's
+ * subject stays in view above it.
+ */
+export const HeroTextBottom: Story = {
+  args: {
+    nodes: ["centre", "left"].map((alignment) =>
+      hero(alignment, { variant: "background", textPlace: "bottom" }),
+    ),
+  },
+};
+
 /** The Hero with text only (2.6). */
 export const HeroMinimal: Story = {
   args: { nodes: [hero("centre", { variant: "minimal", contentWidth: "narrow" })] },
