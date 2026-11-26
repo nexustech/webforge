@@ -30,6 +30,8 @@ test.afterEach(async () => {
 const pngSize = (data: Buffer) => ({ width: data.readUInt32BE(16), height: data.readUInt32BE(20) });
 
 test("saves the page shown as one picture of all of it, at Mobile's width, and as a PDF", async () => {
+  // Quarantined on Windows: its PDF ran out of the test's time once there, and passed again (#1508).
+  test.fixme(process.platform === "win32", "flaky on Windows CI: #1508");
   // Longer than any window: four Heroes after the starter page's own sections.
   const left = page.getByRole("region", { name: "Left panels" });
   await left.getByRole("tab", { name: "Add", exact: true }).click();
