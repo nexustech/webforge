@@ -1,11 +1,4 @@
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitForElementToBeRemoved,
-} from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -633,7 +626,7 @@ describe("Toaster", () => {
     expect(await screen.findByText("Deleted Heading")).toBeTruthy();
     await userEvent.setup().click(screen.getByRole("button", { name: "Undo" }));
     expect(onUndo).toHaveBeenCalledOnce();
-    // Its action closes the toast, which then leaves.
-    await waitForElementToBeRemoved(() => screen.queryByText("Deleted Heading"));
+    // Its action closes the toast, which then leaves (perhaps already, on a slow machine).
+    await waitFor(() => expect(screen.queryByText("Deleted Heading")).toBeNull());
   });
 });
