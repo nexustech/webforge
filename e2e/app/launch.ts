@@ -204,16 +204,23 @@ export async function launchDesktopApp(
 
 /**
  * Every window of `app`, and each frame in it, asks for reduced motion and has the no-motion sheet
- * (#1493): from the test's side, so the app carries no test-only code. The sheet is added by an
- * init script, for each page's document as it's created; to each frame as it navigates, as an init
- * script doesn't reach the canvas's `about:srcdoc` frame; and at once to what is already open,
- * which the launch may have loaded before either was in place. Each document then keeps it.
+ * (#1493): from the test's side, so the app carries no test-only code. The sheet is added to each
+ * frame as it navigates (the window's page as it loads or reloads, the canvas's `about:srcdoc`
+ * frame), and at once to what is already open; each document then keeps it. A sandboxed frame
+ * that may not run scripts (an embed's) is left alone: a script there would only log an error.
  */
 async function stillWindows(app: ElectronApplication): Promise<void> {
-  await app.context().addInitScript(addNoMotionSheet, NO_MOTION_SHEET);
-  const sheet = (frame: Frame) =>
+  const sheet = async (frame: Frame) => {
+    if (frame.parentFrame() !== null) {
+      const sandbox = await frame
+        .frameElement()
+        .then((element) => element.getAttribute("sandbox"))
+        .catch(() => null);
+      if (sandbox !== null && !sandbox.split(/\s+/).includes("allow-scripts")) return;
+    }
     // A frame gone or navigating meanwhile gets it on its next navigation.
-    frame.evaluate(addNoMotionSheet, NO_MOTION_SHEET).catch(() => undefined);
+    await frame.evaluate(addNoMotionSheet, NO_MOTION_SHEET).catch(() => undefined);
+  };
   const still = async (page: Page) => {
     page.on("framenavigated", (frame) => void sheet(frame));
     await page.emulateMedia({ reducedMotion: "reduce" }).catch(() => undefined);

@@ -10,7 +10,7 @@
  * `transitionend` never fires, and code waiting for it (Radix's Presence, the panels) would hang.
  * An endless one runs once, so a spinner stands still.
  */
-export const NO_MOTION_CSS = `*, *::before, *::after {
+const NO_MOTION_CSS = `*, *::before, *::after {
   transition-duration: 0.01ms !important;
   transition-delay: 0s !important;
   animation-duration: 0.01ms !important;
