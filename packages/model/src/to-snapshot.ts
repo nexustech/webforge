@@ -112,6 +112,9 @@ export function siteToSnapshot(
     menu: site.menu,
     ...(site.settings.general.icon === undefined ? {} : { icon: site.settings.general.icon }),
     ...(site.settings.general.logo === undefined ? {} : { logo: site.settings.general.logo }),
+    ...(site.settings.general.logoOnDark === undefined
+      ? {}
+      : { logoOnDark: site.settings.general.logoOnDark }),
     ...analyticsOf(site.settings.analytics),
     search: {
       allowIndexing: site.settings.search.allowIndexing,

@@ -5,7 +5,7 @@ title: Header, Footer, announcements and shared sections
 summary: The parts that are the same on every page, an announcement bar above them, and sections you share between pages.
 components: [Header, Footer, FooterColumn, MenuLinks, AnnouncementBar]
 related: [pages, layers, add-panel, site-check]
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # Header, Footer, announcements and shared sections
@@ -17,7 +17,7 @@ The **Header**, at the top, and the **Footer**, at the bottom, are the same on e
 **Header** options:
 
 - **Site name:** comes from [Site Settings](site-settings.md#general).
-- **Logo** (once you choose one in [Site Settings](site-settings.md#general)): _In place of the name_ or _Beside the name_. In place of the name, your site's name is the logo's description for people who can't see it. Without a logo the Header shows the name.
+- **Logo** (once you choose one in [Site Settings](site-settings.md#general)): _In place of the name_ or _Beside the name_. In place of the name, your site's name is the logo's description for people who can't see it. Without a logo the Header shows the name. On a dark colour or photo it shows your **Logo for dark backgrounds**, if you chose one in Site Settings.
 - **Logo size:** _Small_, _Medium_ or _Large_. On phones the logo stays no taller than the menu button, so the Header stays one line high.
 - **Layout:** _Name left, menu right_, _Centred_ or _Name left, menu centred_.
 - **Show a button:** a button such as "Book now" or "Get a quote", in any layout: on the right on a computer, and last in the menu on phones. Give it its **Button text** and **Button link**. If your menu also links to the same page, hide that link in the [Menu](pages.md#the-menu), so it isn't there twice.
@@ -43,6 +43,7 @@ With the Header's **Background** at _The first section's_, each page follows its
 - It applies on every page, as every Header setting does. If you move another section to the top, or delete the Hero, the Header follows the new first section. It's one step to undo.
 - A Header that stays at the top turns solid, in the page's colours, once the page has scrolled a little. If you chose _Solid background_ or _None_ before, it shows as _Shadow_, and your choice comes back if you change the Background to _Its own_. A Header that doesn't stay at the top scrolls away with the section.
 - On phones the menu's button sits on the section, and the opened menu is solid. The [Announcement bar](#announcement-bar) stays a solid band above the Header.
+- On a dark colour, or a photo under a dark overlay, the Header shows your [Logo for dark backgrounds](site-settings.md#general), if you chose one. A Header that stays at the top changes to your logo as it turns solid in the page's colours, and back at the top of the page.
 - The menu is as easy to read as the section's own text: if the section's text is hard to read on its picture, {appName} warns you, and a stronger overlay helps both.
 - A Hero that opens its page has a **Header** line at the top of its **Style** tab's Options: **Change in the Header** selects the Header.
 - A site made before this setting keeps _Its own_, so nothing moves until you change it.
