@@ -438,6 +438,28 @@ describe("registerPreviewCommands (3.2)", () => {
     expect(offline.registry.get(COMMAND_IDS.stopPhonePreview)).toBeUndefined();
   });
 
+  it("shows the running preview's address again, without starting it again (#1438)", async () => {
+    const { registry, api, phoneState, phoneStopped } = setUp();
+    expect(registry.get(COMMAND_IDS.showPhonePreview)).toBeUndefined();
+    await runSettled(registry, COMMAND_IDS.previewOnPhone);
+    await vi.waitFor(() => expect(phoneState.getState().status).toBe("ready"));
+    const address = phoneState.getState();
+    // The dialog closed, the preview still on: the title bar's cue shows it again.
+    phoneState.setState({ status: "closed" }, true);
+    expect(registry.get(COMMAND_IDS.showPhonePreview)).toMatchObject({
+      label: "Show Phone Preview…",
+    });
+    expect(registry.get(COMMAND_IDS.showPhonePreview)?.menu).toBeUndefined();
+    registry.run(COMMAND_IDS.showPhonePreview);
+    expect(phoneState.getState()).toEqual(address);
+    // Nothing taken or started again.
+    expect(api.phone).toHaveBeenCalledOnce();
+
+    // Gone with the preview, however it stops.
+    phoneStopped();
+    expect(registry.get(COMMAND_IDS.showPhonePreview)).toBeUndefined();
+  });
+
   it("says so when main stopped the phone's preview by itself, and takes its address away (S9)", async () => {
     const { registry, phoneState, notify, phoneStopped, phoneStoppedListeners, remove } = setUp();
     await runSettled(registry, COMMAND_IDS.previewOnPhone);

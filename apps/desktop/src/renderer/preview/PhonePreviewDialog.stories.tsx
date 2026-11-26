@@ -6,7 +6,7 @@ import { PhonePreviewDialog, type PhoneState } from "./PhonePreviewDialog.js";
 /** The dialog showing `state`, as Preview on Phone… opens it. */
 function Showing({ state }: { readonly state: PhoneState }) {
   const [store] = useState(() => createStore<PhoneState>(() => state));
-  return <PhonePreviewDialog state={store} />;
+  return <PhonePreviewDialog state={store} onStop={() => undefined} />;
 }
 
 // File → Preview on Phone… (3.2, F-PV-1): the preview's address on the Wi-Fi as a QR code.

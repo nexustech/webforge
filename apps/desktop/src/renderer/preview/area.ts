@@ -5,6 +5,7 @@ import { createStore } from "zustand/vanilla";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { TrustedCode } from "../editor/window-services.js";
 import { widthOf } from "../shell/canvas-size.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
 import { siteSession } from "../storage/index.js";
 import { PhonePreviewDialog, type PhoneState } from "./PhonePreviewDialog.js";
 import { registerPreviewCommands } from "./preview-commands.js";
@@ -22,7 +23,11 @@ export const previewArea: Area<WindowContext> = {
     const phone = createStore<PhoneState>(() => ({ status: "closed" }));
     const removeDialog = windowDialogs.register({
       id: "phonePreview",
-      component: () => createElement(PhonePreviewDialog, { state: phone }),
+      component: () =>
+        createElement(PhonePreviewDialog, {
+          state: phone,
+          onStop: () => void commands.run(COMMAND_IDS.stopPhonePreview),
+        }),
       close: () => phone.setState({ status: "closed" }, true),
     });
     const removeCommands = registerPreviewCommands(commands, {

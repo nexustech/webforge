@@ -195,3 +195,34 @@ test("Theme Studio's and Settings' controls are 24 px or more", async () => {
 
   expect(found).toEqual([]);
 });
+
+test("the phone preview's cue is 24 px or more, with its words and as an icon (#1438)", async () => {
+  app = await launchDesktopApp();
+  const page = await app.firstWindow();
+  await waitForCanvas(page);
+  await chooseFromMenu(app, page, "File", "Preview on Phone…");
+  const dialog = page.getByRole("dialog", { name: "Preview on your phone" });
+  await expect(dialog.getByRole("img", { name: "QR code of the preview's address" })).toBeVisible({
+    timeout: 15_000,
+  });
+  // The dialog's own Stop Phone Preview.
+  const found = (await smallTargets(page)).map((small) => `dialog: ${small}`);
+  // Its close button: Escape would first close the tooltip of Help, which has the focus.
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await expect(dialog).toHaveCount(0);
+
+  const banner = page.getByRole("banner");
+  for (const [width, form] of [
+    [1600, banner.getByRole("button", { name: "Stop Phone Preview" })],
+    [960, banner.getByRole("button", { name: "Phone preview on" })],
+  ] as const) {
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.unmaximize());
+    await app.evaluate(
+      ({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0]?.setContentSize(size, 800),
+      width,
+    );
+    await expect(form).toBeVisible();
+    found.push(...(await smallTargets(page)).map((small) => `${width} px: ${small}`));
+  }
+  expect(found).toEqual([]);
+});
