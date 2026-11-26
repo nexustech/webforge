@@ -266,6 +266,9 @@ test("publishes the site to an SFTP host, then keeps the version it went live wi
 });
 
 test("republishes an earlier version, the site as it is left be, and says where it went (4.6b)", async () => {
+  // Quarantined on Windows: its Save Version dialog was once still open after 5 s, and the next
+  // head passed (#1463). Fixed or deleted within a week, under the flaky-test rule.
+  test.fixme(process.platform === "win32", "flaky on Windows CI: #1463");
   test.skip(
     process.platform !== "win32" && process.platform !== "darwin",
     "the OS keychain is Windows' and macOS's (ADR 0006 §5)",
