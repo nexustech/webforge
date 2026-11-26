@@ -439,6 +439,33 @@ describe("FormDialog (2.21, B4)", () => {
     );
   });
 
+  it("holds what's positioned in its fields in its scroll areas, so the dialog never scrolls too (#1437)", () => {
+    // The dialog is `fixed`: an unpositioned scroll area would leave a picture field's hidden
+    // inputs to it, stretching its own scroll from below its edge.
+    const headed = {
+      ...spec,
+      groups: (spec.groups ?? []).map((group) => ({ ...group, heading: "This site" })),
+    };
+    render(
+      <FormDialog
+        open
+        size="xl"
+        title="Site Settings"
+        confirm="Save"
+        spec={headed}
+        initial={initial}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const dialog = screen.getByRole("dialog");
+    for (const slot of ["form-fields", "form-section"]) {
+      const area = dialog.querySelector(`[data-slot="${slot}"]`);
+      expect(area?.classList.contains("overflow-y-auto"), slot).toBe(true);
+      expect(area?.classList.contains("relative"), slot).toBe(true);
+    }
+  });
+
   it("draws a help link beside the title, and one for each section that has one (5.4b)", async () => {
     render(
       <FormDialog

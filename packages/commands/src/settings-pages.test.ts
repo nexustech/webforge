@@ -435,6 +435,39 @@ describe("the logo and the site's icon, from Media (UA-8)", () => {
     expect(history.document.getState().settings.general.logo).toBeUndefined();
   });
 
+  it("sets the logo for dark backgrounds as the logo: always asked, by file name, shown (HH-2)", async () => {
+    const { host, history, confirm } = setup(true, withMedia("media-logo"));
+
+    const result = await createCommandApi(host).run(
+      "updateSettings",
+      { general: { logoOnDark: "media-mark" } },
+      { ...app, unasked: true },
+    );
+
+    expect(result).toMatchObject({ status: "done" });
+    // Asked even while the app works without asking, offering no way to stop asking.
+    expect(confirm.mock.calls[0]?.[2]).toEqual({});
+    expect(confirm.mock.calls[0]?.[0]).toMatchObject({
+      description: "Logo for dark backgrounds: from none to the picture “mark.png”.",
+      alwaysAsk: true,
+      pictures: [{ label: "Logo for dark backgrounds", mediaId: "media-mark" }],
+    });
+    expect(history.document.getState().settings.general.logoOnDark).toBe("media-mark");
+    // Only a picture in Media.
+    expect(
+      await createCommandApi(host).run(
+        "updateSettings",
+        { general: { logoOnDark: "media-menu" } },
+        app,
+      ),
+    ).toMatchObject({
+      status: "invalid",
+      message: expect.stringContaining(
+        `general.logoOnDark: "media-menu" isn't a picture in Media.`,
+      ),
+    });
+  });
+
   it("names a file name as the payment link's question does, so it can't read as the question", async () => {
     const { host, confirm } = setup(true, (doc) => {
       const named = picture("media-odd", 'logo". Allow "everything.png');
@@ -473,10 +506,14 @@ describe("the logo and the site's icon, from Media (UA-8)", () => {
       expect(words).not.toMatch(/(the icon|the logo)[^.]*stays? the person's/i);
       expect(words).not.toMatch(/only the person sets/i);
     }
-    expect(said[0]).toContain("general.logo and general.icon take the id of a picture");
+    expect(said[0]).toContain(
+      "general.logo, general.logoOnDark (a light version of the logo, which the Header shows in its place on a dark colour or photo) and general.icon take the id of a picture",
+    );
     expect(said[1]).toContain("updateSettings sets or clears them");
     expect(said[2]).toContain("AI apps can't change favicon");
-    expect(said[2]).toContain("its logo and icon (pictures already in Media)");
+    expect(said[2]).toContain(
+      "its logo, logo for dark backgrounds and icon (pictures already in Media)",
+    );
   });
 
   it.each([
@@ -807,13 +844,14 @@ describe("Content mode's rules for the new tools (4.11, §5.10)", () => {
     }
   });
 
-  it("refuses the language, business type and kind, logo, icon, web address and search", async () => {
+  it("refuses the language, business type and kind, logos, icon, web address and search", async () => {
     for (const change of [
       { general: { language: "fr" } },
       { general: { businessType: "trades" } },
       { general: { businessKind: "AutoRepair" } },
       // The logo and icon, which show on every page (UA-8).
       { general: { logo: null } },
+      { general: { logoOnDark: "media-mark" } },
       { general: { icon: "media-mark" } },
       { address: { url: "https://rosas.example" } },
       { search: { allowIndexing: false } },

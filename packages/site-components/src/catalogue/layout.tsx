@@ -7,11 +7,12 @@ import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
 import { CONTENT_WIDTH_FIELD, type ContentWidth, contentWidthClass } from "../frame.js";
 import { FOOTER_COLUMN } from "../hidden-fields.js";
+import { onDarkGround } from "../joined-header.js";
 import { boundString, boundText, type ComponentDef } from "../library.js";
 import { LOGO_HEIGHTS, LOGO_SIZES } from "../logo-sizes.js";
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
-import type { NavItem, NavLink, RenderContext } from "../schema.js";
+import type { JoinedHeader, NavItem, NavLink, RenderContext, ResolvedImage } from "../schema.js";
 import { BUTTON_CLASSES, ButtonLink } from "../typography.js";
 
 /** Three-line menu icon, drawn inline so the site needs no icon font (C8). */
@@ -381,25 +382,35 @@ const header = defineComponent({
     const shrinks = values.sticky && scrollStyleOf(values, joined !== undefined) === "shrink";
     // The logo in Site Settings (HF-1), in place of the name or beside it; the name, while there's
     // no logo or its picture is gone from Media.
-    const logo = context.logo === undefined ? null : context.image(context.logo);
+    const logos = logosOf(context, joined, values.sticky);
     const beside = values.logoPlace === "beside";
     const named = boundString(values, "siteName", context).trim();
+    const picture = (image: ResolvedImage, pictureClassName?: string) => (
+      <Picture
+        image={image}
+        // In its place, the logo is the name; beside it, the name says it already. Both pictures
+        // of a Header that swaps them say so: the one hidden is hidden from screen readers too.
+        alt={beside ? "" : named || context.siteText("siteText.logo")}
+        sizes="320px"
+        inView
+        className={`${LOGO_HEIGHTS[values.logoSize]} w-auto max-w-48 object-contain md:max-w-64`}
+        {...(pictureClassName === undefined ? {} : { pictureClassName })}
+      />
+    );
     const name = (
       <a
-        className={`font-heading text-xl font-bold${logo === null ? "" : " flex items-center gap-2"}`}
+        className={`font-heading text-xl font-bold${logos === null ? "" : " flex items-center gap-2"}`}
         href={context.link("index")}
       >
-        {logo === null ? null : (
-          <Picture
-            image={logo}
-            // In its place, the logo is the name; beside it, the name says it already.
-            alt={beside ? "" : named || context.siteText("siteText.logo")}
-            sizes="320px"
-            inView
-            className={`${LOGO_HEIGHTS[values.logoSize]} w-auto max-w-48 object-contain md:max-w-64`}
-          />
+        {logos === null ? null : logos.scrolled === undefined ? (
+          picture(logos.top)
+        ) : (
+          <>
+            {picture(logos.top, SWAPPED_LOGO.top)}
+            {picture(logos.scrolled, SWAPPED_LOGO.scrolled)}
+          </>
         )}
-        {logo === null || beside ? boundText(values, "siteName", context) : null}
+        {logos === null || beside ? boundText(values, "siteName", context) : null}
       </a>
     );
     const bar = (
@@ -452,6 +463,42 @@ const header = defineComponent({
     );
   },
 });
+
+/**
+ * A joined Header's two logos (HH-2) where it changes from a dark ground to a light one as the page
+ * scrolls, or back: the one for the top of the page until the page marks it scrolled (`sticky.js`),
+ * then the other. Without the script it never scrolls, so the first stays.
+ */
+const SWAPPED_LOGO = {
+  top: "in-data-scrolled:hidden",
+  scrolled: "hidden in-data-scrolled:block",
+} as const;
+
+/**
+ * The Header's logo (HF-1), or Site Settings' logo for dark backgrounds (HH-2) where it sits on a
+ * dark colour: at the top of the page (`top`), and, for a joined Header that stays at the top, once
+ * scrolled, when it's on the page's own colour (`scrolled`, where that differs). `null` without a
+ * logo, or with its picture gone from Media; the logo where the one for dark backgrounds is gone.
+ */
+function logosOf(
+  context: RenderContext,
+  joined: JoinedHeader | undefined,
+  sticky: boolean,
+): { readonly top: ResolvedImage; readonly scrolled?: ResolvedImage } | null {
+  const logo = context.logo === undefined ? null : context.image(context.logo);
+  if (logo === null) return null;
+  const onDark = context.logoOnDark === undefined ? null : context.image(context.logoOnDark);
+  if (onDark === null) return { top: logo };
+  const pageDark = onDarkGround(["base-100"], false, context.darkGrounds);
+  const topDark =
+    joined === undefined
+      ? pageDark
+      : onDarkGround(joined.grounds, joined.inverse, context.darkGrounds);
+  const top = topDark ? onDark : logo;
+  // Once scrolled, a joined Header that stays at the top is on the page's own colours.
+  if (joined === undefined || !sticky || topDark === pageDark) return { top };
+  return { top, scrolled: pageDark ? onDark : logo };
+}
 
 /** Whether `style` is one a joined Header offers (HH-1). */
 const offeredJoined = (style: ScrollStyle): style is JoinedScrollStyle =>

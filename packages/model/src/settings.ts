@@ -230,6 +230,12 @@ export const siteSettingsSchema = z.strictObject({
      */
     logo: mediaIdSchema.optional(),
     /**
+     * The logo for dark backgrounds (HH-2), a picture from Media: the Header shows it in place of
+     * `logo` where it sits on a dark colour, a photo under a dark overlay among them. The logo
+     * there too when absent, as before format 22.
+     */
+    logoOnDark: mediaIdSchema.optional(),
+    /**
      * A back-to-top button on every page (F-CM-9, 2.9), shown once the visitor has scrolled down;
      * a page can leave it out (`hideBackToTop`). Off when absent, as in files from before it.
      */

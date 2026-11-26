@@ -63,6 +63,16 @@ describe("siteContentFor's logo (HF-1)", () => {
       unused.id,
     ]);
   });
+
+  it("names its logo for dark backgrounds too (HH-2)", () => {
+    const doc = site();
+    doc.settings.general.logoOnDark = unused.id;
+
+    expect(siteContentFor(doc, siteLibrary).media.map((image) => image.id)).toEqual([
+      icon.id,
+      unused.id,
+    ]);
+  });
 });
 
 describe("siteContentFor's draft pages (G37, #864)", () => {

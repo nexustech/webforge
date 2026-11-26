@@ -9,6 +9,7 @@ import {
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { clickSettled } from "./settled.js";
 
 // Selection chrome on the canvas (1.12): magenta outlines and the selected element's quick
 // actions, each one labelled undo step.
@@ -96,18 +97,15 @@ test.describe("selection chrome", () => {
   });
 
   test("its buttons work while the element's text is being edited, the format menu with them (LF-3)", async () => {
-    // Quarantined: failed once on Linux, the Text still there after Delete, and passed on a re-run
-    // (#1462). Fixed or deleted within a week, under the flaky-test rule.
-    test.fixme(true, "flaky on Linux CI: #1462");
     // Clicking the text edits it: the bar holds the format menu too.
     await canvas().getByText(STARTER_TEXT).click();
     await expect(quickAction("Bold")).toBeVisible();
 
     // A press on the bar keeps the text focused, so the menu stays and the button under the
-    // pointer is the one clicked.
-    await quickAction("Delete").click();
+    // pointer is the one clicked: once the bar has taken the menu in, as a person would (#1462).
+    const where = await clickSettled(quickAction("Delete"), "Delete");
 
-    await expect(canvas().getByText(STARTER_TEXT)).toHaveCount(0);
+    await expect(canvas().getByText(STARTER_TEXT), where).toHaveCount(0);
   });
 
   test("moves, duplicates and deletes the selected element, one undo step each", async () => {

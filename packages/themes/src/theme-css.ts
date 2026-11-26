@@ -4,13 +4,14 @@ import {
   type FontRef,
   INVERSE_THEME,
   type Oklch,
+  OWN_COLOR_PREFIX,
   SHADE_STEPS,
   SHADED_ROLES,
   TEXT_SIZES,
   TEXT_STYLES,
   type ThemeTokens,
 } from "@webforge/model";
-import { inverseColors, ownColorOf, shadeOf } from "./colors.js";
+import { inverseColors, ownColorOf, resolveColorRef, shadeOf } from "./colors.js";
 
 /** Each corner token in CSS, as daisyUI's own themes use them. */
 const RADIUS: Readonly<Record<ThemeTokens["radius"]["box"], string>> = {
@@ -272,9 +273,37 @@ const ownColorUtilities = (tokens: ThemeTokens) =>
     ...SHADE_STEPS.map((step) => `  --color-own-${id}-${step}: var(--wf-color-own-${id}-${step});`),
   ]);
 
+/** Whether `color` is dark: under half way in OKLCH lightness, as a dark page's surface is. */
+export const isDarkColour = (color: Oklch): boolean => color.l < 0.5;
+
 /** Whether `colors` make a dark page: a dark surface. */
 const schemeOf = (colors: ThemeTokens["colors"]): ThemeTokens["scheme"] =>
-  colors["base-100"].l < 0.5 ? "dark" : "light";
+  isDarkColour(colors["base-100"]) ? "dark" : "light";
+
+/**
+ * The colours of `tokens` that are dark ({@link isDarkColour}), in the page's colours and in
+ * reversed sections' (2.4), as colour refs without an opacity: the roles, the colour roles' shades,
+ * and the person's own colours (TC-1a) with theirs. The Header shows Site Settings' logo for dark
+ * backgrounds on them (HH-2): its render context has them as data, which site components read
+ * without this package.
+ */
+export function darkGroundsOf(tokens: ThemeTokens): {
+  readonly colors: readonly string[];
+  readonly inverse: readonly string[];
+} {
+  const shaded = (base: string) => [base, ...SHADE_STEPS.map((step) => `${base}-${step}`)];
+  const refs = [
+    ...COLOR_ROLES.filter((role) => !(SHADED_ROLES as readonly string[]).includes(role)),
+    ...SHADED_ROLES.flatMap(shaded),
+    ...(tokens.ownColors ?? []).flatMap(({ id }) => shaded(`${OWN_COLOR_PREFIX}${id}`)),
+  ];
+  const dark = (palette: "colors" | "inverse") =>
+    refs.filter((ref) => {
+      const resolved = resolveColorRef(tokens, ref, palette);
+      return resolved !== undefined && isDarkColour(resolved.color);
+    });
+  return { colors: dark("colors"), inverse: dark("inverse") };
+}
 
 /**
  * The buttons as the theme draws them (#423), whatever a component's classes: every button's

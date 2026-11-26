@@ -803,6 +803,10 @@ describe("createPuckEngine", () => {
 
     // A new config would draw every element again: one that reads nothing never draws again.
     await act(async () => engine.setLooks({ Heading: { lookItalic: true } }));
+    // The theme's dark colours (HH-2), set again the same, then none: only the Header reads them.
+    await act(async () => engine.setDarkGrounds({ colors: ["neutral"], inverse: [] }));
+    await act(async () => engine.setDarkGrounds({ colors: ["neutral"], inverse: [] }));
+    await act(async () => engine.setDarkGrounds(undefined));
     await act(async () => engine.setPreviews({ mobileMenu: true }));
     await act(async () =>
       engine.setSettings({ siteText: english, setting: () => "Rosa's Bakery" }),
@@ -870,6 +874,7 @@ describe("createPuckEngine", () => {
         [{ pageId: "home", label: "Home", href: "#", current: true }],
       );
       engine.setLooks({ Button: { lookCorners: "full" } });
+      engine.setDarkGrounds({ colors: ["neutral"], inverse: [] });
       engine.setItem({
         item: () => undefined,
         emptyItem: () => "Add it",

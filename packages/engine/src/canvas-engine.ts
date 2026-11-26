@@ -410,6 +410,12 @@ export interface CanvasEngine {
    */
   setLooks(looks: RenderContext["looks"]): void;
   /**
+   * Draws the Header with Site Settings' logo for dark backgrounds on the theme's dark colours
+   * (HH-2), as the export does: called again when the theme changes, with `darkGroundsOf` from
+   * `@webforge/themes`. The Header draws again only when they change.
+   */
+  setDarkGrounds(darkGrounds: RenderContext["darkGrounds"]): void;
+  /**
    * Shows the fields of the post shown (6.10a, ADR 0025) in its Blog's design's bound elements,
    * and what an empty one shows instead (a hint), with its address on the web when the site has
    * one (Share buttons', 6.17b). Called with none on a page that isn't an item, and again when the

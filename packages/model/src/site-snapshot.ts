@@ -206,6 +206,11 @@ export type SiteSnapshot = {
   /** The Media image the Header shows as the business's logo (Site Settings, HF-1, 5.37). */
   readonly logo?: string | undefined;
   /**
+   * The Media image the Header shows in place of the logo on a dark colour (Site Settings' logo
+   * for dark backgrounds, HH-2).
+   */
+  readonly logoOnDark?: string | undefined;
+  /**
    * Google Analytics (B4, 3.8), when Site Settings have a Measurement ID: whether the consent
    * banner asks visitors first (B7), and its own text if the person wrote one.
    */
@@ -387,6 +392,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       menu: menuDocSchema.optional(),
       icon: mediaRefSchema.optional(),
       logo: mediaRefSchema.optional(),
+      logoOnDark: mediaRefSchema.optional(),
       analytics: z
         .strictObject({
           measurementId: measurementIdSchema,
