@@ -17,7 +17,7 @@ function motionIn(page: Page) {
     return {
       sheet: document.getElementById(id) !== null,
       reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
-      // Seconds: browsers write 0.01 ms as 1e-05s or 0.00001s.
+      // In seconds: 0 with the sheet, which has no transitions at all.
       seconds: Number.parseFloat(duration),
     };
   }, NO_MOTION_ID);

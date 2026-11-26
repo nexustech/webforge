@@ -19,7 +19,7 @@ async function canvasFrame(page: Page): Promise<Frame> {
   return frame;
 }
 
-/** Whether `frame` has the sheet and asks for reduced motion, and how many seconds a button eases for. */
+/** Whether `frame` has the sheet and asks for reduced motion, and how long a button eases for. */
 function motionIn(frame: Frame) {
   return frame.evaluate((id) => {
     const probe = document.createElement("button");
