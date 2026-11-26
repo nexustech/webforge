@@ -1,7 +1,9 @@
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@webforge/editor-ui";
@@ -23,8 +25,17 @@ export type PhoneState =
  * File → Preview on Phone… (3.2, F-PV-1): the preview's address on the local network as a QR code
  * for the phone's camera, with the address written out, and what a phone needs to open it. Who
  * else can open it is said too: anyone on the network with the address, while Webforge is open.
+ * While a phone can open it, Stop Phone Preview is there too (`onStop`, #1438): the title bar's
+ * cue, an icon in a narrow window, opens this dialog for it.
  */
-export function PhonePreviewDialog({ state }: { readonly state: StoreApi<PhoneState> }) {
+export function PhonePreviewDialog({
+  state,
+  onStop,
+}: {
+  readonly state: StoreApi<PhoneState>;
+  /** Stops the phone's preview: Stop Phone Preview, which closes the dialog too. */
+  readonly onStop: () => void;
+}) {
   const shown = useSyncExternalStore(state.subscribe, state.getState, state.getState);
   return (
     <Dialog
@@ -63,6 +74,13 @@ export function PhonePreviewDialog({ state }: { readonly state: StoreApi<PhoneSt
             </p>
             <p className="text-xs text-muted-foreground">{t("preview.phone.privacy")}</p>
           </div>
+        ) : null}
+        {shown.status === "ready" ? (
+          <DialogFooter>
+            <Button variant="secondary" onClick={onStop}>
+              {t("command.stopPhonePreview")}
+            </Button>
+          </DialogFooter>
         ) : null}
         {/* Last, so the dialog's own first control still takes the focus as it opens. */}
         <HelpButton topic="phonePreview" className="absolute top-2.5 right-9" />
