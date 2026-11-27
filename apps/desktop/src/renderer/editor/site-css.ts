@@ -12,6 +12,7 @@ import type { UsedSelectors } from "@webforge/site-check";
 import {
   BOX_CLASS_SAFELIST,
   EDITOR_RENDER_CONTEXT,
+  FIRST_SCREEN_CLASSES,
   type RenderContext,
   type ResolvedImage,
   renderNodesToHtml,
@@ -171,6 +172,8 @@ function classesOfLists(
     ...new Set([
       ...lists.flatMap((nodes) => listClasses(nodes, session, site.theme.looks)),
       ...BOX_CLASS_SAFELIST,
+      // A Whole screen Hero's height first on its page, which a page drawn alone lacks (#1489).
+      ...FIRST_SCREEN_CLASSES,
     ]),
   ].sort();
 }
