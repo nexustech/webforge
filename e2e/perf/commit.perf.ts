@@ -60,7 +60,7 @@ for (const { name, otherPages } of [
     const store = ProjectStore.create(sitePath, { name: "Large" });
     store.saveSite(site);
     store.close();
-    app = await launchDesktopApp({ args: [sitePath] });
+    app = await launchDesktopApp({ motion: true, args: [sitePath] });
     const page = await app.firstWindow();
     await waitForCanvas(page);
     await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved");

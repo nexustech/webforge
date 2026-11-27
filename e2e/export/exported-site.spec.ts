@@ -2,9 +2,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
-import { type BrowserContext, expect, type Page, test } from "@playwright/test";
+import type { BrowserContext, Page } from "@playwright/test";
 import { priceList } from "@webforge/test-utils";
 import { EXPORTED_SITE_DIR, exportedPageUrl } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // The exported fixture site, opened from disk (file://) in Chromium, Firefox and WebKit with the
 // network blocked (X1, C8): it must look and work right without any server or external request.
@@ -483,6 +484,9 @@ test.describe("exported site from disk", () => {
   });
 
   test.describe("entrance animations (2.12, F-DS-5)", () => {
+    // About motion itself: sections moving in as visitors see them (#1493).
+    test.use({ motion: true, reducedMotion: "no-preference" });
+
     /** The band below the fold that slides up as it is scrolled to. */
     const fresh = (page: Page) =>
       page.locator("section", { has: page.getByRole("heading", { name: "Fresh every day" }) });
@@ -560,6 +564,9 @@ test.describe("exported site from disk", () => {
   });
 
   test.describe("hover effects (2.28, ST-7)", () => {
+    // About motion itself: a button's lift, at its speed and movement (#1493).
+    test.use({ motion: true, reducedMotion: "no-preference" });
+
     /** The fixture's Button that lifts with a shadow when hovered, slowly and springily. */
     const looks = (page: Page) =>
       page
@@ -990,6 +997,9 @@ test.describe("exported site from disk", () => {
   });
 
   test.describe("carousel (2.10)", () => {
+    // About motion itself: slides scrolling into place, and playing on their own (#1493).
+    test.use({ motion: true, reducedMotion: "no-preference" });
+
     test("names its slides and moves with its buttons and the arrow keys, round past the end", async ({
       page,
     }) => {

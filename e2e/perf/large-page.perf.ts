@@ -200,7 +200,7 @@ async function timeLookChanges(runs: number): Promise<number[]> {
 }
 
 test.beforeAll(async () => {
-  app = await launchDesktopApp();
+  app = await launchDesktopApp({ motion: true });
   page = await app.firstWindow();
   await page.waitForFunction(() => (window as PerfWindow).__webforgePerf !== undefined, null, {
     timeout: 10_000,

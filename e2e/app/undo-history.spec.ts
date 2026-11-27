@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { ACTION_BAR_ACTION, ACTION_BAR_LABEL, SELECTED_COMPONENT } from "@webforge/engine/puck-dom";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, MOTION_TAG, waitForCanvas } from "./launch.js";
 import { clickSettled } from "./settled.js";
 
 // Undo History panel and Undo toasts (1.11, D3, D4): deleting shows "Deleted … · Undo"; jumping to
@@ -83,7 +83,10 @@ test.describe("Undo History and Undo toasts", () => {
     await expect(step("Deleted Heading")).toHaveAttribute("aria-current", "step");
   });
 
-  test("the arrow beside Undo undoes back to a recent step, which Redo brings back (UX-16)", async () => {
+  // Motion on until #1498: with motion off it fails in CI only (Linux).
+  test("the arrow beside Undo undoes back to a recent step, which Redo brings back (UX-16)", {
+    tag: MOTION_TAG,
+  }, async () => {
     await deleteHeading();
     await canvas().getByText(STARTER_TEXT).click();
     await expect(selected()).toHaveText("Text");
