@@ -14,11 +14,31 @@ import type { RendererWindow } from "../app/sites.js";
 // should cost anything (R13a). Here rather than in `pnpm e2e` (ADR 0007, #338): on a shared runner,
 // the first commits after the site opens wait for the renderer drawing the page and the canvas CSS
 // compiling.
+//
+// What's checked is our part (#1621, the owner's choice): each commit's time less the disk's
+// flush, BEGIN and COMMIT's fsync, which main times for these tests. The flush is a runner's disk
+// (16 of 20 ms on Windows' runners, varying night to night), so it and the time end to end, against
+// §10's 50 ms, are recorded and printed on every run, not failed.
 
+/** §10's budget for a commit, end to end: recorded, and noted when over. */
 const COMMIT_BUDGET_MS = 50;
+/** Our part of a commit, its time less the flush: about 4 ms on CI's runners, so a slowdown shows. */
+const OUR_PART_BUDGET_MS = 15;
 /** Commits before the measured ones, while the app finishes opening the site. */
 const WARM_UP = 3;
-const MEASURED = 7;
+const MEASURED = 15;
+
+/** A step main timed (`step-timings.ts`): durations under fixed names only. */
+type TimedStep = { readonly step: string; readonly ms: number; readonly at: number };
+
+/** The median of `values`. */
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)] ?? Number.POSITIVE_INFINITY;
+}
+
+/** `ms` to a tenth. */
+const tenth = (ms: number) => Math.round(ms * 10) / 10;
 
 // Not in test-results/: Playwright empties that folder at the start of every run.
 const RESULTS = join(import.meta.dirname, "../perf-results/commit.json");
@@ -65,31 +85,61 @@ for (const { name, otherPages } of [
     await waitForCanvas(page);
     await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved");
 
-    const durations = await page.evaluate(
+    // Each commit's time, and when it started and ended on the clock main's steps use.
+    const commits = await page.evaluate(
       async ({ changes }) => {
         const { project } = (window as unknown as RendererWindow).webforge;
         const sessionId = (await project.getCurrent())?.sessionId ?? "";
-        const times: number[] = [];
+        const timed: { ms: number; from: number; to: number }[] = [];
         for (const list of changes) {
+          const from = Date.now();
           const start = performance.now();
           const result = await project.commit(sessionId, list);
-          times.push(performance.now() - start);
+          timed.push({ ms: performance.now() - start, from, to: Date.now() });
           if ((result as { status: string }).status !== "saved") throw new Error("not saved");
         }
-        return times;
+        return timed;
       },
       { changes: changeLists },
     );
-
-    const measured = durations.slice(WARM_UP).sort((a, b) => a - b);
-    const median = measured[Math.floor(measured.length / 2)] ?? Number.POSITIVE_INFINITY;
-    const rounded = durations.map((duration) => Math.round(duration * 10) / 10);
-    record(name, { pages: otherPages + 1, medianMs: Math.round(median * 10) / 10, rounded });
-    console.log(
-      `Commit of one page of ${otherPages + 1}: median ${median.toFixed(1)} ms (budget ${COMMIT_BUDGET_MS} ms)`,
-      rounded,
+    const steps = await app.evaluate(
+      () =>
+        (
+          globalThis as { webforgeStepTimings?: () => readonly TimedStep[] }
+        ).webforgeStepTimings?.() ?? [],
     );
+    const flushes = steps.filter((each) => each.step === "a write's flush");
+
+    // Each measured commit, paired with the flush that ended within it: its last, as a first
+    // change of the day saves a version first.
+    const measured = commits.slice(WARM_UP).map((commit) => {
+      const within = flushes.filter((each) => each.at >= commit.from && each.at <= commit.to);
+      const flush = within.at(-1)?.ms;
+      if (flush === undefined) throw new Error("Main timed no flush for a commit");
+      return { total: commit.ms, flush, ours: commit.ms - flush };
+    });
+    const result = {
+      pages: otherPages + 1,
+      medianMs: tenth(median(measured.map((each) => each.total))),
+      ourPartMedianMs: tenth(median(measured.map((each) => each.ours))),
+      flushMedianMs: tenth(median(measured.map((each) => each.flush))),
+      totals: commits.map((each) => tenth(each.ms)),
+      flushes: measured.map((each) => tenth(each.flush)),
+    };
+    record(name, result);
+    console.log(
+      `Commit of one page of ${otherPages + 1}: our part's median ${result.ourPartMedianMs} ms (budget ${OUR_PART_BUDGET_MS} ms); the flush's ${result.flushMedianMs} ms and end to end ${result.medianMs} ms (§10's ${COMMIT_BUDGET_MS} ms), recorded`,
+      result.totals,
+      result.flushes,
+    );
+    if (result.medianMs >= COMMIT_BUDGET_MS) {
+      const description = `A commit of one page of ${otherPages + 1} took ${result.medianMs} ms end to end (median), ${result.flushMedianMs} ms of it the disk's flush; §10's budget is ${COMMIT_BUDGET_MS} ms`;
+      test.info().annotations.push({ type: "over budget", description });
+      console.log(`Over budget: ${description}`);
+    }
     // Soft, like the other budgets here: a miss is reported, not hidden.
-    expect.soft(median).toBeLessThan(COMMIT_BUDGET_MS);
+    expect
+      .soft(result.ourPartMedianMs, "our part of a commit, median (ms)")
+      .toBeLessThan(OUR_PART_BUDGET_MS);
   });
 }
