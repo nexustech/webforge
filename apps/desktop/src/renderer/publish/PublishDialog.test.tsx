@@ -440,7 +440,7 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
     await user.type(within(dialog).getByLabelText("Personal access token"), "nfp_token");
     await user.click(within(dialog).getByRole("button", { name: "Connect" }));
     await user.selectOptions(await within(dialog).findByLabelText("Netlify site"), "new");
-    await user.click(within(dialog).getByRole("button", { name: "Save Destination" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(netlify.createSite).toHaveBeenCalledWith(
@@ -470,7 +470,7 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
     await user.type(within(dialog).getByLabelText("Personal access token"), "nfp_token");
     await user.click(within(dialog).getByRole("button", { name: "Connect" }));
     await user.selectOptions(await within(dialog).findByLabelText("Netlify site"), "new");
-    const save = within(dialog).getByRole("button", { name: "Save Destination" });
+    const save = within(dialog).getByRole("button", { name: "Save" });
 
     // Twice at once: one save. It fails, so the dialog stays; Save again uses the site it made.
     await Promise.all([user.click(save), user.click(save)]);

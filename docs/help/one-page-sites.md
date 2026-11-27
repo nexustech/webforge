@@ -4,7 +4,7 @@ id: one-page-sites
 title: One-page sites
 summary: A whole site on one page, with a menu that scrolls to each section.
 related: [getting-started, pages, links, header-and-footer]
-updated: 2026-11-10
+updated: 2026-11-27
 ---
 
 # One-page sites
@@ -33,7 +33,7 @@ To link to a section you add later:
 
 1. In the [Site panel's Menu](pages.md#the-menu), click **+** (**Add to Menu**) and choose **Link…**.
 2. Under **Link to**, choose **Page**, then your home page, then the **Section**.
-3. Name it, and click **Save Link**.
+3. Name it, and click **Save**.
 
 A button or text can link to a section the same way: see [Links](links.md).
 

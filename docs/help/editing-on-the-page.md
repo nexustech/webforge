@@ -101,7 +101,7 @@ An item set to **Don't publish** stays in your site's file but isn't on your web
 
 A note is a reminder for you on a section or element, such as _Swap this photo before launch_. It's never on your website.
 
-- **Add one:** right-click the item and choose **Add Note…**, or use Edit › Add Note…. Type the note and click **Save Note**.
+- **Add one:** right-click the item and choose **Add Note…**, or use Edit › Add Note…. Type the note and click **Save**.
 - **Where it shows:** the item has a dashed amber outline on the page, and a note icon in [Layers](layers.md); point at the icon to read it. [Site Check](site-check.md) lists every open note under _Tips_.
 - **Change or resolve it:** **Edit Note…** opens it again. **Resolve Note**, or emptying it and saving, removes it.
 

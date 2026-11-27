@@ -158,6 +158,43 @@ export function DialogClose(props: ComponentProps<typeof DialogPrimitive.Close>)
 }
 
 /**
+ * A dialog's Cancel (#1444): the filled grey every Cancel has, "Cancel" unless named otherwise.
+ * It calls the dialog's own `onClick` and is never Radix's Close, which goes through the dialog's
+ * `onOpenChange` and would ask "Discard your changes?" (#1439): Cancel never asks.
+ */
+export function DialogCancel({
+  children,
+  ...props
+}: Omit<ComponentProps<typeof Button>, "variant" | "type"> & {
+  readonly onClick: () => void;
+}) {
+  return (
+    // Marked as the way out, for the footer rule's check (#1444).
+    <Button type="button" variant="secondary" data-way-out="" {...props}>
+      {children ?? t("ui.form.cancel")}
+    </Button>
+  );
+}
+
+/**
+ * The one way out of a dialog with nothing to save (#1444): **Close**, in Cancel's filled grey.
+ * Radix's Close, through the dialog's `onOpenChange`: such a dialog reports no changes, so it
+ * never asks first.
+ */
+export function DialogCloseButton({
+  children,
+  ...props
+}: Omit<ComponentProps<typeof Button>, "variant" | "type" | "asChild">) {
+  return (
+    <DialogPrimitive.Close asChild>
+      <Button type="button" variant="secondary" data-way-out="" {...props}>
+        {children ?? t("ui.close")}
+      </Button>
+    </DialogPrimitive.Close>
+  );
+}
+
+/**
  * The dialog panel, over a dimmed backdrop, with a close button unless `showClose` is false. It
  * gives the focus back to what had it when it opened ({@link useReturnFocus}).
  */
@@ -207,7 +244,12 @@ export function DialogHeader({ className, ...props }: ComponentProps<"div">) {
   );
 }
 
-/** The dialog's buttons; the main action goes last. */
+/**
+ * The dialog's buttons, at its bottom right, in this order (#1444, `docs/extending.md`): other
+ * actions; {@link DialogCancel} or {@link DialogCloseButton}; Back, in a dialog of steps; then the
+ * primary, last. A dialog with nothing to save ends with Close alone, one that finishes a task
+ * with **Done** as its primary.
+ */
 export function DialogFooter({ className, ...props }: ComponentProps<"div">) {
   return (
     <div data-slot="dialog-footer" className={cn(dialogStyles.footer, className)} {...props} />

@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogCloseButton,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -145,6 +146,8 @@ export function ReportProblemDialog(props: ReportProblemDialogProps) {
               {t("help.report.mail")}
             </Button>
           ) : null}
+          {/* Your message is kept for next time (#1439). */}
+          <DialogCloseButton />
           <Button disabled={empty} onClick={() => props.onOpen("issue")}>
             {t("help.report.issue")}
           </Button>

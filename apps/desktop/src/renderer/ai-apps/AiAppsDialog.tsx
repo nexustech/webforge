@@ -10,8 +10,11 @@ import {
   Button,
   Check,
   Dialog,
+  DialogCancel,
+  DialogCloseButton,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   ErrorText,
@@ -507,22 +510,13 @@ export function AiAppsDialog({
                 />
                 <ErrorText message={addError} />
                 <p className="text-sm">{t("aiApps.add.shared")}</p>
-                <div className="flex gap-2">
+                {/* As a dialog's footer has them (#1444): Cancel, then Add, at the right. */}
+                <div className="flex justify-end gap-2">
+                  <DialogCancel onClick={() => setAdding(null)}>{t("aiApps.cancel")}</DialogCancel>
                   <Button onClick={() => void add()}>{t("aiApps.add.confirm")}</Button>
-                  <Button variant="outline" onClick={() => setAdding(null)}>
-                    {t("aiApps.cancel")}
-                  </Button>
                 </div>
               </section>
-            ) : (
-              <Button
-                className="self-start"
-                disabled={!enabled}
-                onClick={() => choose(DEFAULT_CLIENT)}
-              >
-                {t("aiApps.add")}
-              </Button>
-            )}
+            ) : null}
             <section aria-label={t("aiApps.list")}>
               {status.apps.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("aiApps.none")}</p>
@@ -554,6 +548,15 @@ export function AiAppsDialog({
             </section>
           </div>
         )}
+        {/* At the bottom right (#1444): Add AI App while nothing is being added, then Close. */}
+        <DialogFooter>
+          {status === null || shown !== null || adding !== null ? null : (
+            <Button variant="outline" disabled={!enabled} onClick={() => choose(DEFAULT_CLIENT)}>
+              {t("aiApps.add")}
+            </Button>
+          )}
+          <DialogCloseButton />
+        </DialogFooter>
       </DialogContent>
       <AlertDialog
         open={removing !== null}
