@@ -118,7 +118,7 @@ test("every dialog starts below the title bar: full size, in a narrow window and
   await checkEachDialog("at 150%");
 });
 
-test("Theme Studio's X closes Theme Studio, not the app, asking about a draft first (#1411, 4.10)", async () => {
+test("Theme Studio's X closes Theme Studio, not the app, with nothing to ask (#1411, M1)", async () => {
   await chooseFromMenu(app, page, "Site", "Theme Studio…");
   await studio().getByRole("tab", { name: "Components" }).click();
   await studio()
@@ -129,18 +129,10 @@ test("Theme Studio's X closes Theme Studio, not the app, asking about a draft fi
     .getByRole("radio", { name: "Accent", exact: true })
     .click();
 
-  // A draft: the X asks whether to apply it, as Close does.
+  // Applied at once (M1): the X closes straight away, asking nothing. The window, and the site in
+  // it, stay open.
   await cornerClose(studio()).click();
-  const ask = page.getByRole("alertdialog", { name: "Apply Your Changes to Every Features?" });
-  await ask.getByRole("button", { name: "Keep Editing" }).click();
-  await expect(studio()).toBeVisible();
-  await cornerClose(studio()).click();
-  await ask.getByRole("button", { name: "Discard Changes" }).click();
-  await expect(studio()).toHaveCount(0);
-
-  // No draft: it closes straight away. The window, and the site in it, stay open.
-  await chooseFromMenu(app, page, "Site", "Theme Studio…");
-  await cornerClose(studio()).click();
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
   await expect(studio()).toHaveCount(0);
   await expect(page.getByRole("banner")).toBeVisible();
   expect(page.isClosed()).toBe(false);

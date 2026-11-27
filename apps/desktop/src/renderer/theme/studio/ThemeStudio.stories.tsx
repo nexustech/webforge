@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
 import { themePreset } from "@webforge/themes";
-import { userEvent, within } from "storybook/test";
 import type { OwnTheme } from "../../../shared/ipc/themes.js";
 import { starterSite } from "../../../shared/starter-site.js";
 import type { ItemPreviews } from "../../editor/areas.js";
@@ -112,45 +111,3 @@ export const ComponentsShort: Story = { ...componentsOn("Button"), tags: ["short
 
 /** The theme's card style, as the Card look. */
 export const ComponentsCard: Story = componentsOn("Card");
-
-/**
- * Components on Button, changed but not applied yet (4.10): the preview shows the changes, and the
- * bar at the bottom Apply Changes or Discard.
- */
-export const ComponentsDraft: Story = dialogStory((session) => {
-  const studio = createStudio();
-  studio.setState({
-    open: true,
-    section: "components",
-    kind: "Button",
-    draft: {
-      type: "Button",
-      item: "Button",
-      change: { lookCorners: "full", lookShadow: "large" },
-    },
-  });
-  return <ThemeStudio session={session} studio={studio} itemPreviews={itemPreviews} />;
-});
-
-/** Another kind chosen with Button's changes not applied: apply or discard them first (4.10). */
-export const ComponentsDraftQuestion: Story = {
-  ...ComponentsDraft,
-  play: async () => {
-    // The dialog draws outside the story's root.
-    const page = within(document.body);
-    await userEvent.selectOptions(
-      await page.findByRole("combobox", { name: "Sections and elements" }),
-      "Card",
-    );
-    await page.findByRole("alertdialog", { name: "Apply your changes to every Button?" });
-  },
-};
-
-/** The preview showing the theme as it is now, before the changes (4.10). */
-export const ComponentsThemeNow: Story = {
-  ...ComponentsDraft,
-  play: async () => {
-    const page = within(document.body);
-    await userEvent.click(await page.findByRole("radio", { name: "Theme now" }));
-  },
-};

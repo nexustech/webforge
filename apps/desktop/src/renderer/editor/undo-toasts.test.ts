@@ -1,6 +1,6 @@
 import { createHistoryManager, type HistoryEntry } from "@webforge/history";
 import { describe, expect, it, vi } from "vitest";
-import type { EditKind } from "./editor-session.js";
+import type { Announcement, EditKind } from "./editor-session.js";
 import { undoEntry } from "./undo-entry.js";
 import { installUndoToasts, UNDO_TOAST_DURATION_MS } from "./undo-toasts.js";
 
@@ -75,7 +75,7 @@ describe("installUndoToasts", () => {
   function setUp() {
     const { history, idOf, items } = historyWith("Added Hero", "Deleted Heading");
     let listener:
-      | ((entry: HistoryEntry<null>, kind: EditKind, announced: boolean | string) => void)
+      | ((entry: HistoryEntry<null>, kind: EditKind, announced: Announcement) => void)
       | undefined;
     const stop = vi.fn();
     const session = {
@@ -142,6 +142,24 @@ describe("installUndoToasts", () => {
       "Brand colour changed on 6 pages",
       expect.objectContaining({ action: { label: "Undo", onClick: expect.any(Function) } }),
     );
+  });
+
+  it("shows a toast with an id in place of the one before it, and stops watching that one (M1)", () => {
+    const { entry, listener, show, dismiss, history } = setUp();
+    const said = { message: "Changed every Button on your site (12)", id: "theme-look:Button" };
+
+    listener()?.({ ...entry, label: "Changed the theme's look for Button" }, "props", said);
+    listener()?.(entry, "props", said);
+
+    expect(show).toHaveBeenCalledTimes(2);
+    expect(show).toHaveBeenLastCalledWith(
+      "Changed every Button on your site (12)",
+      expect.objectContaining({ id: "theme-look:Button" }),
+    );
+    // The first step undone some other way leaves the toast, which now offers the second's Undo.
+    history.undo();
+    history.undo();
+    expect(dismiss).toHaveBeenCalledOnce();
   });
 
   it("ends a text edit in progress, then undoes the delete from the toast", () => {

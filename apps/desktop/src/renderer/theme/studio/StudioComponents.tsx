@@ -102,16 +102,18 @@ type StudioComponentsProps = {
   /** The kind shown ({@link shownKind}). */
   readonly shown: Kind;
   /**
-   * The look's changes not applied yet (4.10), and the theme with them; the controls show them for
+   * The run of changes in the field in use (M1), and the theme with them; the controls show them for
    * their kind.
    */
   readonly draft?: { readonly look: LookDraft; readonly theme: ThemeTokens } | undefined;
-  /** Sets fields of `type`'s draft look, by name; `undefined` takes one off. */
+  /** Sets fields of `type`'s look in the run, by name; `undefined` takes one off. */
   readonly onChange: (
     type: string,
     item: string,
     change: Readonly<Record<string, unknown>>,
   ) => void;
+  /** The field in use is left: its run of changes is written as one step (M1). */
+  readonly onCommit: () => void;
   /** Sets a theme token shown beside a look: the buttons', the card style. */
   readonly onToken: (control: TokenControl, value: unknown) => void;
   /** The colour fields' control: the theme's colours only, as a look holds (ADR 0009). */
@@ -204,16 +206,18 @@ function lookChange(
 /**
  * Theme Studio's Components (3.12, CT-1): the chosen kind's look, so a kind is styled without
  * selecting one on a page. A look is the Appearance group's fields, in one column with their
- * groups' headings in view (H3); its controls change a draft, which the preview strip above draws, until **Apply
- * Changes** in the bar below writes it as one step (4.10), or **Discard** drops it. A Button's look
- * also shows the theme's button tokens, and Card the card style, which stay where they are in the
- * theme and change at once (product/11, 3.12 note 5).
+ * groups' headings in view (H3), beside the preview of the kind. A change applies at once, as on
+ * every tab (M1): the run of changes in the field in use shows in the preview as it goes, and is
+ * written as one step as the field is left, with a notice that offers Undo. A Button's look also
+ * shows the theme's button tokens, and Card the card style, which stay where they are in the theme
+ * and change at once (product/11, 3.12 note 5).
  */
 export function StudioComponents({
   theme,
   library,
   shown,
   draft,
+  onCommit,
   onChange,
   onToken,
   renderers,
@@ -282,14 +286,16 @@ export function StudioComponents({
             onChange={(name, value) =>
               onChange(shown.type, shown.label, lookChange(def, look, name, value))
             }
-            onCommit={() => undefined}
-            onResetToDefault={(reset) =>
+            onCommit={onCommit}
+            // A reset is a step of its own at once, as the person sees it done (M1).
+            onResetToDefault={(reset) => {
               onChange(
                 shown.type,
                 shown.label,
                 Object.fromEntries(reset.map((name) => [name, undefined])),
-              )
-            }
+              );
+              onCommit();
+            }}
           />
         </FieldRenderersProvider>
       )}
@@ -305,13 +311,14 @@ export function StudioComponents({
             type="button"
             size="sm"
             variant="outline"
-            onClick={() =>
+            onClick={() => {
               onChange(
                 shown.type,
                 shown.label,
                 Object.fromEntries(Object.keys(look).map((name) => [name, undefined])),
-              )
-            }
+              );
+              onCommit();
+            }}
           >
             {t("theme.components.reset")}
           </Button>
