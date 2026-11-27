@@ -3,7 +3,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp, type WebforgeApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, removeWhenFree, type WebforgeApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { stubFileDialogs } from "./sites.js";
 
@@ -13,11 +13,14 @@ import { stubFileDialogs } from "./sites.js";
 let app: WebforgeApp;
 let page: Page;
 let dir: string;
+/** Webforge's user data: its log names the step of a drawing that took too long (#1508). */
+let userData: string;
 
 test.beforeEach(async () => {
   dir = mkdtempSync(join(tmpdir(), "webforge-save-page-"));
-  // Its own user data, in `dir`: the log names the step of a drawing that took too long (#1508).
-  app = await launchDesktopApp({ userDataDir: join(dir, "user-data") });
+  // A folder of its own, apart from the saved files: the app holds it a while after it closes.
+  userData = mkdtempSync(join(tmpdir(), "webforge-save-page-data-"));
+  app = await launchDesktopApp({ userDataDir: userData });
   page = await app.firstWindow();
   await waitForCanvas(page);
 });
@@ -25,6 +28,8 @@ test.beforeEach(async () => {
 test.afterEach(async () => {
   await app.close();
   await rm(dir, { recursive: true, force: true });
+  // Once the app lets go of it, not waited for (#1112).
+  void removeWhenFree(userData);
 });
 
 /**
@@ -38,7 +43,7 @@ async function savedOrFailed(name: string): Promise<void> {
   const failed = page.getByText(/couldn't (draw the page|make the PDF)/);
   await expect(saved.or(failed)).toBeVisible({ timeout: 150_000 });
   if (await saved.isVisible()) return;
-  const log = join(dir, "user-data", "logs", "main.log");
+  const log = join(userData, "logs", "main.log");
   const steps = existsSync(log) ? readFileSync(log, "utf8").match(/timeout-[a-z]+/g) : null;
   throw new Error(
     `The app couldn't save ${name}: ${await failed.first().textContent()} (took too long: ${steps?.join(", ") ?? "no step logged"})`,
