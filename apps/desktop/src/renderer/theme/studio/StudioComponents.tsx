@@ -19,6 +19,7 @@ import {
 } from "@webforge/site-components";
 import { lookFieldsOf } from "../../clipboard/index.js";
 import { specOf } from "../../editor/edit-panel-fields.js";
+import { provenanceOf } from "../../editor/provenance.js";
 import { isOverridden, valueAt, withValueAt } from "../../editor/responsive-value.js";
 import { TOKEN_CONTROLS, type TokenControl, tokenKey } from "../theme-controls.js";
 import type { LookDraft } from "./studio-state.js";
@@ -63,6 +64,22 @@ export function lookKinds(library: ComponentLibrary): KindGroups {
 /** Whether a look's `value` differs on Tablet or Mobile. */
 const perDevice = (value: unknown) =>
   isOverridden(value, "tablet") || isOverridden(value, "mobile");
+
+/** `type`'s look in `theme`: what it sets, by field. */
+export const lookIn = (theme: ThemeTokens, type: string): Readonly<Record<string, unknown>> =>
+  theme.looks?.[type] ?? {};
+
+/** Whether `look` sets anything, so there's something to reset (#1517). */
+export const hasLook = (look: Readonly<Record<string, unknown>>) =>
+  Object.values(look).some((value) => value !== undefined);
+
+/** The kinds whose look in `theme` sets something (#1517): marked in {@link KindChoice}. */
+export const changedKinds = (theme: ThemeTokens): ReadonlySet<string> =>
+  new Set(
+    Object.entries(theme.looks ?? {})
+      .filter(([, look]) => look !== undefined && hasLook(look))
+      .map(([type]) => type),
+  );
 
 /** Whether `type`'s definition in `library` has Theme Studio show `control` with it (#982). */
 const hasControl = (library: ComponentLibrary, type: string, control: ThemeControl) =>
@@ -124,14 +141,17 @@ type StudioComponentsProps = {
 type KindChoiceProps = {
   readonly groups: KindGroups;
   readonly shown: Kind;
+  /** The kinds whose look is changed: they say so in words (#1517). */
+  readonly changed: ReadonlySet<string>;
   readonly onKind: (type: string) => void;
 };
 
 /**
  * Which kind Components shows (CT-11): a list by category in Theme Studio's top bar, so no column
- * is lost to it. Typing a kind's first letters picks it.
+ * is lost to it. Typing a kind's first letters picks it. A kind whose look is changed says so, in
+ * words, as a list's options can hold nothing else (#1517).
  */
-export function KindChoice({ groups, shown, onKind }: KindChoiceProps) {
+export function KindChoice({ groups, shown, changed, onKind }: KindChoiceProps) {
   return (
     <select
       aria-label={t("theme.components.kinds")}
@@ -143,12 +163,47 @@ export function KindChoice({ groups, shown, onKind }: KindChoiceProps) {
         <optgroup key={category} label={category}>
           {kinds.map((each) => (
             <option key={each.type} value={each.type}>
-              {each.label}
+              {changed.has(each.type)
+                ? t("theme.components.kindChanged", { item: each.label })
+                : each.label}
             </option>
           ))}
         </optgroup>
       ))}
     </select>
+  );
+}
+
+/**
+ * Resets the kind shown to the theme's defaults (#1517): in the top bar beside the list of kinds,
+ * so it's in view however far the settings scroll. Always there: unavailable while the look sets
+ * nothing, saying why, to the keyboard too. It takes off the look only: the button tokens and card
+ * style shown with it keep their own controls, and an element styled on its own keeps its style.
+ */
+export function ResetLook({
+  shown,
+  look,
+  onReset,
+}: {
+  readonly shown: Kind;
+  readonly look: Readonly<Record<string, unknown>>;
+  readonly onReset: () => void;
+}) {
+  const changed = hasLook(look);
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      unavailable={!changed}
+      tooltip={
+        changed
+          ? t("theme.components.resetHelp", { item: shown.label })
+          : t("theme.components.none", { item: shown.label })
+      }
+      onClick={onReset}
+    >
+      {t("theme.components.reset", { item: shown.label })}
+    </Button>
   );
 }
 
@@ -225,8 +280,8 @@ export function StudioComponents({
   const def = library.components[shown.type];
   // The draft for this kind, if there is one: what its controls show.
   const drafted = draft?.look.type === shown.type ? draft : undefined;
-  const look: Readonly<Record<string, unknown>> =
-    (drafted?.theme ?? theme).looks?.[shown.type] ?? {};
+  const shownTheme = drafted?.theme ?? theme;
+  const look = lookIn(shownTheme, shown.type);
   const names =
     def === undefined
       ? []
@@ -239,6 +294,22 @@ export function StudioComponents({
     if (field === undefined || spec === undefined || hidden.has(name)) return [];
     // A gradient's end without a colour shows the one it draws with (CT-10).
     const value = shownValueOf(field, valueAt(look[name] ?? def?.defaults[name], "desktop"));
+    // Where its value comes from, in the Edit panel's words (3.12, CT-3): the look is what's set
+    // here (#1517), else the theme's token where one decides it.
+    const source = provenanceOf({
+      name,
+      label: spec.label,
+      own: look[name],
+      look: undefined,
+      initial: def?.defaults[name],
+      responsive: false,
+      breakpoint: "desktop",
+      type: shown.type,
+      item: shown.label,
+      corners: def?.themeCorners,
+      classes: "",
+      theme: shownTheme,
+    });
     return [
       {
         ...spec,
@@ -248,6 +319,7 @@ export function StudioComponents({
         value,
         ...(field?.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
         ...(look[name] === undefined ? {} : { changed: true }),
+        ...(source === undefined ? {} : { source: { text: source.text } }),
         // A look set per device (from a file, or CT-2's dialog): this page changes Desktop's alone.
         ...(perDevice(look[name]) ? { help: t("theme.components.perDevice") } : {}),
       },
@@ -298,31 +370,6 @@ export function StudioComponents({
             }}
           />
         </FieldRenderersProvider>
-      )}
-      {Object.keys(look).length === 0 ? (
-        fields.length === 0 ? null : (
-          <p className="m-0 text-xs text-muted-foreground">
-            {t("theme.components.none", { item: shown.label })}
-          </p>
-        )
-      ) : (
-        <div>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              onChange(
-                shown.type,
-                shown.label,
-                Object.fromEntries(Object.keys(look).map((name) => [name, undefined])),
-              );
-              onCommit();
-            }}
-          >
-            {t("theme.components.reset")}
-          </Button>
-        </div>
       )}
     </section>
   );
