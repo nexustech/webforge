@@ -19,19 +19,24 @@ async function canvasFrame(page: Page): Promise<Frame> {
   return frame;
 }
 
-/** Whether `frame` has the sheet and asks for reduced motion, and how long a button eases for. */
+/**
+ * Whether `frame` has the sheet and asks for reduced motion, and how long a button eases and
+ * animates for.
+ */
 function motionIn(frame: Frame) {
   return frame.evaluate((id) => {
     const probe = document.createElement("button");
     probe.style.transition = "opacity 2s";
+    probe.style.animation = "e2e-probe 2s";
     document.body.append(probe);
-    const duration = getComputedStyle(probe).transitionDuration;
+    const { transitionDuration, animationDuration } = getComputedStyle(probe);
     probe.remove();
     return {
       sheet: document.getElementById(id) !== null,
       reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
       // Seconds: browsers write 0.01 ms as 1e-05s or 0.00001s.
-      seconds: Number.parseFloat(duration),
+      transition: Number.parseFloat(transitionDuration),
+      animation: Number.parseFloat(animationDuration),
     };
   }, NO_MOTION_ID);
 }
@@ -46,7 +51,9 @@ test("turns motion off in the window and on the canvas, by default", async () =>
       .toEqual({
         sheet: true,
         reduced: true,
-        seconds: 0.00001,
+        // No transitions at all (#1497), and animations that still end, for Radix's closings.
+        transition: 0,
+        animation: 0.00001,
       });
   }
   // A page of its own reloaded keeps it.
@@ -61,6 +68,11 @@ test("leaves motion as people see it for a test that turns it on", async () => {
   const page = await app.firstWindow();
   await waitForCanvas(page);
   for (const frame of [page.mainFrame(), await canvasFrame(page)]) {
-    expect(await motionIn(frame)).toEqual({ sheet: false, reduced: false, seconds: 2 });
+    expect(await motionIn(frame)).toEqual({
+      sheet: false,
+      reduced: false,
+      transition: 2,
+      animation: 2,
+    });
   }
 });
