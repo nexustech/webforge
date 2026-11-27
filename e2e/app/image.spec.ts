@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
-import { launchDesktopApp, MOTION_TAG, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The Image element on the canvas (2.9), and its width handles (2.17): a grip on each edge of the
 // selected Image, which snaps its width to a step as one undo step; the Edit panel's slider does
@@ -62,10 +62,7 @@ test("shows an Image without its image as a hint to choose one, as the editor op
   );
 });
 
-// Motion on until #1498: with motion off it fails in CI only (Windows).
-test("narrows an Image by dragging a grip on its edge, snapping to a width, as one step", {
-  tag: MOTION_TAG,
-}, async () => {
+test("narrows an Image by dragging a grip on its edge, snapping to a width, as one step", async () => {
   await left().getByRole("tab", { name: "Elements" }).click();
   await left().getByRole("button", { name: "Image", exact: true }).click();
   const image = canvas().locator(".site-image");
