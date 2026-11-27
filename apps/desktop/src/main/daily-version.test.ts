@@ -18,21 +18,32 @@ const path = () => join(dir, "Bakery.wforge");
  * well under a second (#1546). Real time: only `Date` is faked.
  */
 const steps: string[] = [];
+/**
+ * The step under way and when it started: on a timeout, the step that hangs never finishes, so it
+ * is named from here, with how long it had been running.
+ */
+let running: { readonly step: string; readonly start: number } | undefined;
 async function timed<T>(step: string, run: () => Promise<T> | T): Promise<T> {
   const start = performance.now();
+  running = { step, start };
   try {
     return await run();
   } finally {
+    running = undefined;
     steps.push(`${step} ${Math.round(performance.now() - start)}`);
   }
 }
 
 beforeEach(async ({ onTestFailed }) => {
   steps.length = 0;
+  running = undefined;
   onTestFailed(({ task }) => {
+    const still =
+      running === undefined
+        ? ""
+        : `; still running: ${running.step}, ${Math.round(performance.now() - running.start)} ms`;
     for (const error of task.result?.errors ?? []) {
-      error.message += `
-Each step's time, in ms (#1546): ${steps.join(", ")}`;
+      error.message += `\nEach step's time, in ms (#1546): ${steps.join(", ") || "none"}${still}`;
     }
   });
   dir = mkdtempSync(join(tmpdir(), "webforge-daily-"));
