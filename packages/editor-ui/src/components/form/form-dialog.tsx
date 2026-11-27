@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { Button } from "../ui/button.js";
 import {
@@ -95,15 +95,15 @@ export function FormDialog<V extends FormValues, Out>({
 }
 
 /**
- * The tallest `element` has been since it mounted, as its `min-height`, for
+ * The tallest the element given to its ref has been since it mounted, as its `min-height`, for
  * {@link FormDialogProps.keepHeight}: none when `keep` is false, and none again after the window is
  * resized, where what fits changes.
  */
 function useKeptHeight(keep: boolean) {
-  const ref = useRef<HTMLDivElement>(null);
+  // A callback ref, kept as state: the element to watch, once it's drawn.
+  const [element, ref] = useState<HTMLDivElement | null>(null);
   const [height, setHeight] = useState<number | undefined>(undefined);
   useEffect(() => {
-    const element = ref.current;
     const view = element?.ownerDocument.defaultView;
     if (!keep || element === null || view === null || view === undefined) return undefined;
     const observer = new view.ResizeObserver((entries) => {
@@ -119,8 +119,8 @@ function useKeptHeight(keep: boolean) {
       observer.disconnect();
       view.removeEventListener("resize", forget);
     };
-  }, [keep]);
-  return { ref, style: height === undefined ? undefined : { minHeight: height } };
+  }, [keep, element]);
+  return [ref, height === undefined ? undefined : { minHeight: height }] as const;
 }
 
 function FormDialogBody<V extends FormValues, Out>({
@@ -137,7 +137,7 @@ function FormDialogBody<V extends FormValues, Out>({
   onCancel,
 }: Omit<FormDialogProps<V, Out>, "open" | "size" | "help">) {
   const form = useForm(spec, initial);
-  const kept = useKeptHeight(keepHeight);
+  const [keptRef, keptStyle] = useKeptHeight(keepHeight);
   // Whether Save was tried: a check the form's own content ran (Test Connection) isn't a save.
   const [saveTried, setSaveTried] = useState(false);
   return (
@@ -165,8 +165,8 @@ function FormDialogBody<V extends FormValues, Out>({
         // Positioned, so what's positioned in its fields is held here, not by the `fixed` dialog,
         // which would scroll itself too (#1437).
         data-slot="form-fields"
-        ref={kept.ref}
-        style={kept.style}
+        ref={keptRef}
+        style={keptStyle}
         className="relative -mx-4 -my-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-1"
       >
         <Form
