@@ -117,6 +117,7 @@
 Not proposed:
 
 - **Logos that scroll.** Common, but it is movement for its own sake; the Logos section's row and grid do the job. Look again if owners ask.
+  - **Looked at again, 27 Nov 2026:** a band of scrolling text, not logos, came out of the One Page Love research for a playful theme (#1575). The product owner chose to build it in v1.1 ("Build it in v1.1"), over a still band made from a Section with one line: a **Scrolling text** section that a visitor can pause, that stands still for visitors who ask for less motion and on the canvas while it is edited, and that needs no request ([#1573](https://github.com/nexustech/webforge/issues/1573), about 2 days, not yet a plan item). Logos that scroll stay not proposed.
 - **A gallery filter, and video among its pictures.** Three and four products. Wait for a portfolio collection, where a filter belongs.
 - **Slideshow and thumbnails as gallery layouts.** The Carousel element is the same thing; say so in the Gallery's help.
 - **Breadcrumbs, a table of contents, before and after pictures, a QR code.** Rare, or of little use on a flat site.
