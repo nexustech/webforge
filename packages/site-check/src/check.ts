@@ -36,6 +36,7 @@ import {
   webAddressRule,
 } from "./rules/pages.js";
 import { privacyPageRule } from "./rules/privacy.js";
+import { unpublishedRule } from "./rules/unpublished.js";
 import type {
   CheckInput,
   CheckLevel,
@@ -75,6 +76,7 @@ export const SITE_CHECK_RULES: readonly CheckRule[] = [
   underlinedTextRule,
   outdatedYearRule,
   notesRule,
+  unpublishedRule,
   pastAnnouncementRule,
   postSummaryRule,
   postPictureRule,

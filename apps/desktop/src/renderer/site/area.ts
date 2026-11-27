@@ -1,10 +1,11 @@
 import { toast } from "@webforge/editor-ui";
 import type { Area, EditorContext, WindowContext } from "../editor/areas.js";
-import { PublishedYear } from "../editor/window-services.js";
+import { provide } from "../editor/services.js";
+import { PageSettings, PublishedYear } from "../editor/window-services.js";
 import { connectCanvasItem } from "./canvas-item.js";
 import { connectCanvasPosts } from "./canvas-posts.js";
 import { registerPageCommands } from "./page-commands.js";
-import { registerPageSettingsCommand } from "./page-settings-command.js";
+import { createPageSettings, registerPageSettingsCommand } from "./page-settings-command.js";
 import { registerSitePanel } from "./register-site-panel.js";
 
 /** The post shown, in its Blog's design, and the site's posts in Latest posts, on the canvas (6.10a, 6.10b). */
@@ -35,6 +36,8 @@ export const sitePanelArea: Area<WindowContext> = {
 /** The command palette's Go to page (1.34, F-ED-26), and Page Settings… for the page shown (3.17). */
 export const pageCommandsArea: Area<WindowContext> = {
   id: "pageCommands",
+  // Page Settings on a tab, for Site Check's Fixes and Find's results (#1443).
+  provides: [provide(PageSettings, ({ session }: WindowContext) => createPageSettings(session))],
   uses: [PublishedYear],
   register: ({ commands, session, windowDialogs, use }) => {
     const publishedYear = use(PublishedYear);
@@ -44,6 +47,7 @@ export const pageCommandsArea: Area<WindowContext> = {
       windowDialogs,
       session,
       () => publishedYear.getState() !== undefined,
+      use(PageSettings),
     );
     return () => {
       removeSettings();

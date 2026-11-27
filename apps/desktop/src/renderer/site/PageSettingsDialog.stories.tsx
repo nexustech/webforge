@@ -72,6 +72,8 @@ const meta = {
     onSave: () => undefined,
     onCancel: () => undefined,
     imageUrl: placeholder,
+    // Most stories are of its search result, on Search engines (#1443).
+    initialTab: "search",
   },
 } satisfies Meta<typeof PageSettingsDialog>;
 
@@ -83,6 +85,12 @@ type Story = StoryObj<typeof meta>;
  * with the site's name, its address under the web address, its own description, the site's photo.
  */
 export const SearchPreview: Story = {};
+
+/** As it opens (#1443): the page's name, its file and what it leaves out, on General. */
+export const General: Story = { args: { initialTab: "general" } };
+
+/** As a shared link (3.16, #1443): the site's photo, on Social & sharing. */
+export const WhenShared: Story = { args: { initialTab: "social" } };
 
 /** No description of its own: the site's, said as such. */
 export const InheritedDescription: Story = { args: settingsOf(bakery()) };
@@ -109,7 +117,7 @@ export const HiddenFromSearch: Story = {
   args: settingsOf(bakery({ hideFromSearch: true })),
 };
 
-/** No web address and no photo: the file name, and what a shared link misses. */
+/** No web address and no photo: what a shared link misses, on Social & sharing. */
 export const NoWebAddress: Story = {
-  args: settingsOf(bakery({}, { address: false, image: false })),
+  args: { ...settingsOf(bakery({}, { address: false, image: false })), initialTab: "social" },
 };

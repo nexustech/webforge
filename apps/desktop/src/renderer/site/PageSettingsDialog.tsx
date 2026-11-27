@@ -19,6 +19,7 @@ import {
 } from "@webforge/model";
 import { z } from "zod";
 import "../shell/form-messages.js";
+import type { PageSettingsTab } from "../editor/window-services.js";
 import { HelpButton } from "../help/index.js";
 import { fileNameFor, type PageSettingsChange } from "./page-actions.js";
 import { pagePreview, thumbnailUrl } from "./page-preview.js";
@@ -35,7 +36,24 @@ export type PageSettingsDialogProps = {
   readonly onCancel: () => void;
   /** A Media image's thumbnail; the app's, unless a story draws its own. */
   readonly imageUrl?: (image: ImageMeta) => string;
+  /** The tab it opens on (#1443): General when left out. */
+  readonly initialTab?: PageSettingsTab;
 };
+
+/**
+ * Each field's tab (#1443), named as Settings' sections are: what search engines show on Search
+ * engines, the share image on Social & sharing, and the rest (the page's name, its file and what it
+ * leaves out) on General.
+ */
+const TAB_OF: Readonly<Partial<Record<string, PageSettingsTab>>> = {
+  description: "search",
+  hideFromSearch: "search",
+  shareImage: "social",
+};
+
+/** `fields`, each on its tab ({@link TAB_OF}), in order within it. */
+const onTabs = (fields: readonly FormField[]): readonly FormField[] =>
+  fields.map((field) => ({ ...field, group: TAB_OF[field.name] ?? "general" }));
 
 /**
  * A post's field as the dialog names its value (6.10a): `item.date`, beside the page's own
@@ -155,101 +173,108 @@ export function pageSettingsSpec(
   const postFields = collectionOf(site, page)?.fields ?? [];
   const isPost = page.collection !== undefined;
   return {
-    fields: ({ slug }): readonly FormField[] => [
-      {
-        kind: "text",
-        name: "title",
-        label: t("pageSettings.pageTitle"),
-        maxLength: PAGE_TITLE_MAX,
-      },
-      ...postFields.map((field) => postField(field, images, imageUrl)),
-      {
-        kind: "text",
-        name: "slug",
-        label: t("pageSettings.fileName"),
-        help:
-          fixedFile ??
-          t("pages.fileName", {
-            path: fileNameFor(site, slug.trim() === "" ? page.slug : slug, page.folder, page.id),
-          }),
-        maxLength: PAGE_SLUG_MAX,
-        ...(fixedFile === undefined ? {} : { disabled: true }),
-      },
-      {
-        kind: "text",
-        name: "description",
-        label: t("pageSettings.metaDescription"),
-        help: t("pageSettings.metaDescriptionHint"),
-        multiline: true,
-        maxLength: PAGE_DESCRIPTION_MAX,
-        ...(siteDescription === undefined ? {} : { placeholder: siteDescription }),
-      },
-      {
-        kind: "imageChoice",
-        name: "shareImage",
-        label: t("pageSettings.shareImage"),
-        noneLabel: t("pageSettings.siteShareImage"),
-        options: images.map((image) => ({
-          value: image.id,
-          label: image.name,
-          thumbnail: imageUrl(image),
-        })),
-        ...(images.length === 0 ? { help: t("pageSettings.noImages") } : {}),
-      },
-      // A draft (G37, #864): any page but the Home page and "Page not found", first among what
-      // the page leaves out, as it leaves out the whole page.
-      ...(page.kind === "page" && page.id !== site.homePageId
-        ? [
-            {
-              kind: "toggle" as const,
-              name: "draft",
-              label: t("pageSettings.draft"),
-              help: t("pageSettings.draftHint"),
-            },
-          ]
-        : []),
-      { kind: "toggle", name: "hideHeader", label: t("pageSettings.hideHeader") },
-      { kind: "toggle", name: "hideFooter", label: t("pageSettings.hideFooter") },
-      // "Page not found" is never in navigation, nor shown by search engines. A post is never in
-      // navigation by itself: its Blog lists it.
-      ...(page.kind === "page" && !isPost
-        ? [
-            {
-              kind: "toggle" as const,
-              name: "hideFromNavigation",
-              label: t("pageSettings.hideFromNavigation"),
-            },
-          ]
-        : []),
-      ...(page.kind === "page"
-        ? [
-            // One is the menu, the other is search (3.15, SEO-2).
-            {
-              kind: "toggle" as const,
-              name: "hideFromSearch",
-              label: t("pageSettings.hideFromSearch"),
-              help: t("pageSettings.hideFromSearchHint"),
-            },
-            // What Site Check looks for when the site collects visitors' details (#855).
-            {
-              kind: "toggle" as const,
-              name: "privacy",
-              label: t("pageSettings.privacy"),
-              help: t("pageSettings.privacyHint"),
-            },
-          ]
-        : []),
-      // Only while the site shows one (Site Settings → General).
-      ...(site.settings.general.backToTop === true
-        ? [
-            {
-              kind: "toggle" as const,
-              name: "hideBackToTop",
-              label: t("pageSettings.hideBackToTop"),
-            },
-          ]
-        : []),
+    // Its tabs (#1443): fewer fields at once in a wider dialog, under Settings' own headings.
+    groups: [
+      { id: "general", label: t("site.settings.section.general") },
+      { id: "search", label: t("site.settings.section.search") },
+      { id: "social", label: t("site.settings.section.social") },
     ],
+    fields: ({ slug }): readonly FormField[] =>
+      onTabs([
+        {
+          kind: "text",
+          name: "title",
+          label: t("pageSettings.pageTitle"),
+          maxLength: PAGE_TITLE_MAX,
+        },
+        ...postFields.map((field) => postField(field, images, imageUrl)),
+        {
+          kind: "text",
+          name: "slug",
+          label: t("pageSettings.fileName"),
+          help:
+            fixedFile ??
+            t("pages.fileName", {
+              path: fileNameFor(site, slug.trim() === "" ? page.slug : slug, page.folder, page.id),
+            }),
+          maxLength: PAGE_SLUG_MAX,
+          ...(fixedFile === undefined ? {} : { disabled: true }),
+        },
+        {
+          kind: "text",
+          name: "description",
+          label: t("pageSettings.metaDescription"),
+          help: t("pageSettings.metaDescriptionHint"),
+          multiline: true,
+          maxLength: PAGE_DESCRIPTION_MAX,
+          ...(siteDescription === undefined ? {} : { placeholder: siteDescription }),
+        },
+        {
+          kind: "imageChoice",
+          name: "shareImage",
+          label: t("pageSettings.shareImage"),
+          noneLabel: t("pageSettings.siteShareImage"),
+          options: images.map((image) => ({
+            value: image.id,
+            label: image.name,
+            thumbnail: imageUrl(image),
+          })),
+          ...(images.length === 0 ? { help: t("pageSettings.noImages") } : {}),
+        },
+        // A draft (G37, #864): any page but the Home page and "Page not found", first among what
+        // the page leaves out, as it leaves out the whole page.
+        ...(page.kind === "page" && page.id !== site.homePageId
+          ? [
+              {
+                kind: "toggle" as const,
+                name: "draft",
+                label: t("pageSettings.draft"),
+                help: t("pageSettings.draftHint"),
+              },
+            ]
+          : []),
+        { kind: "toggle", name: "hideHeader", label: t("pageSettings.hideHeader") },
+        { kind: "toggle", name: "hideFooter", label: t("pageSettings.hideFooter") },
+        // "Page not found" is never in navigation, nor shown by search engines. A post is never in
+        // navigation by itself: its Blog lists it.
+        ...(page.kind === "page" && !isPost
+          ? [
+              {
+                kind: "toggle" as const,
+                name: "hideFromNavigation",
+                label: t("pageSettings.hideFromNavigation"),
+              },
+            ]
+          : []),
+        ...(page.kind === "page"
+          ? [
+              // One is the menu, the other is search (3.15, SEO-2).
+              {
+                kind: "toggle" as const,
+                name: "hideFromSearch",
+                label: t("pageSettings.hideFromSearch"),
+                help: t("pageSettings.hideFromSearchHint"),
+              },
+              // What Site Check looks for when the site collects visitors' details (#855).
+              {
+                kind: "toggle" as const,
+                name: "privacy",
+                label: t("pageSettings.privacy"),
+                help: t("pageSettings.privacyHint"),
+              },
+            ]
+          : []),
+        // Only while the site shows one (Site Settings → General).
+        ...(site.settings.general.backToTop === true
+          ? [
+              {
+                kind: "toggle" as const,
+                name: "hideBackToTop",
+                label: t("pageSettings.hideBackToTop"),
+              },
+            ]
+          : []),
+      ]),
     // The page as a search result under its description, and as a shared link under its share
     // image, as the export will write them, updating as the person types (3.16).
     after: (values) => {
@@ -303,6 +328,7 @@ export function PageSettingsDialog({
   onSave,
   onCancel,
   imageUrl = thumbnailUrl,
+  initialTab = "general",
 }: PageSettingsDialogProps) {
   if (page === undefined) return null;
   const fixed = page.id === site.homePageId || page.kind === "not-found";
@@ -311,6 +337,10 @@ export function PageSettingsDialog({
       open={open}
       title={t("pageSettings.title", { name: page.title })}
       help={<HelpButton topic="pageSettings" />}
+      // Wider (#1443): its rows, the search result and the share card have room.
+      size="lg"
+      groupsLabel={t("pageSettings.sections")}
+      initialGroup={initialTab}
       description={t("pageSettings.description")}
       confirm={t("pageSettings.save")}
       spec={pageSettingsSpec(site, page, imageUrl)}

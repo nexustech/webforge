@@ -180,6 +180,7 @@ test("publishes to Netlify sending only what changed, with its forms named, and 
     .click();
   await page.getByRole("menuitem", { name: "Page Settings…" }).click();
   const settings = page.getByRole("dialog", { name: "Settings for 'Home'" });
+  await settings.getByRole("tab", { name: "Search engines" }).click();
   await settings.getByRole("textbox", { name: "Description" }).fill("Fresh bread every morning");
   await settings.getByRole("button", { name: "Save" }).click();
   await expect(settings).toHaveCount(0);

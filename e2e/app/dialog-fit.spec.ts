@@ -187,6 +187,14 @@ const keychain = process.platform === "win32" || process.platform === "darwin";
 /** Whether macOS's menu bar holds the menus, so the title bar has none (LF-13). */
 const nativeMenus = process.platform === "darwin";
 
+/** Page Settings' tabs, each chosen in turn (#1443): through which its top stays put. */
+const pageSettingsTabs: readonly Change[] = ["Search engines", "Social & sharing", "General"].map(
+  (tab): Change => ({
+    name: `the ${tab} tab`,
+    run: (target) => target.getByRole("tab", { name: tab, exact: true }).click(),
+  }),
+);
+
 const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");
 
 /**
@@ -357,6 +365,18 @@ const CASES: readonly FitCase[] = [
       await page.getByRole("menuitem", { name: "Page Settings…" }).click();
       return shown(page.getByRole("dialog", { name: /^Settings for / }));
     },
+    changes: pageSettingsTabs,
+  },
+  // An ordinary page's: all its toggles, the longest form (#1443).
+  {
+    name: "Page Settings for About us",
+    kind: "dialog",
+    open: async ({ page }) => {
+      await pageActions(page, "About us");
+      await page.getByRole("menuitem", { name: "Page Settings…" }).click();
+      return shown(page.getByRole("dialog", { name: "Settings for 'About us'" }));
+    },
+    changes: pageSettingsTabs,
   },
   {
     name: "Add Page",
@@ -695,6 +715,36 @@ const CASES: readonly FitCase[] = [
       return shown(page.getByRole("region", { name: "Bottom panel" }));
     },
   },
+  // A post's: its Date, Summary, Picture and Tags too (#1443). Last, as it adds a Blog to the
+  // site: Add Page › Blog shows its first post, and the Home page is shown again, as the other
+  // cases expect it.
+  {
+    name: "Page Settings for a blog post",
+    kind: "dialog",
+    open: async ({ page }) => {
+      const panel = await sideTab(page, "Right", "Site");
+      await panel.getByRole("button", { name: "Add Page" }).click();
+      await page.getByRole("menuitem", { name: "Blog", exact: true }).click();
+      // Its first post shown, which can switch the column to another tab: the Site tab again.
+      const pages = (await sideTab(page, "Right", "Site")).getByRole("list", { name: "Pages" });
+      await expect(pages.getByRole("button", { name: /^Our first post/ }).first()).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      // A page's button is named by its title, then what else it says of the page.
+      await pages.getByRole("button", { name: /^Home/ }).first().click();
+      await expect(pages.getByRole("button", { name: /^Home/ }).first()).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      await pageActions(page, "Our first post");
+      await page.getByRole("menuitem", { name: "Page Settings…" }).click();
+      const settings = page.getByRole("dialog", { name: "Settings for 'Our first post'" });
+      await expect(settings.getByRole("textbox", { name: "Date" })).toBeVisible();
+      return shown(settings);
+    },
+    changes: pageSettingsTabs,
+  },
 ];
 
 /**
@@ -754,8 +804,9 @@ async function connectAiApp({ app, page }: Context): Promise<{ remove(): Promise
 const sectionFaults = new WeakMap<Page, FitFault[]>();
 
 /**
- * A site with what the cases need: a Hero with a picture from Media placed on it, a second page to
- * delete, a web address (so Export doesn't ask for one first), and a version.
+ * A site with what the cases need: a Hero with a picture from Media placed on it, a heading set to
+ * Don't Publish (Publish's line, #1512), a second page to delete, a web address (so Export doesn't
+ * ask for one first), and a version.
  */
 function seedSite(folder: string): string {
   const path = join(folder, "Rosa's Bakery.wforge");
@@ -793,6 +844,8 @@ function seedSite(folder: string): string {
     if (home === undefined) throw new Error("no home page");
     home.doc.content = [
       { type: "Hero", props: { id: "hero", title: "Fresh bread", image: { mediaId: "shop" } } },
+      // Set to Don't Publish: Publish says so, in a line of its own (#1512).
+      { type: "Heading", props: { id: "kept", text: "Opening soon", hidden: true } },
     ];
     const about = structuredClone(home);
     about.id = newId("page");

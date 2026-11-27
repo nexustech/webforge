@@ -1,12 +1,13 @@
 import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import type { PublishDestination } from "@webforge/model";
+import { type PublishDestination, type SiteDoc, unpublishedRoots } from "@webforge/model";
 import { createElement } from "react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { createPublishRequests, type VersionToRepublish } from "../editor/publish-requests.js";
 import { provide } from "../editor/services.js";
+import { showElement } from "../editor/show-element.js";
 import {
   OnNetlify,
   PublishedYear,
@@ -27,6 +28,9 @@ import { fillWebAddress } from "./web-address.js";
 /** The local year `at`, an ISO time, falls in: the year an export then filled `{year}` in (F-CM-8). */
 const yearOf = (at: string | undefined) =>
   at === undefined ? undefined : new Date(at).getFullYear();
+
+/** How many elements of `site` aren't published, the outermost only (#1512). */
+const countOf = (site: SiteDoc) => unpublishedRoots(site).length;
 
 /** Whether the destinations are shown, and the saved version they'd republish, if one (4.6b). */
 type Opened = { readonly open: boolean; readonly version?: VersionToRepublish };
@@ -71,6 +75,33 @@ export const publishArea: Area<WindowContext> = {
     // The version stays while the dialog fades out, so its title doesn't change; each way of
     // opening it says afresh whether it republishes one.
     const close = () => opened.setState({ open: false });
+    // How many elements of the version being republished aren't published (#1512), once read: a
+    // version that can't be read says nothing here, as Republish says why.
+    const versionUnpublished = createStore<{ readonly id: string; readonly count: number }>(() => ({
+      id: "",
+      count: 0,
+    }));
+    const countVersion = (version: VersionToRepublish) => {
+      if (versionUnpublished.getState().id === version.id) return;
+      versionUnpublished.setState({ id: version.id, count: 0 }, true);
+      api.versions
+        .readSite(siteSession(), version.id)
+        .then((read) => {
+          if (versionUnpublished.getState().id !== version.id) return;
+          // Not read: the next Republish of it reads it again.
+          if (read.status !== "ok") versionUnpublished.setState({ id: "", count: 0 }, true);
+          else versionUnpublished.setState({ id: version.id, count: countOf(read.site) }, true);
+        })
+        .catch((error: unknown) => {
+          versionUnpublished.setState({ id: "", count: 0 }, true);
+          reportFailure("publish.unpublished", error);
+        });
+    };
+    /** Selects the open site's first element that isn't published, the dialog closed (#1512). */
+    const showUnpublished = () => {
+      const [first] = unpublishedRoots(session.history.document.getState());
+      if (first !== undefined) showElement(session, first.on, first.node.props.id);
+    };
     const outcomes = createPublishOutcomes();
     const flow: PublishFlow = {
       site: () => session.history.document.getState(),
@@ -131,8 +162,20 @@ export const publishArea: Area<WindowContext> = {
     function Publish() {
       const { open, version } = useStore(opened);
       const signInOffered = useStore(canSignIn);
+      // Counted only while it's open and publishes the open site: a number, so an edit elsewhere
+      // that leaves it alone draws nothing.
+      const siteCount = useStore(session.history.document, (site) =>
+        open && version === undefined ? countOf(site) : 0,
+      );
+      const versionCount = useStore(versionUnpublished, (counted) =>
+        counted.id === version?.id ? counted.count : 0,
+      );
       return createElement(PublishDialog, {
         open,
+        unpublished:
+          version === undefined
+            ? { count: siteCount, show: showUnpublished }
+            : { count: versionCount },
         ...(version === undefined ? {} : { republishing: version.name }),
         publish: api.publish,
         netlify: { ...netlify, canSignIn: signInOffered },
@@ -187,9 +230,10 @@ export const publishArea: Area<WindowContext> = {
       menu: "file",
       run: () => opened.setState({ open: true }, true),
     });
-    const removeRepublish = requests.onRepublish((version) =>
-      opened.setState({ open: true, version }, true),
-    );
+    const removeRepublish = requests.onRepublish((version) => {
+      countVersion(version);
+      opened.setState({ open: true, version }, true);
+    });
     return () => {
       removeRepublish();
       removeCommand();
