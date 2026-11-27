@@ -105,8 +105,8 @@ const saveKeptCopyResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("canceled") }),
   z.strictObject({
     status: z.literal("failed"),
-    /** No site open, no copy kept for it, or a write error. */
-    reason: z.enum(["no-site", "no-copy", "unknown"]),
+    /** No site open, no copy kept for it, the open site's own file chosen, or a write error. */
+    reason: z.enum(["no-site", "no-copy", "open-site", "unknown"]),
   }),
 ]);
 

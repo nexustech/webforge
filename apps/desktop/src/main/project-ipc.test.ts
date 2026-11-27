@@ -615,5 +615,14 @@ describe("the copy from before an update (#1525)", () => {
     await expect(
       canceled.invoke("project:save-kept-copy", APP_URL, "22222222-2222-4222-8222-222222222222"),
     ).resolves.toEqual({ status: "canceled" });
+
+    // Never over the open site's own file, which the store has open.
+    const over = setUp(
+      { chooseKeptCopyToSave: async () => "/sites/Bakery.wforge" },
+      { keptCopies: { backups: keptAt("x"), version: "0.4.0" } },
+    );
+    await expect(
+      over.invoke("project:save-kept-copy", APP_URL, project.sessionId),
+    ).resolves.toEqual({ status: "failed", reason: "open-site" });
   });
 });

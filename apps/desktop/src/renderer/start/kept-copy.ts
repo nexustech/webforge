@@ -14,7 +14,13 @@ function tell(result: SaveKeptCopyResult): void {
       description: t("site.keptCopy.savedDescription"),
     });
   } else if (result.status === "failed") {
-    toast.error(t("site.keptCopy.saveFailed"));
+    toast.error(
+      t(
+        result.reason === "open-site"
+          ? "site.keptCopy.saveOverOpenSite"
+          : "site.keptCopy.saveFailed",
+      ),
+    );
   }
 }
 

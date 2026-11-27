@@ -715,6 +715,9 @@ export class ProjectSession {
     try {
       takeDailyVersion(store, this.#dailyVersion.kept());
     } catch (error) {
+      // The site's file wasn't kept from before an update, so nothing was written: the next
+      // change, which tries the copy again, tries the daily version too (#1525).
+      if (error instanceof KeepCopyError) this.#dailyChecked = undefined;
       if (!(error instanceof ReadOnlyProjectError)) {
         logFailure("Webforge could not save the daily version of a site", error);
       }

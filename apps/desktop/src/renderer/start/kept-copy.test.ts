@@ -107,6 +107,19 @@ describe("File › Save the Copy from Before the Update… (#1525)", () => {
     );
   });
 
+  it("says so when the person chose the open site's own file", async () => {
+    const { commands, offered } = registered(KEPT, { status: "failed", reason: "open-site" });
+    await vi.waitFor(() => expect(offered()).toBeDefined());
+
+    commands.run(COMMAND_IDS.saveKeptCopy);
+
+    await vi.waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "That's this site's own file. Save the copy under another name.",
+      ),
+    );
+  });
+
   it("leaves the File menu when the area is removed", async () => {
     const { dispose, offered } = registered(KEPT);
     await vi.waitFor(() => expect(offered()).toBeDefined());

@@ -160,11 +160,11 @@ export function createBackups(options: BackupOptions) {
      */
     keepBeforeUpdate(sourcePath: string, projectId: string, formats: StoredFormats): KeptCopy {
       const { fileFormat, siteFormat } = formats;
+      const folder = join(options.root, projectId);
+      const path = join(folder, `before-update-format-${fileFormat}-site-${siteFormat}.wforge`);
+      const incoming = `${path}.tmp`;
       try {
-        const folder = join(options.root, projectId);
         mkdirSync(folder, { recursive: true });
-        const path = join(folder, `before-update-format-${fileFormat}-site-${siteFormat}.wforge`);
-        const incoming = `${path}.tmp`;
         copyFileSync(sourcePath, incoming);
         renameSync(incoming, path);
         for (const name of readdirSync(folder)) {
@@ -174,6 +174,8 @@ export function createBackups(options: BackupOptions) {
         }
         return { path, fileFormat, siteFormat, keptAt: now(), size: statSync(path).size };
       } catch (error) {
+        // A copy cut short by a full disk is no use, and takes the room it needs.
+        rmSync(incoming, { force: true });
         throw new KeepCopyError(error);
       }
     },

@@ -501,6 +501,8 @@ export const site = {
   "site.keptCopy.saved": "Saved {name}",
   "site.keptCopy.savedDescription": "Open it in the older version of {appName}.",
   "site.keptCopy.saveFailed": "The copy couldn't be saved. Try another folder.",
+  "site.keptCopy.saveOverOpenSite":
+    "That's this site's own file. Save the copy under another name.",
   "site.zip.openDialogTitle": "Open a Site from a ZIP File",
   "site.zip.saved": "Saved a copy of your site as “{name}”.",
   "site.zip.savedDescription":

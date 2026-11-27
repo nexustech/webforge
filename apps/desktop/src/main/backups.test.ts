@@ -237,4 +237,16 @@ describe("the copy kept from before an update (#1525)", () => {
     ).toThrow(KeepCopyError);
     expect(existsSync(earlier.path)).toBe(true);
   });
+
+  it("leaves no part-copied file behind when the copy can't be put in place", () => {
+    const backed = backups();
+    const folder = join(dir, "backups", store.info.projectId);
+    // Something in the way of the copy's name, so the copy is made but can't be renamed into it.
+    mkdirSync(join(folder, "before-update-format-2-site-22.wforge"), { recursive: true });
+
+    expect(() => backed.keepBeforeUpdate(sitePath, store.info.projectId, NEWER)).toThrow(
+      KeepCopyError,
+    );
+    expect(readdirSync(folder).filter((name) => name.endsWith(".tmp"))).toEqual([]);
+  });
 });

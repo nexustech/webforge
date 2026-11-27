@@ -22,6 +22,7 @@ import { fillNewSite, type TemplateReader } from "./new-site.js";
 import type { ProjectSession } from "./project-session.js";
 import type { RecentSites } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
+import { samePath } from "./site-paths.js";
 import { recordUsage, type UsageEvent } from "./usage.js";
 
 /** Native file dialogs, injected so the handlers can be tested without Electron. */
@@ -248,6 +249,10 @@ export function registerProjectHandlers(
           }),
     );
     if (path === undefined) return { status: "canceled" };
+    // Never over the open site's own file, which the store has open and would go on writing.
+    const open = session.currentPath();
+    if (open !== undefined && samePath(open, path))
+      return { status: "failed", reason: "open-site" };
     try {
       copyFileSync(kept.path, path);
       return { status: "saved", fileName: basename(path) };
