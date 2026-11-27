@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { McpStatus } from "../../shared/ipc/mcp.js";
 import { AiAppsDialog } from "./AiAppsDialog.js";
 import { AiAppsStatus, INDICATOR_EVERY_MS } from "./AiAppsStatus.js";
+import { onAiAppsChanged } from "./ai-apps-changed.js";
 
 afterEach(() => {
   cleanup();
@@ -87,6 +88,33 @@ describe("the title bar's AI apps status (4.9)", () => {
     expect(
       screen.getByRole("button", { name: "Connected AI apps: Test client. Open AI apps." }),
     ).toBeDefined();
+  });
+
+  it("is told once as AI apps closes, not each time AI apps is drawn again while open (#1615)", async () => {
+    const told = vi.fn();
+    const stop = onAiAppsChanged(told);
+    const mcp = {
+      status: async () => undefined,
+      seenMoved: async () => undefined,
+    } as unknown as Parameters<typeof AiAppsDialog>[0]["mcp"];
+    // A new `notify` each time, as the start screen's command gives it.
+    const draw = (open: boolean) => (
+      <AiAppsDialog
+        open={open}
+        mcp={mcp}
+        copyText={async () => undefined}
+        copySecret={async () => undefined}
+        notify={() => undefined}
+        onClose={() => undefined}
+      />
+    );
+    const view = render(draw(true));
+    view.rerender(draw(true));
+    view.rerender(draw(true));
+    expect(told).not.toHaveBeenCalled();
+    view.rerender(draw(false));
+    expect(told).toHaveBeenCalledOnce();
+    stop();
   });
 
   it("says an app works without asking, by its icon and to a screen reader, until that ends (5.35)", async () => {

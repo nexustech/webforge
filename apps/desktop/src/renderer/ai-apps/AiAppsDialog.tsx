@@ -372,10 +372,14 @@ export function AiAppsDialog({
     return () => {
       live = false;
       clearInterval(timer);
-      // Closed: the title bar's sign shows what changed here at once (#1615).
-      aiAppsChanged();
     };
   }, [open, mcp, notify]);
+  // Closed (or gone while open): the title bar's sign shows what changed here at once (#1615).
+  // Only on `open`, so a new `notify` or `mcp` while it's open doesn't send it.
+  useEffect(() => {
+    if (!open) return undefined;
+    return aiAppsChanged;
+  }, [open]);
 
   // The shown app as AI apps lists it now: none once its key ran out unused, or it was removed.
   const shownApp = shown === null ? undefined : status?.apps.find((app) => app.id === shown.id);
