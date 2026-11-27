@@ -139,6 +139,45 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(await tooltipOf(mark)).toBe("Swap this photo");
   });
 
+  it("marks the outermost unpublished layer with its eye, and dims the layers inside it (#1512)", () => {
+    render(
+      <LayersPanel
+        layers={[
+          layer("s1", {
+            kind: "Section",
+            hidden: true,
+            children: [layer("a"), layer("b", { hidden: true })],
+          }),
+          layer("s2", { kind: "Section", children: [layer("c")] }),
+        ]}
+        selectedId={null}
+        alsoSelected={[]}
+        actions={setUpActions()}
+        layoutLocked={false}
+      />,
+    );
+
+    const [section, inside, alsoHidden, shownSection, shownInside] =
+      screen.getAllByRole("treeitem");
+    // The eye of the layer set to Don't Publish says so, always showing (UX-23).
+    const eye = screen.getByRole("button", {
+      name: "Not published. Choose whether Section shows…",
+    });
+    expect(section?.contains(eye)).toBe(true);
+    expect(eye.className).not.toContain("opacity-0");
+    // Inside it: dimmed and said so, with an eye of its own only for how it shows itself.
+    for (const row of [inside, alsoHidden]) {
+      expect(row?.className).toContain("text-muted-foreground");
+      expect(row?.textContent).toContain(", not published, as it's inside an element that isn't");
+    }
+    expect(inside?.querySelector("button[aria-haspopup]")?.className).toContain("opacity-0");
+    // Elsewhere, as before.
+    for (const row of [shownSection, shownInside]) {
+      expect(row?.className).not.toContain("text-muted-foreground");
+      expect(row?.textContent).not.toContain("not published");
+    }
+  });
+
   it("shows the tree with levels, names, the selection and hidden layers", () => {
     const { item } = setUp();
 
