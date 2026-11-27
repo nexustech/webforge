@@ -94,13 +94,16 @@ export type ReadSiteResult = z.infer<typeof readSiteResultSchema>;
 
 /**
  * Why saving changes failed: no site open, another site opened since the renderer loaded
- * (`stale-session`), a read-only site, changes that would break the site, or a write error.
+ * (`stale-session`), a read-only site, changes that would break the site, the site's file not
+ * kept as an older Webforge wrote it before its format changed (`no-copy`, #1525), or a write
+ * error.
  */
 export const COMMIT_FAILURES = [
   "no-site",
   "stale-session",
   "read-only",
   "invalid",
+  "no-copy",
   "unknown",
 ] as const;
 

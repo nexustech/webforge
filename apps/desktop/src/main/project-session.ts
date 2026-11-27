@@ -39,6 +39,7 @@ import type {
   UiStateResult,
 } from "../shared/ipc-contract.js";
 import { createWriterJobs } from "../worker/writer-jobs.js";
+import { KeepCopyError } from "./backups.js";
 import { localDay, takeDailyVersion } from "./daily-version.js";
 import { setUiState, uiState } from "./editor-state.js";
 import { exportChoices, setExportChoices } from "./export-choices.js";
@@ -181,6 +182,15 @@ export type ProjectSessionOptions = {
   /** Opens a site's file; `ProjectStore.open` unless a test wraps it. */
   readonly openStore?: (path: string) => ProjectStore;
   /**
+   * Keeps the site's file as an older Webforge wrote it, before the first write that changes its
+   * format (#1525, UC-2): the backups' `keepBeforeUpdate`. If it throws, the write is refused, and
+   * a commit says why (`no-copy`).
+   */
+  readonly beforeFormatChange?: (
+    path: string,
+    info: { readonly projectId: string; readonly formatVersion: number },
+  ) => void;
+  /**
    * Saves the daily version before the first change of the day (F-SITE-4), keeping `kept()` of
    * Webforge's own versions; none without it, as in most tests.
    */
@@ -238,7 +248,20 @@ export class ProjectSession {
   constructor(events: ProjectSessionEvents = {}, options: ProjectSessionOptions = {}) {
     this.#listeners = [events];
     this.#gate = options.gate ?? createStoreGate();
-    this.#openStore = options.openStore ?? ((path) => ProjectStore.open(path));
+    const keep = options.beforeFormatChange;
+    this.#openStore =
+      options.openStore ??
+      ((path) => {
+        if (keep === undefined) return ProjectStore.open(path);
+        // The hook runs at a later write, by when the store is there to say what it holds.
+        let opened: ProjectStore | undefined;
+        opened = ProjectStore.open(path, {
+          beforeFormatChange: () => {
+            if (opened !== undefined) keep(path, opened.info);
+          },
+        });
+        return opened;
+      });
     this.#createStore =
       options.createStore ?? ((path, name) => ProjectStore.create(path, { name, timed: timeStep }));
     this.#writer = options.writer ?? createInlineStorageWriter(createWriterJobs());
@@ -519,6 +542,11 @@ export class ProjectSession {
         try {
           store.commit(changes);
         } catch (error) {
+          // The file couldn't be kept as the older Webforge wrote it, so nothing was written.
+          if (error instanceof KeepCopyError) {
+            logFailure("Webforge could not keep the site as it was before the update", error);
+            return { status: "failed", reason: "no-copy" };
+          }
           return storeFailure(error, "Webforge could not save the site");
         }
         this.#site = next.data;

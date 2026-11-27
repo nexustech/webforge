@@ -115,6 +115,11 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       ),
       // The site as it was before each day's first change, in Version History (F-SITE-4, 4.6).
       dailyVersion: { kept: versionsKept },
+      // The file as an older Webforge wrote it, kept before this one first changes its format
+      // (#1525, UC-2).
+      beforeFormatChange: (path, info) => {
+        backups.keepBeforeUpdate(path, info.projectId, info.formatVersion);
+      },
     },
   );
 
