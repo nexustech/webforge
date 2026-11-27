@@ -1,6 +1,5 @@
 import { join, resolve } from "node:path";
 import { t } from "@webforge/i18n/main";
-import { appEvents } from "../shared/ipc/app.js";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { updatesEvents } from "../shared/ipc/updates.js";
 import { updateChannelFor } from "../shared/update-channel.js";
@@ -12,12 +11,12 @@ import { type AppElectron, type AppParts, testDialogAnswer } from "./app-parts.j
 import { appPageUrl } from "./app-scheme.js";
 import { claimInstance, helpWindowsFor, prepareRenderers, prepareSession } from "./app-setup.js";
 import { createBackupSchedule } from "./backup-schedule.js";
-import { createBackups } from "./backups.js";
+import { createBackups, createKeptCopies } from "./backups.js";
 import { captureCanvas } from "./canvas-capture.js";
 import { canvasStylesFeature, createCanvasStyles } from "./canvas-css.js";
 import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { createCodeTrust } from "./code-trust.js";
-import { createCredentialStore } from "./credential-store.js";
+import { createKeychainCredentialStore } from "./credential-store.js";
 import { createNativeDialogs } from "./dialogs.js";
 import { createFlushOnClose } from "./flush-on-close.js";
 import { createHandOff, handOffWindow } from "./hand-off.js";
@@ -100,11 +99,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     lifecycle.preferences?.get().versionsKept ?? DEFAULT_PREFERENCES.versionsKept;
   // Publish passwords, keys and tokens (#666, 4.4a), encrypted with the OS's keychain (Windows
   // DPAPI, macOS Keychain): never in a site file. safeStorage is asked as each one is used.
-  const credentials = createCredentialStore(join(app.getPath("userData"), "credentials.json"), {
-    isEncryptionAvailable: () => electron.safeStorage.isAsyncEncryptionAvailable(),
-    encryptString: (text) => electron.safeStorage.encryptStringAsync(text),
-    decryptString: (encrypted) => electron.safeStorage.decryptStringAsync(encrypted),
-  });
+  const credentials = createKeychainCredentialStore(app.getPath("userData"), electron.safeStorage);
+  // The copy kept of a site before an update changes its format, and saving it (#1525, UC-2).
+  const keptCopies = createKeptCopies(backups, app.getVersion(), () => lifecycle.mainWindow());
   const projectSession = new ProjectSession(
     {},
     {
@@ -116,13 +113,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       ),
       // The site as it was before each day's first change, in Version History (F-SITE-4, 4.6).
       dailyVersion: { kept: versionsKept },
-      // The file as an older Webforge wrote it, kept before this one first changes its format
-      // (#1525, UC-2).
-      beforeFormatChange: (path, info) => {
-        backups.keepBeforeUpdate(path, info.projectId, info.formatVersion);
-        // The renderer offers to save it, once the change that waited for it is saved.
-        lifecycle.mainWindow()?.webContents.send(appEvents.copyKept.channel);
-      },
+      beforeFormatChange: keptCopies.beforeFormatChange,
     },
   );
 
@@ -295,7 +286,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         beforeSwitch: () => siteSwitch.leaveSite(),
         template: templates.template,
         flush: requestFlush,
-        keptCopies: { backups, version: app.getVersion() },
+        keptCopies,
       },
       net: electron.net,
       packaged: app.isPackaged,

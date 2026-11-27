@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { WebforgeError } from "@webforge/errors";
 import { z } from "zod";
 import { createJsonStore } from "./json-store.js";
@@ -163,4 +164,27 @@ export function createCredentialStore(file: string, cipher: SecretCipher): Crede
         return true;
       }),
   };
+}
+
+/** The parts of Electron's `safeStorage` the app's credential store uses. */
+type KeychainCipher = {
+  isAsyncEncryptionAvailable(): Promise<boolean>;
+  encryptStringAsync(text: string): Promise<Buffer>;
+  decryptStringAsync(encrypted: Buffer): Promise<{ result: string; shouldReEncrypt: boolean }>;
+};
+
+/**
+ * The app's credential store (#666, 4.4a), `credentials.json` in `userData`, encrypted with the
+ * OS's keychain through Electron's `safeStorage` (Windows DPAPI, macOS Keychain), asked as each
+ * secret is used.
+ */
+export function createKeychainCredentialStore(
+  userData: string,
+  safeStorage: KeychainCipher,
+): CredentialStore {
+  return createCredentialStore(join(userData, "credentials.json"), {
+    isEncryptionAvailable: () => safeStorage.isAsyncEncryptionAvailable(),
+    encryptString: (text) => safeStorage.encryptStringAsync(text),
+    decryptString: (encrypted) => safeStorage.decryptStringAsync(encrypted),
+  });
 }

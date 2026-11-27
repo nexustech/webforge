@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import type { ProjectStore } from "@webforge/storage";
+import { appEvents } from "../shared/ipc/app.js";
 
 /**
  * A site's file kept as an older Webforge wrote it, before this one first wrote it in a newer
@@ -222,3 +223,27 @@ export function createBackups(options: BackupOptions) {
 
 /** See {@link createBackups}. */
 export type Backups = ReturnType<typeof createBackups>;
+
+/**
+ * The copy kept of a site before an update changes its format, and saving it (#1525, UC-2): the
+ * session's hook, which keeps the file and tells the window so it can offer to save it, and what
+ * the site's calls find it with, with the running version that names its releases.
+ */
+export function createKeptCopies(
+  backups: Backups,
+  version: string,
+  window: () => { readonly webContents: { send(channel: string): void } } | undefined,
+) {
+  return {
+    backups,
+    version,
+    beforeFormatChange: (
+      path: string,
+      info: { readonly projectId: string; readonly formatVersion: number },
+    ): void => {
+      backups.keepBeforeUpdate(path, info.projectId, info.formatVersion);
+      // The window offers to save it, once the change that waited for it is saved.
+      window()?.webContents.send(appEvents.copyKept.channel);
+    },
+  };
+}

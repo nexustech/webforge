@@ -31,7 +31,7 @@ function keptMessage(kept: Extract<KeptCopyInfo, { status: "kept" }>): string {
  * its own for that version to open. Main asks where and copies it, byte for byte. Off while it
  * runs. Returns its run, for the toast that offers it, and its removal.
  */
-export function registerKeptCopyCommand(
+function registerKeptCopyCommand(
   registry: CommandRegistry,
   save: () => Promise<SaveKeptCopyResult>,
 ): { readonly run: () => Promise<void>; readonly dispose: () => void } {
