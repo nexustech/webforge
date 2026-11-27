@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
 import { EXPORTED_SITE_DIR } from "./exported-site.js";
 import { type ServedSite, serveSite } from "./served-site.js";
+import { expect, test } from "./test.js";
 
 // The "Page not found" page (F-ED-20, 3.5) of the fixture export (export.setup.ts), served over
 // http as a host serves it: at any missing address, folders deep too. Without a web address its

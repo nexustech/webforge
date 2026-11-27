@@ -1,7 +1,8 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { HIDING_HEADER_SITE_DIR } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // A Header that hides on the way down (HH-7) on an exported site, opened from disk: out of view as
 // the visitor scrolls down, back as they scroll up, at once for a visitor who asks for less motion,

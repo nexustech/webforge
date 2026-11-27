@@ -33,7 +33,7 @@ test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
   rmSync(RESULTS, { force: true });
-  app = await launchDesktopApp();
+  app = await launchDesktopApp({ motion: true });
   page = await app.firstWindow();
   await waitForCanvas(page);
   await app.evaluate(({ shell }) => {

@@ -1,7 +1,8 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { CONTACT_BUTTONS_SITE_DIR } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // Contact buttons (6.16d) on an exported site, opened from disk: they stay at the bottom left of
 // the screen, and the end of the page scrolls clear of them, so they never cover the Footer.

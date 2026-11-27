@@ -1,7 +1,8 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { HERO_OVERLAY_SITE_DIR } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // The Hero's Overlay (HH-3) on an exported site, opened from disk: over its picture at the strength
 // and in the colour chosen, its text in the colour that suits it, and a Hero saved before at the

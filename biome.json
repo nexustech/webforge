@@ -83,6 +83,26 @@
   },
   "overrides": [
     {
+      "includes": ["e2e/export/*.spec.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@playwright/test": {
+                    "importNames": ["test"],
+                    "message": "Import test from ./test.js, which runs the exported site's pages with motion off (#1493)."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": [
         "**/*.{ts,tsx}",
         "!packages/model/src/ids.ts",

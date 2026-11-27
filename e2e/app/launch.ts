@@ -9,9 +9,12 @@ import {
   type ElectronApplication,
   _electron as electron,
   expect,
+  type Frame,
   type Page,
+  test,
 } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
+import { addNoMotionSheet, NO_MOTION_SHEET } from "../no-motion.js";
 
 /** The desktop app's folder; its production build is in `out/`. */
 export const desktopDir = join(import.meta.dirname, "../../apps/desktop");
@@ -162,6 +165,13 @@ export async function launchDesktopApp(
     readonly tips?: boolean;
     /** More of the app's environment: `WEBFORGE_E2E_NETLIFY_API`, the mock Netlify's (#70). */
     readonly env?: Readonly<Record<string, string>>;
+    /**
+     * Whether its windows move as people see them. Off by default (#1493): reduced motion, and every
+     * transition and animation over at once (`e2e/no-motion.ts`), so a test never reads the screen
+     * mid-change. A test about motion itself, or a timing, turns it on, here or with
+     * {@link MOTION_TAG} when a shared hook launches the app.
+     */
+    readonly motion?: boolean;
   } = {},
 ): Promise<WebforgeApp> {
   const { executablePath, env } = electronCommand();
@@ -181,6 +191,7 @@ export async function launchDesktopApp(
     cwd: desktopDir,
     env: { ...env, ...options.env },
   });
+  if (!(options.motion ?? taggedForMotion())) await stillWindows(app);
   const temporary = [
     ...(options.userDataDir === undefined ? [userData] : []),
     ...(siteDir === undefined ? [] : [siteDir]),
@@ -191,6 +202,49 @@ export async function launchDesktopApp(
     });
   }
   return closingWithin(app);
+}
+
+/**
+ * The tag of a test that runs with motion as people see it, when a shared hook launches the app
+ * (#1493): `test("…", { tag: MOTION_TAG }, …)`, with a comment saying why.
+ */
+export const MOTION_TAG = "@motion";
+
+/** Whether the test running has {@link MOTION_TAG}; false outside a test. */
+function taggedForMotion(): boolean {
+  try {
+    return test.info().tags.includes(MOTION_TAG);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Every window of `app`, and each frame in it, asks for reduced motion and has the no-motion sheet
+ * (#1493): from the test's side, so the app carries no test-only code. The sheet is added to each
+ * frame as it navigates (the window's page as it loads or reloads, the canvas's `about:srcdoc`
+ * frame), and at once to what is already open; each document then keeps it. A sandboxed frame
+ * that may not run scripts (an embed's) is left alone: a script there would only log an error.
+ */
+async function stillWindows(app: ElectronApplication): Promise<void> {
+  const sheet = async (frame: Frame) => {
+    if (frame.parentFrame() !== null) {
+      const sandbox = await frame
+        .frameElement()
+        .then((element) => element.getAttribute("sandbox"))
+        .catch(() => null);
+      if (sandbox !== null && !sandbox.split(/\s+/).includes("allow-scripts")) return;
+    }
+    // A frame gone or navigating meanwhile gets it on its next navigation.
+    await frame.evaluate(addNoMotionSheet, NO_MOTION_SHEET).catch(() => undefined);
+  };
+  const still = async (page: Page) => {
+    page.on("framenavigated", (frame) => void sheet(frame));
+    await page.emulateMedia({ reducedMotion: "reduce" }).catch(() => undefined);
+    await Promise.all(page.frames().map(sheet));
+  };
+  app.on("window", (page) => void still(page));
+  await Promise.all(app.windows().map(still));
 }
 
 /**

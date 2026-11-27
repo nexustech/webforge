@@ -89,7 +89,11 @@ test.beforeAll(async () => {
   dir = mkdtempSync(join(tmpdir(), "webforge-cold-start-"));
   sitePath = join(dir, "Cafe.wforge");
   // The site made as a person makes it, with New Site, on a profile of its own.
-  const app = await launchDesktopApp({ userDataDir: join(dir, "setup"), site: false });
+  const app = await launchDesktopApp({
+    motion: true,
+    userDataDir: join(dir, "setup"),
+    site: false,
+  });
   try {
     const page = await app.firstWindow();
     await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
