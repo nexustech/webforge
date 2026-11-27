@@ -248,6 +248,11 @@ jobs:
               # The failures the queue skips.
               state="CI failed ($(words "$ci"))"
               move="Its stream: fix and push (a flaky test: the flaky-test rule first)"
+            elif [ "$auto" != true ] && [ -n "$inflight" ] && [ "$inflight" != "$number" ] &&
+              [ "$behind" -eq 0 ]; then
+              # Up to date, it would merge at once and put the PR in flight behind main (#1529).
+              state="Waiting for #$inflight, in flight"
+              move="The coordinator: auto-merge on once #$inflight has merged or failed"
             elif [ "$auto" != true ]; then
               state="No auto-merge (CI $(words "$ci"), behind by $behind)"
               move="The coordinator: its merge review, or held on purpose"
@@ -288,6 +293,16 @@ jobs:
               | [.number, .headRefOid, .mergeable, (.autoMergeRequest != null), .headRefName, .url,
                  (.title | gsub("[|\t\\\\]"; " ") | gsub("@"; "@​"))]
               | @tsv')
+          # The PR in flight, as the queue's job finds it: auto-merge on, up to date with main and
+          # its CI running or held. A PR up to date without auto-merge waits for it (#1529).
+          inflight=""
+          while IFS=$'\t' read -r number head _ auto _ _ _; do
+            [ -n "$number" ] && [ "$auto" = true ] || continue
+            found=$(ci_of "$head") || continue
+            [[ "$found" =~ ^(RUNNING|WAITING) ]] || continue
+            behind=$(gh api "repos/$GH_REPO/compare/main...$head" --jq .behind_by) || continue
+            if [ "$behind" -eq 0 ]; then inflight="$number"; break; fi
+          done <<< "$prs"
           rows=""
           release=""
           while IFS=$'\t' read -r number head mergeable auto branch url title; do
