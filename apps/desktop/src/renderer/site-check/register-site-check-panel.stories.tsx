@@ -14,6 +14,7 @@ export const SiteCheck: Story = panelStory((panels, session) =>
     session,
     settings: createSettingsRegistry(),
     commands: { run: () => false },
+    pageSettings: { show: () => undefined },
     openGuide: () => undefined,
     ignored: [],
     saveIgnored: () => undefined,

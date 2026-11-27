@@ -4,7 +4,7 @@ id: pages
 title: Pages and the menu
 summary: Add, rename, reorder and delete pages, set what the menu shows, and change each page's settings.
 related: [header-and-footer, links, site-settings, site-check, blog]
-updated: 2026-11-20
+updated: 2026-11-27
 ---
 
 # Pages and the menu
@@ -55,10 +55,10 @@ A **draft** is a page you're still working on, or one for later, such as a seaso
 
 - **Export and Publish leave it out,** with its menu item and the pictures and documents only it uses. Search engines and AI tools never see it.
 - **Preview shows it,** so you can check it in your browser before it goes live. Open it from the page itself; your menu in Preview leaves it out, as your website's will.
-- **Links to it are left out too.** Site Check lists every link to a draft page, under _Links to draft pages_. Its **Fix** opens the draft's Page Settings. Publishing waits until you fix them, so visitors never meet a button that goes nowhere.
+- **Links to it are left out too.** Site Check lists every link to a draft page, under _Links to draft pages_. Its **Fix** opens the draft's Page Settings, on **General**. Publishing waits until you fix them, so visitors never meet a button that goes nowhere.
 - **Site Check doesn't check a draft's own content** until it's published.
 
-To make a page a draft, turn on **Draft** in its **…** menu, or in Page Settings. Turn it off to publish the page with the rest of your site. The Home page and the Page not found page are always published.
+To make a page a draft, turn on **Draft** in its **…** menu, or on Page Settings' **General** tab. Turn it off to publish the page with the rest of your site. The Home page and the Page not found page are always published.
 
 ## The menu
 
@@ -123,18 +123,26 @@ A page with two old addresses sends both straight to where it is now. If you lat
 
 ## Page Settings
 
-Open a page's **…** menu and choose **Page Settings…**. These settings decide how the page shows in search results, browser tabs and when someone shares it.
+Open a page's **…** menu and choose **Page Settings…**. These settings decide how the page shows in search results, browser tabs and when someone shares it. They're on three tabs, named like the sections of Settings: use the arrow keys to move between them, and Tab to go into one.
+
+**General** has the page's name and file, and what it leaves out:
 
 - **Title:** shown in the browser tab and as the link in search results. Give each page its own.
 - **Date**, **Summary**, **Picture** and **Tags**, for a blog's post only. See [Your blog](blog.md#a-posts-date-summary-picture-and-tags).
 - **File name:** the end of the page's web address, such as `about.html`. The Home page is always `index.html`, and the Page not found page `404.html`.
-- **Description:** a sentence or two shown under the title in search results. Leave it empty to use the site's description.
-- **Share image:** the picture shown when someone shares the page. _The site's image_ uses the one from Site Settings.
 - **Draft: don't publish this page yet:** keeps the page in your site but off your website. See [Draft pages](#draft-pages).
 - **Hide the Header on this page** and **Hide the Footer on this page**.
 - **Hide in menu:** takes the page off the menu.
-- **Hide this page from search engines:** search engines won't list the page. It stays on your site, and anyone with its address can still open it. This is different from hiding it in the menu.
 - **Hide the back-to-top button on this page:** shown when the site has that button (Site Settings › General).
 - **This is the site's privacy page:** tells Site Check this page says what your site collects. **Add Page › Privacy Page** turns it on for the page it adds. See [A privacy page](#a-privacy-page).
 
-While you type, **In search results** shows roughly how the page could look on Google on a phone. **When shared** shows the card people see when the page is shared. Click **Save** to keep your changes, as one step you can undo.
+**Search engines** has what they show:
+
+- **Description:** a sentence or two shown under the title in search results. Leave it empty to use the site's description.
+- **Hide this page from search engines:** search engines won't list the page. It stays on your site, and anyone with its address can still open it. This is different from hiding it in the menu.
+
+**Social & sharing** has **Share image:** the picture shown when someone shares the page. _The site's image_ uses the one from Site Settings.
+
+Site Check's **Fix** for a page without a description opens Page Settings on **Search engines**.
+
+While you type, **In search results**, on **Search engines**, shows roughly how the page could look on Google on a phone. **When shared**, on **Social & sharing**, shows the card people see when the page is shared. Click **Save** to keep your changes, as one step you can undo.

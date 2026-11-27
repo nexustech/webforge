@@ -8,6 +8,7 @@ import type { StoreApi } from "zustand/vanilla";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
 import { siteSelectors } from "../editor/site-css.js";
+import type { PageSettingsOpener } from "../editor/window-services.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { confirmFor, fixFor, jumpTo } from "./actions.js";
@@ -26,8 +27,10 @@ export const SITE_CHECK_PANEL_ID = "siteCheck";
 type SiteCheckPanelOptions = {
   readonly session: EditorSession;
   readonly settings: SettingsRegistry;
-  /** Where Page Settings… is, for a page without a description (3.17). */
+  /** Where the stylesheet's and Publish's commands are, for their fixes. */
   readonly commands: Pick<CommandRegistry, "run">;
+  /** Page Settings on a tab, for a page without a description or a link to a draft (#1443). */
+  readonly pageSettings: PageSettingsOpener;
   /**
    * Where Site Check's own command goes, for the title bar's button with what it found (#1009).
    * Left out, it has none.
@@ -69,6 +72,7 @@ export function registerSiteCheckPanel(
     session,
     settings,
     commands,
+    pageSettings,
     titleBar,
     openGuide,
     ignored,
@@ -99,6 +103,7 @@ export function registerSiteCheckPanel(
     panels,
     settings,
     commands,
+    pageSettings,
     openGuide,
     ...(bundle === undefined ? {} : { bundle }),
   };

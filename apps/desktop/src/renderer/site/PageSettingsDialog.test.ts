@@ -119,3 +119,79 @@ describe("Page Settings for a post (6.10a)", () => {
     });
   });
 });
+
+describe("Page Settings' tabs (#1443)", () => {
+  /** Each field's name and tab, in order, for `page` of `site`. */
+  const tabsOf = (site: ReturnType<typeof starterSite>, pageId: PageId) => {
+    const page = site.pages[pageId];
+    if (page === undefined) throw new Error("no page");
+    const spec = pageSettingsSpec(site, page);
+    const values = {
+      title: "Spring",
+      slug: "",
+      description: "",
+      shareImage: undefined,
+      hideHeader: false,
+      hideFooter: false,
+      hideFromNavigation: false,
+      hideBackToTop: false,
+      hideFromSearch: false,
+      privacy: false,
+      draft: false,
+    };
+    const fields = typeof spec.fields === "function" ? spec.fields(values) : spec.fields;
+    return { spec, fields: fields.map((field) => [field.name, field.group]) };
+  };
+
+  it("are Settings' own sections: General, Search engines and Social & sharing", () => {
+    const site = starterSite();
+    const { spec } = tabsOf(site, site.homePageId);
+    expect(spec.groups?.map((group) => [group.id, group.label])).toEqual([
+      ["general", "General"],
+      ["search", "Search engines"],
+      ["social", "Social & sharing"],
+    ]);
+  });
+
+  it("put the page's name, file and what it leaves out on General, in order", () => {
+    const site = starterSite();
+    // An ordinary page: every toggle (the Home page has no Draft or Hide in menu).
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("No home page");
+    const about = {
+      ...structuredClone(home),
+      id: "about" as PageId,
+      slug: "about",
+      title: "About",
+    };
+    site.pages[about.id] = about;
+    site.pageOrder.push(about.id);
+    expect(tabsOf(site, about.id).fields).toEqual([
+      ["title", "general"],
+      ["slug", "general"],
+      ["description", "search"],
+      ["shareImage", "social"],
+      ["draft", "general"],
+      ["hideHeader", "general"],
+      ["hideFooter", "general"],
+      ["hideFromNavigation", "general"],
+      ["hideFromSearch", "search"],
+      ["privacy", "general"],
+    ]);
+  });
+
+  it("put a post's own fields on General, after its title", () => {
+    const site = starterSite();
+    insertBlog(site, "blog" as CollectionId, "post" as PageId, "2026-11-10");
+    const general = tabsOf(site, "post" as PageId)
+      .fields.filter(([, group]) => group === "general")
+      .map(([name]) => name);
+    expect(general.slice(0, 5)).toEqual([
+      "title",
+      "item.date",
+      "item.summary",
+      "item.picture",
+      "item.tags",
+    ]);
+  });
+});
