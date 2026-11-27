@@ -636,7 +636,7 @@ setup(
 );
 
 setup(
-  "export a page opening with a Whole screen Hero, under the Header and joined (HH-4)",
+  "export a page opening with a Whole screen Hero, under the Header and joined, with a bar above (HH-4, #1489)",
   async () => {
     const sample = sampleSite();
     const [home] = sample.pages;
@@ -661,7 +661,29 @@ setup(
         props: { id: "story", title: "Our story", text: "<p>Since 1998.</p>" },
       },
     ];
-    for (const background of ["own", "section"] as const) {
+    // An Announcement bar above the Header (#1489), shown or past its last day.
+    const bar = (lastDay = ""): NodeDoc => ({
+      type: "AnnouncementBar",
+      // Thin, as the Add panel adds it.
+      props: {
+        id: "bar",
+        text: "Closed 24–26 December",
+        lastDay,
+        padding: { top: "none", bottom: "none" },
+        contentWidth: "full",
+      },
+    });
+    // Each folder: the bar above the Header, if any, and the Header's own props.
+    const variants: readonly (readonly [string, NodeDoc[], Record<string, unknown>])[] = [
+      ["own", [], { background: "own" }],
+      ["joined", [], { background: "section" }],
+      ["own-bar", [bar()], { background: "own" }],
+      ["joined-bar", [bar()], { background: "section" }],
+      ["own-past", [bar("2000-01-01")], { background: "own" }],
+      ["bar-only", [bar()], { hidden: true }],
+      ["shrink-bar", [bar()], { background: "own", sticky: true, scrollStyle: "shrink" }],
+    ];
+    for (const [folder, above, props] of variants) {
       const pages = await exportSnapshot(
         {
           ...sample,
@@ -669,11 +691,11 @@ setup(
           documents: [],
           layout: {
             ...sample.layout,
-            header: [{ ...header, props: { ...header.props, background } }, ...rest],
+            header: [...above, { ...header, props: { ...header.props, ...props } }, ...rest],
           },
           pages: [{ ...home, doc: { root: { props: {} }, content } }],
         },
-        join(HERO_HEIGHT_SITE_DIR, background === "own" ? "own" : "joined"),
+        join(HERO_HEIGHT_SITE_DIR, folder),
       );
       expect(pages).toContain("index.html");
     }

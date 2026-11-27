@@ -99,13 +99,16 @@ const componentsOn = (kind: string): Story =>
   );
 
 /**
- * The Button's look set, beside the theme's button tokens, its fields in columns under the preview;
- * the kinds by category in the bar at the top.
+ * The Button's look set, beside the theme's button tokens, its fields in one column beside the
+ * preview (H3); the kinds by category in the bar at the top.
  */
 export const Components: Story = componentsOn("Button");
 
-/** Components at 1920 × 1080 px: the look's groups in more columns (CT-11). */
+/** Components at 1920 × 1080 px: the preview wider beside the look's groups (H3). */
 export const ComponentsWide: Story = { ...componentsOn("Button"), tags: ["wide-window"] };
+
+/** Components in the app's smallest window, 960 × 600 px: one preview at a time (H3). */
+export const ComponentsShort: Story = { ...componentsOn("Button"), tags: ["short-window"] };
 
 /** The theme's card style, as the Card look. */
 export const ComponentsCard: Story = componentsOn("Card");

@@ -103,17 +103,21 @@ export function onDarkGround(
  * The id of the page's first section where it fills the window's height (`fillsWindow`, a Hero at
  * _Whole screen_, HH-4) under a Header with its own band: shown, not joined to it (that's
  * {@link joinedHeaderOf}'s). Its height then leaves the Header's room, which the Header gives the
- * page. The export's pages and the canvas both take it from here.
+ * page. With no Header shown, the same under an Announcement bar alone (#1489). The export's pages
+ * and the canvas both take it from here.
  */
 export function belowHeaderOf(
   regions: { readonly header: readonly NodeDoc[]; readonly content: readonly NodeDoc[] },
   library: ComponentLibrary,
   looks?: RenderContext["looks"],
 ): string | undefined {
-  const at = regions.header.findIndex((node) => node.type === HEADER && node.props.hidden !== true);
-  if (at < 0 || joinedHeaderOf(regions, library, looks) !== undefined) return undefined;
   const shown = (node: NodeDoc) => node.props.hidden !== true;
-  const first = regions.header.slice(at + 1).find(shown) ?? regions.content.find(shown);
+  const at = regions.header.findIndex((node) => node.type === HEADER && shown(node));
+  // Nothing above the page's first section: it keeps the whole window.
+  if (at < 0 && !regions.header.some(shown)) return undefined;
+  if (joinedHeaderOf(regions, library, looks) !== undefined) return undefined;
+  const after = at < 0 ? undefined : regions.header.slice(at + 1).find(shown);
+  const first = after ?? regions.content.find(shown);
   const def = first === undefined ? undefined : library.components[first.type];
   if (first === undefined || def?.fillsWindow === undefined || typeof first.props.id !== "string") {
     return undefined;

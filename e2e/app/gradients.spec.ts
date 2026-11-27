@@ -67,6 +67,7 @@ test("a direction chosen in Style this Hero… draws Brand to Accent, as one ste
   ).toBeChecked();
   await expectBrandToAccent(hero());
 
+  await dialog.getByRole("button", { name: "Change" }).click();
   await dialog.getByRole("radio", { name: /^This Hero only/ }).check();
   await dialog.getByRole("button", { name: "Apply" }).click();
   await expect(dialog).toBeHidden();

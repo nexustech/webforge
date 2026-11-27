@@ -383,6 +383,12 @@ export const theme = {
   "style.scope.noOthers": "No others",
   "style.scope.others.one": "1 other",
   "style.scope.others.other": "{count} others",
+  // Where it applies, on one line until Change opens the choices (H3).
+  "style.scope.summary.this": "Applies to: This {item} only",
+  "style.scope.summary.page": "Applies to: Every {item} on this page",
+  "style.scope.summary.site": "Applies to: Every {item} on the site",
+  "style.scope.summary.theme": "Applies to: The theme's look for {item}",
+  "style.scope.change": "Change",
   "style.scope.theme.hint":
     "Every {item} without a look of its own follows the theme, on every page.",
   "style.apply": "Apply",
@@ -391,8 +397,10 @@ export const theme = {
   "style.history.page": "Styled every {item} on this page",
   "style.history.site": "Styled every {item} on the site",
   "style.history.theme": "Made the theme's look for {item}",
-  // Theme Studio's and Style this ‹kind›…'s frame: the preview on top, the controls below (CT-11).
+  // Theme Studio's and Style this ‹kind›…'s frame: the controls, the preview beside them (CT-11, H3).
   "styling.resizePreview": "Resize the preview",
   "styling.previewOn": "Preview on {device}",
+  // The switch between Desktop and Mobile in a short dialog's preview (H3).
+  "styling.device": "Preview",
   "theme.studio.samplePage": "A sample page in your theme",
 } as const;

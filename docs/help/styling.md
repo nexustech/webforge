@@ -4,7 +4,7 @@ id: styling
 title: Styling
 summary: Change how a section or element looks, and give the same look to others like it.
 related: [edit-panel, themes, sections, elements]
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # Styling
@@ -25,6 +25,11 @@ The **Appearance** group, at the top of the Style tab, is on every section and e
 - **Opacity**.
 
 _Same as theme_ means the item follows the theme. Every option except Font can be [different on each device](edit-panel.md#different-on-each-device).
+
+The items inside a section, such as a Feature, a Step, a Testimonial, a team member, a pricing plan or an FAQ question, have no Appearance group, and no **Style** on their bar. They take their look from their section and the theme, so every item in a section looks alike:
+
+- **For one section's items:** select the section and change its Style tab, or open **Style This…** for it. Its **Background** is behind the items, and sections of cards have **Cards when hovered** ([Hover effects](#hover-effects)). Its text settings change only its own title.
+- **For every card on the site:** change **Card style** in the [theme](themes.md), or the Card look in Theme Studio's **Components**.
 
 ## Colours
 
@@ -60,10 +65,10 @@ Sections of cards (Features, Testimonials, Team and Pricing) have **Cards when h
 
 It offers more than the Style tab: gradients, a border on each side, each corner's rounding, inner shadows, a background when hovered, and the look of a section's title.
 
-- **At the top**, previews show the item on Desktop and Mobile as you go. They stay in view while you scroll the settings.
-- **To give the previews more room**, drag the line under them, or select it and use the arrow keys.
-- **Below**, the settings fill the window's width, in as many columns as fit.
-- **At the bottom**, **Where it applies**, **Cancel** and **Apply** are always in view.
+- **On the left**, the settings use the window's full height, in one column. Each group's name stays at the top while you scroll through its settings.
+- **On the right**, previews show the item on Desktop and Mobile as you go, one above the other. In a smaller window, one preview shows at a time: choose **Desktop** or **Mobile** above it.
+- **To give the previews more room**, drag the line between them and the settings, or select it and use the arrow keys.
+- **At the bottom**, where it applies, **Cancel** and **Apply** are always in view.
 
 A colour picker here has its own **Done** and **Cancel**, which close only the picker. The window's **Cancel** and **Apply** are for everything you changed in it.
 
@@ -77,14 +82,14 @@ On a section with a background picture, or a Hero with **Image behind the text**
 
 Text on a gradient has to be easy to read at both ends. If a text colour is too faint at one end, its colour row says so and suggests a theme colour that reads on both, and Site Check lists it under **Colour contrast**.
 
-**Where it applies** sets which items get the look:
+The bar at the bottom says where your changes apply, such as **Applies to: This ‹item› only**. Click **Change** to choose another:
 
 - **This ‹item› only**
 - **Every ‹item› on this page**
 - **Every ‹item› on the site**
 - **Make it the theme's look for ‹item›:** every item of this kind without a look of its own follows it, on every page, now and later.
 
-Each choice says how many other items it changes. Click **Apply** to make the change; it's one step you can undo.
+Each choice says how many other items it changes. Choosing one, or pressing Escape, closes the choices again. Click **Apply** to make the change; it's one step you can undo.
 
 ## Copy and paste a look
 
