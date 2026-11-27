@@ -307,8 +307,8 @@ export function SiteWideConfirmDialog({ confirm }: { readonly confirm: SiteWideC
             </div>
           )}
         </AlertDialogHeader>
+        {/* The other answer, then Cancel, then the primary (#1444); Cancel still has the focus. */}
         <AlertDialogFooter>
-          <AlertDialogCancel>{t("confirm.siteWide.cancel")}</AlertDialogCancel>
           {action?.allowAlways === undefined ? null : (
             <AlertDialogAction
               // Quieter than Allow: the change asked about is the one to weigh (5.35).
@@ -321,6 +321,7 @@ export function SiteWideConfirmDialog({ confirm }: { readonly confirm: SiteWideC
               {t("confirm.siteWide.allowAlways")}
             </AlertDialogAction>
           )}
+          <AlertDialogCancel>{t("confirm.siteWide.cancel")}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={() => confirm.answer(true)}>
             {action?.confirm}
           </AlertDialogAction>

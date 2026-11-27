@@ -4,7 +4,8 @@ import { expect, userEvent, within } from "storybook/test";
 import { Button } from "./button.js";
 import {
   Dialog,
-  DialogClose,
+  DialogCancel,
+  DialogCloseButton,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -37,9 +38,7 @@ export const PageSettings: Story = {
           />
         </label>
         <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
+          <DialogCloseButton>Cancel</DialogCloseButton>
           <Button>Save</Button>
         </DialogFooter>
       </DialogContent>
@@ -79,9 +78,7 @@ export const UnsavedChanges: Story = {
           </DialogHeader>
           <TitleField />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
+            <DialogCancel onClick={() => setOpen(false)} />
             <Button>Save</Button>
           </DialogFooter>
         </DialogContent>
