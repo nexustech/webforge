@@ -63,6 +63,12 @@ export const HERO_OVERLAY_SITE_DIR = join(EXPORTED_SITE_DIR, "hero-overlay");
 export const HERO_HEIGHT_SITE_DIR = join(EXPORTED_SITE_DIR, "hero-height");
 
 /**
+ * Where the setup exports a page of every section that lays cards out in rows (#1372, #1511),
+ * inside the fixture's folder so CI uploads it with it.
+ */
+export const CARD_ROWS_SITE_DIR = join(EXPORTED_SITE_DIR, "card-rows");
+
+/**
  * Where the setup exports the fixture's pages with a Header that hides on the way down (HH-7),
  * inside the fixture's folder so CI uploads it with it.
  */

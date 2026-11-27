@@ -40,6 +40,9 @@ export const canvas = {
   "canvas.style": "Style",
   "canvas.hide": "Don't publish",
   "canvas.show": "Show",
+  // The badge on an element set to Don't Publish (#1512), and its tooltip and name.
+  "canvas.notPublished": "Not published",
+  "canvas.notPublished.label": "Not published: left out of your website",
   // Ctrl+/ in the Edit menu and the command box, named by what it will do (#1016).
   "canvas.leaveOff": "Leave Off the Website",
   "canvas.putBack": "Put Back on the Website",

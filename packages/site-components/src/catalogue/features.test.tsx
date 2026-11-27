@@ -49,12 +49,36 @@ describe("the Features section", () => {
     const list = page(render({ variant: "list" }));
 
     expect(cards.querySelector(".site-feature")?.className).toContain("bg-base-200");
-    // Rows of three that centre a last row not full (#1372).
-    expect(cards.querySelector(".flex-wrap")?.className).toBe(CARD_ROWS.threeGap6);
+    // Rows of three that centre a last row not full (#1372), every card the same height (#1511).
+    expect(cards.querySelector(".flex-wrap")?.className).toBe(CARD_ROWS.threeGap6EveryRow);
     expect(centred.querySelector(".site-feature")?.className).toContain("text-center");
     expect(centred.querySelector(".site-feature .rounded-full svg")).not.toBeNull();
     expect(list.querySelector(".site-feature")?.className).toContain("flex items-start");
     expect(list.querySelector(".flex-wrap")?.className).toBe(CARD_ROWS.twoGap8);
+  });
+
+  it("draws its cards the same height on every row unless Card height is Fit the text (#1511)", () => {
+    const row = (props: Record<string, unknown>) =>
+      page(render({ variant: "cards", ...props })).querySelector(".flex-wrap")?.className;
+
+    // Saved before there was a setting: none, which reads as Same height.
+    expect(row({ cardHeight: undefined })).toBe(CARD_ROWS.threeGap6EveryRow);
+    expect(row({ cardHeight: "same" })).toBe(CARD_ROWS.threeGap6EveryRow);
+    expect(row({ cardHeight: "fit" })).toBe(`${CARD_ROWS.threeGap6} items-start`);
+    // The other layouts have no card box: their rows as before, whatever the setting says.
+    expect(
+      page(render({ variant: "centred", cardHeight: "fit" })).querySelector(".flex-wrap")
+        ?.className,
+    ).toBe(CARD_ROWS.threeGap10);
+  });
+
+  it("shows Card height for the cards layout only (#1511)", () => {
+    const field = siteLibrary.components.Features?.fields.cardHeight;
+    const site = { menuLinksToSections: false };
+
+    expect(field?.shownWhen?.({ variant: "cards" }, site)).toBe(true);
+    expect(field?.shownWhen?.({ variant: "centred" }, site)).toBe(false);
+    expect(field?.shownWhen?.({ variant: "list" }, site)).toBe(false);
   });
 
   it("takes the first layout for one it doesn't have", () => {

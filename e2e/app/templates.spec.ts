@@ -49,6 +49,12 @@ test.afterEach(async () => {
 
 for (const template of TEMPLATES) {
   test(`makes a ${template.title} site within its opening budget, accessible on the canvas (2.15)`, async () => {
+    // Quarantined (#1560): waited about 5.8 s without working once on Linux CI, over the opening's
+    // backstop, and passed on its re-run. #1560 finds why and brings it back.
+    test.fixme(
+      template.title === "Salon / Beauty",
+      "#1560: over its opening backstop once on Linux",
+    );
     app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
     const page = await app.firstWindow();
     await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({

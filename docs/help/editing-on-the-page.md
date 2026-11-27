@@ -4,7 +4,7 @@ id: editing-on-the-page
 title: Editing on the page
 summary: Select, type, move, copy and delete sections and elements right on the page.
 related: [the-editor, edit-panel, layers, styling, links, keyboard-shortcuts]
-updated: 2026-11-22
+updated: 2026-11-27
 ---
 
 # Editing on the page
@@ -87,6 +87,14 @@ Right-click a section or element, on the page or in [Layers](layers.md), for:
 - **Delete**.
 
 On the keyboard, Shift+F10 or the menu key opens the same menu.
+
+## Not published
+
+An item set to **Don't publish** stays in your site's file but isn't on your website. On the page it's dimmed, with a **Not published** badge in its top right corner, so it doesn't look like something your visitors will see. The badge is only in the editor: Preview, your website and the pictures you save of a page don't have it.
+
+- **Put it back:** click the badge to select the item, then click **Show** beside it. It's one step you can undo. In Content mode, which locks the layout, the badge has no **Show**.
+- **Items inside it:** they aren't published either, so only the outermost item has a badge. [Layers](layers.md) dims their rows.
+- **The Header or Footer on one page:** _Hide the Header on this page_, in Page Settings, takes it off that page altogether, in the editor too, so there's nothing to badge.
 
 ## Notes
 

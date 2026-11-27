@@ -4,7 +4,7 @@ id: layers
 title: Layers
 summary: See everything on the page as a list, and select, reorder, hide, leave off your website and rename it.
 related: [editing-on-the-page, header-and-footer, blog, keyboard-shortcuts]
-updated: 2026-11-25
+updated: 2026-11-27
 ---
 
 # Layers
@@ -20,7 +20,8 @@ It's the easiest way to reach something small or hidden, or to see how a page is
 - **Link:** a linked copy of a [shared section](header-and-footer.md#shared-sections). On the Header and Footer, it means they're on every page; on a blog's design, on every post.
 - **Lock:** the item can't be moved or deleted, only changed: the blog design's own sections.
 - **Sparkles:** the item has an entrance animation.
-- **Crossed-out name:** the item isn't published. It's dimmed on the page.
+- **Crossed-out name and a crossed-out eye:** the item isn't published. It's dimmed on the page, with a [Not published](editing-on-the-page.md#not-published) badge.
+- **Dimmed row:** the item is inside one that isn't published, so it isn't on your website either. Its own eye still says how it shows by itself, for when the item around it is shown again.
 - **Name in italics:** the item is hidden while you edit. It isn't on the page in the editor, but it's on your website.
 - **Note:** the item has a [note](editing-on-the-page.md#notes). Point at the icon to read it.
 

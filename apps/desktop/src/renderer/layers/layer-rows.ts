@@ -39,6 +39,12 @@ export type TreeRow = {
   readonly siblings: number;
   /** Its children show below it (it has some, and isn't collapsed). */
   readonly expanded: boolean;
+  /**
+   * It's inside a layer that isn't published (#1512): it isn't on the website either, whatever its
+   * own eye says. Its row is dimmed, as the canvas dims it, and only the outermost such layer's row
+   * has the crossed eye for it.
+   */
+  readonly insideUnpublished: boolean;
 };
 
 /** How the tree is shown: the layers collapsed, and the filter's text. */
@@ -85,14 +91,17 @@ export function rowsOf(
   view: TreeView,
   depth = 1,
   parent = "",
+  insideUnpublished = false,
 ): TreeRow[] {
   return layers.flatMap((layer, index) => {
     if (view.filter !== "" && !anyMatch(layer, view.filter)) return [];
     const expanded =
       layer.children.length > 0 && (view.filter !== "" || !view.collapsed.has(layer.id));
     return [
-      kept({ layer, depth, parent, index, siblings: layers.length, expanded }),
-      ...(expanded ? rowsOf(layer.children, view, depth + 1, layer.id) : []),
+      kept({ layer, depth, parent, index, siblings: layers.length, expanded, insideUnpublished }),
+      ...(expanded
+        ? rowsOf(layer.children, view, depth + 1, layer.id, insideUnpublished || layer.hidden)
+        : []),
     ];
   });
 }
