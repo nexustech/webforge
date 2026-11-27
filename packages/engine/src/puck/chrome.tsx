@@ -170,11 +170,11 @@ ${EMPTY_TABLE_BODY}::after {
   white-space: nowrap;
   cursor: pointer;
 }
-.${UNPUBLISHED_BADGE_CLASS}__label {
+.${UNPUBLISHED_BADGE_CLASS} > .${UNPUBLISHED_BADGE_CLASS}__label {
   background: #334155;
   color: #fff;
 }
-.${UNPUBLISHED_BADGE_CLASS}__show {
+.${UNPUBLISHED_BADGE_CLASS} > .${UNPUBLISHED_BADGE_CLASS}__show {
   background: var(--wf-outline-color);
   color: #fff;
 }

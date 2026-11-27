@@ -290,8 +290,11 @@ test.describe("keyboard and floating add", () => {
     await expect(badge).toHaveCount(1);
     const label = badge.getByRole("button", { name: "Not published: left out of your website" });
     await expect(label).toBeVisible();
-    // Over the page, and not dimmed with the element.
+    // Over the page, not dimmed with the element, in its own colours whatever the site's buttons have.
     expect(await badge.evaluate((element) => getComputedStyle(element).opacity)).toBe("1");
+    expect(await label.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(
+      "rgb(51, 65, 85)",
+    );
 
     // From the section around it, a click on the badge selects the heading again, offering Show.
     await quickAction("Select the surrounding element").click();
