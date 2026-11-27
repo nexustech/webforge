@@ -6,6 +6,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  UnsavedChanges,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { type ReactNode, useId, useState } from "react";
@@ -60,6 +61,8 @@ export function DraftDialog(props: DraftDialogProps) {
       }}
     >
       <DialogContent className="sm:max-w-xl">
+        {/* The draft as the person changed it; an untouched one closes at once (#1439). */}
+        <UnsavedChanges changed={draft !== undefined && text !== draft} />
         <DialogHeader>
           <DialogTitle>{props.title}</DialogTitle>
           <DialogDescription>{props.description}</DialogDescription>

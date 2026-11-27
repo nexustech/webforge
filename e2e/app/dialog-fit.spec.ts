@@ -633,6 +633,18 @@ const CASES: readonly FitCase[] = [
       return shown(page.getByRole("alertdialog"));
     },
   },
+  // A dialog with a change, closed with Esc (#1439).
+  {
+    name: "Confirm: discard your changes",
+    kind: "dialog",
+    open: async ({ page }) => {
+      await page.keyboard.press("ControlOrMeta+Comma");
+      const settings = await shown(page.getByRole("dialog", { name: "Settings", exact: true }));
+      await settings.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
+      await page.keyboard.press("Escape");
+      return shown(page.getByRole("alertdialog", { name: "Discard your changes?" }));
+    },
+  },
   {
     name: "Confirm: delete a picture",
     kind: "dialog",
@@ -897,7 +909,8 @@ const overlays = (page: Page) =>
   page.locator('[role="dialog"]:visible, [role="alertdialog"]:visible, [role="menu"]:visible');
 
 /**
- * Closes whatever a case left open: Escape, or Discard where Theme Studio asks about a draft.
+ * Closes whatever a case left open: Escape, or Discard where a dialog with changes asks first
+ * (#1439).
  * Whether everything closed.
  */
 async function closeAll(page: Page): Promise<boolean> {

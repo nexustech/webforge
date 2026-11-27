@@ -313,6 +313,33 @@ describe("QuickStartDialog (QS-1, 3.11b)", () => {
   });
 });
 
+describe("the quick start's answers on Esc (#1439)", () => {
+  const pressEscape = () =>
+    act(async () =>
+      document
+        .querySelector('[data-slot="dialog-content"]')
+        ?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })),
+    );
+  const question = () => document.querySelector('[role="alertdialog"]');
+
+  it("closes at once with nothing answered", async () => {
+    const { onCancel } = await render();
+    await pressEscape();
+    expect(question()).toBeNull();
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it("asks before throwing an answer away, and Discard puts it away", async () => {
+    const { onCancel } = await render();
+    await type(field(t("quickStart.name")), "Rosa's Bakery");
+    await pressEscape();
+    expect(question()?.textContent).toContain(t("ui.unsaved.title"));
+    expect(onCancel).not.toHaveBeenCalled();
+    await click(t("ui.unsaved.discard"));
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+});
+
 describe("the quick start in the usage summary (5.40)", () => {
   afterEach(() => {
     setUsageLog(undefined);

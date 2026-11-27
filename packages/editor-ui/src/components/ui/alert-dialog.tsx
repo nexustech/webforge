@@ -2,7 +2,7 @@ import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import type { ComponentProps } from "react";
 import { cn } from "../../lib/cn.js";
 import { buttonVariants } from "./button.js";
-import { dialogStyles } from "./dialog.js";
+import { dialogStyles } from "./dialog-styles.js";
 import { useReturnFocus } from "./return-focus.js";
 
 /** A confirmation that needs an answer (D5/D7: "Delete page 'About'?"). */

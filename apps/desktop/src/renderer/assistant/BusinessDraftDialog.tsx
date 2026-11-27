@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   ScrollArea,
+  UnsavedChanges,
 } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import { useId, useState } from "react";
@@ -68,6 +69,10 @@ export function BusinessDraftDialog(props: BusinessDraftDialogProps) {
       }}
     >
       <DialogContent className="flex max-h-[min(44rem,var(--dialog-fit-height))] flex-col sm:max-w-2xl">
+        {/* A drafted text the person changed; untouched drafts close at once (#1439). */}
+        <UnsavedChanges
+          changed={drafts !== undefined && words.some((each, index) => each !== drafts[index])}
+        />
         <DialogHeader>
           <DialogTitle>{t("assistant.business.title")}</DialogTitle>
           <DialogDescription>{t("assistant.business.about")}</DialogDescription>
