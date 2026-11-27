@@ -4,7 +4,7 @@ id: assistant
 title: The assistant
 summary: Ask {appName}'s built-in assistant to change your site, and check, keep or undo what it changed.
 related: [settings, undo-and-history, version-history, ai-apps]
-updated: 2026-11-23
+updated: 2026-11-27
 status: partial
 ---
 
@@ -56,7 +56,7 @@ While the assistant is on, [Site Check](site-check.md) offers **Write One…** b
 - **A page's description:** the assistant writes one from the page's title and text, and {appName} shows it as a search result would.
 - **A picture's alt text:** the assistant writes it from the picture's file name and the text near it. It can't see the picture itself, so check it says what the picture shows. What you use becomes the picture's alt text in [Media](media.md), wherever it's placed.
 
-Change the text as you like, then click **Use This**, **Try Again** for another, or **Cancel**. What you use is one step in Undo History, named _AI (Assistant): …_.
+Change the text as you like, then click **Use This**, **Try Again** for another, or **Cancel**. What you use is one step in Undo History, named _AI (Assistant): …_. Once you've changed the text, **Esc** asks before throwing your changes away; a draft you haven't touched closes at once, and **Try Again** writes another.
 
 ## Writing your pages' words
 

@@ -219,6 +219,24 @@ describe("unpublishedRoots (#1512)", () => {
     expect(ids(unpublishedRoots(doc))).not.toContain("draft:draft-off");
   });
 
+  it("counts the Header and the Footer only while a published page shows them", () => {
+    const doc = leftOut();
+    // Every published page hides the Header, and all but a draft the Footer.
+    const pages: typeof doc.pages = {};
+    for (const [id, entry] of Object.entries(doc.pages)) {
+      if (entry === undefined) continue;
+      const draft = entry.settings.draft === true;
+      pages[id as keyof typeof pages] = {
+        ...entry,
+        settings: { ...entry.settings, hideHeader: true, hideFooter: !draft },
+      };
+    }
+    const found = ids(unpublishedRoots({ ...doc, pages }));
+    expect(found).not.toContain("header:header-off");
+    expect(found).not.toContain("footer:footer-off");
+    expect(found).toContain(`${BLOG}:design-off`);
+  });
+
   it("lists what one page leaves out, in the order it's drawn, with the Header and Footer it shows", () => {
     const doc = leftOut();
     const [home, notFound] = doc.pageOrder;

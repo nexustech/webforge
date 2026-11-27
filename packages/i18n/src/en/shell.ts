@@ -19,6 +19,11 @@ export const shell = {
   "shell.undoSteps.one": "Undoes this step",
   "shell.undoSteps.many": "Undoes {count} steps",
   "ui.close": "Close",
+  // What a dialog with changes asks when Esc or its X would close it (#1439, MVP §7 item 66).
+  "ui.unsaved.title": "Discard your changes?",
+  "ui.unsaved.description": "What you changed here hasn't been saved.",
+  "ui.unsaved.keepEditing": "Keep Editing",
+  "ui.unsaved.discard": "Discard",
   // A form dialog's button that closes it without saving (2.21).
   "ui.form.cancel": "Cancel",
   "ui.form.fixErrors": "Some values need fixing before they can be saved.",
@@ -100,9 +105,9 @@ export const shell = {
   // Preview and Preview on Phone (3.2, F-PV-1).
   "preview.opened": "Opened in your browser",
   "preview.unpublished.one":
-    "1 element on this page isn't published, so the preview leaves it out, as your website will.",
+    "1 item on this page isn't published, so the preview leaves it out, as your website will.",
   "preview.unpublished.other":
-    "{count} elements on this page aren't published, so the preview leaves them out, as your website will.",
+    "{count} items on this page aren't published, so the preview leaves them out, as your website will.",
   "preview.failed": "{appName} couldn't open the preview. Try again in a moment.",
   // Save Page as Image… and Save Page as PDF… (5.22, OL-9).
   "preview.save.imageTitle": "Save Page as Image",

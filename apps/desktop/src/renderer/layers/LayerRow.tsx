@@ -87,7 +87,7 @@ function LayerRowView({
         "group relative flex h-7 items-center gap-1 rounded-sm pr-1 text-xs outline-none",
         "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
         selected && "bg-accent text-accent-foreground",
-        // Not published, or inside an element that isn't (#1512): dimmed, as on the canvas.
+        // Not published, or inside an item that isn't (#1512): dimmed, as on the canvas.
         (layer.hidden || row.insideUnpublished) && !selected && "text-muted-foreground",
         // Muted as any disabled control is, not faded (#1010).
         notAllowed && "cursor-not-allowed text-disabled",

@@ -1,4 +1,12 @@
-import { Button, Dialog, Tabs, TabsContent, TabsList, TabsTrigger } from "@webforge/editor-ui";
+import {
+  Button,
+  Dialog,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  UnsavedChanges,
+} from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import type { NodeDoc } from "@webforge/model";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
@@ -68,6 +76,11 @@ function OpenStyleDialog({
   // The item as the dialog changes it: the preview and the counts follow the site and selection.
   const site = useDocument(session, (doc) => doc);
   const selection = useUi(session, (ui) => ui);
+  // A step since it opened: changes that Esc, the X or Cancel would take back (#1439).
+  const latest = useStore(
+    session.history.state,
+    ({ entries, cursor }) => entries[cursor - 1]?.id ?? null,
+  );
   const item = styledItemIn(site, session.library, selection);
   if (item === undefined) return null;
   const { node } = item;
@@ -130,6 +143,7 @@ function OpenStyleDialog({
           </>
         }
       >
+        <UnsavedChanges changed={latest !== since} />
         {/* The groups, as wide as the dialog: the Appearance fields, and 3.13b's groups in
             StyleGroups; in Advanced mode, the item's CSS in a tab beside them (3.14). */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border">

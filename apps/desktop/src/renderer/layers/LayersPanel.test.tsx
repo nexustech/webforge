@@ -168,7 +168,7 @@ describe("LayersPanel (F-ED-12)", () => {
     // Inside it: dimmed and said so, with an eye of its own only for how it shows itself.
     for (const row of [inside, alsoHidden]) {
       expect(row?.className).toContain("text-muted-foreground");
-      expect(row?.textContent).toContain(", not published, as it's inside an element that isn't");
+      expect(row?.textContent).toContain(", not published, as it's inside an item that isn't");
     }
     expect(inside?.querySelector("button[aria-haspopup]")?.className).toContain("opacity-0");
     // Elsewhere, as before.

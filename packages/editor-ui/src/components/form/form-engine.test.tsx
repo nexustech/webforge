@@ -439,6 +439,37 @@ describe("FormDialog (2.21, B4)", () => {
     );
   });
 
+  it("asks before Esc throws a change away, closes at once without one, and Cancel never asks (#1439)", async () => {
+    const onCancel = vi.fn();
+    render(
+      <FormDialog
+        open
+        title="Site Settings"
+        confirm="Save"
+        spec={spec}
+        initial={initial}
+        onSave={vi.fn()}
+        onCancel={onCancel}
+      />,
+    );
+    const user = userEvent.setup({ delay: null });
+    const question = () => screen.queryByRole("alertdialog", { name: "Discard your changes?" });
+
+    await user.keyboard("{Escape}");
+    expect(onCancel).toHaveBeenCalledOnce();
+    expect(question()).toBeNull();
+
+    await user.type(screen.getByRole("textbox", { name: "Site name" }), "s");
+    await user.keyboard("{Escape}");
+    expect(question()).not.toBeNull();
+    expect(onCancel).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole("button", { name: "Keep Editing" }));
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(question()).toBeNull();
+    expect(onCancel).toHaveBeenCalledTimes(2);
+  });
+
   it("holds what's positioned in its fields in its scroll areas, so the dialog never scrolls too (#1437)", () => {
     // The dialog is `fixed`: an unpositioned scroll area would leave a picture field's hidden
     // inputs to it, stretching its own scroll from below its edge.
