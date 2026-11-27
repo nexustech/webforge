@@ -1,4 +1,5 @@
 import { toast } from "@webforge/editor-ui";
+import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { createElement } from "react";
 import { createStore } from "zustand/vanilla";
@@ -37,7 +38,17 @@ export const previewArea: Area<WindowContext> = {
       sessionId: siteSession,
       phone,
       notify: (message) => toast.error(message),
-      tell: (message) => toast(message),
+      // With what the page leaves out, it waits to be closed (#1512): the browser came to the front,
+      // so it would be gone before the person looked back.
+      tell: (message, leftOut) =>
+        leftOut === undefined
+          ? toast(message)
+          : toast(message, {
+              description: leftOut.description,
+              duration: Number.POSITIVE_INFINITY,
+              closeButton: true,
+              action: { label: t("canvas.show"), onClick: leftOut.show },
+            }),
       saved: (message, description) => toast.success(message, { description }),
       // The device the canvas shows: Desktop's is the canvas's own width (PH2-18).
       width: () => widthOf(session.ui.getState().viewport, canvasView.getState().size?.width),

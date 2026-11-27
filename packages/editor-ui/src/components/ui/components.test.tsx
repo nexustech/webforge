@@ -629,4 +629,14 @@ describe("Toaster", () => {
     // Its action closes the toast, which then leaves (perhaps already, on a slow machine).
     await waitFor(() => expect(screen.queryByText("Deleted Heading")).toBeNull());
   });
+
+  it("names a waiting toast's close button in the app's words (#1512)", async () => {
+    render(<Toaster theme="light" />);
+    act(() => {
+      toast("Opened in your browser", { duration: Number.POSITIVE_INFINITY, closeButton: true });
+    });
+    expect(await screen.findByText("Opened in your browser")).toBeTruthy();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByText("Opened in your browser")).toBeNull());
+  });
 });
