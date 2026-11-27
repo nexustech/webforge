@@ -58,6 +58,32 @@ function running(): ElectronApplication {
   return app;
 }
 
+// A first opening on each worker, untimed, before the timed ones (#1595): a fresh runner's first
+// launch pays a one-time cost, the system's not the app's (each test has its own user data),
+// which on macOS made the first opening up to 3.6 times the rest's median and once missed its
+// 6 s backstop. The openings timed then are each template's as a person opens it, warm.
+test.beforeAll(async () => {
+  test.setTimeout(2 * 60_000);
+  const warm = mkdtempSync(join(tmpdir(), "webforge-templates-warm-"));
+  const first = TEMPLATES[0];
+  if (first === undefined) throw new Error("No templates");
+  const warmApp = await launchDesktopApp({ userDataDir: join(warm, "user-data"), site: false });
+  try {
+    const page = await warmApp.firstWindow();
+    await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
+      timeout: APP_START_TIMEOUT_MS,
+    });
+    await stubFileDialogs(warmApp, join(warm, "Site.wforge"));
+    await createFromTemplate(page, first);
+    await expect(
+      page.frameLocator(".editor__canvas iframe").locator("h1", { hasText: first.heading }),
+    ).toBeVisible({ timeout: OPEN_WAIT });
+  } finally {
+    await warmApp.close();
+    void removeWhenFree(warm);
+  }
+});
+
 test.beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "webforge-templates-"));
 });

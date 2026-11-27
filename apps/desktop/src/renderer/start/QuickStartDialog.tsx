@@ -16,9 +16,10 @@ import {
   ToggleGroup,
   ToggleGroupItem,
   useForm,
+  useUnsavedChanges,
 } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
-import { DEFAULT_THEME, SITE_DESCRIPTION_MAX, SITE_NAME_MAX } from "@webforge/model";
+import { DEFAULT_THEME, SITE_DESCRIPTION_MAX, SITE_NAME_MAX, sameJson } from "@webforge/model";
 import { type BusinessDetails, TEMPLATE_CATEGORIES } from "@webforge/templates";
 import { hexOf, type ImageColour, imageColours, oklchCss, THEME_PRESETS } from "@webforge/themes";
 import { FileIcon, ImageIcon } from "lucide-react";
@@ -131,7 +132,8 @@ function QuickStartBody({
   readonly onShown: (step: QuickStartStep) => void;
 }) {
   const untitled = t("site.untitledName");
-  const [answers, setAnswers] = useState(() => initialAnswers ?? emptyAnswers());
+  const [started] = useState(() => initialAnswers ?? emptyAnswers());
+  const [answers, setAnswers] = useState(started);
   const [step, setStep] = useState(QUICK_START_STEPS.indexOf(initialStep));
   const [spec] = useState(detailsSpec);
   const details = useForm(
@@ -145,6 +147,8 @@ function QuickStartBody({
       ? initialAnswers.colours.hex
       : hexOf(DEFAULT_THEME.colors.primary),
   );
+  // An answer given, or a detail typed: a click outside keeps them, and Esc or the X asks (#1439).
+  useUnsavedChanges(details.changed || !sameJson(answers, started));
   const last = step === QUICK_START_STEPS.length - 1;
   const change = (patch: Partial<QuickStartAnswers>) =>
     setAnswers((current) => ({ ...current, ...patch }));
