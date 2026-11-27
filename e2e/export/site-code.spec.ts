@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { themedPageUrl } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // The site's own code (F-ED-15, 3.9), in the themed fixture site (export.setup.ts): its stylesheet,
 // script and HTML for the head and body of every page, as a browser runs them from disk.

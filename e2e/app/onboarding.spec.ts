@@ -7,6 +7,7 @@ import { clickOnCanvas } from "./canvas-click.js";
 import {
   APP_START_TIMEOUT_MS,
   launchDesktopApp,
+  MOTION_TAG,
   removeWhenFree,
   type WebforgeApp,
   waitForCanvas,
@@ -42,7 +43,36 @@ async function below(card: Locator, control: Locator) {
   expect(cardBox.y).toBeLessThan(controlBox.y + controlBox.height + 24);
 }
 
-test("offers the tour after the quick start, and shows the three steps beside their controls", async () => {
+// Someone whose system asks for less motion (#1497): reduced motion as their system reports it, and
+// none of the tests' own sheet. Expected to fail until #1497 is fixed, which removes `test.fail`.
+test("offers the tour with the focus to someone who asks for less motion (#1497)", {
+  tag: MOTION_TAG,
+}, async () => {
+  test.fail(true, "#1497: with reduced motion, the tour's offer doesn't take the focus");
+  app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
+  const page = await app.firstWindow();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
+    timeout: APP_START_TIMEOUT_MS,
+  });
+  await stubFileDialogs(app, join(dir, "Rosa's Bakery.wforge"));
+  await page.getByRole("button", { name: /^Start a Site…/ }).click();
+  const quickStart = page.getByRole("dialog", { name: "Start a site" });
+  await quickStart.getByRole("radio", { name: "Food and drink" }).click();
+  await quickStart.getByRole("button", { name: "Create site" }).click();
+  await expect(page.frameLocator(".editor__canvas iframe").locator("h1").first()).toBeVisible({
+    timeout: OPEN_WAIT,
+  });
+
+  const offer = tourCard(page, "Want a quick tour?");
+  await expect(offer).toBeVisible();
+  await expect(offer).toBeFocused();
+});
+
+// Motion on until #1497: with reduced motion, the tour's offer doesn't take the focus.
+test("offers the tour after the quick start, and shows the three steps beside their controls", {
+  tag: MOTION_TAG,
+}, async () => {
   const userData = join(dir, "user-data");
   app = await launchDesktopApp({ userDataDir: userData, site: false });
   const page = await app.firstWindow();

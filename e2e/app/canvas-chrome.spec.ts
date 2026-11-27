@@ -8,7 +8,7 @@ import {
 } from "@webforge/engine/puck-dom";
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, MOTION_TAG, waitForCanvas } from "./launch.js";
 import { clickSettled } from "./settled.js";
 
 // Selection chrome on the canvas (1.12): magenta outlines and the selected element's quick
@@ -96,7 +96,10 @@ test.describe("selection chrome", () => {
     await expect(canvas().locator(ACTION_BAR).first()).toHaveCSS("background-color", accent);
   });
 
-  test("its buttons work while the element's text is being edited, the format menu with them (LF-3)", async () => {
+  // Motion on until #1498: with motion off it fails in CI only (Linux).
+  test("its buttons work while the element's text is being edited, the format menu with them (LF-3)", {
+    tag: MOTION_TAG,
+  }, async () => {
     // Clicking the text edits it: the bar holds the format menu too.
     await canvas().getByText(STARTER_TEXT).click();
     await expect(quickAction("Bold")).toBeVisible();

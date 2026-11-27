@@ -1,9 +1,10 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { readTemplates } from "@webforge/templates/node";
 import { CHECK_TEMPLATES, TEMPLATES_DIR } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // Every template, exported as a site made from it starts and opened from disk (file://) in
 // Chromium, Firefox and WebKit (and Edge on Windows) with the network blocked (3.10, X1, C8): no

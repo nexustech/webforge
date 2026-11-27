@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
 import { NO_BANNER_SITE_DIR, THEMED_SITE_DIR } from "./exported-site.js";
 import { type ServedSite, serveSite } from "./served-site.js";
+import { expect, test } from "./test.js";
 
 // Changing one's mind about cookies (#539, B7) on the themed export (export.setup.ts), served over
 // http as a host would serve it: from disk Google's script never loads, so there would be nothing

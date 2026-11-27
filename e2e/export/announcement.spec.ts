@@ -1,8 +1,9 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { ANNOUNCEMENT_SITE_DIR } from "./exported-site.js";
 import { serveSite } from "./served-site.js";
+import { expect, test } from "./test.js";
 
 // The Announcement bar (6.4) on an exported site: above the Header on every page, closed by
 // keyboard for the rest of the visit, and gone after its last day.

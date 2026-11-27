@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { themedPageUrl } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // The fixture site exported in a theme of its own (#423, export.setup.ts): square, large, outline
 // buttons, strong shadows and links underlined only on hover, each as the browser draws it.
