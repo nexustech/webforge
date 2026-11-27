@@ -150,7 +150,7 @@ export const panels = {
   "layers.shownNow.editorHidden": "Hidden while editing",
   "layers.shownNow.hidden": "Not published",
   // A row inside a layer set to Don't Publish (#1512), for a screen reader.
-  "layers.insideUnpublished": "not published, as it's inside an element that isn't",
+  "layers.insideUnpublished": "not published, as it's inside an item that isn't",
   "layers.shown.shown": "Show",
   "layers.shown.editorHidden": "Hide While Editing",
   "layers.shown.hidden": "Don't Publish",

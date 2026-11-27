@@ -94,6 +94,17 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
         });
         return result.canceled || result.filePath === "" ? undefined : result.filePath;
       },
+      chooseKeptCopyToSave: async (fileName) => {
+        const answer = await parts.testAnswer("save");
+        if (answer !== undefined) return answer.path;
+        // The system's dialog asks before replacing a file of that name.
+        const result = await save({
+          title: t("site.keptCopy.saveDialogTitle"),
+          defaultPath: `${fileName}${PROJECT_EXTENSION}`,
+          filters: projectFilters,
+        });
+        return result.canceled || result.filePath === "" ? undefined : result.filePath;
+      },
       chooseSiteZipToOpen: async () => {
         const answer = await parts.testAnswer("open");
         if (answer !== undefined) return answer.path;

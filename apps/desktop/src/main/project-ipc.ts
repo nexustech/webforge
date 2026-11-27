@@ -1,5 +1,9 @@
+import { copyFileSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
+import { basename } from "node:path";
 import { errnoOf } from "@webforge/errors";
+import { t } from "@webforge/i18n/main";
+import { safeFileName } from "@webforge/model";
 import {
   fillFromSiteZip,
   readSiteZip,
@@ -11,12 +15,14 @@ import type { IpcMain } from "electron";
 import type { NewSiteRequest } from "../shared/ipc/project.js";
 import type { ProjectFailureReason } from "../shared/ipc-contract.js";
 import type { Backups } from "./backups.js";
+import { releasesThatOpen } from "./format-releases.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
 import { fillNewSite, type TemplateReader } from "./new-site.js";
 import type { ProjectSession } from "./project-session.js";
 import type { RecentSites } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
+import { samePath } from "./site-paths.js";
 import { recordUsage, type UsageEvent } from "./usage.js";
 
 /** Native file dialogs, injected so the handlers can be tested without Electron. */
@@ -35,6 +41,11 @@ export type ProjectDialogs = {
   chooseSiteZipToSave(siteName: string): Promise<string | undefined>;
   /** Asks which site's ZIP to open (4.7); `undefined` if the user cancels. */
   chooseSiteZipToOpen(): Promise<string | undefined>;
+  /**
+   * Asks where to save the copy from before an update as a site file of its own, offering
+   * `fileName` (#1525); `undefined` if the user cancels.
+   */
+  chooseKeptCopyToSave(fileName: string): Promise<string | undefined>;
 };
 
 /** Why a site's ZIP can't be opened, as the open dialog's failure says it. */
@@ -117,6 +128,14 @@ export function registerProjectHandlers(
     readonly template?: TemplateReader;
     /** Asks the renderer to save its last changes, before a copy of the site is saved (4.7). */
     readonly flush?: () => Promise<void>;
+    /**
+     * The copies kept from before an update (#1525), and the running version, which names the
+     * releases that wrote a copy's format.
+     */
+    readonly keptCopies?: {
+      readonly backups: Pick<Backups, "keptBeforeUpdate">;
+      readonly version: string;
+    };
   } = {},
 ): void {
   const {
@@ -124,6 +143,7 @@ export function registerProjectHandlers(
     recent,
     beforeSwitch,
     flush,
+    keptCopies,
     template = (id) => {
       throw new Error(`No template ${id}`);
     },
@@ -185,6 +205,61 @@ export function registerProjectHandlers(
     if (path === undefined) return { status: "canceled" };
     await flush?.();
     return site.saveSiteZip(path);
+  });
+  /** The open site's copy from before an update, for the opening `sessionId`, if it has one. */
+  const keptCopyOf = (sessionId: string) => {
+    const projectId = session.openProjectId();
+    if (session.staleReason(sessionId) !== undefined || projectId === undefined) return undefined;
+    return keptCopies?.backups.keptBeforeUpdate(projectId);
+  };
+  // The copy from before an update (#1525): whether the open site has one.
+  registerIpcHandler(ipc, "keptCopy", isTrustedSender, async (sessionId) => {
+    const kept = keptCopyOf(sessionId);
+    if (kept === undefined || keptCopies === undefined) return { status: "none" };
+    const releases = releasesThatOpen(kept, keptCopies.version);
+    return {
+      status: "kept",
+      first: releases?.first ?? null,
+      last: releases?.last ?? null,
+      keptAt: kept.keptAt.toISOString(),
+      size: kept.size,
+    };
+  });
+  // Save the Copy from Before the Update… (#1525): the kept file, byte for byte, where the person
+  // chooses; never opened or migrated, so the older Webforge opens it.
+  registerIpcHandler(ipc, "saveKeptCopy", isTrustedSender, async (sessionId) => {
+    if (session.staleReason(sessionId) === "stale-session") return { status: "canceled" };
+    const current = session.current();
+    if (current === null) return { status: "failed", reason: "no-site" };
+    const kept = keptCopyOf(sessionId);
+    if (kept === undefined || keptCopies === undefined) {
+      return { status: "failed", reason: "no-copy" };
+    }
+    const releases = releasesThatOpen(kept, keptCopies.version);
+    const name = safeFileName(current.name, t("site.untitledName"));
+    const path = await dialogs.chooseKeptCopyToSave(
+      releases === undefined
+        ? t("site.keptCopy.fileNameUndated", { name })
+        : t("site.keptCopy.fileName", {
+            name,
+            versions:
+              releases.first === releases.last
+                ? releases.first
+                : t("site.keptCopy.versions", releases),
+          }),
+    );
+    if (path === undefined) return { status: "canceled" };
+    // Never over the open site's own file, which the store has open and would go on writing.
+    const open = session.currentPath();
+    if (open !== undefined && samePath(open, path))
+      return { status: "failed", reason: "open-site" };
+    try {
+      copyFileSync(kept.path, path);
+      return { status: "saved", fileName: basename(path) };
+    } catch (error) {
+      logFailure("Webforge could not save the copy from before the update", error);
+      return { status: "failed", reason: "unknown" };
+    }
   });
   // Open Site from ZIP… (4.7): the ZIP checked before anything else is asked, then saved as a new
   // site where the person chooses, named as it was.

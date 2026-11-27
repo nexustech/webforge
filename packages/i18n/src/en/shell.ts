@@ -105,9 +105,9 @@ export const shell = {
   // Preview and Preview on Phone (3.2, F-PV-1).
   "preview.opened": "Opened in your browser",
   "preview.unpublished.one":
-    "1 element on this page isn't published, so the preview leaves it out, as your website will.",
+    "1 item on this page isn't published, so the preview leaves it out, as your website will.",
   "preview.unpublished.other":
-    "{count} elements on this page aren't published, so the preview leaves them out, as your website will.",
+    "{count} items on this page aren't published, so the preview leaves them out, as your website will.",
   "preview.failed": "{appName} couldn't open the preview. Try again in a moment.",
   // Save Page as Image… and Save Page as PDF… (5.22, OL-9).
   "preview.save.imageTitle": "Save Page as Image",
@@ -226,6 +226,7 @@ export const shell = {
   "command.clearRecent": "Clear Recent",
   // A copy of the whole site as a ZIP, and a site opened from one (4.7): not Export's website.
   "command.saveSiteZip": "Save a Copy as ZIP…",
+  "command.saveKeptCopy": "Save the Copy from Before the Update…",
   // File › Close Site (#1016): back to the start screen, the site saved.
   "command.closeSite": "Close Site",
   "command.openSiteZip": "Open Site from ZIP…",

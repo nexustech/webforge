@@ -124,7 +124,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     );
     const dialog = await screen.findByRole("dialog");
     expect(
-      within(dialog).getByText("2 elements aren't published, so they won't be on your website."),
+      within(dialog).getByText("2 items aren't published, so they won't be on your website."),
     ).toBeTruthy();
     expect(within(dialog).getByRole("button", { name: "Show" })).toBeTruthy();
     await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));

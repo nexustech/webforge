@@ -184,11 +184,13 @@ const FOCUSABLE =
 
 /**
  * Starts the dialog's focus where it started before the line about what isn't published (#1512):
- * on the first thing past it, so Enter as it opens never closes it with **Show**.
+ * on the first thing past it, so Enter as it opens never closes it with **Show**. Without the line,
+ * the dialog's own first focus.
  */
 function focusPastUnpublished(event: Event): void {
   const content = event.target;
   if (!(content instanceof HTMLElement)) return;
+  if (content.querySelector("[data-publish-unpublished]") === null) return;
   const first = [...content.querySelectorAll<HTMLElement>(FOCUSABLE)].find(
     (element) => element.closest("[data-publish-unpublished]") === null,
   );
