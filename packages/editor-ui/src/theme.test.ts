@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { dialogStyles } from "./components/ui/dialog.js";
 import themeCss from "./theme.css?raw";
 
 /** The declarations of theme.css's reduced-motion rule, by property. */
@@ -40,5 +41,22 @@ describe("the editor's reduced-motion rule (#1497)", () => {
     expect(duration).toBeLessThanOrEqual(0.01);
     expect(ms(rule.get("animation-delay"))).toBe(0);
     expect(rule.get("animation-iteration-count")).toBe("1");
+  });
+});
+
+describe("where dialogs go (#1441)", () => {
+  it("hangs a dialog from its top edge, below the title bar, so a change of height moves only its foot", () => {
+    expect(dialogStyles.content).toContain("top-[min(var(--dialog-top),");
+    expect(dialogStyles.content).not.toContain("translate-y-1/2");
+    // Centred across, still.
+    expect(dialogStyles.content).toContain("-translate-x-1/2");
+    for (const token of [
+      "--dialog-gap",
+      "--dialog-top",
+      "--dialog-max-height",
+      "--dialog-fit-height",
+    ]) {
+      expect(themeCss, token).toContain(`${token}:`);
+    }
   });
 });

@@ -73,6 +73,10 @@ This builds the app in perf mode (`electron-vite build --mode perf`, which adds 
 - Launch the app with `launchDesktopApp()` from `app/launch.ts`.
 - Use `page` for the window (`page.evaluate()` callbacks run in the renderer) and `app.evaluate()` for the main process.
 - Biome's Playwright rules apply here (no missing `await`, no `waitForTimeout`, no `page.pause()`).
+- **Every dialog and panel fits the window:** `app/dialog-fit.spec.ts` (#1433) opens each dialog, menu and panel in `CASES`, in six rounds (960 × 600 and 1366 × 768 in Dark and Light, 1366 × 768 at 125% text, and 1440 × 900 at 150% for the dialogs alone), and holds each to `app/fits.ts`'s rules: inside the window and below the title bar, nothing scrolling sideways, no scrolling itself as well as a list inside it, its top still through its changes of state (Dark rounds), and the title bar fitting with its optional controls showing.
+  - Each case is a step with soft checks, so one failing dialog doesn't hide the rest; a case that leaves something open starts the app again for the next, and the round lists it. A round stops after five cases it couldn't check, as something they share is broken then.
+  - A fault filed and not yet fixed goes in `KNOWN_FAULTS`, with its issue, and the change of state it shows after where the case drives several. The check then asserts that exact rule still fails there, and fails once it passes, so the fix removes the entry. Nothing is skipped silently.
+  - A failure names the case, the round and what was measured (anti-pattern 20). Its last test breaks one dialog per rule on purpose, to show each check catches it.
 
 ### Motion is off (#1493)
 
