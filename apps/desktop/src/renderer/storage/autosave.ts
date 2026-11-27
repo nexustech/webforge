@@ -1,6 +1,7 @@
 import type { ReadonlyStore } from "@webforge/history";
 import { changedDocuments, type SiteDoc, type SiteDocumentChange } from "@webforge/model";
 import { createStore, type StoreApi } from "zustand/vanilla";
+import type { CommitFailure } from "../../shared/ipc/project.js";
 import type { CommitResult } from "../../shared/ipc-contract.js";
 import { reportFailure } from "../log.js";
 
@@ -10,6 +11,12 @@ import { reportFailure } from "../log.js";
  * tries again).
  */
 export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
+
+/** The save status, and why the last save failed while it's `error` (#1525: a copy not kept). */
+export type AutosaveState = {
+  readonly status: SaveStatus;
+  readonly failure?: CommitFailure | undefined;
+};
 
 /** Timers, injectable so tests can use fake ones. */
 type Timers = {
@@ -37,7 +44,7 @@ export type AutosaveOptions = {
 
 /** A running autosave for one open site. */
 export type Autosave = {
-  readonly status: StoreApi<{ readonly status: SaveStatus }>;
+  readonly status: StoreApi<AutosaveState>;
   /** Saves now (blur, page switch, close, Ctrl/Cmd+S); resolves once the file has every change. */
   flush(): Promise<void>;
   /** Stops listening and cancels pending saves; does not save. */
@@ -62,7 +69,7 @@ export function createAutosave(options: AutosaveOptions): Autosave {
   const maxWaitMs = options.maxWaitMs ?? MAX_WAIT_MS;
   let saved = options.saved;
   const initialStatus: SaveStatus = saved === options.document.getState() ? "saved" : "unsaved";
-  const status = createStore<{ status: SaveStatus }>()(() => ({ status: initialStatus }));
+  const status = createStore<AutosaveState>()(() => ({ status: initialStatus }));
   let idleTimer: unknown;
   let maxTimer: unknown;
   /** The save in progress; saves run one after another so they never race in the file. */
@@ -115,10 +122,16 @@ export function createAutosave(options: AutosaveOptions): Autosave {
     }
     if (options.document.getState() !== next) {
       // Edited while saving: those changes get their own save.
-      status.setState({ status: result.status === "saved" ? "unsaved" : "error" });
+      status.setState({
+        status: result.status === "saved" ? "unsaved" : "error",
+        failure: result.status === "saved" ? undefined : result.reason,
+      });
       schedule();
     } else {
-      status.setState({ status: result.status === "saved" ? "saved" : "error" });
+      status.setState({
+        status: result.status === "saved" ? "saved" : "error",
+        failure: result.status === "saved" ? undefined : result.reason,
+      });
     }
   }
 
