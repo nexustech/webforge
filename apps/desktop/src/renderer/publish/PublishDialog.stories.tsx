@@ -87,6 +87,16 @@ type Story = StoryObj<typeof meta>;
 /** Two destinations: one ready to publish to, one whose password must be typed again. */
 export const Destinations: Story = {};
 
+/** Elements set to Don't Publish (#1512): how many, and Show, which selects the first. */
+export const WithUnpublished: Story = {
+  args: { unpublished: { count: 3, show: () => undefined } },
+};
+
+/** Republishing a saved version (4.6b) with elements set to Don't Publish: no Show (#1512). */
+export const RepublishWithUnpublished: Story = {
+  args: { republishing: "Before the menu", unpublished: { count: 1 } },
+};
+
 /**
  * A site with none yet (#1014): "Where is your website hosted?", a card for each answer, Netlify
  * offered and Help able to open, and Close alone.
