@@ -15,7 +15,7 @@ import type { IpcMain } from "electron";
 import type { NewSiteRequest } from "../shared/ipc/project.js";
 import type { ProjectFailureReason } from "../shared/ipc-contract.js";
 import type { Backups } from "./backups.js";
-import { releasesThatWrote } from "./format-releases.js";
+import { releasesThatOpen } from "./format-releases.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
 import { fillNewSite, type TemplateReader } from "./new-site.js";
@@ -215,7 +215,7 @@ export function registerProjectHandlers(
   registerIpcHandler(ipc, "keptCopy", isTrustedSender, async (sessionId) => {
     const kept = keptCopyOf(sessionId);
     if (kept === undefined || keptCopies === undefined) return { status: "none" };
-    const releases = releasesThatWrote(kept.fileFormat, keptCopies.version);
+    const releases = releasesThatOpen(kept, keptCopies.version);
     return {
       status: "kept",
       first: releases?.first ?? null,
@@ -234,12 +234,18 @@ export function registerProjectHandlers(
     if (kept === undefined || keptCopies === undefined) {
       return { status: "failed", reason: "no-copy" };
     }
-    const releases = releasesThatWrote(kept.fileFormat, keptCopies.version);
+    const releases = releasesThatOpen(kept, keptCopies.version);
     const name = safeFileName(current.name, t("site.untitledName"));
     const path = await dialogs.chooseKeptCopyToSave(
       releases === undefined
         ? t("site.keptCopy.fileNameUndated", { name })
-        : t("site.keptCopy.fileName", { name, first: releases.first, last: releases.last }),
+        : t("site.keptCopy.fileName", {
+            name,
+            versions:
+              releases.first === releases.last
+                ? releases.first
+                : t("site.keptCopy.versions", releases),
+          }),
     );
     if (path === undefined) return { status: "canceled" };
     try {

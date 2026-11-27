@@ -9,18 +9,17 @@ import {
   statSync,
 } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
-import type { ProjectStore } from "@webforge/storage";
+import type { ProjectStore, StoredFormats } from "@webforge/storage";
 import { appEvents } from "../shared/ipc/app.js";
 
 /**
  * A site's file kept as an older Webforge wrote it, before this one first wrote it in a newer
- * format (#1525, UC-2): `userData/backups/<projectId>/before-update-format-<n>.wforge`, one for
- * each site, by its id, so a moved or renamed file keeps it. Never pruned with the rolling backups.
+ * format (#1525, UC-2): `userData/backups/<projectId>/before-update-format-<n>-site-<m>.wforge`,
+ * one for each site, by its id, so a moved or renamed file keeps it. Never pruned with the rolling
+ * backups. Its formats, as the older Webforge wrote them, say which versions open it.
  */
-export type KeptCopy = {
+export type KeptCopy = StoredFormats & {
   readonly path: string;
-  /** The storage format the file was in: what the older Webforge wrote. */
-  readonly fileFormat: number;
   /** When it was kept. */
   readonly keptAt: Date;
   /** Its size, in bytes. */
@@ -35,8 +34,8 @@ export class KeepCopyError extends Error {
   }
 }
 
-/** `before-update-format-2.wforge`: the kept copy, by the file format it holds. */
-const KEPT_NAME = /^before-update-format-(\d+)\.wforge$/;
+/** `before-update-format-2-site-22.wforge`: the kept copy, by the formats it holds. */
+const KEPT_NAME = /^before-update-format-(\d+)-site-(\d+)\.wforge$/;
 
 /** A backup of a site, newest first in {@link Backups.list}. */
 export type BackupInfo = {
@@ -159,11 +158,12 @@ export function createBackups(options: BackupOptions) {
      * and renamed, so a failed copy leaves the earlier one. Throws {@link KeepCopyError} on failure:
      * the write must not happen without it.
      */
-    keepBeforeUpdate(sourcePath: string, projectId: string, fileFormat: number): KeptCopy {
+    keepBeforeUpdate(sourcePath: string, projectId: string, formats: StoredFormats): KeptCopy {
+      const { fileFormat, siteFormat } = formats;
       try {
         const folder = join(options.root, projectId);
         mkdirSync(folder, { recursive: true });
-        const path = join(folder, `before-update-format-${fileFormat}.wforge`);
+        const path = join(folder, `before-update-format-${fileFormat}-site-${siteFormat}.wforge`);
         const incoming = `${path}.tmp`;
         copyFileSync(sourcePath, incoming);
         renameSync(incoming, path);
@@ -172,7 +172,7 @@ export function createBackups(options: BackupOptions) {
             rmSync(join(folder, name), { force: true });
           }
         }
-        return { path, fileFormat, keptAt: now(), size: statSync(path).size };
+        return { path, fileFormat, siteFormat, keptAt: now(), size: statSync(path).size };
       } catch (error) {
         throw new KeepCopyError(error);
       }
@@ -187,7 +187,13 @@ export function createBackups(options: BackupOptions) {
         if (match === null) continue;
         const path = join(folder, name);
         const info = statSync(path);
-        return { path, fileFormat: Number(match[1]), keptAt: info.mtime, size: info.size };
+        return {
+          path,
+          fileFormat: Number(match[1]),
+          siteFormat: Number(match[2]),
+          keptAt: info.mtime,
+          size: info.size,
+        };
       }
       return undefined;
     },
@@ -239,9 +245,9 @@ export function createKeptCopies(
     version,
     beforeFormatChange: (
       path: string,
-      info: { readonly projectId: string; readonly formatVersion: number },
+      kept: { readonly projectId: string } & StoredFormats,
     ): void => {
-      backups.keepBeforeUpdate(path, info.projectId, info.formatVersion);
+      backups.keepBeforeUpdate(path, kept.projectId, kept);
       // The window offers to save it, once the change that waited for it is saved.
       window()?.webContents.send(appEvents.copyKept.channel);
     },

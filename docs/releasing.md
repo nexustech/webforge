@@ -20,9 +20,10 @@ workflow is `.github/workflows/release.yml`; its header has the details.
    the pull request only once the repository allows it: Settings › Actions › General › "Allow
    GitHub Actions to create and approve pull requests".
 3. **Before merging it, add the release to `RELEASES`** in `apps/desktop/src/main/format-releases.ts`,
-   with the storage format it writes (`FORMAT_VERSION`): a copy kept from before an update
-   (#1525) names the releases that open it from that list. A test fails while the current format
-   has no release, so a format change can't forget it.
+   with the file format it writes (`FORMAT_VERSION` in `packages/storage`) and its site format
+   (`SITE_FORMAT_VERSION` in `packages/model`): a copy kept from before an update (#1525) names
+   the releases that open it from that list. A test fails while the current file format has no
+   release, so a format change can't forget it.
 4. **Merge it** when the release should go out. release-please tags the merge `v<version>` and
    makes a **draft** GitHub Release with the CHANGELOG entries.
 5. **The builds.** The same workflow run builds the Windows installer and the macOS DMG and zip

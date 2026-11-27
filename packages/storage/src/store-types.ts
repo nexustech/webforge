@@ -157,9 +157,19 @@ export type OpenProjectOptions = {
    * Called once, before the first write that brings an older file's format or an older site's
    * format up to date (#1525, UC-2): the moment to keep the file as the older Webforge wrote it.
    * The file is whole then, between transactions. If it throws, that write doesn't happen. Never
-   * called for a file already up to date, or one opened read-only.
+   * called for a file already up to date, or one opened read-only. Told the formats the file is
+   * in, which say which versions of Webforge open it.
    */
-  readonly beforeFormatChange?: () => void;
+  readonly beforeFormatChange?: (formats: StoredFormats) => void;
+};
+
+/**
+ * The formats a site's file is in (#1525): the file's own, its tables, and the site's, which
+ * changes more often. Together they say which versions of Webforge can open it.
+ */
+export type StoredFormats = {
+  readonly fileFormat: number;
+  readonly siteFormat: number;
 };
 
 /** The steps of making a new project, as {@link CreateProjectOptions.timed} is told them (#1560). */

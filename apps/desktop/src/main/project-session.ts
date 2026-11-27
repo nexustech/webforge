@@ -18,6 +18,7 @@ import {
   ReadOnlyProjectError,
   reachableBlobs,
   type StoredBlob,
+  type StoredFormats,
   type VersionManifest,
 } from "@webforge/storage";
 import type {
@@ -184,11 +185,11 @@ export type ProjectSessionOptions = {
   /**
    * Keeps the site's file as an older Webforge wrote it, before the first write that changes its
    * format (#1525, UC-2): the backups' `keepBeforeUpdate`. If it throws, the write is refused, and
-   * a commit says why (`no-copy`).
+   * a commit says why (`no-copy`). Told the site's id and the formats the file is in.
    */
   readonly beforeFormatChange?: (
     path: string,
-    info: { readonly projectId: string; readonly formatVersion: number },
+    kept: { readonly projectId: string } & StoredFormats,
   ) => void;
   /**
    * Saves the daily version before the first change of the day (F-SITE-4), keeping `kept()` of
@@ -256,8 +257,8 @@ export class ProjectSession {
         // The hook runs at a later write, by when the store is there to say what it holds.
         let opened: ProjectStore | undefined;
         opened = ProjectStore.open(path, {
-          beforeFormatChange: () => {
-            if (opened !== undefined) keep(path, opened.info);
+          beforeFormatChange: (formats) => {
+            if (opened !== undefined) keep(path, { projectId: opened.info.projectId, ...formats });
           },
         });
         return opened;

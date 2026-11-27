@@ -85,6 +85,28 @@ describe("File › Save the Copy from Before the Update… (#1525)", () => {
     );
   });
 
+  it("names the one release a copy opens in, or none when no release does", async () => {
+    const one = registered({ ...KEPT, first: "0.3.1", last: "0.3.1" });
+    await vi.waitFor(() => expect(one.offered()).toBeDefined());
+    one.copyKept();
+    await vi.waitFor(() =>
+      expect(toast).toHaveBeenLastCalledWith(
+        "Webforge kept a copy of this site as it was, for Webforge 0.3.1.",
+        expect.anything(),
+      ),
+    );
+
+    const unnamed = registered({ ...KEPT, first: null, last: null });
+    await vi.waitFor(() => expect(unnamed.offered()).toBeDefined());
+    unnamed.copyKept();
+    await vi.waitFor(() =>
+      expect(toast).toHaveBeenLastCalledWith(
+        "Webforge kept a copy of this site as it was before the update.",
+        expect.anything(),
+      ),
+    );
+  });
+
   it("leaves the File menu when the area is removed", async () => {
     const { dispose, offered } = registered(KEPT);
     await vi.waitFor(() => expect(offered()).toBeDefined());

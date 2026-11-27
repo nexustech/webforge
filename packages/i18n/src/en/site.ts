@@ -489,10 +489,11 @@ export const site = {
   "site.zip.saveDialogTitle": "Save a Copy of Your Site as a ZIP File",
   // The copy kept from before an update (#1525, UC-2): saved as a site file of its own.
   "site.keptCopy.saveDialogTitle": "Save the Copy from Before the Update",
-  "site.keptCopy.fileName": "{name} (for {appName} {first} to {last})",
+  "site.keptCopy.fileName": "{name} (for {appName} {versions})",
   "site.keptCopy.fileNameUndated": "{name} (from before the update)",
-  "site.keptCopy.kept":
-    "{appName} kept a copy of this site as it was, for {appName} {first} to {last}.",
+  "site.keptCopy.kept": "{appName} kept a copy of this site as it was, for {appName} {versions}.",
+  // The versions a kept copy opens in, when there are more than one: "0.1.0 to 0.3.1".
+  "site.keptCopy.versions": "{first} to {last}",
   "site.keptCopy.keptUnnamed": "{appName} kept a copy of this site as it was before the update.",
   "site.keptCopy.keptDescription":
     "This version saves the site in a newer way. Save the copy to open the site in the older version. It's in the File menu too.",

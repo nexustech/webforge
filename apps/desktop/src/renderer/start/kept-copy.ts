@@ -20,9 +20,10 @@ function tell(result: SaveKeptCopyResult): void {
 
 /** What the toast says of a copy just kept: the releases it's for, when they're known. */
 function keptMessage(kept: Extract<KeptCopyInfo, { status: "kept" }>): string {
-  return kept.first === null || kept.last === null
-    ? t("site.keptCopy.keptUnnamed")
-    : t("site.keptCopy.kept", { first: kept.first, last: kept.last });
+  const { first, last } = kept;
+  if (first === null || last === null) return t("site.keptCopy.keptUnnamed");
+  const versions = first === last ? first : t("site.keptCopy.versions", { first, last });
+  return t("site.keptCopy.kept", { versions });
 }
 
 /**

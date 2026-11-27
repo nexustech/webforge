@@ -62,6 +62,7 @@ import {
   type SiteEditorMode,
   type StoredBlob,
   type StoredDocument,
+  type StoredFormats,
   siteEditorModeSchema,
   type VersionInfo,
   type VersionManifest,
@@ -90,9 +91,13 @@ export class ProjectStore {
    */
   #unsavedMigration: SiteDoc | undefined;
   /** {@link OpenProjectOptions.beforeFormatChange}, until it has run. */
-  #beforeFormatChange: (() => void) | undefined;
+  #beforeFormatChange: ((formats: StoredFormats) => void) | undefined;
 
-  private constructor(db: Database.Database, info: ProjectInfo, beforeFormatChange?: () => void) {
+  private constructor(
+    db: Database.Database,
+    info: ProjectInfo,
+    beforeFormatChange?: (formats: StoredFormats) => void,
+  ) {
     this.#db = db;
     this.#info = info;
     this.#beforeFormatChange = info.readOnly ? undefined : beforeFormatChange;
@@ -682,7 +687,12 @@ export class ProjectStore {
     const keep = this.#beforeFormatChange;
     if (keep === undefined) return;
     if (this.#info.formatVersion >= FORMAT_VERSION && this.#unsavedMigration === undefined) return;
-    keep();
+    // The site's format as stored, not as `readSite` brought it up to date in memory.
+    const site = this.readDocument("site");
+    keep({
+      fileFormat: this.#info.formatVersion,
+      siteFormat: siteFormatOf(site === undefined ? [] : [site]),
+    });
     this.#beforeFormatChange = undefined;
   }
 

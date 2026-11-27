@@ -39,7 +39,7 @@ describe("the copy kept from before an update, as the session saves (#1525)", ()
       {},
       {
         beforeFormatChange: (sitePath, info) => {
-          kept.push(backups.keepBeforeUpdate(sitePath, info.projectId, info.formatVersion).path);
+          kept.push(backups.keepBeforeUpdate(sitePath, info.projectId, info).path);
         },
       },
     );
@@ -57,7 +57,7 @@ describe("the copy kept from before an update, as the session saves (#1525)", ()
       // The copy holds the older format and the file's original bytes, edits and all after it.
       expect(readFileSync(kept[0] ?? "").equals(original)).toBe(true);
       expect(readFileSync(path).equals(original)).toBe(false);
-      expect(kept[0]).toContain("before-update-format-1.wforge");
+      expect(kept[0]).toContain("before-update-format-1-site-1.wforge");
     } finally {
       await session.close();
     }

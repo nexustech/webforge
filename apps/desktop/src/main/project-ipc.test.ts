@@ -517,16 +517,16 @@ describe("making and saving sites in the usage summary (5.40)", () => {
 
 describe("the copy from before an update (#1525)", () => {
   const tempDir = tempDirFactory("webforge-kept-ipc-");
-  /** A kept copy of the site, as the backups give it. */
-  const keptAt = (path: string, fileFormat = 2) => ({
+  /** A kept copy of the site in `formats`, as the backups give it: by default, older than 0.1.0. */
+  const keptAt = (path: string, formats = { fileFormat: 2, siteFormat: 11 }) => ({
     keptBeforeUpdate: vi.fn((projectId: string) =>
       projectId === "project-1"
-        ? { path, fileFormat, keptAt: new Date("2026-11-27T10:00:00.000Z"), size: 4 }
+        ? { path, ...formats, keptAt: new Date("2026-11-27T10:00:00.000Z"), size: 4 }
         : undefined,
     ),
   });
 
-  it("says whether the open site has one, with the releases that wrote its format", async () => {
+  it("says whether the open site has one, with the releases that open its formats", async () => {
     const dir = tempDir();
     const backups = keptAt(join(dir, "kept.wforge"));
     const { invoke } = setUp({}, { keptCopies: { backups, version: "0.4.0" } });
@@ -538,8 +538,11 @@ describe("the copy from before an update (#1525)", () => {
       keptAt: "2026-11-27T10:00:00.000Z",
       size: 4,
     });
-    // A format no release wrote: none named.
-    const unnamed = setUp({}, { keptCopies: { backups: keptAt("x", 1), version: "0.4.0" } });
+    // Formats no release opens: none named.
+    const unnamed = setUp(
+      {},
+      { keptCopies: { backups: keptAt("x", { fileFormat: 1, siteFormat: 1 }), version: "0.4.0" } },
+    );
     await expect(
       unnamed.invoke("project:kept-copy", APP_URL, project.sessionId),
     ).resolves.toMatchObject({ first: null, last: null });
@@ -574,6 +577,25 @@ describe("the copy from before an update (#1525)", () => {
     });
     expect(chooseKeptCopyToSave).toHaveBeenCalledWith("Bakery (for Webforge 0.1.0 to 0.3.1)");
     expect(readFileSync(join(dir, "Saved.wforge")).equals(readFileSync(kept))).toBe(true);
+  });
+
+  it("names the copy for the one release that opens it, or for the update when none does", async () => {
+    const chooseKeptCopyToSave = vi.fn(async (_name: string) => undefined);
+    // Saved by 0.3.1: the releases before it have an older site format.
+    const one = setUp(
+      { chooseKeptCopyToSave },
+      { keptCopies: { backups: keptAt("x", { fileFormat: 2, siteFormat: 22 }), version: "0.4.0" } },
+    );
+    await one.invoke("project:save-kept-copy", APP_URL, project.sessionId);
+    expect(chooseKeptCopyToSave).toHaveBeenLastCalledWith("Bakery (for Webforge 0.3.1)");
+
+    // Saved by a development build, newer than any release.
+    const none = setUp(
+      { chooseKeptCopyToSave },
+      { keptCopies: { backups: keptAt("x", { fileFormat: 2, siteFormat: 99 }), version: "0.4.0" } },
+    );
+    await none.invoke("project:save-kept-copy", APP_URL, project.sessionId);
+    expect(chooseKeptCopyToSave).toHaveBeenLastCalledWith("Bakery (from before the update)");
   });
 
   it("saves nothing without a copy, when the person cancels, or for a replaced opening", async () => {

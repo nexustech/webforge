@@ -5,7 +5,7 @@ import { copyWforgeFixture } from "@webforge/test-utils";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
-import { FORMAT_VERSION, ProjectStore } from "../src/index.js";
+import { FORMAT_VERSION, ProjectStore, type StoredFormats } from "../src/index.js";
 
 // The moment before a site's file changes format (#1525, UC-2): the newer Webforge keeps the file
 // as the older one wrote it, so it still opens there. `beforeFormatChange` is called once, before
@@ -16,20 +16,22 @@ const tempDir = tempDirFactory("webforge-before-format-");
 /** Opens `path` with a hook that keeps the file's bytes each time it's called. */
 function openKeeping(path: string, options: { readonly fail?: boolean } = {}) {
   const kept: Buffer[] = [];
+  const formats: StoredFormats[] = [];
   const store = ProjectStore.open(path, {
-    beforeFormatChange: () => {
+    beforeFormatChange: (stored) => {
       kept.push(readFileSync(path));
+      formats.push(stored);
       if (options.fail === true) throw new Error("No room for the copy");
     },
   });
-  return { store, kept };
+  return { store, kept, formats };
 }
 
 describe("ProjectStore's beforeFormatChange (#1525)", () => {
   it("keeps a file one format behind before its first write, once, with its bytes as they were", () => {
     const path = copyWforgeFixture(1, tempDir());
     const original = readFileSync(path);
-    const { store, kept } = openKeeping(path);
+    const { store, kept, formats } = openKeeping(path);
     try {
       // Reading writes nothing, and keeps nothing.
       const site = store.readSite();
@@ -40,6 +42,8 @@ describe("ProjectStore's beforeFormatChange (#1525)", () => {
 
       expect(kept).toHaveLength(1);
       expect(kept[0]?.equals(original)).toBe(true);
+      // The formats as stored, which name the versions that open the copy.
+      expect(formats).toEqual([{ fileFormat: 1, siteFormat: 1 }]);
       expect(store.info.formatVersion).toBeGreaterThan(1);
     } finally {
       store.close();
@@ -49,7 +53,7 @@ describe("ProjectStore's beforeFormatChange (#1525)", () => {
   it("keeps a site one site format behind before the commit that writes it in the new one", () => {
     const path = copyWforgeFixture(2, tempDir());
     const original = readFileSync(path);
-    const { store, kept } = openKeeping(path);
+    const { store, kept, formats } = openKeeping(path);
     try {
       const site = store.readSite();
       expect(kept).toHaveLength(0);
@@ -59,6 +63,8 @@ describe("ProjectStore's beforeFormatChange (#1525)", () => {
 
       expect(kept).toHaveLength(1);
       expect(kept[0]?.equals(original)).toBe(true);
+      // The site's format as stored, not as reading brought it up to date.
+      expect(formats).toEqual([{ fileFormat: FORMAT_VERSION, siteFormat: 11 }]);
     } finally {
       store.close();
     }

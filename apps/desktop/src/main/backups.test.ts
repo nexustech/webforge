@@ -184,17 +184,20 @@ describe("createBackups", () => {
 });
 
 describe("the copy kept from before an update (#1525)", () => {
+  const OLD = { fileFormat: 1, siteFormat: 11 };
+  const NEWER = { fileFormat: 2, siteFormat: 22 };
+
   it("keeps the file byte for byte by the site's id, apart from the rolling backups", async () => {
     const backed = backups(2);
     const original = readFileSync(sitePath);
 
-    const kept = backed.keepBeforeUpdate(sitePath, store.info.projectId, 1);
+    const kept = backed.keepBeforeUpdate(sitePath, store.info.projectId, OLD);
 
     expect(readFileSync(kept.path).equals(original)).toBe(true);
     expect(kept.path).toBe(
-      join(dir, "backups", store.info.projectId, "before-update-format-1.wforge"),
+      join(dir, "backups", store.info.projectId, "before-update-format-1-site-11.wforge"),
     );
-    expect(kept).toMatchObject({ fileFormat: 1, size: original.length });
+    expect(kept).toMatchObject({ fileFormat: 1, siteFormat: 11, size: original.length });
     // Never counted, pruned or restored with the rolling backups.
     for (let index = 0; index < 4; index++) {
       clock = new Date(clock.getTime() + 60_000);
@@ -209,27 +212,28 @@ describe("the copy kept from before an update (#1525)", () => {
     const backed = backups();
     expect(backed.keptBeforeUpdate(store.info.projectId)).toBeUndefined();
 
-    backed.keepBeforeUpdate(sitePath, store.info.projectId, 1);
+    backed.keepBeforeUpdate(sitePath, store.info.projectId, OLD);
     // A later format change replaces it.
-    const later = backed.keepBeforeUpdate(sitePath, store.info.projectId, 2);
+    const later = backed.keepBeforeUpdate(sitePath, store.info.projectId, NEWER);
 
     expect(backed.keptBeforeUpdate(store.info.projectId)).toMatchObject({
       path: later.path,
       fileFormat: 2,
+      siteFormat: 22,
     });
     expect(
       readdirSync(join(dir, "backups", store.info.projectId)).filter((name) =>
         name.startsWith("before-update"),
       ),
-    ).toEqual(["before-update-format-2.wforge"]);
+    ).toEqual(["before-update-format-2-site-22.wforge"]);
   });
 
   it("says it couldn't keep the copy, and leaves the earlier one, when the copy fails", () => {
     const backed = backups();
-    const earlier = backed.keepBeforeUpdate(sitePath, store.info.projectId, 1);
+    const earlier = backed.keepBeforeUpdate(sitePath, store.info.projectId, OLD);
 
     expect(() =>
-      backed.keepBeforeUpdate(join(dir, "missing.wforge"), store.info.projectId, 2),
+      backed.keepBeforeUpdate(join(dir, "missing.wforge"), store.info.projectId, NEWER),
     ).toThrow(KeepCopyError);
     expect(existsSync(earlier.path)).toBe(true);
   });
