@@ -70,7 +70,7 @@ export const lookIn = (theme: ThemeTokens, type: string): Readonly<Record<string
   theme.looks?.[type] ?? {};
 
 /** Whether `look` sets anything, so there's something to reset (#1517). */
-export const hasLook = (look: Readonly<Record<string, unknown>>) =>
+const hasLook = (look: Readonly<Record<string, unknown>>) =>
   Object.values(look).some((value) => value !== undefined);
 
 /** The kinds whose look in `theme` sets something (#1517): marked in {@link KindChoice}. */
