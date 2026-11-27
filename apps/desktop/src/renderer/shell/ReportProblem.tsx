@@ -66,7 +66,7 @@ export function ReportProblemDialog(props: ReportProblemDialogProps) {
   const empty = text.trim() === "";
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="flex max-h-[min(44rem,var(--dialog-max-height))] flex-col sm:max-w-xl">
+      <DialogContent className="flex max-h-[min(44rem,var(--dialog-fit-height))] flex-col sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{t("help.report.title")}</DialogTitle>
           <DialogDescription>{t("help.report.about")}</DialogDescription>

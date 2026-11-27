@@ -97,6 +97,12 @@ export type FormSpec<V extends FormValues, Out> = {
    * Settings (`combineForms`) has none.
    */
   readonly after?: (values: V, form: FormActions) => Readonly<Partial<Record<string, ReactNode>>>;
+  /**
+   * Whether each field but an on/off one keeps a line for its error while it has none, so Save
+   * showing errors moves nothing under the pointer (#1441): for a form whose errors are likely, as
+   * the web host's. Left out, a field's error adds its line when it shows.
+   */
+  readonly reserveErrorRoom?: boolean;
 };
 
 /** What a form's own content (`after`) can ask of the form. */

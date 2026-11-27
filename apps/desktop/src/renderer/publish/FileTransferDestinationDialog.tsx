@@ -603,6 +603,8 @@ export function FileTransferDestinationDialog({
     adjust,
     // Plain FTP's warning, which is beside the connection, shows as the form opens.
     moreOpen: (values) => values.protocol === "ftp" && !plainFtpWarned,
+    // Save with a field left empty is likely here: its errors move nothing (#1441).
+    reserveErrorRoom: true,
     // An existing destination's own connection, port and folder, folded but not hidden.
     moreSummary: settingsSummary,
     check: (values) => [
