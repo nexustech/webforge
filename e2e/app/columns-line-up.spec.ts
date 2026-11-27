@@ -252,9 +252,13 @@ test("draws the columns last first on Mobile once set there, keeping their order
   await expect(spacerIn(0)).toHaveCount(1);
   // Selected first, as a person picks up what they mean to move: the Columns is selected now.
   await left.getByRole("treeitem", { name: /^Spacer/ }).click();
+  // Aimed at Column 2 where it is once the drag is under way, as a person aims at what they see:
+  // the canvas moves as a drag starts, and a point found before it can be over the other column.
   const target = canvas().getByText("Column 2 of 2", { exact: true });
-  const at = await boxOf(target, "Column 2's text");
-  await drag(page, spacerIn(0), { x: at.x + at.width / 2, y: at.y + at.height * 0.8 });
+  await drag(page, spacerIn(0), async () => {
+    const at = await boxOf(target, "Column 2's text");
+    return { x: at.x + at.width / 2, y: at.y + at.height * 0.8 };
+  });
   await expect(spacerIn(1)).toHaveCount(1);
   await expect(spacerIn(0)).toHaveCount(0);
   expect((await ordered()).saved).toEqual(["Column 1 of 2", "Column 2 of 2"]);
