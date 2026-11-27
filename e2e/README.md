@@ -78,7 +78,7 @@ This builds the app in perf mode (`electron-vite build --mode perf`, which adds 
 
 Tests run with motion off, so none reads the screen while something on it still moves.
 
-- **What's off:** every page asks for reduced motion, and has a sheet that ends each transition and animation at once (`no-motion.ts`; 0.01 ms, so `transitionend` and `animationend` still fire).
+- **What's off:** every page asks for reduced motion, and has a sheet with no transitions and every animation over at once (`no-motion.ts`), as the editor's own reduced-motion rule. Transitions at 0 s: a short one on every element would give each a transition of every property, drawn at its old value for a frame (#1497). Animations at 0.01 ms, so `animationend` still fires: Radix's Presence waits for it to unmount what's closing. Nothing in the editor waits for `transitionend`.
 - **The app:** `launchDesktopApp()` applies both to each window and frame, the canvas's included, from the test's side, as Playwright's `reducedMotion` doesn't reach Electron's windows.
 - **The exported site:** its projects set `reducedMotion: "reduce"`, and `export/test.ts` adds a sheet with no transitions or animations at all, as no script of the site's waits for one's end with reduced motion, and WebKit didn't always finish a 0.01 ms one before a test read it. Its specs import `test` and `expect` from `./test.js`, never `test` from `@playwright/test`; Biome says so.
 

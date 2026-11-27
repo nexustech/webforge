@@ -44,11 +44,11 @@ async function below(card: Locator, control: Locator) {
 }
 
 // Someone whose system asks for less motion (#1497): reduced motion as their system reports it, and
-// none of the tests' own sheet. Expected to fail until #1497 is fixed, which removes `test.fail`.
+// none of the tests' own sheet (`@motion`), so the editor's own reduced-motion rule is what's tested.
+// It gave every element a transition, and the card was still hidden as it took the focus.
 test("offers the tour with the focus to someone who asks for less motion (#1497)", {
   tag: MOTION_TAG,
 }, async () => {
-  test.fail(true, "#1497: with reduced motion, the tour's offer doesn't take the focus");
   app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
   const page = await app.firstWindow();
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -69,10 +69,7 @@ test("offers the tour with the focus to someone who asks for less motion (#1497)
   await expect(offer).toBeFocused();
 });
 
-// Motion on until #1497: with reduced motion, the tour's offer doesn't take the focus.
-test("offers the tour after the quick start, and shows the three steps beside their controls", {
-  tag: MOTION_TAG,
-}, async () => {
+test("offers the tour after the quick start, and shows the three steps beside their controls", async () => {
   const userData = join(dir, "user-data");
   app = await launchDesktopApp({ userDataDir: userData, site: false });
   const page = await app.firstWindow();

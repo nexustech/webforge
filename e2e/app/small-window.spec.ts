@@ -3,7 +3,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp, MOTION_TAG, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { stubFileDialogs } from "./sites.js";
 
@@ -58,10 +58,7 @@ async function zoomPercent(): Promise<number> {
   return match === null ? 0 : Number(match[1]);
 }
 
-// Motion on until #1497: with reduced motion, the first zoom at 960 × 600 is 57%, not 58%.
-test("opens a site at a size to read, the left column a strip, Publish and Site Check named (#1166)", {
-  tag: MOTION_TAG,
-}, async () => {
+test("opens a site at a size to read, the left column a strip, Publish and Site Check named (#1166)", async () => {
   await expect(page.getByRole("region", { name: "Left panels" })).toBeHidden();
   // 58% at 960 × 600: the frame is 590 px against Desktop's 1024 px minimum (PH2-18). Reaching 60%
   // would narrow the Edit panel below #1007's width or take the canvas's padding (#1166's acceptance).
@@ -351,18 +348,12 @@ async function expectLeftOpen(): Promise<void> {
   await expect.poll(zoomPercent).toBeGreaterThanOrEqual(50);
 }
 
-// Motion on until #1497: with reduced motion, the columns don't fold as here.
-test("folds the right column when the left one opens there, the page at half or more (#1166)", {
-  tag: MOTION_TAG,
-}, async () => {
+test("folds the right column when the left one opens there, the page at half or more (#1166)", async () => {
   await chooseFromMenu(app, page, "View", "Show or Hide Left Panels");
   await expectLeftOpen();
 });
 
-// Motion on until #1497: with reduced motion, the columns don't fold as here.
-test("opens the left column from its strip at its full width, folding the right (#1166)", {
-  tag: MOTION_TAG,
-}, async () => {
+test("opens the left column from its strip at its full width, folding the right (#1166)", async () => {
   await page
     .getByRole("navigation", { name: "Left panels, collapsed" })
     .getByRole("button", { name: "Add" })
@@ -370,10 +361,7 @@ test("opens the left column from its strip at its full width, folding the right 
   await expectLeftOpen();
 });
 
-// Motion on until #1497: with reduced motion, the columns don't fold as here.
-test("opens the left column from its strip's own button, folding the right (#1412)", {
-  tag: MOTION_TAG,
-}, async () => {
+test("opens the left column from its strip's own button, folding the right (#1412)", async () => {
   await page
     .getByRole("navigation", { name: "Left panels, collapsed" })
     .getByRole("button", { name: "Show Left Panels" })
