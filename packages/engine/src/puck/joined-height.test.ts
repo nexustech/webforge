@@ -80,4 +80,51 @@ describe("followJoinedHeight (HH-1)", () => {
     expect(height()).toBe("64px");
     stop();
   });
+
+  it("gives the page where a section filling the window starts, under a bar too (#1489)", async () => {
+    const observed: Element[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: () => void) {
+          resized.push(callback);
+        }
+        observe(target: Element) {
+          observed.push(target);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const above = () => document.documentElement.style.getPropertyValue("--wf-above-h");
+    const stop = followJoinedHeight(document);
+    expect(above()).toBe("");
+
+    const bar = document.createElement("section");
+    bar.setAttribute("data-wf-announcement", "");
+    document.body.append(bar);
+    addHeader(64, "data-wf-height");
+    const hero = document.createElement("section");
+    let top = 100;
+    hero.getBoundingClientRect = () => new DOMRect(0, top, 960, 600);
+    hero.setAttribute("data-wf-fills", "");
+    document.body.append(hero);
+    await settle();
+    expect(above()).toBe("100px");
+    // The bar is watched, so its change of size moves the section's start.
+    expect(observed).toContain(bar);
+
+    top = 64;
+    for (const callback of resized) callback();
+    expect(above()).toBe("64px");
+
+    hero.remove();
+    await settle();
+    expect(above()).toBe("");
+    hero.setAttribute("data-wf-fills", "");
+    document.body.append(hero);
+    await settle();
+    stop();
+    expect(above()).toBe("");
+  });
 });

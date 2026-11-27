@@ -22,6 +22,9 @@ import { menuComponents } from "./menu.js";
 import { postTagsComponents } from "./post-tags.js";
 import { pricingComponents } from "./pricing.js";
 import { sectionsComponents } from "./sections.js";
+
+export { FIRST_SCREEN_CLASSES } from "./sections.js";
+
 import { shareButtonsComponents } from "./share-buttons.js";
 import { statsComponents } from "./stats.js";
 import { stepsComponents } from "./steps.js";
