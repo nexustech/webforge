@@ -212,7 +212,7 @@ Product owner, 2026-11-27: all ten adopted, with the choices below. Recorded in 
 | SL-7  | ✅ **"Paddle"** as seller of record, the keys Webforge's own; Stripe Managed Payments the second choice. The ADR is 6.0b's                                                                                                                                                                                                                                                                                                                                                                                                     |
 | SL-8  | ✅ **Adopted:** Webforge's own licence service                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | SL-9  | ✅ **"Testers free, others discount", at "30% off"** for 60 days, and v1.0 never stops working. **Not said in the app:** the product owner then ruled that the app and its help give no price and make no claim about one, as these could change before selling starts (product owner, 2026-11-27). So the notice to v1.0's users goes on the website, and [#1554](https://github.com/nexustech/webforge/issues/1554) (About and the README) is withdrawn. The warning before the update to v1.1 is 6.0a's, and names no price |
-| SL-10 | ✅ **Adopted:** not the Mac App Store; a half-day look at the Microsoft Store ([#1555](https://github.com/nexustech/webforge/issues/1555), Phase 5)                                                                                                                                                                                                                                                                                                                                                                            |
+| SL-10 | ✅ **Adopted:** not the Mac App Store; a half-day look at the Microsoft Store ([#1555](https://github.com/nexustech/webforge/issues/1555), Phase 5). Looked at on the same day: [§9](#9-the-microsoft-store-looked-at-sl-10). **Not in the Microsoft Store either, for now:** its signing covers Store installs only, and listing the installer there at v1.1 was put to the product owner, who answered "Not now" and deferred testing the Store to v1.2 or later                                                             |
 
 Also decided the same day:
 
@@ -222,7 +222,82 @@ Also decided the same day:
 
 Still to do, and not an item yet: Webforge's own website with its pricing, terms and refund pages, which Paddle reviews before approving a seller (`spec/04` §4).
 
-## 9. Sources
+## 9. The Microsoft Store, looked at (SL-10)
+
+The half-day look SL-10 asked for ([#1555](https://github.com/nexustech/webforge/issues/1555)), on 27 Nov 2026. Its question: would a copy of Webforge in the Microsoft Store, taking payment through Webforge's own checkout, give Windows signing and a second place to be found, and at what cost?
+
+**Short answer:** the Store's free signing only reaches people who install from the Store, so it does not answer risk R1 or question Q3 for the download on the website. Listing the ordinary installer in the Store is cheap and worth doing once the installer is signed and licensing is built. A second, Store-packaged build is not worth its cost now.
+
+### 9.1 How it was looked at
+
+- **From Microsoft's and electron-builder's own pages:** registration, signing, payment, what a Store package restricts, updates and review. Marked _documented_ below.
+- **A package was built** from `main` with electron-builder 26.18.0's `appx` target, into a folder outside the repository, with a placeholder identity. Marked _tried_.
+- **Nothing was installed, run or submitted.** Installing an unsigned package needs Windows' Developer Mode or a certificate added to the computer's trusted list, and submitting needs a developer account. What only those would show is listed in §9.5.
+
+### 9.2 Two ways into the Store
+
+|                             | The installer, listed in the Store                                                              | A Store package (MSIX)                                                                                    |
+| --------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| What it is                  | The same NSIS installer as the website's, at a web address the Store points to                  | A second build of the app, in the Store's own format                                                      |
+| Who signs it                | Webforge, with a certificate from a trusted authority, and every program file inside it too     | Microsoft, after review, at no cost. No certificate is needed to submit                                   |
+| Warnings on a Store install | None from SmartScreen, by Microsoft's table                                                     | None                                                                                                      |
+| The website's download      | Unchanged: needs its own certificate and earns its own reputation                               | Unchanged: Microsoft's signature is for Store installs only                                               |
+| Updates                     | The app's own updater, as now. Each release is a new web address submitted to the Store         | The Store's. The app's own updater must be off: electron-updater doesn't support these packages           |
+| The owner's data            | One kind of install, so nothing to reconcile                                                    | New files under the user's profile go to a private place that is deleted on uninstall; see §9.4           |
+| Review                      | Up to three working days: installs silently as a standard user, offline, and uninstalls cleanly | Up to three working days, plus a written reason for the full-access permission every desktop app declares |
+| Work, as an estimate        | One to two days                                                                                 | One to two weeks, then a second build to test with every release                                          |
+
+All _documented_, except the last row, which is an estimate from the list of work and not a measurement.
+
+### 9.3 What holds for both
+
+- **A company account.** An individual account is for apps that are not part of a business, and can't be changed into a company one later. A company is checked by its D-U-N-S number or its papers, and by an email address or proof of its web domain; a manual check takes two to five working days. Registration is free. Whether a UK sole trader passes is not established. This is the same choice as question Q2 (Apple enrolment as an individual or a company).
+- **Webforge's own checkout is allowed, and Microsoft takes nothing.** An app that isn't a game may sell through its own payment company; Microsoft's own costs 15 %. The listing must say that it does, name the payment company in the app at the point of sale, and may send the buyer to a browser to pay.
+- **A free listing with a trial that a key unlocks** is a pattern Microsoft itself describes.
+- **The listing must state the price range and the trial's terms,** and say beforehand if what an owner made is restricted when the trial ends. The Store's page would be a third place, with the website and the checkout, where the price is written. It is not in the app or the help (product owner, 27 Nov 2026).
+- **The reviewers need a working key** in the submission's notes, and a privacy policy at a web address.
+- **Reach:** Microsoft says the Store has over 250 million people a month. A Store listing is found by `winget` without more work. How many would find Webforge there is not known.
+
+### 9.4 The Store package, tried
+
+- **electron-builder wrote the package's layout and manifest** from the existing configuration: the full-access permission, and the `.wforge` file type from `fileAssociations`. Nothing in `electron-builder.yml` had to change for that.
+- **Its own packing tool would not start** on this computer (`spawn UNKNOWN`; the copy of `makeappx` it downloads is old). The Windows SDK's `makeappx` packed the same layout without complaint: 422 files, 176 MB, unsigned, as a Store submission is meant to be.
+- **Three program files are inside:** `Webforge.exe`, `better-sqlite3`'s Windows binary and `pagent.exe`, which comes with `ssh2`. For the installer route each needs Webforge's signature.
+- **electron-builder's newer `msix` target** is in its 27.0 alphas only, and its page calls it beta.
+
+What the documentation says a Store package would change in Webforge:
+
+| What Webforge does                                                                   | In a Store package                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Opens and saves a site anywhere the owner chooses                                    | Allowed (_documented_)                                                                                                                                                                      |
+| Keeps backups, recent sites, themes and settings under the user's profile            | New files go to a private copy of that folder, kept for the package and **deleted when it is uninstalled**. Files the website's copy already made there are changed in place (_documented_) |
+| Both copies installed                                                                | Possible, but they share some data and not the rest, by the rule above. Microsoft's advice is to detect the other copy and move the data                                                    |
+| Updates itself                                                                       | Must be switched off when `process.windowsStore` is true (_documented_)                                                                                                                     |
+| Opens a `.wforge` on a double-click                                                  | Declared in the manifest, which the build did (_tried_); that the app receives the path is _not tested_                                                                                     |
+| The preview server, the AI-app bridge and the OpenRouter sign-in, on a loopback port | No restriction is documented for a full-access app; _not tested_                                                                                                                            |
+| FTP, FTPS and SFTP                                                                   | The same; _not tested_                                                                                                                                                                      |
+| Secrets in the OS keychain (`safeStorage`)                                           | No Microsoft page covers it; another Electron app in the Store does it; _not tested_                                                                                                        |
+| One window at a time (the single-instance lock)                                      | Whether a Store copy and a website copy share the lock is _not known_                                                                                                                       |
+| Writes the bridge into Claude Desktop's folder (4.9)                                 | A write under another app's folder in the user's profile may land in the private copy, where Claude Desktop would never see it; _not tested_, and the likeliest to break                    |
+
+### 9.5 What only installing and submitting would show
+
+- Whether a company account can be opened, and how long it takes.
+- Whether the reason given for the full-access permission passes the first time.
+- Each _not tested_ row above.
+- What happens to an owner's backups when both copies are installed and one is removed.
+- How long review takes in practice, and what reviewers make of a trial and a key.
+- How many people the listing brings.
+
+### 9.6 Recommendation
+
+1. **Don't count on the Store for signing.** R1 and Q3 stand as they were: the website's installer needs its own certificate (0.5b, [#850](https://github.com/nexustech/webforge/issues/850)), and that certificate is also what the cheap route into the Store requires.
+2. **List the installer in the Store at v1.1,** after 0.5b and with licensing (6.0a, 6.0b): a free listing with the trial, the key bought on the website. About one to two days, as an estimate: a company account, the listing's words and pictures, a privacy policy page, a key for the reviewers, signing `pagent.exe` and the SQLite binary with the rest, and a step in the release that submits each version's web address. It adds no second build and changes nothing an owner has.
+3. **Not a Store package now.** It costs a second build and a week or two, puts an owner's backups where an uninstall deletes them, and may break the AI-app bridge. Look again when electron-builder's `msix` target is stable, or if owners on locked-down computers (Windows in S mode) ask.
+
+**Decided (product owner, 27 Nov 2026): "Not now".** The installer is not listed in the Store at v1.1, so no item is added to the plan and Phase 6's days are unchanged. 1 and 3 stand. **Deferred to v1.2 or later** (product owner, the same day): the listing, and the installing and submitting that §9.5 says are still untested, wait until then. Nothing is planned or filed for it now.
+
+## 10. Sources
 
 All read on 27 Nov 2026.
 
@@ -234,4 +309,5 @@ All read on 27 Nov 2026.
 - **Payment companies:** [Paddle's pricing](https://www.paddle.com/pricing), [payouts](https://www.paddle.com/help/manage/get-paid/when-and-how-do-i-get-paid) and [digital products](https://developer.paddle.com/get-started/how-paddle-works/digital-products); [Lemon Squeezy's closing notice](https://www.lemonsqueezy.com/blog/saying-goodbye-to-lemon-squeezy); Stripe Managed Payments ([how it works](https://docs.stripe.com/payments/managed-payments/how-it-works), [fees](https://support.stripe.com/questions/managed-payments-pricing?locale=en-GB)) and [Stripe's UK pricing](https://stripe.com/gb/pricing); Polar ([fees](https://polar.sh/docs/merchant-of-record/fees), [licence keys](https://polar.sh/docs/features/benefits/license-keys)); Dodo Payments ([pricing](https://dodopayments.com/pricing)); Gumroad ([fees](https://gumroad.com/help/article/66-gumroads-fees)); [FastSpring](https://fastspring.com/pricing/).
 - **Licence-key services:** [Keygen](https://keygen.sh/pricing/) and [its licence](https://keygen.sh/license/); [Cryptlex](https://cryptlex.com/pricing); [LicenseSpring](https://licensespring.com/pricing); [Keyforge](https://keyforge.dev).
 - **Stores:** Microsoft ([why the Store](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/why-distribute-through-store), [installer requirements](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msi/app-package-requirements)); Apple ([small business programme](https://developer.apple.com/app-store/small-business-program/), [review guidelines](https://developer.apple.com/app-store/review/guidelines/)); [Setapp](https://docs.setapp.com/docs/setapp-marketplace-overview).
+- **The Microsoft Store (§9):** Microsoft on [opening a developer account](https://learn.microsoft.com/en-us/windows/apps/publish/partner-center/open-a-developer-account), [the Store's policies](https://learn.microsoft.com/en-us/windows/apps/publish/store-policies) (10.8, payment), [signing options](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options), [SmartScreen](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/smartscreen-reputation), [what a package changes for a desktop app](https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-behind-the-scenes), [moving people from a website copy to a Store copy](https://learn.microsoft.com/en-us/windows/apps/distribute-through-store/how-to-transition-users-from-your-web-unpackaged-app-to-store-packaged-app), [updating an installer listing](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msi/publish-update-to-your-app-on-store) and [its review](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msi/app-certification-process); electron-builder on [AppX](https://www.electron.build/docs/appx) and [MSIX](https://www.electron.build/docs/msix/); Electron's [`process.windowsStore`](https://www.electronjs.org/docs/latest/api/process); Bitwarden's [notes on its Store build](https://contributing.bitwarden.com/getting-started/clients/desktop/microsoft-store).
 - **Law and tax:** [the UK's cancellation rule for downloads](https://www.legislation.gov.uk/uksi/2013/3134/regulation/37); [gov.uk on online selling](https://www.gov.uk/online-and-distance-selling-for-businesses/online-selling); [gov.uk on VAT for digital services](https://www.gov.uk/guidance/the-vat-rules-if-you-supply-digital-services-to-private-consumers); [the EU's one-stop shop](https://vat-one-stop-shop.ec.europa.eu/one-stop-shop/declare-and-pay-oss_en).

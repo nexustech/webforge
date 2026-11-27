@@ -6554,6 +6554,21 @@
             "Feature"
           ]
         },
+        "cardHeight": {
+          "kind": "select",
+          "label": "Card height",
+          "help": "Every card as tall as the tallest, or each as tall as its own text",
+          "options": [
+            {
+              "label": "Same height",
+              "value": "same"
+            },
+            {
+              "label": "Fit the text",
+              "value": "fit"
+            }
+          ]
+        },
         "hover": {
           "kind": "select",
           "label": "Cards when hovered",
