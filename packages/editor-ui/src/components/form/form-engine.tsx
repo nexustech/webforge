@@ -164,6 +164,7 @@ export function Form<V extends FormValues, Out>({
         field={field}
         value={form.values[field.name]}
         error={issueOf(field, issues)}
+        reserveError={form.spec.reserveErrorRoom === true && field.kind !== "toggle"}
         {...(field.kind === "list"
           ? { itemErrors: itemIssuesOf(field, itemsOf(form.values[field.name]), issues) }
           : {})}
@@ -371,6 +372,7 @@ function FormFieldRow({
   field,
   value,
   error,
+  reserveError,
   itemErrors,
   renderers,
   onChange,
@@ -378,6 +380,7 @@ function FormFieldRow({
   readonly field: FormField;
   readonly value: unknown;
   readonly error: string | undefined;
+  readonly reserveError: boolean;
   readonly itemErrors?: FieldRendererProps["itemErrors"];
   readonly renderers: FieldRenderers;
   readonly onChange: (value: unknown) => void;
@@ -405,6 +408,7 @@ function FormFieldRow({
       label={field.kind === "toggle" ? undefined : field.label}
       hint={field.help}
       error={error}
+      reserveError={reserveError}
       layout={isWide(field) ? "stacked" : "row"}
     >
       {(ids, { labelId, hintId, errorId }) =>

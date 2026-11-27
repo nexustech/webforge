@@ -148,7 +148,7 @@ export function StylingFrame({
   return (
     <DialogContent
       className={cn(
-        "flex h-(--dialog-max-height) w-[calc(100vw-2rem)] max-w-none flex-col gap-3 sm:max-w-none",
+        "flex [--dialog-height:var(--dialog-max-height)] h-(--dialog-height) w-[calc(100vw-2rem)] max-w-none flex-col gap-3 sm:max-w-none",
         className,
       )}
       {...content}

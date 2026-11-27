@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { Button } from "../ui/button.js";
 import {
@@ -35,6 +35,12 @@ export type FormDialogProps<V extends FormValues, Out> = {
   readonly help?: ReactNode;
   /** At the top of a group's tab: a **?** for that section (5.4b). */
   readonly groupHelp?: (group: string) => ReactNode;
+  /**
+   * Whether its fields keep the most room they've taken while it's open, so a choice that shows
+   * fewer fields (a link's type) doesn't shorten the dialog and move its buttons (#1441). A choice
+   * that shows more still grows it, downward.
+   */
+  readonly keepHeight?: boolean;
   /**
    * Saving: the checked value, and the groups whose fields changed, for the one undo step the
    * app records ("Changed Site Settings: Contact & hours"). The dialog doesn't close by itself.
@@ -76,7 +82,8 @@ export function FormDialog<V extends FormValues, Out>({
           "flex flex-col",
           size === "lg" && "sm:max-w-2xl",
           // A form with a side nav (LF-12's Settings): one height for every section (#1409).
-          size === "xl" && "h-[min(44rem,var(--dialog-max-height))] sm:max-w-3xl",
+          size === "xl" &&
+            "[--dialog-height:min(44rem,var(--dialog-max-height))] h-(--dialog-height) sm:max-w-3xl",
         )}
       >
         <FormDialogBody {...body} onCancel={onCancel} />
@@ -85,6 +92,35 @@ export function FormDialog<V extends FormValues, Out>({
       </DialogContent>
     </Dialog>
   );
+}
+
+/**
+ * The tallest `element` has been since it mounted, as its `min-height`, for
+ * {@link FormDialogProps.keepHeight}: none when `keep` is false, and none again after the window is
+ * resized, where what fits changes.
+ */
+function useKeptHeight(keep: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    const element = ref.current;
+    const view = element?.ownerDocument.defaultView;
+    if (!keep || element === null || view === null || view === undefined) return undefined;
+    const observer = new view.ResizeObserver((entries) => {
+      // Its laid-out height, not as drawn: the dialog opens zoomed to 95%, which a bounding box
+      // would keep, and its end changes no size to report the real one.
+      const now = entries[0]?.borderBoxSize[0]?.blockSize ?? element.offsetHeight;
+      setHeight((kept) => (kept === undefined || now > kept ? now : kept));
+    });
+    observer.observe(element);
+    const forget = () => setHeight(undefined);
+    view.addEventListener("resize", forget);
+    return () => {
+      observer.disconnect();
+      view.removeEventListener("resize", forget);
+    };
+  }, [keep]);
+  return { ref, style: height === undefined ? undefined : { minHeight: height } };
 }
 
 function FormDialogBody<V extends FormValues, Out>({
@@ -96,10 +132,12 @@ function FormDialogBody<V extends FormValues, Out>({
   groupsLabel,
   initialGroup,
   groupHelp,
+  keepHeight = false,
   onSave,
   onCancel,
 }: Omit<FormDialogProps<V, Out>, "open" | "size" | "help">) {
   const form = useForm(spec, initial);
+  const kept = useKeptHeight(keepHeight);
   // Whether Save was tried: a check the form's own content ran (Test Connection) isn't a save.
   const [saveTried, setSaveTried] = useState(false);
   return (
@@ -127,6 +165,8 @@ function FormDialogBody<V extends FormValues, Out>({
         // Positioned, so what's positioned in its fields is held here, not by the `fixed` dialog,
         // which would scroll itself too (#1437).
         data-slot="form-fields"
+        ref={kept.ref}
+        style={kept.style}
         className="relative -mx-4 -my-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-1"
       >
         <Form
@@ -136,13 +176,16 @@ function FormDialogBody<V extends FormValues, Out>({
           {...(groupHelp === undefined ? {} : { groupHelp })}
         />
       </div>
-      {/* After a Save that couldn't: why nothing happened, read out at once. */}
-      {saveTried && form.issues.length > 0 ? (
-        <p role="alert" className="m-0 text-xs text-destructive-text">
-          {t("ui.form.fixErrors")}
-        </p>
-      ) : null}
       <DialogFooter>
+        {/*
+          After a Save that couldn't: why nothing happened, read out at once. Beside the buttons,
+          not above them, so it moves nothing under the pointer (#1441).
+        */}
+        {saveTried && form.issues.length > 0 ? (
+          <p role="alert" className="m-0 min-w-0 flex-1 self-center text-xs text-destructive-text">
+            {t("ui.form.fixErrors")}
+          </p>
+        ) : null}
         <Button type="button" variant="secondary" onClick={onCancel}>
           {t("ui.form.cancel")}
         </Button>

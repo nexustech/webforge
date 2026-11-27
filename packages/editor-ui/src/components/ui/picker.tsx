@@ -212,7 +212,7 @@ export function Picker<Item extends PickerItem>({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex h-[min(36rem,calc(var(--dialog-max-height)-2rem))] flex-col gap-2 sm:max-w-3xl"
+        className="flex [--dialog-height:min(36rem,calc(var(--dialog-max-height)-2rem))] h-(--dialog-height) flex-col gap-2 sm:max-w-3xl"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           opener.current =
