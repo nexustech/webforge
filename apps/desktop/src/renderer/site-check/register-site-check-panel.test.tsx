@@ -92,10 +92,12 @@ function setUp(
   const saveIgnored = vi.fn();
   const commands = { run: vi.fn(() => true) };
   const openGuide = vi.fn();
+  const pageSettings = { show: vi.fn() };
   const remove = registerSiteCheckPanel(panels, {
     session,
     settings,
     commands,
+    pageSettings,
     openGuide,
     ignored,
     saveIgnored,
@@ -118,6 +120,7 @@ function setUp(
     showSettings,
     showPanel,
     commands,
+    pageSettings,
     openGuide,
     rule,
   };
@@ -133,6 +136,7 @@ describe("Site Check's first-time tip (5.4a, OB-4)", () => {
       session: sessionWith(site),
       settings: createSettingsRegistry(),
       commands: { run: vi.fn(() => true) },
+      pageSettings: { show: vi.fn() },
       openGuide: vi.fn(),
       ignored: [],
       saveIgnored: vi.fn(),
@@ -442,7 +446,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
   });
 
   it("opens Page Settings on a page without a description (3.17)", async () => {
-    const { session, commands, rule } = setUp();
+    const { session, pageSettings, rule } = setUp();
 
     const line = within(rule("pageDescriptions")).getByRole("button", { name: /^Show About(,|$)/ });
     const finding = line.closest("li");
@@ -450,7 +454,8 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     await userEvent.click(within(finding).getByRole("button", { name: /^Fix: / }));
 
     expect(session.ui.getState().pageId).toBe(ABOUT);
-    expect(commands.run).toHaveBeenCalledWith("page.settings");
+    // On Search engines, where the description is (#1443).
+    expect(pageSettings.show).toHaveBeenCalledWith("search");
   });
 
   it("opens Site Settings at Contact for a missing business detail (3.17)", async () => {
@@ -531,6 +536,7 @@ describe("Site Check's title-bar button (#1009)", () => {
       settings: createSettingsRegistry(),
       commands: { run: vi.fn(() => true) },
       titleBar,
+      pageSettings: { show: vi.fn() },
       openGuide: vi.fn(),
       ignored: [],
       saveIgnored: vi.fn(),
@@ -565,6 +571,7 @@ describe("Site Check's title-bar button (#1009)", () => {
       settings: createSettingsRegistry(),
       commands: { run: vi.fn(() => true) },
       titleBar,
+      pageSettings: { show: vi.fn() },
       openGuide: vi.fn(),
       ignored: [],
       saveIgnored: vi.fn(),

@@ -6,6 +6,7 @@ import type { Area, WindowContext } from "../editor/areas.js";
 import { provide } from "../editor/services.js";
 import {
   OnNetlify,
+  PageSettings,
   PublishedYear,
   SiteCheckIgnored,
   SiteCheckToFix,
@@ -38,7 +39,7 @@ export const siteCheckArea: Area<WindowContext> = {
     // What the latest check lists to fix, for the export's and Publish's reports (#1171).
     provide(SiteCheckToFix, () => createStore<number>()(() => 0)),
   ],
-  uses: [PublishedYear, OnNetlify, TrustedCode, TipPlaces],
+  uses: [PublishedYear, OnNetlify, TrustedCode, TipPlaces, PageSettings],
   register: ({ api, panels, session, settings, commands, windowDialogs, use }) => {
     const siteCheckIgnored = use(SiteCheckIgnored);
     const codeTrust = use(TrustedCode);
@@ -56,6 +57,7 @@ export const siteCheckArea: Area<WindowContext> = {
       session,
       settings,
       commands,
+      pageSettings: use(PageSettings),
       titleBar: commands,
       // A guide's page (3.17), by its name: main knows the address.
       openGuide: (guide) => {

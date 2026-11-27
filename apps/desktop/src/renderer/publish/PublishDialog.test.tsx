@@ -78,6 +78,7 @@ function setUp(
   publish: PublishDialogApi = fakePublish(listed),
   webAddress?: string,
   help?: ComponentProps<typeof HelpProvider>["open"],
+  unpublished?: ComponentProps<typeof PublishDialog>["unpublished"],
 ) {
   const notify = vi.fn();
   const onSaved = vi.fn();
@@ -85,6 +86,7 @@ function setUp(
   const dialog = (
     <PublishDialog
       open
+      unpublished={unpublished}
       publish={publish}
       sessionId={() => SESSION}
       notify={notify}
@@ -108,6 +110,27 @@ function setUp(
 }
 
 describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
+  it("starts its focus past the line of what isn't published, so Enter doesn't press Show (#1512)", async () => {
+    const show = vi.fn();
+    setUp(
+      [live].map((destination) => ({ destination, signIn: "saved", trust: {} })),
+      undefined,
+      undefined,
+      undefined,
+      {
+        count: 2,
+        show,
+      },
+    );
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).getByText("2 elements aren't published, so they won't be on your website."),
+    ).toBeTruthy();
+    expect(within(dialog).getByRole("button", { name: "Show" })).toBeTruthy();
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+    expect(document.activeElement?.textContent).not.toBe("Show");
+  });
+
   it("lists each destination by name, where it is, and whether its password is here", async () => {
     setUp([
       { destination: live, signIn: "saved", trust: { hostKey: HOST_KEY } },

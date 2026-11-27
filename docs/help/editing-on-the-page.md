@@ -94,6 +94,7 @@ An item set to **Don't publish** stays in your site's file but isn't on your web
 
 - **Put it back:** click the badge to select the item, then click **Show** beside it. It's one step you can undo. In Content mode, which locks the layout, the badge has no **Show**.
 - **Items inside it:** they aren't published either, so only the outermost item has a badge. [Layers](layers.md) dims their rows.
+- **Finding them all:** [Site Check](site-check.md#tips) lists each one as a tip, [Publish](publish.md#publishing) says how many your website leaves out, and [Preview](preview.md#drafts-and-things-you-dont-publish) says how many the page does. Each counts a section left out once, as the badges do.
 - **The Header or Footer on one page:** _Hide the Header on this page_, in Page Settings, takes it off that page altogether, in the editor too, so there's nothing to badge.
 
 ## Notes

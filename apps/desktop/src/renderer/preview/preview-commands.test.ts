@@ -221,6 +221,35 @@ describe("registerPreviewCommands: the site's code (#649)", () => {
 });
 
 describe("registerPreviewCommands (3.2)", () => {
+  it("says what the page opened leaves out, once each, with Show to select the first (#1512)", async () => {
+    const { session, registry, about, tell } = setUp();
+    const site = session.history.document.getState();
+    const [section] = site.pages[about]?.doc.content ?? [];
+    if (section === undefined) throw new Error("no section on About");
+    session.edit("root", "Kept the section off your website", (draft) => {
+      const kept = draft.pages[about]?.doc.content[0];
+      if (kept !== undefined) kept.props.hidden = true;
+    });
+
+    // The home page leaves nothing out: the message as before.
+    await runSettled(registry, COMMAND_IDS.preview);
+    await vi.waitFor(() => expect(tell).toHaveBeenCalledWith("Opened in your browser"));
+
+    session.showPage(about);
+    await runSettled(registry, COMMAND_IDS.preview);
+    await vi.waitFor(() => expect(tell).toHaveBeenCalledTimes(2));
+    const [message, leftOut] = tell.mock.calls[1] ?? [];
+    expect(message).toBe("Opened in your browser");
+    expect(leftOut?.description).toBe(
+      "1 element on this page isn't published, so the preview leaves it out, as your website will.",
+    );
+
+    // From another page, Show goes back to it and selects the element.
+    session.showPage(site.homePageId);
+    leftOut?.show();
+    expect(session.ui.getState()).toMatchObject({ pageId: about, nodeId: section.props.id });
+  });
+
   it("opens the site at the page shown, from File → Preview and the title bar's button", async () => {
     const { session, registry, api, about, tell, notify } = setUp();
     session.showPage(about);

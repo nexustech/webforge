@@ -426,6 +426,8 @@ export {
   eachElement,
   elementsAt,
   pageWithCopy,
+  type UnpublishedRoot,
+  unpublishedRoots,
 } from "./site-elements.js";
 export { isDeviceName, sitePathSchema } from "./site-path.js";
 export type {

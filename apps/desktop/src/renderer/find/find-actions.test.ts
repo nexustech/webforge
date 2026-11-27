@@ -10,7 +10,6 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
 import { insertBlog, insertPost } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
@@ -61,7 +60,7 @@ function setUp(edit?: (draft: SiteDoc, about: PageId, shared: SharedSectionId) =
     session,
     panels: { show: vi.fn() },
     settings: { show: vi.fn(async () => true) },
-    commands: { run: vi.fn(() => true) },
+    pageSettings: { show: vi.fn() },
     siteWide: {
       confirmSiteWide: async (action) => {
         asked.push(action);
@@ -233,12 +232,15 @@ describe("showSpot", () => {
     expect(session.ui.getState().nodeId).toBe("header");
   });
 
-  it("opens Page Settings for a title, the Pages panel for a name in the menu", () => {
+  it("opens Page Settings for a title or a description, on its tab, the Pages panel for a name in the menu", () => {
     const { actions, session, about } = setUp();
 
     showSpot({ kind: "page", pageId: about, field: "title" }, actions);
     expect(session.ui.getState().pageId).toBe(about);
-    expect(actions.commands.run).toHaveBeenCalledWith(COMMAND_IDS.pageSettings);
+    expect(actions.pageSettings.show).toHaveBeenLastCalledWith("general");
+    // The description's on Search engines (#1443).
+    showSpot({ kind: "page", pageId: about, field: "description" }, actions);
+    expect(actions.pageSettings.show).toHaveBeenLastCalledWith("search");
 
     showSpot({ kind: "page", pageId: about, field: "navLabel" }, actions);
     expect(actions.panels.show).toHaveBeenCalledWith("site");
