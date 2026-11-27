@@ -177,6 +177,9 @@ export function createBackups(options: BackupOptions) {
       const incoming = `${path}.tmp`;
       try {
         mkdirSync(folder, { recursive: true });
+        // On main, synchronously, as the write waits for it anyway: a 400 MB site file took
+        // 113 ms on CI's Windows runner and 257–345 ms on its macOS one (#1525's follow-up).
+        // Once per site file and format change, so not worth a thread.
         copyFileSync(sourcePath, incoming);
         // Stamped when it was kept: a copy keeps the site file's own time on Windows and macOS.
         const keptAt = now();
