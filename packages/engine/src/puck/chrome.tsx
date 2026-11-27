@@ -34,6 +34,7 @@ import {
   OVERLAY,
   SELECTED_COMPONENT,
   TABLE_ROW_WRAPPER,
+  WRAPPING_ROW_ELEMENT,
 } from "./puck-dom.js";
 import { canPerform, performOnSelected } from "./selected-actions.js";
 import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spacing-handles.js";
@@ -130,6 +131,14 @@ ${EMPTY_TABLE_BODY}::after {
   ${TABLE_ROW_WRAPPER} {
     display: block;
   }
+}
+/*
+ * An element in a row that wraps (#1511): as tall as its wrapper, which the row stretches as the
+ * site's row stretches the element itself. With no weight (:where), so an element's own height,
+ * or a row that doesn't stretch (Features' Fit the text), still wins.
+ */
+:where(${WRAPPING_ROW_ELEMENT}) {
+  height: 100%;
 }
 /* A hidden element (Layers' Hide): dimmed, still there to select and show again. */
 [${HIDDEN_ATTRIBUTE}] {
