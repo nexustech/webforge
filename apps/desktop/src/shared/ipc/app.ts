@@ -324,6 +324,11 @@ export const appEvents = {
   },
   /** An item of macOS's menu bar was chosen: run the renderer's command with this id (LF-13). */
   runCommand: { channel: "app:run-command", args: z.tuple([commandIdSchema]) },
+  /**
+   * The open site's file was just kept as an older Webforge wrote it, before its format changed
+   * (#1525): the renderer offers to save it.
+   */
+  copyKept: { channel: "app:copy-kept", args: z.tuple([]) },
 } as const;
 
 /** `window.webforge.app`. */
@@ -371,6 +376,8 @@ export interface AppApi {
   setNativeMenus(menus: NativeMenus): Promise<null>;
   /** Runs `run` with a command's id whenever it is chosen in macOS's menu bar. */
   onRunCommand(run: (id: string) => void): () => void;
+  /** Calls `kept` each time the open site's file is kept from before an update (#1525). */
+  onCopyKept(kept: () => void): () => void;
   /**
    * Runs `save` whenever the window is about to close, and tells the main process once it has
    * finished (or failed), so the window can close. Returns a function that stops listening.

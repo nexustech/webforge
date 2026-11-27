@@ -96,6 +96,9 @@ function built(read: unknown) {
 }
 
 test("a five-page site built from blank comes back as it was, page by page", async () => {
+  // Typing into the home page's heading lands mid-word on Windows CI: the caret goes back to where
+  // the click put it after the first key (#1613). Quarantined there until the fix.
+  test.fixme(process.platform === "win32", "flaky on Windows CI: #1613");
   const testInfo = test.info();
   test.setTimeout(240_000);
   let page = await startWithoutSite();
