@@ -7,6 +7,7 @@ import { ProjectStore } from "@webforge/storage";
 import { largeSiteEdits } from "../app/large-site.js";
 import { launchDesktopApp, waitForCanvas } from "../app/launch.js";
 import type { RendererWindow } from "../app/sites.js";
+import type { TimedStep } from "../app/steps.js";
 
 // Commit time (architecture §10, ADR 0003): committing one changed page of a site, from the
 // renderer: IPC, the main process's check of the changes, and the SQLite transaction with fsync.
@@ -27,9 +28,6 @@ const OUR_PART_BUDGET_MS = 15;
 /** Commits before the measured ones, while the app finishes opening the site. */
 const WARM_UP = 3;
 const MEASURED = 15;
-
-/** A step main timed (`step-timings.ts`): durations under fixed names only. */
-type TimedStep = { readonly step: string; readonly ms: number; readonly at: number };
 
 /** The median of `values`. */
 function median(values: readonly number[]): number {
