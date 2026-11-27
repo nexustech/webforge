@@ -12,7 +12,7 @@
 - **The selling points:** the one-off licence and the complete export (WF-6, [competitors/01](../competitors/01-webflow.md)); "your files, one price, nothing lost, AI only if you turn it on" (UC-5, [competitors/09](../competitors/09-what-users-complain-about.md)).
 - **The licence and who takes the money:** SL-1 to SL-10 ([product/26](26-licensing-and-selling.md)): US $99 before tax, every later version included, three computers, a 14-day trial, a 30-day refund, Paddle as the seller of record. v1.0 is free; selling starts at v1.1 (PH6-2).
 - **No price in the app or its help** (product owner, 27 Nov 2026). Prices and terms live on the website and at the checkout, so the website is where this note's wording matters.
-- **The website is a lead-time item** in the plan ([§4](../../spec/04-implementation-plan.md)): Paddle reviews it before approving a seller. It has no issue.
+- **The website is a lead-time item** in the plan ([§4](../../spec/04-implementation-plan.md)): Paddle reviews it before approving a seller. It had no issue before this note; §8 records the two filed with its decisions.
 - **A five-page outline exists** from the product owner's trial of building the website in Webforge ([`docs/testing/own-website-with-claude-code.md`](../../docs/testing/own-website-with-claude-code.md)): Home, Features, Compare, Pricing and Download.
 - **Beta testers** come from a waiting-list page and email (Q7), recruited from item 5.7 (mid-December 2026).
 
