@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
   Button,
   fieldControlClass,
+  useUnsavedChanges,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { useEffect, useId, useState } from "react";
@@ -48,6 +49,8 @@ export function ModelSection({ status, api, onStatus }: ModelSectionProps) {
   const [warning, setWarning] = useState(false);
   const [key, setKey] = useState("");
   const [said, setSaid] = useState<SignInStatus | undefined>(undefined);
+  // A key pasted and not used yet: Assistant settings asks before losing it (#1439).
+  useUnsavedChanges(key !== "");
   const ready = status.provider.kind !== "openrouter" || status.provider.signedIn;
   // The whole provider: its kind, address, sign-in and whether it has a key.
   const provider = JSON.stringify(status.provider);

@@ -30,6 +30,11 @@ export type FormState<V extends FormValues, Out> = Pick<FormActions, "validate">
    * after each failed one.
    */
   readonly attempts: number;
+  /**
+   * Whether a value differs from where the form started, so closing it would throw something away
+   * (#1439). A field emptied again counts as unchanged.
+   */
+  readonly changed: boolean;
 };
 
 /** The fields of `spec` for `values`. */
@@ -160,6 +165,26 @@ export function applyListChange(
 export const itemsOf = (value: unknown): readonly ListItem[] =>
   Array.isArray(value) ? (value as readonly ListItem[]) : [];
 
+/** Nothing in a field: empty text, an empty list, or no value at all, which a field shows alike. */
+const isEmpty = (value: unknown) =>
+  value === undefined ||
+  value === null ||
+  value === "" ||
+  (Array.isArray(value) && value.length === 0);
+
+/**
+ * Whether any value differs between `before` and `after` (#1439): a field typed in and emptied
+ * again, or a list added to and emptied again, is the same as one never touched.
+ */
+export function valuesChanged(before: FormValues, after: FormValues): boolean {
+  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+  return [...keys].some((key) => {
+    const was = before[key];
+    const now = after[key];
+    return !(isEmpty(was) && isEmpty(now)) && !sameJson(was, now);
+  });
+}
+
 /** Edits a form of `spec`, starting from `initial` (2.21): its values, problems and Save. */
 export function useForm<V extends FormValues, Out>(
   spec: FormSpec<V, Out>,
@@ -230,5 +255,6 @@ export function useForm<V extends FormValues, Out>(
     submit,
     validate,
     attempts,
+    changed: valuesChanged(first, values),
   };
 }

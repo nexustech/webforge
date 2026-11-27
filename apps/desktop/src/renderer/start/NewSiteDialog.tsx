@@ -12,6 +12,7 @@ import {
   TextInput,
   ToggleGroup,
   ToggleGroupItem,
+  useUnsavedChanges,
 } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import { DEFAULT_THEME, SITE_NAME_MAX } from "@webforge/model";
@@ -84,12 +85,15 @@ export function NewSiteDialog({ open, templates, onCreate, onCancel }: NewSiteDi
 }
 
 function NewSiteBody({ templates, onCreate, onCancel }: Omit<NewSiteDialogProps, "open">) {
-  const [name, setName] = useState(() => t("site.untitledName"));
+  const [untitled] = useState(() => t("site.untitledName"));
+  const [name, setName] = useState(untitled);
   const [theme, setTheme] = useState(DEFAULT_THEME.preset);
   const [chosen, setChosen] = useState<TemplateId | null>(null);
   const [category, setCategory] = useState<TemplateCategory | null>(null);
   const [sort, setSort] = useState<TemplateSort>("name");
   const [details, setDetails] = useState<TemplateSummary | null>(null);
+  // A name typed, a template or a theme chosen: kept from a click outside, asked about on Esc (#1439).
+  useUnsavedChanges(name !== untitled || chosen !== null || theme !== DEFAULT_THEME.preset);
   const themeId = useId();
   const choiceName = useId();
   const sortId = useId();

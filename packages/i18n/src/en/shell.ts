@@ -19,6 +19,11 @@ export const shell = {
   "shell.undoSteps.one": "Undoes this step",
   "shell.undoSteps.many": "Undoes {count} steps",
   "ui.close": "Close",
+  // What a dialog with changes asks when Esc or its X would close it (#1439, MVP §7 item 66).
+  "ui.unsaved.title": "Discard your changes?",
+  "ui.unsaved.description": "What you changed here hasn't been saved.",
+  "ui.unsaved.keepEditing": "Keep Editing",
+  "ui.unsaved.discard": "Discard",
   // A form dialog's button that closes it without saving (2.21).
   "ui.form.cancel": "Cancel",
   "ui.form.fixErrors": "Some values need fixing before they can be saved.",

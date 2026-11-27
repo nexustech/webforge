@@ -4,7 +4,7 @@ id: getting-started
 title: Getting started
 summary: Make your first site, with the quick start, a template or an example.
 related: [the-editor, templates, pages, themes, preview, publish, export]
-updated: 2026-11-21
+updated: 2026-11-27
 ---
 
 # Getting started
@@ -46,6 +46,8 @@ To come back here from a site, choose **File › Close Site**. {appName} saves t
 ## Start a site (the quick start)
 
 Four short steps. Every question is optional, you can go back to any step, and **Create Site** works from any step. You can change every answer later.
+
+Once you've answered something, a stray click outside the quick start doesn't close it, and **Esc** or its **×** asks _Discard your changes?_ before your answers go: choose **Keep Editing** to carry on.
 
 1. **Your business:** what kind of business it is (Food and drink, Beauty, Trades, Services, Creative, Shop or Personal), its name, and one line on what you do. The name starts empty: leave it and your site is called _My site_ until you rename it. The line on what you do goes in the big welcome at the top of your home page, in place of the template's sample business, and search engines show it under your site's name. While [the assistant](assistant.md) is on, it also asks you to **Tell us about your business** in a few sentences: see [Writing your pages' words](assistant.md#writing-your-pages-words).
 2. **A look:** a theme, and a template suited to your kind of business. For Food and drink or Trades, you can open a finished example site instead.
