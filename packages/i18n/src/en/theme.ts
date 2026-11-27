@@ -69,6 +69,12 @@ export const theme = {
   "theme.fonts.accent": "Accent",
   "theme.fonts.accentHelp": "For text whose Font is set to Accent in its Style tab.",
   // A change applies at once, with Undo (LF-15); the accent alone changes only what is set in it.
+  // A Theme Studio change that restyles every one of a kind, said after it with Undo (M1).
+  "theme.changed.look.one": "Changed every {item} on your site (1)",
+  "theme.changed.look.other": "Changed every {item} on your site ({count})",
+  // A style token's change, said after it with Undo (M1): "Changed corner style on 4 pages".
+  "theme.changed.style.one": "{change} on 1 page",
+  "theme.changed.style.other": "{change} on {count} pages",
   "theme.changed.fonts.one": "Fonts changed on 1 page",
   "theme.changed.fonts.other": "Fonts changed on {count} pages",
   "theme.changed.accentFont.one": "Accent font changed on 1 page",
@@ -231,19 +237,6 @@ export const theme = {
   "theme.components.look": "Look for every {item}",
   "theme.components.reset": "Reset to Theme's Defaults",
   "theme.components.none": "Nothing chosen yet: each {item} uses the theme's defaults.",
-  // Apply changes together (4.10): the look's controls change a draft until it is applied.
-  "theme.components.draft": "Changes to every {item} that aren't in the theme yet.",
-  "theme.components.apply": "Apply Changes",
-  "theme.components.discard": "Discard",
-  "theme.components.previewShow": "Look shown",
-  "theme.components.previewNow": "Theme now",
-  "theme.components.previewDraft": "With your changes",
-  "theme.components.pending.title": "Apply Your Changes to Every {item}?",
-  "theme.components.pending.description":
-    "They aren't in the theme yet. Apply them as one change, or discard them.",
-  "theme.components.pending.apply": "Apply Changes",
-  "theme.components.pending.discard": "Discard Changes",
-  "theme.components.pending.cancel": "Keep Editing",
   "theme.look.confirm": "Change How Every {item} Looks?",
   "theme.look.confirm.one": "This restyles the one on the site that has no look of its own.",
   "theme.look.confirm.other":

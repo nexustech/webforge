@@ -11,7 +11,7 @@ import { createCanvasView } from "../shell/canvas-view.js";
 import { ContextualToolbarsProvider } from "../shell/contextual-toolbar-context.js";
 import { createContextualToolbars } from "../shell/contextual-toolbars.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
-import { createEditorSession } from "./editor-session.js";
+import { type Announcement, createEditorSession } from "./editor-session.js";
 import { footerToolbar } from "./FooterToolbar.js";
 
 afterEach(cleanup);
@@ -86,7 +86,7 @@ describe("the Footer's toolbar (HF-4, 5.39)", () => {
         props: { id: "col", content: [{ type: "Text", props: { id: "t", text: "<p>Hi</p>" } }] },
       },
     ]);
-    const announced: (boolean | string)[] = [];
+    const announced: Announcement[] = [];
     session.onEntryAdded((_entry, _kind, announce) => announced.push(announce));
 
     await user.click(within(startFrom()).getByRole("button", { name: "Simple" }));
@@ -102,7 +102,7 @@ describe("the Footer's toolbar (HF-4, 5.39)", () => {
 
   it("shows no toast when the columns held nothing to replace", async () => {
     const { session, user } = setUp();
-    const announced: (boolean | string)[] = [];
+    const announced: Announcement[] = [];
     session.onEntryAdded((_entry, _kind, announce) => announced.push(announce));
     await user.click(within(startFrom()).getByRole("button", { name: "Columns" }));
     expect(announced).toEqual([false]);

@@ -105,11 +105,16 @@ type SiteWideQuestion = {
 
 /**
  * How a change to every page is made: after `question` (D7), or at once, saying `toast` with Undo
- * (LF-15). Neither, for a change that only the Theme tab's controls show, such as a token's.
+ * (LF-15), in place of the toast `toastId` when given (one for a run of changes to one thing, M1).
+ * Neither, for a change made with nothing to say.
  */
 type Reach =
   | { readonly question: SiteWideQuestion; readonly toast?: undefined }
-  | { readonly question?: undefined; readonly toast: (pages: number) => string }
+  | {
+      readonly question?: undefined;
+      readonly toast: (pages: number) => string;
+      readonly toastId?: string;
+    }
   | undefined;
 
 /**
@@ -290,12 +295,23 @@ async function changeTheme(
       site?.(draft);
       if (own !== undefined) draft.theme.own = { ...own };
     },
-    reach?.toast === undefined ? undefined : { announce: reach.toast(pages) },
+    reach?.toast === undefined
+      ? undefined
+      : {
+          announce:
+            reach.toastId === undefined
+              ? reach.toast(pages)
+              : { message: reach.toast(pages), id: reach.toastId },
+        },
   );
   return true;
 }
 
-/** Sets a token the Theme tab offers as a choice: one step, named for its group. */
+/**
+ * Sets a token the Theme tab and Theme Studio offer as a choice: one step, named for its group, said
+ * with Undo in one notice for the group, as a colour's change is (M1): "Changed corner style on 4
+ * pages".
+ */
 export function setToken(
   session: ThemeSession,
   asks: ThemeAsks,
@@ -303,11 +319,15 @@ export function setToken(
   value: unknown,
 ): Promise<boolean> {
   if (tokenValue(theme(session), control) === value) return Promise.resolve(false);
+  const change = t(`theme.history.${control.group}` as ComponentMessageKey);
   return changeTheme(
     session,
     asks,
-    t(`theme.history.${control.group}` as ComponentMessageKey),
-    undefined,
+    change,
+    {
+      toast: (pages) => plural("theme.changed.style", pages, { change }),
+      toastId: `theme-token:${control.group}`,
+    },
     (tokens) => setTokenValue(tokens, control, value),
   );
 }
@@ -345,8 +365,10 @@ export function lookReach(site: SiteDoc, type: string, fields: readonly string[]
 /**
  * Changes the theme's look for elements of `type`, named `item` ("Button"), by `change` (3.12,
  * CT-1): each field to its value, or taken off for `undefined`, so the kind goes back to its
- * defaults there. One step, "Changed the theme's look for Button"; asked first (D7) when it
- * restyles anything, saying how many. False if nothing changed.
+ * defaults there. One step, "Changed the theme's look for Button". When it restyles anything, it is
+ * asked first (D7), saying how many; with `notice` (Theme Studio, M1), it applies at once and says
+ * so after, with Undo, in one notice for the kind: "Changed every Button on your site (12)".
+ * False if nothing changed.
  */
 export function setLook(
   session: ThemeSession,
@@ -354,6 +376,7 @@ export function setLook(
   type: string,
   item: string,
   change: Readonly<Record<string, unknown>>,
+  { notice = false }: { readonly notice?: boolean } = {},
 ): Promise<boolean> {
   const look: Readonly<Record<string, unknown>> = theme(session).looks?.[type] ?? {};
   const fields = Object.keys(change).filter((field) => !sameJson(look[field], change[field]));
@@ -366,13 +389,18 @@ export function setLook(
     t(resets ? "theme.history.lookReset" : "theme.history.look", { item }),
     reach === 0
       ? undefined
-      : {
-          question: {
-            action: t("theme.look.confirm", { item }),
-            description: plural("theme.look.confirm", reach),
-            confirm: t("theme.look.confirmButton"),
+      : notice
+        ? {
+            toast: () => plural("theme.changed.look", reach, { item }),
+            toastId: `theme-look:${type}`,
+          }
+        : {
+            question: {
+              action: t("theme.look.confirm", { item }),
+              description: plural("theme.look.confirm", reach),
+              confirm: t("theme.look.confirmButton"),
+            },
           },
-        },
     (tokens) => {
       const next: Record<string, unknown> = { ...tokens.looks?.[type] };
       for (const field of fields) {

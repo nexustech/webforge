@@ -41,16 +41,10 @@ test("a kind's look set in Theme Studio shows on an item without its own, once i
     .locator('[data-field="lookBackground"]')
     .getByRole("radio", { name: "Accent", exact: true })
     .click();
-  // A draft until applied (4.10): the canvas has nothing of it yet.
-  await expect(features).not.toHaveClass(/bg-secondary!/);
-  // In the bar at the bottom, always in view (CT-11).
-  await studio.getByRole("button", { name: "Apply Changes" }).click();
-  // A built-in theme is changed as the person's own copy of it, saved unasked (2.23, LF-15).
-  // It restyles every Features on the site, so it asks first (D7).
-  await page
-    .getByRole("alertdialog", { name: "Change how every Features looks?" })
-    .getByRole("button", { name: "Change Look" })
-    .click();
+  // Applied at once, unasked, with a notice (M1). A built-in theme is changed as the person's own
+  // copy of it, saved unasked (2.23, LF-15).
+  await expect(features).toHaveClass(/bg-secondary!/);
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
 
   await studio.getByRole("button", { name: "Close", exact: true }).click();
   await expect(studio).toHaveCount(0);
