@@ -85,7 +85,7 @@ test("the badge, Layers, Preview, Publish and Site Check name the same elements,
   await expect(toast).toContainText(
     "2 elements on this page aren't published, so the preview leaves them out",
   );
-  await toast.getByRole("button", { name: "Close" }).click();
+  // It waits to be closed: left open here, the next Preview's replaces it.
   const publish = await openPublish();
   await expect(publish).toContainText(
     "2 elements aren't published, so they won't be on your website.",
@@ -106,7 +106,17 @@ test("the badge, Layers, Preview, Publish and Site Check name the same elements,
   await expect(again).toContainText(
     "1 element on this page isn't published, so the preview leaves it out",
   );
-  await again.getByRole("button", { name: "Close" }).click();
+  // One at a time, with today's count: the first one's 2 has gone.
+  const counts = page
+    .locator("[data-sonner-toast]")
+    .filter({ hasText: /published, so the preview/ });
+  await expect(counts).toHaveCount(1);
+  // A page that leaves nothing out takes it away.
+  await toolbar().getByRole("combobox", { name: "Page shown" }).selectOption("Page not found");
+  await expect(canvas().locator("h1")).toHaveText("Sorry, this page doesn't exist");
+  await openPreview();
+  await expect(counts).toHaveCount(0);
+  await toolbar().getByRole("combobox", { name: "Page shown" }).selectOption({ index: 0 });
   const publishAgain = await openPublish();
   await expect(publishAgain).toContainText(
     "1 element isn't published, so it won't be on your website.",

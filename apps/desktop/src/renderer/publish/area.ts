@@ -87,10 +87,15 @@ export const publishArea: Area<WindowContext> = {
       api.versions
         .readSite(siteSession(), version.id)
         .then((read) => {
-          if (read.status !== "ok" || versionUnpublished.getState().id !== version.id) return;
-          versionUnpublished.setState({ id: version.id, count: countOf(read.site) }, true);
+          if (versionUnpublished.getState().id !== version.id) return;
+          // Not read: the next Republish of it reads it again.
+          if (read.status !== "ok") versionUnpublished.setState({ id: "", count: 0 }, true);
+          else versionUnpublished.setState({ id: version.id, count: countOf(read.site) }, true);
         })
-        .catch((error: unknown) => reportFailure("publish.unpublished", error));
+        .catch((error: unknown) => {
+          versionUnpublished.setState({ id: "", count: 0 }, true);
+          reportFailure("publish.unpublished", error);
+        });
     };
     /** Selects the open site's first element that isn't published, the dialog closed (#1512). */
     const showUnpublished = () => {
