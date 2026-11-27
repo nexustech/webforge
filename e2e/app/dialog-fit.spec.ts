@@ -149,19 +149,31 @@ type KnownFault = {
   readonly rounds?: readonly string[];
   /** The systems it shows on; every one by default. Scrollbars and fonts differ between them. */
   readonly systems?: readonly NodeJS.Platform[];
+  /**
+   * The change of state it shows after, by name; any, or none, by default. Name it where the case
+   * drives others, so the same rule broken after another change still fails.
+   */
+  readonly change?: string;
 };
 
 const KNOWN_FAULTS: readonly KnownFault[] = [
   // The Link dialog's link types and the web host form's More Options move their tops (H4).
   { case: "Link", rule: 5, issue: 1441 },
-  { case: "Publish to Your Web Host", rule: 5, issue: 1441 },
+  { case: "Publish to Your Web Host", rule: 5, issue: 1441, change: "More Options" },
   // Colours: the dialog scrolls as well as its colours, which scroll sideways at 960 × 600.
-  { case: "Theme Studio", rule: 3, issue: 1535, rounds: ["960 × 600, Dark"] },
+  {
+    case: "Theme Studio",
+    rule: 3,
+    issue: 1535,
+    rounds: ["960 × 600, Dark"],
+    change: "the Colours tab",
+  },
   {
     case: "Theme Studio",
     rule: 4,
     issue: 1535,
     rounds: ["960 × 600, Dark", "1366 × 768, Dark", "1366 × 768 at 125%, Dark"],
+    change: "the Colours tab",
   },
   // Taller than the room below the title bar, so it opens over it.
   {
@@ -701,35 +713,44 @@ async function connectAiApp({ app, page }: Context): Promise<{ remove(): Promise
   await dialog.getByRole("radio", { name: "Another app" }).click();
   await dialog.getByRole("textbox", { name: "Name" }).fill("Test client");
   await dialog.getByRole("button", { name: "Add", exact: true }).click();
-  const added = dialog.getByRole("region", { name: "Test client is added" });
-  await expect(added.getByText(/You won't see it again/)).toBeVisible();
-  const [address, key] = await added.locator("dd code").allTextContents();
-  if (address === undefined || key === undefined) throw new Error("no address or key shown");
-  await added.getByRole("button", { name: "Done" }).click();
-  const client = new Client({ name: "e2e", version: "1" });
-  await client.connect(
-    new StreamableHTTPClientTransport(new URL(address), {
-      requestInit: { headers: { authorization: `Bearer ${key}` } },
-    }),
-  );
-  await client.listTools();
-  // Connected, as AI apps says, before it closes: the title bar's status follows that (a 5 s wait
-  // for the status alone, the dialog closed at once, missed it once on macOS).
-  await expect(dialog.getByText("Connected", { exact: true })).toBeVisible({ timeout: 15_000 });
-  await dialog.getByRole("button", { name: "Close" }).click();
-  await expect(
-    page.getByRole("button", { name: "Connected AI apps: Test client. Open AI apps." }),
-  ).toBeVisible({ timeout: 15_000 });
-  return {
-    remove: async () => {
-      await client.close();
+  // From here its key is in the keychain: removed again whatever happens next.
+  let client: Client | undefined;
+  const remove = async () => {
+    try {
+      await client?.close();
+    } finally {
       await closeAll(page);
       await chooseFromMenu(app, page, "File", "AI Apps…");
       await dialog.getByRole("button", { name: "Remove Test client" }).click();
       await page.getByRole("alertdialog").getByRole("button", { name: "Remove" }).click();
       await expect(dialog.getByText("No AI apps yet.")).toBeVisible();
-    },
+    }
   };
+  try {
+    const added = dialog.getByRole("region", { name: "Test client is added" });
+    await expect(added.getByText(/You won't see it again/)).toBeVisible();
+    const [address, key] = await added.locator("dd code").allTextContents();
+    if (address === undefined || key === undefined) throw new Error("no address or key shown");
+    await added.getByRole("button", { name: "Done" }).click();
+    client = new Client({ name: "e2e", version: "1" });
+    await client.connect(
+      new StreamableHTTPClientTransport(new URL(address), {
+        requestInit: { headers: { authorization: `Bearer ${key}` } },
+      }),
+    );
+    await client.listTools();
+    // Connected, as AI apps says, before it closes: the title bar's status follows that (a 5 s
+    // wait for the status alone, the dialog closed at once, missed it once on macOS).
+    await expect(dialog.getByText("Connected", { exact: true })).toBeVisible({ timeout: 15_000 });
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(
+      page.getByRole("button", { name: "Connected AI apps: Test client. Open AI apps." }),
+    ).toBeVisible({ timeout: 15_000 });
+  } catch (error) {
+    await remove().catch(() => undefined);
+    throw error;
+  }
+  return { remove };
 }
 
 /** The faults Settings' sections showed, kept by its change for its case to report. */
@@ -807,11 +828,18 @@ async function start(round: Round): Promise<Context> {
     }),
   );
   const app = await launchDesktopApp({ userDataDir: userData, args: [seedSite(siteFolder)] });
-  const page = await app.firstWindow();
-  await waitForCanvas(page);
-  await expect(page.locator("html")).toHaveAttribute("data-theme", round.theme);
-  await sizeWindow(app, page, round);
-  return { app, page, round };
+  try {
+    const page = await app.firstWindow();
+    // A case that can't find what it clicks gives up in 10 s, not at the test's timeout.
+    page.setDefaultTimeout(10_000);
+    await waitForCanvas(page);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", round.theme);
+    await sizeWindow(app, page, round);
+    return { app, page, round };
+  } catch (error) {
+    await app.close().catch(() => undefined);
+    throw error;
+  }
 }
 
 /** What's open over the editor: dialogs, alert dialogs and menus. */
@@ -835,15 +863,20 @@ async function closeAll(page: Page): Promise<boolean> {
   return (await overlays(page).count()) === 0;
 }
 
+/** Whether the known fault `entry` accounts for `fault`: its rule, after its change if it names one. */
+const covers = (entry: KnownFault, fault: FitFault) =>
+  entry.rule === fault.rule && (entry.change === undefined || entry.change === fault.change);
+
 /**
- * `faults` against the faults known for `name` in `round`: the rules broken, the rules expected
- * broken, and a message naming the case, the round and every number measured.
+ * `faults` against the faults known for `name` in `round`: the rules broken that no known fault
+ * accounts for, the known faults that no longer show, and a message naming the case, the round
+ * and every number measured.
  */
 function faultReport(
   name: string,
   round: Round,
   faults: readonly FitFault[],
-): { broken: FitRule[]; known: FitRule[]; message: string } {
+): { unexpected: FitRule[]; fixed: KnownFault[]; message: string } {
   const known = KNOWN_FAULTS.filter(
     (fault) =>
       fault.case === name &&
@@ -852,29 +885,38 @@ function faultReport(
       (fault.rounds === undefined || fault.rounds.includes(round.name)) &&
       (fault.systems === undefined || fault.systems.includes(process.platform)),
   );
-  const rulesOf = (list: readonly { rule: FitRule }[]) =>
-    [...new Set(list.map((each) => each.rule))].sort();
-  const broken = rulesOf(faults);
+  const unexpected = faults.filter((fault) => !known.some((entry) => covers(entry, fault)));
+  const fixed = known.filter((entry) => !faults.some((fault) => covers(entry, fault)));
   const notes = [
-    ...faults.map((fault) => `rule ${fault.rule}: ${fault.says}`),
-    ...known
-      .filter((fault) => !broken.includes(fault.rule))
-      .map(
-        (fault) =>
-          `rule ${fault.rule} passes: fixed, so remove its KNOWN_FAULTS entry (#${fault.issue})`,
-      ),
+    ...faults.map(
+      (fault) => `rule ${fault.rule}: ${fault.says}${unexpected.includes(fault) ? "" : " (known)"}`,
+    ),
+    ...fixed.map(
+      (entry) =>
+        `rule ${entry.rule}${entry.change === undefined ? "" : ` after ${entry.change}`} passes: fixed, so remove its KNOWN_FAULTS entry (#${entry.issue})`,
+    ),
   ];
   return {
-    broken,
-    known: rulesOf(known),
+    unexpected: [...new Set(unexpected.map((fault) => fault.rule))].sort(),
+    fixed,
     message: `${name}, ${round.name}: ${notes.join("; ") || "fits"}`,
   };
 }
 
 /** Checks `faults` are the ones known for `name` in `round` ({@link faultReport}). */
 function expectFaults(name: string, round: Round, faults: readonly FitFault[]): void {
-  const { broken, known, message } = faultReport(name, round, faults);
-  expect.soft(broken, message).toEqual(known);
+  const { unexpected, fixed, message } = faultReport(name, round, faults);
+  expect.soft({ unexpected, fixed: fixed.map((entry) => entry.issue) }, message).toEqual({
+    unexpected: [],
+    fixed: [],
+  });
+}
+
+/** An error's first line and, when it timed out, what it was waiting for. */
+function firstLines(error: unknown): string {
+  const lines = String(error).split("\n");
+  const waiting = lines.map((line) => line.trim()).find((line) => line.startsWith("- waiting for"));
+  return waiting === undefined ? (lines[0] ?? "") : `${lines[0]} (${waiting.slice(2)})`;
 }
 
 /** Opens `each`, measures it, drives its changes, and checks what it found. */
@@ -891,94 +933,183 @@ async function checkCase(context: Context, each: FitCase): Promise<void> {
     for (const change of each.changes ?? []) {
       await change.run(target, context);
       const after = await fitOf(target);
-      faults.push(...movedFaults(fit, after, change.name));
+      for (const fault of movedFaults(fit, after, change.name)) {
+        faults.push({ ...fault, change: change.name });
+      }
       for (const fault of fitFaults(after, rules, overlap)) {
-        faults.push({ ...fault, says: `after ${change.name}, ${fault.says}` });
+        faults.push({ ...fault, says: `after ${change.name}, ${fault.says}`, change: change.name });
       }
       fit = after;
     }
-    faults.push(...(sectionFaults.get(page) ?? []));
+    for (const fault of sectionFaults.get(page) ?? []) {
+      faults.push({ ...fault, change: "each section" });
+    }
     sectionFaults.delete(page);
   }
   expectFaults(each.name, round, faults);
 }
 
-test.afterAll(async () => {
-  await Promise.all(folders.splice(0).map((folder) => removeWhenFree(folder)));
+test.afterAll(() => {
+  // Not awaited: it retries for as long as the app's files stay locked, past the hook's timeout.
+  for (const folder of folders.splice(0)) void removeWhenFree(folder);
 });
+
+/** How many cases a round may fail to check before it stops: past that, what they share is broken. */
+const GIVE_UP_AFTER = 5;
 
 for (const round of ROUNDS) {
   test(`every dialog and panel fits the window, ${round.name} (#1433)`, async () => {
-    // About forty cases, each opened, measured and closed.
-    test.setTimeout(10 * 60_000);
-    let context = await start(round);
+    // About forty cases, each opened, measured and closed: under a minute a round in CI, the whole
+    // file 3 to 4 minutes in one shard. A round whose cases can't be checked stops after
+    // GIVE_UP_AFTER of them, each given up in 10 s, well within this.
+    test.setTimeout(4 * 60_000);
+    let context: Context | undefined = await start(round);
     const unchecked: string[] = [];
+    let failed = 0;
     try {
       for (const each of CASES) {
         if (each.when?.(round) === false) continue;
         if (round.dialogsOnly === true && each.kind !== "dialog") continue;
+        if (failed >= GIVE_UP_AFTER) {
+          unchecked.push(`the rest: ${failed} cases couldn't be checked, so the round stopped`);
+          break;
+        }
+        const current: Context = context;
+        const before = unchecked.length;
         try {
-          await test.step(each.name, () => checkCase(context, each));
+          await test.step(each.name, () => checkCase(current, each));
         } catch (error) {
-          unchecked.push(`${each.name}: ${String(error).split("\n")[0]}`);
+          unchecked.push(`${each.name}: ${firstLines(error)}`);
         }
-        if (!(await closeAll(context.page))) {
+        if (!(await closeAll(current.page).catch(() => false))) {
           unchecked.push(`${each.name}: left something open, so the app was started again`);
-          await context.app.close();
-          context = await start(round);
+          await current.app.close().catch(() => undefined);
+          context = undefined;
+          try {
+            context = await start(round);
+          } catch (error) {
+            unchecked.push(`the app couldn't be started again: ${firstLines(error)}`);
+          }
         }
+        if (unchecked.length > before) failed++;
+        if (context === undefined) break;
       }
+      const ready = context;
 
       // The title bar with its optional controls showing: the phone preview's cue (left on by its
       // case), Site Check's longest count, Undo with steps, and the connected AI apps' status. That
       // needs an app's key in the system's keychain, which Linux's runners haven't got, so Linux
       // checks the title bar without it; Windows and macOS with it.
-      await test
-        .step("the title bar, its optional controls showing", async () => {
-          const { app, page } = context;
-          if (
-            (await page
-              .getByRole("banner")
-              .getByRole("button", { name: /Phone Preview|Phone preview on/ })
-              .count()) === 0
-          ) {
-            await chooseFromMenu(app, page, "File", "Preview on Phone…");
-            const dialog = page.getByRole("dialog", { name: "Preview on your phone" });
+      if (ready !== undefined && failed < GIVE_UP_AFTER) {
+        await test
+          .step("the title bar, its optional controls showing", async () => {
+            const { app, page } = ready;
+            if (
+              (await page
+                .getByRole("banner")
+                .getByRole("button", { name: /Phone Preview|Phone preview on/ })
+                .count()) === 0
+            ) {
+              await chooseFromMenu(app, page, "File", "Preview on Phone…");
+              const dialog = page.getByRole("dialog", { name: "Preview on your phone" });
+              await expect(
+                dialog.getByRole("img", { name: "QR code of the preview's address" }),
+              ).toBeVisible({ timeout: 15_000 });
+              await dialog.getByRole("button", { name: "Close" }).click();
+            }
+            // A step to undo: a section added.
+            const add = await sideTab(page, "Left", "Add");
+            await add.getByRole("button", { name: "Hero", exact: true }).click();
             await expect(
-              dialog.getByRole("img", { name: "QR code of the preview's address" }),
-            ).toBeVisible({ timeout: 15_000 });
-            await dialog.getByRole("button", { name: "Close" }).click();
-          }
-          // A step to undo: a section added.
-          const add = await sideTab(page, "Left", "Add");
-          await add.getByRole("button", { name: "Hero", exact: true }).click();
-          await expect(
-            page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }),
-          ).toBeEnabled();
-          const connected = keychain ? await connectAiApp(context) : undefined;
-          try {
-            let faults: FitFault[] = [];
-            await expect
-              .poll(async () => {
-                faults = titleBarFaults(await titleBarLayout(page, "99 to fix"));
-                return faults.length;
-              })
-              .toBe(0)
-              .catch(() => undefined);
-            expectFaults("the title bar", round, faults);
-          } finally {
-            await connected?.remove();
-          }
-        })
-        .catch((error: unknown) => {
-          unchecked.push(`the title bar: ${String(error).split("\n")[0]}`);
-        });
+              page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }),
+            ).toBeEnabled();
+            const connected = keychain ? await connectAiApp(ready) : undefined;
+            try {
+              let faults: FitFault[] = [];
+              await expect
+                .poll(async () => {
+                  faults = titleBarFaults(await titleBarLayout(page, "99 to fix"));
+                  return faults.length;
+                })
+                .toBe(0)
+                .catch(() => undefined);
+              expectFaults("the title bar", round, faults);
+            } finally {
+              await connected?.remove();
+            }
+          })
+          .catch((error: unknown) => {
+            unchecked.push(`the title bar: ${firstLines(error)}`);
+          });
+      }
     } finally {
-      await context.app.close();
+      await context?.app.close().catch(() => undefined);
     }
     expect(unchecked, `${round.name}: cases that couldn't be checked`).toEqual([]);
   });
 }
+
+test("a known fault holds only after its change, and says when it's fixed (#1433)", () => {
+  const round = ROUNDS[0];
+  if (round === undefined) throw new Error("no rounds");
+  const moved = (change: string): FitFault => ({
+    rule: 5,
+    says: `${change}: its top moved from 98 to 182`,
+    change,
+  });
+  // Still there, after its change: nothing to report.
+  const still = faultReport("Publish to Your Web Host", round, [moved("More Options")]);
+  expect(still.unexpected, still.message).toEqual([]);
+  expect(still.fixed).toEqual([]);
+  // The same rule broken after another change in the same dialog: a new fault.
+  const other = faultReport("Publish to Your Web Host", round, [
+    moved("More Options"),
+    moved("Save with its fields empty, showing their errors"),
+  ]);
+  expect(other.unexpected, other.message).toEqual([5]);
+  // Gone: fixed, and the message says to remove the entry.
+  const fixed = faultReport("Publish to Your Web Host", round, []);
+  expect(fixed.unexpected).toEqual([]);
+  expect(fixed.fixed.map((entry) => entry.issue)).toEqual([1441]);
+  expect(fixed.message).toBe(
+    "Publish to Your Web Host, 960 × 600, Dark: rule 5 after More Options passes: fixed, so remove its KNOWN_FAULTS entry (#1441)",
+  );
+  // An entry for any change holds whichever change shows it.
+  expect(faultReport("Link", round, [moved("the Email link type")]).unexpected).toEqual([]);
+});
+
+test("rule 2 fails when no title bar is measured (#1433)", () => {
+  const fit: Fit = {
+    top: 100,
+    left: 100,
+    right: 860,
+    bottom: 500,
+    titleBar: 40,
+    bar: 40,
+    window: { width: 960, height: 600 },
+    sideways: [],
+    ownScroll: 0,
+    innerScrolls: [],
+  };
+  expect(fitFaults(fit, [2, 3, 4])).toEqual([]);
+  expect(fitFaults({ ...fit, titleBar: 0, bar: 0 }, [2, 3, 4])).toEqual([
+    { rule: 2, says: 'no title bar measured: no [data-slot="title-bar"] drawn' },
+  ]);
+  expect(fitFaults({ ...fit, titleBar: 0, bar: 0 }, [3, 4])).toEqual([]);
+});
+
+test("an unchecked case says what it was waiting for (#1433)", () => {
+  expect(
+    firstLines(
+      new Error(
+        "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Add Page' })",
+      ),
+    ),
+  ).toBe(
+    "Error: locator.click: Timeout 10000ms exceeded. (waiting for getByRole('button', { name: 'Add Page' }))",
+  );
+  expect(firstLines(new Error("no address or key shown"))).toBe("Error: no address or key shown");
+});
 
 /** Breaks `dialog` in the page by running `breaking` on it, as a fault would. */
 const breakIt = (dialog: Locator, breaking: (element: HTMLElement) => void) =>
@@ -996,9 +1127,9 @@ test("each rule fails when broken on purpose, naming the dialog, the window and 
   };
   /** The report for Keyboard Shortcuts' `faults`, which must break `rule` alone. */
   const expectCaught = (faults: readonly FitFault[], rule: FitRule, measured: RegExp) => {
-    const { broken, known, message } = faultReport("Keyboard Shortcuts", round, faults);
-    expect(broken, message).toEqual([rule]);
-    expect(known).toEqual([]);
+    const { unexpected, fixed, message } = faultReport("Keyboard Shortcuts", round, faults);
+    expect(unexpected, message).toEqual([rule]);
+    expect(fixed).toEqual([]);
     expect(message).toContain("Keyboard Shortcuts, 960 × 600, Dark:");
     expect(message).toMatch(measured);
   };

@@ -78,7 +78,12 @@ async function scrollAreasUnder(target: Locator): Promise<string[]> {
 export type FitRule = 2 | 3 | 4 | 5 | 6;
 
 /** A rule broken, with what was measured, so a failure says what it saw (anti-pattern 20). */
-export type FitFault = { readonly rule: FitRule; readonly says: string };
+export type FitFault = {
+  readonly rule: FitRule;
+  readonly says: string;
+  /** The change of state it showed after, by name; none for what showed once it opened. */
+  readonly change?: string;
+};
 
 /** What {@link fitOf} measures of a dialog or panel, in CSS px. */
 export type Fit = {
@@ -88,6 +93,8 @@ export type Fit = {
   readonly bottom: number;
   /** Where the title bar ends: the bar the page draws, or the window controls' area if lower. */
   readonly titleBar: number;
+  /** Where the bar the page draws ends: 0 when none was found, which rule 2 reports. */
+  readonly bar: number;
   readonly window: { readonly width: number; readonly height: number };
   /** What scrolls sideways in it, itself included: label or classes, and by how much. */
   readonly sideways: readonly string[];
@@ -134,6 +141,7 @@ function readFit(target: Locator): Promise<Fit> {
       right: Math.round(box.right * 10) / 10,
       bottom: Math.round(box.bottom * 10) / 10,
       titleBar: Math.round(Math.max(bar, controls) * 10) / 10,
+      bar: Math.round(bar * 10) / 10,
       window: { width: window.innerWidth, height: window.innerHeight },
       sideways,
       ownScroll: scrolls(own.overflowY)
@@ -176,6 +184,11 @@ export async function fitOf(target: Locator): Promise<Fit> {
 export function fitFaults(fit: Fit, rules: readonly FitRule[], overlap = 0): FitFault[] {
   const faults: FitFault[] = [];
   const { top, left, right, bottom, titleBar, window } = fit;
+  // No title bar found, as when its data-slot is renamed: nothing to measure the top against, which
+  // would pass every dialog where the window controls take no room (Linux, macOS).
+  if (rules.includes(2) && fit.bar === 0) {
+    faults.push({ rule: 2, says: 'no title bar measured: no [data-slot="title-bar"] drawn' });
+  }
   // Half a pixel for the interface zoom's rounding (#1195).
   if (
     rules.includes(2) &&
