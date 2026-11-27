@@ -35,6 +35,7 @@ import {
   UNCLAIMED_KEY_MS,
 } from "../../shared/ipc/mcp.js";
 import { type ShellKind, shellOf } from "../../shared/mcp-setup.js";
+import { aiAppsChanged } from "./ai-apps-changed.js";
 import { UnaskedChoice } from "./UnaskedChoice.js";
 
 /** How often the dialog asks for the apps' status while open, so *Connected* follows them. */
@@ -371,6 +372,8 @@ export function AiAppsDialog({
     return () => {
       live = false;
       clearInterval(timer);
+      // Closed: the title bar's sign shows what changed here at once (#1615).
+      aiAppsChanged();
     };
   }, [open, mcp, notify]);
 

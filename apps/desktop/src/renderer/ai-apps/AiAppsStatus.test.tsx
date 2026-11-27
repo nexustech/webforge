@@ -3,6 +3,7 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { McpStatus } from "../../shared/ipc/mcp.js";
+import { AiAppsDialog } from "./AiAppsDialog.js";
 import { AiAppsStatus, INDICATOR_EVERY_MS } from "./AiAppsStatus.js";
 
 afterEach(() => {
@@ -44,6 +45,48 @@ describe("the title bar's AI apps status (4.9)", () => {
     });
     await userEvent.setup({ delay: null }).click(button);
     expect(onOpen).toHaveBeenCalledOnce();
+  });
+
+  it("names an app connected in AI apps the moment AI apps closes, not at its next look (#1615)", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let status: McpStatus = {
+      enabled: true,
+      address: "http://127.0.0.1:51234/mcp",
+      moved: false,
+      apps: [app("Test client", false)],
+    };
+    const mcp = {
+      status: async () => status,
+      seenMoved: async () => undefined,
+    } as unknown as Parameters<typeof AiAppsDialog>[0]["mcp"];
+    const draw = (open: boolean) => (
+      <>
+        <AiAppsStatus mcp={mcp} onOpen={() => undefined} />
+        <AiAppsDialog
+          open={open}
+          mcp={mcp}
+          copyText={async () => undefined}
+          copySecret={async () => undefined}
+          notify={() => undefined}
+          onClose={() => undefined}
+        />
+      </>
+    );
+    const view = render(draw(true));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.queryByRole("button", { name: /^Connected AI apps/ })).toBeNull();
+
+    // The app connects while AI apps is open; then AI apps closes, well before the sign's next look.
+    status = { ...status, apps: [app("Test client", true)] };
+    view.rerender(draw(false));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(
+      screen.getByRole("button", { name: "Connected AI apps: Test client. Open AI apps." }),
+    ).toBeDefined();
   });
 
   it("says an app works without asking, by its icon and to a screen reader, until that ends (5.35)", async () => {
