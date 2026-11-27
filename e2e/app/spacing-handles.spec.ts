@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { clickOnCanvas } from "./canvas-click.js";
-import { launchDesktopApp, MOTION_TAG, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Spacing handles on the canvas (1.32, F-ED-25): grips on the selected element's edges set its
 // padding and margin, each drag one labelled undo step; Esc cancels a drag.
@@ -121,10 +121,7 @@ test("drags a Medium Section's padding on its column, the section a band across 
   await expect(steps().first()).toHaveText("Changed Section space inside");
 });
 
-// Motion on until #1498: with motion off it fails in CI only (Linux, once).
-test("drags a heading's margin on Mobile; hidden in Content mode", {
-  tag: MOTION_TAG,
-}, async () => {
+test("drags a heading's margin on Mobile; hidden in Content mode", async () => {
   await page
     .getByRole("toolbar", { name: "Canvas" })
     .getByRole("radio", { name: "Mobile" })

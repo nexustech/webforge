@@ -256,7 +256,12 @@
     background: var(--scrollbar-thumb-hover);
   }
 
-  /* Must beat every component's own animation and transition classes. */
+  /* Must beat every component's own animation and transition classes. Transitions at 0 s, not a
+     short time: `transition-property` starts as `all`, so a duration on every element would give
+     each a transition of every property, drawn at its old value until the next frame, which took
+     the focus from the tour and sized the columns wrongly (#1497). Animations at 0.01 ms, run once:
+     Radix's Presence waits for `animationend` to unmount a closing dialog or menu, which a 0 s or
+     no animation never sends. theme.test.ts checks both. */
   @media (prefers-reduced-motion: reduce) {
     *,
     ::before,
@@ -264,9 +269,13 @@
       /* biome-ignore lint/complexity/noImportantStyles: overrides all component motion. */
       animation-duration: 0.01ms !important;
       /* biome-ignore lint/complexity/noImportantStyles: overrides all component motion. */
+      animation-delay: 0s !important;
+      /* biome-ignore lint/complexity/noImportantStyles: overrides all component motion. */
       animation-iteration-count: 1 !important;
       /* biome-ignore lint/complexity/noImportantStyles: overrides all component motion. */
-      transition-duration: 0.01ms !important;
+      transition-duration: 0s !important;
+      /* biome-ignore lint/complexity/noImportantStyles: overrides all component motion. */
+      transition-delay: 0s !important;
     }
   }
 }

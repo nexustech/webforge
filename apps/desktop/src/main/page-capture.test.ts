@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  CaptureTimeout,
   type CaptureWindow,
   createPageCapture,
   MAX_IMAGE_HEIGHT,
@@ -7,8 +8,17 @@ import {
   WINDOW_HEIGHT,
 } from "./page-capture.js";
 
-/** A window whose page is `height` tall, recording what it was asked, in order. */
-function windowOf(height: number, options: { readonly hang?: boolean } = {}) {
+/** A step of drawing a page that a fake window can hang at, as one once did on Windows (#1508). */
+type HangAt = "open" | "load" | "ready" | "print" | "picture";
+
+/** Never settles. */
+const never = () => new Promise<never>(() => undefined);
+
+/**
+ * A window whose page is `height` tall, recording what it was asked, in order; `hang` never
+ * answers there (`true`: every load).
+ */
+function windowOf(height: number, options: { readonly hang?: boolean | HangAt } = {}) {
   const asked: string[] = [];
   const params = new Map<string, unknown>();
   const window = {
@@ -24,19 +34,31 @@ function windowOf(height: number, options: { readonly hang?: boolean } = {}) {
         sendCommand: vi.fn(async (method: string, sent?: object) => {
           asked.push(method);
           params.set(method, sent);
-          if (method === "Runtime.evaluate") return { result: { value: height } };
+          if (method === "Runtime.evaluate") {
+            if (options.hang === "ready") await never();
+            return { result: { value: height } };
+          }
           if (method === "Page.captureScreenshot") {
+            if (options.hang === "picture") await never();
             return { data: Buffer.from([137, 80, 78, 71]).toString("base64") };
           }
           return {};
         }),
       },
-      loadURL: vi.fn(async (_url: string) => {
+      loadURL: vi.fn(async (url: string) => {
         asked.push("load");
-        if (options.hang === true) await new Promise(() => undefined);
+        const blank = url === "about:blank";
+        if (
+          options.hang === true ||
+          (options.hang === "open" && blank) ||
+          (options.hang === "load" && !blank)
+        ) {
+          await never();
+        }
       }),
       printToPDF: vi.fn(async () => {
         asked.push("print");
+        if (options.hang === "print") await never();
         return Buffer.from("%PDF-1.7");
       }),
     },
@@ -119,15 +141,43 @@ describe("createPageCapture (5.22)", () => {
     ).rejects.toThrow("ERR_CONNECTION_REFUSED");
     expect(failing.window.destroy).toHaveBeenCalledOnce();
 
-    const hanging = windowOf(100, { hang: true });
-    await expect(
-      createPageCapture(() => hanging.window as unknown as CaptureWindow, 10)(
+    // A connection refused isn't tried again: only a step that ran out of time is.
+    expect(failing.window.destroy).toHaveBeenCalledOnce();
+  });
+
+  it("gives each step its own time, then tries once more in a fresh window (#1508)", async () => {
+    for (const [step, kind] of [
+      ["open", "pdf"],
+      ["load", "pdf"],
+      ["ready", "png"],
+      ["print", "pdf"],
+      ["picture", "png"],
+    ] as const) {
+      // Hangs the first time, draws the second: the save gets its file.
+      const hanging = windowOf(100, { hang: step });
+      const fine = windowOf(100);
+      const windows = [hanging.window, fine.window];
+      const create = vi.fn(() => windows.shift() as unknown as CaptureWindow);
+      const drawn = await createPageCapture(create, 10)("http://x/", 375, kind);
+      expect(drawn.data.length, step).toBeGreaterThan(0);
+      expect(create, step).toHaveBeenCalledTimes(2);
+      expect(hanging.window.destroy, step).toHaveBeenCalledOnce();
+      expect(fine.window.destroy, step).toHaveBeenCalledOnce();
+
+      // Hangs both times: it fails, naming the step, for the log.
+      const first = windowOf(100, { hang: step });
+      const second = windowOf(100, { hang: step });
+      const both = [first.window, second.window];
+      const failing = createPageCapture(() => both.shift() as unknown as CaptureWindow, 10)(
         "http://x/",
         375,
-        "pdf",
-      ),
-    ).rejects.toThrow("too long");
-    expect(hanging.window.destroy).toHaveBeenCalledOnce();
+        kind,
+      );
+      await expect(failing, step).rejects.toBeInstanceOf(CaptureTimeout);
+      await expect(failing, step).rejects.toMatchObject({ step, code: `timeout-${step}` });
+      expect(first.window.destroy, step).toHaveBeenCalledOnce();
+      expect(second.window.destroy, step).toHaveBeenCalledOnce();
+    }
   });
 });
 
