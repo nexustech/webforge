@@ -45,6 +45,7 @@ export {
   type SiteEditorMode,
   type StoredBlob,
   type StoredDocument,
+  type StoredFormats,
   VERSION_REASONS,
   type VersionInfo,
   type VersionKind,

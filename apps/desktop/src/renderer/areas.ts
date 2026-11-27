@@ -34,6 +34,7 @@ import { canvasItemArea, pageCommandsArea, sitePanelArea } from "./site/area.js"
 import { siteCheckArea } from "./site-check/area.js";
 import { canvasSettingsArea, siteCodeArea, siteSettingsArea } from "./site-settings/area.js";
 import { closeSiteArea } from "./start/close-site.js";
+import { keptCopyArea } from "./start/kept-copy.js";
 import { saveSiteZipArea } from "./start/save-site-zip.js";
 import { crashReportsArea } from "./storage/area.js";
 import { stylesheetPanelArea } from "./stylesheet/area.js";
@@ -89,6 +90,7 @@ export const WINDOW_AREAS: readonly Area<WindowContext>[] = [
   codeTrustArea,
   exportCommandArea,
   saveSiteZipArea,
+  keptCopyArea,
   publishArea,
   versionHistoryArea,
   previewArea,

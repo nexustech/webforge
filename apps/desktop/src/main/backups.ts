@@ -9,7 +9,33 @@ import {
   statSync,
 } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
-import type { ProjectStore } from "@webforge/storage";
+import type { ProjectStore, StoredFormats } from "@webforge/storage";
+import { appEvents } from "../shared/ipc/app.js";
+
+/**
+ * A site's file kept as an older Webforge wrote it, before this one first wrote it in a newer
+ * format (#1525, UC-2): `userData/backups/<projectId>/before-update-format-<n>-site-<m>.wforge`,
+ * one for each site, by its id, so a moved or renamed file keeps it. Never pruned with the rolling
+ * backups. Its formats, as the older Webforge wrote them, say which versions open it.
+ */
+export type KeptCopy = StoredFormats & {
+  readonly path: string;
+  /** When it was kept. */
+  readonly keptAt: Date;
+  /** Its size, in bytes. */
+  readonly size: number;
+};
+
+/** The file couldn't be kept as it was, so the write that would change its format is refused. */
+export class KeepCopyError extends Error {
+  constructor(cause: unknown) {
+    super("Webforge could not keep the site's file as it was before the update", { cause });
+    this.name = "KeepCopyError";
+  }
+}
+
+/** `before-update-format-2-site-22.wforge`: the kept copy, by the formats it holds. */
+const KEPT_NAME = /^before-update-format-(\d+)-site-(\d+)\.wforge$/;
 
 /** A backup of a site, newest first in {@link Backups.list}. */
 export type BackupInfo = {
@@ -126,6 +152,55 @@ export function createBackups(options: BackupOptions) {
     },
 
     /**
+     * Keeps the site file at `sourcePath` as it is now, byte for byte, as the copy from before an
+     * update (#1525), replacing the site's earlier one. Called before the first write that changes
+     * the file's format, with the file whole between transactions. Copied under a temporary name
+     * and renamed, so a failed copy leaves the earlier one. Throws {@link KeepCopyError} on failure:
+     * the write must not happen without it.
+     */
+    keepBeforeUpdate(sourcePath: string, projectId: string, formats: StoredFormats): KeptCopy {
+      const { fileFormat, siteFormat } = formats;
+      const folder = join(options.root, projectId);
+      const path = join(folder, `before-update-format-${fileFormat}-site-${siteFormat}.wforge`);
+      const incoming = `${path}.tmp`;
+      try {
+        mkdirSync(folder, { recursive: true });
+        copyFileSync(sourcePath, incoming);
+        renameSync(incoming, path);
+        for (const name of readdirSync(folder)) {
+          if (KEPT_NAME.test(name) && join(folder, name) !== path) {
+            rmSync(join(folder, name), { force: true });
+          }
+        }
+        return { path, fileFormat, siteFormat, keptAt: now(), size: statSync(path).size };
+      } catch (error) {
+        // A copy cut short by a full disk is no use, and takes the room it needs.
+        rmSync(incoming, { force: true });
+        throw new KeepCopyError(error);
+      }
+    },
+
+    /** The copy kept of the site with `projectId` from before an update, if there is one. */
+    keptBeforeUpdate(projectId: string): KeptCopy | undefined {
+      const folder = join(options.root, projectId);
+      if (!existsSync(folder)) return undefined;
+      for (const name of readdirSync(folder)) {
+        const match = KEPT_NAME.exec(name);
+        if (match === null) continue;
+        const path = join(folder, name);
+        const info = statSync(path);
+        return {
+          path,
+          fileFormat: Number(match[1]),
+          siteFormat: Number(match[2]),
+          keptAt: info.mtime,
+          size: info.size,
+        };
+      }
+      return undefined;
+    },
+
+    /**
      * Puts `backup` in place of the damaged site file at `sitePath`. The damaged file is kept
      * next to it as `<name> (damaged <date>).wforge`, never deleted, so nothing is lost if the
      * backup turns out older than hoped. The backup is copied under a temporary name first, so a
@@ -156,3 +231,27 @@ export function createBackups(options: BackupOptions) {
 
 /** See {@link createBackups}. */
 export type Backups = ReturnType<typeof createBackups>;
+
+/**
+ * The copy kept of a site before an update changes its format, and saving it (#1525, UC-2): the
+ * session's hook, which keeps the file and tells the window so it can offer to save it, and what
+ * the site's calls find it with, with the running version that names its releases.
+ */
+export function createKeptCopies(
+  backups: Backups,
+  version: string,
+  window: () => { readonly webContents: { send(channel: string): void } } | undefined,
+) {
+  return {
+    backups,
+    version,
+    beforeFormatChange: (
+      path: string,
+      kept: { readonly projectId: string } & StoredFormats,
+    ): void => {
+      backups.keepBeforeUpdate(path, kept.projectId, kept);
+      // The window offers to save it, once the change that waited for it is saved.
+      window()?.webContents.send(appEvents.copyKept.channel);
+    },
+  };
+}
