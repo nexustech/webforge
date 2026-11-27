@@ -378,25 +378,6 @@ const CASES: readonly FitCase[] = [
     },
     changes: pageSettingsTabs,
   },
-  // A post's: its Date, Summary, Picture and Tags too (#1443). Add Page › Blog shows its first
-  // post, and the command box's Page Settings… opens the page shown.
-  {
-    name: "Page Settings for a blog post",
-    kind: "dialog",
-    open: async ({ page }) => {
-      const panel = await sideTab(page, "Right", "Site");
-      await panel.getByRole("button", { name: "Add Page" }).click();
-      await page.getByRole("menuitem", { name: "Blog", exact: true }).click();
-      await page.getByRole("button", { name: /^Search commands/ }).click();
-      const commands = page.getByRole("dialog", { name: "Commands" });
-      await page.keyboard.type("Page Settings");
-      await commands.getByRole("option", { name: /^Page Settings…/ }).click();
-      const settings = page.getByRole("dialog", { name: /^Settings for / });
-      await expect(settings.getByRole("textbox", { name: "Date" })).toBeVisible();
-      return shown(settings);
-    },
-    changes: pageSettingsTabs,
-  },
   {
     name: "Add Page",
     kind: "dialog",
@@ -733,6 +714,27 @@ const CASES: readonly FitCase[] = [
       await page.keyboard.press("ControlOrMeta+f");
       return shown(page.getByRole("region", { name: "Bottom panel" }));
     },
+  },
+  // A post's: its Date, Summary, Picture and Tags too (#1443). Last, as it adds a Blog to the
+  // site: Add Page › Blog shows its first post, and the Home page is shown again, as the other
+  // cases expect it.
+  {
+    name: "Page Settings for a blog post",
+    kind: "dialog",
+    open: async ({ page }) => {
+      const panel = await sideTab(page, "Right", "Site");
+      await panel.getByRole("button", { name: "Add Page" }).click();
+      await page.getByRole("menuitem", { name: "Blog", exact: true }).click();
+      const pages = panel.getByRole("list", { name: "Pages" });
+      await expect(pages.getByRole("list", { name: "Blog" })).toBeVisible();
+      await pages.getByRole("button", { name: "Home", exact: true }).click();
+      await pageActions(page, "Our first post");
+      await page.getByRole("menuitem", { name: "Page Settings…" }).click();
+      const settings = page.getByRole("dialog", { name: "Settings for 'Our first post'" });
+      await expect(settings.getByRole("textbox", { name: "Date" })).toBeVisible();
+      return shown(settings);
+    },
+    changes: pageSettingsTabs,
   },
 ];
 

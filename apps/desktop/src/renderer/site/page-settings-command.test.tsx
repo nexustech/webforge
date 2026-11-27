@@ -90,6 +90,24 @@ describe("registerPageSettingsCommand (3.17)", () => {
     expect(dialog.queryByRole("textbox", { name: "Title" })).toBeNull();
   });
 
+  it("opens with the focus in the tab's first field, not on its tab, so typing goes there (#1443)", async () => {
+    const { session, pageSettings } = setUp();
+    showAbout(session);
+
+    act(() => pageSettings.show());
+    let dialog = await openedDialog("Settings for 'About'");
+    await waitFor(() =>
+      expect(document.activeElement).toBe(dialog.getByRole("textbox", { name: "Title" })),
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }));
+
+    act(() => pageSettings.show("search"));
+    dialog = await openedDialog("Settings for 'About'");
+    await waitFor(() =>
+      expect(document.activeElement).toBe(dialog.getByRole("textbox", { name: "Description" })),
+    );
+  });
+
   it("shows the problem's tab after a failed Save, its field focused (#1443)", async () => {
     const { session, pageSettings } = setUp();
     showAbout(session);

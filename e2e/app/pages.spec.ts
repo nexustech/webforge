@@ -144,11 +144,12 @@ test.describe("Pages panel", () => {
     await pages().getByRole("button", { name: "Actions for About us" }).click();
     await page.getByRole("menuitem", { name: "Page Settings…" }).click();
     await expect(dialog.getByRole("textbox", { name: "File name" })).toHaveValue("our-story");
-    await expect(dialog.getByRole("textbox", { name: "Description" })).toHaveValue(
-      "How we started",
-    );
     await expect(
       dialog.getByRole("checkbox", { name: "Hide the Footer on this page" }),
     ).toBeChecked();
+    await dialog.getByRole("tab", { name: "Search engines" }).click();
+    await expect(dialog.getByRole("textbox", { name: "Description" })).toHaveValue(
+      "How we started",
+    );
   });
 });
