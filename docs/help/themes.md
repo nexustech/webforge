@@ -11,7 +11,7 @@ updated: 2026-11-26
 
 Your site's **theme** sets its colours, fonts, text sizes, buttons, corners and spacing on every page. Change it and the whole site follows, so everything stays consistent. Each change is a single step you can undo.
 
-A new colour or font shows on your pages straight away, so you can try several. A message says how many pages it changed, such as "Brand colour changed on 6 pages", with **Undo** to take it back. Switching to another theme, or giving every item of one kind the same look, asks you first.
+A new colour or font shows on your pages straight away, so you can try several. A message says how many pages it changed, such as "Brand colour changed on 6 pages", with **Undo** to take it back. Switching to another theme asks you first, and so does making one item's look the theme's look for its kind in [**Style This…**](styling.md#style-this). A look changed in Theme Studio's **Components** applies at once, with **Undo**.
 
 You'll find the **Theme** panel in the right column, beside Site and Media, or under **Site › Theme…**.
 
@@ -91,7 +91,7 @@ Built-in themes never change. The first time you change one, {appName} saves **y
 
 Beside Colours, Text and Styles, on the right, a sample page shows your theme on Desktop and Mobile as you change it, while the settings use the window's full height on the left. In a smaller window, one shows at a time: choose **Desktop** or **Mobile** above it. To give it more room, drag the line between it and the settings, or select the line and use the arrow keys.
 
-In **Components**, the kind you chose is shown in the same place, and each group's name stays at the top while you scroll through its settings. Your changes stay a draft until you click **Apply Changes** in the bar at the bottom, or **Discard** them. **Theme now** and **With your changes** above the preview compare the look before and after.
+In **Components**, the kind you chose is shown in the same place, and each group's name stays at the top while you scroll through its settings. As on every tab, each change applies at once: {appName} doesn't ask first. A note at the bottom of the window then says what changed and how far, such as "Changed every Button on your site (12)", with **Undo**, which puts it back in one step. Ctrl+Z (Cmd+Z on a Mac) undoes it too. On **Styles**, a change such as the corners says how many pages it changed.
 
 ### Your colours
 

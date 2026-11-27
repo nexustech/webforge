@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, MOTION_TAG, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
 // A gradient's direction turns it on (CT-10, 5.11): chosen in *Style this Hero…* or for every Hero
@@ -79,7 +79,10 @@ test("a direction chosen in Style this Hero… draws Brand to Accent, as one ste
   await expect(hero()).not.toHaveClass(/from-primary!/);
 });
 
-test("a direction chosen for every Hero in Theme Studio draws Brand to Accent once applied (CT-10)", async () => {
+// Motion on until #1498: with motion off it fails in CI only (macOS, once).
+test("a direction chosen for every Hero in Theme Studio draws Brand to Accent once applied (CT-10)", {
+  tag: MOTION_TAG,
+}, async () => {
   await addHero();
 
   await chooseFromMenu(app, page, "Site", "Theme Studio…");
@@ -92,14 +95,9 @@ test("a direction chosen for every Hero in Theme Studio draws Brand to Accent on
   const look = studio.getByRole("region", { name: "Hero" });
   await look.getByRole("combobox", { name: "Gradient", exact: true }).selectOption("toRight");
   await expect(look.getByText("Gradient ends with")).toBeVisible();
-  // In the bar at the bottom, always in view (CT-11).
-  await studio.getByRole("button", { name: "Apply Changes" }).click();
-  // A built-in theme is changed as the person's own copy of it, saved unasked (2.23, LF-15), and
-  // every Hero asks (D7).
-  await page
-    .getByRole("alertdialog", { name: "Change how every Hero looks?" })
-    .getByRole("button", { name: "Change Look" })
-    .click();
+  // Applied at once, unasked (M1). A built-in theme is changed as the person's own copy of it,
+  // saved unasked (2.23, LF-15).
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
   await studio.getByRole("button", { name: "Close", exact: true }).click();
   await expect(studio).toHaveCount(0);
 

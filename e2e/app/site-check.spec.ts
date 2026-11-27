@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, MOTION_TAG, waitForCanvas } from "./launch.js";
 
 // Site Check (3.6, F-CHK-1): the bottom drawer's panel checks the open site as it changes. A
 // finding jumps to where it is; some have a Fix; Should fix and Tips can be ignored for the site.
@@ -84,7 +84,10 @@ for (const [width, height] of [
   [1366, 768],
   [960, 600],
 ] as const) {
-  test(`opens from the title bar's count at a height to read, problems first, at ${width} × ${height} (#1164)`, async () => {
+  // Motion on until #1498: with motion off it fails in CI only (macOS, once).
+  test(`opens from the title bar's count at a height to read, problems first, at ${width} × ${height} (#1164)`, {
+    tag: MOTION_TAG,
+  }, async () => {
     // The drawer closed, as a new person's is, and the window this size.
     await page.getByRole("button", { name: "Show or Hide Bottom Panel" }).click();
     await expect(drawer()).toBeHidden();

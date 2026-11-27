@@ -9,6 +9,7 @@ import {
 import { contrastRatio, FONT_PAIRINGS, hexOf, THEME_PRESETS, themePreset } from "@webforge/themes";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
+import type { Announcement } from "../editor/editor-session.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { TOKEN_CONTROLS, tokenKey } from "./theme-controls.js";
 import {
@@ -99,6 +100,8 @@ describe("the Theme tab's edits (2.3a)", () => {
 
   it("sets a token as one step named for its group, and none for the value it has", async () => {
     const { session, labels, theme } = setUp();
+    const notices: Announcement[] = [];
+    session.onEntryAdded((_entry, _kind, announced) => notices.push(announced));
 
     await setToken(session, undefined, control("cards.style"), "raised");
     await setToken(session, undefined, control("headings.case"), "uppercase");
@@ -109,6 +112,14 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(theme().headings.case).toBe("uppercase");
     expect(theme().effects.depth).toBe(false);
     expect(labels()).toEqual(["Changed card style", "Changed heading style", "Changed effects"]);
+    // Said after, with Undo, in one notice for each group (M1).
+    const pages = Object.keys(session.history.document.getState().pages).length;
+    const on = pages === 1 ? "on 1 page" : `on ${pages} pages`;
+    expect(notices).toEqual([
+      { message: `Changed card style ${on}`, id: "theme-token:cards" },
+      { message: `Changed heading style ${on}`, id: "theme-token:headings" },
+      { message: `Changed effects ${on}`, id: "theme-token:effects" },
+    ]);
   });
 
   it("sets a text style's size as one step naming it", async () => {
@@ -413,7 +424,9 @@ function naming(...taken: string[]) {
 function toastsOf(session: ReturnType<typeof setUp>["session"]): (string | boolean)[] {
   const said: (string | boolean)[] = [];
   session.onEntryAdded((_entry, _kind, announced) => {
-    if (announced !== false) said.push(announced);
+    if (announced !== false) {
+      said.push(typeof announced === "object" ? announced.message : announced);
+    }
   });
   return said;
 }

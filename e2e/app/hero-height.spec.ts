@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, MOTION_TAG, waitForCanvas } from "./launch.js";
 
 // A Whole screen Hero on the canvas (HH-4): as tall as the part of the page in view, less the
 // Header's band, at each device view, and steady. The canvas's frame grows with its page, so a
@@ -15,15 +15,33 @@ let dir: string;
 let app: ElectronApplication;
 let page: Page;
 
-test.beforeEach(async () => {
-  // A page opening with a Hero over its picture, under the Header's own band, and a section after.
+/**
+ * Opens a page opening with a Hero over its picture, under the Header's own band, and a section
+ * after; with `bar`, an Announcement bar above the Header (#1489).
+ */
+async function launch(bar = false) {
   dir = mkdtempSync(join(tmpdir(), "webforge-hero-height-"));
   const sitePath = join(dir, "Hero.wforge");
+  // A Header with its own band, as a new site's.
   const site = createSite({
     name: "Hero",
     language: "en",
     homeTitle: "Home",
     notFoundTitle: "Not found",
+    layout: {
+      header: [
+        {
+          type: "Header",
+          props: {
+            id: "header",
+            siteName: "Hero",
+            bindings: { siteName: "general.name" },
+            background: "own",
+          },
+        },
+      ],
+      footer: [],
+    },
   });
   const home = site.pages[site.homePageId];
   if (home === undefined) throw new Error("no home page");
@@ -37,6 +55,21 @@ test.beforeEach(async () => {
       props: { id: "story", title: "Our story", text: "<p>Since 1998.</p>" },
     },
   ];
+  if (bar) {
+    site.layout.header = [
+      {
+        type: "AnnouncementBar",
+        // Thin, as the Add panel adds it.
+        props: {
+          id: "bar",
+          text: "Closed 24–26 December",
+          padding: { top: "none", bottom: "none" },
+          contentWidth: "full",
+        },
+      },
+      ...site.layout.header,
+    ];
+  }
   const store = ProjectStore.create(sitePath, { name: "Hero" });
   store.saveSite(site);
   store.close();
@@ -44,7 +77,7 @@ test.beforeEach(async () => {
   page = await app.firstWindow();
   await waitForCanvas(page);
   await expect(canvas().locator("h1")).toHaveText("Fresh bread");
-});
+}
 
 test.afterEach(async () => {
   await app?.close();
@@ -56,7 +89,10 @@ const left = () => page.getByRole("region", { name: "Left panels" });
 const right = () => page.getByRole("region", { name: "Right panels" });
 const toolbar = () => page.getByRole("toolbar", { name: "Canvas" });
 
-/** The Hero's height, the Header's, the window's height the canvas gives, and the page's. */
+/**
+ * The Hero's height, the Header's, an Announcement bar's, the window's height the canvas gives,
+ * and the page's.
+ */
 const sizes = () =>
   canvas()
     .locator("body")
@@ -67,6 +103,7 @@ const sizes = () =>
       return {
         hero: height(".site-hero"),
         header: height("header.site-header"),
+        bar: height("[data-wf-announcement]"),
         window: Number.parseFloat(
           getComputedStyle(doc.documentElement).getPropertyValue("--wf-viewport-h"),
         ),
@@ -74,18 +111,32 @@ const sizes = () =>
       };
     });
 
-test("draws a Whole screen Hero as tall as the canvas shows, less the Header, and steady (HH-4)", async () => {
+/** Sets the Hero's height to Whole screen. */
+async function wholeScreen() {
   await left().getByRole("treeitem", { name: /^Hero/ }).click();
   await expect(right().getByRole("heading", { name: "Hero", exact: true })).toBeVisible();
   await right().getByRole("tab", { name: "Style" }).click();
   await right().locator('[data-field="height"] select').selectOption("screen");
+}
+
+/** Shows the canvas at `device`'s view. */
+async function view(device: "Desktop" | "Tablet" | "Mobile") {
+  await toolbar().getByRole("radio", { name: device }).click();
+  await expect(toolbar().getByRole("radio", { name: device })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+}
+
+// Motion on until #1498: with motion off it fails in CI only (Linux).
+test("draws a Whole screen Hero as tall as the canvas shows, less the Header, and steady (HH-4)", {
+  tag: MOTION_TAG,
+}, async () => {
+  await launch();
+  await wholeScreen();
 
   for (const device of ["Desktop", "Tablet", "Mobile"] as const) {
-    await toolbar().getByRole("radio", { name: device }).click();
-    await expect(toolbar().getByRole("radio", { name: device })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
+    await view(device);
     // The window less the Header: the two fill the part of the page in view.
     await expect
       .poll(async () => {
@@ -99,5 +150,21 @@ test("draws a Whole screen Hero as tall as the canvas shows, less the Header, an
       .locator("body")
       .evaluate(() => new Promise((resolve) => setTimeout(resolve, 600)));
     expect((await sizes()).page, device).toBe(before.page);
+  }
+});
+
+test("leaves an Announcement bar's room above the Header too (#1489)", async () => {
+  await launch(true);
+  await wholeScreen();
+
+  for (const device of ["Desktop", "Tablet", "Mobile"] as const) {
+    await view(device);
+    // The bar, the Header and the Hero fill the part of the page in view.
+    await expect
+      .poll(async () => {
+        const at = await sizes();
+        return at.bar > 0 ? Math.abs(at.hero + at.header + at.bar - at.window) : Number.NaN;
+      }, device)
+      .toBeLessThan(2);
   }
 });

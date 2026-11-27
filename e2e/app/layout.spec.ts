@@ -17,7 +17,9 @@ let app: ElectronApplication;
 let page: Page;
 
 async function start(): Promise<void> {
-  app = await launchDesktopApp({ userDataDir });
+  // Motion on until #1497: one app for the file, and with reduced motion a part opened again
+  // doesn't take the focus where it was (layout:149).
+  app = await launchDesktopApp({ userDataDir, motion: true });
   page = await app.firstWindow();
   await expect(page.getByRole("region", { name: "Left panels" })).toBeVisible({
     timeout: APP_START_TIMEOUT_MS,

@@ -1,6 +1,6 @@
 # Theme Studio, if we built it again
 
-**Status:** 🟡 For decision (TS-1…TS-23). Nothing here is in the plan, and the product owner asked that nothing be planned yet. [§5](#5-one-way-of-styling-and-no-modes) is a second pass that would replace TS-1, TS-2 and TS-8. [§6](#6-theme-panel-v2-and-theme-studio-v2) is a third: Theme panel v2 and Theme Studio v2, with a value of your own for any setting and fonts of your own.
+**Status:** 🟡 For decision (TS-1…TS-30). Nothing here is in the plan, and the product owner asked that nothing be planned yet. [§5](#5-one-way-of-styling-and-no-modes) is a second pass that would replace TS-1, TS-2 and TS-8. [§6](#6-theme-panel-v2-and-theme-studio-v2) is a third: Theme panel v2 and Theme Studio v2, with a value of your own for any setting and fonts of your own. [§7](#7-theme-studio-as-a-view-of-the-editor) is a fourth, of 27 Nov: Theme Studio v2 as a view of the editor in place of a window, with what the canvas code allows and what other builders do.
 
 **Date:** 2026-11-21
 
@@ -119,26 +119,34 @@ and, to tell the new from what ships: "Call the new concepts Theme Studio v2 and
 
 Theme panel v2 is the _Whole site_ scope of TS-10's Design panel if that is taken, and the Theme panel with TS-12's folding groups if it isn't.
 
+**v1 has moved since this section was written** (checked 27 Nov against `main`):
+
+- **Settings on the left, previews on the right** in Theme Studio and Style This (PR 1506, H3): the settings run the window's full height, and under 640 px of height one preview shows at a time, with a **Desktop** and **Mobile** switch.
+- **Components applies at once** (PR 1522, M1): its draft, **Discard** and **Apply Changes**, and **Theme now** and **With your changes** are gone; each change is one undo step with a notice and **Undo**. This is TS-14 done for v1's Theme Studio.
+- **One line says where a look applies** in Style This, "Applies to: This Hero only · Change" (PR 1506).
+- **Planned:** Components' reset at the top, with what you changed marked (#1517).
+
 ### 6.1 Why v1's two can drift
 
 - **The list is only half shared.** `theme-controls.ts` builds one list (`TOKEN_CONTROLS`) that both read, but it leaves out the colours, the fonts and the text sizes (`DRAWN_OWN_WAY`). Each surface builds those itself, and they are the settings people use most.
 - **The two belong to different families.** The Theme panel is drawn with the Edit panel's fields, so it matches the Edit panel. Theme Studio shares its frame with Style This (`StylingFrame.tsx`), so the two windows match each other. A change to the panels doesn't reach the windows.
+- **It has happened once already.** Your colours (TC-1b, 5.28) are drawn in Theme Studio's Colours tab only (`studio/StudioOwnColours.tsx`); the Theme panel doesn't list them.
 
 ### 6.2 What v1 offers beyond its presets
 
 Read from the help pages ([Themes](../../docs/help/themes.md), [Styling](../../docs/help/styling.md), [The Stylesheet panel](../../docs/help/stylesheet.md), [Custom Code](../../docs/help/custom-code.md)), not from using each one.
 
-| What                                                    | Where                                              | Limits                                                                                |
-| ------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Any colour for the theme's five colours                 | Both                                               | Typing a colour's code needs Advanced mode in the panel; Theme Studio always shows it |
-| Colours from an image                                   | Theme Studio › Colours                             |                                                                                       |
-| A size for each heading level, body text and small text | Theme Studio › Text; the panel in Advanced mode    | From a list of sizes; Simple mode's panel has _Smaller_, _Standard_ and _Larger_      |
-| Weight and line spacing for each kind of text           | Theme Studio only                                  |                                                                                       |
-| Any font for Headings, Body text and Accent             | Both                                               | Only the fonts Webforge offers: "You can't add font files of your own yet"            |
-| The look of every item of a kind, with gradients        | Theme Studio › Components                          | A draft until **Apply Changes**                                                       |
-| Your own named themes                                   | Saved on the first change; managed in Theme Studio | Kept on this computer                                                                 |
-| A Custom colour on one item                             | The Style tab's colour fields                      | Advanced mode only, until 5.29                                                        |
-| CSS of your own (`custom.css`)                          | The Stylesheet panel, and Custom Code in Settings  | Advanced mode only. Theme Studio has no CSS and doesn't point to it                   |
+| What                                                    | Where                                              | Limits                                                                                              |
+| ------------------------------------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Any colour for the theme's five colours                 | Both                                               | The colour picker takes a typed code in either mode (5.26); Simple mode's rows show no code (LF-16) |
+| Colours from an image                                   | Theme Studio › Colours                             |                                                                                                     |
+| A size for each heading level, body text and small text | Theme Studio › Text; the panel in Advanced mode    | From a list of sizes; Simple mode's panel has _Smaller_, _Standard_ and _Larger_                    |
+| Weight and line spacing for each kind of text           | Theme Studio only                                  |                                                                                                     |
+| Any font for Headings, Body text and Accent             | Both                                               | Only the fonts Webforge offers: "You can't add font files of your own yet"                          |
+| The look of every item of a kind, with gradients        | Theme Studio › Components                          | Applied at once, each change one undo step (PR 1522)                                                |
+| Your own named themes                                   | Saved on the first change; managed in Theme Studio | Kept on this computer                                                                               |
+| A Custom colour on one item                             | The Style tab's colour fields                      | Advanced mode only, until 5.29                                                                      |
+| CSS of your own (`custom.css`)                          | The Stylesheet panel, and Custom Code in Settings  | Advanced mode only. Theme Studio has no CSS and doesn't point to it                                 |
 
 Corners, shadows, spacing, border width, button shape and card style are each a short list. No value of your own can be given.
 
@@ -175,13 +183,13 @@ The product owner: "We need to ensure we have feature parity with what is offere
 
 **What v2 as written would lose, and how it is kept (TS-23):**
 
-| v1 offers                                                              | Why v2 would lose it                                                            | How it is kept                                                                    |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| A sample page that shows every kind of item at once                    | v2 previews the site's own pages, which may have no form, card or pricing table | **Sample page** is one of the pages to choose in the preview                      |
-| **Discard** in Components: try several changes and throw them all away | Every change applies at once (TS-14)                                            | **Undo Everything Since You Opened Theme Studio**, one button                     |
-| The page's colours and the reversed ones, side by side                 | One column has no room for two sets                                             | Opened from the Colours row at a wider size; the preview shows a reversed section |
-| Styles drawn as examples                                               | A row in a panel shows names                                                    | Each choice is drawn as a small picture in its row                                |
-| Choosing a kind that isn't on the page in view (Components' list)      | Clicking the preview reaches only what is on that page                          | The list of kinds stays in the scope line                                         |
+| v1 offers                                                              | Why v2 would lose it                                                                   | How it is kept                                                                                       |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| A sample page that shows every kind of item at once                    | v2 previews the site's own pages, which may have no form, card or pricing table        | **Sample page** is one of the pages to choose in the preview                                         |
+| **Discard** in Components: try several changes and throw them all away | v1 itself dropped it on 27 Nov (PR 1522), for a notice with **Undo** after each change | **Undo Everything Since You Opened Theme Studio**, one button, which gives back more than v1 now has |
+| The page's colours and the reversed ones, side by side                 | One column has no room for two sets                                                    | Opened from the Colours row at a wider size; the preview shows a reversed section                    |
+| Styles drawn as examples                                               | A row in a panel shows names                                                           | Each choice is drawn as a small picture in its row                                                   |
+| Choosing a kind that isn't on the page in view (Components' list)      | Clicking the preview reaches only what is on that page                                 | The list of kinds stays in the scope line                                                            |
 
 **To be said, so none is dropped by accident:**
 
@@ -199,7 +207,7 @@ The product owner: "We need to ensure we have feature parity with what is offere
 | Dropped                                      | Reason                                                                              |
 | -------------------------------------------- | ----------------------------------------------------------------------------------- |
 | Theme Studio's five tabs                     | They become the panel's groups, so the panel and Theme Studio are one thing (TS-18) |
-| The draft bar in Components                  | One way of applying (TS-14); the undo-everything button keeps the way out           |
+| The draft bar in Components                  | Already gone from v1 (PR 1522); the undo-everything button keeps the way out        |
 | Settings spread in columns across the window | The room goes to the preview of the site's own pages                                |
 | What only Advanced mode's Theme panel shows  | Every theme setting is for everyone (TS-20); code tools only add code (TS-21)       |
 
@@ -207,18 +215,101 @@ The product owner: "We need to ensure we have feature parity with what is offere
 
 - **How much code assumes a preset's name.** TS-19's size is the least certain here: the theme's CSS, the font plan and the tests were not read for it.
 - **What Theme Studio v2 gives up.** v1 spreads its settings in columns across the window. Beside a preview they are one column. Not tried with anyone.
-- **Which side the panel sits on** in Theme Studio v2, and whether its changes apply at once (TS-14).
+- **Which side the panel sits on** in Theme Studio v2. v1's window now has its settings on the left (PR 1506); as a view ([§7](#7-theme-studio-as-a-view-of-the-editor)) the panel is the right column's. Whether changes apply at once is settled for v1 (PR 1522).
 - **Converting a font to WOFF2** on the way in would make sites lighter and needs a library with a permissive licence. None was looked for.
 - **Where a font of your own is kept for other sites.** A downloaded font is kept on the computer for all of them; whether your own are offered there too is open.
 - **A sketch** of Theme Studio v2 was drawn in the conversation and isn't kept in the repository: the same panel in the editor and in Theme Studio, with Desktop and Mobile, **Before** and **After** and the themes to choose from.
 
-## 7. What this note does not propose
+## 7. Theme Studio as a view of the editor
+
+A fourth pass, on 27 Nov 2026, from a review of §6 with the product owner, who chose to take further "Studio as a view". It refines TS-18: Theme Studio v2 stays a named place you enter and leave, and stops being a window.
+
+### 7.1 What the view is
+
+**Opening it:**
+
+- **The left column and the bottom panel fold** to their strips, and one click brings either back.
+- **The right column shows Theme panel v2,** at the width the person last gave it.
+- **A Theme Studio bar takes the canvas toolbar's place:** a page to choose, the tabs **Desktop**, **Mobile** and **Every kind**, **Before** and **After**, **Themes**, **Undo all** with a count of the changes since the view opened, and **Done**.
+- **The title bar says "Theme Studio".** **Done** or Esc puts the columns back as they were.
+
+**The product owner's directions, 27 Nov:** "Maybe mobile view should be a separate tab?", then "Tabs over the page, theme changes apply to every device". So Desktop and Mobile are tabs over the page, one showing at a time, and showing both at once is dropped. A tab is a way of looking: a theme change made on the Mobile tab is for every device.
+
+**What it gains over the window:**
+
+- **More room in a small window.** At 960 × 600 the window's preview column is 395 px and draws the page at 0.30 of its size (PR 1506's measurements). With the left column folded and a 300 px panel, the canvas has roughly 600 px. That figure is arithmetic from the column widths, not a measurement.
+- **One panel by construction.** There is no second set of rows to keep in step ([§6.1](#61-why-v1s-two-can-drift)).
+- **No dialog to fit.** Two of the 25 Nov review's findings are about dialogs and wouldn't arise in a view: Esc or a click outside throwing work away (H2, #1439), and too little room for the controls (H3, #1440, which PR 1506 eased by moving the previews beside them).
+- **Site › Theme… beside Site › Theme Studio…** (L7, #1457) gets a plain answer: one opens the panel, the other the view around it.
+
+### 7.2 What the code allows
+
+Read on 27 Nov by a search of the renderer and `packages/engine`; nothing was run.
+
+| Part of the view               | What is there today                                                                                                                                                                                       | So                                                                                                                                                                          |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One device at a time           | The canvas is one Puck iframe whose width is set (`canvas-view.ts`, `canvas-size.ts`: Tablet 768, Mobile 375). `Viewport` holds one value                                                                 | Tabs fit the code. Both at once would need a second canvas                                                                                                                  |
+| A change showing as it is made | A dragged colour is laid over the page as its own style element (`previewTheme`, `applyThemePreviewCss` in `site-styles.ts`), with no rebuild of the site's CSS                                           | Trying a theme's values, and **Before**, can go the same way. A theme that changes fonts or classes may need the rebuild, which waits 300 ms (`site-css.ts`). Not confirmed |
+| A click on the page            | Puck selects the item (`canvas-selection.ts`). Nothing intercepts a click or makes the canvas read-only; Content mode works through Puck's permissions                                                    | "A click picks the kind" has nothing to build on. A click that selects as usual, with the panel following, has                                                              |
+| The sample page                | Drawn as static HTML in an iframe that takes no clicks (`createItemPreviews`, `section-preview.tsx`; `samplePageOf` in `ThemeStudio.tsx`). The previews never draw one of the site's pages                | **Every kind** can't be the live canvas. Its items taking a click is new work                                                                                               |
+| Folding the columns            | Sizes are saved as the person's own layout (`Preferences.panelLayout`), and "collapsed" is read from a saved size. Nothing changes several panels at once; Design and Content is a lock each area follows | The view must fold and restore without writing over the saved layout. This is the newest part                                                                               |
+| Before                         | The colour picker keeps the value it opened with. Theme Studio's **Theme now** went with PR 1522                                                                                                          | The view keeps the theme as it was on opening                                                                                                                               |
+
+### 7.3 What other builders do
+
+From each product's help pages on 27 Nov, not from using them. Patterns only: no wording, layout files or pictures are taken.
+
+| Product         | How the theme is edited                                                                                                                                                                                             | Worth noting                                                                                                                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Squarespace     | A [Site Styles](https://support.squarespace.com/hc/articles/205815788) panel beside the live page                                                                                                                   | Clicking an area of the page shows the settings for that area and hides the rest                                                                                                                      |
+| Shopify         | [Theme settings](https://help.shopify.com/en/manual/online-store/themes/theme-structure/theme-settings) in a sidebar beside the live shop                                                                           | Clicking the page loads the matching settings; Desktop and Mobile are a switch, one at a time                                                                                                         |
+| WordPress       | A [Styles](https://wordpress.org/support/article/styles-overview/) panel beside the page, and a [Style Book](https://developer.wordpress.org/news/2023/06/the-style-book-a-one-stop-shop-for-styling-block-themes/) | The Style Book shows every kind of block at once. A theme's colours or its fonts can be taken [without the rest](https://developer.wordpress.org/themes/global-settings-and-styles/style-variations/) |
+| Wix Studio      | A [Site Styles](https://support.wix.com/en/article/studio-editor-about-site-styles) panel                                                                                                                           | Fixed sets: 9 text styles, at most 25 site colours                                                                                                                                                    |
+| Webflow, Framer | Variables and saved styles                                                                                                                                                                                          | For designers. Nothing here for this audience                                                                                                                                                         |
+
+None of the four builders opens a separate window for the theme: each puts a panel beside the live page. The view is the common pattern, and what would be Webforge's own is trying a change before keeping it (TS-28).
+
+### 7.4 Proposals
+
+Sizes are rough ideal days, and rougher than the earlier sections': no part of the view has been tried.
+
+| #         | Proposal                                                                                                                                                                                                                                                                                                                       | Changes or builds on                                                                                                | Size |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- | ---- |
+| **TS-24** | **Theme Studio v2 is a view of the editor.** As [§7.1](#71-what-the-view-is): the columns fold, the right column shows Theme panel v2, a bar takes the canvas toolbar's place, and **Done** restores the layout. Unavailable while the design is locked. The window goes once the panel holds everything it has                | In place of TS-18's window; needs TS-17. `ShellLayout.tsx`, `panels.ts`; H2, H3, L7                                 | 5    |
+| **TS-25** | **Desktop and Mobile are tabs over the page,** each keeping its place on the page, and a theme change is for every device whichever shows. The product owner's direction                                                                                                                                                       | The canvas's one viewport. Drops v1's two previews together: at 960 × 600 there is room for one (PR 1506)           | 1    |
+| **TS-26** | **A third tab, Every kind:** one of each kind of item in the theme, which is v1's sample page given a home. A click on one narrows the panel as on a page (TS-27)                                                                                                                                                              | WordPress's Style Book. In place of TS-23's "sample page as a page to choose". `samplePageOf`, `createItemPreviews` | 2    |
+| **TS-27** | **A click selects as usual and narrows the panel.** Click a button and the panel shows what affects every Button, with **Show Everything** to go back. The page behaves as it does in the editor; only what the panel offers differs                                                                                           | Squarespace and Shopify. In place of TS-18's scope line as the way to a kind; the list of kinds stays (TS-23)       | 1.5  |
+| **TS-28** | **Try it before keeping it.** A change that moves more than one setting is shown on the page first, with **Keep** and **Go Back**: a theme, colours from an image, a start from the logo (TS-4), a feel (TS-3), what an AI app proposes ([product/24](24-styling-with-ai.md)). A change to one setting applies at once, as now | The live preview of a dragged colour (OL-18, 5.30). Changes a theme switch, which asks first today                  | 3    |
+| **TS-29** | **A theme's colours only, or its fonts only.** Each theme in **Themes** offers **Whole Theme**, **Colours Only** and **Fonts Only**                                                                                                                                                                                            | WordPress's colour and typography variations. `switchPreset`                                                        | 1.5  |
+| **TS-30** | **The view opens on your page with the themes showing,** and the panel says to click anything on the page to change every one like it, over the essentials. The folded groups are for those who go looking                                                                                                                     | TS-3's "the feel before the settings", without its sliders                                                          | 1    |
+
+About 15 days. TS-24 is in place of TS-18 (3.5 days), which leaves about 53 days for everything in this note without TS-5.
+
+**Looked at and not proposed:**
+
+- **A mark on the tab that isn't showing,** to say a change needs a look on Mobile. The hidden device isn't drawn anywhere, so there is nothing to check.
+- **Where a colour is used.** Wix Studio's users [ask for it](https://support.wix.com/en/article/studio-editor-request-tracking-typography-theme-usage-in-the-site-styles-panel) for text styles. v1 already counts the uses of colours outside the theme and goes to a colour's use ([Themes](../../docs/help/themes.md)), so this is parity to keep, not a proposal.
+- **Desktop and Mobile together.** Dropped by TS-25.
+
+**What I'd take first:** the panel gaining everything the window holds (TS-17, and [§6.4](#64-parity-with-v1)). It is needed whichever shape is chosen. The view (TS-24, TS-25) then replaces the window as a second step, and TS-26 to TS-30 follow in any order.
+
+### 7.5 What isn't known
+
+- **Nothing here has been tried with anyone.** The 25 Nov review proposes a test task (change the brand colour, and one section's look with Style This); run on v1 first, it would say which of these matter.
+- **Whether folding the columns on entry feels like help or like losing your place.**
+- **Long lists in a 300 px column:** up to 200 of your colours, the shades, and the page's colours beside the reversed ones. It works only if widening the column is obvious.
+- **Fifteen themes and your own in a row over the page.** The sketch showed four. A row that scrolls, or one that opens wider, isn't settled.
+- **Style This.** The same argument makes it a view too. Its tabs would look like Theme Studio's and mean something else, since there a change on Mobile is for Mobile only, so its **Applies to** line would have to say so.
+- **TS-28 and one undo step.** Whether **Keep** is the step, and what **Undo all** counts.
+- **A sketch** was drawn in the conversation and isn't kept in the repository: the view with its bar, a click on the page changing what the panel applies to (not yet narrowing it, as TS-27 would), **Before** and **After**, and a theme tried with **Keep** and **Go back**. It was drawn at the conversation's width, not at 960 × 600.
+
+## 8. What this note does not propose
 
 - Free values or spacing for one element, or raw CSS as a main path ([§2](#2-what-stays)). TS-19's value of your own is for a setting of the theme, so it still reaches every page.
 - Fonts loaded from another website, such as a font service's.
 - Animated or generated themes, or a marketplace of themes.
 - Anything already decided: your colours and any colour in Simple mode (TC-1a…TC-4), the colour picker and live theme colours (OL-18, OL-19), dark mode for visitors (6.11), the code editors (TC-5, TC-6).
 
-## 8. Decisions
+## 9. Decisions
 
-None yet. Product owner, 2026-11-21: "Theme Studio write note but do not plan anything yet"; and, the same day, of §5: "Write it into the Theme Studio note as proposals"; and of §6: "Add it to the Theme Studio note with v2". The owner's answer in §6 ("Custom values for everyone, CSS only with code tools") is the direction TS-19 to TS-21 are written to; it has no decision ID, and none of them is planned. The same holds for the owner's rules of the theme switch ([§6.3](#63-proposals)) and of parity with v1 ([§6.4](#64-parity-with-v1)).
+None yet. Product owner, 2026-11-21: "Theme Studio write note but do not plan anything yet"; and, the same day, of §5: "Write it into the Theme Studio note as proposals"; and of §6: "Add it to the Theme Studio note with v2". The owner's answer in §6 ("Custom values for everyone, CSS only with code tools") is the direction TS-19 to TS-21 are written to; it has no decision ID, and none of them is planned. The same holds for the owner's rules of the theme switch ([§6.3](#63-proposals)) and of parity with v1 ([§6.4](#64-parity-with-v1)). Product owner, 2026-11-27, of §7: "Studio as a view"; "Tabs over the page, theme changes apply to every device" (TS-25 is written to it); "Compare with what competitors are doing see if there are any good ideas we can use"; and "Add to the note". None of §7 has a decision ID or is planned.

@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
 import { themedPageUrl } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // Google Analytics' consent banner (3.8, B4, B7) on the themed export (export.setup.ts), opened
 // from disk with the network blocked: the banner asks, nothing reaches Google before or after

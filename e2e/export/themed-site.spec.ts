@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { themedPageUrl } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // The fixture site exported in a theme of its own (#423, export.setup.ts): square, large, outline
 // buttons, strong shadows and links underlined only on hover, each as the browser draws it.
@@ -93,12 +93,11 @@ test("draws a Hero's second button as a link beside the theme's outlined buttons
   const first = await look("About us");
   expect(first.border).toBeGreaterThan(0.9);
   expect(first.underline).toBe("none");
-  // No box: Linux's WebKit leaves a faint tint (0.15) where Safari, Chrome and Firefox leave none.
-  // Once settled: the button eases its colours over 0.2 s (#1488).
+  // No box, once settled: the button eases its colours over 0.2 s (#1488).
   await expect
     .poll(async () => {
       const second = await look("Book a table");
-      return second.background < 0.2 && second.border < 0.2 && second.underline === "underline";
+      return second.background < 0.02 && second.border < 0.02 && second.underline === "underline";
     })
     .toBe(true);
 });

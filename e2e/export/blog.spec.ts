@@ -2,8 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { BLOG_SITE_DIR } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // A Blog (6.10a, 6.10b, ADR 0025) on an exported site, opened from disk: a post in the Blog's
 // folder inside its design, and the Blog's own pages and feed, which the export writes.
