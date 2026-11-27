@@ -137,12 +137,12 @@ ${EMPTY_TABLE_BODY}::after {
   opacity: 0.35;
 }
 /*
- * Its *Not published* badge (#1512): in the top right corner of Puck's wrapper around it (which Puck
- * positions), over the
- * page, so nothing on it moves, and not dimmed with it. The same size on screen whatever the zoom,
- * as the element bar is. Only the outermost unpublished element's: one inside another isn't
- * published either way, so its badge would only repeat it. Its buttons start from all: unset, so the
- * site's own button rules don't reach it.
+ * Its *Not published* badge (#1512): in the top right corner of Puck's wrapper around it (which
+ * Puck positions), over the page, so nothing on it moves, and not dimmed with it. The same size on
+ * screen whatever the zoom, as the element bar is. Only the outermost unpublished element's: one
+ * inside another isn't published either way, so its badge would only repeat it. Its buttons start
+ * from all: unset, so the site's own button rules don't reach them; their colours are set after,
+ * as specifically.
  */
 .${UNPUBLISHED_BADGE_CLASS} {
   position: absolute;
