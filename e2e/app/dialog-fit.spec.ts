@@ -640,7 +640,8 @@ const CASES: readonly FitCase[] = [
     open: async ({ app, page }) => {
       await chooseFromMenu(app, page, "Site", "Site Settings…");
       const settings = await shown(page.getByRole("dialog", { name: "Settings", exact: true }));
-      await settings.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
+      // Another name than the seeded site's, so something has changed.
+      await settings.getByRole("textbox", { name: "Site name" }).fill("Hightown Bakery");
       await page.keyboard.press("Escape");
       return shown(page.getByRole("alertdialog", { name: "Discard your changes?" }));
     },
