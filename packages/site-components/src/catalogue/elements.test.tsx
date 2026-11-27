@@ -500,6 +500,14 @@ describe("the Columns element (2.9)", () => {
       expect(wide).toContain("lg:[&>*:first-child:nth-last-child(-n+3)]:col-span-1");
     });
 
+    it("draws a layout it doesn't know as Equal, reversed or not", () => {
+      for (const lastFirst of [false, true]) {
+        const classes = grid(columnsOf({ layout: "wide", lastFirst })).split(" ");
+        expect(classes).not.toContain("undefined");
+        expect(classes).toContain("auto-cols-fr");
+      }
+    });
+
     it("offers Last column first for two or three columns only", () => {
       const field = siteLibrary.components.Columns?.fields.lastFirst;
       const site = { menuLinksToSections: false };

@@ -95,6 +95,7 @@ Places elements side by side, in 1 to 4 **Columns**. Select it to see the **Add 
 - **Line up:** where the columns sit when one is taller than another: _Top_, _Middle_ or _Bottom_. Short text beside a tall picture, lined up in the _Middle_, sits level with the middle of the picture. With **Show column outlines** on, the outlines follow each column's own height.
 - **Last column first:** draws the columns in the opposite order, on the devices you turn it on for. For two or three columns. Turned on for Mobile, a picture in the right-hand column shows above its text on a phone. With _First one wider_, the wider column is still the one drawn first.
   - The order changes only on screen. Someone moving through the page with the Tab key, or listening with a screen reader, still meets the columns in the order they're in here, on every device: a web page has one order underneath for every screen size. Use it where the order makes no difference to the meaning, such as a picture and its text. For steps that must be read in order, move the columns instead.
+  - **Remove last column** removes the last column here, which on a device where it's turned on is the one drawn first.
 
 ### Tabs
 

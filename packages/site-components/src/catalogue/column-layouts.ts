@@ -97,12 +97,15 @@ export function columnGridClasses(
 ): string {
   const reversed = (breakpoint: Breakpoint) =>
     lastFirst !== undefined && resolveResponsive(lastFirst, breakpoint) === true;
+  // A layout that isn't one of them (a file edited by hand, say) draws as Equal.
+  const classesOf = (value: ColumnLayout) =>
+    COLUMN_LAYOUT_CLASS[value] ?? COLUMN_LAYOUT_CLASS.equal;
   if (!BREAKPOINTS.some(reversed)) {
-    return responsiveClasses(layout, (value) => COLUMN_LAYOUT_CLASS[value]);
+    return responsiveClasses(layout, classesOf);
   }
   const each = (breakpoint: Breakpoint) => {
     const drawn = drawnLayout(resolveResponsive(layout, breakpoint), reversed(breakpoint));
-    return `${COLUMN_LAYOUT_CLASS[drawn]} ${reversed(breakpoint) ? LAST_FIRST_CLASS : IN_ORDER_CLASS}`;
+    return `${classesOf(drawn)} ${reversed(breakpoint) ? LAST_FIRST_CLASS : IN_ORDER_CLASS}`;
   };
   return responsiveClasses<string>(
     { $responsive: { mobile: each("mobile"), tablet: each("tablet"), desktop: each("desktop") } },

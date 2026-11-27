@@ -253,7 +253,8 @@ test("draws the columns last first on Mobile once set there, keeping their order
   // Selected first, as a person picks up what they mean to move: the Columns is selected now.
   await left.getByRole("treeitem", { name: /^Spacer/ }).click();
   // Aimed at Column 2 where it is once the drag is under way, as a person aims at what they see:
-  // the canvas moves as a drag starts, and a point found before it can be over the other column.
+  // while something is dragged the canvas draws the columns in their saved order (without that, a
+  // drop in a reversed row landed in the other column in CI), so Column 2 moves as the drag starts.
   const target = canvas().getByText("Column 2 of 2", { exact: true });
   await drag(page, spacerIn(0), async () => {
     const at = await boxOf(target, "Column 2's text");

@@ -158,6 +158,15 @@ export const RICH_TEXT_MENU = "[data-puck-rte-menu]";
  * drags use them.
  */
 export const DRAGGING = "[data-puck-entry][data-puck-dragging]";
+
+/**
+ * Every component's wrapper on the canvas while something is being dragged (#1544). Columns'
+ * *Last column first* draws its columns in reverse with `order`, and a drop in a reversed row
+ * landed in the other column in CI, on every system, though not every time here. While a drag is
+ * under way the canvas draws every row in its saved order (`chrome.tsx`), so where a drop lands
+ * follows the order it's drawn in.
+ */
+export const WRAPPER_WHILE_DRAGGING = `:root:has(${DRAGGING}) ${COMPONENT_DROP_ZONE} > ${COMPONENT}`;
 export const DROP_PREVIEW = "[data-dnd-placeholder], [data-puck-line-placeholder]";
 
 /**
