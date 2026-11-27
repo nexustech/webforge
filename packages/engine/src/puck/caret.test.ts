@@ -122,4 +122,34 @@ describe("preserveCaret", () => {
 
     expect(element.textContent).toBe("Welcome!?!");
   });
+
+  it("still puts the caret back for the key making the change, as Ctrl+Z is (#1613)", async () => {
+    const element = field("Hello world");
+    caretAt(element.firstChild as Node, 5);
+    // The change is made while its own keydown is still under way, by a handler above the field
+    // that sees it first: that key, reaching the field next, isn't the person's next act.
+    document.addEventListener("keydown", () => preserveCaret(document), {
+      once: true,
+      capture: true,
+    });
+    element.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true }));
+    element.replaceChildren("Hello there world");
+    await flush();
+
+    expect(caret()).toEqual({ node: "Hello there world", offset: 5 });
+  });
+
+  it("lets the caret be once the person leaves the field (#1613)", async () => {
+    const element = field("Hello world");
+    caretAt(element.firstChild as Node, 5);
+    preserveCaret(document);
+    await flush();
+    element.dispatchEvent(new FocusEvent("focusout"));
+    caretAt(element.firstChild as Node, 11);
+    (element.firstChild as Text).appendData("!");
+    caretAt(element.firstChild as Node, 12);
+    await flush();
+
+    expect(caret()).toEqual({ node: "Hello world!", offset: 12 });
+  });
 });
