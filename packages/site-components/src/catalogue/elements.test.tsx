@@ -438,6 +438,90 @@ describe("the Columns element (2.9)", () => {
     ).toHaveLength(2);
   });
 
+  describe("Line up and Last column first (CP-14, #1544)", () => {
+    const columnsOf = (props: Record<string, unknown>, columns: readonly unknown[] = twoColumns) =>
+      render("Columns", {
+        ...siteLibrary.components.Columns?.defaults,
+        columns,
+        layout: { $responsive: { desktop: "wideFirst", tablet: "equal", mobile: "stacked" } },
+        ...props,
+      });
+    /** The classes of the grid that holds the columns, as written in the page's HTML. */
+    const grid = (html: string) =>
+      (/<div class="site-columns"><div class="([^"]*)"/.exec(html)?.[1] ?? "")
+        .replaceAll("&gt;", ">")
+        .replaceAll("&amp;", "&");
+
+    it("draws a Columns saved before either setting exactly as before", () => {
+      // As main drew it before #1544.
+      const before = `<div class="site-columns"><div class="grid grid-flow-row [&amp;&gt;*:first-child:nth-last-child(-n+3)]:col-span-1 [&amp;&gt;*:last-child:nth-child(-n+3)]:col-span-1 [&amp;&gt;*:nth-child(2):nth-last-child(2)]:col-span-1 md:grid-flow-col md:auto-cols-fr md:[&amp;&gt;*:first-child:nth-last-child(-n+3)]:col-span-1 md:[&amp;&gt;*:last-child:nth-child(-n+3)]:col-span-1 md:[&amp;&gt;*:nth-child(2):nth-last-child(2)]:col-span-1 lg:grid-flow-col lg:auto-cols-fr lg:[&amp;&gt;*:first-child:nth-last-child(-n+3)]:col-span-2 lg:[&amp;&gt;*:last-child:nth-child(-n+3)]:col-span-1 lg:[&amp;&gt;*:nth-child(2):nth-last-child(2)]:col-span-1 gap-8"><div class="site-column min-w-0"><div class="flex flex-col gap-4"><div class="site-text text-body [&amp;_a:not(.btn)]:[text-decoration-line:var(--wf-link-decoration,underline)] [&amp;_a:not(.btn):hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn):focus-visible]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn)]:[color:var(--wf-link-color,currentColor)] [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6"><div class="contents"><p>Hi</p></div></div></div></div><div class="site-column min-w-0"><div class="flex flex-col gap-4"><div class="site-text text-body [&amp;_a:not(.btn)]:[text-decoration-line:var(--wf-link-decoration,underline)] [&amp;_a:not(.btn):hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn):focus-visible]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn)]:[color:var(--wf-link-color,currentColor)] [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6"><div class="contents"><p>Hi</p></div></div></div></div></div></div>`;
+
+      expect(columnsOf({})).toBe(before);
+      // Top and off everywhere draw the same.
+      expect(columnsOf({ lineUp: "top", lastFirst: false })).toBe(before);
+      expect(columnsOf({ lastFirst: { $responsive: { desktop: false, mobile: false } } })).toBe(
+        before,
+      );
+    });
+
+    it("lines the columns up in the middle or at the bottom", () => {
+      expect(grid(columnsOf({ lineUp: "middle" })).split(" ")).toContain("items-center");
+      expect(grid(columnsOf({ lineUp: "bottom" })).split(" ")).toContain("items-end");
+      expect(grid(columnsOf({ lineUp: "top" }))).not.toMatch(/items-/);
+    });
+
+    it("draws them last first on the devices chosen, the wide column still drawn first", () => {
+      const classes = grid(
+        columnsOf({ lastFirst: { $responsive: { desktop: false, mobile: true } } }),
+      ).split(" ");
+
+      // Mobile: reversed, stacked.
+      expect(classes).toEqual(
+        expect.arrayContaining([
+          "grid-flow-row",
+          "[&>*:first-child:nth-last-child(-n+3)]:order-3",
+          "[&>*:nth-child(2):nth-last-child(2)]:order-2",
+          "[&>*:last-child:nth-child(-n+3)]:order-1",
+        ]),
+      );
+      // Tablet: in their order again.
+      expect(classes).toEqual(
+        expect.arrayContaining([
+          "md:[&>*:first-child:nth-last-child(-n+3)]:order-none",
+          "md:[&>*:last-child:nth-child(-n+3)]:order-none",
+        ]),
+      );
+      // Desktop, not reversed: First one wider as it is.
+      expect(classes).toContain("lg:[&>*:first-child:nth-last-child(-n+3)]:col-span-2");
+
+      // Reversed on Desktop: First one wider spans the last column, which is drawn first.
+      const wide = grid(columnsOf({ lastFirst: true })).split(" ");
+      expect(wide).toContain("lg:[&>*:last-child:nth-child(-n+3)]:col-span-2");
+      expect(wide).toContain("lg:[&>*:first-child:nth-last-child(-n+3)]:col-span-1");
+    });
+
+    it("draws a layout it doesn't know as Equal, reversed or not", () => {
+      for (const lastFirst of [false, true]) {
+        const classes = grid(columnsOf({ layout: "wide", lastFirst })).split(" ");
+        expect(classes).not.toContain("undefined");
+        expect(classes).toContain("auto-cols-fr");
+      }
+    });
+
+    it("offers Last column first for two or three columns only", () => {
+      const field = siteLibrary.components.Columns?.fields.lastFirst;
+      const site = { menuLinksToSections: false };
+      const columns = (count: number) => ({ columns: Array.from({ length: count }, () => ({})) });
+
+      expect([1, 2, 3, 4].map((count) => field?.shownWhen?.(columns(count), site))).toEqual([
+        false,
+        true,
+        true,
+        false,
+      ]);
+    });
+  });
+
   it("starts with two columns, each with a text, whose ids a placed copy replaces", () => {
     const defaults = siteLibrary.components.Columns?.defaults;
     const columns = defaults?.columns as NodeDoc[] | undefined;
