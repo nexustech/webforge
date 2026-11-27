@@ -91,16 +91,25 @@ test("draws each row of cards as Preview does, the same heights in the same rows
     await browser.close();
   }
   expectCardRows(inPreview, width, "Preview");
-  // The same heights, row for row. Not Pricing's: on the canvas each plan's button has the
-  // canvas's own link editing under it, which makes every plan taller there alike.
+  // The same heights, row for row, within a pixel: the canvas is Electron's Chromium and Preview
+  // Playwright's, which can lay text out a fraction apart. Not Pricing's: on the canvas each
+  // plan's button has the canvas's own link editing under it, which makes every plan taller there
+  // alike.
   for (const [title, section] of Object.entries(onCanvas)) {
     if (title === "Prices") continue;
+    const canvasHeights = section.rows.flatMap((row) => row.heights);
+    const previewHeights = inPreview[title]?.rows.flatMap((row) => row.heights) ?? [];
     expect
-      .soft(
-        section.rows.map((row) => row.heights),
-        `${title}: the canvas's heights against Preview's`,
-      )
-      .toEqual(inPreview[title]?.rows.map((row) => row.heights));
+      .soft(previewHeights.length, `${title}: as many cards on the canvas as in Preview`)
+      .toBe(canvasHeights.length);
+    for (const [index, height] of canvasHeights.entries()) {
+      expect
+        .soft(
+          Math.abs(height - (previewHeights[index] ?? Number.NaN)),
+          `${title}: card ${index + 1}'s height, ${height} on the canvas, ${previewHeights[index]} in Preview`,
+        )
+        .toBeLessThanOrEqual(1);
+    }
   }
 });
 
@@ -132,6 +141,8 @@ test("offers Card height for the cards layout only, and Fit the text draws each 
 });
 
 test("takes a card dropped before or after another in a row of cards laid out as a grid (#1511)", async () => {
+  // Two drags, each waiting for its stages and pressing again if Puck missed it: 46 s here.
+  test.setTimeout(150_000);
   await start(CARD_ROW_SECTIONS.filter((section) => section.props.title === sameHeightTitle(4)));
   const card = (title: string) =>
     canvas()

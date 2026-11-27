@@ -98,7 +98,9 @@ export const TABLE_ROW_WRAPPER = `tbody${COMPONENT_DROP_ZONE} > ${COMPONENT}`;
  * rows of cards are (`CARD_ROWS`), the element inside its wrapper. On the site the element is the
  * row's item, and the browser stretches it to its row's height; on the canvas Puck's wrapper is
  * the item, and the one stretched. The canvas styles (`chrome.tsx`) make the element fill its
- * wrapper, so cards in a row are the same height on the canvas as on the site.
+ * wrapper, so cards in a row are the same height on the canvas as on the site. It reaches every
+ * slot that wraps, a row of buttons too, which the site stretches alike; an element that sets its
+ * own `align-self` there would fill its wrapper on the canvas all the same.
  */
 export const WRAPPING_ROW_ELEMENT = `${COMPONENT_DROP_ZONE}.flex-wrap > ${COMPONENT} > *`;
 
