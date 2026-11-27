@@ -284,6 +284,8 @@ type SectionPlace = {
    * (`RenderContext.belowHeader`, HH-4): its height leaves the Header's room.
    */
   readonly belowHeader: boolean;
+  /** It's the section a Header is joined to (`RenderContext.joinedHeader`, HH-1). */
+  readonly joined: boolean;
 };
 
 /**
@@ -404,9 +406,17 @@ export function defineSection<const F extends Fields, const Variant extends stri
       const stored: Readonly<Record<string, unknown>> = values;
       // The section a Header is joined to (HH-1) makes room for it above its own padding.
       const underHeader = props.id === props.context.joinedHeader?.section;
+      const place = { belowHeader: props.context.belowHeader === props.id, joined: underHeader };
+      // The page's first section where it fills the window, under the Header's band or joined to
+      // it: `joined.js` measures where it starts (`--wf-above-h`), so an Announcement bar above
+      // leaves room too (#1489).
+      const fills =
+        (place.belowHeader || place.joined) && rest.fillsWindow?.(values) === true
+          ? { "data-wf-fills": "" }
+          : {};
       const classes = [
         `site-${name}`,
-        frame?.(values, { belowHeader: props.context.belowHeader === props.id }) ?? "",
+        frame?.(values, place) ?? "",
         `${paddedColumn?.(values) === true ? (underHeader ? UNDER_HEADER : "") : sectionPadding(stored.padding, underHeader)}${marginClasses(stored.margin)}${entranceClasses(stored)}`.trim(),
         appearanceBoxClasses(stored),
         backgroundClasses(stored),
@@ -416,6 +426,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
         <section
           className={classes.join(" ")}
           {...(frameAttributes?.(values, props.context) ?? {})}
+          {...fills}
           {...theme}
           {...entranceAttributes(stored)}
         >
