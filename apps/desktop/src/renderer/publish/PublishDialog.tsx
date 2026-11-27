@@ -154,7 +154,10 @@ function UnpublishedLine({
 }) {
   const { count, show } = unpublished;
   return (
-    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div
+      data-publish-unpublished=""
+      className="flex items-center gap-2 text-sm text-muted-foreground"
+    >
       <EyeOffIcon className="size-4 shrink-0" aria-hidden />
       <p className="min-w-0 flex-1">
         {plural(version ? "publish.unpublished.version" : "publish.unpublished", count)}
@@ -173,6 +176,25 @@ function UnpublishedLine({
       )}
     </div>
   );
+}
+
+/** What the dialog's focus can start on: its buttons, links and fields, as the dialog's own. */
+const FOCUSABLE =
+  'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Starts the dialog's focus where it started before the line about what isn't published (#1512):
+ * on the first thing past it, so Enter as it opens never closes it with **Show**.
+ */
+function focusPastUnpublished(event: Event): void {
+  const content = event.target;
+  if (!(content instanceof HTMLElement)) return;
+  const first = [...content.querySelectorAll<HTMLElement>(FOCUSABLE)].find(
+    (element) => element.closest("[data-publish-unpublished]") === null,
+  );
+  if (first === undefined) return;
+  event.preventDefault();
+  first.focus();
 }
 
 /**
@@ -350,7 +372,7 @@ export function PublishDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-xl" onOpenAutoFocus={focusPastUnpublished}>
           <DialogHeader>
             <DialogTitle>
               {republishing === undefined
