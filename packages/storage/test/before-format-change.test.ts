@@ -3,8 +3,9 @@ import { join } from "node:path";
 import { createSite } from "@webforge/model";
 import { copyWforgeFixture } from "@webforge/test-utils";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
+import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
-import { ProjectStore } from "../src/index.js";
+import { FORMAT_VERSION, ProjectStore } from "../src/index.js";
 
 // The moment before a site's file changes format (#1525, UC-2): the newer Webforge keeps the file
 // as the older one wrote it, so it still opens there. `beforeFormatChange` is called once, before
@@ -112,5 +113,32 @@ describe("ProjectStore's beforeFormatChange (#1525)", () => {
       readOnly.close();
     }
     expect(called).toBe(false);
+  });
+
+  it("leaves a newer Webforge's file exactly as it was, and keeps nothing of it", () => {
+    // A site saved by a newer Webforge: a format past this build's.
+    const path = join(tempDir(), "Newer.wforge");
+    const made = ProjectStore.create(path, { name: "Bakery" });
+    made.saveSite(
+      createSite({ name: "Bakery", language: "en", homeTitle: "Home", notFoundTitle: "404" }),
+    );
+    made.close();
+    const db = new Database(path);
+    db.prepare("UPDATE meta SET value = ? WHERE key = 'format_version'").run(
+      String(FORMAT_VERSION + 1),
+    );
+    db.close();
+    const original = readFileSync(path);
+
+    const { store, kept } = openKeeping(path);
+    try {
+      // Opened read-only, as the session then refuses it: nothing can write it.
+      expect(store.info).toMatchObject({ newerFormat: true, readOnly: true });
+      expect(() => store.saveSite(store.readSite())).toThrow();
+    } finally {
+      store.close();
+    }
+    expect(readFileSync(path).equals(original)).toBe(true);
+    expect(kept).toHaveLength(0);
   });
 });
