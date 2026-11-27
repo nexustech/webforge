@@ -12,7 +12,7 @@ All the notes under `research/` on `main` of 20 Nov 2026 (commit `966982c0`) wer
 
 Short names in the tables:
 
-- **competitors/01–08:** [Webflow](01-webflow.md), [Pinegrow](02-pinegrow.md), [the November 2026 comparison](03-comparison-2026-11.md), [Onlook](04-onlook.md), [Webnode](05-webnode.md), [Pinegrow's Revisions](06-pinegrow-revisions.md), [version history elsewhere](07-version-history-elsewhere.md), [Pinegrow's Content Workspace](08-pinegrow-content-workspace.md).
+- **competitors/01–09:** [Webflow](01-webflow.md), [Pinegrow](02-pinegrow.md), [the November 2026 comparison](03-comparison-2026-11.md), [Onlook](04-onlook.md), [Webnode](05-webnode.md), [Pinegrow's Revisions](06-pinegrow-revisions.md), [version history elsewhere](07-version-history-elsewhere.md), [Pinegrow's Content Workspace](08-pinegrow-content-workspace.md), [what users complain about](09-what-users-complain-about.md).
 - **product/01–21:**
   - [01 terminology](../product/01-terminology.md), [02 CMS](../product/02-cms.md), [04 editor look and feel](../product/04-editor-look-and-feel.md), [05 feature gap analysis](../product/05-feature-gap-analysis.md)
   - [06 editor UI parity](../product/06-editor-ui-ux-parity.md), [07 look-and-feel pass](../product/07-look-and-feel-pass.md), [08 component styling](../product/08-component-styling.md), [08 start screen](../product/08-start-screen-comparison.md)
@@ -95,6 +95,7 @@ Compared as building blocks for Webforge, not as products the owner would choose
 
 - **[product/25](../product/25-hero-and-header.md) (24 Nov 2026), the hero and the Header:** compares Squarespace, Wix, Hostinger, Webnode, GoDaddy (from search results only), Durable, Shopify's themes, Google Sites, Webflow, Framer, WordPress block themes, Bootstrap Studio, Pinegrow, Elements, Blocs, Mobirise, Nicepage and Sitely again, and for the first time **Square Online and Weebly**, the WordPress themes **Astra**, **Kadence** and **GeneratePress**, **Elementor**, and **Bootstrap**'s own examples. Jimdo's help pages couldn't be read, and Carrd has no header without custom CSS, so neither is compared.
 - **[competitors/07](07-version-history-elsewhere.md) (26 Nov 2026), version history:** compares what 25 of the products above offer for going back to an earlier version: the desktop apps of §2 except Pinegrow (in competitors/06) and Onlook, the hosted builders of §3 except 10Web, with Square Online and Weebly, both of §4, and Canva, Google Sites, WordPress, Figma and, for the first time here, **Elementor's History panel** from §5 and §8.
+- **[competitors/09](09-what-users-complain-about.md) (26 Nov 2026), what users complain about and ask for:** reads the forums, request boards and reviews of 27 products: the desktop apps of §2 except Onlook, the hosted builders of §3 except 10Web and Shopify, with Square Online and Weebly, both of §4, WordPress, Elementor and Shopify's themes, and the AI site generators Lovable and Bolt of §6, with **v0** for the first time.
 
 ## 9. Limits
 
