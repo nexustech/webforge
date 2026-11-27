@@ -1,7 +1,8 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { HERO_HEIGHT_SITE_DIR } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // A Whole screen Hero (HH-4) on an exported site, opened from disk: it fills the window under a
 // Header with its own band, and the whole window with the Header joined to it. With an Announcement

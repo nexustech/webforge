@@ -45,7 +45,11 @@ function record(name: string, ms: number): void {
 for (const template of TEMPLATES) {
   test(`opens a ${template.title} site in under 3 s (F-SITE-1)`, async () => {
     dir = mkdtempSync(join(tmpdir(), "webforge-open-perf-"));
-    app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
+    app = await launchDesktopApp({
+      motion: true,
+      userDataDir: join(dir, "user-data"),
+      site: false,
+    });
     const page = await app.firstWindow();
     await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
     await stubFileDialogs(app, join(dir, "Site.wforge"));

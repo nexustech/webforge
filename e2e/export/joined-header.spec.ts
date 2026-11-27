@@ -1,7 +1,8 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { JOINED_SITE_DIR } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // The Header joined to each page's first section (HH-1) on an exported site, opened from disk: on
 // the Hero's picture with room under it, solid in the page's colours once scrolled, and its phone

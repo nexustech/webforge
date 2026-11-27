@@ -77,3 +77,17 @@ This builds the app in perf mode (`electron-vite build --mode perf`, which adds 
   - Each case is a step with soft checks, so one failing dialog doesn't hide the rest; a case that leaves something open starts the app again for the next, and the round lists it.
   - A fault filed and not yet fixed goes in `KNOWN_FAULTS`, with its issue. The check then asserts that exact rule still fails there, and fails once it passes, so the fix removes the entry. Nothing is skipped silently.
   - A failure names the case, the round and what was measured (anti-pattern 20). Its last test breaks one dialog per rule on purpose, to show each check catches it.
+
+### Motion is off (#1493)
+
+Tests run with motion off, so none reads the screen while something on it still moves.
+
+- **What's off:** every page asks for reduced motion, and has a sheet that ends each transition and animation at once (`no-motion.ts`; 0.01 ms, so `transitionend` and `animationend` still fire).
+- **The app:** `launchDesktopApp()` applies both to each window and frame, the canvas's included, from the test's side, as Playwright's `reducedMotion` doesn't reach Electron's windows.
+- **The exported site:** its projects set `reducedMotion: "reduce"`, and `export/test.ts` adds a sheet with no transitions or animations at all, as no script of the site's waits for one's end with reduced motion, and WebKit didn't always finish a 0.01 ms one before a test read it. Its specs import `test` and `expect` from `./test.js`, never `test` from `@playwright/test`; Biome says so.
+
+A test about motion itself turns it back on, and says why:
+
+- **The app:** `launchDesktopApp({ motion: true })`. The performance suite does, as it measures what people wait for.
+- **The exported site:** `test.use({ motion: true, reducedMotion: "no-preference" })` in its `describe`.
+- **A test of reduced motion itself** still asks for it with `page.emulateMedia({ reducedMotion: "reduce" })`, so it reads the same either way.

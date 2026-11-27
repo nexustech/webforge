@@ -713,10 +713,13 @@ async function connectAiApp({ app, page }: Context): Promise<{ remove(): Promise
     }),
   );
   await client.listTools();
+  // Connected, as AI apps says, before it closes: the title bar's status follows that (a 5 s wait
+  // for the status alone, the dialog closed at once, missed it once on macOS).
+  await expect(dialog.getByText("Connected", { exact: true })).toBeVisible({ timeout: 15_000 });
   await dialog.getByRole("button", { name: "Close" }).click();
   await expect(
     page.getByRole("button", { name: "Connected AI apps: Test client. Open AI apps." }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
   return {
     remove: async () => {
       await client.close();

@@ -26,6 +26,9 @@ export default defineConfig({
   use: {
     trace: "retain-on-failure",
   },
+  // The exported site's pages ask for reduced motion, and export/test.ts adds the no-motion sheet:
+  // a test never reads a page mid-change (#1493). The app's windows get the same from
+  // launchDesktopApp, as Playwright's options don't reach Electron's. A test about motion opts out.
   projects: [
     { name: "app", testDir: "./app" },
     { name: "export-setup", testDir: "./export", testMatch: /\.setup\.ts$/ },
@@ -34,7 +37,7 @@ export default defineConfig({
       testDir: "./export",
       testMatch: /\.spec\.ts$/,
       dependencies: ["export-setup"],
-      use: { browserName },
+      use: { browserName, reducedMotion: "reduce" as const },
     })),
     // Edge, installed with Windows, which has no other browser to try the exported site in (3.10).
     ...(process.platform === "win32"
@@ -44,7 +47,11 @@ export default defineConfig({
             testDir: "./export",
             testMatch: /\.spec\.ts$/,
             dependencies: ["export-setup"],
-            use: { browserName: "chromium" as const, channel: "msedge" },
+            use: {
+              browserName: "chromium" as const,
+              channel: "msedge",
+              reducedMotion: "reduce" as const,
+            },
           },
         ]
       : []),

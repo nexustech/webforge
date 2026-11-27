@@ -1,5 +1,6 @@
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { themedPageUrl } from "./exported-site.js";
+import { expect, test } from "./test.js";
 
 // Forms (3.7, B3, B6) on the themed export (export.setup.ts), which sends to Web3Forms with the
 // site's web address: opened from disk with the network blocked, nothing leaves the computer until
