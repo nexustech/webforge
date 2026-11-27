@@ -156,6 +156,12 @@ export const siteCheck = {
   "siteCheck.rule.notes.pass": "No open notes",
   "siteCheck.rule.notes.fail.one": "1 note to resolve",
   "siteCheck.rule.notes.fail.other": "{count} notes to resolve",
+  "siteCheck.rule.unpublished": "Not published",
+  "siteCheck.rule.unpublished.pass": "Everything is published",
+  "siteCheck.rule.unpublished.fail.one":
+    "1 element isn't published, so it's left out of your website",
+  "siteCheck.rule.unpublished.fail.other":
+    "{count} elements aren't published, so they're left out of your website",
   "siteCheck.rule.outdatedYear": "Year on your site",
   "siteCheck.rule.outdatedYear.pass": "Your published site shows this year",
   "siteCheck.rule.outdatedYear.fail.one":

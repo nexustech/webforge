@@ -754,8 +754,9 @@ async function connectAiApp({ app, page }: Context): Promise<{ remove(): Promise
 const sectionFaults = new WeakMap<Page, FitFault[]>();
 
 /**
- * A site with what the cases need: a Hero with a picture from Media placed on it, a second page to
- * delete, a web address (so Export doesn't ask for one first), and a version.
+ * A site with what the cases need: a Hero with a picture from Media placed on it, a heading set to
+ * Don't Publish (Publish's line, #1512), a second page to delete, a web address (so Export doesn't
+ * ask for one first), and a version.
  */
 function seedSite(folder: string): string {
   const path = join(folder, "Rosa's Bakery.wforge");
@@ -793,6 +794,8 @@ function seedSite(folder: string): string {
     if (home === undefined) throw new Error("no home page");
     home.doc.content = [
       { type: "Hero", props: { id: "hero", title: "Fresh bread", image: { mediaId: "shop" } } },
+      // Set to Don't Publish: Publish says so, in a line of its own (#1512).
+      { type: "Heading", props: { id: "kept", text: "Opening soon", hidden: true } },
     ];
     const about = structuredClone(home);
     about.id = newId("page");

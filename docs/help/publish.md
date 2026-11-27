@@ -4,7 +4,7 @@ id: publish
 title: Publish
 summary: Put your website on your web host or on Netlify, and update it with one click whenever you change something.
 related: [export, site-check, site-settings, version-history]
-updated: 2026-11-20
+updated: 2026-11-27
 ---
 
 # Publish
@@ -61,6 +61,8 @@ Netlify can show visitors its log-in page instead of your site. {appName} warns 
 - **Visitor access or password protection:** turn it off in the site's settings on Netlify.
 
 ## Publishing
+
+If anything on your site is set to **Don't publish**, the dialog says how many items won't be on your website. Click **Show** to select the first on its page; **Show** on its [Not published](editing-on-the-page.md#not-published) badge puts it back. When you republish an earlier version, the line counts that version's, without **Show**.
 
 Click **Publish** beside a destination. {appName}:
 

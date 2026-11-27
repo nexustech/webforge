@@ -1,5 +1,5 @@
-import { t } from "@webforge/i18n";
-import { type PageId, pagePath, type SiteDoc } from "@webforge/model";
+import { plural, t } from "@webforge/i18n";
+import { type PageId, pagePath, type SiteDoc, unpublishedRoots } from "@webforge/model";
 import { type ComponentLibrary, siteContentFor } from "@webforge/site-components";
 import type { StoreApi } from "zustand/vanilla";
 import { DEVICE_SIZE } from "../../shared/ipc/prefs.js";
@@ -11,6 +11,7 @@ import type {
 } from "../../shared/ipc/preview.js";
 import type { CodeDecision } from "../editor/code-trust.js";
 import type { EditorSession } from "../editor/editor-session.js";
+import { showElement } from "../editor/show-element.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -19,9 +20,15 @@ import type { PhoneState } from "./PhonePreviewDialog.js";
 /** At most one change of the site sent in this long: the first at once, the last at its end. */
 export const PREVIEW_UPDATE_MS = 100;
 
+/**
+ * What the preview leaves out of the page it opened at (#1512): how many elements aren't published,
+ * in words, and **Show**, which selects the first on the canvas.
+ */
+type LeftOut = { readonly description: string; readonly show: () => void };
+
 /** What the preview commands work on and with. */
 export type PreviewCommandsDeps = {
-  readonly session: Pick<EditorSession, "history" | "ui">;
+  readonly session: Pick<EditorSession, "history" | "ui" | "showPage" | "select">;
   readonly library: ComponentLibrary;
   readonly api: PreviewApi;
   /** The opening of the site this page was loaded for, sent with the site (R6, #663). */
@@ -30,8 +37,11 @@ export type PreviewCommandsDeps = {
   readonly phone: StoreApi<PhoneState>;
   /** Tells the person something went wrong. */
   readonly notify: (message: string) => void;
-  /** Tells the person something worked: the preview opened in their browser (#1009). */
-  readonly tell: (message: string) => void;
+  /**
+   * Tells the person something worked: the preview opened in their browser (#1009), with what it
+   * leaves out of the page, if anything (#1512).
+   */
+  readonly tell: (message: string, leftOut?: LeftOut) => void;
   /** Tells the person a page was saved, with more on what was (5.22). */
   readonly saved: (message: string, description: string) => void;
   /** The width of the device the canvas shows, in CSS pixels: a page is saved at it (5.22). */
@@ -117,6 +127,19 @@ export function registerPreviewCommands(
   // published, and the menu is as it will be.
   const content = () => siteContentFor(site(), library, { drafts: true });
   const page = () => previewPageOf(site(), session.ui.getState().pageId);
+  /** What page `pageId` leaves out (#1512), as the preview opened at it: nothing, if it has none. */
+  const leftOutOf = (pageId: PageId): LeftOut | undefined => {
+    const roots = unpublishedRoots(site(), { page: pageId });
+    const [first] = roots;
+    if (first === undefined) return undefined;
+    return {
+      description: plural("preview.unpublished", roots.length),
+      show: () => {
+        // It may have gone since: then there's nothing to select.
+        showElement(session, first.on, first.node.props.id);
+      },
+    };
+  };
 
   let following: (() => void) | undefined;
 
@@ -252,12 +275,19 @@ export function registerPreviewCommands(
         afterCode(
           () => {
             follow();
+            const shown = session.ui.getState().pageId;
             api
               .open(sessionId(), content(), page())
               .then((opened) => {
-                // The browser may open behind the window: the app says it did (#1009).
-                if (opened === "opened") tell(t("preview.opened"));
-                else notify(t("preview.failed"));
+                // The browser may open behind the window: the app says it did (#1009), and what
+                // the page leaves out, which the preview doesn't show (#1512).
+                if (opened !== "opened") {
+                  notify(t("preview.failed"));
+                  return;
+                }
+                const leftOut = leftOutOf(shown);
+                if (leftOut === undefined) tell(t("preview.opened"));
+                else tell(t("preview.opened"), leftOut);
               })
               .catch((error: unknown) => {
                 reportFailure("preview.open", error);

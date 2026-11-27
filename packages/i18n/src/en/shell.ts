@@ -99,6 +99,10 @@ export const shell = {
   "preview.notReady": "The preview isn't ready yet. Reload this page in a moment.",
   // Preview and Preview on Phone (3.2, F-PV-1).
   "preview.opened": "Opened in your browser",
+  "preview.unpublished.one":
+    "1 element on this page isn't published, so the preview leaves it out, as your website will.",
+  "preview.unpublished.other":
+    "{count} elements on this page aren't published, so the preview leaves them out, as your website will.",
   "preview.failed": "{appName} couldn't open the preview. Try again in a moment.",
   // Save Page as Image… and Save Page as PDF… (5.22, OL-9).
   "preview.save.imageTitle": "Save Page as Image",
