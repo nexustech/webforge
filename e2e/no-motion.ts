@@ -7,12 +7,15 @@
 // (e2e/README.md).
 
 /**
- * Every transition and animation over at once. Not 0: a 0 s transition doesn't run, so its
- * `transitionend` never fires, and code waiting for it (Radix's Presence, the panels) would hang.
- * An endless one runs once, so a spinner stands still.
+ * No transitions, and every animation over at once, as the editor's own reduced-motion rule
+ * (`packages/editor-ui/src/theme.css`). Transitions at 0 s: a short duration on every element would
+ * give each a transition of every property, as `transition-property` starts as `all`, and the
+ * renderer would draw old values for a frame (#1497). Nothing in the editor waits for
+ * `transitionend`. Animations at 0.01 ms, not 0: Radix's Presence waits for `animationend` to
+ * unmount what's closing. An endless one runs once, so a spinner stands still.
  */
 const NO_MOTION_CSS = `*, *::before, *::after {
-  transition-duration: 0.01ms !important;
+  transition-duration: 0s !important;
   transition-delay: 0s !important;
   animation-duration: 0.01ms !important;
   animation-delay: 0s !important;

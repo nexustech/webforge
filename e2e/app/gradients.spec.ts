@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
-import { launchDesktopApp, MOTION_TAG, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
 // A gradient's direction turns it on (CT-10, 5.11): chosen in *Style this Hero…* or for every Hero
@@ -79,10 +79,7 @@ test("a direction chosen in Style this Hero… draws Brand to Accent, as one ste
   await expect(hero()).not.toHaveClass(/from-primary!/);
 });
 
-// Motion on until #1498: with motion off it fails in CI only (macOS, once).
-test("a direction chosen for every Hero in Theme Studio draws Brand to Accent once applied (CT-10)", {
-  tag: MOTION_TAG,
-}, async () => {
+test("a direction chosen for every Hero in Theme Studio draws Brand to Accent once applied (CT-10)", async () => {
   await addHero();
 
   await chooseFromMenu(app, page, "Site", "Theme Studio…");
