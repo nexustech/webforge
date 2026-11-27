@@ -153,6 +153,13 @@ export type ProjectInfo = ValidatedProject & {
 export type OpenProjectOptions = {
   /** Open without write access, e.g. to look inside a backup. */
   readonly readOnly?: boolean;
+  /**
+   * Called once, before the first write that brings an older file's format or an older site's
+   * format up to date (#1525, UC-2): the moment to keep the file as the older Webforge wrote it.
+   * The file is whole then, between transactions. If it throws, that write doesn't happen. Never
+   * called for a file already up to date, or one opened read-only.
+   */
+  readonly beforeFormatChange?: () => void;
 };
 
 /** The steps of making a new project, as {@link CreateProjectOptions.timed} is told them (#1560). */

@@ -89,10 +89,13 @@ export class ProjectStore {
    * the file (R14), so a site opened and closed unedited stays as it was. The first write saves it.
    */
   #unsavedMigration: SiteDoc | undefined;
+  /** {@link OpenProjectOptions.beforeFormatChange}, until it has run. */
+  #beforeFormatChange: (() => void) | undefined;
 
-  private constructor(db: Database.Database, info: ProjectInfo) {
+  private constructor(db: Database.Database, info: ProjectInfo, beforeFormatChange?: () => void) {
     this.#db = db;
     this.#info = info;
+    this.#beforeFormatChange = info.readOnly ? undefined : beforeFormatChange;
   }
 
   /**
@@ -131,7 +134,7 @@ export class ProjectStore {
         return new ProjectStore(db, { ...validated, readOnly });
       }
       configureWrites(db);
-      return new ProjectStore(db, { ...validated, readOnly });
+      return new ProjectStore(db, { ...validated, readOnly }, options.beforeFormatChange);
     } catch (error) {
       if (db.open) db.close();
       throw toProjectFileError(error);
@@ -193,6 +196,8 @@ export class ProjectStore {
    */
   saveSite(site: SiteDoc): void {
     this.#assertWritable();
+    // Before the migration it replaces is forgotten: the site written is in the current format.
+    this.#keepBeforeFormatChange();
     // A whole site replaces whatever migration was waiting to be written.
     this.#unsavedMigration = undefined;
     this.commit(this.#siteChanges(site));
@@ -658,6 +663,7 @@ export class ProjectStore {
    */
   #write<T>(change: () => T): T {
     this.#assertWritable();
+    this.#keepBeforeFormatChange();
     const from = this.#info.formatVersion;
     const result = stamped(this.#db, () => {
       if (from < FORMAT_VERSION) migrateSchema(this.#db, from);
@@ -665,6 +671,19 @@ export class ProjectStore {
     });
     if (from < FORMAT_VERSION) this.#info = { ...this.#info, formatVersion: FORMAT_VERSION };
     return result;
+  }
+
+  /**
+   * Runs {@link OpenProjectOptions.beforeFormatChange} once, before the first write that changes
+   * the file's format (its tables) or the site's (a migration `readSite` has waiting). It throws
+   * through, so that write doesn't happen.
+   */
+  #keepBeforeFormatChange(): void {
+    const keep = this.#beforeFormatChange;
+    if (keep === undefined) return;
+    if (this.#info.formatVersion >= FORMAT_VERSION && this.#unsavedMigration === undefined) return;
+    keep();
+    this.#beforeFormatChange = undefined;
   }
 
   #assertWritable(): void {
