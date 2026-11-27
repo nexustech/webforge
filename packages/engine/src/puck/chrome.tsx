@@ -34,7 +34,6 @@ import {
   OVERLAY,
   SELECTED_COMPONENT,
   TABLE_ROW_WRAPPER,
-  WRAPPER_WHILE_DRAGGING,
   WRAPPING_ROW_ELEMENT,
 } from "./puck-dom.js";
 import { canPerform, performOnSelected } from "./selected-actions.js";
@@ -141,13 +140,6 @@ ${EMPTY_TABLE_BODY}::after {
  */
 :where(${WRAPPING_ROW_ELEMENT}) {
   height: 100%;
-}
-/*
- * While something is dragged (#1544): every row in its saved order, so a drop lands where it's
- * seen. Columns drawn last first swap back as the drag starts, and again once it ends.
- */
-${WRAPPER_WHILE_DRAGGING} {
-  order: 0 !important;
 }
 /* A hidden element (Layers' Hide): dimmed, still there to select and show again. */
 [${HIDDEN_ATTRIBUTE}] {
