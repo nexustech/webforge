@@ -241,7 +241,7 @@ describe("registerPreviewCommands (3.2)", () => {
     const [message, leftOut] = tell.mock.calls[1] ?? [];
     expect(message).toBe("Opened in your browser");
     expect(leftOut?.description).toBe(
-      "1 element on this page isn't published, so the preview leaves it out, as your website will.",
+      "1 item on this page isn't published, so the preview leaves it out, as your website will.",
     );
 
     // From another page, Show goes back to it and selects the element.

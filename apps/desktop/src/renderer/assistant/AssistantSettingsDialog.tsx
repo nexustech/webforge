@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   fieldControlClass,
+  UnsavedChanges,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { useEffect, useId, useState } from "react";
@@ -90,6 +91,8 @@ export function AssistantSettingsDialog({ open, onOpenChange, api }: AssistantSe
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
+        {/* A limit typed and not set yet; the sections report their own (#1439). */}
+        <UnsavedChanges changed={limit !== ""} />
         <DialogHeader>
           <DialogTitle>{t("assistant.settings.title")}</DialogTitle>
           <DialogDescription>{t("assistant.settings.description")}</DialogDescription>

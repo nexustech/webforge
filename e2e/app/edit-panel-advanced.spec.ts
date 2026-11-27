@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { clickOnCanvas } from "./canvas-click.js";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { CANVAS_START_TIMEOUT_MS, launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
 // The Edit panel's Advanced tab (Advanced mode, F-ED-11): CSS classes, attributes and the anchor
@@ -54,8 +54,11 @@ test("sets an element's anchor and classes on the Advanced tab, in Advanced mode
   const heading = canvas().locator(".site-heading");
   await expect(heading).toHaveAttribute("id", "welcome");
   await expect(heading).toHaveClass(/(^| )italic$/);
-  // The site's CSS is compiled with the new class too.
-  await expect(heading).toHaveCSS("font-style", "italic");
+  // The site's CSS is compiled with the new class too. Seconds after the app starts, the one
+  // canvas styles worker is still busy with the site's first compiles and the class catalogue
+  // Advanced mode loads, so on a cold, busy runner this compile waits behind them as the first did
+  // (#1617): Windows went past 5 s.
+  await expect(heading).toHaveCSS("font-style", "italic", { timeout: CANVAS_START_TIMEOUT_MS });
   // In Advanced mode, Layers shares the left column with Undo History, and comes first.
   await page.getByRole("tab", { name: "Undo History" }).click();
   await expect(steps()).toHaveText([

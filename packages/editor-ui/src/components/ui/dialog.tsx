@@ -1,35 +1,150 @@
 import { t } from "@webforge/i18n";
 import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import type { ComponentProps } from "react";
+import {
+  type ComponentProps,
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "../../lib/cn.js";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./alert-dialog.js";
+import { Button } from "./button.js";
+import { dialogStyles } from "./dialog-styles.js";
 import { useReturnFocus } from "./return-focus.js";
 
-/**
- * Overlay and panel classes shared with AlertDialog. The panel is centred across the window and
- * hangs from its top edge, a little below the title bar (`--dialog-top`, theme.css), so a change of
- * its height moves only its bottom edge and nothing jumps under the pointer (#1441). It's no taller
- * than the room below that (`--dialog-fit-height`), so the window's own controls are never over it
- * (#1411); a taller one scrolls, its rows kept at their own height rather than squashed (a
- * template's preview over its caption). A dialog with a fixed height sets it as `--dialog-height`
- * (`[--dialog-height:min(44rem,var(--dialog-max-height))] h-(--dialog-height)`), and rises as far
- * as it must to fit, up to 1rem under the title bar. One that sets a height without it is only
- * shortened to fit.
- */
-export const dialogStyles = {
-  overlay:
-    "fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
-  content:
-    "fixed top-[min(var(--dialog-top),calc(100dvh-1rem-var(--dialog-height,0px)))] left-1/2 z-50 grid max-h-[max(var(--dialog-fit-height),var(--dialog-height,0px))] auto-rows-max w-full max-w-[calc(100%-2rem)] -translate-x-1/2 gap-3 overflow-y-auto rounded-lg border border-border-strong bg-card p-4 text-card-foreground shadow-xl outline-none sm:max-w-md data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
-  header: "flex flex-col gap-1",
-  footer: "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-  title: "text-lg font-semibold",
-  description: "text-sm text-muted-foreground",
-} as const;
+export { dialogStyles };
 
-/** A modal dialog (Page Settings, Site Settings). */
-export function Dialog(props: ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
+/**
+ * What a dialog's content tells its {@link Dialog}: whether something in it has changed (#1439).
+ * Each part that reports does so under its own key, so one part with nothing changed doesn't hide
+ * another's changes.
+ */
+type Unsaved = {
+  readonly report: (key: symbol, changed: boolean) => void;
+  /** Whether some part has changes now, read as the dialog would close. */
+  readonly changed: () => boolean;
+};
+
+const UnsavedContext = createContext<Unsaved | null>(null);
+
+/**
+ * Says whether the dialog this is drawn in has changes that closing would throw away (#1439,
+ * MVP §7 item 66). While it has, a click outside doesn't close the dialog, and Esc or its X asks
+ * "Discard your changes?" first; with none, all three close it at once, as in a dialog that never
+ * calls this. Its own Cancel, Save, and anything else that sets `open` itself, close it without
+ * asking. For a dialog whose `open` is controlled.
+ */
+export function useUnsavedChanges(changed: boolean): void {
+  const unsaved = useContext(UnsavedContext);
+  const [key] = useState(() => Symbol("unsaved"));
+  // Before the browser paints, so a key pressed straight after a change already sees it.
+  useLayoutEffect(() => {
+    unsaved?.report(key, changed);
+    return () => unsaved?.report(key, false);
+  }, [unsaved, key, changed]);
+}
+
+/**
+ * {@link useUnsavedChanges} as an element, for a dialog whose state lives above its `Dialog`:
+ * drawn anywhere in its content.
+ */
+export function UnsavedChanges({ changed }: { readonly changed: boolean }) {
+  useUnsavedChanges(changed);
+  return null;
+}
+
+/**
+ * A modal dialog (Page Settings, Site Settings). One whose content has changes
+ * ({@link useUnsavedChanges}) asks before Esc or its X throws them away.
+ */
+export function Dialog({
+  onOpenChange,
+  children,
+  ...props
+}: ComponentProps<typeof DialogPrimitive.Root>) {
+  // The parts with changes. A ref, not state: read as the dialog would close, it holds the latest
+  // reports, not the last render's.
+  const changed = useRef(new Set<symbol>());
+  const [asking, setAsking] = useState(false);
+  const discarded = useRef(false);
+  const unsaved = useMemo<Unsaved>(
+    () => ({
+      report: (key, next) => {
+        if (next) changed.current.add(key);
+        else changed.current.delete(key);
+      },
+      changed: () => changed.current.size > 0,
+    }),
+    [],
+  );
+  return (
+    <UnsavedContext.Provider value={unsaved}>
+      <DialogPrimitive.Root
+        data-slot="dialog"
+        {...props}
+        onOpenChange={(next) => {
+          if (!next && unsaved.changed()) {
+            setAsking(true);
+            return;
+          }
+          onOpenChange?.(next);
+        }}
+      >
+        {children}
+      </DialogPrimitive.Root>
+      <AlertDialog
+        open={asking}
+        onOpenChange={(next) => {
+          // Esc on the question keeps editing.
+          if (!next) setAsking(false);
+        }}
+      >
+        <AlertDialogContent
+          // Discarded, the focus goes back with the dialog, to what opened it; kept editing, to the
+          // field the question was asked from.
+          onCloseAutoFocus={(event) => {
+            if (!discarded.current) return;
+            discarded.current = false;
+            event.preventDefault();
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("ui.unsaved.title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("ui.unsaved.description")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {/* The safe choice first, with the focus, as Theme Studio's question had it (4.10). */}
+            <AlertDialogCancel>{t("ui.unsaved.keepEditing")}</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                discarded.current = true;
+                setAsking(false);
+                // Straight to the dialog's own close: its changes stay counted, so a dialog that
+                // stays open (busy applying) still asks the next time.
+                onOpenChange?.(false);
+              }}
+            >
+              {t("ui.unsaved.discard")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </UnsavedContext.Provider>
+  );
 }
 
 /** The button that opens the dialog; use `asChild` around a {@link Button}. */
@@ -52,9 +167,11 @@ export function DialogContent({
   showClose = true,
   onOpenAutoFocus,
   onCloseAutoFocus,
+  onInteractOutside,
   ...props
 }: ComponentProps<typeof DialogPrimitive.Content> & { readonly showClose?: boolean }) {
   const returnFocus = useReturnFocus({ onOpenAutoFocus, onCloseAutoFocus });
+  const unsaved = useContext(UnsavedContext);
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay data-slot="dialog-overlay" className={dialogStyles.overlay} />
@@ -63,6 +180,11 @@ export function DialogContent({
         className={cn(dialogStyles.content, className)}
         {...props}
         {...returnFocus}
+        onInteractOutside={(event) => {
+          onInteractOutside?.(event);
+          // With changes, the largest target on screen doesn't throw them away (#1439).
+          if (unsaved?.changed() === true) event.preventDefault();
+        }}
       >
         {children}
         {showClose && (

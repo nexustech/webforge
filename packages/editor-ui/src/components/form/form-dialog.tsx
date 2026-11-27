@@ -9,6 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  useUnsavedChanges,
 } from "../ui/dialog.js";
 import { Form } from "./form-engine.js";
 import type { FormSpec, FormValues } from "./form-spec.js";
@@ -56,7 +57,9 @@ export type FormDialogProps<V extends FormValues, Out> = {
  * declare a {@link FormSpec} instead of drawing their own fields. In a window too short for the
  * whole form, the fields scroll between the title and the buttons, which stay in view (#1172).
  * With a side nav (`size="xl"`, Settings) it keeps one height whichever section is shown, no
- * taller than the window allows, and only the section's fields scroll (#1409).
+ * taller than the window allows, and only the section's fields scroll (#1409). With a value
+ * changed, a click outside doesn't close it, and Esc or the X asks "Discard your changes?" (#1439);
+ * Cancel closes it without asking.
  */
 export function FormDialog<V extends FormValues, Out>({
   open,
@@ -152,6 +155,8 @@ function FormDialogBody<V extends FormValues, Out>({
   onCancel,
 }: Omit<FormDialogProps<V, Out>, "open" | "size" | "help">) {
   const form = useForm(spec, initial);
+  // With a value changed, a click outside leaves it open, and Esc or the X asks first (#1439).
+  useUnsavedChanges(form.changed);
   const [keptRef, keptStyle] = useKeptHeight(keepHeight);
   // Whether Save was tried: a check the form's own content ran (Test Connection) isn't a save.
   const [saveTried, setSaveTried] = useState(false);

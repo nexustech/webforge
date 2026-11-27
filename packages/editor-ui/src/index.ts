@@ -113,6 +113,8 @@ export {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  UnsavedChanges,
+  useUnsavedChanges,
 } from "./components/ui/dialog.js";
 export {
   DropdownMenu,

@@ -1,4 +1,4 @@
-import { Button, fieldControlClass } from "@webforge/editor-ui";
+import { Button, fieldControlClass, useUnsavedChanges } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { useId, useState } from "react";
 import type { AssistantApi, AssistantStatus } from "../../shared/ipc/assistant.js";
@@ -38,6 +38,9 @@ export function ProviderSection({ status, api, onStatus }: ProviderSectionProps)
   const [code, setCode] = useState("");
   const [key, setKey] = useState("");
   const [said, setSaid] = useState<SignInStatus | undefined>(undefined);
+  // A code, key or address typed and not used yet: Assistant settings asks before losing it (#1439).
+  const savedAddress = status.provider.kind === "server" ? status.provider.baseUrl : "";
+  useUnsavedChanges((waiting === "code" && code !== "") || key !== "" || address !== savedAddress);
   /** Changes the provider in main, keeping the status it answers. */
   const use = (provider: Parameters<AssistantApi["update"]>[0]["provider"]) =>
     void api

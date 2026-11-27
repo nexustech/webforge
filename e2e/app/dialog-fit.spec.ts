@@ -633,6 +633,19 @@ const CASES: readonly FitCase[] = [
       return shown(page.getByRole("alertdialog"));
     },
   },
+  // A dialog with a change, closed with Esc (#1439).
+  {
+    name: "Confirm: discard your changes",
+    kind: "dialog",
+    open: async ({ app, page }) => {
+      await chooseFromMenu(app, page, "Site", "Site Settings…");
+      const settings = await shown(page.getByRole("dialog", { name: "Settings", exact: true }));
+      // Another name than the seeded site's, so something has changed.
+      await settings.getByRole("textbox", { name: "Site name" }).fill("Hightown Bakery");
+      await page.keyboard.press("Escape");
+      return shown(page.getByRole("alertdialog", { name: "Discard your changes?" }));
+    },
+  },
   {
     name: "Confirm: delete a picture",
     kind: "dialog",
@@ -897,7 +910,8 @@ const overlays = (page: Page) =>
   page.locator('[role="dialog"]:visible, [role="alertdialog"]:visible, [role="menu"]:visible');
 
 /**
- * Closes whatever a case left open: Escape, or Discard where Theme Studio asks about a draft.
+ * Closes whatever a case left open: Escape, or Discard where a dialog with changes asks first
+ * (#1439).
  * Whether everything closed.
  */
 async function closeAll(page: Page): Promise<boolean> {

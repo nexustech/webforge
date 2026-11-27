@@ -175,8 +175,9 @@ function pageRoots(site: SiteDoc, pageId: PageId): UnpublishedRoot[] {
  * only, so a section left out with five elements in it counts once. With `page`, those left out of
  * that page, as Preview draws it: its own, the Header's and Footer's unless it hides them, those of
  * the shared sections it shows and of its collection's design. Without, those of the whole site as
- * it's published: each place once, a shared section's only while a published page shows it, a
- * design's only while it has a published item, and none on a draft page.
+ * it's published: each place once, the Header's and Footer's and a shared section's only while a
+ * published page shows them, a design's only while it has a published item, and none on a draft
+ * page.
  */
 export function unpublishedRoots(
   site: SiteDoc,
@@ -188,8 +189,12 @@ export function unpublishedRoots(
     return entry === undefined || isDraftPage(site, entry) ? [] : [entry];
   });
   const found: UnpublishedRoot[] = [];
-  rootsIn(site.layout.header, "header", found);
-  rootsIn(site.layout.footer, "footer", found);
+  if (published.some((entry) => entry.settings.hideHeader !== true)) {
+    rootsIn(site.layout.header, "header", found);
+  }
+  if (published.some((entry) => entry.settings.hideFooter !== true)) {
+    rootsIn(site.layout.footer, "footer", found);
+  }
   for (const entry of published) rootsIn(entry.doc.content, entry.id, found);
   const shown = new Set(published.flatMap((entry) => shownSharedSections(entry.doc.content)));
   for (const entry of Object.values(site.sharedSections)) {

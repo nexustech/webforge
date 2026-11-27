@@ -55,7 +55,7 @@ const outermostRows = () =>
   tree()
     .getByRole("treeitem")
     .filter({ has: page.getByRole("button", { name: /^Not published\. Choose whether / }) })
-    .filter({ hasNotText: "as it's inside an element that isn't" });
+    .filter({ hasNotText: "as it's inside an item that isn't" });
 
 /** The toasts showing, not one closing, which Sonner keeps a moment as it leaves. */
 const toasts = () => page.locator('[data-sonner-toast]:not([data-removed="true"])');
@@ -86,12 +86,12 @@ test("the badge, Layers, Preview, Publish and Site Check name the same elements,
   await expect(unpublishedTip().getByRole("button", { name: /^Show / })).toHaveCount(2);
   const toast = await openPreview();
   await expect(toast).toContainText(
-    "2 elements on this page aren't published, so the preview leaves them out",
+    "2 items on this page aren't published, so the preview leaves them out",
   );
   // It waits to be closed: left open here, the next Preview's replaces it.
   const publish = await openPublish();
   await expect(publish).toContainText(
-    "2 elements aren't published, so they won't be on your website.",
+    "2 items aren't published, so they won't be on your website.",
   );
   await page.keyboard.press("Escape");
   await expect(publish).toHaveCount(0);
@@ -104,10 +104,10 @@ test("the badge, Layers, Preview, Publish and Site Check name the same elements,
   const findings = unpublishedTip().getByRole("button", { name: /^Show / });
   await expect(findings).toHaveCount(1);
   await expect(findings).toHaveAccessibleName(/^Show Section on /);
-  await expect(unpublishedTip()).toContainText("1 element isn't published");
+  await expect(unpublishedTip()).toContainText("1 item isn't published");
   const again = await openPreview();
   await expect(again).toContainText(
-    "1 element on this page isn't published, so the preview leaves it out",
+    "1 item on this page isn't published, so the preview leaves it out",
   );
   // One at a time, with today's count: the first one's 2 has gone.
   const counts = toasts().filter({ hasText: /published, so the preview/ });
@@ -123,7 +123,7 @@ test("the badge, Layers, Preview, Publish and Site Check name the same elements,
   await toolbar().getByRole("combobox", { name: "Page shown" }).selectOption({ index: 0 });
   const publishAgain = await openPublish();
   await expect(publishAgain).toContainText(
-    "1 element isn't published, so it won't be on your website.",
+    "1 item isn't published, so it won't be on your website.",
   );
 });
 
@@ -148,7 +148,7 @@ test("Show selects the element from another page, and in Content mode, without s
   await row("Section").click();
   await expect(editPanel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
   const toast = await openPreview();
-  await expect(toast).toContainText("1 element on this page isn't published");
+  await expect(toast).toContainText("1 item on this page isn't published");
   await toast.getByRole("button", { name: "Show", exact: true }).click();
   await expect(editPanel().getByRole("heading", { name: "Heading", exact: true })).toBeVisible();
   await expect(canvas().locator("h1[data-webforge-hidden]")).toHaveCount(1);
