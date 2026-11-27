@@ -132,8 +132,9 @@ export function Dialog({
               variant="destructive"
               onClick={() => {
                 discarded.current = true;
-                changed.current.clear();
                 setAsking(false);
+                // Straight to the dialog's own close: its changes stay counted, so a dialog that
+                // stays open (busy applying) still asks the next time.
                 onOpenChange?.(false);
               }}
             >

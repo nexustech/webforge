@@ -200,6 +200,27 @@ describe("a dialog with unsaved changes (#1439)", () => {
     });
   });
 
+  it("still asks the next time when a dialog stays open after Discard (busy applying)", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const closing = vi.fn();
+    render(
+      <Dialog open onOpenChange={closing}>
+        <DialogContent>
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>Your settings.</DialogDescription>
+          <NameField />
+        </DialogContent>
+      </Dialog>,
+    );
+    await user.type(screen.getByRole("textbox", { name: "Name" }), "page");
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Discard" }));
+    expect(closing).toHaveBeenCalledWith(false);
+    await user.keyboard("{Escape}");
+    expect(question()).not.toBeNull();
+    expect(closing).toHaveBeenCalledOnce();
+  });
+
   it("counts a change from any part of the dialog, not only the last to report", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     function TwoParts() {
