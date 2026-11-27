@@ -80,4 +80,46 @@ describe("preserveCaret", () => {
 
     expect(caret()).toEqual({ node: "outside", offset: 3 });
   });
+
+  /** Types `key` at the caret as a browser does: `beforeinput`, then the text, then the caret. */
+  function type(element: HTMLElement, key: string): void {
+    element.dispatchEvent(
+      new InputEvent("beforeinput", { inputType: "insertText", data: key, bubbles: true }),
+    );
+    const text = element.firstChild as Text;
+    const at = document.getSelection()?.focusOffset ?? text.length;
+    text.insertData(at, key);
+    caretAt(text, at + key.length);
+  }
+
+  it("leaves the caret where the person put it, after a change that didn't draw the field (#1613)", async () => {
+    // A click put the caret mid-word as a change that doesn't touch this field came in.
+    const element = field("Welcome");
+    caretAt(element.firstChild as Node, 4);
+    preserveCaret(document);
+    await flush();
+    // They move it to the end and type: the field changes by their keys, not by the change.
+    caretAt(element.firstChild as Node, 7);
+    for (const key of " today") {
+      type(element, key);
+      await flush();
+    }
+
+    expect(element.textContent).toBe("Welcome today");
+    expect(caret()).toEqual({ node: "Welcome today", offset: 13 });
+  });
+
+  it("puts each key after the last, with a change arriving between two keys (#1613)", async () => {
+    const element = field("Welcome");
+    caretAt(element.firstChild as Node, 7);
+    type(element, "!");
+    preserveCaret(document);
+    await flush();
+    type(element, "?");
+    await flush();
+    type(element, "!");
+    await flush();
+
+    expect(element.textContent).toBe("Welcome!?!");
+  });
 });
