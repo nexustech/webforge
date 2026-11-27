@@ -34,10 +34,12 @@ import type { FieldDef, ResolvedImage } from "../schema.js";
 import { SocialLogo, socialName } from "../social-icons.js";
 import { BODY_TEXT_CLASSES, BUTTON_CLASSES } from "../typography.js";
 import {
-  COLUMN_LAYOUT_CLASS,
   COLUMN_LAYOUTS,
+  COLUMN_LINE_UP_CLASS,
+  COLUMN_LINE_UPS,
   type ColumnLayout,
   ColumnsLayoutContext,
+  columnGridClasses,
   type ImageFrame,
   imageSizes,
   MAX_COLUMNS,
@@ -518,6 +520,23 @@ const columns = defineComponent({
       responsive: true,
       steps: COLUMN_GAPS.map((value) => ({ label: t(`field.columnGap.${value}`), value })),
     },
+    // Where the columns sit when one is taller than another (CP-14, #1544).
+    lineUp: {
+      kind: "select",
+      label: t("field.columnLineUp"),
+      help: t("field.columnLineUp.help"),
+      options: COLUMN_LINE_UPS.map((value) => ({ label: t(`field.columnLineUp.${value}`), value })),
+    },
+    // The columns drawn last first, on the devices chosen: two or three of them (CP-14, #1544).
+    lastFirst: {
+      kind: "toggle",
+      label: t("field.columnLastFirst"),
+      help: t("field.columnLastFirst.help"),
+      responsive: true,
+      shownWhen: (values) =>
+        Array.isArray(values.columns) &&
+        (values.columns.length === 2 || values.columns.length === 3),
+    },
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
@@ -542,7 +561,9 @@ const columns = defineComponent({
   render: ({ values, slots }) => {
     const Columns = slots.columns;
     const layout: Responsive<ColumnLayout> = values.layout;
-    const placing = responsiveClasses(layout, (value) => COLUMN_LAYOUT_CLASS[value]);
+    // A Columns saved before #1544 has neither field: drawn as before.
+    const placing = columnGridClasses(layout, values.lastFirst);
+    const lineUp = COLUMN_LINE_UP_CLASS[values.lineUp] ?? "";
     const gap = responsiveClasses(values.gap, (value) => COLUMN_GAP_CLASS[value]);
     return (
       <div
@@ -551,7 +572,7 @@ const columns = defineComponent({
       >
         <ColumnsLayoutContext value={layout}>
           {/* The grid is the slot's own element, so the canvas lays them out as the export does. */}
-          <Columns className={`grid ${placing} ${gap}`} />
+          <Columns className={`grid ${placing} ${gap}${lineUp === "" ? "" : ` ${lineUp}`}`} />
         </ColumnsLayoutContext>
       </div>
     );
