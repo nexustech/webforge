@@ -57,10 +57,13 @@ const outermostRows = () =>
     .filter({ has: page.getByRole("button", { name: /^Not published\. Choose whether / }) })
     .filter({ hasNotText: "as it's inside an element that isn't" });
 
+/** The toasts showing, not one closing, which Sonner keeps a moment as it leaves. */
+const toasts = () => page.locator('[data-sonner-toast]:not([data-removed="true"])');
+
 /** Opens Preview, and gives the toast that says it opened. */
 async function openPreview() {
   await page.getByRole("banner").getByRole("button", { name: "Preview", exact: true }).click();
-  const toast = page.locator("[data-sonner-toast]").filter({ hasText: "Opened in your browser" });
+  const toast = toasts().filter({ hasText: "Opened in your browser" });
   await expect(toast).toBeVisible();
   return toast;
 }
@@ -107,15 +110,16 @@ test("the badge, Layers, Preview, Publish and Site Check name the same elements,
     "1 element on this page isn't published, so the preview leaves it out",
   );
   // One at a time, with today's count: the first one's 2 has gone.
-  const counts = page
-    .locator("[data-sonner-toast]")
-    .filter({ hasText: /published, so the preview/ });
+  const counts = toasts().filter({ hasText: /published, so the preview/ });
   await expect(counts).toHaveCount(1);
   // A page that leaves nothing out takes it away.
   await toolbar().getByRole("combobox", { name: "Page shown" }).selectOption("Page not found");
   await expect(canvas().locator("h1")).toHaveText("Sorry, this page doesn't exist");
-  await openPreview();
+  // Sonner closes the old one a frame after showing the new one, so this counts rather than
+  // asking for the one toast, which a strict match would fail at once.
+  await page.getByRole("banner").getByRole("button", { name: "Preview", exact: true }).click();
   await expect(counts).toHaveCount(0);
+  await expect(toasts().filter({ hasText: "Opened in your browser" })).toHaveCount(1);
   await toolbar().getByRole("combobox", { name: "Page shown" }).selectOption({ index: 0 });
   const publishAgain = await openPublish();
   await expect(publishAgain).toContainText(
