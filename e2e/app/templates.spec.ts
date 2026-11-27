@@ -99,6 +99,9 @@ for (const template of TEMPLATES) {
     if (opened === undefined) throw new Error("Not measured");
     const work = await opened();
     openings.push(work.wallMs);
+    // Every opening's steps, beside its [work] line: a wait within a backstop shows too, as one of
+    // about 4.5 s did on Windows, whose backstop is 30 s (#1560).
+    console.log(`[steps] ${template.title}: ${await stepsSince(running(), pressed)}`);
     // Over its budget, judged again against the runner as it is then (#1466). A miss names each
     // step main timed after Create, so a wait shows where it was (#1560).
     await expectWorkWithin(
