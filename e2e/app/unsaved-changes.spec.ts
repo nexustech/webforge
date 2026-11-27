@@ -23,6 +23,8 @@ const question = () => page.getByRole("alertdialog", { name: "Discard your chang
 /** A click on the dimmed area, in the window's bottom left corner, clear of every dialog. */
 async function clickOutside() {
   const size = page.viewportSize() ?? { width: 1280, height: 800 };
+  // Once the menu it was opened from has gone: until then a click outside is the menu's.
+  await expect(page.getByRole("menu")).toHaveCount(0);
   await page.mouse.click(8, size.height - 8);
 }
 
@@ -45,8 +47,9 @@ const CASES: readonly Case[] = [
   },
   {
     name: "Settings",
+    // On the site's own section, where its name is.
     open: async () => {
-      await page.keyboard.press("ControlOrMeta+Comma");
+      await chooseFromMenu(app, page, "Site", "Site Settings…");
       return page.getByRole("dialog", { name: "Settings", exact: true });
     },
     change: (dialog) => dialog.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery"),
@@ -64,7 +67,8 @@ const CASES: readonly Case[] = [
       await page.getByRole("menuitem", { name: "Page Settings…" }).click();
       return page.getByRole("dialog", { name: /^Settings for / });
     },
-    change: (dialog) => dialog.getByRole("textbox", { name: "File name" }).fill("our-story"),
+    // The Home page's: its file name is fixed, its title isn't.
+    change: (dialog) => dialog.getByRole("textbox", { name: "Title" }).fill("Welcome"),
   },
 ];
 

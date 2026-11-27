@@ -637,8 +637,8 @@ const CASES: readonly FitCase[] = [
   {
     name: "Confirm: discard your changes",
     kind: "dialog",
-    open: async ({ page }) => {
-      await page.keyboard.press("ControlOrMeta+Comma");
+    open: async ({ app, page }) => {
+      await chooseFromMenu(app, page, "Site", "Site Settings…");
       const settings = await shown(page.getByRole("dialog", { name: "Settings", exact: true }));
       await settings.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
       await page.keyboard.press("Escape");
