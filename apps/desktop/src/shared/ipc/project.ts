@@ -81,7 +81,8 @@ export type SaveSiteZipResult = z.infer<typeof saveSiteZipResultSchema>;
 /**
  * The copy the open site has from before an update (#1525, UC-2): its file as an older Webforge
  * wrote it, kept before this one first wrote it in a newer format. `first` and `last` are the
- * releases that wrote that format before this one, `null` when no release did.
+ * releases before this one that open its formats (the same one when only one does), `null` when
+ * none does.
  */
 const keptCopySchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("none") }),
