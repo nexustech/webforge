@@ -16,6 +16,7 @@ export const FindReplace: Story = panelStory((panels, session) =>
     panels,
     commands: createCommandRegistry(),
     settings: createSettingsRegistry(),
+    pageSettings: { show: () => undefined },
     siteWide: { confirmSiteWide: async () => true },
   }),
 );

@@ -187,6 +187,14 @@ const keychain = process.platform === "win32" || process.platform === "darwin";
 /** Whether macOS's menu bar holds the menus, so the title bar has none (LF-13). */
 const nativeMenus = process.platform === "darwin";
 
+/** Page Settings' tabs, each chosen in turn (#1443): through which its top stays put. */
+const pageSettingsTabs: readonly Change[] = ["Search engines", "Social & sharing", "General"].map(
+  (tab): Change => ({
+    name: `the ${tab} tab`,
+    run: (target) => target.getByRole("tab", { name: tab, exact: true }).click(),
+  }),
+);
+
 const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");
 
 /**
@@ -357,6 +365,18 @@ const CASES: readonly FitCase[] = [
       await page.getByRole("menuitem", { name: "Page Settings…" }).click();
       return shown(page.getByRole("dialog", { name: /^Settings for / }));
     },
+    changes: pageSettingsTabs,
+  },
+  // An ordinary page's: all its toggles, the longest form (#1443).
+  {
+    name: "Page Settings for About us",
+    kind: "dialog",
+    open: async ({ page }) => {
+      await pageActions(page, "About us");
+      await page.getByRole("menuitem", { name: "Page Settings…" }).click();
+      return shown(page.getByRole("dialog", { name: "Settings for 'About us'" }));
+    },
+    changes: pageSettingsTabs,
   },
   {
     name: "Add Page",
@@ -694,6 +714,36 @@ const CASES: readonly FitCase[] = [
       await page.keyboard.press("ControlOrMeta+f");
       return shown(page.getByRole("region", { name: "Bottom panel" }));
     },
+  },
+  // A post's: its Date, Summary, Picture and Tags too (#1443). Last, as it adds a Blog to the
+  // site: Add Page › Blog shows its first post, and the Home page is shown again, as the other
+  // cases expect it.
+  {
+    name: "Page Settings for a blog post",
+    kind: "dialog",
+    open: async ({ page }) => {
+      const panel = await sideTab(page, "Right", "Site");
+      await panel.getByRole("button", { name: "Add Page" }).click();
+      await page.getByRole("menuitem", { name: "Blog", exact: true }).click();
+      // Its first post shown, which can switch the column to another tab: the Site tab again.
+      const pages = (await sideTab(page, "Right", "Site")).getByRole("list", { name: "Pages" });
+      await expect(pages.getByRole("button", { name: /^Our first post/ }).first()).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      // A page's button is named by its title, then what else it says of the page.
+      await pages.getByRole("button", { name: /^Home/ }).first().click();
+      await expect(pages.getByRole("button", { name: /^Home/ }).first()).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      await pageActions(page, "Our first post");
+      await page.getByRole("menuitem", { name: "Page Settings…" }).click();
+      const settings = page.getByRole("dialog", { name: "Settings for 'Our first post'" });
+      await expect(settings.getByRole("textbox", { name: "Date" })).toBeVisible();
+      return shown(settings);
+    },
+    changes: pageSettingsTabs,
   },
 ];
 

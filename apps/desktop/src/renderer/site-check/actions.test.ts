@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { insertBlog, insertPost } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
-import { confirmFor, jumpTo, type SiteCheckActions } from "./actions.js";
+import { confirmFor, fixFor, jumpTo, type SiteCheckActions } from "./actions.js";
 import { describePlace } from "./describe.js";
 
 const BLOG = "blog" as CollectionId;
@@ -23,6 +23,7 @@ function setUp() {
     panels,
     settings: { show: vi.fn() },
     commands: { run: vi.fn() },
+    pageSettings: { show: vi.fn() },
     openGuide: vi.fn(),
   };
   return { session, title, panels, actions };
@@ -96,5 +97,27 @@ describe("This Is Correct on a text marked as an example (#1228)", () => {
     expect(confirmFor("sampleDetails", finding(), actions)).toBeUndefined();
     session.history.undo();
     expect(isExample(marked(), field)).toBe(true);
+  });
+});
+
+describe("Fixes that open Page Settings (#1443)", () => {
+  it("open it on Search engines for a page's description, on General for a link to a draft", () => {
+    const { session, actions } = setUp();
+    const site = session.history.document.getState();
+    const page = site.pageOrder.find((id) => id !== site.homePageId) ?? site.homePageId;
+
+    fixFor("pageDescriptions", { key: "d", place: { kind: "page", pageId: page } }, actions)?.();
+    expect(session.ui.getState().pageId).toBe(page);
+    expect(actions.pageSettings.show).toHaveBeenLastCalledWith("search");
+
+    // Draft is on General.
+    const link: Finding = {
+      key: "l",
+      place: { kind: "page", pageId: site.homePageId },
+      values: { pageId: page, draftPage: "About" },
+    };
+    fixFor("draftLinks", link, actions)?.();
+    expect(session.ui.getState().pageId).toBe(page);
+    expect(actions.pageSettings.show).toHaveBeenLastCalledWith("general");
   });
 });

@@ -85,6 +85,21 @@ export function FormDialog<V extends FormValues, Out>({
           size === "xl" &&
             "[--dialog-height:min(44rem,var(--dialog-max-height))] h-(--dialog-height) sm:max-w-3xl",
         )}
+        // A form on tabs across its top (Page Settings, #1443): the first field of the tab shown,
+        // not its tab, so typing still goes into it. A side nav's (Settings') keeps its own.
+        onOpenAutoFocus={(event) => {
+          const content = event.target instanceof HTMLElement ? event.target : null;
+          const field = content
+            ?.querySelector('[role="tablist"][aria-orientation="horizontal"]')
+            ?.closest('[data-slot="form-fields"]')
+            ?.querySelector<HTMLElement>(
+              '[role="tabpanel"][data-state="active"] :is(input, textarea, select):not(:disabled)',
+            );
+          if (field === null || field === undefined) return;
+          event.preventDefault();
+          field.focus();
+          if (field instanceof HTMLInputElement) field.select();
+        }}
       >
         <FormDialogBody {...body} onCancel={onCancel} />
         {/* Last, so the dialog's first field still takes the focus as it opens. */}

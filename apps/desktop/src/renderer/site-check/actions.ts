@@ -22,6 +22,7 @@ import type { EditorSession } from "../editor/editor-session.js";
 import { quotedElementName } from "../editor/labels.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
 import { showElement } from "../editor/show-element.js";
+import type { PageSettingsOpener } from "../editor/window-services.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -38,8 +39,10 @@ export type SiteCheckActions = {
   >;
   readonly panels: Pick<PanelRegistry, "show">;
   readonly settings: Pick<SettingsRegistry, "show">;
-  /** Runs Page Settings… for the page shown (3.17). */
+  /** Runs the stylesheet's and Publish's commands. */
   readonly commands: Pick<CommandRegistry, "run">;
+  /** Page Settings for the page shown, on the tab a fix needs (3.17, #1443). */
+  readonly pageSettings: PageSettingsOpener;
   /** Opens a guide's page on another website in the browser (3.17). */
   readonly openGuide: (guide: SearchGuide) => void;
   /** Download and bundle (3.9), where the window offers it. */
@@ -83,7 +86,11 @@ function showCode(settings: SiteCheckActions["settings"]): void {
  * Media, the Theme panel, Site Settings at the web address, Contact or Search engines, or Settings'
  * Custom Code. A guide opens its page in the browser.
  */
-export function jumpTo(place: FindingPlace, actions: SiteCheckActions): void {
+export function jumpTo(
+  place: FindingPlace,
+  // A jump never opens Page Settings: only a fix does.
+  actions: Omit<SiteCheckActions, "pageSettings">,
+): void {
   const { session, panels, settings } = actions;
   const site = session.history.document.getState();
   switch (place.kind) {
@@ -243,18 +250,20 @@ export function fixFor(
   if (rule === "forms" && finding.values?.form === "service") {
     return () => showSiteSettings(actions.settings, "forms");
   }
-  // A link to a draft page (G37, #864): its Page Settings, where the page is published.
+  // A link to a draft page (G37, #864): its Page Settings, where the page is published: Draft is
+  // on General.
   const draftPage = finding.values?.pageId;
   if (rule === "draftLinks" && typeof draftPage === "string" && isPageIn(site.pages, draftPage)) {
     return () => {
       actions.session.showPage(draftPage);
-      actions.commands.run(COMMAND_IDS.pageSettings);
+      actions.pageSettings.show("general");
     };
   }
+  // The description is on Search engines, with the search result it makes (#1443).
   if (rule === "pageDescriptions" && place.kind === "page") {
     return () => {
       actions.session.showPage(place.pageId);
-      actions.commands.run(COMMAND_IDS.pageSettings);
+      actions.pageSettings.show("search");
     };
   }
   // A site that collects visitors' details with no privacy page: add one, written from Site
