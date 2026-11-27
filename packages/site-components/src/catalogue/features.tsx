@@ -11,12 +11,20 @@ import { BodyText, SectionIntro, SectionTitle } from "../typography.js";
 const FEATURES_LAYOUTS = ["cards", "centred", "list"] as const;
 type FeaturesLayout = (typeof FEATURES_LAYOUTS)[number];
 
-/** The grid each layout lays its features out in, the slot's own element (docs/components.md). */
-const GRID_CLASS = {
-  cards: CARD_ROWS.threeGap6,
-  centred: CARD_ROWS.threeGap10,
-  list: CARD_ROWS.twoGap8,
-} as const satisfies Record<FeaturesLayout, string>;
+/** The cards layout's *Card height*: every card as tall as the tallest, or each its own height. */
+const CARD_HEIGHTS = ["same", "fit"] as const;
+
+/**
+ * The grid each layout lays its features out in, the slot's own element (docs/components.md).
+ * Cards are the same height on every row unless *Card height* is *Fit the text*; one saved
+ * before there was a setting has none, which reads as *Same height* (#1511). The other layouts
+ * have no card box, so each row keeps the height of its tallest feature.
+ */
+function gridClass(layout: FeaturesLayout, cardHeight: unknown): string {
+  if (layout === "centred") return CARD_ROWS.threeGap10;
+  if (layout === "list") return CARD_ROWS.twoGap8;
+  return cardHeight === "fit" ? `${CARD_ROWS.threeGap6} items-start` : CARD_ROWS.threeGap6EveryRow;
+}
 
 /** The layout of the Features section a feature is in, and its cards' hover effect's classes. */
 const FeaturesContext = createContext<{ readonly layout: FeaturesLayout; readonly hover: string }>({
@@ -45,6 +53,14 @@ const features = defineSection({
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "richtext", label: t("field.text"), inline: true },
     items: { kind: "slot", label: t("field.features"), allow: ["Feature"] },
+    cardHeight: {
+      kind: "select",
+      label: t("field.cardHeight"),
+      help: t("field.cardHeight.help"),
+      options: CARD_HEIGHTS.map((value) => ({ label: t(`field.cardHeight.${value}`), value })),
+      // Only cards have a box whose height shows.
+      shownWhen: (values) => values.variant === "cards",
+    },
     // Every card alike under the pointer, those added later too (F-DS-5, 2.12).
     ...CARD_HOVER_FIELDS,
   },
@@ -73,7 +89,7 @@ const features = defineSection({
           <SectionIntro className="mt-4">{values.text}</SectionIntro>
         </div>
         <FeaturesContext value={{ layout: values.variant, hover: hoverClasses(values) }}>
-          <Items className={GRID_CLASS[values.variant]} />
+          <Items className={gridClass(values.variant, values.cardHeight)} />
         </FeaturesContext>
       </div>
     );

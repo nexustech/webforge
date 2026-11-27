@@ -11,6 +11,7 @@
     "packaged",
     "perf",
     "visual",
+    "card-rows.ts",
     "no-motion.ts",
     "playwright.config.ts",
     "playwright.packaged.config.ts",
