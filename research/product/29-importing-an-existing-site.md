@@ -9,6 +9,7 @@
 ## 1. What is decided and built already
 
 - **Importing existing websites is out of scope** (C3, [MVP spec §5](../../spec/02-mvp-spec.md)).
+- **"Bring your current site" was proposed and not taken** (WN-1, [competitors/05](../competitors/05-webnode.md), 20 Nov 2026): from the quick start, the owner gives their old site's address, and the Assistant or an AI app reads its pages and fills the new site with their words, contact details and page list, never markup or design; 3 to 5 days, v1.1. Webnode shipped this in March 2026. This note looks at the same question more widely, and §8 records what reopens.
 - **The help page _Moving from another website builder_** (UC-5, [#1526](https://github.com/nexustech/webforge/issues/1526), Phase 5, open) is today's answer to "can I bring my site?": bring your words and pictures across by hand.
 - **Old addresses keep working after a rename** (#862). When a published page's file name changes, the old address gets a small page that sends visitors on; on Netlify, and on Apache hosts once the destination's switch is on, it redirects for good. They are listed in **Site Settings › Search engines**, where they can be removed. An address can't be added there by hand, and each is a file name ending `.html`.
 - **An AI app works on the open site** through the bridge (4.9): it reads and changes pages, sections, text, Site Settings and the theme. **It never adds a picture, and Webforge downloads nothing:** the app asks, and the owner chooses files (`docs/help/ai-apps.md`).
@@ -54,7 +55,7 @@
 | Framer        | A few elements at a time                                           | A live page, by a browser extension | No animations or screen sizes                                                                              |
 | Webflow       | Rows into its collections                                          | A spreadsheet file                  | No HTML                                                                                                    |
 
-Nothing was found for Carrd, Webnode, Jimdo or Durable.
+**Webnode** rebuilds a site from its address as a Webnode site (AI Migration, March 2026; [competitors/05](../competitors/05-webnode.md)). Nothing was found for Carrd, Jimdo or Durable.
 
 ### 3.3 Rebuilding from an address with AI
 
@@ -146,7 +147,7 @@ The product owner, 27 Nov 2026. Quoted words are the answers chosen.
 
 | ID   | Decision                                                                                                                                                                                                                                                                                                                                                                              |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| IM-1 | ✅ **"Yes, reword":** copying another site's design, layout, template or stock pictures stays out of scope; bringing the owner's words, own pictures, page list, business's details and old addresses is in                                                                                                                                                                           |
+| IM-1 | ✅ **"Yes, reword":** copying another site's design, layout, template or stock pictures stays out of scope; bringing the owner's words, own pictures, page list, business's details and old addresses is in. This reopens C3 in the narrow form WN-1 asked for; WN-1's own entry from the quick start stays not taken, and IM-6 is where it is decided                                |
 | IM-2 | ❌ **Not adopted.** No moving checklist is added to the help; #1526's page stays as planned                                                                                                                                                                                                                                                                                           |
 | IM-3 | ✅ **"Yes, at v1.1":** an old address added by hand, with or without `.html`. About 2 days; an item when v1.1 is planned                                                                                                                                                                                                                                                              |
 | IM-4 | ✅ **Adopted:** the AI route is tried on a real old site and written up; about half a day of the product owner's time and half a day of writing                                                                                                                                                                                                                                       |
