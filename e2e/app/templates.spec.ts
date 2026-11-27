@@ -27,6 +27,28 @@ let app: ElectronApplication | undefined;
 const openings: number[] = [];
 
 /** The app this test launched. */
+/** A step main timed in an opening (`step-timings.ts`, #1560): durations under fixed names only. */
+type TimedStep = { readonly step: string; readonly ms: number; readonly at: number };
+
+/**
+ * The steps main timed after `since` (#1560): each one's time and when it ended, in ms after
+ * `since`, so the time no step accounts for shows between them.
+ */
+async function stepsSince(app: ElectronApplication, since: number): Promise<string> {
+  const steps = await app.evaluate(
+    () =>
+      (
+        globalThis as { webforgeStepTimings?: () => readonly TimedStep[] }
+      ).webforgeStepTimings?.() ?? [],
+  );
+  const after = steps.filter((each) => each.at >= since);
+  return after.length === 0
+    ? "Main timed no steps after Create."
+    : `Each step after Create, its ms (and when it ended, after Create): ${after
+        .map((each) => `${each.step} ${each.ms} (+${each.at - since})`)
+        .join(", ")}`;
+}
+
 function running(): ElectronApplication {
   if (app === undefined) throw new Error("The app is not running");
   return app;
@@ -49,12 +71,6 @@ test.afterEach(async () => {
 
 for (const template of TEMPLATES) {
   test(`makes a ${template.title} site within its opening budget, accessible on the canvas (2.15)`, async () => {
-    // Quarantined (#1560): waited about 5.8 s without working once on Linux CI, over the opening's
-    // backstop, and passed on its re-run. #1560 finds why and brings it back.
-    test.fixme(
-      template.title === "Salon / Beauty",
-      "#1560: over its opening backstop once on Linux",
-    );
     app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
     const page = await app.firstWindow();
     await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
@@ -63,8 +79,10 @@ for (const template of TEMPLATES) {
     await stubFileDialogs(app, join(dir, "Site.wforge"));
 
     let opened: (() => Promise<Work>) | undefined;
+    let pressed = 0;
     await createFromTemplate(page, template, async () => {
       opened = await measureWork(running());
+      pressed = Date.now();
     });
     const canvas = page.frameLocator(".editor__canvas iframe");
     await expect(canvas.locator("h1", { hasText: template.heading })).toBeVisible({
@@ -73,13 +91,17 @@ for (const template of TEMPLATES) {
     if (opened === undefined) throw new Error("Not measured");
     const work = await opened();
     openings.push(work.wallMs);
-    // Over its budget, judged again against the runner as it is then (#1466).
+    // Over its budget, judged again against the runner as it is then (#1466). A miss names each
+    // step main timed after Create, so a wait shows where it was (#1560).
     await expectWorkWithin(
       work,
       await openBudget(running()),
       `Opening the ${template.title} site`,
       () => openBudget(running(), { fresh: true }),
-    );
+    ).catch(async (error: unknown) => {
+      const said = error instanceof Error ? error.message : String(error);
+      throw new Error(`${said}\n${await stepsSince(running(), pressed)}`);
+    });
     await expect(canvas.locator("main img, section img").first()).not.toHaveJSProperty(
       "naturalWidth",
       0,

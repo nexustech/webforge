@@ -155,10 +155,29 @@ export type OpenProjectOptions = {
   readonly readOnly?: boolean;
 };
 
+/** The steps of making a new project, as {@link CreateProjectOptions.timed} is told them (#1560). */
+export type CreateProjectStep =
+  | "make the file"
+  | "first commit"
+  | "move into place"
+  | "check the new file";
+
+/**
+ * Runs `run` as `step` for whoever wants each step's time (#1560), returning what `run` returns
+ * and throwing what it throws.
+ */
+export type CreateStepTimer = <T>(step: CreateProjectStep, run: () => T) => T;
+
 /** Options for {@link ProjectStore.create}. */
 export type CreateProjectOptions = {
   /** Site name, e.g. "Rosa's Bakery". */
   readonly name: string;
+  /**
+   * Wraps each step of making the file (#1560): the new file and its connection, its first commit
+   * (the schema, written with `synchronous = FULL`), the rename into place, and the checks it
+   * opens with. Without it, the steps run as they are.
+   */
+  readonly timed?: CreateStepTimer;
 };
 
 /**

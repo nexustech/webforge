@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { changedDocuments, createSite, type SiteDoc } from "@webforge/model";
-import { ProjectStore } from "@webforge/storage";
+import { type CreateStepTimer, ProjectStore } from "@webforge/storage";
 import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProjectSession } from "./project-session.js";
@@ -34,6 +34,16 @@ async function timed<T>(step: string, run: () => Promise<T> | T): Promise<T> {
   }
 }
 
+/** The store's own steps in making the file (#1560), timed into the same list. */
+const storeSteps: CreateStepTimer = (step, run) => {
+  const start = performance.now();
+  try {
+    return run();
+  } finally {
+    steps.push(`${step} ${Math.round(performance.now() - start)}`);
+  }
+};
+
 beforeEach(async ({ onTestFailed }) => {
   steps.length = 0;
   running = undefined;
@@ -51,7 +61,9 @@ beforeEach(async ({ onTestFailed }) => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-11-01T09:00:00"));
   site = createSite({ name: "Bakery", language: "en", homeTitle: "Home", notFoundTitle: "404" });
-  const store = await timed("create", () => ProjectStore.create(path(), { name: "Bakery" }));
+  const store = await timed("create", () =>
+    ProjectStore.create(path(), { name: "Bakery", timed: storeSteps }),
+  );
   await timed("save", () => store.saveSite(site));
   store.close();
   session = new ProjectSession({}, { dailyVersion: { kept: () => 2 } });

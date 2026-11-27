@@ -9,6 +9,7 @@ import type { PreferencesStore } from "./preferences.js";
 import { createSecureWebPreferences } from "./security.js";
 import { installContextMenu, spellCheckAvailable } from "./spellcheck.js";
 import { markStartup } from "./startup-timing.js";
+import { markStep } from "./step-timings.js";
 import {
   editorPageAddress,
   MIN_WINDOW_SIZE,
@@ -85,6 +86,10 @@ export function createMainWindows(deps: MainWindowDeps): MainWindows {
       markStartup("window-created");
       // Zoomed in, the smallest window grows, capped by the screen the window opens on.
       fitWindowToZoom(window, interfaceZoom, workAreaOf(window));
+      // The canvas's frame loading, for the E2E tests' step times only (#1560).
+      window.webContents.on("did-frame-finish-load", (_event, isMainFrame) => {
+        if (!isMainFrame) markStep("a frame finished loading");
+      });
       // Spelling suggestions, Add to Dictionary, Cut, Copy and Paste on right-clicks (F-ED-19).
       installContextMenu(window, (template) => electron.Menu.buildFromTemplate(template));
       // Maximised the first time, so the canvas gets the room (ADR 0008). Maximising shows the

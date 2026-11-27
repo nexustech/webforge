@@ -5,6 +5,7 @@ import { BLANK_TEMPLATE_ID, siteFromTemplate, type TemplateId } from "@webforge/
 import { readTemplate, type TemplateFolder } from "@webforge/templates/node";
 import { themePreset } from "@webforge/themes";
 import type { NewSiteRequest } from "../shared/ipc/project.js";
+import { timeStep, timeStepLater } from "./step-timings.js";
 import type { StorageWriter } from "./storage-writer.js";
 
 /** What New Site makes of a new site (2.14a): its name, and what writes its content. */
@@ -74,11 +75,10 @@ export async function fillNewSite(
   // The quick start's own colours on the preset (3.11b), or the preset as it is.
   const theme = request.themeTokens ?? themePreset(request.theme) ?? DEFAULT_THEME;
   const folder = template(request.template ?? BLANK_TEMPLATE_ID);
-  for (const image of folder.images) {
-    const outcome = await target.importFile(
-      image.mediaId,
-      image.file,
-      join(folder.imagesDir, image.file),
+  for (const [index, image] of folder.images.entries()) {
+    // Numbered, never named, in the E2E tests' step times (#1560).
+    const outcome = await timeStepLater(`image ${index + 1} of ${folder.images.length}`, () =>
+      target.importFile(image.mediaId, image.file, join(folder.imagesDir, image.file)),
     );
     if (outcome.status !== "stored" || outcome.hash !== image.hash) {
       throw new Error(
@@ -86,12 +86,11 @@ export async function fillNewSite(
       );
     }
   }
-  target.store.saveSite(
-    siteFromTemplate(folder.template, folder.images, {
-      name: request.name,
-      theme,
-      ...(request.business === undefined ? {} : { business: request.business }),
-      ...(request.pages === undefined ? {} : { pages: request.pages }),
-    }),
-  );
+  const site = siteFromTemplate(folder.template, folder.images, {
+    name: request.name,
+    theme,
+    ...(request.business === undefined ? {} : { business: request.business }),
+    ...(request.pages === undefined ? {} : { pages: request.pages }),
+  });
+  timeStep("save the site", () => target.store.saveSite(site));
 }
