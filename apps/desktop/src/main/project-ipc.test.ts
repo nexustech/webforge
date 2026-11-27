@@ -538,6 +538,8 @@ describe("the copy from before an update (#1525)", () => {
       keptAt: "2026-11-27T10:00:00.000Z",
       size: 4,
     });
+    // Found by the site's id and its file's path.
+    expect(backups.keptBeforeUpdate).toHaveBeenCalledWith("project-1", "/sites/Bakery.wforge");
     // Formats no release opens: none named.
     const unnamed = setUp(
       {},

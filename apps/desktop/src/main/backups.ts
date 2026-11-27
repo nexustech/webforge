@@ -7,6 +7,7 @@ import {
   renameSync,
   rmSync,
   statSync,
+  utimesSync,
 } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import type { ProjectStore, StoredFormats } from "@webforge/storage";
@@ -34,8 +35,17 @@ export class KeepCopyError extends Error {
   }
 }
 
-/** `before-update-format-2-site-22.wforge`: the kept copy, by the formats it holds. */
-const KEPT_NAME = /^before-update-format-(\d+)-site-(\d+)\.wforge$/;
+/**
+ * `before-update-3f2a9c41b07e-format-2-site-22.wforge`: the kept copy, by the site file's path (a
+ * short key of it) and the formats it holds. A file copied in Explorer or Finder keeps its site's
+ * id, so the path keeps each copy's own (#1525).
+ */
+const KEPT_NAME = /^before-update-([0-9a-f]{12})-format-(\d+)-site-(\d+)\.wforge$/;
+
+/** The short key of a site file's path that a kept copy is named by. */
+function keptKey(sitePath: string): string {
+  return pathKey(sitePath).slice(0, 12);
+}
 
 /** A backup of a site, newest first in {@link Backups.list}. */
 export type BackupInfo = {
@@ -161,18 +171,24 @@ export function createBackups(options: BackupOptions) {
     keepBeforeUpdate(sourcePath: string, projectId: string, formats: StoredFormats): KeptCopy {
       const { fileFormat, siteFormat } = formats;
       const folder = join(options.root, projectId);
-      const path = join(folder, `before-update-format-${fileFormat}-site-${siteFormat}.wforge`);
+      const key = keptKey(sourcePath);
+      const name = `before-update-${key}-format-${fileFormat}-site-${siteFormat}.wforge`;
+      const path = join(folder, name);
       const incoming = `${path}.tmp`;
       try {
         mkdirSync(folder, { recursive: true });
         copyFileSync(sourcePath, incoming);
+        // Stamped when it was kept: a copy keeps the site file's own time on Windows and macOS.
+        const keptAt = now();
+        utimesSync(incoming, keptAt, keptAt);
         renameSync(incoming, path);
-        for (const name of readdirSync(folder)) {
-          if (KEPT_NAME.test(name) && join(folder, name) !== path) {
-            rmSync(join(folder, name), { force: true });
+        // This file's earlier copy goes; a copy of the same site under another path stays.
+        for (const other of readdirSync(folder)) {
+          if (other !== name && KEPT_NAME.exec(other)?.[1] === key) {
+            rmSync(join(folder, other), { force: true });
           }
         }
-        return { path, fileFormat, siteFormat, keptAt: now(), size: statSync(path).size };
+        return { path, fileFormat, siteFormat, keptAt, size: statSync(path).size };
       } catch (error) {
         // A copy cut short by a full disk is no use, and takes the room it needs.
         rmSync(incoming, { force: true });
@@ -180,24 +196,36 @@ export function createBackups(options: BackupOptions) {
       }
     },
 
-    /** The copy kept of the site with `projectId` from before an update, if there is one. */
-    keptBeforeUpdate(projectId: string): KeptCopy | undefined {
+    /**
+     * The copy kept from before an update of the site with `projectId`, open at `sitePath`, if
+     * there is one: the copy of that file, or else the site's newest, for a file moved or renamed
+     * since its copy was kept.
+     */
+    keptBeforeUpdate(projectId: string, sitePath: string): KeptCopy | undefined {
       const folder = join(options.root, projectId);
       if (!existsSync(folder)) return undefined;
-      for (const name of readdirSync(folder)) {
+      const key = keptKey(sitePath);
+      const kept = readdirSync(folder).flatMap((name): (KeptCopy & { key: string })[] => {
         const match = KEPT_NAME.exec(name);
-        if (match === null) continue;
+        if (match === null) return [];
         const path = join(folder, name);
         const info = statSync(path);
-        return {
-          path,
-          fileFormat: Number(match[1]),
-          siteFormat: Number(match[2]),
-          keptAt: info.mtime,
-          size: info.size,
-        };
-      }
-      return undefined;
+        return [
+          {
+            key: match[1] ?? "",
+            path,
+            fileFormat: Number(match[2]),
+            siteFormat: Number(match[3]),
+            keptAt: info.mtime,
+            size: info.size,
+          },
+        ];
+      });
+      const newest = kept.sort((a, b) => b.keptAt.getTime() - a.keptAt.getTime());
+      const found = newest.find((copy) => copy.key === key) ?? newest[0];
+      if (found === undefined) return undefined;
+      const { key: _key, ...copy } = found;
+      return copy;
     },
 
     /**
