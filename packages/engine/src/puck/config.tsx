@@ -36,6 +36,11 @@ import {
 } from "./render-context-store.js";
 import { FormatToolbar, richTextField } from "./rich-text.js";
 import { ROOT_ZONE } from "./tree.js";
+import {
+  NO_UNPUBLISHED_ACTIONS,
+  type UnpublishedActions,
+  UnpublishedBadge,
+} from "./unpublished-badge.js";
 
 /**
  * What rich text being edited has: the format toolbar over it, as Puck takes it, and the editor's
@@ -92,6 +97,7 @@ function toPuckComponent(
   revision: EditorRevision,
   context: RenderContextSource,
   richText: RichTextTools,
+  unpublished: UnpublishedActions,
 ): ComponentConfig {
   const fieldsOfKind = (kind: FieldDef["kind"]) =>
     Object.entries(def.fields)
@@ -121,7 +127,7 @@ function toPuckComponent(
     // *Hide while editing* (UX-23, #864): not drawn on the canvas, and still exported. Layers
     // lists it, to select it or show it again.
     if (props.editorHidden === true) return null;
-    const { puck: _puck, id: rawId, ...own } = props;
+    const { puck, id: rawId, ...own } = props;
     // The theme's look for its kind under what it sets itself (3.12, CT-1), as the export does.
     const values = withLook(own, type, context.looks);
     const id = typeof rawId === "string" ? rawId : "";
@@ -138,7 +144,18 @@ function toPuckComponent(
     const marked = values.hidden === true ? markedHidden(output) : output;
     const noted = typeof values.note === "string" ? markedWith(marked, NOTE_ATTRIBUTE) : marked;
     // A text holding an example (#1228): outlined until the person checks it.
-    return hasExamples(values.examples) ? markedExample(noted) : noted;
+    const drawn = hasExamples(values.examples) ? markedExample(noted) : noted;
+    // Set to Don't Publish: its badge after it, in Puck's wrapper, so the element is still the
+    // wrapper's first, which the canvas measures (#1512). Only while Puck edits: drawn without it,
+    // as in a test, there is no selection to offer Show for.
+    return values.hidden === true && (puck as PuckContext | undefined)?.isEditing === true ? (
+      <>
+        {drawn}
+        <UnpublishedBadge id={id} actions={unpublished} />
+      </>
+    ) : (
+      drawn
+    );
   };
   return {
     label: def.label,
@@ -299,7 +316,8 @@ function EmptyPageButton({ emptyPage }: { readonly emptyPage: EmptyPage }) {
  * `context` is what the components render with. Each component follows the parts of it it read,
  * and draws again when one of them changes (a theme's look, a Media image, Site Settings), with the
  * config as it was (#727). `richText` is what rich text being edited has: the format toolbar over
- * it, and the editor's extensions.
+ * it, and the editor's extensions. `unpublished` is what an element's *Not published* badge can
+ * do (#1512).
  */
 export function toPuckConfig(
   library: ComponentLibrary,
@@ -307,6 +325,7 @@ export function toPuckConfig(
   context: RenderContextSource = fixedRenderContext(() => EDITOR_RENDER_CONTEXT),
   richText: RichTextTools = DEFAULT_RICH_TEXT_TOOLS,
   emptyPage: EmptyPage = NO_EMPTY_PAGE,
+  unpublished: UnpublishedActions = NO_UNPUBLISHED_ACTIONS,
 ): Config {
   // The page's top level takes sections only (F-ED-1): elements go inside them, and the shared
   // Header and Footer and an FAQ's questions are never added there. Puck then shows no drop place
@@ -340,7 +359,7 @@ export function toPuckConfig(
     components: Object.fromEntries(
       Object.entries(library.components).map(([type, def]) => [
         type,
-        toPuckComponent(type, def, revision, context, richText),
+        toPuckComponent(type, def, revision, context, richText, unpublished),
       ]),
     ),
   };
