@@ -1,3 +1,4 @@
+import { t } from "@webforge/i18n";
 import type { ComponentProps } from "react";
 import { Toaster as Sonner } from "sonner";
 
@@ -18,6 +19,8 @@ export function Toaster({ theme = "dark", ...props }: ComponentProps<typeof Sonn
       position="bottom-center"
       className="toaster group"
       toastOptions={{
+        // A toast that waits to be closed has a close button (#1512): named in the app's words.
+        closeButtonAriaLabel: t("ui.close"),
         classNames: {
           toast: "rounded-md! border-border-strong! bg-popover! text-popover-foreground! text-sm!",
           description: "text-muted-foreground!",
