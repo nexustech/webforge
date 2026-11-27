@@ -10,7 +10,6 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
 import { insertBlog, insertPost } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
@@ -61,7 +60,6 @@ function setUp(edit?: (draft: SiteDoc, about: PageId, shared: SharedSectionId) =
     session,
     panels: { show: vi.fn() },
     settings: { show: vi.fn(async () => true) },
-    commands: { run: vi.fn(() => true) },
     pageSettings: { show: vi.fn() },
     siteWide: {
       confirmSiteWide: async (action) => {

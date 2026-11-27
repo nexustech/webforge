@@ -8,10 +8,6 @@ import type { VersionActions, VersionList } from "./version-history.js";
 // The services the window's areas share (#984): each provided by one area, listed in `uses` by
 // the areas that use it. The area that provides each says so beside its token.
 
-/**
- * The year the open site was last published in (F-CM-8), `undefined` when it hasn't been: as its
- * versions record it when it opened, then each publish from this window (4.5). Publish provides it.
- */
 /** A tab of Page Settings (#1443), named as Settings' sections are. */
 export type PageSettingsTab = "general" | "search" | "social";
 
@@ -25,6 +21,10 @@ export type PageSettingsOpener = { readonly show: (tab?: PageSettingsTab) => voi
 /** The window's {@link PageSettingsOpener}, which the Site area provides. */
 export const PageSettings = defineService<PageSettingsOpener>("pageSettings");
 
+/**
+ * The year the open site was last published in (F-CM-8), `undefined` when it hasn't been: as its
+ * versions record it when it opened, then each publish from this window (4.5). Publish provides it.
+ */
 export const PublishedYear = defineService<StoreApi<number | undefined>>("publishedYear");
 
 /**

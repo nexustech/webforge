@@ -15,7 +15,6 @@ import { inDesign } from "../editor/shared-layout.js";
 import { showElement } from "../editor/show-element.js";
 import type { PageSettingsOpener } from "../editor/window-services.js";
 import { reportFailure } from "../log.js";
-import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import {
@@ -32,7 +31,6 @@ export type FindActions = {
   readonly session: EditorSession;
   readonly panels: Pick<PanelRegistry, "show">;
   readonly settings: Pick<SettingsRegistry, "show">;
-  readonly commands: Pick<CommandRegistry, "run">;
   /** Page Settings on the tab a page's title or description is on (#1443). */
   readonly pageSettings: PageSettingsOpener;
   readonly siteWide: Pick<SiteWideConfirm, "confirmSiteWide">;
