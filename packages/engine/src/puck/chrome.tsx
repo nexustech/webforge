@@ -40,6 +40,7 @@ import { canPerform, performOnSelected } from "./selected-actions.js";
 import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spacing-handles.js";
 import { ensureStyle } from "./styles.js";
 import { ROOT_ZONE } from "./tree.js";
+import { UNPUBLISHED_BADGE_CLASS } from "./unpublished-badge.js";
 import { OPTION_ATTRIBUTES } from "./view-attributes.js";
 import {
   WIDTH_HANDLES_CSS,
@@ -143,6 +144,56 @@ ${EMPTY_TABLE_BODY}::after {
 /* A hidden element (Layers' Hide): dimmed, still there to select and show again. */
 [${HIDDEN_ATTRIBUTE}] {
   opacity: 0.35;
+}
+/*
+ * Its *Not published* badge (#1512): in the top right corner of Puck's wrapper around it (which
+ * Puck positions), over the page, so nothing on it moves, and not dimmed with it. The same size on
+ * screen whatever the zoom, as the element bar is. Only the outermost unpublished element's: one
+ * inside another isn't published either way, so its badge would only repeat it. Its buttons start
+ * from all: unset, so the site's own button rules don't reach them; their colours are set after,
+ * as specifically.
+ */
+.${UNPUBLISHED_BADGE_CLASS} {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  gap: 2px;
+  transform: scale(calc(1 / var(--wf-zoom, 1)));
+  transform-origin: right top;
+}
+[${HIDDEN_ATTRIBUTE}] .${UNPUBLISHED_BADGE_CLASS} {
+  display: none;
+}
+.${UNPUBLISHED_BADGE_CLASS} > button {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 3px;
+  font: 600 11px/18px system-ui, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.${UNPUBLISHED_BADGE_CLASS} > .${UNPUBLISHED_BADGE_CLASS}__label {
+  background: #334155;
+  color: #fff;
+}
+.${UNPUBLISHED_BADGE_CLASS} > .${UNPUBLISHED_BADGE_CLASS}__show {
+  background: var(--wf-outline-color);
+  color: #fff;
+}
+/* Not Puck's dashed outline for its controls inside an element: its buttons have their own. */
+[data-puck-entry] .${UNPUBLISHED_BADGE_CLASS}[data-puck-overlay-portal] {
+  outline: none !important;
+}
+.${UNPUBLISHED_BADGE_CLASS} > button:focus-visible {
+  outline: 2px solid var(--wf-outline-color);
+  outline-offset: 1px;
 }
 /* An element with a note (UX-17): a dashed amber outline, inside it, so nothing moves. */
 [${NOTE_ATTRIBUTE}] {

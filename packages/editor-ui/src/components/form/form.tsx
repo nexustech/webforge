@@ -35,6 +35,11 @@ export type FieldProps = {
    */
   readonly layout?: "stacked" | "row";
   /**
+   * Whether its error's line is kept, empty, while it has none, so an error appearing moves nothing
+   * under the pointer (#1441).
+   */
+  readonly reserveError?: boolean;
+  /**
    * Draws the control, spreading `control` on it so the label, hint and error belong to it. A
    * group of controls (radios, a field renderer of the Edit panel) is named by `labelId` instead,
    * with `aria-labelledby`; a field renderer is described by the hint's and error's ids in `ids`.
@@ -46,7 +51,15 @@ export type FieldProps = {
  * A labelled form field (dialogs: Page Settings, Site Settings, links): the label, the control the
  * field draws, its error and its hint. The form engine of plan item 2.21 draws its fields with it.
  */
-export function Field({ name, label, hint, error, layout = "stacked", children }: FieldProps) {
+export function Field({
+  name,
+  label,
+  hint,
+  error,
+  layout = "stacked",
+  reserveError = false,
+  children,
+}: FieldProps) {
   const id = useId();
   const labelId = useId();
   const hintId = useId();
@@ -85,7 +98,7 @@ export function Field({ name, label, hint, error, layout = "stacked", children }
           },
         )}
       </div>
-      <ErrorText id={errorId} message={error} className={right} />
+      <ErrorText id={errorId} message={error} className={right} reserve={reserveError} />
       {hint !== undefined && (
         <p id={hintId} className={cn("m-0 text-2xs text-muted-foreground", right)}>
           {hint}
@@ -95,17 +108,29 @@ export function Field({ name, label, hint, error, layout = "stacked", children }
   );
 }
 
-/** A field's error, if it has one; `id` is what its control's `aria-describedby` names. */
+/**
+ * A field's error, if it has one; `id` is what its control's `aria-describedby` names. With
+ * `reserve`, an empty line of the same height while it has none (#1441).
+ */
 export function ErrorText({
   id,
   message,
   className,
+  reserve = false,
 }: {
   readonly id?: string;
   readonly message?: string | undefined;
   readonly className?: string | undefined;
+  readonly reserve?: boolean;
 }) {
-  return message === undefined ? null : (
+  if (message === undefined) {
+    return reserve ? (
+      <p aria-hidden="true" data-slot="error-room" className={cn("m-0 text-xs", className)}>
+        &nbsp;
+      </p>
+    ) : null;
+  }
+  return (
     <p id={id} className={cn("m-0 text-xs text-destructive-text", className)}>
       {message}
     </p>

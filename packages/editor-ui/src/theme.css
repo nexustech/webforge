@@ -133,12 +133,20 @@
 /*
  * Where dialogs may go (#1411): the window under its title bar, whose native controls Windows
  * draws over everything the page draws, a dialog's overlay included. The desktop app sets the
- * title bar's height; with none (Storybook), dialogs have the whole window. A dialog is centred
- * in that area and never taller than it, less a 1rem margin above and below.
+ * title bar's height; with none (Storybook), dialogs have the whole window.
+ *
+ * A dialog hangs from its top edge, `--dialog-gap` below the title bar, so a change of its height
+ * moves only its bottom edge and nothing jumps under the pointer (#1441). One that grows is never
+ * taller than the room below that, less 1rem (`--dialog-fit-height`). One with a fixed height
+ * (`--dialog-height`, up to `--dialog-max-height`: the area less 1rem above and below) rises as far
+ * as it must to fit, as high as 1rem under the title bar (dialog.tsx).
  */
 :root {
   --title-bar-height: 0px;
+  --dialog-gap: clamp(1rem, 10dvh - 2rem, 5rem);
+  --dialog-top: calc(var(--title-bar-height) + var(--dialog-gap));
   --dialog-max-height: calc(100dvh - var(--title-bar-height) - 2rem);
+  --dialog-fit-height: calc(100dvh - var(--dialog-top) - 1rem);
 }
 
 @theme inline {

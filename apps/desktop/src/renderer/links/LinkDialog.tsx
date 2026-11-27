@@ -386,6 +386,8 @@ export function LinkDialog({
       confirm={t("link.save")}
       spec={linkSpec(site, targets, documents, label !== undefined)}
       initial={initialValues(link, label, targets, documents)}
+      // Another link type shows fewer fields: the dialog keeps its height, its buttons still (#1441).
+      keepHeight
       onSave={({ label: text, link: saved, anchor }) =>
         onSave({ link: saved, ...(anchor === undefined ? {} : { anchor }) }, text)
       }

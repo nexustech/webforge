@@ -157,9 +157,6 @@ type KnownFault = {
 };
 
 const KNOWN_FAULTS: readonly KnownFault[] = [
-  // The Link dialog's link types and the web host form's More Options move their tops (H4).
-  { case: "Link", rule: 5, issue: 1441 },
-  { case: "Publish to Your Web Host", rule: 5, issue: 1441, change: "More Options" },
   // Colours: the dialog scrolls as well as its colours, which scroll sideways at 960 × 600.
   {
     case: "Theme Studio",
@@ -1052,30 +1049,34 @@ for (const round of ROUNDS) {
 test("a known fault holds only after its change, and says when it's fixed (#1433)", () => {
   const round = ROUNDS[0];
   if (round === undefined) throw new Error("no rounds");
-  const moved = (change: string): FitFault => ({
-    rule: 5,
-    says: `${change}: its top moved from 98 to 182`,
+  // Theme Studio's known faults (#1535): rule 3 and rule 4 after the Colours tab, in this round.
+  const scrolls = (rule: 3 | 4, change: string): FitFault => ({
+    rule,
+    says: `${change}: it scrolls as well as its contents`,
     change,
   });
+  const colours = [scrolls(3, "the Colours tab"), scrolls(4, "the Colours tab")];
   // Still there, after its change: nothing to report.
-  const still = faultReport("Publish to Your Web Host", round, [moved("More Options")]);
+  const still = faultReport("Theme Studio", round, colours);
   expect(still.unexpected, still.message).toEqual([]);
   expect(still.fixed).toEqual([]);
   // The same rule broken after another change in the same dialog: a new fault.
-  const other = faultReport("Publish to Your Web Host", round, [
-    moved("More Options"),
-    moved("Save with its fields empty, showing their errors"),
-  ]);
-  expect(other.unexpected, other.message).toEqual([5]);
+  const other = faultReport("Theme Studio", round, [...colours, scrolls(3, "the Fonts tab")]);
+  expect(other.unexpected, other.message).toEqual([3]);
   // Gone: fixed, and the message says to remove the entry.
-  const fixed = faultReport("Publish to Your Web Host", round, []);
+  const fixed = faultReport("Theme Studio", round, [scrolls(4, "the Colours tab")]);
   expect(fixed.unexpected).toEqual([]);
-  expect(fixed.fixed.map((entry) => entry.issue)).toEqual([1441]);
+  expect(fixed.fixed.map((entry) => entry.issue)).toEqual([1535]);
   expect(fixed.message).toBe(
-    "Publish to Your Web Host, 960 × 600, Dark: rule 5 after More Options passes: fixed, so remove its KNOWN_FAULTS entry (#1441)",
+    "Theme Studio, 960 × 600, Dark: rule 4: the Colours tab: it scrolls as well as its contents (known); rule 3 after the Colours tab passes: fixed, so remove its KNOWN_FAULTS entry (#1535)",
   );
-  // An entry for any change holds whichever change shows it.
-  expect(faultReport("Link", round, [moved("the Email link type")]).unexpected).toEqual([]);
+  // An entry for any change holds whichever change shows it: the View menu's (#1536).
+  const over: FitFault = {
+    rule: 2,
+    says: "a submenu: it opens over the title bar",
+    change: "a submenu",
+  };
+  expect(faultReport("the View menu", round, [over]).unexpected).toEqual([]);
 });
 
 test("rule 2 fails when no title bar is measured (#1433)", () => {
@@ -1181,11 +1182,12 @@ test("each rule fails when broken on purpose, naming the dialog, the window and 
       /rule 4: scrolls \d+ px itself while .*Inner list/,
     );
 
-    // 5: shrinking as its content changes, so its top moves: dialogs are centred.
+    // 5: its top moving as its content changes, as a centred dialog's did before they hung from
+    // their tops (#1441): moved here by hand.
     dialog = await open();
     const before = await fitOf(dialog);
     await breakIt(dialog, (element) => {
-      element.style.height = "200px";
+      element.style.top = `${element.getBoundingClientRect().top + 40}px`;
     });
     expectCaught(
       movedFaults(before, await fitOf(dialog), "an error shown"),
