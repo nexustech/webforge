@@ -111,6 +111,9 @@ export const shell = {
   "preview.save.cut":
     "The page is longer than one picture can hold, so it stops short of the end. Save it as a PDF to have all of it.",
   "preview.save.drawFailed": "{appName} couldn't draw the page. Try again in a moment.",
+  // A PDF that couldn't be made, even after a second go (#1508): the picture is the other way.
+  "preview.save.pdfFailed":
+    "{appName} couldn't make the PDF. Try again, or save the page as an image.",
   "preview.save.notAllowed": "{appName} isn't allowed to save there. Choose another folder.",
   "preview.save.diskFull": "There isn't enough space on the disk to save the page.",
   "preview.save.writeFailed": "{appName} couldn't save the file there. Try another folder.",

@@ -1,6 +1,7 @@
 import type { Debugger, WebContents } from "electron";
 import { z } from "zod";
 import type { AppElectron } from "./app-parts.js";
+import { log } from "./log.js";
 import { createSecureWebPreferences, hardenSession } from "./security.js";
 
 /** What a page is saved as (5.22): a picture of all of it, or a PDF. */
@@ -30,8 +31,27 @@ export const MAX_IMAGE_HEIGHT = 16_384;
 /** The tallest PDF page, in CSS pixels: a PDF page is at most 200 inches; a longer page runs on. */
 const MAX_PDF_PAGE_HEIGHT = 200 * 96;
 
-/** How long a page has to load and be drawn. */
-const CAPTURE_MS = 60_000;
+/**
+ * How long each step of drawing a page has (#1508): opening its window, loading the page, waiting
+ * for its pictures and fonts, and printing or taking the picture. Well under the 3 minutes the
+ * whole save has (`RENDER_MS`), so a step that hangs is tried again once, in a fresh window.
+ */
+const STEP_MS = 20_000;
+
+/** The steps of drawing a page, by name: the one that ran out of time is in the log. */
+type CaptureStep = "open" | "load" | "ready" | "print" | "picture";
+
+/**
+ * A step of drawing a page ran out of time. Its `code` names the step, which the log keeps (no page
+ * content): `timeout-print`.
+ */
+export class CaptureTimeout extends Error {
+  readonly code: string;
+  constructor(readonly step: CaptureStep) {
+    super(`The page's ${step} step took too long`);
+    this.code = `timeout-${step}`;
+  }
+}
 
 /**
  * Run in the page once it has loaded (its own scripts never run): every image loaded and decoded
@@ -55,70 +75,89 @@ const screenshot = z.object({ data: z.string().min(1) });
  * person's browser): without them the site shows as it is, every entrance already in, the first of
  * each slideshow. A picture is of the whole page, as tall as it is (at most
  * {@link MAX_IMAGE_HEIGHT}); a PDF is the page as it prints, with its backgrounds, each page as
- * wide as the device. The window goes once it's drawn, or fails, or takes too long.
+ * wide as the device. Each step has {@link STEP_MS}: one that runs out (a PDF's print once hung on
+ * Windows, #1508) is tried again from the start in a fresh window, and if that runs out too, the
+ * save fails with a {@link CaptureTimeout} naming the step. The window goes once it's drawn, or
+ * fails, or takes too long.
  */
 export function createPageCapture(
   /** A window `width` by `height`, which loads nothing but from `origin`, the page's own. */
   createWindow: (width: number, height: number, origin: string) => CaptureWindow,
-  timeoutMs = CAPTURE_MS,
+  stepMs = STEP_MS,
 ): PageCapture {
-  return async (url, width, kind) => {
+  /** Draws the page once, in a window of its own, each step within {@link STEP_MS}. */
+  const drawOnce = async (url: string, width: number, kind: CaptureKind): Promise<Capture> => {
     const window = createWindow(width, WINDOW_HEIGHT, new URL(url).origin);
     const { webContents } = window;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const draw = async (): Promise<Capture> => {
-      const send = (method: string, params?: object) =>
-        webContents.debugger.sendCommand(method, params);
-      // An empty page first: until a page has loaded, the debugger's commands never answer.
-      await webContents.loadURL("about:blank");
-      webContents.debugger.attach("1.3");
-      // Before it loads: no script of the site's runs, nothing moves, and no scroll bar narrows it.
-      await send("Emulation.setScriptExecutionDisabled", { value: true });
-      await send("Emulation.setEmulatedMedia", {
-        features: [{ name: "prefers-reduced-motion", value: "reduce" }],
-      });
-      await send("Emulation.setDeviceMetricsOverride", {
-        width,
-        height: WINDOW_HEIGHT,
-        deviceScaleFactor: 1,
-        mobile: false,
-      });
-      await send("Emulation.setScrollbarsHidden", { hidden: true });
-      await webContents.loadURL(url);
-      const height = evaluated.parse(
-        await send("Runtime.evaluate", {
-          expression: READY,
-          awaitPromise: true,
-          returnByValue: true,
-        }),
-      ).result.value;
-      if (kind === "pdf") {
-        const data = await webContents.printToPDF({
-          printBackground: true,
-          pageSize: { width: width / 96, height: Math.min(height, MAX_PDF_PAGE_HEIGHT) / 96 },
-          margins: { top: 0, bottom: 0, left: 0, right: 0 },
+    /** Runs `step`, failing with a {@link CaptureTimeout} once it has taken `stepMs`. */
+    const within = async <T>(step: CaptureStep, work: () => Promise<T>): Promise<T> => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        return await Promise.race([
+          work(),
+          new Promise<never>((_resolve, reject) => {
+            timer = setTimeout(() => reject(new CaptureTimeout(step)), stepMs);
+          }),
+        ]);
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+    const send = (method: string, params?: object) =>
+      webContents.debugger.sendCommand(method, params);
+    try {
+      await within("open", async () => {
+        // An empty page first: until a page has loaded, the debugger's commands never answer.
+        await webContents.loadURL("about:blank");
+        webContents.debugger.attach("1.3");
+        // Before it loads: no script of the site's runs, nothing moves, and no scroll bar
+        // narrows it.
+        await send("Emulation.setScriptExecutionDisabled", { value: true });
+        await send("Emulation.setEmulatedMedia", {
+          features: [{ name: "prefers-reduced-motion", value: "reduce" }],
         });
+        await send("Emulation.setDeviceMetricsOverride", {
+          width,
+          height: WINDOW_HEIGHT,
+          deviceScaleFactor: 1,
+          mobile: false,
+        });
+        await send("Emulation.setScrollbarsHidden", { hidden: true });
+      });
+      await within("load", () => webContents.loadURL(url));
+      const height = await within(
+        "ready",
+        async () =>
+          evaluated.parse(
+            await send("Runtime.evaluate", {
+              expression: READY,
+              awaitPromise: true,
+              returnByValue: true,
+            }),
+          ).result.value,
+      );
+      if (kind === "pdf") {
+        const data = await within("print", () =>
+          webContents.printToPDF({
+            printBackground: true,
+            pageSize: { width: width / 96, height: Math.min(height, MAX_PDF_PAGE_HEIGHT) / 96 },
+            margins: { top: 0, bottom: 0, left: 0, right: 0 },
+          }),
+        );
         return { data: new Uint8Array(data), cut: false };
       }
       const drawn = Math.min(height, MAX_IMAGE_HEIGHT);
-      const { data } = screenshot.parse(
-        await send("Page.captureScreenshot", {
-          format: "png",
-          captureBeyondViewport: true,
-          clip: { x: 0, y: 0, width, height: drawn, scale: 1 },
-        }),
+      const { data } = await within("picture", async () =>
+        screenshot.parse(
+          await send("Page.captureScreenshot", {
+            format: "png",
+            captureBeyondViewport: true,
+            clip: { x: 0, y: 0, width, height: drawn, scale: 1 },
+          }),
+        ),
       );
       return { data: new Uint8Array(Buffer.from(data, "base64")), cut: drawn < height };
-    };
-    try {
-      return await Promise.race([
-        draw(),
-        new Promise<never>((_resolve, reject) => {
-          timer = setTimeout(() => reject(new Error("The page took too long to draw")), timeoutMs);
-        }),
-      ]);
     } finally {
-      clearTimeout(timer);
       if (!window.isDestroyed()) {
         try {
           webContents.debugger.detach();
@@ -127,6 +166,16 @@ export function createPageCapture(
         }
         window.destroy();
       }
+    }
+  };
+  return async (url, width, kind) => {
+    try {
+      return await drawOnce(url, width, kind);
+    } catch (error) {
+      if (!(error instanceof CaptureTimeout)) throw error;
+      // Once more, from the start, in a fresh window: the step's name in the log, nothing else.
+      log.warn("Webforge is drawing a page again: a step took too long", { code: error.code });
+      return drawOnce(url, width, kind);
     }
   };
 }
