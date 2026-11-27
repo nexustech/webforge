@@ -4,7 +4,7 @@ id: settings
 title: Settings
 summary: {appName}'s own preferences, such as its appearance, Simple or Advanced mode, your devices and where updates come from.
 related: [site-settings, the-editor, ai-apps, assistant]
-updated: 2026-11-20
+updated: 2026-11-27
 ---
 
 # Settings
@@ -16,7 +16,7 @@ updated: 2026-11-20
 
 Settings opens on the start screen too, before any site is open, with the app's parts alone: **Interface**, **Devices** and **Updates**.
 
-Click **Save** to keep your changes.
+Click **Save** to keep your changes. Once you've changed something, clicking outside Settings doesn't close it, and **Esc** or its **×** asks _Discard your changes?_ first; **Cancel** closes it without saving.
 
 ## Interface
 

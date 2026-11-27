@@ -11,6 +11,7 @@ import {
   itemIssuesOf,
   unplacedIssues,
   useForm,
+  valuesChanged,
 } from "./use-form.js";
 
 type Values = { readonly name: string; readonly email: string; readonly hours: readonly unknown[] };
@@ -170,6 +171,37 @@ describe("useForm's changes (2.21)", () => {
         values({ hours: [{ id: "a", days: ["mon"], opens: undefined }] }),
       ),
     ).toEqual(["contact"]);
+  });
+});
+
+describe("whether a form has changed (#1439)", () => {
+  it("is false as it opens, true after an edit, and false once the edit is taken back", () => {
+    const { result } = renderHook(() => useForm(spec, values()));
+    expect(result.current.changed).toBe(false);
+    act(() => result.current.change("name", "Ana"));
+    expect(result.current.changed).toBe(true);
+    act(() => result.current.change("name", "Rosa"));
+    expect(result.current.changed).toBe(false);
+  });
+
+  it("counts a field changed, then changed back to empty, as unchanged", () => {
+    const { result } = renderHook(() => useForm(spec, values()));
+    act(() => result.current.change("email", "a"));
+    expect(result.current.changed).toBe(true);
+    act(() => result.current.change("email", ""));
+    expect(result.current.changed).toBe(false);
+  });
+
+  it("treats empty text, an empty list and no value alike, and anything else as a change", () => {
+    expect(valuesChanged({ note: undefined }, { note: "" })).toBe(false);
+    expect(valuesChanged({}, { note: "", hours: [] })).toBe(false);
+    expect(valuesChanged({ hours: [] }, { hours: undefined })).toBe(false);
+    expect(valuesChanged({ note: null }, { note: "" })).toBe(false);
+    expect(valuesChanged({ note: "" }, { note: " " })).toBe(true);
+    expect(valuesChanged({ on: false }, { on: undefined })).toBe(true);
+    expect(valuesChanged({ count: 0 }, {})).toBe(true);
+    expect(valuesChanged({ hours: [{ id: "a" }] }, { hours: [] })).toBe(true);
+    expect(valuesChanged({ hours: [{ a: 1, b: 2 }] }, { hours: [{ b: 2, a: 1 }] })).toBe(false);
   });
 });
 

@@ -4,7 +4,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # The editor
@@ -31,6 +31,8 @@ In a narrower window still, such as a large **Text size** on a small screen, a f
 
 Dialogs, such as **Settings** and **Theme Studio**, open below the title bar, never under the window's own buttons to minimise, maximise and close it. Those buttons work while a dialog is open, and a dialog's own **×** closes only the dialog.
 
+A dialog you've changed something in doesn't throw your changes away by accident. Clicking outside it does nothing, and **Esc** or its **×** asks _Discard your changes?_: **Keep Editing** takes you back to where you were, and **Discard** closes it without saving. With nothing changed, all three close it straight away. **Cancel** always closes it without asking.
+
 Before a site is open, on the start screen, the title bar has only the menus, **New** and **Open**. **File › Close Site** goes back there, the site saved.
 
 A button or menu item you can't use at the moment is greyed out, and most say why: hover over the button, or look under the item in a menu or in the command search. Undo says there's nothing to undo, for example, Paste Style asks you to copy a style first, and the Edit menu's Duplicate, Delete and moves ask you to select an element first.
@@ -51,7 +53,7 @@ You can do everything in the editor without a mouse.
 - **Tab** moves between the buttons and options in a part. In a row of tabs, use the arrow keys. A button you move to shows its tooltip, as it does when you hover over it: its name, its shortcut if it has one, and why it's greyed out if it is. **Esc** hides the tooltip.
 - On the page, the arrow keys select the next or previous item, **Enter** edits its text and **Esc** stops. See [Editing on the page](editing-on-the-page.md).
 - **Shift+F10**, or the menu key, opens the right-click menu for what you've selected.
-- **Esc** closes a dialog and takes you back to where you were.
+- **Esc** closes a dialog and takes you back to where you were. In a dialog you've changed something in, it asks first.
 
 Every key is listed in [Keyboard shortcuts](keyboard-shortcuts.md).
 
