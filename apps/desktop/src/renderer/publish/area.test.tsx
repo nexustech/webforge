@@ -324,7 +324,7 @@ describe("what won't be on the website (#1512)", () => {
     });
     const dialog = within(await screen.findByRole("dialog", { name: "Publish" }));
     expect(
-      dialog.getByText("1 element isn't published, so it won't be on your website."),
+      dialog.getByText("1 item isn't published, so it won't be on your website."),
     ).toBeTruthy();
     await userEvent.setup({ delay: null }).click(dialog.getByRole("button", { name: "Show" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Publish" })).toBeNull());
@@ -351,7 +351,7 @@ describe("what won't be on the website (#1512)", () => {
     );
     expect(
       await dialog.findByText(
-        "1 element in this version isn't published, so it won't be on your website.",
+        "1 item in this version isn't published, so it won't be on your website.",
       ),
     ).toBeTruthy();
     expect(dialog.queryByRole("button", { name: "Show" })).toBeNull();
