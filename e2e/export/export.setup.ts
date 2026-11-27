@@ -20,9 +20,11 @@ import { readTemplates } from "@webforge/templates/node";
 import { sampleSite } from "@webforge/test-utils";
 import { launchDesktopApp } from "../app/launch.js";
 import { stubFileDialogs } from "../app/sites.js";
+import { CARD_ROW_SECTIONS } from "../card-rows.js";
 import {
   ANNOUNCEMENT_SITE_DIR,
   BLOG_SITE_DIR,
+  CARD_ROWS_SITE_DIR,
   CHECK_TEMPLATES,
   CONTACT_BUTTONS_SITE_DIR,
   EXPORTED_SITE_DIR,
@@ -701,6 +703,24 @@ setup(
     }
   },
 );
+
+setup("export a page of every section with cards in rows (#1372, #1511)", async () => {
+  const sample = sampleSite();
+  const [home] = sample.pages;
+  if (home === undefined) throw new Error("The fixture site has no home");
+  rmSync(CARD_ROWS_SITE_DIR, { recursive: true, force: true });
+  // One page and no files, through the pipeline alone: only the rows of cards matter here.
+  const pages = await exportSnapshot(
+    {
+      ...sample,
+      media: [],
+      documents: [],
+      pages: [{ ...home, doc: { root: { props: {} }, content: [...CARD_ROW_SECTIONS] } }],
+    },
+    CARD_ROWS_SITE_DIR,
+  );
+  expect(pages).toContain("index.html");
+});
 
 setup("export a site whose Header hides on the way down (HH-7)", async () => {
   const sample = sampleSite();

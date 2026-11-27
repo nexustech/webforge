@@ -5,7 +5,7 @@ title: Sections
 summary: Every section you can add to a page, what it's for and what you can change.
 components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat, Steps, Step, ContactButtons, Menu, MenuItem]
 related: [elements, add-panel, edit-panel, forms, header-and-footer]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Sections
@@ -57,6 +57,7 @@ Asks visitors to do one thing, with a title, a short text and a button. **Layout
 What you offer, or the reasons to choose you. Each **Feature** has an icon, a title and a text.
 
 - **Layouts:** _Cards_, _Centred icons_ or _List_. A last row that isn't full is centred, as in Testimonials, Team, Pricing, Stats and Latest posts: four features in rows of three put the fourth in the middle under them.
+- **Card height**, for the _Cards_ layout: _Same height_ makes every card as tall as the tallest, on every row, from a tablet's width up. _Fit the text_ makes each card as tall as its own text. On a phone each card fits its text either way.
 - **Cards when hovered** sets what the cards do under the pointer (see [Styling](styling.md#hover-effects)).
 
 ## Gallery

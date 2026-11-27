@@ -51,7 +51,7 @@ export function ShortcutSheet({ editor = true }: { readonly editor?: boolean }) 
       {/* As high whatever the search leaves, so the box doesn't move while people type; wider on a
           wide window, for three columns, and never wider than the window. */}
       <DialogContent
-        className="h-[min(40rem,var(--dialog-max-height))] content-start sm:max-w-[min(48rem,calc(100%-2rem))] lg:max-w-[min(64rem,calc(100%-2rem))]"
+        className="[--dialog-height:min(40rem,var(--dialog-max-height))] h-(--dialog-height) content-start sm:max-w-[min(48rem,calc(100%-2rem))] lg:max-w-[min(64rem,calc(100%-2rem))]"
         onEscapeKeyDown={(event) => {
           // Esc clears the search first, then closes.
           if (search !== "") {

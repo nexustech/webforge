@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
@@ -463,6 +463,99 @@ describe("FormDialog (2.21, B4)", () => {
       const area = dialog.querySelector(`[data-slot="${slot}"]`);
       expect(area?.classList.contains("overflow-y-auto"), slot).toBe(true);
       expect(area?.classList.contains("relative"), slot).toBe(true);
+    }
+  });
+
+  it("says why Save didn't beside the buttons, read out at once, its first problem focused (#1441)", async () => {
+    render(
+      <FormDialog
+        open
+        title="Site Settings"
+        confirm="Save"
+        spec={spec}
+        initial={initial}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup({ delay: null });
+    const name = screen.getByRole("textbox", { name: "Site name" });
+    await user.clear(name);
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    // In the buttons' row, so it adds no height above them and moves nothing under the pointer.
+    const alert = screen.getByRole("alert");
+    expect(alert.closest('[data-slot="dialog-footer"]')).not.toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(name));
+  });
+
+  it("keeps a line for each field's error with reserveErrorRoom, none for an on/off field (#1441)", async () => {
+    render(
+      <FormDialog
+        open
+        title="Site Settings"
+        confirm="Save"
+        spec={{ ...spec, reserveErrorRoom: true }}
+        initial={initial}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const room = (field: string) =>
+      screen.getByRole("dialog").querySelector(`[data-field="${field}"] [data-slot="error-room"]`);
+    // The General tab: the site's name, and Show a button, an on/off field.
+    expect(room("name")).not.toBeNull();
+    expect(room("open")).toBeNull();
+    expect(room("name")?.getAttribute("aria-hidden")).toBe("true");
+
+    const user = userEvent.setup({ delay: null });
+    await user.clear(screen.getByRole("textbox", { name: "Site name" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    // The error takes the line it kept.
+    expect(screen.getByText("Give it a name")).toBeTruthy();
+    expect(room("name")).toBeNull();
+  });
+
+  it("keeps the most room its fields have taken with keepHeight, until the window is resized (#1441)", () => {
+    let report: (height: number) => void = () => undefined;
+    class Observer {
+      constructor(
+        callback: (entries: readonly { borderBoxSize: { blockSize: number }[] }[]) => void,
+      ) {
+        // The laid-out size, as a zoomed-in dialog's bounding box isn't.
+        report = (height) => callback([{ borderBoxSize: [{ blockSize: height }] }]);
+      }
+      observe() {}
+      disconnect() {}
+    }
+    vi.stubGlobal("ResizeObserver", Observer);
+    try {
+      render(
+        <FormDialog
+          open
+          title="Link"
+          confirm="Save"
+          spec={spec}
+          initial={initial}
+          keepHeight
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      const fields = () =>
+        screen.getByRole("dialog").querySelector<HTMLElement>('[data-slot="form-fields"]');
+      act(() => report(200));
+      expect(fields()?.style.minHeight).toBe("200px");
+      // Fewer fields: it keeps its height. More: it grows.
+      act(() => report(120));
+      expect(fields()?.style.minHeight).toBe("200px");
+      act(() => report(260));
+      expect(fields()?.style.minHeight).toBe("260px");
+      // A resized window changes what fits: it starts again.
+      act(() => window.dispatchEvent(new Event("resize")));
+      expect(fields()?.style.minHeight).toBe("");
+    } finally {
+      vi.unstubAllGlobals();
     }
   });
 
