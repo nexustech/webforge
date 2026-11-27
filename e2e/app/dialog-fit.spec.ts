@@ -725,9 +725,18 @@ const CASES: readonly FitCase[] = [
       const panel = await sideTab(page, "Right", "Site");
       await panel.getByRole("button", { name: "Add Page" }).click();
       await page.getByRole("menuitem", { name: "Blog", exact: true }).click();
-      const pages = panel.getByRole("list", { name: "Pages" });
-      await expect(pages.getByRole("list", { name: "Blog" })).toBeVisible();
-      await pages.getByRole("button", { name: "Home", exact: true }).click();
+      // Its first post shown, which can switch the column to another tab: the Site tab again.
+      const pages = (await sideTab(page, "Right", "Site")).getByRole("list", { name: "Pages" });
+      await expect(pages.getByRole("button", { name: /^Our first post/ }).first()).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      // A page's button is named by its title, then what else it says of the page.
+      await pages.getByRole("button", { name: /^Home/ }).first().click();
+      await expect(pages.getByRole("button", { name: /^Home/ }).first()).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
       await pageActions(page, "Our first post");
       await page.getByRole("menuitem", { name: "Page Settings…" }).click();
       const settings = page.getByRole("dialog", { name: "Settings for 'Our first post'" });
