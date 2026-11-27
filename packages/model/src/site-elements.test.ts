@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { NodeDoc } from "./documents.js";
 import type { CollectionId, SharedSectionId } from "./ids.js";
-import { createSite } from "./site-doc.js";
+import { createSite, type SiteDoc } from "./site-doc.js";
 import {
   designAt,
   eachElement,
@@ -140,7 +140,7 @@ describe("unpublishedRoots (#1512)", () => {
   });
 
   /** The site above, with elements left out in each place, and a draft page and a Blog post. */
-  function leftOut() {
+  function leftOut(): SiteDoc {
     const base = site();
     const [home, notFound] = base.pageOrder;
     const homePage = home === undefined ? undefined : base.pages[home];
@@ -204,13 +204,13 @@ describe("unpublishedRoots (#1512)", () => {
   it("leaves out a draft's elements, a shared section no page shows, and a design with no post", () => {
     const doc = leftOut();
     const [home, notFound] = doc.pageOrder;
-    const unshown = {
-      ...doc,
-      pages: Object.fromEntries(
-        Object.entries(doc.pages).filter(([id]) => id === home || id === notFound),
-      ),
-      pageOrder: doc.pageOrder.filter((id) => id === home || id === notFound),
-    };
+    const kept = [home, notFound].flatMap((id) => (id === undefined ? [] : [id]));
+    const pages: typeof doc.pages = {};
+    for (const id of kept) {
+      const entry = doc.pages[id];
+      if (entry !== undefined) pages[id] = entry;
+    }
+    const unshown = { ...doc, pages, pageOrder: kept };
     const homePage = home === undefined ? undefined : unshown.pages[home];
     if (homePage === undefined) throw new Error("No home page");
     homePage.doc.content = homePage.doc.content.filter((each) => each.props.id !== "hours-on-home");

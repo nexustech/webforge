@@ -19,14 +19,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@webforge/editor-ui";
-import { t } from "@webforge/i18n";
+import { plural, t } from "@webforge/i18n";
 import {
   type FileTransferDestination,
   type FileTransferTrust,
   PUBLISH_DESTINATIONS_MAX,
   type PublishDestination,
 } from "@webforge/model";
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, EyeOffIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type {
   ConnectionResult,
@@ -96,8 +96,17 @@ export type PublishDialogApi = Pick<
   | "chooseKeyFile"
 >;
 
+/**
+ * How many elements aren't published in what the dialog publishes (#1512), the outermost only, and
+ * **Show**, which selects the first: none for a saved version, whose elements aren't in the open
+ * site.
+ */
+export type Unpublished = { readonly count: number; readonly show?: (() => void) | undefined };
+
 export type PublishDialogProps = {
   readonly open: boolean;
+  /** What won't be on the website (#1512): said under the description while there's any. */
+  readonly unpublished?: Unpublished | undefined;
   /**
    * The name of the saved version the destinations republish (4.6b), shown in the title, each
    * one's Publish becoming Republish; the open site is published when left out.
@@ -131,6 +140,42 @@ type Editing = {
 type Tests = Readonly<Record<string, ConnectionResult | "testing">>;
 
 /**
+ * What won't be on the website (#1512): how many elements aren't published, and **Show**, which
+ * closes the dialog and selects the first. A saved version's has no **Show**.
+ */
+function UnpublishedLine({
+  unpublished,
+  version,
+  onShow,
+}: {
+  readonly unpublished: Unpublished;
+  readonly version: boolean;
+  readonly onShow: () => void;
+}) {
+  const { count, show } = unpublished;
+  return (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <EyeOffIcon className="size-4 shrink-0" aria-hidden />
+      <p className="min-w-0 flex-1">
+        {plural(version ? "publish.unpublished.version" : "publish.unpublished", count)}
+      </p>
+      {show === undefined ? null : (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            onShow();
+            show();
+          }}
+        >
+          {t("publish.unpublished.show")}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/**
  * Publish (F-PB-1, 4.4a): the site's publish destinations, several allowed, each with its name,
  * host and folder, and whether this computer has its password. Add one, edit it, test it or
  * remove it; 4.3's form adds and edits them. Publish, each one's first action, publishes the site
@@ -139,6 +184,7 @@ type Tests = Readonly<Record<string, ConnectionResult | "testing">>;
  */
 export function PublishDialog({
   open,
+  unpublished,
   republishing,
   publish,
   netlify,
@@ -317,6 +363,13 @@ export function PublishDialog({
                 : t("publish.republish.description")}
             </DialogDescription>
           </DialogHeader>
+          {unpublished === undefined || unpublished.count === 0 ? null : (
+            <UnpublishedLine
+              unpublished={unpublished}
+              version={republishing !== undefined}
+              onShow={onClose}
+            />
+          )}
           {listed === undefined ? (
             <p role="status" className="text-sm text-muted-foreground">
               {t("publish.destinations.loading")}

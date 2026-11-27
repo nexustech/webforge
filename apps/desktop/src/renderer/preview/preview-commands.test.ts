@@ -226,7 +226,7 @@ describe("registerPreviewCommands (3.2)", () => {
     const site = session.history.document.getState();
     const [section] = site.pages[about]?.doc.content ?? [];
     if (section === undefined) throw new Error("no section on About");
-    session.edit(about, "Kept the section off your website", (draft) => {
+    session.edit("root", "Kept the section off your website", (draft) => {
       const kept = draft.pages[about]?.doc.content[0];
       if (kept !== undefined) kept.props.hidden = true;
     });
