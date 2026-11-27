@@ -4,6 +4,10 @@ import { basename, dirname, join } from "node:path";
 import { configureWrites, connect } from "./connection.js";
 import { stampContent } from "./content-check.js";
 import { APPLICATION_ID, FORMAT_VERSION, SCHEMA } from "./schema.js";
+import type { CreateStepTimer } from "./store-types.js";
+
+/** Each step run as it is, untimed. */
+const untimed: CreateStepTimer = (_step, run) => run();
 
 /** A temporary name beside `path`, hidden, for a file written there before it's renamed into place. */
 const tempPathFor = (path: string) => join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
@@ -31,33 +35,48 @@ export async function writeInPlace(
  * `ProjectStore.create`). It's built under a temporary name next to `path` and renamed into place,
  * so a crash never leaves a half-created project.
  */
-export function createProjectFile(path: string, name: string): void {
+export function createProjectFile(
+  path: string,
+  name: string,
+  timed: CreateStepTimer = untimed,
+): void {
   const tempPath = tempPathFor(path);
   try {
-    const db = connect(tempPath, { create: true });
+    const db = timed("make the file", () => {
+      const made = connect(tempPath, { create: true });
+      try {
+        made.pragma(`application_id = ${APPLICATION_ID}`);
+        configureWrites(made);
+      } catch (error) {
+        made.close();
+        throw error;
+      }
+      return made;
+    });
     try {
-      db.pragma(`application_id = ${APPLICATION_ID}`);
-      configureWrites(db);
       const meta = {
         format_version: String(FORMAT_VERSION),
         project_id: randomUUID(),
         name: name,
         created_at: new Date().toISOString(),
       };
-      db.transaction(() => {
-        for (const statement of SCHEMA) {
-          db.exec(statement);
-        }
-        const insert = db.prepare("INSERT INTO meta (key, value) VALUES (?, ?)");
-        for (const [key, value] of Object.entries(meta)) {
-          insert.run(key, value);
-        }
-        stampContent(db);
-      })();
+      // The file's first commit: its schema, written with `synchronous = FULL` (#1560).
+      timed("first commit", () =>
+        db.transaction(() => {
+          for (const statement of SCHEMA) {
+            db.exec(statement);
+          }
+          const insert = db.prepare("INSERT INTO meta (key, value) VALUES (?, ?)");
+          for (const [key, value] of Object.entries(meta)) {
+            insert.run(key, value);
+          }
+          stampContent(db);
+        })(),
+      );
     } finally {
       db.close();
     }
-    renameSync(tempPath, path);
+    timed("move into place", () => renameSync(tempPath, path));
   } catch (error) {
     rmSync(tempPath, { force: true });
     throw error;
