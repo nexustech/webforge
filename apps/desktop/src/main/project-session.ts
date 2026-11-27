@@ -66,6 +66,7 @@ import {
   versionPackage,
 } from "./site-versions.js";
 import { saveSiteZip } from "./site-zip.js";
+import { timeStep, timeStepLater } from "./step-timings.js";
 import { createInlineStorageWriter, type StorageWriter } from "./storage-writer.js";
 import { createStoreGate, type GateKind, type StoreGate } from "./store-gate.js";
 
@@ -239,7 +240,7 @@ export class ProjectSession {
     this.#gate = options.gate ?? createStoreGate();
     this.#openStore = options.openStore ?? ((path) => ProjectStore.open(path));
     this.#createStore =
-      options.createStore ?? ((path, name) => ProjectStore.create(path, { name }));
+      options.createStore ?? ((path, name) => ProjectStore.create(path, { name, timed: timeStep }));
     this.#writer = options.writer ?? createInlineStorageWriter(createWriterJobs());
     this.#dailyVersion = options.dailyVersion;
   }
@@ -431,10 +432,12 @@ export class ProjectSession {
       (store) => ({ store }),
       (error: unknown) => ({ error }),
     );
-    const result = await this.#replaceWith(target, () => {
-      if ("error" in made) throw made.error;
-      return made.store;
-    });
+    const result = await timeStepLater("open the session", () =>
+      this.#replaceWith(target, () => {
+        if ("error" in made) throw made.error;
+        return made.store;
+      }),
+    );
     if (result.status === "failed" && replaced !== undefined) {
       await this.#replaceWith(
         replaced.path,

@@ -13,6 +13,7 @@ How a beta session differs from 5.4a's:
 - **Who:** three of the round's testers, asked by email. Choose people who haven't sent a report yet, or whose reports stop early (in Start a Site, the tour or publishing), since they are the ones the totals can't explain. Ask them in the first week of the round, before they've made much of their site.
 - **Where:** on their own computer, with the beta version they already have, in person or over a video call where they share their screen. Their own computer shows what the test computer can't: their screen size, text size and web host.
 - **Their own business:** use their own business rather than _Rosa's Bakery_, and their own web host if they want to publish for real. Otherwise use the test host on the card, as in 5.4a. They can carry on with a site they've started; note how far they were.
+- **People who have never made a site (WO-4, [note 28](../../research/product/28-who-the-owner-is.md)):** two or three of the beta's watched testers are people who have never made a website. Watch each from opening Webforge for the first time to a published site, and again a week later, when they change something on it. The second visit shows whether they find their place again. Write up what stopped them, in _Where they got stuck_ and in a line on the second visit.
 - **Recording:** as in 5.4a's privacy rules, nothing is recorded, by screen or voice, unless they agree in writing. A video call's own recording counts.
 
 **Keeping the notes:**

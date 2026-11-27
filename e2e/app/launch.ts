@@ -62,6 +62,8 @@ export function electronCommand(): { executablePath: string; env: Record<string,
       WEBFORGE_E2E_BUNDLE: "1",
       WEBFORGE_E2E_FONTS: "1",
       WEBFORGE_E2E_PHONE: "1",
+      // Each step of an opening timed in main, for a missed budget to name its steps (#1560).
+      WEBFORGE_STEP_TIMINGS: "1",
     },
   };
 }
