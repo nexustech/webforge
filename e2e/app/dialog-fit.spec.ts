@@ -1,6 +1,8 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { createSite, type MediaId, newId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
@@ -145,6 +147,8 @@ type KnownFault = {
   readonly issue: number;
   /** The rounds it shows in, by name; every round that checks the rule by default. */
   readonly rounds?: readonly string[];
+  /** The systems it shows on; every one by default. Scrollbars and fonts differ between them. */
+  readonly systems?: readonly NodeJS.Platform[];
 };
 
 const KNOWN_FAULTS: readonly KnownFault[] = [
@@ -167,6 +171,9 @@ const KNOWN_FAULTS: readonly KnownFault[] = [
     rounds: ["960 × 600, Dark", "960 × 600, Light", "1366 × 768 at 125%, Dark"],
   },
 ];
+
+/** Whether an AI app's key can be kept: Windows' and macOS's keychains (ADR 0006 §5, ADR 0021). */
+const keychain = process.platform === "win32" || process.platform === "darwin";
 
 /** Whether macOS's menu bar holds the menus, so the title bar has none (LF-13). */
 const nativeMenus = process.platform === "darwin";
@@ -451,7 +458,9 @@ const CASES: readonly FitCase[] = [
     kind: "dialog",
     when: (round) => round === ROUNDS[0],
     open: async ({ app, page }) => {
-      await stubFileDialogs(app, mkdtempSync(join(tmpdir(), "webforge-fit-export-")));
+      const folder = mkdtempSync(join(tmpdir(), "webforge-fit-export-"));
+      folders.push(folder);
+      await stubFileDialogs(app, folder);
       await page.getByRole("banner").getByRole("button", { name: "Export", exact: true }).click();
       const dialog = await shown(page.getByRole("dialog", { name: "Export Site" }));
       await dialog.getByRole("radio", { name: "A folder" }).click();
@@ -679,6 +688,47 @@ const CASES: readonly FitCase[] = [
   },
 ];
 
+/**
+ * Pairs an AI app in AI apps… and connects it, as ai-apps.spec.ts does, so the title bar shows
+ * that it's connected. `remove` takes it out again, and its key out of the system's keychain.
+ */
+async function connectAiApp({ app, page }: Context): Promise<{ remove(): Promise<void> }> {
+  const dialog = page.getByRole("dialog", { name: "AI Apps" });
+  await chooseFromMenu(app, page, "File", "AI Apps…");
+  const allow = dialog.getByRole("checkbox", { name: "Let AI apps connect" });
+  if (!(await allow.isChecked())) await allow.click();
+  await dialog.getByRole("button", { name: "Add AI app" }).click();
+  await dialog.getByRole("radio", { name: "Another app" }).click();
+  await dialog.getByRole("textbox", { name: "Name" }).fill("Test client");
+  await dialog.getByRole("button", { name: "Add", exact: true }).click();
+  const added = dialog.getByRole("region", { name: "Test client is added" });
+  await expect(added.getByText(/You won't see it again/)).toBeVisible();
+  const [address, key] = await added.locator("dd code").allTextContents();
+  if (address === undefined || key === undefined) throw new Error("no address or key shown");
+  await added.getByRole("button", { name: "Done" }).click();
+  const client = new Client({ name: "e2e", version: "1" });
+  await client.connect(
+    new StreamableHTTPClientTransport(new URL(address), {
+      requestInit: { headers: { authorization: `Bearer ${key}` } },
+    }),
+  );
+  await client.listTools();
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await expect(
+    page.getByRole("button", { name: "Connected AI apps: Test client. Open AI apps." }),
+  ).toBeVisible();
+  return {
+    remove: async () => {
+      await client.close();
+      await closeAll(page);
+      await chooseFromMenu(app, page, "File", "AI Apps…");
+      await dialog.getByRole("button", { name: "Remove Test client" }).click();
+      await page.getByRole("alertdialog").getByRole("button", { name: "Remove" }).click();
+      await expect(dialog.getByText("No AI apps yet.")).toBeVisible();
+    },
+  };
+}
+
 /** The faults Settings' sections showed, kept by its change for its case to report. */
 const sectionFaults = new WeakMap<Page, FitFault[]>();
 
@@ -796,7 +846,8 @@ function faultReport(
       fault.case === name &&
       round.rules.includes(fault.rule) &&
       (fault.rule !== 5 || round.changes) &&
-      (fault.rounds === undefined || fault.rounds.includes(round.name)),
+      (fault.rounds === undefined || fault.rounds.includes(round.name)) &&
+      (fault.systems === undefined || fault.systems.includes(process.platform)),
   );
   const rulesOf = (list: readonly { rule: FitRule }[]) =>
     [...new Set(list.map((each) => each.rule))].sort();
@@ -839,9 +890,7 @@ async function checkCase(context: Context, each: FitCase): Promise<void> {
       const after = await fitOf(target);
       faults.push(...movedFaults(fit, after, change.name));
       for (const fault of fitFaults(after, rules, overlap)) {
-        if (!faults.some((found) => found.rule === fault.rule)) {
-          faults.push({ ...fault, says: `after ${change.name}, ${fault.says}` });
-        }
+        faults.push({ ...fault, says: `after ${change.name}, ${fault.says}` });
       }
       fit = after;
     }
@@ -878,9 +927,9 @@ for (const round of ROUNDS) {
       }
 
       // The title bar with its optional controls showing: the phone preview's cue (left on by its
-      // case), Site Check's longest count, and Undo with steps. The connected AI apps' status needs
-      // the system's keychain, which Linux's runners haven't got: Windows and macOS check it in
-      // ai-apps.spec.ts.
+      // case), Site Check's longest count, Undo with steps, and the connected AI apps' status. That
+      // needs an app's key in the system's keychain, which Linux's runners haven't got, so Linux
+      // checks the title bar without it; Windows and macOS with it.
       await test
         .step("the title bar, its optional controls showing", async () => {
           const { app, page } = context;
@@ -903,15 +952,20 @@ for (const round of ROUNDS) {
           await expect(
             page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }),
           ).toBeEnabled();
-          let faults: FitFault[] = [];
-          await expect
-            .poll(async () => {
-              faults = titleBarFaults(await titleBarLayout(page, "99 to fix"));
-              return faults.length;
-            })
-            .toBe(0)
-            .catch(() => undefined);
-          expectFaults("the title bar", round, faults);
+          const connected = keychain ? await connectAiApp(context) : undefined;
+          try {
+            let faults: FitFault[] = [];
+            await expect
+              .poll(async () => {
+                faults = titleBarFaults(await titleBarLayout(page, "99 to fix"));
+                return faults.length;
+              })
+              .toBe(0)
+              .catch(() => undefined);
+            expectFaults("the title bar", round, faults);
+          } finally {
+            await connected?.remove();
+          }
         })
         .catch((error: unknown) => {
           unchecked.push(`the title bar: ${String(error).split("\n")[0]}`);
