@@ -71,7 +71,7 @@ exports[`the consultant template's export > writes the reviewed pages and files 
 [
   "404.html",
   "about.html",
-  "assets/css/site.e078075df7.css",
+  "assets/css/site.4848a2f655.css",
   "assets/fonts/lora-latin-ext-wght-normal.woff2",
   "assets/fonts/lora-latin-wght-normal.woff2",
   "assets/fonts/work-sans-latin-ext-wght-italic.woff2",
@@ -100,7 +100,7 @@ exports[`the personal template's export > writes the reviewed pages and files 1`
 [
   "404.html",
   "about.html",
-  "assets/css/site.b8de863195.css",
+  "assets/css/site.d4a574b488.css",
   "assets/fonts/dm-sans-latin-ext-wght-italic.woff2",
   "assets/fonts/dm-sans-latin-ext-wght-normal.woff2",
   "assets/fonts/dm-sans-latin-wght-italic.woff2",
@@ -331,7 +331,7 @@ exports[`the trades template's export > writes the reviewed pages and files 1`] 
 [
   "404.html",
   "about.html",
-  "assets/css/site.bac5bb5869.css",
+  "assets/css/site.e264c21a87.css",
   "assets/fonts/bebas-neue-latin-400-normal.woff2",
   "assets/fonts/bebas-neue-latin-ext-400-normal.woff2",
   "assets/fonts/roboto-latin-ext-wght-italic.woff2",
