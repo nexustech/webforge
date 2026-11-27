@@ -24,7 +24,7 @@ export const PREVIEW_UPDATE_MS = 100;
  * What the preview leaves out of the page it opened at (#1512): how many elements aren't published,
  * in words, and **Show**, which selects the first on the canvas.
  */
-export type LeftOut = { readonly description: string; readonly show: () => void };
+type LeftOut = { readonly description: string; readonly show: () => void };
 
 /** What the preview commands work on and with. */
 export type PreviewCommandsDeps = {

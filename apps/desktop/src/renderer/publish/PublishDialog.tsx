@@ -101,7 +101,7 @@ export type PublishDialogApi = Pick<
  * **Show**, which selects the first: none for a saved version, whose elements aren't in the open
  * site.
  */
-export type Unpublished = { readonly count: number; readonly show?: (() => void) | undefined };
+type Unpublished = { readonly count: number; readonly show?: (() => void) | undefined };
 
 export type PublishDialogProps = {
   readonly open: boolean;
