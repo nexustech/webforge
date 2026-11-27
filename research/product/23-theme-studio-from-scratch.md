@@ -239,7 +239,7 @@ A fourth pass, on 27 Nov 2026, from a review of §6 with the product owner, who 
 
 - **More room in a small window.** At 960 × 600 the window's preview column is 395 px and draws the page at 0.30 of its size (PR 1506's measurements). With the left column folded and a 300 px panel, the canvas has roughly 600 px. That figure is arithmetic from the column widths, not a measurement.
 - **One panel by construction.** There is no second set of rows to keep in step ([§6.1](#61-why-v1s-two-can-drift)).
-- **No dialog to fit.** Two of the 25 Nov review's findings (Esc discarding work, H2; the controls squeezed for height, H3) are about the window.
+- **No dialog to fit.** Two of the 25 Nov review's findings are about dialogs and wouldn't arise in a view: Esc or a click outside throwing work away (H2, #1439), and too little room for the controls (H3, #1440, which PR 1506 eased by moving the previews beside them).
 - **Site › Theme… beside Site › Theme Studio…** (L7, #1457) gets a plain answer: one opens the panel, the other the view around it.
 
 ### 7.2 What the code allows
@@ -301,7 +301,7 @@ About 15 days. TS-24 is in place of TS-18 (3.5 days), which leaves about 53 days
 - **Fifteen themes and your own in a row over the page.** The sketch showed four. A row that scrolls, or one that opens wider, isn't settled.
 - **Style This.** The same argument makes it a view too. Its tabs would look like Theme Studio's and mean something else, since there a change on Mobile is for Mobile only, so its **Applies to** line would have to say so.
 - **TS-28 and one undo step.** Whether **Keep** is the step, and what **Undo all** counts.
-- **A sketch** was drawn in the conversation and isn't kept in the repository: the view with its bar, the panel narrowing on a click, **Before** and **After**, and a theme tried with **Keep** and **Go back**. It was drawn at the conversation's width, not at 960 × 600.
+- **A sketch** was drawn in the conversation and isn't kept in the repository: the view with its bar, a click on the page changing what the panel applies to (not yet narrowing it, as TS-27 would), **Before** and **After**, and a theme tried with **Keep** and **Go back**. It was drawn at the conversation's width, not at 960 × 600.
 
 ## 8. What this note does not propose
 
