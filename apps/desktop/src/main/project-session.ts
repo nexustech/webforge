@@ -298,6 +298,11 @@ export class ProjectSession {
     return this.#path;
   }
 
+  /** The open site's project id, for the main process only: what its kept copy is found by. */
+  openProjectId(): string | undefined {
+    return this.#store?.info.projectId;
+  }
+
   /** The open site, or `null`. */
   current(): ProjectSummary | null {
     return this.#store === undefined || this.#path === undefined || this.#sessionId === undefined

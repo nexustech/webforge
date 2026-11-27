@@ -1,5 +1,6 @@
 import { join, resolve } from "node:path";
 import { t } from "@webforge/i18n/main";
+import { appEvents } from "../shared/ipc/app.js";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { updatesEvents } from "../shared/ipc/updates.js";
 import { updateChannelFor } from "../shared/update-channel.js";
@@ -119,6 +120,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       // (#1525, UC-2).
       beforeFormatChange: (path, info) => {
         backups.keepBeforeUpdate(path, info.projectId, info.formatVersion);
+        // The renderer offers to save it, once the change that waited for it is saved.
+        lifecycle.mainWindow()?.webContents.send(appEvents.copyKept.channel);
       },
     },
   );
@@ -292,6 +295,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         beforeSwitch: () => siteSwitch.leaveSite(),
         template: templates.template,
         flush: requestFlush,
+        keptCopies: { backups, version: app.getVersion() },
       },
       net: electron.net,
       packaged: app.isPackaged,

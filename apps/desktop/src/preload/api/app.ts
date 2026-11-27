@@ -27,6 +27,10 @@ export const appApi = (call: Call, subscribe: Subscribe): AppApi => ({
       const parsed = appEvents.runCommand.args.safeParse(args);
       if (parsed.success) run(parsed.data[0]);
     }),
+  onCopyKept: (kept) =>
+    subscribe(appEvents.copyKept.channel, (...args) => {
+      if (appEvents.copyKept.args.safeParse(args).success) kept();
+    }),
   onFlushRequest: (save) =>
     subscribe(appEvents.flushRequest.channel, (...args) => {
       const parsed = appEvents.flushRequest.args.safeParse(args);

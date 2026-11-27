@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { createSite } from "@webforge/model";
 import { ProjectStore, writeSiteZip } from "@webforge/storage";
@@ -39,6 +39,7 @@ function setUp(
     open: vi.fn(() => opened),
     current: vi.fn(() => project),
     currentPath: vi.fn((): string | undefined => "/sites/Bakery.wforge"),
+    openProjectId: vi.fn((): string | undefined => "project-1"),
     readSite: vi.fn(() => ({ status: "empty" })),
     commit: vi.fn(() => ({ status: "saved" })),
     uiState: vi.fn(() => ({ editorMode: "content" })),
@@ -64,6 +65,7 @@ function setUp(
       chooseProjectToOpen: async () => "/sites/Bakery.wforge",
       chooseSiteZipToSave: async () => "/backups/Bakery.zip",
       chooseSiteZipToOpen: async () => "/backups/Bakery.zip",
+      chooseKeptCopyToSave: async () => undefined,
       ...dialogs,
     },
     options,
@@ -510,5 +512,86 @@ describe("making and saving sites in the usage summary (5.40)", () => {
     }
 
     expect(counted).toEqual([{ kind: "saveFailed", reason: "read-only" }]);
+  });
+});
+
+describe("the copy from before an update (#1525)", () => {
+  const tempDir = tempDirFactory("webforge-kept-ipc-");
+  /** A kept copy of the site, as the backups give it. */
+  const keptAt = (path: string, fileFormat = 2) => ({
+    keptBeforeUpdate: vi.fn((projectId: string) =>
+      projectId === "project-1"
+        ? { path, fileFormat, keptAt: new Date("2026-11-27T10:00:00.000Z"), size: 4 }
+        : undefined,
+    ),
+  });
+
+  it("says whether the open site has one, with the releases that wrote its format", async () => {
+    const dir = tempDir();
+    const backups = keptAt(join(dir, "kept.wforge"));
+    const { invoke } = setUp({}, { keptCopies: { backups, version: "0.4.0" } });
+
+    await expect(invoke("project:kept-copy", APP_URL, project.sessionId)).resolves.toEqual({
+      status: "kept",
+      first: "0.1.0",
+      last: "0.3.1",
+      keptAt: "2026-11-27T10:00:00.000Z",
+      size: 4,
+    });
+    // A format no release wrote: none named.
+    const unnamed = setUp({}, { keptCopies: { backups: keptAt("x", 1), version: "0.4.0" } });
+    await expect(
+      unnamed.invoke("project:kept-copy", APP_URL, project.sessionId),
+    ).resolves.toMatchObject({ first: null, last: null });
+    // None for a replaced opening, or a site without one.
+    await expect(
+      invoke("project:kept-copy", APP_URL, "22222222-2222-4222-8222-222222222222"),
+    ).resolves.toEqual({
+      status: "none",
+    });
+    const none = setUp(
+      {},
+      { keptCopies: { backups: { keptBeforeUpdate: () => undefined }, version: "0.4.0" } },
+    );
+    await expect(none.invoke("project:kept-copy", APP_URL, project.sessionId)).resolves.toEqual({
+      status: "none",
+    });
+  });
+
+  it("saves the kept file byte for byte where the person chooses, named for the releases", async () => {
+    const dir = tempDir();
+    const kept = join(dir, "kept.wforge");
+    writeFileSync(kept, Buffer.from([1, 2, 3, 4]));
+    const chooseKeptCopyToSave = vi.fn(async (_name: string) => join(dir, "Saved.wforge"));
+    const { invoke } = setUp(
+      { chooseKeptCopyToSave },
+      { keptCopies: { backups: keptAt(kept), version: "0.4.0" } },
+    );
+
+    await expect(invoke("project:save-kept-copy", APP_URL, project.sessionId)).resolves.toEqual({
+      status: "saved",
+      fileName: "Saved.wforge",
+    });
+    expect(chooseKeptCopyToSave).toHaveBeenCalledWith("Bakery (for Webforge 0.1.0 to 0.3.1)");
+    expect(readFileSync(join(dir, "Saved.wforge")).equals(readFileSync(kept))).toBe(true);
+  });
+
+  it("saves nothing without a copy, when the person cancels, or for a replaced opening", async () => {
+    const without = setUp(
+      {},
+      { keptCopies: { backups: { keptBeforeUpdate: () => undefined }, version: "0.4.0" } },
+    );
+    await expect(
+      without.invoke("project:save-kept-copy", APP_URL, project.sessionId),
+    ).resolves.toEqual({ status: "failed", reason: "no-copy" });
+
+    const canceled = setUp({}, { keptCopies: { backups: keptAt("x"), version: "0.4.0" } });
+    await expect(
+      canceled.invoke("project:save-kept-copy", APP_URL, project.sessionId),
+    ).resolves.toEqual({ status: "canceled" });
+
+    await expect(
+      canceled.invoke("project:save-kept-copy", APP_URL, "22222222-2222-4222-8222-222222222222"),
+    ).resolves.toEqual({ status: "canceled" });
   });
 });

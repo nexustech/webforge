@@ -487,6 +487,10 @@ export const site = {
   // website, which Export makes.
   "site.zip.fileType": "ZIP file",
   "site.zip.saveDialogTitle": "Save a Copy of Your Site as a ZIP File",
+  // The copy kept from before an update (#1525, UC-2): saved as a site file of its own.
+  "site.keptCopy.saveDialogTitle": "Save the Copy from Before the Update",
+  "site.keptCopy.fileName": "{name} (for {appName} {first} to {last})",
+  "site.keptCopy.fileNameUndated": "{name} (from before the update)",
   "site.zip.openDialogTitle": "Open a Site from a ZIP File",
   "site.zip.saved": "Saved a copy of your site as “{name}”.",
   "site.zip.savedDescription":

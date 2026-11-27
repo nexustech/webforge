@@ -78,6 +78,40 @@ const saveSiteZipResultSchema = z.discriminatedUnion("status", [
 /** Outcome of saving a copy of the open site as a ZIP. */
 export type SaveSiteZipResult = z.infer<typeof saveSiteZipResultSchema>;
 
+/**
+ * The copy the open site has from before an update (#1525, UC-2): its file as an older Webforge
+ * wrote it, kept before this one first wrote it in a newer format. `first` and `last` are the
+ * releases that wrote that format before this one, `null` when no release did.
+ */
+const keptCopySchema = z.discriminatedUnion("status", [
+  z.strictObject({ status: z.literal("none") }),
+  z.strictObject({
+    status: z.literal("kept"),
+    first: z.string().min(1).nullable(),
+    last: z.string().min(1).nullable(),
+    keptAt: z.iso.datetime(),
+    size: z.int().nonnegative(),
+  }),
+]);
+
+/** The copy the open site has from before an update, if any. */
+export type KeptCopyInfo = z.infer<typeof keptCopySchema>;
+
+/** Outcome of saving the copy from before an update as a site file of its own (#1525). */
+const saveKeptCopyResultSchema = z.discriminatedUnion("status", [
+  /** Saved as `fileName`, never the full path. */
+  z.strictObject({ status: z.literal("saved"), fileName: z.string().min(1) }),
+  z.strictObject({ status: z.literal("canceled") }),
+  z.strictObject({
+    status: z.literal("failed"),
+    /** No site open, no copy kept for it, or a write error. */
+    reason: z.enum(["no-site", "no-copy", "unknown"]),
+  }),
+]);
+
+/** Outcome of saving the copy from before an update. */
+export type SaveKeptCopyResult = z.infer<typeof saveKeptCopyResultSchema>;
+
 /** Outcome of reading the open site's documents. */
 const readSiteResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("ok"), site: siteDocSchema }),
@@ -260,6 +294,22 @@ export const projectChannels = {
     request: z.tuple([sessionIdSchema]),
     response: saveSiteZipResultSchema,
   },
+  /** The copy the site opened as `sessionId` has from before an update (#1525), if any. */
+  keptCopy: {
+    channel: "project:kept-copy",
+    request: z.tuple([sessionIdSchema]),
+    response: keptCopySchema,
+  },
+  /**
+   * Saves the copy from before an update as a site file of its own, byte for byte, where the
+   * person chooses in a save dialog (#1525): never opened or brought up to date, so the older
+   * Webforge opens it. `canceled` once another site has opened.
+   */
+  saveKeptCopy: {
+    channel: "project:save-kept-copy",
+    request: z.tuple([sessionIdSchema]),
+    response: saveKeptCopyResultSchema,
+  },
   /**
    * Asks which site's ZIP to open (open dialog in main), checks it, asks where to save it as a new
    * site (save dialog) and makes that current (4.7).
@@ -373,6 +423,10 @@ export interface ProjectApi {
   open(): Promise<ProjectResult>;
   /** Saves a copy of the site opened as `sessionId` as a ZIP, where the person chooses (4.7). */
   saveZip(sessionId: string): Promise<SaveSiteZipResult>;
+  /** The copy the site opened as `sessionId` has from before an update (#1525), if any. */
+  keptCopy(sessionId: string): Promise<KeptCopyInfo>;
+  /** Saves that copy as a site file of its own, where the person chooses (#1525). */
+  saveKeptCopy(sessionId: string): Promise<SaveKeptCopyResult>;
   /** Opens a site's ZIP the person chooses as a new site, saved where they choose (4.7). */
   openZip(): Promise<ProjectResult>;
   /**
