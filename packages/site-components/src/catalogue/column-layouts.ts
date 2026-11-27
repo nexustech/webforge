@@ -1,5 +1,6 @@
 import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/model";
 import { createContext } from "react";
+import { responsiveClasses } from "../library.js";
 
 /** The fewest and the most columns a Columns element has (2.17's toolbar adds and removes them). */
 export const MIN_COLUMNS = 1;
@@ -41,6 +42,73 @@ export const COLUMN_LAYOUT_CLASS: Readonly<Record<ColumnLayout, string>> = {
   stacked:
     "grid-flow-row [&>*:first-child:nth-last-child(-n+3)]:col-span-1 [&>*:last-child:nth-child(-n+3)]:col-span-1 [&>*:nth-child(2):nth-last-child(2)]:col-span-1",
 };
+
+/** Where a Columns element's columns sit when one is taller than another (CP-14, #1544). */
+export const COLUMN_LINE_UPS = ["top", "middle", "bottom"] as const;
+type ColumnLineUp = (typeof COLUMN_LINE_UPS)[number];
+
+/**
+ * Each line-up's class on the grid. A column has no box of its own, only what it holds, so the
+ * grid's items are aligned rather than stretched: on the canvas they are Puck's wrappers, which
+ * hold each column tightly, so the canvas lines them up as the site does. Top adds nothing, as a
+ * grid's columns already start at the top: a Columns saved before there was a setting keeps its
+ * classes.
+ */
+export const COLUMN_LINE_UP_CLASS: Readonly<Record<ColumnLineUp, string>> = {
+  top: "",
+  middle: "items-center",
+  bottom: "items-end",
+};
+
+/**
+ * Two or three columns drawn last first, by `order` on the grid's children (on the canvas, Puck's
+ * wrappers): the first drawn third, the second second, the last first. With four columns none of
+ * these match, and they're drawn in their order. A screen reader and Tab still go through them
+ * in their order: a page has one order of its HTML for every device.
+ */
+const LAST_FIRST_CLASS =
+  "[&>*:first-child:nth-last-child(-n+3)]:order-3 [&>*:nth-child(2):nth-last-child(2)]:order-2 [&>*:last-child:nth-child(-n+3)]:order-1";
+/** The same children in their order again, on a device after one that reverses them. */
+const IN_ORDER_CLASS =
+  "[&>*:first-child:nth-last-child(-n+3)]:order-none [&>*:nth-child(2):nth-last-child(2)]:order-none [&>*:last-child:nth-child(-n+3)]:order-none";
+
+/**
+ * The layout drawn with the columns last first: a wide first or last column swaps ends, so the
+ * wide column is still the one drawn first with *First one wider* (product owner, 27 Nov 2026),
+ * and drawn last with *Last one wider*. A wide middle column stays in the middle.
+ */
+function drawnLayout(layout: ColumnLayout, lastFirst: boolean): ColumnLayout {
+  if (!lastFirst) return layout;
+  if (layout === "wideFirst") return "wideLast";
+  if (layout === "wideLast") return "wideFirst";
+  return layout;
+}
+
+const BREAKPOINTS: readonly Breakpoint[] = ["mobile", "tablet", "desktop"];
+
+/**
+ * The classes on a Columns element's grid for its widths, `layout`, and *Last column first*,
+ * `lastFirst`, on each device. Where no device draws them last first, `layout`'s classes alone,
+ * exactly as before there was the setting.
+ */
+export function columnGridClasses(
+  layout: Responsive<ColumnLayout>,
+  lastFirst: Responsive<boolean> | undefined,
+): string {
+  const reversed = (breakpoint: Breakpoint) =>
+    lastFirst !== undefined && resolveResponsive(lastFirst, breakpoint) === true;
+  if (!BREAKPOINTS.some(reversed)) {
+    return responsiveClasses(layout, (value) => COLUMN_LAYOUT_CLASS[value]);
+  }
+  const each = (breakpoint: Breakpoint) => {
+    const drawn = drawnLayout(resolveResponsive(layout, breakpoint), reversed(breakpoint));
+    return `${COLUMN_LAYOUT_CLASS[drawn]} ${reversed(breakpoint) ? LAST_FIRST_CLASS : IN_ORDER_CLASS}`;
+  };
+  return responsiveClasses<string>(
+    { $responsive: { mobile: each("mobile"), tablet: each("tablet"), desktop: each("desktop") } },
+    (classes) => classes,
+  );
+}
 
 /**
  * The widest a column can be, as a share of its Columns, with a layout: a wide column takes ⅔ of

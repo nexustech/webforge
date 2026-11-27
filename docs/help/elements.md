@@ -5,7 +5,7 @@ title: Elements
 summary: Every element you can put inside a section, what it's for and what you can change.
 components: [Heading, Text, List, ListItem, Image, Carousel, CarouselSlide, EmbedVideo, Button, Spacer, Divider, Icon, SocialLinks, Columns, Column, Tabs, Tab, EmbedMap, Form, FormField, BuyButton, Accordion, AccordionItem, Table, TableRow]
 related: [sections, add-panel, edit-panel, media, links, forms, custom-code]
-updated: 2026-11-24
+updated: 2026-11-27
 ---
 
 # Elements
@@ -92,6 +92,9 @@ Places elements side by side, in 1 to 4 **Columns**. Select it to see the **Add 
 
 - **Column widths:** _Equal_, _First one wider_, _Last one wider_, _Middle one wider_ or _One under another_. Set it per device: _One under another_ on Mobile is usually what you want.
 - **Space between columns:** _Small_, _Medium_ or _Large_.
+- **Line up:** where the columns sit when one is taller than another: _Top_, _Middle_ or _Bottom_. Short text beside a tall picture, lined up in the _Middle_, sits level with the middle of the picture. With **Show column outlines** on, the outlines follow each column's own height.
+- **Last column first:** draws the columns in the opposite order, on the devices you turn it on for. For two or three columns. Turned on for Mobile, a picture in the right-hand column shows above its text on a phone. With _First one wider_, the wider column is still the one drawn first.
+  - The order changes only on screen. Someone moving through the page with the Tab key, or listening with a screen reader, still meets the columns in the order they're in here, on every device: a web page has one order underneath for every screen size. Use it where the order makes no difference to the meaning, such as a picture and its text. For steps that must be read in order, move the columns instead.
 
 ### Tabs
 

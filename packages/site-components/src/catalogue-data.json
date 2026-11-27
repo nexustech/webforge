@@ -2647,6 +2647,31 @@
             }
           ]
         },
+        "lineUp": {
+          "kind": "select",
+          "label": "Line up",
+          "help": "Where the columns sit when one is taller than another",
+          "options": [
+            {
+              "label": "Top",
+              "value": "top"
+            },
+            {
+              "label": "Middle",
+              "value": "middle"
+            },
+            {
+              "label": "Bottom",
+              "value": "bottom"
+            }
+          ]
+        },
+        "lastFirst": {
+          "kind": "toggle",
+          "label": "Last column first",
+          "help": "Draws the columns in the opposite order, on the devices you choose: a picture on the right shows above its text on a phone. Tab and screen readers still go through them in their order here.",
+          "responsive": true
+        },
         "margin": {
           "kind": "box",
           "label": "Space outside",
