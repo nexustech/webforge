@@ -26,7 +26,6 @@ let app: ElectronApplication | undefined;
 /** Each opening's wall-clock time, for their median (#569). */
 const openings: number[] = [];
 
-/** The app this test launched. */
 /** A step main timed in an opening (`step-timings.ts`, #1560): durations under fixed names only. */
 type TimedStep = { readonly step: string; readonly ms: number; readonly at: number };
 
@@ -35,12 +34,16 @@ type TimedStep = { readonly step: string; readonly ms: number; readonly at: numb
  * `since`, so the time no step accounts for shows between them.
  */
 async function stepsSince(app: ElectronApplication, since: number): Promise<string> {
-  const steps = await app.evaluate(
-    () =>
-      (
-        globalThis as { webforgeStepTimings?: () => readonly TimedStep[] }
-      ).webforgeStepTimings?.() ?? [],
-  );
+  // A main that's stuck or gone can't say: the failure being explained still comes through.
+  const steps = await app
+    .evaluate(
+      () =>
+        (
+          globalThis as { webforgeStepTimings?: () => readonly TimedStep[] }
+        ).webforgeStepTimings?.() ?? [],
+    )
+    .catch(() => undefined);
+  if (steps === undefined) return "Main's steps couldn't be read.";
   const after = steps.filter((each) => each.at >= since);
   return after.length === 0
     ? "Main timed no steps after Create."
@@ -49,6 +52,7 @@ async function stepsSince(app: ElectronApplication, since: number): Promise<stri
         .join(", ")}`;
 }
 
+/** The app this test launched. */
 function running(): ElectronApplication {
   if (app === undefined) throw new Error("The app is not running");
   return app;
@@ -85,9 +89,13 @@ for (const template of TEMPLATES) {
       pressed = Date.now();
     });
     const canvas = page.frameLocator(".editor__canvas iframe");
-    await expect(canvas.locator("h1", { hasText: template.heading })).toBeVisible({
-      timeout: OPEN_WAIT,
-    });
+    // A stall past the wait says where it was too (#1560).
+    await expect(canvas.locator("h1", { hasText: template.heading }))
+      .toBeVisible({ timeout: OPEN_WAIT })
+      .catch(async (error: unknown) => {
+        const said = error instanceof Error ? error.message : String(error);
+        throw new Error(`${said}\n${await stepsSince(running(), pressed)}`);
+      });
     if (opened === undefined) throw new Error("Not measured");
     const work = await opened();
     openings.push(work.wallMs);

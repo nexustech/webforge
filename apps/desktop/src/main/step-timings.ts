@@ -28,6 +28,9 @@ export type TimedStep = { readonly step: StepName; readonly ms: number; readonly
 /** Whether the E2E launch asked for the steps' times. */
 const ON = process.env.WEBFORGE_STEP_TIMINGS === "1";
 
+/** Whether the steps are recorded: for what is only set up to record them. */
+export const STEP_TIMINGS_ON = ON;
+
 /** The most steps kept: the latest, so a long session's list never grows without end. */
 const MAX_STEPS = 500;
 
