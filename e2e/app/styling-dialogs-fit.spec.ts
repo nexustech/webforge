@@ -1,12 +1,13 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
-import { expectFitsWindow, expectOneScrollAreaUnder, sizeWindow } from "./fits.js";
+import { expectOneScrollAreaUnder, sizeWindow } from "./fits.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
 // Style This… and Theme Studio at the window sizes the app supports (#1440, H3): the previews
 // beside the controls, so the controls get the dialog's height; one preview with a switch in a
 // short window; one scroll area under the pointer anywhere; each group's heading in view, with the
-// focus never hidden under one (WCAG 2.4.11); and the dialog inside the window.
+// focus never hidden under one (WCAG 2.4.11). That they fit the window, as every dialog does, is
+// dialog-fit.spec.ts's to check (#1433).
 
 let app: ElectronApplication;
 let page: Page;
@@ -123,7 +124,6 @@ for (const size of SIZES) {
     await right().getByRole("tab", { name: "Style" }).click();
     await right().getByRole("button", { name: "Style This Hero…" }).click();
     const dialog = page.getByRole("dialog", { name: "Style this Hero" });
-    await expectFitsWindow(dialog, `Style this Hero, ${at}`);
 
     // The controls at least half the dialog's height (152 px before, at 960 × 600).
     const controls = dialog.getByRole("tabpanel");
@@ -156,7 +156,6 @@ for (const size of SIZES) {
     await chooseFromMenu(app, page, "Site", "Theme Studio…");
     const dialog = page.getByRole("dialog", { name: "Theme Studio" });
     await dialog.getByRole("tab", { name: "Components" }).click();
-    await expectFitsWindow(dialog, `Theme Studio's Components, ${at}`);
 
     const controls = dialog.getByRole("tabpanel", { name: "Components" });
     const preview = dialog.getByRole("region", { name: /as it looks in this theme$/ });

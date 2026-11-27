@@ -3,6 +3,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { titleBarFaults, titleBarLayout } from "./fits.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { stubFileDialogs } from "./sites.js";
@@ -270,68 +271,18 @@ test("folds the panel buttons into one Panels menu in a narrow title bar, ticked
 });
 
 /**
- * The title bar with Site Check showing `count`: whether any two of its controls are over each
- * other or anything is cut off, where Publish ends against the window's own buttons (Windows,
- * Linux), and how wide the search box is, which takes what's left (#1166).
+ * Checks the title bar with Site Check showing `count` ({@link titleBarLayout}): nothing over
+ * anything else or cut off, nothing in the window controls' area, and `spare` px or more to spare.
  */
-async function titleBarWith(count: string) {
-  return page.getByRole("banner").evaluate((header, shown) => {
-    const check = [...header.querySelectorAll("button")].find((button) =>
-      (button.getAttribute("aria-label") ?? "").startsWith("Site Check:"),
-    );
-    const text = [...(check?.querySelectorAll("span") ?? [])].find(
-      (span) => getComputedStyle(span).display !== "none",
-    );
-    if (text !== undefined) text.textContent = shown;
-    const overlay = (
-      navigator as Navigator & {
-        windowControlsOverlay?: { visible: boolean; getTitlebarAreaRect(): DOMRect };
-      }
-    ).windowControlsOverlay;
-    const room =
-      overlay?.visible === true
-        ? overlay.getTitlebarAreaRect().right
-        : document.documentElement.clientWidth;
-    // Each control: a button, a menu's title or a choice, not one holding another.
-    const controls = [
-      ...header.querySelectorAll<HTMLElement>("button, [role='menuitem'], [role='radio']"),
-    ]
-      .filter((each) => each.getBoundingClientRect().width > 0)
-      .filter((each) => each.querySelector("button, [role='menuitem'], [role='radio']") === null);
-    const overlaps: string[] = [];
-    controls.forEach((a, index) => {
-      for (const b of controls.slice(index + 1)) {
-        const [ra, rb] = [a.getBoundingClientRect(), b.getBoundingClientRect()];
-        if (ra.left < rb.right - 0.5 && rb.left < ra.right - 0.5) {
-          overlaps.push(
-            `${a.getAttribute("aria-label") ?? a.textContent} × ${b.getAttribute("aria-label") ?? b.textContent}`,
-          );
-        }
-      }
-    });
-    const publish = controls.find((each) => each.textContent === "Publish");
-    const searchBox = header.querySelector("button[aria-haspopup='dialog']");
-    return {
-      searchWidth: searchBox?.getBoundingClientRect().width ?? 0,
-      room,
-      publishRight: publish?.getBoundingClientRect().right ?? Number.POSITIVE_INFINITY,
-      overlaps,
-      cutOff: header.scrollWidth > header.clientWidth,
-    };
-  }, count);
-}
-
-/** Checks {@link titleBarWith} `count`: nothing over or cut off, and `spare` px or more to spare. */
 async function expectTitleBarFits(count: string, width: number, spare = 4): Promise<void> {
   // Measured again until it settles: on Linux, the window controls' overlay reports the title
   // bar's room for the window's size before a resize for a moment after it.
   await expect(async () => {
-    const layout = await titleBarWith(count);
+    const layout = await titleBarLayout(page, count);
     console.log(
       `[work] ${width} px title bar, "${count}": Publish ends at ${layout.publishRight.toFixed(1)} of ${layout.room} px, ${(layout.searchWidth - 140).toFixed(1)} px to spare`,
     );
-    expect(layout.overlaps, count).toEqual([]);
-    expect(layout.cutOff, count).toBe(false);
+    expect(titleBarFaults(layout), count).toEqual([]);
     // Half a pixel for the zoom's rounding (#1195).
     expect(layout.publishRight, count).toBeLessThanOrEqual(layout.room + 0.5);
     // The spare is what the search box has over its least, 140 px.
