@@ -101,8 +101,9 @@ export class ProjectStore {
    * a half-created project.
    */
   static create(path: string, options: CreateProjectOptions): ProjectStore {
-    createProjectFile(path, options.name);
-    return ProjectStore.open(path);
+    createProjectFile(path, options.name, options.timed);
+    const timed = options.timed ?? ((_step, run) => run());
+    return timed("check the new file", () => ProjectStore.open(path));
   }
 
   /**

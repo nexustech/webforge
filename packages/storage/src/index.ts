@@ -34,6 +34,8 @@ export {
 export {
   type AssetInfo,
   type CreateProjectOptions,
+  type CreateProjectStep,
+  type CreateStepTimer,
   type DocumentChange,
   type NewAsset,
   type NewVersion,
