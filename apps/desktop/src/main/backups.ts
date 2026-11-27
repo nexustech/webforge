@@ -11,6 +11,32 @@ import {
 import { basename, dirname, extname, join, resolve } from "node:path";
 import type { ProjectStore } from "@webforge/storage";
 
+/**
+ * A site's file kept as an older Webforge wrote it, before this one first wrote it in a newer
+ * format (#1525, UC-2): `userData/backups/<projectId>/before-update-format-<n>.wforge`, one for
+ * each site, by its id, so a moved or renamed file keeps it. Never pruned with the rolling backups.
+ */
+export type KeptCopy = {
+  readonly path: string;
+  /** The storage format the file was in: what the older Webforge wrote. */
+  readonly fileFormat: number;
+  /** When it was kept. */
+  readonly keptAt: Date;
+  /** Its size, in bytes. */
+  readonly size: number;
+};
+
+/** The file couldn't be kept as it was, so the write that would change its format is refused. */
+export class KeepCopyError extends Error {
+  constructor(cause: unknown) {
+    super("Webforge could not keep the site's file as it was before the update", { cause });
+    this.name = "KeepCopyError";
+  }
+}
+
+/** `before-update-format-2.wforge`: the kept copy, by the file format it holds. */
+const KEPT_NAME = /^before-update-format-(\d+)\.wforge$/;
+
 /** A backup of a site, newest first in {@link Backups.list}. */
 export type BackupInfo = {
   readonly path: string;
@@ -123,6 +149,46 @@ export function createBackups(options: BackupOptions) {
         .filter((entry) => entry.isDirectory())
         .flatMap((entry) => backupsIn(join(options.root, entry.name, key)))
         .sort((a, b) => b.takenAt.getTime() - a.takenAt.getTime());
+    },
+
+    /**
+     * Keeps the site file at `sourcePath` as it is now, byte for byte, as the copy from before an
+     * update (#1525), replacing the site's earlier one. Called before the first write that changes
+     * the file's format, with the file whole between transactions. Copied under a temporary name
+     * and renamed, so a failed copy leaves the earlier one. Throws {@link KeepCopyError} on failure:
+     * the write must not happen without it.
+     */
+    keepBeforeUpdate(sourcePath: string, projectId: string, fileFormat: number): KeptCopy {
+      try {
+        const folder = join(options.root, projectId);
+        mkdirSync(folder, { recursive: true });
+        const path = join(folder, `before-update-format-${fileFormat}.wforge`);
+        const incoming = `${path}.tmp`;
+        copyFileSync(sourcePath, incoming);
+        renameSync(incoming, path);
+        for (const name of readdirSync(folder)) {
+          if (KEPT_NAME.test(name) && join(folder, name) !== path) {
+            rmSync(join(folder, name), { force: true });
+          }
+        }
+        return { path, fileFormat, keptAt: now(), size: statSync(path).size };
+      } catch (error) {
+        throw new KeepCopyError(error);
+      }
+    },
+
+    /** The copy kept of the site with `projectId` from before an update, if there is one. */
+    keptBeforeUpdate(projectId: string): KeptCopy | undefined {
+      const folder = join(options.root, projectId);
+      if (!existsSync(folder)) return undefined;
+      for (const name of readdirSync(folder)) {
+        const match = KEPT_NAME.exec(name);
+        if (match === null) continue;
+        const path = join(folder, name);
+        const info = statSync(path);
+        return { path, fileFormat: Number(match[1]), keptAt: info.mtime, size: info.size };
+      }
+      return undefined;
     },
 
     /**

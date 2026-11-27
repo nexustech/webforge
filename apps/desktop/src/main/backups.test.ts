@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   rmSync,
   utimesSync,
   writeFileSync,
@@ -14,7 +15,7 @@ import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createBackups } from "./backups.js";
+import { createBackups, KeepCopyError } from "./backups.js";
 
 let dir: string;
 let sitePath: string;
@@ -179,5 +180,57 @@ describe("createBackups", () => {
 
     expect(readdirSync(join(dir, "sites"))).toEqual(["Bakery.wforge"]);
     store = ProjectStore.create(join(dir, "other.wforge"), { name: "Other" });
+  });
+});
+
+describe("the copy kept from before an update (#1525)", () => {
+  it("keeps the file byte for byte by the site's id, apart from the rolling backups", async () => {
+    const backed = backups(2);
+    const original = readFileSync(sitePath);
+
+    const kept = backed.keepBeforeUpdate(sitePath, store.info.projectId, 1);
+
+    expect(readFileSync(kept.path).equals(original)).toBe(true);
+    expect(kept.path).toBe(
+      join(dir, "backups", store.info.projectId, "before-update-format-1.wforge"),
+    );
+    expect(kept).toMatchObject({ fileFormat: 1, size: original.length });
+    // Never counted, pruned or restored with the rolling backups.
+    for (let index = 0; index < 4; index++) {
+      clock = new Date(clock.getTime() + 60_000);
+      await backed.take(store, sitePath);
+    }
+    expect(backed.list(sitePath)).toHaveLength(2);
+    expect(backed.list(sitePath).some((backup) => backup.path === kept.path)).toBe(false);
+    expect(existsSync(kept.path)).toBe(true);
+  });
+
+  it("finds the site's kept copy by its id, wherever its file is now, one for each site", () => {
+    const backed = backups();
+    expect(backed.keptBeforeUpdate(store.info.projectId)).toBeUndefined();
+
+    backed.keepBeforeUpdate(sitePath, store.info.projectId, 1);
+    // A later format change replaces it.
+    const later = backed.keepBeforeUpdate(sitePath, store.info.projectId, 2);
+
+    expect(backed.keptBeforeUpdate(store.info.projectId)).toMatchObject({
+      path: later.path,
+      fileFormat: 2,
+    });
+    expect(
+      readdirSync(join(dir, "backups", store.info.projectId)).filter((name) =>
+        name.startsWith("before-update"),
+      ),
+    ).toEqual(["before-update-format-2.wforge"]);
+  });
+
+  it("says it couldn't keep the copy, and leaves the earlier one, when the copy fails", () => {
+    const backed = backups();
+    const earlier = backed.keepBeforeUpdate(sitePath, store.info.projectId, 1);
+
+    expect(() =>
+      backed.keepBeforeUpdate(join(dir, "missing.wforge"), store.info.projectId, 2),
+    ).toThrow(KeepCopyError);
+    expect(existsSync(earlier.path)).toBe(true);
   });
 });
