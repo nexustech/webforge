@@ -87,7 +87,8 @@ function LayerRowView({
         "group relative flex h-7 items-center gap-1 rounded-sm pr-1 text-xs outline-none",
         "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
         selected && "bg-accent text-accent-foreground",
-        layer.hidden && !selected && "text-muted-foreground",
+        // Not published, or inside an element that isn't (#1512): dimmed, as on the canvas.
+        (layer.hidden || row.insideUnpublished) && !selected && "text-muted-foreground",
         // Muted as any disabled control is, not faded (#1010).
         notAllowed && "cursor-not-allowed text-disabled",
         drag.indicatorClass(row),
@@ -220,6 +221,10 @@ function LayerName({ row }: { readonly row: TreeRow }) {
         <>
           {layer.name} <span className="text-muted-foreground">{layer.kind}</span>
         </>
+      )}
+      {row.insideUnpublished && (
+        // Said for a screen reader: the row's own eye only says how this layer itself shows.
+        <span className="sr-only">{`, ${t("layers.insideUnpublished")}`}</span>
       )}
       {layer.note !== undefined && (
         // A note for the person (UX-17, #868), after the name, its text on pointing at it.

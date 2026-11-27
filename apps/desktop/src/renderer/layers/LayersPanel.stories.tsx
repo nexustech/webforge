@@ -95,5 +95,28 @@ export const HeaderAndFooter: Story = {
   },
 };
 
+/**
+ * A Features section not published (#1512): its row has the crossed eye, and the features inside
+ * it are dimmed, not each crossed out, as they aren't on the website either way.
+ */
+export const NotPublished: Story = {
+  args: {
+    layers: [
+      layer("features", "Features", {
+        hidden: true,
+        children: [
+          layer("f1", "Feature", { name: "Fresh bread" }),
+          layer("f2", "Feature"),
+          layer("f3", "Feature"),
+        ],
+      }),
+      layer("faq", "FAQ", {
+        children: [layer("q1", "Question"), layer("q2", "Question", { hidden: true })],
+      }),
+    ],
+    selectedId: "q1",
+  },
+};
+
 /** A page with no sections yet. */
 export const Empty: Story = { args: { layers: [], selectedId: null } };
