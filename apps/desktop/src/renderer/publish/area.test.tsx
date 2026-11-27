@@ -55,9 +55,12 @@ const rosas = {
 function setUp({
   published = LIVE,
   address = true,
+  leftOut = false,
 }: {
   readonly published?: PublishResult;
   readonly address?: boolean;
+  /** A heading on the home page set to Don't Publish, in the site and its saved version (#1512). */
+  readonly leftOut?: boolean;
 } = {}) {
   const registries = registriesForTest();
   const windowDialogs = createWindowDialogs();
@@ -69,6 +72,12 @@ function setUp({
     notFoundTitle: "Not found",
   });
   if (address) site.settings.address.url = "https://www.rosasbakery.co.uk";
+  if (leftOut) {
+    site.pages[site.homePageId]?.doc.content.push({
+      type: "Heading",
+      props: { id: "kept", text: "Opening soon", hidden: true },
+    });
+  }
   const session = sessionWith(site);
   const flush = vi.spyOn(session, "flush");
   const api = fakePreloadApi({
@@ -305,6 +314,49 @@ describe("publishArea (4.4a)", () => {
 });
 
 const VERSION = { id: "2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d", name: "Before the menu" };
+
+describe("what won't be on the website (#1512)", () => {
+  it("says how many elements aren't published, and Show closes the dialog and selects the first", async () => {
+    const { registries, session } = setUp({ leftOut: true });
+    session.select(null);
+    act(() => {
+      registries.commands.run(COMMAND_IDS.publish);
+    });
+    const dialog = within(await screen.findByRole("dialog", { name: "Publish" }));
+    expect(
+      dialog.getByText("1 element isn't published, so it won't be on your website."),
+    ).toBeTruthy();
+    await userEvent.setup({ delay: null }).click(dialog.getByRole("button", { name: "Show" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Publish" })).toBeNull());
+    expect(session.ui.getState().nodeId).toBe("kept");
+  });
+
+  it("says nothing when everything is published", async () => {
+    const { registries } = setUp();
+    act(() => {
+      registries.commands.run(COMMAND_IDS.publish);
+    });
+    const dialog = within(await screen.findByRole("dialog", { name: "Publish" }));
+    await dialog.findByRole("button", { name: "Publish to Rosa's Bakery" });
+    expect(dialog.queryByText(/isn't published|aren't published/)).toBeNull();
+  });
+
+  it("counts a version's own when republishing it, without Show, as it isn't the open site", async () => {
+    const { publishing } = setUp({ leftOut: true });
+    act(() => {
+      publishing.republish(VERSION);
+    });
+    const dialog = within(
+      await screen.findByRole("dialog", { name: "Republish “Before the menu”" }),
+    );
+    expect(
+      await dialog.findByText(
+        "1 element in this version isn't published, so it won't be on your website.",
+      ),
+    ).toBeTruthy();
+    expect(dialog.queryByRole("button", { name: "Show" })).toBeNull();
+  });
+});
 
 describe("Republish from Version History (4.6b)", () => {
   /** Asks to republish {@link VERSION}, and republishes it to Rosa's Bakery. */

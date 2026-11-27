@@ -5,7 +5,7 @@ title: Your blog
 summary: Add a blog, write posts on the page, tag them, list them anywhere, import them, and change the design every post shares.
 components: [LatestPosts, PostTags, ShareButtons]
 related: [pages, header-and-footer, edit-panel, export, site-settings]
-updated: 2026-11-17
+updated: 2026-11-27
 ---
 
 # Your blog
@@ -28,7 +28,7 @@ Drafted your post elsewhere in Markdown? Paste it into the post's text: headings
 
 ### A post's date, summary, picture and tags
 
-Open the post's **…** menu and choose **Page Settings…**. Under its **Title**:
+Open the post's **…** menu and choose **Page Settings…**. On its **General** tab, under its **Title**:
 
 - **Date:** the day of the post. Posts are listed newest first.
 - **Summary:** a sentence or two about the post.

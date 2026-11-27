@@ -281,12 +281,17 @@ describe("PagesPanel (F-ED-13)", () => {
     await userEvent.clear(slug);
     await userEvent.type(slug, "Our Team");
     expect(within(dialog).getByText("File name: company/our-team.html")).toBeTruthy();
+    await userEvent.click(
+      within(dialog).getByRole("checkbox", { name: "Hide the Footer on this page" }),
+    );
+    expect(within(dialog).getByRole("checkbox", { name: /^Draft/ })).toBeTruthy();
+    // The site has no back-to-top button to leave off.
+    expect(within(dialog).queryByRole("checkbox", { name: /back-to-top/ })).toBeNull();
+    // The description is on its own tab (#1443).
+    await userEvent.click(within(dialog).getByRole("tab", { name: "Search engines" }));
     await userEvent.type(
       within(dialog).getByRole("textbox", { name: "Description" }),
       "Who we are",
-    );
-    await userEvent.click(
-      within(dialog).getByRole("checkbox", { name: "Hide the Footer on this page" }),
     );
     await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
 
@@ -305,9 +310,6 @@ describe("PagesPanel (F-ED-13)", () => {
       // A draft, as it was (G37): its switch was on.
       draft: true,
     });
-    expect(within(dialog).getByRole("checkbox", { name: /^Draft/ })).toBeTruthy();
-    // The site has no back-to-top button to leave off.
-    expect(within(dialog).queryByRole("checkbox", { name: /back-to-top/ })).toBeNull();
   });
 
   it("leaves the site's back-to-top button off a page (F-CM-9)", async () => {

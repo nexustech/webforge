@@ -13,9 +13,8 @@ import type { EditorSession } from "../editor/editor-session.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
 import { inDesign } from "../editor/shared-layout.js";
 import { showElement } from "../editor/show-element.js";
+import type { PageSettingsOpener } from "../editor/window-services.js";
 import { reportFailure } from "../log.js";
-import { COMMAND_IDS } from "../shell/command-ids.js";
-import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import {
@@ -32,7 +31,8 @@ export type FindActions = {
   readonly session: EditorSession;
   readonly panels: Pick<PanelRegistry, "show">;
   readonly settings: Pick<SettingsRegistry, "show">;
-  readonly commands: Pick<CommandRegistry, "run">;
+  /** Page Settings on the tab a page's title or description is on (#1443). */
+  readonly pageSettings: PageSettingsOpener;
   readonly siteWide: Pick<SiteWideConfirm, "confirmSiteWide">;
 };
 
@@ -115,7 +115,7 @@ function elementName(site: SiteDoc, spot: TextSpot & { kind: "element" }): strin
  * description in its Page Settings, its name in the menu and the menu's own labels in the Pages
  * panel, a business detail in Site Settings.
  */
-export function showSpot(spot: TextSpot, { session, panels, settings, commands }: FindActions) {
+export function showSpot(spot: TextSpot, { session, panels, settings, pageSettings }: FindActions) {
   const site = session.history.document.getState();
   switch (spot.kind) {
     case "element":
@@ -125,7 +125,8 @@ export function showSpot(spot: TextSpot, { session, panels, settings, commands }
       if (site.pages[spot.pageId] === undefined) return;
       session.showPage(spot.pageId);
       if (spot.field === "navLabel") panels.show(SITE_PANEL_ID);
-      else commands.run(COMMAND_IDS.pageSettings);
+      // The description's on Search engines, the title on General (#1443).
+      else pageSettings.show(spot.field === "description" ? "search" : "general");
       return;
     case "menu":
       panels.show(SITE_PANEL_ID);

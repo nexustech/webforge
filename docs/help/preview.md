@@ -27,7 +27,7 @@ The preview works only on this computer, and only while {appName} is open. Nothi
 
 The preview shows your website as it will be published, with one difference: it shows your [draft pages](pages.md#draft-pages) too, so you can check them before they go live. Open a draft from the page itself; the menu leaves it out, as your website's will.
 
-Anything set to **Don't publish** in [Layers](layers.md#what-you-can-do) isn't in the preview, as it won't be on your website. Anything you **Hide while editing** is, as it is on your website.
+Anything set to **Don't publish** in [Layers](layers.md#what-you-can-do) isn't in the preview, as it won't be on your website. When the page has any, **Opened in your browser** says how many items it leaves out, and stays until you close it. Click **Show** there to select the first on the page. Anything you **Hide while editing** is in the preview, as it is on your website.
 
 ## On your phone
 

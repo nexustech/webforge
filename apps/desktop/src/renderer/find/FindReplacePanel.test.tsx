@@ -31,6 +31,7 @@ function setUp() {
     panels,
     commands,
     settings: createSettingsRegistry(),
+    pageSettings: { show: vi.fn() },
     siteWide: { confirmSiteWide },
   });
   const [panel] = panels.list();

@@ -1,6 +1,7 @@
 import { type Collection, isCollectionIn } from "./collections.js";
 import { isNodeDoc, type NodeDoc } from "./documents.js";
 import type { CollectionId, PageId, SharedSectionId } from "./ids.js";
+import { isDraftPage } from "./published-site.js";
 import { isKeyOf } from "./records.js";
 import { isSharedCopy } from "./shared-sections.js";
 import type { SiteDoc } from "./site-doc.js";
@@ -117,4 +118,90 @@ export function pageWithCopy(
     if (copy !== undefined) return { pageId, copyId: copy.props.id };
   }
   return undefined;
+}
+
+/** An element set to Don't Publish that no such element holds, and where it's kept (#1512). */
+export type UnpublishedRoot = { readonly node: NodeDoc; readonly on: ElementPlace };
+
+/** Adds to `found` each element of `nodes` (kept `on`) set to Don't Publish with none such holding it. */
+function rootsIn(
+  nodes: readonly NodeDoc[],
+  on: ElementPlace,
+  found: UnpublishedRoot[],
+): UnpublishedRoot[] {
+  walk(
+    nodes,
+    on,
+    (node, place, ancestors) => {
+      if (node.props.hidden === true && !ancestors.some((held) => held.props.hidden === true)) {
+        found.push({ node, on: place });
+      }
+    },
+    false,
+  );
+  return found;
+}
+
+/**
+ * The shared sections in `content`, a page's top level, that a copy shows: one not set to Don't
+ * Publish there. A copy that is counts as itself, so what's in it doesn't count again.
+ */
+const shownSharedSections = (content: readonly NodeDoc[]): SharedSectionId[] =>
+  content
+    .filter(isSharedCopy)
+    .filter((copy) => copy.props.hidden !== true)
+    .map((copy) => copy.props.sharedSectionId);
+
+/** The elements left out of page `pageId` of `site`, in the order it's drawn (#1512). */
+function pageRoots(site: SiteDoc, pageId: PageId): UnpublishedRoot[] {
+  const page = site.pages[pageId];
+  if (page === undefined) return [];
+  const found: UnpublishedRoot[] = [];
+  if (page.settings.hideHeader !== true) rootsIn(site.layout.header, "header", found);
+  const design = page.collection === undefined ? undefined : designAt(site, page.collection);
+  if (design !== undefined) rootsIn(design.design.before, design.id, found);
+  rootsIn(page.doc.content, pageId, found);
+  for (const shared of shownSharedSections(page.doc.content)) {
+    const entry = site.sharedSections[shared];
+    if (entry !== undefined) rootsIn([entry.section], entry.id, found);
+  }
+  if (design !== undefined) rootsIn(design.design.after, design.id, found);
+  if (page.settings.hideFooter !== true) rootsIn(site.layout.footer, "footer", found);
+  return found;
+}
+
+/**
+ * The elements set to **Don't Publish** in `site` (#1512), as the canvas badges them: the outermost
+ * only, so a section left out with five elements in it counts once. With `page`, those left out of
+ * that page, as Preview draws it: its own, the Header's and Footer's unless it hides them, those of
+ * the shared sections it shows and of its collection's design. Without, those of the whole site as
+ * it's published: each place once, a shared section's only while a published page shows it, a
+ * design's only while it has a published item, and none on a draft page.
+ */
+export function unpublishedRoots(
+  site: SiteDoc,
+  { page }: { readonly page?: PageId } = {},
+): UnpublishedRoot[] {
+  if (page !== undefined) return pageRoots(site, page);
+  const published = site.pageOrder.flatMap((id) => {
+    const entry = site.pages[id];
+    return entry === undefined || isDraftPage(site, entry) ? [] : [entry];
+  });
+  const found: UnpublishedRoot[] = [];
+  rootsIn(site.layout.header, "header", found);
+  rootsIn(site.layout.footer, "footer", found);
+  for (const entry of published) rootsIn(entry.doc.content, entry.id, found);
+  const shown = new Set(published.flatMap((entry) => shownSharedSections(entry.doc.content)));
+  for (const entry of Object.values(site.sharedSections)) {
+    if (shown.has(entry.id)) rootsIn([entry.section], entry.id, found);
+  }
+  const designs = new Set(
+    published.flatMap((entry) => (entry.collection === undefined ? [] : [entry.collection])),
+  );
+  for (const collection of Object.values(site.collections)) {
+    if (designs.has(collection.id)) {
+      rootsIn([...collection.design.before, ...collection.design.after], collection.id, found);
+    }
+  }
+  return found;
 }
