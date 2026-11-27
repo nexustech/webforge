@@ -188,7 +188,14 @@ test("opens Page Settings on a page without a description, in Being found (3.17)
     .first()
     .click();
 
-  await expect(page.getByRole("dialog", { name: /^Settings for '/ })).toBeVisible();
+  const settings = page.getByRole("dialog", { name: /^Settings for '/ });
+  await expect(settings).toBeVisible();
+  // On Search engines, where the description is (#1443).
+  await expect(settings.getByRole("tab", { name: "Search engines" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(settings.getByRole("textbox", { name: "Description" })).toBeVisible();
 });
 
 test("lists a note added from the element menu as a tip, outlined on the page, until it's resolved (UX-17)", async () => {

@@ -277,6 +277,8 @@ export const panels = {
   "pageSettings.title": "Settings for '{name}'",
   "pageSettings.description":
     "How this page shows in search results, browser tabs and when shared.",
+  // Its tabs, for screen readers (#1443); the tabs themselves are Settings' section names.
+  "pageSettings.sections": "Page Settings sections",
   "pageSettings.pageTitle": "Title",
   "pageSettings.fileName": "File name",
   "pageSettings.homeFile": "The Home page is always index.html.",

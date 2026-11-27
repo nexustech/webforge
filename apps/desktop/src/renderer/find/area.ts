@@ -1,4 +1,5 @@
 import type { Area, WindowContext } from "../editor/areas.js";
+import { PageSettings } from "../editor/window-services.js";
 import { registerFindReplacePanel } from "./register-find-replace-panel.js";
 
 /**
@@ -7,6 +8,14 @@ import { registerFindReplacePanel } from "./register-find-replace-panel.js";
  */
 export const findReplacePanelArea: Area<WindowContext> = {
   id: "findReplacePanel",
-  register: ({ panels, session, settings, commands, siteWide }) =>
-    registerFindReplacePanel({ session, panels, settings, commands, siteWide }),
+  uses: [PageSettings],
+  register: ({ panels, session, settings, commands, siteWide, use }) =>
+    registerFindReplacePanel({
+      session,
+      panels,
+      settings,
+      commands,
+      pageSettings: use(PageSettings),
+      siteWide,
+    }),
 };

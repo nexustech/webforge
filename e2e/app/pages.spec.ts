@@ -117,8 +117,21 @@ test.describe("Pages panel", () => {
     const dialog = page.getByRole("dialog", { name: "Settings for 'About us'" });
     await dialog.getByRole("textbox", { name: "File name" }).fill("our story");
     await expect(dialog.getByText("File name: our-story.html")).toBeVisible();
-    await dialog.getByRole("textbox", { name: "Description" }).fill("How we started");
     await dialog.getByRole("checkbox", { name: "Hide the Footer on this page" }).check();
+    // Its tabs (#1443), from the keyboard: the arrow keys choose one, then Tab goes to its panel
+    // and on to its first field.
+    await dialog.getByRole("tab", { name: "General" }).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(dialog.getByRole("tab", { name: "Search engines" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await page.keyboard.press("Tab");
+    await expect(dialog.getByRole("tabpanel", { name: "Search engines" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    const description = dialog.getByRole("textbox", { name: "Description" });
+    await expect(description).toBeFocused();
+    await description.fill("How we started");
     await dialog.getByRole("button", { name: "Save" }).click();
     await expect(dialog).toHaveCount(0);
 

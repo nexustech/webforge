@@ -12,6 +12,19 @@ import type { VersionActions, VersionList } from "./version-history.js";
  * The year the open site was last published in (F-CM-8), `undefined` when it hasn't been: as its
  * versions record it when it opened, then each publish from this window (4.5). Publish provides it.
  */
+/** A tab of Page Settings (#1443), named as Settings' sections are. */
+export type PageSettingsTab = "general" | "search" | "social";
+
+/**
+ * Page Settings for the page shown, opened on a tab (#1443): where a Site Check *Fix* or a Find
+ * result leads, the description's on Search engines. The command palette's *Page Settings…*
+ * opens it on General.
+ */
+export type PageSettingsOpener = { readonly show: (tab?: PageSettingsTab) => void };
+
+/** The window's {@link PageSettingsOpener}, which the Site area provides. */
+export const PageSettings = defineService<PageSettingsOpener>("pageSettings");
+
 export const PublishedYear = defineService<StoreApi<number | undefined>>("publishedYear");
 
 /**
