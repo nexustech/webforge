@@ -54,8 +54,15 @@ export function previewPageOf(site: SiteDoc, pageId: PageId): PreviewPage {
   return page === undefined ? "index.html" : `${pagePath(page, site.homePageId)}.html`;
 }
 
-/** What the person is told once a page is saved as a picture or a PDF, or why it wasn't. */
-function savedWords(result: SavePageResult, width: number): readonly [string, string] | string {
+/**
+ * What the person is told once a page is saved as a picture or a PDF, or why it wasn't: a PDF that
+ * couldn't be made offers the picture instead (#1508).
+ */
+function savedWords(
+  result: SavePageResult,
+  width: number,
+  kind: PageFileKind,
+): readonly [string, string] | string {
   switch (result.status) {
     case "saved":
       return [
@@ -69,7 +76,9 @@ function savedWords(result: SavePageResult, width: number): readonly [string, st
           ? t("preview.save.diskFull")
           : result.reason === "write"
             ? t("preview.save.writeFailed")
-            : t("preview.save.drawFailed");
+            : kind === "pdf"
+              ? t("preview.save.pdfFailed")
+              : t("preview.save.drawFailed");
     default:
       return "";
   }
@@ -209,7 +218,7 @@ export function registerPreviewCommands(
         kind,
       })
       .then((result) => {
-        const words = savedWords(result, width);
+        const words = savedWords(result, width, kind);
         if (typeof words !== "string") deps.saved(...words);
         else if (words !== "") notify(words);
       })

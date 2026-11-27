@@ -42,7 +42,7 @@ function inMenuBar(
  * Opens the editor's menu `menu` ("File"…) in the title bar: from its title, or, while the title
  * bar is too narrow for the titles (#1166), from the Menu button they fold into.
  */
-async function openTitleBarMenu(page: Page, menu: string): Promise<void> {
+export async function openTitleBarMenu(page: Page, menu: string): Promise<void> {
   const folded = page
     .getByRole("menubar", { name: "App menu" })
     .getByRole("menuitem", { name: "Menu", exact: true });

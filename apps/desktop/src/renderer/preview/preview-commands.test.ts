@@ -325,7 +325,8 @@ describe("registerPreviewCommands (3.2)", () => {
     );
 
     for (const [reason, words] of [
-      ["draw", "Webforge couldn't draw the page. Try again in a moment."],
+      // A PDF that couldn't be made offers the picture instead (#1508).
+      ["draw", "Webforge couldn't make the PDF. Try again, or save the page as an image."],
       ["not-allowed", "Webforge isn't allowed to save there. Choose another folder."],
       ["disk-full", "There isn't enough space on the disk to save the page."],
       ["write", "Webforge couldn't save the file there. Try another folder."],
@@ -335,11 +336,20 @@ describe("registerPreviewCommands (3.2)", () => {
       await vi.waitFor(() => expect(notify).toHaveBeenLastCalledWith(words));
     }
 
+    // A picture that couldn't be drawn says so.
+    api.savePage.mockResolvedValueOnce({ status: "failed", reason: "draw" });
+    await runSettled(registry, COMMAND_IDS.savePageImage);
+    await vi.waitFor(() =>
+      expect(notify).toHaveBeenLastCalledWith(
+        "Webforge couldn't draw the page. Try again in a moment.",
+      ),
+    );
+
     notify.mockClear();
     saved.mockClear();
     api.savePage.mockResolvedValueOnce({ status: "canceled" });
     await runSettled(registry, COMMAND_IDS.savePagePdf);
-    await vi.waitFor(() => expect(api.savePage).toHaveBeenCalledTimes(6));
+    await vi.waitFor(() => expect(api.savePage).toHaveBeenCalledTimes(7));
     expect(notify).not.toHaveBeenCalled();
     expect(saved).not.toHaveBeenCalled();
   });

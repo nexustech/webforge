@@ -4,7 +4,7 @@ id: preview
 title: Preview
 summary: See your site in your web browser and on your phone, as visitors will, while you edit, and save a page as an image or a PDF.
 related: [export, site-check, custom-code, pages, layers]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Preview
@@ -45,6 +45,7 @@ To show someone a page before it's published, choose **File › Save Page as Ima
 - **An image is the whole page,** top to bottom, not only the part you can see. A very long page stops short at the end of what one image can hold, and {appName} says so: save a PDF to have all of it.
 - **A PDF keeps its backgrounds,** as wide as the device, and runs on to more pages if it's long.
 - Animations show as they end, and a slideshow shows its first slide. Nothing is put on the internet, and nothing is kept but the file you save.
+- If drawing the page stalls, {appName} tries once more by itself. If a PDF still can't be made, it says so: try again, or save the page as an image instead.
 
 ## If {appName} asks about code
 
