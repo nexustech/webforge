@@ -83,6 +83,9 @@ test.afterEach(async () => {
 const right = () => page.getByRole("region", { name: "Right panels" });
 
 test("links a button to a section, and the exported link follows a renamed page", async () => {
+  // Quarantined on Windows: its export once showed no "Site exported" report within a minute,
+  // and the re-run passed (#1582). Fixed or deleted within a week, under the flaky-test rule.
+  test.fixme(process.platform === "win32", "flaky on Windows CI: #1582");
   // Select the Hero in Layers: no canvas geometry, whatever the zoom.
   const left = page.getByRole("region", { name: "Left panels" });
   await left.getByRole("treeitem", { name: /^Hero/ }).click();

@@ -120,6 +120,80 @@ export const Columns: Story = {
   },
 };
 
+/** A short text beside a tall picture, lined up at the top, in the middle and at the bottom (#1544). */
+export const ColumnsLinedUp: Story = {
+  args: {
+    nodes: inSection(
+      (["top", "middle", "bottom"] as const).map(
+        (lineUp): NodeDoc => ({
+          type: "Columns",
+          props: {
+            id: `line-up-${lineUp}`,
+            layout: "equal",
+            lineUp,
+            columns: [
+              column(`${lineUp}-text`, [
+                paragraph(`${lineUp}-words`, `Lined up: ${lineUp}. Baked every morning.`),
+              ]),
+              column(`${lineUp}-picture`, [
+                {
+                  type: "Image",
+                  props: { id: `${lineUp}-image`, image: { mediaId: "photo" }, shape: "portrait" },
+                },
+              ]),
+            ],
+          },
+        }),
+      ),
+    ),
+  },
+};
+
+/** `count` columns, each saying which it is, so the order they're drawn in shows. */
+const numbered = (id: string, count: number) =>
+  Array.from({ length: count }, (_, index) =>
+    column(`${id}-${index}`, [paragraph(`${id}-${index}-text`, `Column ${index + 1} of ${count}`)]),
+  );
+
+/**
+ * Last column first (#1544): on every device with each wider column, the wide one still drawn
+ * first with First one wider, and on Mobile only, where a picture on the right shows above its
+ * text. Tab and a screen reader go through them in their order.
+ */
+export const ColumnsLastFirst: Story = {
+  args: {
+    nodes: inSection([
+      ...(
+        [
+          ["two-wide-first", 2, "wideFirst"],
+          ["two-wide-last", 2, "wideLast"],
+          ["three-wide-first", 3, "wideFirst"],
+          ["three-wide-middle", 3, "wideMiddle"],
+        ] as const
+      ).map(
+        ([id, count, layout]): NodeDoc => ({
+          type: "Columns",
+          props: { id, layout, lastFirst: true, columns: numbered(id, count) },
+        }),
+      ),
+      {
+        type: "Columns",
+        props: {
+          id: "phone-only",
+          layout: { $responsive: { desktop: "equal", mobile: "stacked" } },
+          lastFirst: { $responsive: { desktop: false, mobile: true } },
+          columns: [
+            column("phone-text", [paragraph("phone-words", "Column 1 of 2: the words.")]),
+            column("phone-picture", [
+              { type: "Image", props: { id: "phone-image", image: { mediaId: "photo" } } },
+            ]),
+          ],
+        },
+      },
+    ]),
+  },
+};
+
 /**
  * An Image of each shape (3.19), a landscape and a portrait picture side by side in Columns, each
  * cut around its focal point (a sun on the left, a tree on the right): pictures of different
