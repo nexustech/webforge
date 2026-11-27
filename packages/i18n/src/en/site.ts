@@ -491,6 +491,15 @@ export const site = {
   "site.keptCopy.saveDialogTitle": "Save the Copy from Before the Update",
   "site.keptCopy.fileName": "{name} (for {appName} {first} to {last})",
   "site.keptCopy.fileNameUndated": "{name} (from before the update)",
+  "site.keptCopy.kept":
+    "{appName} kept a copy of this site as it was, for {appName} {first} to {last}.",
+  "site.keptCopy.keptUnnamed": "{appName} kept a copy of this site as it was before the update.",
+  "site.keptCopy.keptDescription":
+    "This version saves the site in a newer way. Save the copy to open the site in the older version. It's in the File menu too.",
+  "site.keptCopy.save": "Save…",
+  "site.keptCopy.saved": "Saved {name}",
+  "site.keptCopy.savedDescription": "Open it in the older version of {appName}.",
+  "site.keptCopy.saveFailed": "The copy couldn't be saved. Try another folder.",
   "site.zip.openDialogTitle": "Open a Site from a ZIP File",
   "site.zip.saved": "Saved a copy of your site as “{name}”.",
   "site.zip.savedDescription":
