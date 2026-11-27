@@ -248,6 +248,10 @@ jobs:
               # The failures the queue skips.
               state="CI failed ($(words "$ci"))"
               move="Its stream: fix and push (a flaky test: the flaky-test rule first)"
+            elif [ "$auto" != true ] && [ -n "$inflight" ] && [ "$behind" -eq 0 ]; then
+              # Up to date, it would merge at once and put the PR in flight behind main (#1529).
+              state="Waiting for #$inflight, in flight"
+              move="The coordinator: its merge review, then auto-merge once #$inflight has merged or failed"
             elif [ "$auto" != true ]; then
               state="No auto-merge (CI $(words "$ci"), behind by $behind)"
               move="The coordinator: its merge review, or held on purpose"
@@ -288,6 +292,32 @@ jobs:
               | [.number, .headRefOid, .mergeable, (.autoMergeRequest != null), .headRefName, .url,
                  (.title | gsub("[|\t\\\\]"; " ") | gsub("@"; "@​"))]
               | @tsv')
+          # Whether PR `$1` changes docs only, by the `next` job's rule (keep the two in step).
+          docs_only() {
+            local files
+            files=$(gh api "repos/$GH_REPO/pulls/$1/files" --paginate --jq '.[].filename') || return 1
+            ! grep -Evq '^(docs|spec|research)/|\.md$' <<< "$files"
+          }
+          # The code PR in flight, as the queue's job finds one: auto-merge on, up to date with main
+          # and its CI running, held or not started yet (NONE, just pushed). A PR up to date without
+          # auto-merge waits for it (#1529). A docs PR in flight is done in seconds, so isn't named.
+          inflight=""
+          while IFS=$'\t' read -r number head _ auto _ _ _; do
+            [ -n "$number" ] && [ "$auto" = true ] || continue
+            if ! found=$(ci_of "$head"); then
+              echo "Couldn't read #$number's CI for the PR in flight." >&2
+              continue
+            fi
+            [[ "$found" =~ ^(RUNNING|WAITING|NONE) ]] || continue
+            if ! behind=$(gh api "repos/$GH_REPO/compare/main...$head" --jq .behind_by); then
+              echo "Couldn't compare #$number with main for the PR in flight." >&2
+              continue
+            fi
+            [ "$behind" -eq 0 ] || continue
+            if docs_only "$number"; then continue; fi
+            inflight="$number"
+            break
+          done <<< "$prs"
           rows=""
           release=""
           while IFS=$'\t' read -r number head mergeable auto branch url title; do
