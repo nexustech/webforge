@@ -31,6 +31,7 @@ import type {
   TextSplit,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
+import { canHideIn } from "./action-bar.js";
 import { createCanvasFrame } from "./canvas-frame.js";
 import { listenInEditor } from "./canvas-listeners.js";
 import { createCanvasPage } from "./canvas-page.js";
@@ -361,10 +362,21 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /** The Puck config for `library`, rendering with the current editor revisions and context. */
   const configFor = (forLibrary: ComponentLibrary) =>
-    toPuckConfig(forLibrary, (id) => editorRevisions.get(id) ?? 0, renderContext, richText.tools, {
-      shown: () => page.docs().page.content.length === 0,
-      add: () => addRequests.emit({ index: 0 }),
-    });
+    toPuckConfig(
+      forLibrary,
+      (id) => editorRevisions.get(id) ?? 0,
+      renderContext,
+      richText.tools,
+      {
+        shown: () => page.docs().page.content.length === 0,
+        add: () => addRequests.emit({ index: 0 }),
+      },
+      // An unpublished element's badge shows it again as the element bar's *Show* does (#1512).
+      {
+        canShow: (id) => canHideIn(page.docs(), id),
+        show: (id) => elementRequests.emit({ kind: "toggleHidden", nodeId: id }),
+      },
+    );
 
   const render = () => {
     if (root === null || config === null) {

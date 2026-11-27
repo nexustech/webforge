@@ -32,6 +32,21 @@ export type ActionBarOptions = {
 };
 
 /**
+ * Whether element `id` of the page `shown` can be hidden or shown again from it: one of the
+ * page's own (a layer), or one in a linked copy, not one of the shared Header's or Footer's. The
+ * element bar's *Hide* and an unpublished element's *Show* (#1512) both ask.
+ */
+export function canHideIn(shown: CanvasDocs, id: string): boolean {
+  if (findNode(shown.page, id) !== undefined) return true;
+  // A linked copy is one of the page's own, shown by its section's id.
+  const node = findNode(composePage(shown.page, shown.layout, shown.shared), id);
+  return (
+    node !== undefined &&
+    copyShownBy(node, copiesOn(shown.page.content), shown.shared) !== undefined
+  );
+}
+
+/**
  * The selected element's quick actions (1.12, F-ED-25), for the page as it is now: locked on the
  * shared Header and Footer themselves (F-ED-7) and while several elements are selected, with *Edit*
  * and *Hide* asked for the page as the bar was drawn (R2).
@@ -55,15 +70,7 @@ export function createActionBar(options: ActionBarOptions) {
           options.request({ kind: "pickImage", nodeId: id });
         }
       },
-      canHide: (id) => {
-        if (findNode(shown.page, id) !== undefined) return true;
-        // A linked copy is one of the page's own, shown by its section's id.
-        const node = findNode(composePage(shown.page, shown.layout, shown.shared), id);
-        return (
-          node !== undefined &&
-          copyShownBy(node, copiesOn(shown.page.content), shown.shared) !== undefined
-        );
-      },
+      canHide: (id) => canHideIn(shown, id),
       toggleHidden: (id) => options.request({ kind: "toggleHidden", nodeId: id }),
       // Its Appearance fields, which *Style this ‹kind›…* shows (3.13a).
       canStyle: (type) =>

@@ -281,6 +281,32 @@ test.describe("keyboard and floating add", () => {
     await expect(canvas().locator("h1")).toHaveText(`${STARTER_HEADING}!`);
   });
 
+  test("an unpublished element has a badge, which selects it and offers Show, one step (#1512)", async () => {
+    await selectHeading();
+    await page.keyboard.press("ControlOrMeta+/");
+    await expect(steps().first()).toHaveText("Kept Heading off your website");
+
+    const badge = canvas().locator(".wf-unpublished");
+    await expect(badge).toHaveCount(1);
+    const label = badge.getByRole("button", { name: "Not published: left out of your website" });
+    await expect(label).toBeVisible();
+    // Over the page, not dimmed with the element, in its own colours whatever the site's buttons have.
+    expect(await badge.evaluate((element) => getComputedStyle(element).opacity)).toBe("1");
+    expect(await label.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(
+      "rgb(51, 65, 85)",
+    );
+
+    // From the section around it, a click on the badge selects the heading again, offering Show.
+    await quickAction("Select the surrounding element").click();
+    await expect(badge.getByRole("button", { name: "Show", exact: true })).toHaveCount(0);
+    await label.click();
+    await expect(quickAction("Show")).toBeVisible();
+    await badge.getByRole("button", { name: "Show", exact: true }).click();
+    await expect(steps().first()).toHaveText("Showed Heading");
+    await expect(badge).toHaveCount(0);
+    await expect(canvas().locator("h1[data-webforge-hidden]")).toHaveCount(0);
+  });
+
   test("Ctrl/Cmd-click selects several elements, deleted together; a plain click one again (1.31)", async () => {
     const panel = page.getByRole("region", { name: "Right panels" });
     await selectHeading();
