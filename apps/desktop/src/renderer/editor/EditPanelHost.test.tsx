@@ -509,7 +509,7 @@ describe("EditPanelHost", () => {
       expect(spacing.hasAttribute("data-changed")).toBe(true);
 
       fireEvent.contextMenu(spacing);
-      await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
+      await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Default" }));
 
       expect(labels()).toEqual(["Changed Section space inside", "Reset Spacing on Section"]);
       expect(section()?.padding).toEqual(siteLibrary.components.Section?.defaults.padding);
@@ -541,7 +541,7 @@ describe("EditPanelHost", () => {
       await user.click(side("Space inside Top").getByRole("radio", { name: "S" }));
 
       fireEvent.contextMenu(screen.getByRole("button", { name: "Spacing" }));
-      await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
+      await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Default" }));
 
       expect(labels()).toEqual([
         "Changed Section space inside on Mobile",

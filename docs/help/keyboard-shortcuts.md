@@ -95,7 +95,7 @@ See [Layers](layers.md#keys-in-layers).
 
 ## In the Edit panel
 
-| Keys               | What they do                                                                                                                   |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| Ctrl+Enter         | Open or fold every group                                                                                                       |
-| Cmd+Esc (Mac only) | Reset the option or group you're on. On Windows, right-click it and choose **Reset to Default** or **Reset Group to Defaults** |
+| Keys               | What they do                                                                                                                  |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Ctrl+Enter         | Open or fold every group                                                                                                      |
+| Cmd+Esc (Mac only) | Reset the option or group you're on. On Windows, right-click it and choose **Reset to Default** or **Reset Group to Default** |
