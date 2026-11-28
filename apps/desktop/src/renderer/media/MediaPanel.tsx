@@ -10,6 +10,7 @@ import {
   Button,
   cn,
   EmptyState,
+  FileName,
   fieldControlClass,
   ScrollArea,
   ToggleGroup,
@@ -182,7 +183,8 @@ export function MediaPanel({
                   ) : (
                     <DocumentTile file={item} />
                   )}
-                  <span className="truncate px-1.5 py-1 text-xs">{item.fileName}</span>
+                  {/* Cut in the middle to keep its extension in view (#1452); whole in its details. */}
+                  <FileName name={item.fileName} className="px-1.5 py-1 text-xs" />
                 </button>
               </li>
             ))}

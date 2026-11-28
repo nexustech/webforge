@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { PHOTO as photo, PRICES as prices, sessionWith } from "../testing/fixtures.js";
+import { spokenText } from "../testing/spoken.test-helper.js";
 import { MediaPanel } from "./MediaPanel.js";
 import { addMedia } from "./media-commands.js";
 
@@ -341,7 +342,8 @@ describe("MediaPanel", () => {
     ]);
     await render();
 
-    expect(container.querySelector("li")?.textContent).toBe("1.4 MBStock.xlsx");
+    const tile = container.querySelector("li");
+    expect(tile === null ? "" : spokenText(tile)).toBe("1.4 MBStock.xlsx");
     await act(async () => button("Stock.xlsx")?.click());
     expect(container.querySelector('[aria-label="Stock.xlsx details"]')?.textContent).toContain(
       "Excel spreadsheet, 1.4 MB",
