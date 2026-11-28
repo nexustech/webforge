@@ -286,6 +286,10 @@ No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `
 
 No control has the browser's `title` (`pnpm ui-strings` checks the renderer, `editor-ui` and the engine for one in JSX or set with `setAttribute`, and the engine for `element.title =` too, #1011): it is slow, unstyled and never shown on focus. Give a `Button` its `tooltip`, wrap another control in `WithTooltip` (`disableable` for one that can be disabled, `whenCut` for a label cut short), and give a control on the canvas `data-wf-tip`. An `iframe` keeps its `title`, which names it.
 
+## The site format
+
+A change to what a site file may hold (a new value in a select, a new component, a renamed field) bumps `SITE_FORMAT_VERSION` with a migration step and fixtures ([ADR 0012](adr/0012-site-format-migrations.md)). **A PR that changes the format takes the next number on `main` and never reuses one; a step that does nothing is fine.** Two PRs that bump at once conflict on the number, and the second takes the next one. Gathering every change before a release under one number was considered and dropped (#1644, 28 Nov 2026): later PRs would edit an earlier PR's step, and builds between releases would hold sites changed in different ways under the same number.
+
 ## Tests and stories
 
 - **The fake canvas engine** is `createFakeEngine()` from `@webforge/test-utils/renderer`.

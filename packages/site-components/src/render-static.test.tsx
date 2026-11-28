@@ -1084,6 +1084,25 @@ describe("renderNodesToHtml", () => {
       expect(heroIn("background")).not.toContain("aria-hidden");
     });
 
+    it("centres a centred Text only Hero's box in its row, and leaves a left one at its edge (#1648)", () => {
+      // The class of the box holding its title, text and buttons.
+      const copy = (html: string) => /<div class="([^"]*)"><h1/.exec(html)?.[1];
+
+      for (const contentWidth of ["narrow", "full"]) {
+        // Centred, the box is centred as its words are: its title's middle is the page's, at
+        // every height (Tall and Whole screen set it in a flex row).
+        for (const height of ["fit", "tall", "screen"]) {
+          expect(copy(heroIn("minimal", { alignment: "centre", contentWidth, height }))).toBe(
+            "mx-auto max-w-xl",
+          );
+        }
+        // On the left, it keeps the row's left edge, as before.
+        expect(copy(heroIn("minimal", { alignment: "left", contentWidth }))).toBe("max-w-xl");
+        // Behind the text, the row's flex centres the box already: unchanged.
+        expect(copy(heroIn("background", { alignment: "centre", contentWidth }))).toBe("max-w-xl");
+      }
+    });
+
     it("shows text only, leaving out an image it was given", () => {
       const html = heroIn("minimal", { alignment: "centre", contentWidth: "narrow" });
 
