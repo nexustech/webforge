@@ -82,7 +82,8 @@ const ROUNDS: readonly Round[] = [
     height: 768,
     zoom: 1,
     theme: "dark",
-    rules: [2, 3, 4, 5, 6],
+    // The keyboard's ends (7) once, here: they don't change with the window's size or colours.
+    rules: [2, 3, 4, 5, 6, 7],
     changes: true,
   },
   {
@@ -984,6 +985,59 @@ function firstLines(error: unknown): string {
 }
 
 /** Opens `each`, measures it, drives its changes, and checks what it found. */
+/**
+ * Rule 7 (#1650): from `dialog`'s first control Shift+Tab, and from its last Tab, moves the focus to
+ * another element inside it. A trap puts it back on the same one; a dialog's focus trap wraps it to
+ * the other end. Its first and last are what a focus trap counts: the elements it holds in the tab
+ * order, shown and enabled.
+ */
+async function keyboardFaults(page: Page, dialog: Locator): Promise<FitFault[]> {
+  const faults: FitFault[] = [];
+  for (const [end, key] of [
+    ["first", "Shift+Tab"],
+    ["last", "Tab"],
+  ] as const) {
+    const from = await dialog.evaluate((element, which) => {
+      const tabbable = [
+        ...element.querySelectorAll<HTMLElement>(
+          'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ].filter(
+        (each) =>
+          each.tabIndex >= 0 &&
+          !(each as HTMLButtonElement).disabled &&
+          each.getClientRects().length > 0 &&
+          each.closest("[inert]") === null,
+      );
+      const chosen = which === "first" ? tabbable[0] : tabbable.at(-1);
+      if (chosen === undefined) return null;
+      chosen.focus();
+      // Where the focus went: a list of tabs hands it on to its active tab.
+      const focused = document.activeElement as HTMLElement | null;
+      focused?.setAttribute("data-fit-from", "");
+      const label = focused?.getAttribute("aria-label") ?? focused?.textContent ?? "";
+      return `${focused?.tagName.toLowerCase()} "${label.trim().slice(0, 30)}"`;
+    }, end);
+    if (from === null) continue;
+    await page.keyboard.press(key);
+    const after = await dialog.evaluate((element) => {
+      const focused = document.activeElement;
+      const stuck = focused?.hasAttribute("data-fit-from") === true;
+      for (const each of element.querySelectorAll("[data-fit-from]")) {
+        each.removeAttribute("data-fit-from");
+      }
+      return { stuck, inside: focused !== null && element.contains(focused) };
+    });
+    if (after.stuck || !after.inside) {
+      faults.push({
+        rule: 7,
+        says: `${key} from its ${end} control, ${from}, ${after.stuck ? "stayed on it" : "left the dialog"}`,
+      });
+    }
+  }
+  return faults;
+}
+
 async function checkCase(context: Context, each: FitCase): Promise<void> {
   const { page, round } = context;
   const target = await each.open(context);
@@ -993,6 +1047,8 @@ async function checkCase(context: Context, each: FitCase): Promise<void> {
   const overlap = each.kind === "menu" ? 2 : 0;
   let fit: Fit = await fitOf(target);
   const faults = fitFaults(fit, rules, overlap);
+  if (rules.includes(7) && each.kind === "dialog")
+    faults.push(...(await keyboardFaults(page, target)));
   if (round.changes) {
     for (const change of each.changes ?? []) {
       await change.run(target, context);
