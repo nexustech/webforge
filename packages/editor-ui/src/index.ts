@@ -147,6 +147,7 @@ export {
   ErrorFallback,
   type ErrorFallbackProps,
 } from "./components/ui/error-boundary.js";
+export { FileName, fileNameParts } from "./components/ui/file-name.js";
 export { HoverCard, HoverCardContent, HoverCardTrigger } from "./components/ui/hover-card.js";
 export {
   Menubar,

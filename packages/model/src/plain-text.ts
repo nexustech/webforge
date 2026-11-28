@@ -28,6 +28,15 @@ export function plainText(html: string): string {
 const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 
 /**
+ * `text`'s characters as a reader counts them: an emoji or an accented letter made of several
+ * code points is one. A name cut short is cut between them, never inside one: by
+ * {@link shortened}, and by a file's name cut in the middle (#1452).
+ */
+export function graphemes(text: string): string[] {
+  return Array.from(GRAPHEMES.segment(text), ({ segment }) => segment);
+}
+
+/**
  * `text`, shortened to `most` characters as a reader counts them, ending in "…" when it's cut:
  * never cut inside an emoji, which would leave half of it before the "…". A plan's titles (S30)
  * and Site Check's names for an element by its text (#1449) are shortened with it.
@@ -35,7 +44,7 @@ const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 export function shortened(text: string, most: number): string {
   // Most texts are short: no need to split them.
   if (text.length <= most) return text;
-  const characters = Array.from(GRAPHEMES.segment(text), ({ segment }) => segment);
+  const characters = graphemes(text);
   return characters.length <= most
     ? text
     : `${characters

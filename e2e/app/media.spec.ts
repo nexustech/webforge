@@ -304,7 +304,9 @@ test("places a Media image on the Hero from the Edit panel, shows it on the canv
   await field.click();
   const picker = page.getByRole("dialog", { name: "Choose an image" });
   await page.keyboard.type("shop front");
-  await expect(picker.getByRole("option")).toHaveText(["Shop front.jpg"]);
+  // Its name said once, whole, though it's drawn in two parts (#1452).
+  await expect(picker.getByRole("option")).toHaveCount(1);
+  await expect(picker.getByRole("option")).toHaveAccessibleName("Shop front.jpg");
   await page.keyboard.press("Enter");
   await expect(picker).toBeHidden();
   await expect(page.getByRole("button", { name: "Image Change image…" })).toBeFocused();

@@ -7,6 +7,7 @@ import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { createImagePickRequests, type ImagePickRequests } from "../editor/image-picks.js";
 import { sessionWith } from "../testing/fixtures.js";
+import { spokenText } from "../testing/spoken.test-helper.js";
 import { ImageField } from "./ImageField.js";
 import { addMedia } from "./media-commands.js";
 
@@ -74,7 +75,7 @@ const button = (name: string) =>
     (element.getAttribute("aria-label") ?? element.textContent ?? "").includes(name),
   );
 const options = () => [...document.querySelectorAll<HTMLElement>('[role="option"]')];
-const option = (name: string) => options().find((element) => element.textContent === name);
+const option = (name: string) => options().find((element) => spokenText(element) === name);
 /** Double-clicks an image in the picker, which chooses it. */
 const chooseImage = (name: string) =>
   act(async () => {
@@ -88,7 +89,7 @@ describe("ImageField", () => {
 
     await act(async () => button("Choose an Image")?.click());
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Choose an Image");
-    expect(options().map((each) => each.textContent)).toEqual(["a1.jpg", "b2.jpg"]);
+    expect(options().map(spokenText)).toEqual(["a1.jpg", "b2.jpg"]);
     await chooseImage("b2.jpg");
 
     expect(onChange).toHaveBeenCalledWith({ mediaId: "b2" });
@@ -108,7 +109,7 @@ describe("ImageField", () => {
       search?.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
-    expect(options().map((each) => each.textContent)).toEqual(["a1.jpg"]);
+    expect(options().map(spokenText)).toEqual(["a1.jpg"]);
   });
 
   it("shows the chosen image, drops the old image's alt override when it changes, and removes it", async () => {
