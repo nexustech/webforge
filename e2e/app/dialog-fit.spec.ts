@@ -987,7 +987,7 @@ function firstLines(error: unknown): string {
 /** Opens `each`, measures it, drives its changes, and checks what it found. */
 /**
  * Rule 7 (#1650): from `dialog`'s first control Shift+Tab, and from its last Tab, moves the focus to
- * another element inside it. A trap puts it back on the same one; a dialog's focus trap wraps it to
+ * another element inside it, where it has more than one. A trap puts it back on the same one; a dialog's focus trap wraps it to
  * the other end. Its first and last are what a focus trap counts: the elements it holds in the tab
  * order, shown and enabled.
  */
@@ -1009,6 +1009,8 @@ async function keyboardFaults(page: Page, dialog: Locator): Promise<FitFault[]> 
           each.getClientRects().length > 0 &&
           each.closest("[inert]") === null,
       );
+      // One control (the Commands box): wrapping to itself is right, as there's nowhere else.
+      if (tabbable.length < 2) return null;
       const chosen = which === "first" ? tabbable[0] : tabbable.at(-1);
       if (chosen === undefined) return null;
       chosen.focus();

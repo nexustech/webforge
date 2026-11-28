@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./dialog.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs.js";
+import { ToggleGroup, ToggleGroupItem } from "./toggle-group.js";
 
 afterEach(cleanup);
 
@@ -22,7 +23,7 @@ function Sections() {
   );
 }
 
-describe("TabsList (#1650)", () => {
+describe("TabsList and ToggleGroup (#1650)", () => {
   // Pins what Radix does, so an upgrade that changes it fails here, not in a person's hands: the
   // dialog's focus trap wraps Shift+Tab from its first tabbable element to its last, and the
   // tabs, first in the dialog, are that first element only once the list itself isn't.
@@ -48,6 +49,28 @@ describe("TabsList (#1650)", () => {
     expect(document.activeElement).toBe(colours);
     // The list stays out of the way once a tab has been the stop.
     expect(screen.getByRole("tablist").getAttribute("tabindex")).toBe("-1");
+  });
+
+  it("lets Shift+Tab leave a toggle group first in a dialog, as a link's kind is", async () => {
+    const user = userEvent.setup();
+    render(
+      <Dialog open>
+        <DialogContent>
+          <DialogTitle>Link</DialogTitle>
+          <DialogDescription>Where it goes.</DialogDescription>
+          <ToggleGroup type="single" defaultValue="page" aria-label="Goes to">
+            <ToggleGroupItem value="page">Page</ToggleGroupItem>
+            <ToggleGroupItem value="web">Web address</ToggleGroupItem>
+          </ToggleGroup>
+        </DialogContent>
+      </Dialog>,
+    );
+    const page = screen.getByRole("radio", { name: "Page" });
+    page.focus();
+    await user.tab({ shift: true });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Close" }));
+    await user.tab();
+    expect(document.activeElement).toBe(page);
   });
 
   it("is reached by Tab before any tab has had the focus, and Shift+Tab leaves it in a panel", async () => {
