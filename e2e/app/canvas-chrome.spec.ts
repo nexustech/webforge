@@ -393,7 +393,7 @@ test.describe("keyboard and floating add", () => {
     await dialog.getByRole("textbox").fill("Welcome");
     await dialog.getByRole("button", { name: "Rename" }).click();
 
-    await expect(steps().first()).toHaveText("Renamed Heading to 'Welcome'");
+    await expect(steps().first()).toHaveText("Renamed Heading to “Welcome”");
     const crumbs = page.getByRole("navigation", { name: "Where the selection is" });
     await expect(crumbs.getByRole("button").last()).toHaveText("Welcome");
   });

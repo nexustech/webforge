@@ -229,7 +229,7 @@ describe("adding the terms page and the cookie policy (#866)", () => {
     expect(siteDocSchema.parse(site())).toEqual(site());
     expect(session.ui.getState().pageId).toBe(id);
     expect(session.history.entries().map((entry) => entry.label)).toEqual([
-      `Added page '${t(`${strings}.title`)}'`,
+      `Added page “${t(`${strings}.title`)}”`,
     ]);
     // Nothing else on the new page needs fixing; Site Check finds the note left for the owner, on
     // the page's opening section, which publishing won't take until it's gone.

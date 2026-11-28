@@ -41,6 +41,32 @@ export const Sizes: Story = {
   ),
 };
 
+/**
+ * Every variant unavailable (#1517): it looks disabled but keeps the keyboard's focus, so its
+ * tooltip, saying why, reaches the keyboard too.
+ */
+export const Unavailable: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button unavailable tooltip="Nothing is changed yet.">
+        Primary
+      </Button>
+      <Button variant="secondary" unavailable tooltip="Nothing is changed yet.">
+        Secondary
+      </Button>
+      <Button variant="outline" unavailable tooltip="Nothing is changed yet.">
+        Outline
+      </Button>
+      <Button variant="ghost" unavailable tooltip="Nothing is changed yet.">
+        Ghost
+      </Button>
+      <Button variant="destructive" unavailable tooltip="Nothing is changed yet.">
+        Delete
+      </Button>
+    </div>
+  ),
+};
+
 /** Every variant disabled: muted text, and a muted fill where the variant has one (#1010). */
 export const Disabled: Story = {
   render: () => (

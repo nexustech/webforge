@@ -67,7 +67,7 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     expect(content(session)).toHaveLength(1);
     // Selected as the canvas shows it.
     expect(session.ui.getState().nodeId).toBe(copiedNodeId(copy?.props.id ?? "", "section-1"));
-    expect(labels(session)).toEqual(["Saved 'Hours' as a shared section"]);
+    expect(labels(session)).toEqual(["Saved “Hours” as a shared section"]);
 
     session.history.undo();
     expect(site(session).sharedSections).toEqual({});
@@ -242,7 +242,7 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     expect(session.ui.getState().nodeId).toBe(section?.props.id);
     // The shared section stays, for its other copies and the Add panel.
     expect(theShared(session)).toBe(shared);
-    expect(labels(session).at(-1)).toBe("Detached 'Hours'");
+    expect(labels(session).at(-1)).toBe("Detached “Hours”");
 
     session.history.undo();
     expect(copiesOn(session)).toEqual([copy]);
@@ -268,7 +268,7 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     const before = site(session);
 
     for (const name of ["Hours", "hours", "  HOURS ", "hOuRs"]) {
-      expect(nameProblem(before, name)).toBe("A shared section called 'Hours' already exists");
+      expect(nameProblem(before, name)).toBe("A shared section called “Hours” already exists");
     }
     expect(nameProblem(before, "Hours later")).toBeUndefined();
     // Its own name, when renaming it.
@@ -277,7 +277,7 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     // Saving another section under a name in use changes nothing.
     const other = sessionWith(before);
     const notFound = Object.values(before.pages).find((page) => page.kind === "not-found");
-    if (notFound === undefined) throw new Error("no 'Page not found' page");
+    if (notFound === undefined) throw new Error("no “Page not found” page");
     other.showPage(notFound.id);
     other.select(notFound.doc.content[0]?.props.id ?? null);
     expect(saveAsSharedSection(other, "HOURS")).toBe(false);
@@ -291,7 +291,7 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
 
     expect(renameSharedSection(session, id, "  Opening hours ")).toBe(true);
     expect(theShared(session).name).toBe("Opening hours");
-    expect(labels(session).at(-1)).toBe("Renamed 'Hours' to 'Opening hours'");
+    expect(labels(session).at(-1)).toBe("Renamed “Hours” to “Opening hours”");
     // Its own name again, with other capitals: allowed.
     expect(renameSharedSection(session, id, "OPENING HOURS")).toBe(true);
     expect(theShared(session).name).toBe("OPENING HOURS");
@@ -341,7 +341,7 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     expect(other?.props.id).not.toBe(section?.props.id);
     // The selection inside the copy moves to the section it became.
     expect(session.ui.getState().nodeId).toBe(section?.props.id);
-    expect(labels(session).at(-1)).toBe("Deleted shared section 'Hours'");
+    expect(labels(session).at(-1)).toBe("Deleted shared section “Hours”");
 
     session.history.undo();
     expect(theShared(session)).toEqual(shared);

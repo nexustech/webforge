@@ -4,7 +4,7 @@ id: edit-panel
 title: The Edit panel
 summary: Change the selected section or element's content and options, on every device or just one.
 related: [styling, sections, elements, editing-on-the-page]
-updated: 2026-11-20
+updated: 2026-11-27
 ---
 
 # The Edit panel
@@ -35,8 +35,10 @@ You can also select an item on the page and edit it there.
 
 ## Resetting
 
+On the Style tab, a small dot beside an option's name means it's set on this item rather than coming from the theme, and the words under it say so. A group's title has the dot too when an option in it is set here.
+
 - Right-click an option's name and choose **Reset to Default**, or **Reset to Theme's Look** where the option comes from the theme.
-- Right-click a group's title and choose **Reset Group to Defaults**.
+- Right-click a group's title and choose **Reset Group to Default**.
 - On a Mac, Cmd+Esc resets the option or group you're on.
 
 ## Copying a group to another item

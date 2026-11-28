@@ -30,7 +30,7 @@ describe("addMedia", () => {
     const session = sessionWithMedia(photo);
 
     expect(media(session)).toEqual({ photo });
-    expect(lastLabel(session)).toBe("Added image 'shop.jpg'");
+    expect(lastLabel(session)).toBe("Added image “shop.jpg”");
     session.history.undo();
     expect(media(session)).toEqual({});
   });
@@ -80,7 +80,7 @@ describe("replaceMedia", () => {
       height: 800,
     });
 
-    expect(lastLabel(session)).toBe("Replaced image 'shop.jpg'");
+    expect(lastLabel(session)).toBe("Replaced image “shop.jpg”");
     expect(media(session)[photo.id]).toEqual({
       ...photo,
       hash: "c".repeat(64),
@@ -99,7 +99,7 @@ describe("replaceMedia", () => {
     replaceMedia(session, prices.id, { ...photo, alt: "New" });
     replaceMedia(session, "missing" as MediaId, photo);
 
-    expect(lastLabel(session)).toBe("Replaced file 'prices.pdf'");
+    expect(lastLabel(session)).toBe("Replaced file “prices.pdf”");
     expect(media(session)[prices.id]).toMatchObject({
       id: "prices",
       name: "prices",
@@ -113,15 +113,15 @@ describe("deleteMedia", () => {
     const session = sessionWithMedia(photo, prices);
 
     deleteMedia(session, prices.id);
-    expect(lastLabel(session)).toBe("Deleted file 'prices.pdf'");
+    expect(lastLabel(session)).toBe("Deleted file “prices.pdf”");
     deleteMedia(session, photo.id);
-    expect(lastLabel(session)).toBe("Deleted image 'shop.jpg'");
+    expect(lastLabel(session)).toBe("Deleted image “shop.jpg”");
     expect(media(session)).toEqual({});
 
     session.history.undo();
     expect(media(session)[photo.id]).toEqual(photo);
     deleteMedia(session, "missing" as MediaId);
-    expect(lastLabel(session)).toBe("Deleted file 'prices.pdf'");
+    expect(lastLabel(session)).toBe("Deleted file “prices.pdf”");
   });
 });
 
@@ -130,7 +130,7 @@ describe("cropMedia", () => {
     const session = sessionWithMedia({ ...photo, focal: { x: 0, y: 0.5 } });
 
     cropMedia(session, photo.id, "square");
-    expect(lastLabel(session)).toBe("Cropped image 'shop.jpg'");
+    expect(lastLabel(session)).toBe("Cropped image “shop.jpg”");
     const cropped = media(session)[photo.id];
     expect(cropped?.kind === "image" && cropped.crop).toEqual({
       x: 0,
@@ -149,7 +149,7 @@ describe("cropMedia", () => {
   it("leaves files alone", () => {
     const session = sessionWithMedia(prices);
     cropMedia(session, prices.id, "square");
-    expect(lastLabel(session)).toBe("Added file 'prices.pdf'");
+    expect(lastLabel(session)).toBe("Added file “prices.pdf”");
   });
 });
 
@@ -168,7 +168,7 @@ describe("setFocalPoint", () => {
 
     setFocalPoint(session, photo.id, { x: 1.4, y: 0.33333 });
 
-    expect(lastLabel(session)).toBe("Changed focal point of 'shop.jpg'");
+    expect(lastLabel(session)).toBe("Changed focal point of “shop.jpg”");
     expect(media(session)[photo.id]).toMatchObject({
       focal: { x: 1, y: 0.333 },
       crop: { x: 0.375, y: 0, width: 0.625, height: 1 },
@@ -182,8 +182,8 @@ describe("setFocalPoint", () => {
     setFocalPoint(session, photo.id, { x: 0.6, y: 0.5 }, true);
 
     expect(session.history.state.getState().entries.map((entry) => entry.label)).toEqual([
-      "Added image 'shop.jpg'",
-      "Changed focal point of 'shop.jpg'",
+      "Added image “shop.jpg”",
+      "Changed focal point of “shop.jpg”",
     ]);
     expect(media(session)[photo.id]).toMatchObject({ focal: { x: 0.6, y: 0.5 } });
   });
@@ -191,6 +191,6 @@ describe("setFocalPoint", () => {
   it("leaves files alone", () => {
     const session = sessionWithMedia(prices);
     setFocalPoint(session, prices.id, { x: 0.5, y: 0.5 });
-    expect(lastLabel(session)).toBe("Added file 'prices.pdf'");
+    expect(lastLabel(session)).toBe("Added file “prices.pdf”");
   });
 });

@@ -4,7 +4,7 @@ id: themes
 title: Themes, colours and fonts
 summary: Change your whole site's colours, fonts, corners and spacing at once, in the Theme panel or Theme Studio.
 related: [styling, templates, media]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Themes, colours and fonts
@@ -87,7 +87,7 @@ Built-in themes never change. The first time you change one, {appName} saves **y
 - **Colours:** every colour and its shades, for the page and for reversed sections side by side, and [your colours](#your-colours). **Colours from an Image…** suggests brand colours from your logo or a photo in Media.
 - **Text:** size, weight and line spacing for each kind of text.
 - **Styles:** corners, shadows and the other settings, drawn as examples.
-- **Components:** the look of every kind of section and element across the site, such as every Button or every card. Choose which kind from the list beside the tabs. A gradient is added as in **Style This…**: choose its direction, and it starts as Brand to Accent ([Gradients](styling.md#gradients)).
+- **Components:** the look of every kind of section and element across the site, such as every Button or every card. Choose which kind from the list beside the tabs; a kind whose look you've changed says **(changed)** there. Beside the list, **Reset Button to Default** (named for the kind you chose) takes every Button back to the theme's colours, text and styles. It leaves the button settings above the look as they are, and an element you styled with **Style This…** keeps its style. While nothing is changed it's greyed out; point at it, or move to it with Tab, to see why. In the settings, a dot beside a setting's name, and beside its group's name, shows what you've changed. A gradient is added as in **Style This…**: choose its direction, and it starts as Brand to Accent ([Gradients](styling.md#gradients)).
 
 Beside Colours, Text and Styles, on the right, a sample page shows your theme on Desktop and Mobile as you change it, while the settings use the window's full height on the left. In a smaller window, one shows at a time: choose **Desktop** or **Mobile** above it. To give it more room, drag the line between it and the settings, or select the line and use the arrow keys.
 

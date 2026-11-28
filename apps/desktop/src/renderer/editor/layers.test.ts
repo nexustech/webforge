@@ -74,7 +74,7 @@ describe("layersOf (F-ED-12)", () => {
       ["b", "Hours"],
       ["c", undefined],
     ]);
-    expect(layerItem({ kind: "Heading", name: "Hours" })).toBe("'Hours'");
+    expect(layerItem({ kind: "Heading", name: "Hours" })).toBe("“Hours”");
     expect(layerItem({ kind: "Heading", name: undefined })).toBe("Heading");
   });
 
@@ -186,7 +186,7 @@ describe("Layers changes, one undo step each", () => {
 
     moveLayer(session, "b", 0);
 
-    expect(labels()).toEqual(["Moved 'Hours'"]);
+    expect(labels()).toEqual(["Moved “Hours”"]);
     expect(session.ui.getState()).toMatchObject({ nodeId: "b", others: [] });
     session.history.undo();
     expect(session.ui.getState()).toMatchObject({ nodeId: "a", others: ["b"] });
@@ -204,7 +204,7 @@ describe("Layers changes, one undo step each", () => {
     expect(ids(first())).toEqual(["a", "b", "c"]);
 
     moveLayer(session, "b", 0);
-    expect(labels().at(-1)).toBe("Moved 'Hours'");
+    expect(labels().at(-1)).toBe("Moved “Hours”");
     for (const index of [-1, 3, 0]) moveLayer(session, "b", index);
     moveLayer(session, "missing", 0);
     expect(labels()).toHaveLength(1);
@@ -220,8 +220,8 @@ describe("Layers changes, one undo step each", () => {
 
     expect(first()?.[0]?.props).not.toHaveProperty("layerName");
     expect(labels()).toEqual([
-      "Renamed Heading to 'Opening times'",
-      "Removed the name of 'Opening times'",
+      "Renamed Heading to “Opening times”",
+      "Removed the name of “Opening times”",
     ]);
   });
 
@@ -236,7 +236,7 @@ describe("Layers changes, one undo step each", () => {
     setLayerHidden(session, "s2", false);
 
     expect(first()?.[1]?.props).not.toHaveProperty("hidden");
-    expect(labels()).toEqual(["Kept 'Hours' off your website", "Showed 'Hours'", "Showed Section"]);
+    expect(labels()).toEqual(["Kept “Hours” off your website", "Showed “Hours”", "Showed Section"]);
     expect(session.ui.getState().nodeId).toBe("a");
     session.history.undo();
     expect(session.ui.getState().nodeId).toBe("a");
@@ -377,9 +377,9 @@ describe("linked copies in Layers (F-ED-23)", () => {
     expect(content().map((node) => node.props.id)).toEqual(["c1", "s1", "c2", "c3"]);
     expect(session.ui.getState().nodeId).toBe(layer);
     expect(session.history.entries().map((entry) => entry.label)).toEqual([
-      "Renamed Section to 'Weekdays'",
-      "Kept 'Weekdays' off your website",
-      "Moved 'Weekdays'",
+      "Renamed Section to “Weekdays”",
+      "Kept “Weekdays” off your website",
+      "Moved “Weekdays”",
     ]);
     // The shared section itself is untouched.
     expect(
@@ -455,9 +455,9 @@ describe("a post's Blog design in Layers (#936)", () => {
       "Link to the Blog instead",
     );
     expect(labels()).toEqual([
-      "Renamed Heading to 'Post title' in the design of 'Blog'",
-      "Kept Heading off your website in the design of 'Blog'",
-      "Added a note to Heading in the design of 'Blog'",
+      "Renamed Heading to “Post title” in the design of “Blog”",
+      "Kept Heading off your website in the design of “Blog”",
+      "Added a note to Heading in the design of “Blog”",
     ]);
     session.history.undo();
     expect(
@@ -473,7 +473,7 @@ describe("a post's Blog design in Layers (#936)", () => {
     moveLayer(session, "date", 0);
     const inside = (design()?.before[0]?.props.content as NodeDoc[] | undefined) ?? [];
     expect(inside.map((node) => node.props.id)).toEqual(["date", "title"]);
-    expect(labels()).toEqual(["Moved Heading in the design of 'Blog'"]);
+    expect(labels()).toEqual(["Moved Heading in the design of “Blog”"]);
     expect(copyLayer(session, "title", 0, false)).toBe(
       "Elements of the blog's design can't be copied: it's the same on every post.",
     );

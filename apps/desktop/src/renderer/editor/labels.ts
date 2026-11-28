@@ -51,11 +51,11 @@ export function elementName(
   return givenElementName(node, shared) ?? elementKind(node, library, shared);
 }
 
-/** `kind`, or a `name` the person gave in quotes, as undo labels name an element: "'Opening times'". */
+/** `kind`, or a `name` the person gave in quotes, as undo labels name an element: "“Opening times”". */
 export const quotedName = (kind: string, name: string | undefined): string =>
   name === undefined ? kind : t("history.namedItem", { name });
 
-/** How undo labels and messages name an element (D2): "'Opening times'", else "Heading". */
+/** How undo labels and messages name an element (D2): "“Opening times”", else "Heading". */
 export function quotedElementName(
   node: NodeDoc,
   library: ComponentLibrary,
@@ -65,7 +65,7 @@ export function quotedElementName(
 }
 
 /**
- * How undo labels name an element: the name the user gave it in Layers ("'Opening times'"), else
+ * How undo labels name an element: the name the user gave it in Layers ("“Opening times”"), else
  * its component's display name ("Heading"), as the glossary has it (D2).
  */
 function itemName(
@@ -176,8 +176,8 @@ export type FieldChange = { readonly from: unknown; readonly to: unknown };
 
 /**
  * The undo label for a canvas edit (D2), e.g. "Moved Heading", "Edited Heading text" or "Edited
- * 'Opening times' text". `before` is the page as it was, where a removed element is still found;
- * `shared`, the site's shared sections, names a linked copy as Layers does ("Moved 'Opening hours'").
+ * “Opening times” text". `before` is the page as it was, where a removed element is still found;
+ * `shared`, the site's shared sections, names a linked copy as Layers does ("Moved “Opening hours”").
  * `change` names the part of an image a change set: "Changed Image alt text" (#1370).
  */
 export function labelFor(

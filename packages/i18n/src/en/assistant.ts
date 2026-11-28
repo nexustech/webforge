@@ -113,7 +113,7 @@ export const assistant = {
   "assistant.consent.cancel": "Cancel",
   "assistant.consent.openRouterAndMaker": "OpenRouter and {maker}",
   "assistant.consent.openRouterAndModelMaker": "OpenRouter and the model's maker",
-  "assistant.site.title": "Use the assistant on {site}?",
+  "assistant.site.title": "Use the assistant on “{site}”?",
   "assistant.site.sent": "Its content will be sent to {receivers} when you send a message.",
   "assistant.site.kept": "Your answer stays on this computer, never in the site file.",
   "assistant.site.allow": "Use on This Site",

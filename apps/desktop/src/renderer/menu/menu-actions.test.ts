@@ -37,7 +37,7 @@ function setUp() {
       item.kind === "group" ? [item, ...item.children] : [item],
     );
     const found = all.find((item) => itemLabel(site(), item) === label);
-    if (found === undefined) throw new Error(`no menu item '${label}'`);
+    if (found === undefined) throw new Error(`no menu item “${label}”`);
     return found.id;
   };
   return { session, site, about, labels, rows, idOf };
@@ -75,9 +75,9 @@ describe("menu editor actions (F-ED-17)", () => {
       anchorId: "opening-hours",
     });
     expect(labels().slice(-3)).toEqual([
-      "Added menu item 'Book now'",
-      "Added menu item 'Hours'",
-      "Added menu item 'More'",
+      "Added menu item “Book now”",
+      "Added menu item “Hours”",
+      "Added menu item “More”",
     ]);
 
     session.history.undo();
@@ -100,8 +100,8 @@ describe("menu editor actions (F-ED-17)", () => {
     renameMenuItem(session, about, "");
     setMenuItemHidden(session, about, true);
     expect(rows()[1]).toBe("About (hidden)");
-    expect(labels()).toContain("Renamed menu item 'About'");
-    expect(labels()).toContain("Hid menu item 'Our story'");
+    expect(labels()).toContain("Renamed menu item “About”");
+    expect(labels()).toContain("Hid menu item “Our story”");
     expect(labels().filter((label) => label.startsWith("Renamed"))).toHaveLength(2);
   });
 
@@ -121,9 +121,9 @@ describe("menu editor actions (F-ED-17)", () => {
     moveMenuItem(session, about, { group: null, index: 0 });
     expect(rows()).toEqual(["About", "More", "My site"]);
     expect(labels().filter((label) => label.startsWith("Moved"))).toEqual([
-      "Moved menu item 'About'",
-      "Moved menu item 'My site'",
-      "Moved menu item 'About'",
+      "Moved menu item “About”",
+      "Moved menu item “My site”",
+      "Moved menu item “About”",
     ]);
     expect(site().menu.follows).toBe("custom");
   });
@@ -144,7 +144,7 @@ describe("menu editor actions (F-ED-17)", () => {
     });
 
     expect(menuItem(site(), shop)).toMatchObject({ kind: "section", label: "Hours", hidden: true });
-    expect(labels().at(-1)).toBe("Changed menu item 'Shop'");
+    expect(labels().at(-1)).toBe("Changed menu item “Shop”");
   });
 
   it("removes items, and follows the page order again on request, all undoable", () => {

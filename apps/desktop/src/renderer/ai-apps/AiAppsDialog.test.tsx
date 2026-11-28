@@ -184,7 +184,7 @@ describe("AI apps (4.9)", () => {
 
   it("adds Claude Desktop, with its key once to copy and its extension to install", async () => {
     const { dialog, mcp, copySecret, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App…" }));
     // Claude Desktop first, named so already.
     expect(
       dialog().getByRole("radio", { name: "Claude Desktop" }).getAttribute("aria-checked"),
@@ -233,7 +233,7 @@ describe("AI apps (4.9)", () => {
 
   it("adds another app, showing its key once to copy, with the address to give it", async () => {
     const { dialog, mcp, copyText, copySecret, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App…" }));
     expect(
       dialog().getByText("The app will read and change the sites you open in Webforge."),
     ).toBeTruthy();
@@ -270,7 +270,7 @@ describe("AI apps (4.9)", () => {
 
   it("adds Claude Code as another app is added, with a command to run that has no key (5.13)", async () => {
     const { dialog, mcp, copyText, copySecret, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App…" }));
     await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
     // Its name offered in place of Claude Desktop's.
     expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty("value", "Claude Code");
@@ -300,7 +300,7 @@ describe("AI apps (4.9)", () => {
       ],
     ] as const) {
       const { dialog, copyText, copySecret, user } = setUp({}, { shell });
-      await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+      await user.click(await dialog().findByRole("button", { name: "Add AI App…" }));
       await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
       await user.click(dialog().getByRole("button", { name: "Add" }));
       await dialog().findByText(KEY);
@@ -339,7 +339,7 @@ describe("AI apps (4.9)", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     let time = 1_000_000;
     const { dialog, connect, user } = setUp({ apps: [] }, { now: () => time });
-    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App…" }));
     await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
     await user.click(dialog().getByRole("button", { name: "Add" }));
     await dialog().findByText(KEY);
@@ -366,7 +366,7 @@ describe("AI apps (4.9)", () => {
   it("says a new app's key ran out once AI apps no longer lists it (#1245)", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { dialog, mcp, user } = setUp({ apps: [] });
-    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App…" }));
     await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
     await user.click(dialog().getByRole("button", { name: "Add" }));
     await dialog().findByText(KEY);
@@ -385,7 +385,7 @@ describe("AI apps (4.9)", () => {
 
   it("adds VS Code as another app is added, and opens its install link (5.13)", async () => {
     const { dialog, mcp, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App…" }));
     await user.click(dialog().getByRole("radio", { name: "VS Code (GitHub Copilot)" }));
     expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty("value", "VS Code");
     await user.click(dialog().getByRole("button", { name: "Add" }));
@@ -417,7 +417,7 @@ describe("AI apps (4.9)", () => {
 
   it("keeps a name the person typed when they choose another app, and swaps an offered one", async () => {
     const { dialog, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App…" }));
     await user.click(dialog().getByRole("radio", { name: "VS Code (GitHub Copilot)" }));
     await user.click(dialog().getByRole("radio", { name: "Another app" }));
     expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty("value", "");
@@ -429,7 +429,7 @@ describe("AI apps (4.9)", () => {
   it("says why an app wasn't added, and adds nothing while AI apps is off", async () => {
     const { dialog, mcp, user } = setUp();
     mcp.add.mockResolvedValueOnce({ status: "name-taken" });
-    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App…" }));
     await user.clear(dialog().getByRole("textbox", { name: "Name" }));
     await user.type(dialog().getByRole("textbox", { name: "Name" }), "Claude");
     await user.click(dialog().getByRole("button", { name: "Add" }));
@@ -439,7 +439,7 @@ describe("AI apps (4.9)", () => {
 
     cleanup();
     const off = setUp({ enabled: false, address: null });
-    const add = await off.dialog().findByRole("button", { name: "Add AI App" });
+    const add = await off.dialog().findByRole("button", { name: "Add AI App…" });
     expect((add as HTMLButtonElement).disabled).toBe(true);
   });
 
@@ -450,15 +450,15 @@ describe("AI apps (4.9)", () => {
     expect(mcp.setEnabled).toHaveBeenCalledWith(true);
     await waitFor(() =>
       expect(
-        (dialog().getByRole("button", { name: "Add AI App" }) as HTMLButtonElement).disabled,
+        (dialog().getByRole("button", { name: "Add AI App…" }) as HTMLButtonElement).disabled,
       ).toBe(false),
     );
   });
 
   it("removes an app after asking, cutting it off", async () => {
     const { dialog, mcp, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Remove Claude" }));
-    const question = within(await screen.findByRole("alertdialog", { name: "Remove Claude?" }));
+    await user.click(await dialog().findByRole("button", { name: "Remove Claude…" }));
+    const question = within(await screen.findByRole("alertdialog", { name: "Remove “Claude”?" }));
     await user.click(question.getByRole("button", { name: "Remove" }));
 
     expect(mcp.remove).toHaveBeenCalledWith(CLAUDE.id);
@@ -557,6 +557,34 @@ describe("the address for AI apps, under Let AI apps connect (#1624)", () => {
     expect(dialog().queryByRole("alert")).toBeNull();
   });
 
+  it("says nothing of it while AI apps is still starting at launch, and says it if no address comes", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // Opened while {appName} is still opening its port: on, with no address yet.
+    const starting = { enabled: true, address: null, moved: false, apps: [CLAUDE] };
+    const { dialog, mcp } = setUp(starting);
+    await dialog().findByRole("checkbox", { name: "Let AI apps connect" });
+    expect(dialog().queryByRole("alert")).toBeNull();
+
+    // Started: the address shows, and nothing was said.
+    mcp.status.mockResolvedValue({ ...starting, address: ADDRESS });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect(line(dialog).getByText(ADDRESS)).toBeTruthy();
+    expect(dialog().queryByRole("alert")).toBeNull();
+
+    // No port could be had: two statuses in a row with no address, and it says so.
+    mcp.status.mockResolvedValue(starting);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect(dialog().queryByRole("alert")).toBeNull();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect((await dialog().findByRole("alert")).textContent).toMatch(/nothing can connect/);
+  });
+
   it("says beside the new address that it has changed, and that apps need it", async () => {
     const { dialog, mcp } = setUp({ moved: true });
     const shown = await waitFor(() => line(dialog));
@@ -591,7 +619,7 @@ describe("the address for AI apps, under Let AI apps connect (#1624)", () => {
 
   it("shows Claude Code's address as a value, and copying either address leaves the key's state alone", async () => {
     const { dialog, copyText, copySecret, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App…" }));
     await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
     await user.click(dialog().getByRole("button", { name: "Add" }));
     const panel = within(await dialog().findByRole("region", { name: "Claude Code is added" }));

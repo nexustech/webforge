@@ -74,6 +74,33 @@ function footerFaults(buttons: readonly FooterButton[]): string[] {
   return faults;
 }
 
+/**
+ * Every editor story that shows a confirmation, by its id, and whether what it confirms is outside
+ * Undo (#1445, T6 in research/product/01-terminology.md). Its confirming button is red only when
+ * it is. A story showing one that isn't listed fails, so each new confirmation is decided here.
+ */
+const CONFIRMATIONS: ReadonlyMap<string, boolean> = new Map([
+  ["base-alertdialog--delete-page", false],
+  ["base-alertdialog--delete-version", true],
+  ["base-dialog--unsaved-changes", true],
+  ["ai-mediarequestdialog--asking", false],
+  ["edit-apply-look-to-every--confirmation", false],
+  ["edit-apply-look-to-every--confirmation-on-this-page", false],
+  ["dialogs-ai-apps--removing", true],
+  ["dialogs-clear-recent--asking", true],
+  ["dialogs-diagnostics--clearing", true],
+  ["dialogs-my-themes--delete-in-use", true],
+  ["dialogs-publish-outcome--replace-other-site", true],
+  ["dialogs-theme-studio-your-colours--deleting-one-in-use", false],
+  ["panels-media--deleting-one-in-use", false],
+  ["panels-pages--delete-blog", false],
+  ["shell-sitewideconfirmdialog--delete-page", false],
+  ["shell-sitewideconfirmdialog--ai-app-offers-unasked", false],
+  ["shell-sitewideconfirmdialog--shared-footer-element", false],
+  ["shell-sitewideconfirmdialog--long-plan", false],
+  ["shell-sitewideconfirmdialog--ai-app-sets-logo", false],
+]);
+
 /** The development presets (S3) every pull request checks the site components in (2.16). */
 const PR_PRESETS: readonly string[] = ["light", "dark", "high-contrast-rounded"];
 
@@ -242,6 +269,32 @@ for (const build of BUILDS) {
             );
             for (const buttons of footers) {
               expect(footerFaults(buttons), `${story.title} › ${story.name}'s footer`).toEqual([]);
+            }
+
+            // A confirmation's button is red only for what Undo can't bring back (#1445).
+            const red = await page.evaluate(() => {
+              const shown = [
+                ...document.querySelectorAll<HTMLElement>('[data-slot="alert-dialog-content"]'),
+              ].some((content) => content.checkVisibility());
+              if (!shown) return null;
+              return [
+                ...document.querySelectorAll<HTMLElement>(
+                  '[data-slot="alert-dialog-footer"] button',
+                ),
+              ].some(
+                (button) => button.checkVisibility() && button.dataset.variant === "destructive",
+              );
+            });
+            if (red !== null) {
+              const outsideUndo = CONFIRMATIONS.get(story.id);
+              expect(
+                outsideUndo,
+                `${story.id} shows a confirmation: add it to CONFIRMATIONS, saying whether Undo can bring back what it does`,
+              ).toBeDefined();
+              expect(
+                red,
+                `${story.title} › ${story.name}: red only when Undo can't bring it back (T6)`,
+              ).toBe(outsideUndo);
             }
           }
 

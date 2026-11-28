@@ -126,6 +126,7 @@ export function WithTooltip({
   readonly children: ReactElement<{
     readonly "aria-describedby"?: string | undefined;
     readonly disabled?: boolean | undefined;
+    readonly "aria-disabled"?: boolean | "true" | "false" | undefined;
     readonly "aria-hidden"?: boolean | "true" | "false" | undefined;
   }>;
 }) {
@@ -144,9 +145,13 @@ export function WithTooltip({
   // A disabled button can't take the keyboard's focus, so its tooltip (why it's off) is its
   // description for as long as it's disabled, not only while the pointer opens it. One hidden
   // from screen readers (a mouse's shortcut) has no one to describe it to.
+  // One unavailable (`aria-disabled`, #1517) keeps the focus, and is described as it takes it.
   const hidden = children.props["aria-hidden"];
+  const off = children.props["aria-disabled"];
   const described =
-    hidden !== true && hidden !== "true" && (open || children.props.disabled === true);
+    hidden !== true &&
+    hidden !== "true" &&
+    (open || children.props.disabled === true || off === true || off === "true");
   const describedBy = [children.props["aria-describedby"], described ? description : undefined]
     .filter((each) => each !== undefined)
     .join(" ");

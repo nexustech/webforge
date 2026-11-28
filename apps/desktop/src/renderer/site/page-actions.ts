@@ -35,7 +35,7 @@ import { insertPrivacyPage } from "./privacy-page.js";
 import { insertTermsPage } from "./terms-page.js";
 
 /**
- * The Pages panel's actions (F-ED-13). Each is one labelled undo step ("Added page 'About'"), and
+ * The Pages panel's actions (F-ED-13). Each is one labelled undo step ("Added page “About”"), and
  * undo brings back the page that was shown (U3). Slugs follow the page name and stay unique in
  * their folder (X1). The "Page not found" page (F-ED-20) can't be deleted, duplicated, made the
  * Home page, moved into a folder or shown in navigation; the Home page can't be deleted or moved
@@ -45,7 +45,7 @@ import { insertTermsPage } from "./terms-page.js";
 /** The parts of an editor session the actions use. */
 export type PagesSession = Pick<EditorSession, "history" | "ui" | "edit">;
 
-/** "page 'About'", for the history's "Added {item}" labels. */
+/** "page “About”", for the history's "Added {item}" labels. */
 const pageItem = (name: string) => t("pages.item", { name });
 
 /**
@@ -159,7 +159,7 @@ const POLICY_PAGES: Readonly<
 /**
  * Adds a page written from Site Settings for the owner to start from (#855, #866): the privacy
  * page, marked as the one Site Check looks for; the terms; or the cookie policy. Shows it. One
- * undo step ("Added page 'Terms'"). Returns its id.
+ * undo step ("Added page “Terms”"). Returns its id.
  */
 export function addPolicyPage(
   session: PagesSession,

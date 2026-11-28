@@ -51,10 +51,13 @@ import {
 import { changeDraft, draftChange, draftChanges, themeWithDraft } from "./look-draft.js";
 import { StudioColours } from "./StudioColours.js";
 import {
+  changedKinds,
   KindChoice,
+  lookIn,
   lookKinds,
   previewNode,
   previewTypeOf,
+  ResetLook,
   StudioComponents,
   shownKind,
 } from "./StudioComponents.js";
@@ -196,6 +199,21 @@ export function ThemeStudio({
     [doc, isColorField],
   );
   const keyOfUse = (use: OneOffUse) => `${use.on} ${use.nodeId} ${use.field}`;
+  /** Sets fields of `type`'s look in the run, by name; `undefined` takes one off. */
+  const changeLook = (type: string, item: string, change: Readonly<Record<string, unknown>>) =>
+    studio.setState((state) => ({
+      draft: changeDraft(
+        session.history.document.getState().theme,
+        state.draft,
+        type,
+        item,
+        change,
+      ),
+    }));
+  // The look shown, as its controls show it, and the kinds whose look is changed (#1517).
+  const shownTheme = drafted?.theme ?? theme;
+  const shownLook = shown === undefined ? {} : lookIn(shownTheme, shown.type);
+  const changed = useMemo(() => changedKinds(shownTheme), [shownTheme]);
   /** Shows another kind, writing a run still open in this one first. */
   const chooseKind = (next: string) => {
     void apply().then(() => studio.setState({ kind: next }));
@@ -284,7 +302,22 @@ export function ThemeStudio({
                 ))}
               </TabsList>
               {section === "components" && shown !== undefined ? (
-                <KindChoice groups={groups} shown={shown} onKind={chooseKind} />
+                <>
+                  <KindChoice groups={groups} shown={shown} changed={changed} onKind={chooseKind} />
+                  {/* Takes the whole look off, as one step at once (M1). */}
+                  <ResetLook
+                    shown={shown}
+                    look={shownLook}
+                    onReset={() => {
+                      changeLook(
+                        shown.type,
+                        shown.label,
+                        Object.fromEntries(Object.keys(shownLook).map((name) => [name, undefined])),
+                      );
+                      void apply();
+                    }}
+                  />
+                </>
               ) : null}
             </>
           }
@@ -411,17 +444,7 @@ export function ThemeStudio({
                 library={library}
                 shown={shown}
                 draft={drafted}
-                onChange={(type, item, change) =>
-                  studio.setState((state) => ({
-                    draft: changeDraft(
-                      session.history.document.getState().theme,
-                      state.draft,
-                      type,
-                      item,
-                      change,
-                    ),
-                  }))
-                }
+                onChange={changeLook}
                 onCommit={() => void apply()}
                 onToken={(control, value) => void setToken(session, asks, control, value)}
                 renderers={renderers}

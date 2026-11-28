@@ -239,8 +239,8 @@ export function MediaPanel({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("site.media.deleteDialog.cancel")}</AlertDialogCancel>
+            {/* Undo brings it back: the ordinary button, not red (#1445). */}
             <AlertDialogAction
-              variant="destructive"
               onClick={() => {
                 if (confirming !== undefined) {
                   // Placements keep pointing at the image, so Undo brings every one of them back.

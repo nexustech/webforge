@@ -73,7 +73,7 @@ test("switching the theme asks first, with the pages it changes, and is one undo
   const canvasHeading = page.frameLocator(".editor__canvas iframe").locator("h1").first();
 
   await page.getByRole("combobox", { name: "Theme", exact: true }).selectOption("bistro");
-  const ask = page.getByRole("alertdialog", { name: "Switch to the theme 'Bistro'?" });
+  const ask = page.getByRole("alertdialog", { name: "Switch to the theme “Bistro”?" });
   // Every page: the home page and Page not found.
   await expect(ask).toContainText("2 pages of your site will change.");
   await ask.getByRole("button", { name: "Cancel" }).click();
@@ -92,7 +92,7 @@ test("switching the theme asks first, with the pages it changes, and is one undo
   await page.getByRole("tab", { name: "Undo History" }).click();
   // Newest first.
   await expect(page.locator(".undo-history__step")).toHaveText([
-    "Changed theme to 'Bistro'",
+    "Changed theme to “Bistro”",
     "Opened page",
   ]);
   await page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }).click();
@@ -191,7 +191,7 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: "Undo History" }).click();
   await expect(page.locator(".undo-history__step").first()).toHaveText(
-    "Changed brand colours from 'Shop front.jpg'",
+    "Changed brand colours from “Shop front.jpg”",
   );
 });
 
