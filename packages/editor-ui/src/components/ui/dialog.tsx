@@ -35,6 +35,8 @@ type Unsaved = {
   readonly report: (key: symbol, changed: boolean) => void;
   /** Whether some part has changes now, read as the dialog would close. */
   readonly changed: () => boolean;
+  /** Asks "Discard your changes?" when some part has them, running `then` on Discard. */
+  readonly ask: (then: () => void) => void;
 };
 
 const UnsavedContext = createContext<Unsaved | null>(null);
@@ -55,6 +57,19 @@ export function useUnsavedChanges(changed: boolean): void {
     return () => unsaved?.report(key, false);
   }, [unsaved, key, changed]);
 }
+
+/**
+ * What leaves a step of the dialog this is drawn in without closing it, such as a form's **Back**
+ * (#1456), asks with: `(then) => void` runs `then` at once when nothing in the dialog has changed,
+ * and otherwise asks "Discard your changes?" as Esc does, running `then` on _Discard_ and nothing
+ * on _Keep Editing_. Outside a {@link Dialog}, it runs `then` at once.
+ */
+export function useAskBeforeDiscarding(): (then: () => void) => void {
+  const unsaved = useContext(UnsavedContext);
+  return unsaved?.ask ?? runNow;
+}
+
+const runNow = (then: () => void) => then();
 
 /**
  * {@link useUnsavedChanges} as an element, for a dialog whose state lives above its `Dialog`:
@@ -79,7 +94,8 @@ export function Dialog({
   // The parts with changes. A ref, not state: read as the dialog would close, it holds the latest
   // reports, not the last render's.
   const changed = useRef(new Set<symbol>());
-  const [asking, setAsking] = useState(false);
+  // What _Discard_ does, while the question is asked: close the dialog, or leave a step of it.
+  const [asking, setAsking] = useState<{ readonly onDiscard: () => void } | undefined>();
   const discarded = useRef(false);
   const unsaved = useMemo<Unsaved>(
     () => ({
@@ -88,6 +104,10 @@ export function Dialog({
         else changed.current.delete(key);
       },
       changed: () => changed.current.size > 0,
+      ask: (then) => {
+        if (changed.current.size > 0) setAsking({ onDiscard: then });
+        else then();
+      },
     }),
     [],
   );
@@ -98,7 +118,7 @@ export function Dialog({
         {...props}
         onOpenChange={(next) => {
           if (!next && unsaved.changed()) {
-            setAsking(true);
+            setAsking({ onDiscard: () => onOpenChange?.(false) });
             return;
           }
           onOpenChange?.(next);
@@ -107,10 +127,10 @@ export function Dialog({
         {children}
       </DialogPrimitive.Root>
       <AlertDialog
-        open={asking}
+        open={asking !== undefined}
         onOpenChange={(next) => {
           // Esc on the question keeps editing.
-          if (!next) setAsking(false);
+          if (!next) setAsking(undefined);
         }}
       >
         <AlertDialogContent
@@ -134,10 +154,12 @@ export function Dialog({
               variant="destructive"
               onClick={() => {
                 discarded.current = true;
-                setAsking(false);
-                // Straight to the dialog's own close: its changes stay counted, so a dialog that
-                // stays open (busy applying) still asks the next time.
-                onOpenChange?.(false);
+                const discard = asking?.onDiscard;
+                setAsking(undefined);
+                // Straight to the dialog's own close, or the step's way back: its changes stay
+                // counted until it goes, so a dialog that stays open (busy applying) still asks
+                // the next time.
+                discard?.();
               }}
             >
               {t("ui.unsaved.discard")}

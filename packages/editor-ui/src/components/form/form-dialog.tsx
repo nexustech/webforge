@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { Button } from "../ui/button.js";
 import {
@@ -10,6 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  useAskBeforeDiscarding,
   useUnsavedChanges,
 } from "../ui/dialog.js";
 import { Form } from "./form-engine.js";
@@ -105,7 +106,7 @@ export function FormDialog<V extends FormValues, Out>({
           if (field instanceof HTMLInputElement) field.select();
         }}
       >
-        <FormDialogBody {...body} onCancel={onCancel} />
+        <FormDialogBody {...body} exit={{ kind: "cancel", run: onCancel }} />
         {/* Last, so the dialog's first field still takes the focus as it opens. */}
         {help === undefined ? null : <div className="absolute top-2.5 right-9">{help}</div>}
       </DialogContent>
@@ -142,6 +143,30 @@ function useKeptHeight(keep: boolean) {
   return [ref, height === undefined ? undefined : { minHeight: height }] as const;
 }
 
+/** Props of {@link FormPane}: a {@link FormDialog}'s, with Back for Cancel. */
+export type FormPaneProps<V extends FormValues, Out> = Omit<
+  FormDialogProps<V, Out>,
+  "open" | "size" | "help" | "onCancel"
+> & {
+  /** Back to the step before, in the dialog it's drawn in; asked first when a value changed. */
+  readonly onBack: () => void;
+};
+
+/**
+ * A {@link FormDialog}'s form as a step inside another dialog (#1456), such as Publish's web host:
+ * its title and description become the dialog's, and it ends with **Back** where a form dialog has
+ * Cancel. Back asks "Discard your changes?" first when a value changed, as Esc does, and goes back
+ * on _Discard_. Esc and the X close the whole dialog, asking first in the same way. Its first field
+ * takes the focus as it's drawn. Draw it inside a `DialogContent` laid out as a column
+ * (`flex flex-col`), so its fields can scroll.
+ */
+export function FormPane<V extends FormValues, Out>({ onBack, ...body }: FormPaneProps<V, Out>) {
+  return <FormDialogBody {...body} exit={{ kind: "back", run: onBack }} />;
+}
+
+/** How a form is left without saving: its dialog's Cancel, or Back to the step before it. */
+type FormExit = { readonly kind: "cancel" | "back"; readonly run: () => void };
+
 function FormDialogBody<V extends FormValues, Out>({
   title,
   description,
@@ -153,9 +178,24 @@ function FormDialogBody<V extends FormValues, Out>({
   groupHelp,
   keepHeight = false,
   onSave,
-  onCancel,
-}: Omit<FormDialogProps<V, Out>, "open" | "size" | "help">) {
+  exit,
+}: Omit<FormDialogProps<V, Out>, "open" | "size" | "help" | "onCancel"> & {
+  readonly exit: FormExit;
+}) {
   const form = useForm(spec, initial);
+  const ask = useAskBeforeDiscarding();
+  // A step's first field takes the focus as it's drawn, after its title (#1456); a dialog's own
+  // opening focuses its form dialog's.
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const step = exit.kind === "back";
+  useEffect(() => {
+    if (!step) return;
+    formRef.current
+      ?.querySelector<HTMLElement>(
+        '[data-slot="form-fields"] :is(input, textarea, select):not(:disabled)',
+      )
+      ?.focus();
+  }, [step]);
   // With a value changed, a click outside leaves it open, and Esc or the X asks first (#1439).
   useUnsavedChanges(form.changed);
   const [keptRef, keptStyle] = useKeptHeight(keepHeight);
@@ -163,6 +203,7 @@ function FormDialogBody<V extends FormValues, Out>({
   const [saveTried, setSaveTried] = useState(false);
   return (
     <form
+      ref={formRef}
       className="flex min-h-0 flex-1 flex-col gap-3"
       // What to fix shows in the editor's own words, never the browser's bubble.
       noValidate
@@ -207,7 +248,14 @@ function FormDialogBody<V extends FormValues, Out>({
             {t("ui.form.fixErrors")}
           </p>
         ) : null}
-        <DialogCancel onClick={onCancel} />
+        {exit.kind === "back" ? (
+          // Back, not a way out: the dialog stays open (#1444's order puts it before the primary).
+          <Button type="button" variant="secondary" onClick={() => ask(exit.run)}>
+            {t("ui.form.back")}
+          </Button>
+        ) : (
+          <DialogCancel onClick={exit.run} />
+        )}
         <Button type="submit" disabled={spec.validateOn === "change" && !form.valid}>
           {confirm}
         </Button>
