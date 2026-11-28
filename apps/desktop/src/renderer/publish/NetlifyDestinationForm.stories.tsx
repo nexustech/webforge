@@ -1,8 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
-import {
-  type NetlifyDestinationApi,
-  NetlifyDestinationDialog,
-} from "./NetlifyDestinationDialog.js";
+import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
+import { Dialog, DialogContent } from "@webforge/editor-ui";
+import { type NetlifyDestinationApi, NetlifyDestinationForm } from "./NetlifyDestinationForm.js";
 
 /** A Netlify account with two sites, the second with visitor access on. */
 const netlify: NetlifyDestinationApi = {
@@ -36,12 +34,22 @@ const netlify: NetlifyDestinationApi = {
   }),
 };
 
+/** Drawn as Publish draws it (#1456): a step of its dialog, as wide. */
+const inPublish: Decorator = (Story) => (
+  <Dialog open>
+    <DialogContent className="flex flex-col sm:max-w-2xl">
+      <Story />
+    </DialogContent>
+  </Dialog>
+);
+
 const meta = {
   title: "Dialogs/Netlify destination",
-  component: NetlifyDestinationDialog,
+  component: NetlifyDestinationForm,
   tags: ["full-window"],
-  args: { open: true, netlify, onSave: () => undefined, onCancel: () => undefined },
-} satisfies Meta<typeof NetlifyDestinationDialog>;
+  decorators: [inPublish],
+  args: { netlify, onSave: () => undefined, onBack: () => undefined },
+} satisfies Meta<typeof NetlifyDestinationForm>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

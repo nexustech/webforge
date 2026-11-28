@@ -108,7 +108,7 @@ test("starts the host form at the site's web address, and tests only a filled-in
   await expect(form.getByText("The connection didn't work.")).toHaveCount(0);
 });
 
-test("keeps the host form's Test Connection, Cancel and Save in view in the smallest window (#1172)", async () => {
+test("keeps the host form's Test Connection, Back and Save in view in the smallest window (#1172)", async () => {
   const path = join(dir, "Rosa's Bakery.wforge");
   ProjectStore.create(path, { name: "Rosa's Bakery" }).close();
   const page = await openPublish(path);
@@ -124,12 +124,12 @@ test("keeps the host form's Test Connection, Cancel and Save in view in the smal
     .getByRole("button", { name: "A web host with a control panel", exact: true })
     .click();
   const form = page.getByRole("dialog", { name: "Publish to your web host" });
-  const buttons = ["Test Connection", "Cancel", "Save"].map((name) =>
+  const buttons = ["Test Connection", "Back", "Save"].map((name) =>
     form.getByRole("button", { name, exact: true }),
   );
   for (const button of buttons) await expect(button).toBeInViewport({ ratio: 1 });
 
-  // More Options open: the fields scroll, and Cancel and Save stay where they are.
+  // More Options open: the fields scroll, and Back and Save stay where they are.
   await form.getByRole("button", { name: "More Options" }).click();
   await expect(form.getByLabel("Folder", { exact: true })).toBeVisible();
   for (const button of buttons.slice(1)) await expect(button).toBeInViewport({ ratio: 1 });

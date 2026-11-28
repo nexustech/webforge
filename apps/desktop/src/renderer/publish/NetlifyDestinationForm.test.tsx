@@ -1,15 +1,32 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Dialog, DialogContent } from "@webforge/editor-ui";
+import { type ReactNode, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   type NetlifyDestinationApi,
-  NetlifyDestinationDialog,
-  type NetlifyDestinationDialogProps,
+  NetlifyDestinationForm,
+  type NetlifyDestinationFormProps,
   type NetlifySite,
-} from "./NetlifyDestinationDialog.js";
+} from "./NetlifyDestinationForm.js";
 
 afterEach(cleanup);
+
+/**
+ * The form as a step of Publish (#1456): in a dialog, gone after Back, or after Esc or the X
+ * close the dialog.
+ */
+function InPublish({ form }: { readonly form: (back: () => void) => ReactNode }) {
+  const [shown, setShown] = useState(true);
+  return (
+    <Dialog open={shown} onOpenChange={(next) => (next ? undefined : setShown(false))}>
+      <DialogContent className="flex flex-col sm:max-w-2xl">
+        {form(() => setShown(false))}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const HANDLE = "8d2c1f0e-1111-4222-8333-444455556666";
 const SAVED = "c0ffee00-1111-4222-8333-444455556666";
@@ -51,25 +68,34 @@ function fakeNetlify(overrides: Partial<NetlifyDestinationApi> = {}) {
   };
 }
 
-function setUp(netlify = fakeNetlify(), editing?: NetlifyDestinationDialogProps["editing"]) {
+function setUp(netlify = fakeNetlify(), editing?: NetlifyDestinationFormProps["editing"]) {
   const onSave = vi.fn();
   render(
-    <NetlifyDestinationDialog
-      open
-      netlify={netlify}
-      {...(editing === undefined ? {} : { editing })}
-      onSave={onSave}
-      onCancel={vi.fn()}
+    <InPublish
+      form={(back) => (
+        <NetlifyDestinationForm
+          netlify={netlify}
+          {...(editing === undefined ? {} : { editing })}
+          onSave={onSave}
+          onBack={back}
+        />
+      )}
     />,
   );
   const user = userEvent.setup({ delay: null });
+  /** Back to the list, discarding what changed when it asks. */
+  const back = async () => {
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    const discard = screen.queryByRole("button", { name: "Discard" });
+    if (discard !== null) await user.click(discard);
+  };
   const field = (name: string) => screen.getByLabelText(name, { exact: true });
   const save = () => user.click(screen.getByRole("button", { name: "Save" }));
   const connect = async (token: string) => {
     await user.type(field("Personal access token"), token);
     await user.click(screen.getByRole("button", { name: "Connect" }));
   };
-  return { netlify, onSave, user, field, save, connect };
+  return { netlify, onSave, user, field, save, connect, back };
 }
 
 describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
@@ -152,12 +178,22 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
     });
   });
 
-  it("lets go of a sign-in it made when it's cancelled, but not one saved for the destination", async () => {
-    const { netlify, user, connect } = setUp();
+  it("lets go of a sign-in it made when it goes, but not one saved for the destination", async () => {
+    const { netlify, connect, back } = setUp();
     await connect("nfp_token");
     await screen.findByText("Signed in to Netlify.");
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    await back();
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(netlify.forgetSignIn).toHaveBeenCalledWith(HANDLE);
+    cleanup();
+
+    // Esc closing Publish lets it go too (#1456).
+    const closing = setUp();
+    await closing.connect("nfp_token");
+    await screen.findByText("Signed in to Netlify.");
+    await closing.user.keyboard("{Escape}");
+    await closing.user.click(screen.getByRole("button", { name: "Discard" }));
+    expect(closing.netlify.forgetSignIn).toHaveBeenCalledWith(HANDLE);
     cleanup();
 
     const editing = setUp(fakeNetlify(), {
@@ -171,7 +207,7 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
     expect(editing.netlify.forgetSignIn).not.toHaveBeenCalled();
   });
 
-  it("stops a browser sign-in when it's cancelled, and lets go of one that ends after (#826 review)", async () => {
+  it("stops a browser sign-in when it goes, and lets go of one that ends after (#826 review)", async () => {
     // Approved in the browser just as the form is cancelled: the answer comes after.
     let answer: (result: Awaited<ReturnType<NetlifyDestinationApi["signIn"]>>) => void = () =>
       undefined;
@@ -181,11 +217,11 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
           answer = resolve;
         }),
     );
-    const { netlify, user } = setUp(fakeNetlify({ canSignIn: true, signIn }));
+    const { netlify, user, back } = setUp(fakeNetlify({ canSignIn: true, signIn }));
     await user.click(screen.getByRole("button", { name: "Sign In with Netlify" }));
     await screen.findByRole("button", { name: "Cancel Sign-In" });
 
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    await back();
     expect(netlify.cancelSignIn).toHaveBeenCalled();
     answer({ status: "signed-in", handle: HANDLE });
 

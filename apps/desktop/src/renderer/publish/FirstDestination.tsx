@@ -13,11 +13,14 @@ function Card({
   description,
   onChoose,
   ref,
+  adds,
 }: {
   readonly title: string;
   readonly description: string;
   readonly onChoose: () => void;
   readonly ref?: Ref<HTMLButtonElement>;
+  /** The kind of destination it adds, for Publish to put the focus back on it (#1456). */
+  readonly adds?: PublishDestination["kind"];
 }) {
   const described = useId();
   return (
@@ -27,6 +30,7 @@ function Card({
         type="button"
         className="text-left text-sm font-medium outline-none after:absolute after:inset-0 after:rounded-md"
         aria-describedby={described}
+        data-first-destination={adds}
         onClick={onChoose}
       >
         {title}
@@ -65,12 +69,14 @@ export function FirstDestination({
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         <Card
           ref={first}
+          adds="file-transfer"
           title={t("publish.first.fileTransfer")}
           description={t("publish.first.fileTransfer.description")}
           onChoose={() => onAdd("file-transfer")}
         />
         {netlify ? (
           <Card
+            adds="netlify"
             title={t("publish.first.netlify")}
             description={t("publish.first.netlify.description")}
             onChoose={() => onAdd("netlify")}
