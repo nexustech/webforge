@@ -215,7 +215,7 @@ for (const [width, height, zoom] of [
       { timeout: 15_000 },
     );
     // Its close button: Escape would first close the tooltip of Help, which has the focus.
-    await dialog.getByRole("button", { name: "Close" }).click();
+    await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
     await expect(dialog).toHaveCount(0);
 
     const banner = page.getByRole("banner");

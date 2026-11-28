@@ -131,12 +131,14 @@ test("an AI app paired in AI apps… changes the site, as undo steps named after
   expect(added).toMatchObject({ status: "done", label: "AI (Test client): Added Hero" });
   // Connected, as AI apps says; with it closed, the step and the title bar's sign show.
   await expect(dialog().getByText("Connected", { exact: true })).toBeVisible();
-  await dialog().getByRole("button", { name: "Close" }).click();
+  await dialog().getByRole("button", { name: "Close", exact: true }).first().click();
   await expect(canvas().getByText("Fresh bread every morning")).toBeVisible();
   await expect(step("AI (Test client): Added Hero")).toBeVisible();
+  // The sign looks again as AI apps closes (#1615); in case that look is lost, its next regular
+  // one, 5 s later (INDICATOR_EVERY_MS), with room for a slow runner.
   await expect(
     page.getByRole("button", { name: "Connected AI apps: Test client. Open AI apps." }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 10_000 });
 
   // Its change undoes as any other.
   await page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }).click();
@@ -340,7 +342,7 @@ async function pairAnotherApp(name: string): Promise<{ address: string; key: str
   const [address, key] = await shown.locator("dd code").allTextContents();
   if (address === undefined || key === undefined) throw new Error("no address or key shown");
   await shown.getByRole("button", { name: "Done" }).click();
-  await dialog().getByRole("button", { name: "Close" }).click();
+  await dialog().getByRole("button", { name: "Close", exact: true }).first().click();
   return { address, key };
 }
 

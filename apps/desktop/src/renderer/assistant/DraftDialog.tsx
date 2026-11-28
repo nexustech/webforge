@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -93,14 +94,12 @@ export function DraftDialog(props: DraftDialogProps) {
           </div>
         )}
         <DialogFooter>
-          <Button variant="ghost" onClick={props.onCancel}>
-            {t("assistant.rewrite.cancel")}
-          </Button>
           {state.step === "draft" || state.step === "failed" ? (
             <Button variant="outline" onClick={props.onAgain}>
               {t("assistant.rewrite.again")}
             </Button>
           ) : null}
+          <DialogCancel onClick={props.onCancel}>{t("assistant.rewrite.cancel")}</DialogCancel>
           {draft === undefined ? null : (
             <Button disabled={text.trim() === ""} onClick={() => props.onUse(text.trim())}>
               {t("assistant.rewrite.use")}

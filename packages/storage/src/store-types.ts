@@ -189,6 +189,10 @@ export type StoredFormats = {
 /** The steps of making a new project, as {@link CreateProjectOptions.timed} is told them (#1560). */
 export type CreateProjectStep =
   | "make the file"
+  // Its three parts (#1625), inside it: one took 10 s once on a Windows runner.
+  | "make the file: open it"
+  | "make the file: its first write"
+  | "make the file: how it writes"
   | "first commit"
   | "move into place"
   | "check the new file";

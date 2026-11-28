@@ -3,6 +3,7 @@ import { t } from "@webforge/i18n";
 import { BotIcon, ZapIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { McpApi, McpStatus } from "../../shared/ipc/mcp.js";
+import { onAiAppsChanged } from "./ai-apps-changed.js";
 
 /** How often the title bar asks whether an AI app is connected. */
 export const INDICATOR_EVERY_MS = 5_000;
@@ -32,7 +33,8 @@ function shownOf(status: McpStatus | undefined, at: number): Shown & { readonly 
 /**
  * The title bar's sign that an AI app is connected (F-AI-1, 4.9): nothing while none is; while one
  * is, its name, and a click opens AI apps, where it can be removed. While an app works without
- * asking on the open site (5.35, UA-2), its icon and its name say so, until that ends.
+ * asking on the open site (5.35, UA-2), its icon and its name say so, until that ends. It looks
+ * every {@link INDICATOR_EVERY_MS}, and again the moment AI apps closes (#1615).
  */
 export function AiAppsStatus({ mcp, onOpen, now = Date.now }: AiAppsStatusProps) {
   const [shown, setShown] = useState<Shown>({ connected: [], unasked: [] });
@@ -56,10 +58,13 @@ export function AiAppsStatus({ mcp, onOpen, now = Date.now }: AiAppsStatusProps)
     };
     refresh();
     const timer = setInterval(refresh, INDICATOR_EVERY_MS);
+    // As AI apps closes, at once: an app just connected there is named without waiting (#1615).
+    const stop = onAiAppsChanged(refresh);
     return () => {
       live = false;
       clearInterval(timer);
       clearTimeout(ending);
+      stop();
     };
   }, [mcp, now]);
   const { connected, unasked } = shown;

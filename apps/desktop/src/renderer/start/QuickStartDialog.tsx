@@ -4,6 +4,7 @@ import {
   ColourPicker,
   cn,
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -221,17 +222,16 @@ function QuickStartBody({
         <Button type="button" variant="link" className="mr-auto px-0" onClick={onChooseTemplate}>
           {t("quickStart.chooseTemplate")}
         </Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          {t("quickStart.cancel")}
-        </Button>
-        {step === 0 ? null : (
-          <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>
-            {t("quickStart.back")}
-          </Button>
-        )}
+        {/* Other actions, Cancel, then Back beside the primary, the pair people step with (#1444). */}
         {last ? null : (
           <Button type="button" variant="outline" onClick={create}>
             {t("quickStart.create")}
+          </Button>
+        )}
+        <DialogCancel onClick={onCancel}>{t("quickStart.cancel")}</DialogCancel>
+        {step === 0 ? null : (
+          <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>
+            {t("quickStart.back")}
           </Button>
         )}
         <Button type="submit">{last ? t("quickStart.create") : t("quickStart.next")}</Button>

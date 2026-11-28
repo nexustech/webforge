@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogCloseButton,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -75,13 +76,15 @@ export function PhonePreviewDialog({
             <p className="text-xs text-muted-foreground">{t("preview.phone.privacy")}</p>
           </div>
         ) : null}
-        {shown.status === "ready" ? (
-          <DialogFooter>
-            <Button variant="secondary" onClick={onStop}>
+        {/* Stop Phone Preview while it runs, then Close, which leaves it running (#1444). */}
+        <DialogFooter>
+          {shown.status === "ready" ? (
+            <Button variant="outline" onClick={onStop}>
               {t("command.stopPhonePreview")}
             </Button>
-          </DialogFooter>
-        ) : null}
+          ) : null}
+          <DialogCloseButton />
+        </DialogFooter>
         {/* Last, so the dialog's own first control still takes the focus as it opens. */}
         <HelpButton topic="phonePreview" className="absolute top-2.5 right-9" />
       </DialogContent>

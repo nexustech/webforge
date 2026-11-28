@@ -1,7 +1,9 @@
 import {
   Dialog,
+  DialogCloseButton,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   fieldControlClass,
@@ -92,6 +94,10 @@ export function ShortcutSheet({ editor = true }: { readonly editor?: boolean }) 
             />
           </div>
         )}
+        {/* Nothing to save: one Close (#1444). */}
+        <DialogFooter>
+          <DialogCloseButton />
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

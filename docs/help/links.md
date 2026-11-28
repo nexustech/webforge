@@ -4,7 +4,7 @@ id: links
 title: Links
 summary: Link to a page, a section, an email address, a phone number, a website or a file.
 related: [editing-on-the-page, elements, media, pages]
-updated: 2026-11-21
+updated: 2026-11-27
 ---
 
 # Links
@@ -24,7 +24,7 @@ Buttons, menu items and text can link somewhere. To add a link:
 | **Web address** | Opens another website. Type its address, such as `example.com`; {appName} adds `https://`                                                                            |
 | **File**        | Opens or downloads a document from [Media](media.md), such as a PDF menu or price list. Turn on **Download the file instead of opening it** to have visitors save it |
 
-**Open in a new tab** keeps your site open behind the link. It's offered for a page, a web address or a file, and a file opens in a new tab unless you turn it off. Click **Save Link** to add the link.
+**Open in a new tab** keeps your site open behind the link. It's offered for a page, a web address or a file, and a file opens in a new tab unless you turn it off. Click **Save** to add the link.
 
 Links don't open while you edit. Use [Preview](preview.md) to try them.
 

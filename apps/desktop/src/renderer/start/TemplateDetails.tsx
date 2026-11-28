@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -42,9 +43,7 @@ export function TemplateDetails({
             {`${t(`template.category.${template.category}`)} · ${plural("newSite.pages", template.pages)} · ${presetLabel(template.theme)}`}
           </p>
           <DialogFooter>
-            <Button type="button" variant="secondary" onClick={onClose}>
-              {t("newSite.cancel")}
-            </Button>
+            <DialogCancel onClick={onClose}>{t("newSite.cancel")}</DialogCancel>
             <Button type="button" onClick={() => onUse(template)}>
               {t("newSite.useTemplate")}
             </Button>
