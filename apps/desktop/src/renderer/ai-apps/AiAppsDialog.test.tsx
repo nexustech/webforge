@@ -557,6 +557,34 @@ describe("the address for AI apps, under Let AI apps connect (#1624)", () => {
     expect(dialog().queryByRole("alert")).toBeNull();
   });
 
+  it("says nothing of it while AI apps is still starting at launch, and says it if no address comes", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // Opened while {appName} is still opening its port: on, with no address yet.
+    const starting = { enabled: true, address: null, moved: false, apps: [CLAUDE] };
+    const { dialog, mcp } = setUp(starting);
+    await dialog().findByRole("checkbox", { name: "Let AI apps connect" });
+    expect(dialog().queryByRole("alert")).toBeNull();
+
+    // Started: the address shows, and nothing was said.
+    mcp.status.mockResolvedValue({ ...starting, address: ADDRESS });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect(line(dialog).getByText(ADDRESS)).toBeTruthy();
+    expect(dialog().queryByRole("alert")).toBeNull();
+
+    // No port could be had: two statuses in a row with no address, and it says so.
+    mcp.status.mockResolvedValue(starting);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect(dialog().queryByRole("alert")).toBeNull();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect((await dialog().findByRole("alert")).textContent).toMatch(/nothing can connect/);
+  });
+
   it("says beside the new address that it has changed, and that apps need it", async () => {
     const { dialog, mcp } = setUp({ moved: true });
     const shown = await waitFor(() => line(dialog));
