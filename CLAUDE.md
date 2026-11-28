@@ -24,7 +24,7 @@ A desktop builder for non-technical small-business owners that produces self-con
   - The renderer never imports Node/Electron.
   - Core packages contain no React.
 - **Every document change goes through `HistoryManager.run/begin`.** It must be undoable, with a meaningful label ("Edited Header text").
-- **Shared code is written once** (product owner, 2026-11-28). Look for the helper, hook, schema or component before writing one (`docs/anti-patterns.md`, 5, 6 and 18). The PR that brings a second use of a local one moves it to the lowest package both can import and uses it from both; it never copies it.
+- **Shared code is written once** (product owner, 2026-11-28). Look for the helper, hook, schema or component before writing one (`docs/anti-patterns.md`, 5, 6, 18 and 23). The PR that brings a second use of a local one moves it to the lowest package both can import and uses it from both; it never copies it.
 - **No hard-coded UI strings.** Use `t('key')`, with wording from the glossary in `research/product/01-terminology.md`. Hierarchy: Site → Page → Section → Element.
 - **Help pages stay current.** A change people can see updates its page in `docs/help/` in the same PR, and the page's `updated` date (HP-4). Rules in `docs/help/README.md`; `pnpm help-check` checks the pages (HP-5).
 - **The app's name is `{appName}` in every message,** filled in from `app.name`; a rename changes that and `productName` only (`docs/branding.md`).
@@ -96,7 +96,7 @@ What each one builds, checks and writes, and how CI runs it, is in `docs/command
 - **Plan, and have the plan critiqued, before writing code** (product owner, 2026-11-26), for every item of half a day or more: plan items, bugs, feedback and chores alike. Post an `Implementation plan` comment on the issue:
   - the approach, and the files and packages it changes;
   - **what else uses what it changes:** every caller, component, dialog or template that uses a shared piece it touches (a dialog primitive, a token, the title bar, a section every template has), and how each will be checked;
-  - **what it reuses and what it adds:** the shared pieces it takes (searched for first, in `docs/extending.md`'s list and in the code), any open issue that touches the same files or needs the same new piece, and anything it builds that another open issue could use, named on that issue;
+  - **what it reuses and what it adds:** the shared pieces it takes (searched for first, in `docs/extending.md` and in the code), any open issue that touches the same files or needs the same new piece, and anything it builds that another open issue could use, named on that issue;
   - the window sizes, appearances, systems and states it will check, and what the help pages and screenshots need;
   - its risks and open questions.
     Then ask the coordinating session (or, without one, a reviewer that hasn't seen your reasoning) to critique it, and start once its points are answered. A PR that touches a shared piece checks everything that plan listed, and says so.
