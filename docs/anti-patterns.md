@@ -42,7 +42,7 @@ The examples are the ones the reviews gave; most have been fixed since, and they
 
 - **Looks like:** six copies of "how an element is named", with different handling of an empty name. Five value-equality helpers with different meanings (A18). Three abortable sleeps, one rejecting and two resolving on abort. Three file-size formatters, so one file showed two sizes in Media and in Site Check.
 - **Why it hurts:** a fix lands in one copy and misses the others, and the copies decide things that matter, such as whether an edit becomes an undo step.
-- **Instead:** look for the helper first (`elementName`, `sameJson` in `@webforge/model`, `sleep` in `@webforge/publish`, `sha256HexSchema`); if it's missing, add one in the lowest package that can own it.
+- **Instead:** look for the helper first (`elementName`, `sameJson` in `@webforge/model`, `sleep` in `@webforge/publish`, `sha256HexSchema`); if it's missing, add one in the lowest package that can own it. One that only its caller needs can stay beside that caller; the PR that brings a second caller moves it and uses it from both, and never copies it. Don't write it for callers that don't exist yet: a helper made general ahead of its second use grows options nobody asked for. The author's review runs `/simplify`, which looks for this in the diff.
 - **Found by:** arch 1 (R10); architecture review 2 A18; codebase review D1, D2; [UI/UX audit](reviews/2026-11-14-ui-ux-audit.md) §9.5.
 
 ### 6. A model limit typed again as a number
