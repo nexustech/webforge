@@ -32,6 +32,12 @@ describe("ProjectStore.create's steps (#1560)", () => {
     try {
       expect(seen).toEqual([
         "start make the file",
+        "start make the file: open it",
+        "end make the file: open it",
+        "start make the file: its first write",
+        "end make the file: its first write",
+        "start make the file: how it writes",
+        "end make the file: how it writes",
         "end make the file",
         "start first commit",
         "end first commit",
@@ -82,6 +88,11 @@ describe("ProjectStore.create's steps (#1560)", () => {
     expect(() => ProjectStore.create(path, { name: "Bakery", timed })).toThrow(
       (untimed as Error).constructor as new () => Error,
     );
-    expect(seen).toEqual(["start make the file", "end make the file"]);
+    expect(seen).toEqual([
+      "start make the file",
+      "start make the file: open it",
+      "end make the file: open it",
+      "end make the file",
+    ]);
   });
 });

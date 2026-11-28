@@ -101,6 +101,11 @@ test.afterEach(async () => {
 
 for (const template of TEMPLATES) {
   test(`makes a ${template.title} site within its opening budget, accessible on the canvas (2.15)`, async () => {
+    // Making its file once took 10 s on a Windows runner, and passed on the re-run (#1625).
+    test.fixme(
+      process.platform === "win32" && template.title === "Photographer / Portfolio",
+      "flaky on Windows CI: #1625",
+    );
     app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
     const page = await app.firstWindow();
     await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
