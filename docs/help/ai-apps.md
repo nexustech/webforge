@@ -4,7 +4,7 @@ id: ai-apps
 title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
 related: [undo-and-history, version-history, site-check]
-updated: 2026-11-24
+updated: 2026-11-28
 ---
 
 # AI apps
@@ -21,7 +21,7 @@ Choose **File › AI Apps…** (or search for it in **Search Commands…**, or c
 
 You need Claude Desktop installed on this computer.
 
-1. Click **Add AI App**. **Claude Desktop** is already chosen, and named so. Click **Add**.
+1. Click **Add AI App**, at the bottom of the window. **Claude Desktop** is already chosen, and named so. Click **Add**.
 2. {appName} shows the app's **Key**. Click **Copy the key**: you won't see it again, and it stops working if Claude Desktop doesn't use it within 5 minutes.
 3. Click **Install in Claude Desktop**. Claude Desktop opens {appName}'s extension and asks whether to install it.
 4. In Claude Desktop, paste the key into **Key**, and install the extension.
@@ -175,13 +175,15 @@ ChatGPT can't connect to {appName} yet.
 
 Developer tools connect to {appName} directly, at an address on this computer: `http://127.0.0.1:<port>/mcp`. **Add AI App** sets up Claude Code and VS Code for you, and shows the address for any other app.
 
+While **Let AI apps connect** is ticked, **AI Apps** shows the address under it, port and all, as **Address for AI apps**. Select it, or click **Copy the address** beside it. If AI Apps says {appName} couldn't start listening for AI apps, nothing can connect: untick **Let AI apps connect**, then tick it again.
+
 Unlike Claude Desktop's extension, these tools can't check who answers at the address. While {appName} is closed, another program on this computer could answer there and get the key. So turn {appName}'s server off in the tool while {appName} is closed: in Claude Code, with `/mcp`; in VS Code, with **MCP: List Servers** › **webforge** › **Stop Server**.
 
 ### Claude Code
 
 You need [Claude Code](https://code.claude.com/docs/en/setup) installed.
 
-1. Click **Add AI App**, choose **Claude Code**, and click **Add**. {appName} shows three steps, each with what it copies, and the commands for your computer's terminal. On Windows the steps say PowerShell: run them there, not in Command Prompt, which splits the add command at its spaces.
+1. Click **Add AI App**, choose **Claude Code**, and click **Add**. {appName} shows the **Address** it adds Claude Code at, then three steps, each with what it copies, and the commands for your computer's terminal. On Windows the steps say PowerShell: run them there, not in Command Prompt, which splits the add command at its spaces.
 2. **Add {appName} to Claude Code:** click **Copy the add command**, and run it in a terminal (Bash or Zsh), or in PowerShell on Windows. It adds {appName}'s server, named `webforge`, to Claude Code for all your projects:
 
    ```
@@ -236,7 +238,25 @@ If VS Code already has a server named `webforge`, from an earlier time you added
 
 Some things to know:
 
-- The port is chosen once and kept, so the address stays the same each time {appName} starts.
+- The port is chosen once and kept, so the address stays the same each time {appName} starts, unless another program takes it (see [If an AI app stops connecting](#if-an-ai-app-stops-connecting)).
 - Requests from web pages are refused, as is any request without an added app's key.
 - The key goes only in the `Authorization` header, never in the address.
 - {appName} never logs what an app sends or reads, only which tool it used.
+
+### If an AI app stops connecting
+
+If another program used {appName}'s port while {appName} was closed, {appName} chooses a new one, so its address for AI apps changes. **AI Apps** says **{appName}'s address for AI apps has changed** beside the new address. An app set up with the old address can't connect until it has the new one, and {appName} removed apps that connect directly, such as Claude Code, so they need a new key too.
+
+For Claude Code:
+
+1. In a terminal, remove the server Claude Code has at the old address:
+
+   ```
+   claude mcp remove --scope user webforge
+   ```
+
+2. In {appName}, click **Add AI App**, choose **Claude Code**, and follow its steps (see [Claude Code](#claude-code)). Its add command holds the new address, and its key is new.
+
+For another app, add it again in **AI Apps**, then put the new address and key in its settings for MCP servers, in place of the old ones.
+
+If an app stops connecting and AI Apps doesn't say the address has changed, check that the address in the app's settings is the one **Address for AI apps** shows, and that **Let AI apps connect** is ticked.

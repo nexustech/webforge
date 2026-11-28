@@ -10,8 +10,11 @@ import {
   Button,
   Check,
   Dialog,
+  DialogCancel,
+  DialogCloseButton,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   ErrorText,
@@ -40,6 +43,13 @@ import { UnaskedChoice } from "./UnaskedChoice.js";
 
 /** How often the dialog asks for the apps' status while open, so *Connected* follows them. */
 export const STATUS_EVERY_MS = 2_000;
+
+/**
+ * How many statuses in a row, on with no address, before the dialog says nothing can connect: at
+ * launch {appName} turns AI apps on without waiting, so the first may come while it's still
+ * opening its port. One that a turning on answers counts as all of them: it has finished trying.
+ */
+const NO_ADDRESS_POLLS = 2;
 
 export type AiAppsDialogProps = {
   readonly open: boolean;
@@ -120,7 +130,7 @@ function CopyRow({
     <>
       <dt>{label}</dt>
       <dd className="contents">
-        <code className="break-all font-mono">{value}</code>
+        <code className="break-all font-mono select-text">{value}</code>
         <Button variant="outline" size="sm" onClick={onCopy}>
           {copyLabel}
         </Button>
@@ -148,6 +158,15 @@ function SetupSteps({
   if (setup === undefined) return null;
   return (
     <>
+      {/* The address the command holds, as a value too (#1624), for an app set up by hand. */}
+      <dl className="mt-2 grid grid-cols-[auto_1fr_auto] items-center gap-2 text-sm">
+        <CopyRow
+          label={t("aiApps.key.address")}
+          value={shown.address}
+          copyLabel={copied === "address" ? t("aiApps.key.copied") : t("aiApps.key.copyAddress")}
+          onCopy={() => onCopy("address", shown.address)}
+        />
+      </dl>
       <h4 className="mt-2 text-sm font-medium">{setup.title()}</h4>
       <ol className="mt-1 flex list-decimal flex-col gap-3 pl-5 text-sm">
         {setup.steps(shown.address, shell).map((step, index) => {
@@ -185,6 +204,43 @@ function SetupSteps({
         })}
       </ol>
     </>
+  );
+}
+
+/**
+ * The address AI apps reach {appName} at (#1624), whenever it listens: to see and copy, for an app
+ * set up by hand or one that stopped connecting. When it has changed, it says so here, beside the
+ * new one. The address holds no key.
+ */
+function AddressLine({
+  address,
+  moved,
+  copied,
+  onCopy,
+}: {
+  readonly address: string;
+  readonly moved: boolean;
+  readonly copied: boolean;
+  readonly onCopy: () => void;
+}) {
+  return (
+    <section aria-label={t("aiApps.address")} className="flex flex-col gap-1">
+      {/* Its label above, so the address keeps its port on one line beside its button. */}
+      <dl className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-1 text-sm">
+        <dt className="col-span-2">{t("aiApps.address")}</dt>
+        <dd className="contents">
+          <code className="break-all font-mono select-text">{address}</code>
+          <Button variant="outline" size="sm" onClick={onCopy}>
+            {copied ? t("aiApps.key.copied") : t("aiApps.key.copyAddress")}
+          </Button>
+        </dd>
+      </dl>
+      {moved ? (
+        <p className="text-sm">{t("aiApps.moved")}</p>
+      ) : (
+        <p className="text-sm text-muted-foreground">{t("aiApps.address.hint")}</p>
+      )}
+    </section>
   );
 }
 
@@ -341,12 +397,24 @@ export function AiAppsDialog({
   const [now, setNow] = useState(clock);
   const [removing, setRemoving] = useState<AppStatus | null>(null);
   const [installed, setInstalled] = useState<McpInstallResult["status"] | null>(null);
+  // The address under the switch last copied (#1624): apart from a new app's panel, so copying it
+  // leaves the key's state alone, and a new address isn't shown as copied.
+  const [copiedLine, setCopiedLine] = useState<string | null>(null);
+  // How many turnings on or off main hasn't answered yet: a status polled meanwhile may have no
+  // address yet, so nothing says it can't listen until each has (a quick off and on again too).
+  const [switching, setSwitching] = useState(0);
+  // Statuses in a row that were on with no address (see {@link NO_ADDRESS_POLLS}).
+  const [withoutAddress, setWithoutAddress] = useState(0);
   const whichId = useId();
   // Opened again: no *moved* note from last time, from its first frame (#990).
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
-    if (open) setMoved(false);
+    if (open) {
+      setMoved(false);
+      setCopiedLine(null);
+      setWithoutAddress(0);
+    }
   }
 
   useEffect(() => {
@@ -357,6 +425,9 @@ export function AiAppsDialog({
         (next: McpStatus | undefined) => {
           if (!live) return;
           setStatus(next ?? null);
+          setWithoutAddress((count) =>
+            next?.enabled === true && next.address === null ? count + 1 : 0,
+          );
           if (next?.moved === true) {
             setMoved(true);
             void mcp.seenMoved().catch(() => undefined);
@@ -420,6 +491,13 @@ export function AiAppsDialog({
     );
   };
 
+  const copyLine = (address: string) => {
+    void copyText(address).then(
+      () => setCopiedLine(address),
+      () => notify(t("aiApps.failed")),
+    );
+  };
+
   /**
    * Switches the kind of app being added, offering its name for it: a name the person typed stays,
    * and one offered for another kind is replaced.
@@ -450,7 +528,8 @@ export function AiAppsDialog({
   const enabled = status?.enabled ?? false;
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
-      <DialogContent className="max-w-lg">
+      {/* `sm:`, as the primitive's own width is, so this one wins from 640 px (#1455). */}
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("aiApps.title")}</DialogTitle>
           <DialogDescription>{t("aiApps.description")}</DialogDescription>
@@ -461,9 +540,34 @@ export function AiAppsDialog({
               label={t("aiApps.enabled")}
               hint={t("aiApps.enabledHint")}
               checked={enabled}
-              onChange={(checked) => void act(mcp.setEnabled(checked))}
+              onChange={(checked) => {
+                setSwitching((count) => count + 1);
+                void act(
+                  mcp.setEnabled(checked).then((next) => {
+                    // Answered with no address: the port couldn't be had, nothing to wait for.
+                    setWithoutAddress(next.enabled && next.address === null ? NO_ADDRESS_POLLS : 0);
+                    return next;
+                  }),
+                ).finally(() => setSwitching((count) => count - 1));
+              }}
             />
-            {moved ? <p className="text-sm">{t("aiApps.moved")}</p> : null}
+            {/* On: where apps reach it, or, with no address, that nothing can (#1624). */}
+            {!enabled ? (
+              moved ? (
+                <p className="text-sm">{t("aiApps.moved")}</p>
+              ) : null
+            ) : status.address !== null ? (
+              <AddressLine
+                address={status.address}
+                moved={moved}
+                copied={copiedLine === status.address}
+                onCopy={() => copyLine(status.address ?? "")}
+              />
+            ) : switching > 0 || withoutAddress < NO_ADDRESS_POLLS ? null : (
+              <p role="alert" className="text-sm">
+                {t("aiApps.notListening")}
+              </p>
+            )}
             {shown !== null ? (
               <section aria-label={t("aiApps.key.title", { name: shown.name })}>
                 <h3 className="font-medium">{t("aiApps.key.title", { name: shown.name })}</h3>
@@ -514,22 +618,13 @@ export function AiAppsDialog({
                 />
                 <ErrorText message={addError} />
                 <p className="text-sm">{t("aiApps.add.shared")}</p>
-                <div className="flex gap-2">
+                {/* As a dialog's footer has them (#1444): Cancel, then Add, at the right. */}
+                <div className="flex justify-end gap-2">
+                  <DialogCancel onClick={() => setAdding(null)}>{t("aiApps.cancel")}</DialogCancel>
                   <Button onClick={() => void add()}>{t("aiApps.add.confirm")}</Button>
-                  <Button variant="outline" onClick={() => setAdding(null)}>
-                    {t("aiApps.cancel")}
-                  </Button>
                 </div>
               </section>
-            ) : (
-              <Button
-                className="self-start"
-                disabled={!enabled}
-                onClick={() => choose(DEFAULT_CLIENT)}
-              >
-                {t("aiApps.add")}
-              </Button>
-            )}
+            ) : null}
             <section aria-label={t("aiApps.list")}>
               {status.apps.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("aiApps.none")}</p>
@@ -561,6 +656,15 @@ export function AiAppsDialog({
             </section>
           </div>
         )}
+        {/* At the bottom right (#1444): Add AI App while nothing is being added, then Close. */}
+        <DialogFooter>
+          {status === null || shown !== null || adding !== null ? null : (
+            <Button variant="outline" disabled={!enabled} onClick={() => choose(DEFAULT_CLIENT)}>
+              {t("aiApps.add")}
+            </Button>
+          )}
+          <DialogCloseButton />
+        </DialogFooter>
       </DialogContent>
       <AlertDialog
         open={removing !== null}

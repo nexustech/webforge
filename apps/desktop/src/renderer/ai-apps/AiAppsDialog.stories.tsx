@@ -82,8 +82,20 @@ export const WorkingWithoutAsking: Story = {
   },
 };
 
-/** The remembered address was taken: the apps have to be added again. */
+/**
+ * The remembered address was taken: beside the new address, it says so, and that the apps have to
+ * be added again (#1624).
+ */
 export const Moved: Story = { args: { mcp: mcpWith({ ...ON, moved: true }) } };
+
+/** On, but no port could be had: no address, and it says nothing can connect (#1624). */
+export const NotListening: Story = {
+  args: { mcp: mcpWith({ ...ON, address: null, apps: [] }) },
+  // Said once a second status has no address either (#1624), so not while it's still starting.
+  play: async () => {
+    await screen.findByRole("alert", undefined, { timeout: 5_000 });
+  },
+};
 
 /** What becomes of an app paired in a story (#1245): it waits, connects, or its key runs out. */
 type Then = "waiting" | "connected" | "expired";

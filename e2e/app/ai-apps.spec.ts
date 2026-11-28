@@ -99,8 +99,12 @@ test("an AI app paired in AI apps… changes the site, as undo steps named after
   // Off by default: nothing listens, and nothing can be added.
   await expect(allow).not.toBeChecked();
   await expect(dialog().getByRole("button", { name: "Add AI app" })).toBeDisabled();
+  // No address while it's off; once on, the address apps reach it at, under the switch (#1624).
+  const line = dialog().getByRole("region", { name: "Address for AI apps" });
+  await expect(line).toHaveCount(0);
 
   await allow.click();
+  await expect(line.locator("code")).toHaveText(/^http:\/\/127\.0\.0\.1:\d+\/mcp$/);
   await dialog().getByRole("button", { name: "Add AI app" }).click();
   await dialog().getByRole("radio", { name: "Another app" }).click();
   await dialog().getByRole("textbox", { name: "Name" }).fill("Test client");
@@ -110,6 +114,8 @@ test("an AI app paired in AI apps… changes the site, as undo steps named after
   const [address, key] = await shown.locator("dd code").allTextContents();
   if (address === undefined || key === undefined) throw new Error("no address or key shown");
   expect(address).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/mcp$/);
+  // The line's address is the one the app connects at, below.
+  await expect(line.locator("code")).toHaveText(address);
   await shown.getByRole("button", { name: "Done" }).click();
   await expect(dialog().getByText(key)).toHaveCount(0);
 
@@ -131,7 +137,7 @@ test("an AI app paired in AI apps… changes the site, as undo steps named after
   expect(added).toMatchObject({ status: "done", label: "AI (Test client): Added Hero" });
   // Connected, as AI apps says; with it closed, the step and the title bar's sign show.
   await expect(dialog().getByText("Connected", { exact: true })).toBeVisible();
-  await dialog().getByRole("button", { name: "Close" }).click();
+  await dialog().getByRole("button", { name: "Close", exact: true }).first().click();
   await expect(canvas().getByText("Fresh bread every morning")).toBeVisible();
   await expect(step("AI (Test client): Added Hero")).toBeVisible();
   // The sign looks again as AI apps closes (#1615); in case that look is lost, its next regular
@@ -342,7 +348,7 @@ async function pairAnotherApp(name: string): Promise<{ address: string; key: str
   const [address, key] = await shown.locator("dd code").allTextContents();
   if (address === undefined || key === undefined) throw new Error("no address or key shown");
   await shown.getByRole("button", { name: "Done" }).click();
-  await dialog().getByRole("button", { name: "Close" }).click();
+  await dialog().getByRole("button", { name: "Close", exact: true }).first().click();
   return { address, key };
 }
 

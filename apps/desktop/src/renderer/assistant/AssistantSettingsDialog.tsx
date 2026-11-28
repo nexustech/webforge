@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -166,9 +167,10 @@ export function AssistantSettingsDialog({ open, onOpenChange, api }: AssistantSe
           </div>
         )}
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          {/* Its sections act at once; Close leaves what's typed and not used yet without asking. */}
+          <DialogCancel onClick={() => onOpenChange(false)}>
             {t("assistant.settings.close")}
-          </Button>
+          </DialogCancel>
         </DialogFooter>
         {status === undefined ? null : (
           <AppConsentDialog

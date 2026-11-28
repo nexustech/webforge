@@ -5,7 +5,7 @@ title: Sections
 summary: Every section you can add to a page, what it's for and what you can change.
 components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat, Steps, Step, ContactButtons, Menu, MenuItem]
 related: [elements, add-panel, edit-panel, forms, header-and-footer]
-updated: 2026-11-27
+updated: 2026-11-28
 ---
 
 # Sections
@@ -33,10 +33,11 @@ Many sections hold a list of items, such as a Gallery's images or an FAQ's quest
 The large opening section of a page: a title, a short text, a button and an image.
 
 - **Layouts:** _Image beside the text_, _Centred, image below_, _Image behind the text_, _Text only_.
-- **Alignment:** _Centre_ or _Left_.
+- **Alignment:** _Centre_ or _Left_: how the title, text and buttons line up. In _Text only_, _Centre_ also puts them in the middle of the section.
 - **Height:** _Fits its content_, _Tall_ or _Whole screen_. _Tall_ is most of the window's height; _Whole screen_ fills the window, below the Header when the Header has its own band, or with the Header on it when its **Background** is _The first section's_. An **Announcement bar** above the Header keeps its own room, and the Hero grows to fill it when a visitor closes the bar or after its last day. A Hero is never shorter than its content: on a small screen it grows to show all of it. The title, text and buttons stay in the middle, or at the bottom of the picture if you choose.
 - **Second button text** and **Second button link:** a second button beside the first, such as _Book a table_ beside _See the menu_. It shows once it has text, outlined so the first stands out, and on a phone it moves under the first when there isn't room. Over a picture it takes the text's colour. If your theme already outlines its buttons, the second is shown as a link instead, so the two never look alike. {appName} reminds you in Site Check if it has text but no link.
 - **Text on the picture**, in _Image behind the text_: _Middle_ or _Bottom_, with the **Alignment** you chose. At the bottom, the picture's subject stays in view above the title, text and button. It shows most with a **Height** of _Tall_ or _Whole screen_.
+- **Text width** (in the **Style** tab, beside **Content width**), in every layout but _Image beside the text_: _Narrow_ or _Wide_. _Narrow_, a new Hero's, keeps the title and text at a width that's easy to read. _Wide_: as wide as the section's **Content width**, so in _Centred, image below_ they're as wide as the picture. They're never wider than about **Content width**'s _Wide_, since much longer lines are hard to read: at _Full_, the picture is wider. It's one setting for every device: on a phone, both fill the screen.
 - **Overlay** and **Overlay colour**, in _Image behind the text_ once it has a picture: how strongly a layer of colour covers the picture (_None_ to _Very strong_), in the theme's _Neutral_ colour or the _Page background_, so the title and text stay readable. The text takes the colour that suits the overlay's. A new Hero starts at _Strong_, in _Neutral_. A Hero made before you could choose keeps the overlay it had, shown as _As before_; once you choose another, _As before_ isn't offered again. {appName} warns you when the text would be hard to read.
 - **Header** (at the top of the **Style** tab's Options, on a Hero that opens its page): says whether the Header sits on this Hero or has its own band. **Change in the Header** selects the Header, where its **Background** is set for every page. See [The Header on the first section](header-and-footer.md#the-header-on-the-first-section).
 

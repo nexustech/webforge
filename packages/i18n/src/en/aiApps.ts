@@ -7,8 +7,15 @@ export const aiApps = {
   "aiApps.enabled": "Let AI apps connect",
   "aiApps.enabledHint":
     "When off, nothing can connect. When on, {appName} listens on this computer only.",
+  // Under Let AI apps connect while it's on (#1624): where apps reach it, to copy.
+  "aiApps.address": "Address for AI apps",
+  "aiApps.address.hint":
+    "An app you set up by hand connects here. The address can change if another program takes it, so if an app stops connecting, check it uses this one.",
+  // On, but with no address: the port couldn't be had (#1624).
+  "aiApps.notListening":
+    "{appName} couldn't start listening for AI apps, so nothing can connect. Turn Let AI apps connect off, then on again.",
   "aiApps.moved":
-    "{appName}'s address for AI apps has changed, as another program was using the old one. To keep your site safe, apps other than Claude Desktop were removed: add them again. Remove Claude Desktop and add it again too, then install its new extension.",
+    "{appName}'s address for AI apps has changed, as another program was using the old one: an app set up with the old address needs the new one. To keep your site safe, apps other than Claude Desktop were removed: add them again. Remove Claude Desktop and add it again too, then install its new extension.",
   // At start, until AI apps has been opened (S27, #794).
   "aiApps.movedToast":
     "{appName}'s address for AI apps has changed. Open AI apps to connect your apps again.",

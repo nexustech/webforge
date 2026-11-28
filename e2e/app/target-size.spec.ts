@@ -208,7 +208,7 @@ test("the phone preview's cue is 24 px or more, with its words and as an icon (#
   // The dialog's own Stop Phone Preview.
   const found = (await smallTargets(page)).map((small) => `dialog: ${small}`);
   // Its close button: Escape would first close the tooltip of Help, which has the focus.
-  await dialog.getByRole("button", { name: "Close" }).click();
+  await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
   await expect(dialog).toHaveCount(0);
 
   const banner = page.getByRole("banner");

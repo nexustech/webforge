@@ -17,6 +17,13 @@ const HISTORY_STEPS = 50;
 const FRAME_BUDGET_MS = 16;
 const INSTANT_MS = 100;
 /**
+ * How many times undo and redo are each timed: enough that their p95 isn't simply the slowest run,
+ * which one garbage collection or one slow frame on a CI runner decides (#1621).
+ */
+const UNDO_RUNS = 30;
+/** How many times each Undo History jump is timed, its median held to the budget (#1621). */
+const JUMP_RUNS = 5;
+/**
  * A drag's budget, set from CI's Windows and macOS runners in 5.1 and tightened by #786 (ADR 0007's
  * addenda): no long task over 250 ms while dragging, and the move recorded within 1 s of the drop.
  * §10's "no dropped frames" is still missed on a page this large: since our Puck patch's items 8
@@ -398,22 +405,29 @@ test("a page with 200+ elements against the editing budgets", async () => {
     );
     await expect(page.locator(".undo-history__step")).toHaveCount(before + HISTORY_STEPS);
 
-    // The title bar's Undo and Redo (#110).
-    const undo = await timeClicks('[data-slot="title-bar"] button[aria-label="Undo"]', 10);
-    const redo = await timeClicks('[data-slot="title-bar"] button[aria-label="Redo"]', 10);
-    const jumpToStart = await timeClicks("li:last-child > .undo-history__step", 1);
-    const jumpToEnd = await timeClicks("li:first-child > .undo-history__step", 1);
+    // The title bar's Undo and Redo (#110), each run fewer times than there are steps.
+    const undo = await timeClicks('[data-slot="title-bar"] button[aria-label="Undo"]', UNDO_RUNS);
+    const redo = await timeClicks('[data-slot="title-bar"] button[aria-label="Redo"]', UNDO_RUNS);
+    // Each jump goes to the other end, so each one changes the canvas: start, end, start, end…
+    const jumpToStart: number[] = [];
+    const jumpToEnd: number[] = [];
+    for (let run = 0; run < JUMP_RUNS; run++) {
+      jumpToStart.push(...(await timeClicks("li:last-child > .undo-history__step", 1)));
+      jumpToEnd.push(...(await timeClicks("li:first-child > .undo-history__step", 1)));
+    }
 
     results.history = {
       steps: HISTORY_STEPS,
       undo: summary(undo),
       redo: summary(redo),
-      jumpToStartMs: Math.round(jumpToStart[0] ?? 0),
-      jumpToEndMs: Math.round(jumpToEnd[0] ?? 0),
+      jumpToStart: summary(jumpToStart),
+      jumpToEnd: summary(jumpToEnd),
     };
     expect.soft(p(undo, 0.95), "undo p95 (ms)").toBeLessThan(INSTANT_MS);
     expect.soft(p(redo, 0.95), "redo p95 (ms)").toBeLessThan(INSTANT_MS);
-    expect.soft(Math.max(...jumpToStart, ...jumpToEnd), "jump (ms)").toBeLessThan(INSTANT_MS);
+    // The median of each jump's runs: one slow run on a runner doesn't decide it (#1621).
+    expect.soft(p(jumpToStart, 0.5), "jump to the start, median (ms)").toBeLessThan(INSTANT_MS);
+    expect.soft(p(jumpToEnd, 0.5), "jump to the end, median (ms)").toBeLessThan(INSTANT_MS);
   });
 
   await test.step("memory", async () => {

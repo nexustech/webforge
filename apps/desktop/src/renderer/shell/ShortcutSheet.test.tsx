@@ -248,7 +248,10 @@ describe("ShortcutSheet", () => {
     fireEvent.change(screen.getByRole("searchbox", { name: "Search shortcuts" }), {
       target: { value: "bold" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    // Its footer's Close, before the × of the same name (#1444).
+    const [close] = screen.getAllByRole("button", { name: "Close" });
+    if (close === undefined) throw new Error("no Close");
+    fireEvent.click(close);
     act(() => {
       registry.run(COMMAND_IDS.shortcuts);
     });

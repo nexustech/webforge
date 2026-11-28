@@ -4,10 +4,13 @@ import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   Dialog,
+  DialogCancel,
+  DialogCloseButton,
   DialogContent,
   DialogDescription,
   DialogTitle,
   UnsavedChanges,
+  useAskBeforeDiscarding,
   useUnsavedChanges,
 } from "./dialog.js";
 import {
@@ -240,5 +243,178 @@ describe("a dialog with unsaved changes (#1439)", () => {
     await user.type(screen.getByRole("textbox", { name: "Name" }), "page");
     await user.keyboard("{Escape}");
     expect(question()).not.toBeNull();
+  });
+});
+
+/** A step of a dialog: a field, and Back, which asks first when the field changed. */
+function NameStep({ onBack }: { readonly onBack: () => void }) {
+  const ask = useAskBeforeDiscarding();
+  return (
+    <>
+      <NameField />
+      <button type="button" onClick={() => ask(onBack)}>
+        Back
+      </button>
+    </>
+  );
+}
+
+/** Publish's shape (#1456): a list, and a form drawn in its place as a step of the same dialog. */
+function Steps({ onClosed }: { readonly onClosed: () => void }) {
+  const [open, setOpen] = useState(true);
+  const [editing, setEditing] = useState(false);
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (next) return;
+        setOpen(false);
+        onClosed();
+      }}
+    >
+      <DialogContent>
+        <DialogTitle>{editing ? "Name" : "List"}</DialogTitle>
+        <DialogDescription>Steps.</DialogDescription>
+        {editing ? (
+          <NameStep onBack={() => setEditing(false)} />
+        ) : (
+          <button type="button" onClick={() => setEditing(true)}>
+            Edit
+          </button>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+describe("leaving a step of a dialog (#1456)", () => {
+  const setupSteps = async () => {
+    const onClosed = vi.fn();
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    render(<Steps onClosed={onClosed} />);
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    return { user, onClosed };
+  };
+
+  it("goes back at once with nothing changed", async () => {
+    const { user, onClosed } = await setupSteps();
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+
+    expect(question()).toBeNull();
+    expect(screen.getByRole("dialog", { name: "List" })).toBeTruthy();
+    expect(onClosed).not.toHaveBeenCalled();
+  });
+
+  it("asks first with a change, and Keep Editing stays on the step", async () => {
+    const { user } = await setupSteps();
+    await user.type(screen.getByRole("textbox", { name: "Name" }), " page");
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(question()).not.toBeNull();
+    await user.click(screen.getByRole("button", { name: "Keep Editing" }));
+
+    expect(question()).toBeNull();
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveProperty("value", "Home page");
+  });
+
+  it("goes back on Discard, leaving the dialog open, and then closes without asking", async () => {
+    const { user, onClosed } = await setupSteps();
+    await user.type(screen.getByRole("textbox", { name: "Name" }), " page");
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    await user.click(screen.getByRole("button", { name: "Discard" }));
+
+    expect(screen.getByRole("dialog", { name: "List" })).toBeTruthy();
+    expect(onClosed).not.toHaveBeenCalled();
+    // The step's changes went with it: Esc on the list closes the dialog at once.
+    await user.keyboard("{Escape}");
+    expect(question()).toBeNull();
+    expect(onClosed).toHaveBeenCalledOnce();
+  });
+
+  it("asks before Esc on the step closes the whole dialog", async () => {
+    const { user, onClosed } = await setupSteps();
+    await user.type(screen.getByRole("textbox", { name: "Name" }), " page");
+
+    await user.keyboard("{Escape}");
+    expect(question()).not.toBeNull();
+    await user.click(screen.getByRole("button", { name: "Discard" }));
+
+    expect(onClosed).toHaveBeenCalledOnce();
+  });
+
+  it("goes back at once outside a dialog", async () => {
+    const onBack = vi.fn();
+    render(<NameStep onBack={onBack} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+
+    expect(onBack).toHaveBeenCalledOnce();
+  });
+});
+
+describe("a dialog's way out (#1444)", () => {
+  /** A dialog with a field, its own Cancel and Close, as a footer draws them. */
+  function WithWayOut({
+    onCancel,
+    onClosed,
+  }: {
+    readonly onCancel: () => void;
+    readonly onClosed: () => void;
+  }) {
+    const [open, setOpen] = useState(true);
+    return (
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) onClosed();
+        }}
+      >
+        <DialogContent>
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>Your settings.</DialogDescription>
+          <NameField />
+          <DialogCancel
+            onClick={() => {
+              setOpen(false);
+              onCancel();
+            }}
+          />
+          <DialogCloseButton />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  it("Cancel is the filled grey, named Cancel, and closes a changed dialog without asking", async () => {
+    const onCancel = vi.fn();
+    const onClosed = vi.fn();
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    render(<WithWayOut onCancel={onCancel} onClosed={onClosed} />);
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    expect(cancel.dataset.variant).toBe("secondary");
+    expect(cancel.dataset.wayOut).toBe("");
+    await user.type(screen.getByRole("textbox", { name: "Name" }), "page");
+    await user.click(cancel);
+    expect(onCancel).toHaveBeenCalledOnce();
+    expect(onClosed).not.toHaveBeenCalled();
+    expect(question()).toBeNull();
+    expect(dialog()).toBeNull();
+  });
+
+  it("Close is the filled grey too, and closes the dialog through its own onOpenChange", async () => {
+    const onClosed = vi.fn();
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    render(<WithWayOut onCancel={vi.fn()} onClosed={onClosed} />);
+    const close = screen
+      .getAllByRole("button", { name: "Close" })
+      .find((button) => button.dataset.wayOut !== undefined);
+    expect(close?.dataset.variant).toBe("secondary");
+    if (close === undefined) throw new Error("no Close");
+    await user.click(close);
+    expect(onClosed).toHaveBeenCalledOnce();
+    expect(dialog()).toBeNull();
   });
 });
