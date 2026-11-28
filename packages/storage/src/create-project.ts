@@ -43,10 +43,14 @@ export function createProjectFile(
   const tempPath = tempPathFor(path);
   try {
     const db = timed("make the file", () => {
-      const made = connect(tempPath, { create: true });
+      // In parts (#1625): opening creates the file; setting its id is its first write, with the
+      // flush SQLite does by default; then how its later writes are made.
+      const made = timed("make the file: open it", () => connect(tempPath, { create: true }));
       try {
-        made.pragma(`application_id = ${APPLICATION_ID}`);
-        configureWrites(made);
+        timed("make the file: its first write", () =>
+          made.pragma(`application_id = ${APPLICATION_ID}`),
+        );
+        timed("make the file: how it writes", () => configureWrites(made));
       } catch (error) {
         made.close();
         throw error;
