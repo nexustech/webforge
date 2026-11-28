@@ -163,29 +163,32 @@ export function MediaPanel({
           >
             {list.map((item) => (
               <li key={item.id}>
-                <button
-                  type="button"
-                  aria-pressed={item.id === selectedId}
-                  className={cn(
-                    "flex w-full flex-col overflow-hidden rounded-sm border border-border bg-input text-left",
-                    "outline-none hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring",
-                    item.id === selectedId && "border-ring",
-                  )}
-                  onClick={() => setSelectedId(item.id)}
-                >
-                  {item.kind === "image" ? (
-                    <img
-                      src={imageUrl(item, "thumbnail")}
-                      alt=""
-                      className="aspect-[4/3] w-full object-cover"
-                      style={focalStyle(item)}
-                    />
-                  ) : (
-                    <DocumentTile file={item} />
-                  )}
-                  {/* Cut in the middle to keep its extension in view (#1452); whole in its details. */}
-                  <FileName name={item.fileName} className="px-1.5 py-1 text-xs" />
-                </button>
+                {/* Its whole name when the tile cuts it (#1452). */}
+                <WithTooltip tooltip={item.fileName} whenCut>
+                  <button
+                    type="button"
+                    aria-pressed={item.id === selectedId}
+                    className={cn(
+                      "flex w-full flex-col overflow-hidden rounded-sm border border-border bg-input text-left",
+                      "outline-none hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring",
+                      item.id === selectedId && "border-ring",
+                    )}
+                    onClick={() => setSelectedId(item.id)}
+                  >
+                    {item.kind === "image" ? (
+                      <img
+                        src={imageUrl(item, "thumbnail")}
+                        alt=""
+                        className="aspect-[4/3] w-full object-cover"
+                        style={focalStyle(item)}
+                      />
+                    ) : (
+                      <DocumentTile file={item} />
+                    )}
+                    {/* Cut in the middle to keep its extension in view (#1452). */}
+                    <FileName name={item.fileName} className="px-1.5 py-1 text-xs" />
+                  </button>
+                </WithTooltip>
               </li>
             ))}
           </ul>

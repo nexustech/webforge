@@ -4,7 +4,7 @@ id: media
 title: Media
 summary: Add pictures and documents to your site, describe them, and choose what stays in view.
 related: [elements, links, site-check]
-updated: 2026-11-17
+updated: 2026-11-28
 ---
 
 # Media
@@ -23,6 +23,8 @@ updated: 2026-11-17
 - **documents:** PDF, Word, Excel, PowerPoint, OpenDocument, plain text and CSV.
 
 Each file can be up to 50 MB, and each picture up to 50 megapixels. A file gets a web-friendly name from its file name, such as `shop-front`.
+
+Media, and every place you choose a picture (an Image's **Choose an Image…**, Site Settings' **Logo** and **Site icon**, a page's **Share image**), shows each file by its file name. A long name is shortened in the middle, keeping its end and its extension, such as `rive…ast.jpg`; point at it to see it whole.
 
 ## A picture's details
 

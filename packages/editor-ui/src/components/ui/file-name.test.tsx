@@ -16,6 +16,7 @@ const NAMES = [
   "big cake.jpg",
   "café 👩‍🍳 chef.webp",
   "a.b",
+  "summer pic.jpg",
 ];
 
 describe("fileNameParts (#1452)", () => {
@@ -35,6 +36,11 @@ describe("fileNameParts (#1452)", () => {
     // A long "extension", or one with a space, is part of the name.
     expect(fileNameParts("notes.backup-copy")).toEqual({ start: "notes.backup-c", end: "opy" });
     expect(fileNameParts("v1. final draft")).toEqual({ start: "v1. final dr", end: "aft" });
+  });
+
+  it("keeps a space either side of the cut in its part", () => {
+    expect(fileNameParts("summer pic.jpg")).toEqual({ start: "summer ", end: "pic.jpg" });
+    expect(fileNameParts("summer pi.jpg")).toEqual({ start: "summer", end: " pi.jpg" });
   });
 
   it("leaves a short name whole at the end", () => {
@@ -73,6 +79,9 @@ describe("FileName (#1452)", () => {
     expect(start.className).toContain("truncate");
     expect(end.className).toContain("shrink-0");
     expect(end.className).not.toContain("truncate");
+    // A space either side of the cut is kept, over `truncate`'s nowrap.
+    expect(start.className).toContain("whitespace-pre!");
+    expect(end.className).toContain("whitespace-pre");
     // What shows adds up to the name, and can't be selected: a copy is the name, once.
     const shown = start.parentElement;
     expect(shown?.getAttribute("aria-hidden")).toBe("true");

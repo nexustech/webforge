@@ -49,8 +49,10 @@ export function FileName({
   return (
     <span className={cn("relative flex min-w-0 max-w-full", className)}>
       <span aria-hidden className="flex min-w-0 select-none">
-        {/* `whitespace-pre`: a space either side of the cut isn't lost at a part's edge. */}
-        <span className="truncate whitespace-pre">{start}</span>
+        {/* `whitespace-pre`: a space either side of the cut isn't lost at a part's edge. The
+            start's is important, over `truncate`'s `nowrap`, which the stylesheet may put after
+            it ("summer pic.jpg" would show as "summerpic.jpg"). */}
+        <span className="truncate whitespace-pre!">{start}</span>
         <span className="shrink-0 whitespace-pre">{end}</span>
       </span>
       <span className="sr-only">{name}</span>

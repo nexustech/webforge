@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { fieldControlClass } from "../edit/text-field.js";
 import { Check, Field, ImageChoice, TextInput, TimeInput } from "./form.js";
+import { swatch } from "./story-swatch.js";
 
 const meta = {
   title: "Base/Form",
@@ -108,12 +109,6 @@ export const Times: Story = {
     </div>
   ),
 };
-
-/** A plain square of `colour`, in place of a Media thumbnail: stories make no requests (C8). */
-const swatch = (colour: string) =>
-  `data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><rect width="4" height="4" fill="${colour}"/></svg>`,
-  )}`;
 
 /** A thumbnail still loading: nothing drawn yet, so its box's fill shows (#1452). */
 const LOADING = swatch("transparent");

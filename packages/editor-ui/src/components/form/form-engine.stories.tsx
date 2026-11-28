@@ -4,13 +4,8 @@ import { FieldRenderersProvider } from "../edit/field-context.js";
 import type { FieldKind, FieldRenderers } from "../edit/field-spec.js";
 import { Form } from "./form-engine.js";
 import type { FormField, FormSpec, FormValues } from "./form-spec.js";
+import { swatch } from "./story-swatch.js";
 import { useForm } from "./use-form.js";
-
-/** A plain square of `colour`, in place of a Media thumbnail: stories make no requests (C8). */
-const swatch = (colour: string) =>
-  `data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><rect width="4" height="4" fill="${colour}"/></svg>`,
-  )}`;
 
 const SIZES = [
   { label: "S", value: "small" },
