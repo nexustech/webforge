@@ -4,6 +4,7 @@ import { cn } from "../../lib/cn.js";
 import { Button } from "../ui/button.js";
 import {
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -206,9 +207,7 @@ function FormDialogBody<V extends FormValues, Out>({
             {t("ui.form.fixErrors")}
           </p>
         ) : null}
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          {t("ui.form.cancel")}
-        </Button>
+        <DialogCancel onClick={onCancel} />
         <Button type="submit" disabled={spec.validateOn === "change" && !form.valid}>
           {confirm}
         </Button>

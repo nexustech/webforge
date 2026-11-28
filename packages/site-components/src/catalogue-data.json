@@ -3385,6 +3385,22 @@
             }
           ]
         },
+        "textWidth": {
+          "kind": "select",
+          "label": "Text width",
+          "help": "Narrow keeps long lines easy to read. Wide: as wide as the section's Content width, at most about as wide as Content width's Wide.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            }
+          ]
+        },
         "contentWidth": {
           "kind": "select",
           "label": "Content width",
@@ -3586,11 +3602,13 @@
         "alignment": "centre",
         "height": "fit",
         "textPlace": "middle",
+        "textWidth": "narrow",
         "contentWidth": "wide"
       },
       "variantHides": {
         "split": [
-          "textPlace"
+          "textPlace",
+          "textWidth"
         ],
         "centred": [
           "alignment",

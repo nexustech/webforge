@@ -210,7 +210,7 @@ test("lists a note added from the element menu as a tip, outlined on the page, u
   await page.getByRole("menu").getByRole("menuitem", { name: "Add Note…" }).click();
   const dialog = page.getByRole("dialog", { name: "Note on Heading" });
   await dialog.getByRole("textbox", { name: "Note" }).fill("Swap this photo before launch");
-  await dialog.getByRole("button", { name: "Save Note" }).click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
 
   await expect(rule("notes")).toHaveAttribute("data-status", "warn");
   await expect(rule("notes")).toContainText("Swap this photo before launch");

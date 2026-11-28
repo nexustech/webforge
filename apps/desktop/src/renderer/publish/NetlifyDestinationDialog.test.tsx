@@ -64,7 +64,7 @@ function setUp(netlify = fakeNetlify(), editing?: NetlifyDestinationDialogProps[
   );
   const user = userEvent.setup({ delay: null });
   const field = (name: string) => screen.getByLabelText(name, { exact: true });
-  const save = () => user.click(screen.getByRole("button", { name: "Save Destination" }));
+  const save = () => user.click(screen.getByRole("button", { name: "Save" }));
   const connect = async (token: string) => {
     await user.type(field("Personal access token"), token);
     await user.click(screen.getByRole("button", { name: "Connect" }));

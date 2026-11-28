@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
   Button,
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -464,9 +465,7 @@ export function PublishDialog({
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            <Button variant="secondary" onClick={onClose}>
-              {t("publish.destinations.close")}
-            </Button>
+            <DialogCancel onClick={onClose}>{t("publish.destinations.close")}</DialogCancel>
           </DialogFooter>
           {/* Last, so the dialog's own first control still takes the focus as it opens. */}
           <HelpButton topic="publish" className="absolute top-2.5 right-9" />

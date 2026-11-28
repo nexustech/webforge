@@ -1016,6 +1016,37 @@ describe("renderNodesToHtml", () => {
       expect(frame(heroIn("split", { textPlace: "bottom" }))).toBe(frame(heroIn("split")));
     });
 
+    it("sets its title and text at a reading width, or as wide as its content width, at most Wide's (#1631)", () => {
+      // The class of the box holding its title, text and buttons.
+      const copy = (html: string) => /<div class="([^"]*)"><h1/.exec(html)?.[1];
+      const narrow = { centred: "mx-auto max-w-2xl", background: "max-w-xl", minimal: "max-w-xl" };
+
+      for (const [layout, reading] of Object.entries(narrow)) {
+        // Narrow: as every Hero's was, so a saved one draws as before.
+        expect(copy(heroIn(layout))).toBe(reading);
+        expect(heroIn(layout, { textWidth: "narrow" })).toBe(heroIn(layout));
+        // Wide: the section's content width, at every content width, never wider than Wide's.
+        for (const contentWidth of ["narrow", "medium", "wide", "full"]) {
+          const wide = heroIn(layout, { textWidth: "wide", contentWidth });
+          expect(copy(wide)).toBe(
+            layout === "centred" ? "mx-auto w-full max-w-6xl" : "w-full max-w-6xl",
+          );
+          expect(wide).toBe(
+            heroIn(layout, { contentWidth }).replace(
+              `class="${reading}"><h1`,
+              `class="${copy(wide)}"><h1`,
+            ),
+          );
+        }
+      }
+      // Centred in Text only, Wide's box is centred in its row too, which is wider at Full.
+      expect(
+        copy(heroIn("minimal", { textWidth: "wide", contentWidth: "full", alignment: "centre" })),
+      ).toBe("mx-auto w-full max-w-6xl");
+      // Beside its picture, its text has half the row: Text width changes nothing there.
+      expect(heroIn("split", { textWidth: "wide" })).toBe(heroIn("split"));
+    });
+
     it("draws its Overlay at the strength and in the colour chosen, Strong Neutral when new (HH-3)", () => {
       const overlay = (html: string) => /class="absolute inset-0 (bg-[^"]+)"/.exec(html)?.[1];
       const text = (html: string) => /hero-content relative max-w-\[74rem\] (\S+)/.exec(html)?.[1];
@@ -1051,6 +1082,25 @@ describe("renderNodesToHtml", () => {
       expect(html.indexOf(layer)).toBeLessThan(html.indexOf("bg-neutral/60"));
       // Without a gradient, no layer.
       expect(heroIn("background")).not.toContain("aria-hidden");
+    });
+
+    it("centres a centred Text only Hero's box in its row, and leaves a left one at its edge (#1648)", () => {
+      // The class of the box holding its title, text and buttons.
+      const copy = (html: string) => /<div class="([^"]*)"><h1/.exec(html)?.[1];
+
+      for (const contentWidth of ["narrow", "full"]) {
+        // Centred, the box is centred as its words are: its title's middle is the page's, at
+        // every height (Tall and Whole screen set it in a flex row).
+        for (const height of ["fit", "tall", "screen"]) {
+          expect(copy(heroIn("minimal", { alignment: "centre", contentWidth, height }))).toBe(
+            "mx-auto max-w-xl",
+          );
+        }
+        // On the left, it keeps the row's left edge, as before.
+        expect(copy(heroIn("minimal", { alignment: "left", contentWidth }))).toBe("max-w-xl");
+        // Behind the text, the row's flex centres the box already: unchanged.
+        expect(copy(heroIn("background", { alignment: "centre", contentWidth }))).toBe("max-w-xl");
+      }
     });
 
     it("shows text only, leaving out an image it was given", () => {

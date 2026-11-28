@@ -49,7 +49,7 @@ The first time you publish, {appName} asks **Where is your website hosted?** Cho
 
 1. **Sign in to Netlify.** Make a _personal access token_ on Netlify (in **User settings › Applications › Personal access tokens**), paste it into **Personal access token**, and click **Connect**. Where it's offered, **Sign In with Netlify** opens Netlify in your browser instead: approve {appName} there, then come back.
 2. **Choose the Netlify site** to publish to, or **A new site**. A new site's name becomes part of its address, such as `rosas-bakery.netlify.app`. Leave it empty and Netlify makes one up.
-3. **Name** it if you like, then click **Save Destination**. If Site Settings has no web address yet, {appName} fills in the Netlify site's.
+3. **Name** it if you like, then click **Save**. If Site Settings has no web address yet, {appName} fills in the Netlify site's.
 
 Once your site has a Netlify destination, [forms](forms.md) can send their messages with **Netlify Forms**.
 

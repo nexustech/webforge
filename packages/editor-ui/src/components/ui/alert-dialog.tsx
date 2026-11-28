@@ -103,13 +103,17 @@ export function AlertDialogAction({
   return (
     <AlertDialogPrimitive.Action
       data-slot="alert-dialog-action"
+      data-variant={variant}
       className={cn(buttonVariants({ variant }), className)}
       {...props}
     />
   );
 }
 
-/** Closes without doing anything; focused first, so Enter never confirms by accident. */
+/**
+ * Closes without doing anything; focused first, so Enter never confirms by accident. The filled
+ * grey every dialog's Cancel has (#1444).
+ */
 export function AlertDialogCancel({
   className,
   ...props
@@ -117,7 +121,9 @@ export function AlertDialogCancel({
   return (
     <AlertDialogPrimitive.Cancel
       data-slot="alert-dialog-cancel"
-      className={cn(buttonVariants({ variant: "outline" }), className)}
+      data-variant="secondary"
+      data-way-out=""
+      className={cn(buttonVariants({ variant: "secondary" }), className)}
       {...props}
     />
   );

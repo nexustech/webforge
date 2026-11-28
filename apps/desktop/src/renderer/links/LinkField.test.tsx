@@ -85,7 +85,7 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
     const dialog = within(screen.getByRole("dialog", { name: "Link" }));
     await user.selectOptions(dialog.getByRole("combobox", { name: "Page" }), "Blog (all posts)");
     expect(dialog.queryByRole("combobox", { name: "Section" })).toBeNull();
-    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
 
     expect(node("hero")?.buttonLink).toEqual({ kind: "list", collectionId: "blog" });
     expect(screen.getByText("Blog (all posts)")).toBeTruthy();
@@ -99,7 +99,7 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
     const dialog = within(screen.getByRole("dialog", { name: "Link" }));
     await user.selectOptions(dialog.getByRole("combobox", { name: "Section" }), "Opening times");
     await user.click(dialog.getByRole("checkbox", { name: "Open in a new tab" }));
-    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
 
     expect(node("hero")?.buttonLink).toEqual({
       kind: "page",
@@ -127,12 +127,10 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
 
     expect(section.getAttribute("aria-invalid")).toBe("true");
     expect(dialog.getByText(/anchor ID can't be used in a link/)).toBeTruthy();
-    expect((dialog.getByRole("button", { name: "Save Link" }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+    expect((dialog.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
     await user.selectOptions(section, "Top of the page");
     expect(section.getAttribute("aria-invalid")).not.toBe("true");
-    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
     expect(node("hero")?.buttonLink).toEqual({ kind: "page", pageId: expect.any(String) });
   });
 
@@ -149,14 +147,12 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
       dialog.getByRole("textbox", { name: "Email address" }).getAttribute("aria-invalid"),
     ).toBe("true");
     expect(dialog.getByText(/Enter an email address/)).toBeTruthy();
-    expect((dialog.getByRole("button", { name: "Save Link" }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+    expect((dialog.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
 
     await user.click(dialog.getByRole("radio", { name: "Web address" }));
     await user.click(dialog.getByRole("textbox", { name: "Web address" }));
     await user.paste("example.com/menu");
-    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
 
     expect(node("hero")?.buttonLink).toEqual({ kind: "url", href: "https://example.com/menu" });
   });
@@ -193,7 +189,7 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
     await user.click(dialog.getByRole("radio", { name: "Web address" }));
     await user.click(dialog.getByRole("textbox", { name: "Web address" }));
     await user.paste("example.com");
-    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
 
     const shared = session.history.document.getState().layout.footer.at(-1);
     expect(shared?.props.buttonLink).toEqual({ kind: "url", href: "https://example.com" });
@@ -234,7 +230,7 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
       await user.click(
         dialog.getByRole("checkbox", { name: "Download the file instead of opening it" }),
       );
-      await user.click(dialog.getByRole("button", { name: "Save Link" }));
+      await user.click(dialog.getByRole("button", { name: "Save" }));
 
       expect(node("hero")?.buttonLink).toEqual({
         kind: "file",
@@ -253,9 +249,9 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
       await user.click(dialog.getByRole("radio", { name: "File" }));
 
       expect(dialog.getByText("Add a document to Media first, then link to it.")).toBeTruthy();
-      expect(
-        (dialog.getByRole("button", { name: "Save Link" }) as HTMLButtonElement).disabled,
-      ).toBe(true);
+      expect((dialog.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(
+        true,
+      );
     });
   });
 });

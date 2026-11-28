@@ -14,6 +14,7 @@ import {
 import { canvasAxe } from "./canvas-axe.js";
 import { APP_START_TIMEOUT_MS, launchDesktopApp, removeWhenFree } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
+import { stepsSince } from "./steps.js";
 import { createFromTemplate, TEMPLATES } from "./templates.js";
 
 // The templates of 2.15a and 2.15b, made from New Site (F-SITE-1): each opens, with its photos,
@@ -25,32 +26,6 @@ let dir: string;
 let app: ElectronApplication | undefined;
 /** Each opening's wall-clock time, for their median (#569). */
 const openings: number[] = [];
-
-/** A step main timed in an opening (`step-timings.ts`, #1560): durations under fixed names only. */
-type TimedStep = { readonly step: string; readonly ms: number; readonly at: number };
-
-/**
- * The steps main timed after `since` (#1560): each one's time and when it ended, in ms after
- * `since`, so the time no step accounts for shows between them.
- */
-async function stepsSince(app: ElectronApplication, since: number): Promise<string> {
-  // A main that's stuck or gone can't say: the failure being explained still comes through.
-  const steps = await app
-    .evaluate(
-      () =>
-        (
-          globalThis as { webforgeStepTimings?: () => readonly TimedStep[] }
-        ).webforgeStepTimings?.() ?? [],
-    )
-    .catch(() => undefined);
-  if (steps === undefined) return "Main's steps couldn't be read.";
-  const after = steps.filter((each) => each.at >= since);
-  return after.length === 0
-    ? "Main timed no steps after Create."
-    : `Each step after Create, its ms (and when it ended, after Create): ${after
-        .map((each) => `${each.step} ${each.ms} (+${each.at - since})`)
-        .join(", ")}`;
-}
 
 /** The app this test launched. */
 function running(): ElectronApplication {
