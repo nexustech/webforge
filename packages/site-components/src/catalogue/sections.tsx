@@ -324,7 +324,13 @@ const hero = defineSection({
           )}
           {/* As every Hero's was before HH-3, so a saved one's export is unchanged. */}
           {overlay.layer === "" ? null : <div className={`absolute inset-0 ${overlay.layer}`} />}
-          <div className={`hero-content relative ${heroWidth} ${overlay.text} ${aligned}`}>
+          {/*
+            On the left, the row spans the Hero's content width, its box at the row's left edge
+            (#1658): daisyUI's hero-content centres its box otherwise, whatever the alignment.
+          */}
+          <div
+            className={`hero-content relative ${heroWidth} ${aligned === "text-left" ? "w-full justify-start " : ""}${overlay.text} ${aligned}`}
+          >
             {copy}
           </div>
         </>

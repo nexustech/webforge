@@ -991,7 +991,7 @@ describe("renderNodesToHtml", () => {
       // Hero drew them before HH-3, so a saved one's export is unchanged.
       expect(html.indexOf("<picture>")).toBeLessThan(html.indexOf("bg-neutral/70"));
       expect(html).toContain(
-        '</picture><div class="absolute inset-0 bg-neutral/70"></div><div class="hero-content relative max-w-[74rem] text-neutral-content text-left">',
+        '</picture><div class="absolute inset-0 bg-neutral/70"></div><div class="hero-content relative max-w-[74rem] w-full justify-start text-neutral-content text-left">',
       );
     });
 
@@ -1047,9 +1047,34 @@ describe("renderNodesToHtml", () => {
       expect(heroIn("split", { textWidth: "wide" })).toBe(heroIn("split"));
     });
 
+    it("sets a left Hero's text at its row's left edge behind its picture, a centred one in the middle (#1658)", () => {
+      // The row holding the box of its title, text and buttons, and that box.
+      const row = (html: string) => /class="(hero-content relative [^"]*)"/.exec(html)?.[1];
+      const copy = (html: string) => /<div class="([^"]*)"><h1/.exec(html)?.[1];
+
+      for (const contentWidth of ["narrow", "medium", "wide", "full"]) {
+        for (const textPlace of ["middle", "bottom"]) {
+          for (const textWidth of ["narrow", "wide"]) {
+            const props = { contentWidth, textPlace, textWidth };
+            const left = heroIn("background", { ...props, alignment: "left" });
+            // Left: the row spans the content width, its box at the start, not centred in it.
+            expect(row(left)).toMatch(/ w-full justify-start /);
+            expect(copy(left)).toBe(textWidth === "wide" ? "w-full max-w-6xl" : "max-w-xl");
+            // Centre: as before, the box in the middle of a row as wide as it.
+            const centre = heroIn("background", { ...props, alignment: "centre" });
+            expect(row(centre)).not.toMatch(/w-full|justify-start/);
+          }
+        }
+      }
+      // The other layouts are unchanged.
+      expect(heroIn("split")).not.toContain("justify-start");
+      expect(heroIn("centred")).not.toContain("justify-start");
+    });
+
     it("draws its Overlay at the strength and in the colour chosen, Strong Neutral when new (HH-3)", () => {
       const overlay = (html: string) => /class="absolute inset-0 (bg-[^"]+)"/.exec(html)?.[1];
-      const text = (html: string) => /hero-content relative max-w-\[74rem\] (\S+)/.exec(html)?.[1];
+      const text = (html: string) =>
+        /hero-content relative max-w-\[74rem\] (?:w-full justify-start )?(\S+)/.exec(html)?.[1];
 
       const fresh = heroIn("background");
       expect(overlay(fresh)).toBe("bg-neutral/60");
