@@ -42,9 +42,9 @@ const CONTROLS = [
 /**
  * The controls `page` shows that are under 24 px either way, as "role name (width × height)": every
  * control in view, transparent ones included (shown on hover), but an inline link in a sentence,
- * and what is drawn for screen readers only. The canvas's page is the person's site, so it isn't measured.
- * Measured once what is opening has finished: a dialog grows from 95% as it opens, which would
- * measure its 24 px controls as 23.
+ * and what is drawn for screen readers only. The canvas's page is the person's site, so it isn't
+ * measured. Measured once what is opening has finished: a dialog grows from 95% as it opens, which
+ * would measure its 24 px controls as 23.
  */
 const smallTargets = (page: Page) =>
   page.evaluate(async (controls) => {
@@ -67,6 +67,8 @@ const smallTargets = (page: Page) =>
     /**
      * A button whose `::after` is stretched over its nearest positioned ancestor (a card's title,
      * #1014): a click anywhere on that ancestor is a click on it, so the ancestor is its target.
+     * Only an ancestor with no other control in it, as a card is: one holding more (a panel whose
+     * card forgot its `relative`) would let a small button pass by a box it doesn't own.
      */
     const stretchedOver = (element: HTMLElement) => {
       const after = getComputedStyle(element, "::after");
@@ -75,12 +77,15 @@ const smallTargets = (page: Page) =>
         after.position === "absolute" &&
         [after.top, after.right, after.bottom, after.left].every((side) => side === "0px");
       if (!covers || getComputedStyle(element).position !== "static") return null;
-      return element.offsetParent;
+      const card = element.offsetParent;
+      return card !== null && card.querySelectorAll(controls).length === 1 ? card : null;
     };
     const small: string[] = [];
     for (const element of document.querySelectorAll<HTMLElement>(controls)) {
       // Opacity isn't asked about: a control shown only while its row is hovered or focused is
-      // transparent until then, but a target once shown (#1454).
+      // transparent until then, but a target once shown (#1454). One that is transparent for good,
+      // laid over what takes its clicks (a file input over its label), would need measuring by
+      // what it covers instead; none is in the screens measured.
       if (!element.checkVisibility({ visibilityProperty: true })) continue;
       if (element.closest("[aria-hidden='true'], .sr-only") !== null) continue;
       // A checkbox or radio button's label is its target too: a click on it checks the box.
@@ -163,7 +168,11 @@ const hiddenWhenFocused = (page: Page) =>
       await settled();
       if (!element.checkVisibility({ opacityProperty: true })) {
         const role = element.getAttribute("role") ?? element.tagName.toLowerCase();
-        hidden.push(`${role} "${element.getAttribute("aria-label") ?? element.textContent ?? ""}"`);
+        const name = (element.getAttribute("aria-label") ?? element.textContent ?? "")
+          .trim()
+          .replace(/\s+/g, " ")
+          .slice(0, 40);
+        hidden.push(`${role} "${name}"`);
       }
     }
     if (before instanceof HTMLElement) before.focus();
