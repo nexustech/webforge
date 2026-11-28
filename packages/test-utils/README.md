@@ -15,6 +15,7 @@ Fixtures:
 
 - `sampleSite()`, `heroPhoto()`: see above.
 - `tempDirFactory(prefix?)`: call it in a test file; each call of the returned function makes a fresh temporary folder, deleted after the test.
+- `@webforge/test-utils/sources` (Node only, a subpath of its own): `sourcesMatching(root, pattern, pathspecs, { fixed? })` finds the source files under `root` with a line matching `pattern`, with one `git grep` over tracked and untracked files, and gives each with its text. A test that scans a package's source uses it instead of reading every file, which ran past the time limit in loaded runs (#1566, #1569). `isTestOrStory(path)` tells tests and stories apart from the code.
 
 ## Boundaries
 

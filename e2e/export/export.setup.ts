@@ -639,6 +639,19 @@ setup(
                     text: "Sourdough, cakes and pastries from our oven to your table, baked fresh before the doors open every morning, with coffee from the roaster down the road and bread to take home.",
                   }),
                 ),
+                // On the left behind its picture, Narrow at Content width Wide, then Wide at Full
+                // (#1658): the text at the row's left edge.
+                ...[
+                  ["narrow", "wide"],
+                  ["wide", "full"],
+                ].map(([textWidth, contentWidth]) =>
+                  hero(`left-${textWidth}-${contentWidth}`, "60", "neutral", {
+                    alignment: "left",
+                    textWidth,
+                    contentWidth,
+                    text: "Sourdough, cakes and pastries from our oven to your table, baked fresh before the doors open every morning, with coffee from the roaster down the road and bread to take home.",
+                  }),
+                ),
               ],
             },
           },
