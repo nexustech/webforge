@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
 // A dialog with changes (#1439, MVP §7 item 66): a click outside leaves it open; Esc and its X
@@ -11,6 +11,8 @@ let page: Page;
 test.beforeEach(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
+  // The canvas as it's ready, up to its 30 s: 5 s wasn't enough once on Windows (#1674).
+  await waitForCanvas(page);
   await expect(page.frameLocator(".editor__canvas iframe").locator("h1")).toBeVisible();
 });
 
