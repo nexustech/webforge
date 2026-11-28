@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { TEST_DIR_REMOVAL } from "@webforge/test-utils/vitest";
@@ -194,9 +194,8 @@ describe("the copy kept from before an update (#1525)", () => {
     const kept = backed.keepBeforeUpdate(sitePath, store.info.projectId, OLD);
 
     expect(readFileSync(kept.path).equals(original)).toBe(true);
-    expect(kept.path).toBe(
-      join(dir, "backups", store.info.projectId, "before-update-format-1-site-11.wforge"),
-    );
+    expect(dirname(kept.path)).toBe(join(dir, "backups", store.info.projectId));
+    expect(basename(kept.path)).toMatch(/^before-update-[0-9a-f]{12}-format-1-site-11\.wforge$/);
     expect(kept).toMatchObject({ fileFormat: 1, siteFormat: 11, size: original.length });
     // Never counted, pruned or restored with the rolling backups.
     for (let index = 0; index < 4; index++) {
@@ -208,24 +207,28 @@ describe("the copy kept from before an update (#1525)", () => {
     expect(existsSync(kept.path)).toBe(true);
   });
 
-  it("finds the site's kept copy by its id, wherever its file is now, one for each site", () => {
+  it("keeps one copy for each file of a site, which a later format change replaces", () => {
     const backed = backups();
-    expect(backed.keptBeforeUpdate(store.info.projectId)).toBeUndefined();
+    const id = store.info.projectId;
+    expect(backed.keptBeforeUpdate(id, sitePath)).toBeUndefined();
 
-    backed.keepBeforeUpdate(sitePath, store.info.projectId, OLD);
-    // A later format change replaces it.
-    const later = backed.keepBeforeUpdate(sitePath, store.info.projectId, NEWER);
+    backed.keepBeforeUpdate(sitePath, id, OLD);
+    // A later format change replaces this file's copy.
+    const later = backed.keepBeforeUpdate(sitePath, id, NEWER);
+    // A copy of the file made in Explorer or Finder has the same site id, and a copy of its own.
+    clock = new Date(clock.getTime() + 60_000);
+    const copied = join(dir, "sites", "Bakery copy.wforge");
+    copyFileSync(sitePath, copied);
+    const ofCopy = backed.keepBeforeUpdate(copied, id, OLD);
 
-    expect(backed.keptBeforeUpdate(store.info.projectId)).toMatchObject({
-      path: later.path,
-      fileFormat: 2,
-      siteFormat: 22,
-    });
+    expect(backed.keptBeforeUpdate(id, sitePath)).toEqual(later);
+    expect(backed.keptBeforeUpdate(id, copied)).toEqual(ofCopy);
     expect(
-      readdirSync(join(dir, "backups", store.info.projectId)).filter((name) =>
-        name.startsWith("before-update"),
-      ),
-    ).toEqual(["before-update-format-2-site-22.wforge"]);
+      readdirSync(join(dir, "backups", id)).filter((name) => name.startsWith("before-update")),
+    ).toHaveLength(2);
+    // A file moved or renamed since: the site's newest copy, by when it was kept.
+    expect(backed.keptBeforeUpdate(id, join(dir, "Moved.wforge"))).toEqual(ofCopy);
+    expect(ofCopy.keptAt).toEqual(clock);
   });
 
   it("says it couldn't keep the copy, and leaves the earlier one, when the copy fails", () => {
@@ -242,7 +245,9 @@ describe("the copy kept from before an update (#1525)", () => {
     const backed = backups();
     const folder = join(dir, "backups", store.info.projectId);
     // Something in the way of the copy's name, so the copy is made but can't be renamed into it.
-    mkdirSync(join(folder, "before-update-format-2-site-22.wforge"), { recursive: true });
+    const inTheWay = backed.keepBeforeUpdate(sitePath, store.info.projectId, NEWER).path;
+    rmSync(inTheWay);
+    mkdirSync(inTheWay);
 
     expect(() => backed.keepBeforeUpdate(sitePath, store.info.projectId, NEWER)).toThrow(
       KeepCopyError,

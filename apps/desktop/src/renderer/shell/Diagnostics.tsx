@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
   Button,
   Dialog,
+  DialogCloseButton,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -197,6 +198,7 @@ export function DiagnosticsDialog(props: DiagnosticsDialogProps) {
             <Button variant="outline" onClick={props.onOpenFolder}>
               {t("diagnostics.openFolder")}
             </Button>
+            <DialogCloseButton />
             <Button
               disabled={diagnostics === undefined || diagnostics === null}
               onClick={props.onSave}

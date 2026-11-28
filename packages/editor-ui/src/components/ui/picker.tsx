@@ -6,6 +6,7 @@ import { fieldControlClass } from "../edit/text-field.js";
 import { Button } from "./button.js";
 import {
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -351,9 +352,7 @@ export function Picker<Item extends PickerItem>({
         </div>
         <DialogFooter className="items-center">
           <div className="flex flex-1 flex-wrap gap-1.5">{actions}</div>
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-            {t("ui.picker.cancel")}
-          </Button>
+          <DialogCancel onClick={() => onOpenChange(false)}>{t("ui.picker.cancel")}</DialogCancel>
           <Button type="button" disabled={active === undefined} onClick={() => choose(active)}>
             {t("ui.picker.choose")}
           </Button>

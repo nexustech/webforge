@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -103,9 +104,9 @@ export function AssistantExamplesDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+          <DialogCancel onClick={() => onOpenChange(false)}>
             {t("assistant.examples.close")}
-          </Button>
+          </DialogCancel>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -129,9 +130,7 @@ export function LicencesDialog({ open, onOpenChange, licences }: LicencesDialogP
           <Button variant="outline" onClick={openChromium}>
             {t("licences.chromium")}
           </Button>
-          <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            {t("licences.close")}
-          </Button>
+          <DialogCancel onClick={() => onOpenChange(false)}>{t("licences.close")}</DialogCancel>
         </DialogFooter>
       </DialogContent>
     </Dialog>
