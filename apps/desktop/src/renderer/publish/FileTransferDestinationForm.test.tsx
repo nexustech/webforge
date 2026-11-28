@@ -1,12 +1,26 @@
 // @vitest-environment happy-dom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Dialog, DialogContent } from "@webforge/editor-ui";
 import type { FileTransferDestination, FileTransferTrust } from "@webforge/model";
+import { type ReactNode, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PublishApi } from "../../shared/ipc/publish.js";
-import { FileTransferDestinationDialog, valuesOf } from "./FileTransferDestinationDialog.js";
+import { FileTransferDestinationForm, valuesOf } from "./FileTransferDestinationForm.js";
 
 afterEach(cleanup);
+
+/** The form as a step of Publish (#1456): in a dialog, gone after Back. */
+function InPublish({ form }: { readonly form: (back: () => void) => ReactNode }) {
+  const [shown, setShown] = useState(true);
+  return (
+    <Dialog open={shown} onOpenChange={(next) => (next ? undefined : setShown(false))}>
+      <DialogContent className="flex flex-col sm:max-w-2xl">
+        {form(() => setShown(false))}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const HOST_KEY = "SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8";
 const KEY_HANDLE = "6f1c2b3a-1111-4222-8333-444455556666";
@@ -42,14 +56,17 @@ function setUp(
 ) {
   const onSave = vi.fn();
   render(
-    <FileTransferDestinationDialog
-      open
-      destination={destination}
-      webAddress={webAddress}
-      trust={trust}
-      publish={publish}
-      onSave={onSave}
-      onCancel={vi.fn()}
+    <InPublish
+      form={(back) => (
+        <FileTransferDestinationForm
+          destination={destination}
+          webAddress={webAddress}
+          trust={trust}
+          publish={publish}
+          onSave={onSave}
+          onBack={back}
+        />
+      )}
     />,
   );
   const user = userEvent.setup({ delay: null });
@@ -79,7 +96,7 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
       "Password",
       "Test Connection",
       "More Options",
-      "Cancel",
+      "Back",
       "Save",
     ]);
 
@@ -411,20 +428,23 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
 
   it("shows a saved key as saved, with no file name to show", () => {
     render(
-      <FileTransferDestinationDialog
-        open
-        destination={{
-          protocol: "sftp",
-          host: "sftp.rosasbakery.co.uk",
-          user: "rosa",
-          folder: "/site",
-          signIn: "key",
-        }}
-        savedSignIn
-        trust={{ hostKey: HOST_KEY }}
-        publish={fakePublish()}
-        onSave={vi.fn()}
-        onCancel={vi.fn()}
+      <InPublish
+        form={(back) => (
+          <FileTransferDestinationForm
+            destination={{
+              protocol: "sftp",
+              host: "sftp.rosasbakery.co.uk",
+              user: "rosa",
+              folder: "/site",
+              signIn: "key",
+            }}
+            savedSignIn
+            trust={{ hostKey: HOST_KEY }}
+            publish={fakePublish()}
+            onSave={vi.fn()}
+            onBack={back}
+          />
+        )}
       />,
     );
 
@@ -497,16 +517,19 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     const onSave = vi.fn();
     const publish = fakePublish();
     render(
-      <FileTransferDestinationDialog
-        open
-        destination={saved}
-        name="Live"
-        savedSignIn
-        trust={{ hostKey: HOST_KEY }}
-        publish={publish}
-        testSaved={testSaved}
-        onSave={onSave}
-        onCancel={vi.fn()}
+      <InPublish
+        form={(back) => (
+          <FileTransferDestinationForm
+            destination={saved}
+            name="Live"
+            savedSignIn
+            trust={{ hostKey: HOST_KEY }}
+            publish={publish}
+            testSaved={testSaved}
+            onSave={onSave}
+            onBack={back}
+          />
+        )}
       />,
     );
     const user = userEvent.setup({ delay: null });

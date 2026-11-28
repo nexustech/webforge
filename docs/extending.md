@@ -135,6 +135,7 @@ Every dialog ends with the same footer (#1444), so the eye learns it once:
 - **One that finishes a task ends with Done as its primary:** Site Exported, Your Site Is Live.
 - **The primary says Save** unless Save would be unclear. The title already names what's saved (Link, Note, a destination). An action keeps its name: Use This, Add Page, Create Site.
 - **An answer, not a way out, is the primary.** While You Were Away's **Keep** keeps the AI's changes, so it's the primary, not a Close by another name.
+- **A form drawn as a step inside another dialog ends with Back, not Cancel** (`FormPane`, #1456): Publish's destination forms. Back asks "Discard your changes?" first, as Esc does (`useAskBeforeDiscarding`), and Esc or the X close the whole dialog.
 
 `e2e/visual/stories.spec.ts` checks every editor story's footers against this rule (`footerFaults`).
 

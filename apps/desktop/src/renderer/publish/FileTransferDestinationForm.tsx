@@ -1,8 +1,8 @@
 import {
   Button,
   type FormActions,
-  FormDialog,
   type FormField,
+  FormPane,
   type FormSchema,
   type FormSpec,
 } from "@webforge/editor-ui";
@@ -413,8 +413,7 @@ type TestState =
 const connectionOf = (values: FileTransferValues) =>
   `${values.protocol}://${values.host.trim()}:${values.port.trim()}`;
 
-export type FileTransferDestinationDialogProps = {
-  readonly open: boolean;
+export type FileTransferDestinationFormProps = {
   /** The destination to edit, and its name; a new one when left out. */
   readonly destination?: FileTransferDestination | undefined;
   readonly name?: string | undefined;
@@ -437,7 +436,8 @@ export type FileTransferDestinationDialogProps = {
       ) => Promise<ConnectionResult>)
     | undefined;
   readonly onSave: (saved: FileTransferSaved) => void;
-  readonly onCancel: () => void;
+  /** Back to Publish's list, which asks first when a value changed (#1456). */
+  readonly onBack: () => void;
 };
 
 /**
@@ -483,10 +483,10 @@ export function connectionMessage(result: ConnectionResult): string {
  * the connection (FTPS first; plain FTP after a warning shown once per destination), the host,
  * the user and the password or private key, the folder and the web address, and Test connection.
  * An SFTP host's key is trusted the first time its connection is tested. The settings and the
- * sign-in are saved apart: the site keeps only the settings (4.4).
+ * sign-in are saved apart: the site keeps only the settings (4.4). A step of Publish (#1456),
+ * drawn in its dialog in place of the list, with Back to it.
  */
-export function FileTransferDestinationDialog({
-  open,
+export function FileTransferDestinationForm({
   destination,
   name,
   webAddress,
@@ -495,8 +495,8 @@ export function FileTransferDestinationDialog({
   publish,
   testSaved,
   onSave,
-  onCancel,
-}: FileTransferDestinationDialogProps) {
+  onBack,
+}: FileTransferDestinationFormProps) {
   const [keyFile, setKeyFile] = useState<KeyFile | undefined>();
   const [keyProblem, setKeyProblem] = useState<string | undefined>();
   // The SFTP host key trusted, for the connection it was trusted on.
@@ -666,16 +666,14 @@ export function FileTransferDestinationDialog({
   };
 
   return (
-    <FormDialog
-      open={open}
+    <FormPane
       title={t("publish.fileTransfer.title")}
       description={t("publish.fileTransfer.description")}
       confirm={t("publish.fileTransfer.confirm")}
       spec={spec}
       initial={valuesOf(destination, name, webAddress)}
-      size="lg"
       onSave={(saved) => onSave(saved)}
-      onCancel={onCancel}
+      onBack={onBack}
     />
   );
 }
