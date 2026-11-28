@@ -17,15 +17,35 @@ function sources(dir: string): string[] {
   });
 }
 
+/** Where the opening tag starting at `from` ends: its `>`, outside any string or `{…}`. */
+function tagEnd(source: string, from: number): number {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let at = from; at < source.length; at++) {
+    const char = source[at];
+    if (quote !== null) {
+      if (char === "\\") at++;
+      else if (char === quote) quote = null;
+    } else if (char === '"' || char === "'" || char === "`") quote = char;
+    else if (char === "{") depth++;
+    else if (char === "}") depth--;
+    else if (char === ">" && depth === 0) return at;
+  }
+  return source.length;
+}
+
 /**
  * The classes each dialog panel opened in `source` asks for, by its line: every string in its
- * opening tag, so a `className={cn("…", …)}` counts as well as a `className="…"`. A `>` inside a
- * string, or an arrow function's `=>`, doesn't end the tag.
+ * opening tag, in any quotes, so a `className={cn("…", …)}` counts as well as a `className="…"`.
+ * A `>` inside a string or a `{…}` (an arrow function's `=>`, `count > 3`) doesn't end the tag.
  */
 function dialogClassNames(source: string): { readonly line: number; readonly className: string }[] {
   const found: { line: number; className: string }[] = [];
-  for (const match of source.matchAll(/<(?:Alert)?DialogContent\b((?:"[^"]*"|=>|[^>"])*)>/g)) {
-    const strings = [...(match[1] ?? "").matchAll(/"([^"]*)"/g)].map((each) => each[1] ?? "");
+  for (const match of source.matchAll(/<(?:Alert)?DialogContent\b/g)) {
+    const tag = source.slice(match.index, tagEnd(source, match.index + match[0].length));
+    const strings = [...tag.matchAll(/"([^"]*)"|'([^']*)'|`([^`]*)`/g)].map(
+      (each) => each[1] ?? each[2] ?? each[3] ?? "",
+    );
     if (strings.length === 0) continue;
     const line = source.slice(0, match.index).split("\n").length;
     found.push({ line, className: strings.join(" ") });
@@ -60,6 +80,9 @@ describe("dialog widths (#1455)", () => {
     expect(classes('<DialogContent className={cn("[&>p]:mt-1", "max-w-lg")}>')).toEqual([
       "[&>p]:mt-1 max-w-lg",
     ]);
+    expect(classes("<DialogContent className='max-w-lg'>")).toEqual(["max-w-lg"]);
+    expect(classes("<DialogContent className={`flex max-w-lg`}>")).toEqual(["flex max-w-lg"]);
+    expect(classes('<DialogContent open={count > 3} className="max-w-lg">')).toEqual(["max-w-lg"]);
     expect(classes("<DialogContent>")).toEqual([]);
   });
 
