@@ -1,8 +1,8 @@
-import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { COMMAND_IDS } from "../shared/command-ids.js";
 import { USAGE_COMMANDS, usageCommandOf } from "../shared/usage.js";
+import { isTestOrStory, sourcesMatching } from "./source-files.js";
 
 // The usage summary counts each command by a name from a fixed list (5.40, BD-1): a command the
 // list doesn't have isn't counted. Every command the shell names, and every one the editor's code
@@ -10,14 +10,14 @@ import { USAGE_COMMANDS, usageCommandOf } from "../shared/usage.js";
 
 const RENDERER = join(import.meta.dirname, "../renderer");
 
-/** The renderer's source files, tests and stories left out. */
-function sources(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) return sources(path);
-    return /\.tsx?$/.test(entry.name) && !/\.(test|stories)\.tsx?$/.test(entry.name) ? [path] : [];
-  });
-}
+/**
+ * The renderer's source files that register a command by a written id, tests and stories left out:
+ * found by git in one search, so the scan stays quick in a loaded run (#1566).
+ */
+const sources = () =>
+  sourcesMatching(RENDERER, 'id: "[a-z]+[.]', ["*.ts", "*.tsx"]).filter(
+    (file) => !isTestOrStory(file.path),
+  );
 
 describe("the commands the usage summary counts (5.40)", () => {
   it("are listed once each", () => {
@@ -25,10 +25,8 @@ describe("the commands the usage summary counts (5.40)", () => {
   });
 
   it("have every command the shell names, and every one registered by a written id", () => {
-    const written = sources(RENDERER).flatMap((path) =>
-      [...readFileSync(path, "utf8").matchAll(/\bid: "([a-z]+\.[a-zA-Z.]+)"/g)].map(
-        ([, id = ""]) => id,
-      ),
+    const written = sources().flatMap((file) =>
+      [...file.text.matchAll(/\bid: "([a-z]+\.[a-zA-Z.]+)"/g)].map(([, id = ""]) => id),
     );
 
     expect(written.length).toBeGreaterThan(20);

@@ -1,7 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { failureContextSchema } from "../shared/ipc/app.js";
+import { isTestOrStory, sourcesMatching } from "./source-files.js";
 
 // The renderer's handled failures reach main's log by a context `logFailure`'s schema takes
 // (`clipboard.paste`); one it refuses is dropped, and the failure leaves no trace (#1285). Each
@@ -10,14 +10,15 @@ import { failureContextSchema } from "../shared/ipc/app.js";
 
 const RENDERER = join(import.meta.dirname, "../renderer");
 
-/** The renderer's source files, tests and stories left out. */
-function sources(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) return sources(path);
-    return /\.tsx?$/.test(entry.name) && !/\.(test|stories)\.tsx?$/.test(entry.name) ? [path] : [];
-  });
-}
+/**
+ * The renderer's source files that could name a context, tests and stories left out: found by git
+ * in one search, a superset of what {@link contextsIn} looks for, so the scan stays quick in a
+ * loaded run (#1566).
+ */
+const sources = () =>
+  sourcesMatching(RENDERER, "reportFailure|failed[(]|act[(]|failureKey", ["*.ts", "*.tsx"]).filter(
+    (file) => !isTestOrStory(file.path),
+  );
 
 /**
  * The contexts in `text`: `reportFailure("…")`, a template's fixed start (`command.${id}` as
@@ -42,8 +43,8 @@ function contextsIn(text: string): string[] {
 
 describe("the renderer's failure contexts (#1285)", () => {
   it("are each one that logFailure's schema takes", () => {
-    const found = sources(RENDERER).flatMap((path) =>
-      contextsIn(readFileSync(path, "utf8")).map((context) => ({ path, context })),
+    const found = sources().flatMap((file) =>
+      contextsIn(file.text).map((context) => ({ path: file.path, context })),
     );
 
     expect(found.length).toBeGreaterThan(50);
