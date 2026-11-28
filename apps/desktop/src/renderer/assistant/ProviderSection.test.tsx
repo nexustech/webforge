@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@webforge/editor-ui";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AssistantApi, AssistantStatus } from "../../shared/ipc/assistant.js";
 import { FAKE_STATUS } from "./fake-assistant.js";
@@ -123,5 +124,61 @@ describe("where the assistant's requests go (ADR 0026 §2–§3)", () => {
     expect(api.setKey).toHaveBeenCalledWith("sk-test");
     // An http:// server that isn't on this computer (6.9a part 5).
     expect(await screen.findByText(/would travel unencrypted/)).toBeDefined();
+  });
+});
+
+describe("what Assistant settings asks about before closing (#1439)", () => {
+  /** The section in a dialog, as Assistant settings draws it, starting from `provider`. */
+  function inDialog(provider: AssistantStatus["provider"]) {
+    const closing = vi.fn();
+    const api = {
+      update: vi.fn<AssistantApi["update"]>(async () => ({ ...FAKE_STATUS, provider })),
+      signIn: vi.fn<AssistantApi["signIn"]>(),
+      finishSignIn: vi.fn<AssistantApi["finishSignIn"]>(),
+      cancelSignIn: vi.fn<AssistantApi["cancelSignIn"]>(async () => undefined),
+      setKey: vi.fn<AssistantApi["setKey"]>(),
+    };
+    const draw = (now: AssistantStatus["provider"]) => (
+      <Dialog open onOpenChange={closing}>
+        <DialogContent>
+          <DialogTitle>Assistant</DialogTitle>
+          <DialogDescription>Where its requests go.</DialogDescription>
+          <ProviderSection
+            status={{ ...FAKE_STATUS, provider: now }}
+            api={api}
+            onStatus={vi.fn()}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+    const view = render(draw(provider));
+    return {
+      closing,
+      user: userEvent.setup({ delay: null }),
+      redraw: (now: AssistantStatus["provider"]) => view.rerender(draw(now)),
+    };
+  }
+  const question = () => screen.queryByRole("alertdialog", { name: "Discard your changes?" });
+
+  it("asks nothing once another server is swapped for OpenRouter and saved", async () => {
+    const { closing, user, redraw } = inDialog({
+      kind: "server",
+      baseUrl: "http://localhost:8080/",
+      hasKey: false,
+    });
+    await user.click(screen.getByRole("radio", { name: /OpenRouter/ }));
+    redraw({ kind: "openrouter", signedIn: false });
+    await user.keyboard("{Escape}");
+    expect(question()).toBeNull();
+    expect(closing).toHaveBeenCalledWith(false);
+  });
+
+  it("asks about another server's address typed and not used yet", async () => {
+    const { closing, user } = inDialog({ kind: "openrouter", signedIn: false });
+    await user.click(screen.getByRole("radio", { name: /Another server/ }));
+    await user.type(screen.getByRole("textbox", { name: /address/i }), "http://localhost:1234");
+    await user.keyboard("{Escape}");
+    expect(question()).not.toBeNull();
+    expect(closing).not.toHaveBeenCalled();
   });
 });

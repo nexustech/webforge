@@ -67,7 +67,9 @@ export function UnsavedChanges({ changed }: { readonly changed: boolean }) {
 
 /**
  * A modal dialog (Page Settings, Site Settings). One whose content has changes
- * ({@link useUnsavedChanges}) asks before Esc or its X throws them away.
+ * ({@link useUnsavedChanges}) asks before Esc or its X throws them away. That needs `open` and
+ * `onOpenChange` given: a dialog left to open and close itself (`defaultOpen`, a `DialogTrigger`)
+ * would close anyway, its changes lost.
  */
 export function Dialog({
   onOpenChange,

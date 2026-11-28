@@ -19,16 +19,21 @@ workflow is `.github/workflows/release.yml`; its header has the details.
    `RELEASE_PLEASE_TOKEN` secret (below). Without that secret, the workflow's own token can open
    the pull request only once the repository allows it: Settings › Actions › General › "Allow
    GitHub Actions to create and approve pull requests".
-3. **Merge it** when the release should go out. release-please tags the merge `v<version>` and
+3. **Before merging it, add the release to `RELEASES`** in `apps/desktop/src/main/format-releases.ts`,
+   with the file format it writes (`FORMAT_VERSION` in `packages/storage`) and its site format
+   (`SITE_FORMAT_VERSION` in `packages/model`): a copy kept from before an update (#1525) names
+   the releases that open it from that list. A test fails while the current file format has no
+   release, so a format change can't forget it.
+4. **Merge it** when the release should go out. release-please tags the merge `v<version>` and
    makes a **draft** GitHub Release with the CHANGELOG entries.
-4. **The builds.** The same workflow run builds the Windows installer and the macOS DMG and zip
+5. **The builds.** The same workflow run builds the Windows installer and the macOS DMG and zip
    from the tag, and uploads them to the draft, with electron-updater's feed files: Stable's
    (`latest.yml`, `latest-mac.yml`) and Beta's (`beta.yml`, `beta-mac.yml`). The run's summary
    links to the draft. If a build fails, "Re-run failed jobs" builds it again and replaces what it
    had uploaded.
-5. **Beta: publish the draft as a prerelease** once its installers have been checked ("Set as a
+6. **Beta: publish the draft as a prerelease** once its installers have been checked ("Set as a
    pre-release"). Until then nobody gets the release: the app's updater doesn't see drafts.
-6. **Stable, a share at a time.** Once it has gone well on Beta, move it to Stable for some of the
+7. **Stable, a share at a time.** Once it has gone well on Beta, move it to Stable for some of the
    people on it, then all of them:
 
    ```bash

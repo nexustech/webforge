@@ -3,13 +3,13 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import { TooltipProvider } from "@webforge/editor-ui";
 import { afterEach, describe, expect, it } from "vitest";
 import { createStore } from "zustand/vanilla";
-import type { SaveStatus as Status } from "./autosave.js";
+import type { AutosaveState, SaveStatus as Status } from "./autosave.js";
 import { SaveStatus } from "./SaveStatus.js";
 
 afterEach(() => cleanup());
 
 function renderStatus(status: Status) {
-  const store = createStore<{ status: Status }>()(() => ({ status }));
+  const store = createStore<AutosaveState>()(() => ({ status }));
   render(
     <TooltipProvider>
       <SaveStatus status={store} />
@@ -39,5 +39,16 @@ describe("SaveStatus (P2, #1195)", () => {
     act(() => store.setState({ status: "error" }));
     expect(screen.getByRole("status").textContent).toBe("Not saved. Webforge will try again.");
     expect(screen.getByRole("status").querySelector("svg")).toBeNull();
+  });
+
+  it("says the site couldn't be kept as the older version saved it, when that stopped the save (#1525)", () => {
+    const store = renderStatus("saving");
+
+    act(() => store.setState({ status: "error", failure: "no-copy" }));
+    expect(screen.getByRole("status").textContent).toBe(
+      "Not saved: Webforge couldn't keep a copy of this site as the older version saved it. For example, free some space on the disk. Webforge will try again.",
+    );
+    act(() => store.setState({ status: "error", failure: "unknown" }));
+    expect(screen.getByRole("status").textContent).toBe("Not saved. Webforge will try again.");
   });
 });

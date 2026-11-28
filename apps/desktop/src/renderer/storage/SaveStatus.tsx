@@ -3,11 +3,11 @@ import { t } from "@webforge/i18n";
 import { CheckIcon } from "lucide-react";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
-import type { SaveStatus as Status } from "./autosave.js";
+import type { AutosaveState } from "./autosave.js";
 
 /** Props of {@link SaveStatus}. */
 export type SaveStatusProps = {
-  readonly status: StoreApi<{ readonly status: Status }>;
+  readonly status: StoreApi<AutosaveState>;
 };
 
 /**
@@ -18,11 +18,13 @@ export type SaveStatusProps = {
  */
 export function SaveStatus({ status }: SaveStatusProps) {
   const current = useStore(status, (state) => state.status);
+  const failure = useStore(status, (state) => state.failure);
   const label =
     current === "saved"
       ? t("storage.saved")
       : current === "error"
-        ? t("storage.saveFailed")
+        ? // The site's file couldn't be kept as an older version wrote it (#1525).
+          t(failure === "no-copy" ? "storage.saveFailed.noCopy" : "storage.saveFailed")
         : t("storage.saving");
   const saved = current === "saved";
   return (

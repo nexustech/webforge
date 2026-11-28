@@ -38,6 +38,7 @@ import {
   UNCLAIMED_KEY_MS,
 } from "../../shared/ipc/mcp.js";
 import { type ShellKind, shellOf } from "../../shared/mcp-setup.js";
+import { aiAppsChanged } from "./ai-apps-changed.js";
 import { UnaskedChoice } from "./UnaskedChoice.js";
 
 /** How often the dialog asks for the apps' status while open, so *Connected* follows them. */
@@ -376,6 +377,12 @@ export function AiAppsDialog({
       clearInterval(timer);
     };
   }, [open, mcp, notify]);
+  // Closed (or gone while open): the title bar's sign shows what changed here at once (#1615).
+  // Only on `open`, so a new `notify` or `mcp` while it's open doesn't send it.
+  useEffect(() => {
+    if (!open) return undefined;
+    return aiAppsChanged;
+  }, [open]);
 
   // The shown app as AI apps lists it now: none once its key ran out unused, or it was removed.
   const shownApp = shown === null ? undefined : status?.apps.find((app) => app.id === shown.id);
