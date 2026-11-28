@@ -591,7 +591,7 @@ describe("the address for AI apps, under Let AI apps connect (#1624)", () => {
 
   it("shows Claude Code's address as a value, and copying either address leaves the key's state alone", async () => {
     const { dialog, copyText, copySecret, user } = setUp();
-    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(await dialog().findByRole("button", { name: "Add AI App…" }));
     await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
     await user.click(dialog().getByRole("button", { name: "Add" }));
     const panel = within(await dialog().findByRole("region", { name: "Claude Code is added" }));
