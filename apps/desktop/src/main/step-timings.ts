@@ -1,4 +1,4 @@
-import type { CreateProjectStep } from "@webforge/storage";
+import type { CreateProjectStep, WriteParts } from "@webforge/storage";
 
 /**
  * How long each step of opening a site takes, for the E2E tests (#1560): an opening once waited
@@ -17,7 +17,10 @@ export type StepName =
   | `image ${number} of ${number}`
   | "save the site"
   | "open the session"
-  | "a frame finished loading";
+  | "a frame finished loading"
+  // Each committed write's two parts (#1621), for the commit's budget: ours, and the disk's flush.
+  | "a write's changes"
+  | "a write's flush";
 
 /**
  * A step: its name, how long it took (on the monotonic clock, which a test faking `Date` leaves
@@ -37,9 +40,25 @@ const MAX_STEPS = 500;
 const steps: TimedStep[] = [];
 
 function record(step: StepName, start: number): void {
-  steps.push({ step, ms: Math.round(performance.now() - start), at: Date.now() });
+  recordTook(step, performance.now() - start);
+}
+
+/** Records `step` as having taken `ms`, ending now: to a tenth of a ms, as a write's parts are a few. */
+function recordTook(step: StepName, ms: number): void {
+  steps.push({ step, ms: Math.round(ms * 10) / 10, at: Date.now() });
   if (steps.length > MAX_STEPS) steps.splice(0, steps.length - MAX_STEPS);
 }
+
+/**
+ * Records each committed write's two parts (#1621), as `ProjectStore`'s `timedWrite`: `undefined`
+ * unless the E2E launch asked, so a write times nothing in the packaged app.
+ */
+export const writeTimer: ((parts: WriteParts) => void) | undefined = ON
+  ? (parts) => {
+      recordTook("a write's changes", parts.changesMs);
+      recordTook("a write's flush", parts.flushMs);
+    }
+  : undefined;
 
 /** Runs `run` as `step`, timed when the steps are recorded; the step ends even if `run` throws. */
 export function timeStep<T>(step: StepName, run: () => T): T {

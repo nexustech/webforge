@@ -53,5 +53,6 @@ export {
   type VersionPublish,
   type VersionReason,
   versionPublishSchema,
+  type WriteParts,
 } from "./store-types.js";
 export { detectSyncFolder, type SyncService } from "./sync-folders.js";
