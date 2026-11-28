@@ -32,7 +32,15 @@ export function describePlace(
   const { place, values = {} } = finding;
   switch (place.kind) {
     case "element":
-      return elementPlaceName(site, library, place.on, place.nodeId, onPage);
+      // An example to check is told apart from others of its kind by its text (#1449).
+      return elementPlaceName(
+        site,
+        library,
+        place.on,
+        place.nodeId,
+        onPage,
+        typeof values.exampleText === "string" ? values.exampleText : undefined,
+      );
     case "menu": {
       const item = menuItem(site, place.itemId);
       const label =
@@ -127,6 +135,8 @@ export function describeDetail(finding: Finding): string | undefined {
   if (typeof values.example === "string") {
     return t("siteCheck.detail.example", { detail: values.example });
   }
+  // A marked text with no detail that looks like a fact: what This Is Correct confirms (#1449).
+  if (typeof values.exampleText === "string") return t("siteCheck.detail.exampleText");
   // A note on an element (UX-17), as the person wrote it.
   if (typeof values.note === "string") return values.note;
   // The year a published site shows (F-CM-8), as it was published.

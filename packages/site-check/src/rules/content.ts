@@ -18,6 +18,7 @@ import {
   type NodeDoc,
   publishedSite,
   sampleDetailsIn,
+  shortened,
 } from "@webforge/model";
 import type { Catalogue } from "@webforge/site-components/catalogue-data";
 import {
@@ -391,6 +392,12 @@ function holdsSampleDetail(html: string): boolean {
   return linksToExample(html) ? found.some((detail) => !detail.includes("@")) : found.length > 0;
 }
 
+/** A field that names its element, a testimonial's `name` or a card's `title`, in a list too. */
+const NAMING_FIELD = /(^|\.)(name|title)$/;
+
+/** The most characters of an example's text a Site Check row shows (#1449). */
+const EXAMPLE_TEXT_SHOWN = 40;
+
 /** Whether `field` of `node`, as Site Check names it (`items.2.text`), is marked as an example. */
 const isMarked = (node: NodeDoc, field: string) =>
   isExample(node.props, exampleKey(node.props, field));
@@ -427,26 +434,46 @@ export const sampleDetailsRule: CheckRule = {
     if (contact.phone !== undefined && isSamplePhone(contact.phone)) {
       found.push({ key: "contact.phone", place: { kind: "contact", field: "phone" } });
     }
-    // The finding of each element with a text marked as an example, by its place and id.
-    const markedAt = new Map<string, number>();
+    // The finding of each element with a text marked as an example, by its place and id, and
+    // whether its text is named by a name or title field yet.
+    const markedAt = new Map<string, { readonly index: number; named: boolean }>();
     eachFieldValue(input, ["text", "richtext", "link"], (placed) => {
       const { node, field, value } = placed;
       const bindings = node.props.bindings;
       if (typeof bindings === "object" && bindings !== null && field in bindings) return;
       if (typeof value === "string" && isMarked(node, field)) {
         // One finding an element, however many of its texts are marked (a testimonial's quote,
-        // name and role), named by the first detail of any of them.
-        const [detail] = factDetailsIn(plainText(value));
+        // name and role), with the first detail of any of them that looks like a fact, and the
+        // text it's known by (#1449): its name or title, else its first marked text.
+        const plain = plainText(value);
+        // An empty text holds nothing to check: no row for it (#1449).
+        if (plain === "") return;
+        const [detail] = factDetailsIn(plain);
+        const naming = NAMING_FIELD.test(field);
+        const text = shortened(plain, EXAMPLE_TEXT_SHOWN);
         const at = `${placed.on}/${node.props.id}`;
-        const index = markedAt.get(at);
-        const named = detail === undefined ? {} : { values: { example: detail.text } };
-        if (index === undefined) {
-          markedAt.set(at, found.length);
-          found.push({ key: fieldKey(placed), place: elementPlace(placed), ...named });
-        } else if (detail !== undefined && found[index]?.values === undefined) {
-          const first = found[index];
-          if (first !== undefined) found[index] = { ...first, ...named };
+        const marked = markedAt.get(at);
+        if (marked === undefined) {
+          markedAt.set(at, { index: found.length, named: naming });
+          found.push({
+            key: fieldKey(placed),
+            place: elementPlace(placed),
+            values: {
+              exampleText: text,
+              ...(detail === undefined ? {} : { example: detail.text }),
+            },
+          });
+          return;
         }
+        const first = found[marked.index];
+        if (first === undefined) return;
+        const values = { ...first.values };
+        if (detail !== undefined && values.example === undefined) values.example = detail.text;
+        if (values.exampleText === undefined || (naming && !marked.named)) {
+          values.exampleText = text;
+          marked.named = naming;
+        }
+        found[marked.index] = { ...first, values };
         return;
       }
       // Most text has no `@` and no digits: passed over before it's made plain (ADR 0016).

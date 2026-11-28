@@ -23,3 +23,23 @@ export function plainText(html: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+/** Splits text into what a reader sees as characters: an emoji with its modifiers is one. */
+const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+
+/**
+ * `text`, shortened to `most` characters as a reader counts them, ending in "…" when it's cut:
+ * never cut inside an emoji, which would leave half of it before the "…". A plan's titles (S30)
+ * and Site Check's names for an element by its text (#1449) are shortened with it.
+ */
+export function shortened(text: string, most: number): string {
+  // Most texts are short: no need to split them.
+  if (text.length <= most) return text;
+  const characters = Array.from(GRAPHEMES.segment(text), ({ segment }) => segment);
+  return characters.length <= most
+    ? text
+    : `${characters
+        .slice(0, most - 1)
+        .join("")
+        .trimEnd()}…`;
+}
