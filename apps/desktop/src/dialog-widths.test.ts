@@ -1,5 +1,5 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join } from "node:path";
+import { isTestOrStory, sourcesMatching } from "@webforge/test-utils/sources";
 import { describe, expect, it } from "vitest";
 
 // A dialog's width (#1455): the dialog primitive sets `sm:max-w-md`, so a `max-w-*` without `sm:`
@@ -7,15 +7,6 @@ import { describe, expect, it } from "vitest";
 
 const SRC = import.meta.dirname;
 const ROOTS = [join(SRC, "renderer"), join(SRC, "../../../packages/editor-ui/src")];
-
-/** Every `.tsx` under `dir`, its stories and tests left out. */
-function sources(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) return sources(path);
-    return /\.tsx$/.test(entry.name) && !/\.(stories|test)\.tsx$/.test(entry.name) ? [path] : [];
-  });
-}
 
 /** Where the opening tag starting at `from` ends: its `>`, outside any string or `{…}`. */
 function tagEnd(source: string, from: number): number {
@@ -87,12 +78,15 @@ describe("dialog widths (#1455)", () => {
   });
 
   it("no dialog asks for a width without sm:, which the primitive's would override", () => {
+    // Only the files that open a dialog, found by git in one search a folder (#1566).
     const faults = ROOTS.flatMap((root) =>
-      sources(root).flatMap((path) =>
-        dialogClassNames(readFileSync(path, "utf8"))
-          .filter((each) => losesToPrimitive(each.className))
-          .map((each) => `${relative(root, path)}:${each.line} ${each.className}`),
-      ),
+      sourcesMatching(root, "DialogContent", ["*.tsx"], { fixed: true })
+        .filter((file) => !isTestOrStory(file.path))
+        .flatMap((file) =>
+          dialogClassNames(file.text)
+            .filter((each) => losesToPrimitive(each.className))
+            .map((each) => `${file.path}:${each.line} ${each.className}`),
+        ),
     );
     expect(faults).toEqual([]);
   });
