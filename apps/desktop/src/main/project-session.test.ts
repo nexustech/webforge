@@ -414,6 +414,7 @@ describe("ProjectSession sessions (R6, #239)", () => {
       chooseNewProjectPath: async () => undefined,
       chooseProjectToOpen: async () => undefined,
       chooseSiteZipToSave: async () => undefined,
+      chooseKeptCopyToSave: async () => undefined,
       chooseSiteZipToOpen: async () => undefined,
     });
     const commit = (sessionId: string, changes: unknown) =>

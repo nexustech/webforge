@@ -39,8 +39,14 @@ export function ProviderSection({ status, api, onStatus }: ProviderSectionProps)
   const [key, setKey] = useState("");
   const [said, setSaid] = useState<SignInStatus | undefined>(undefined);
   // A code, key or address typed and not used yet: Assistant settings asks before losing it (#1439).
+  // The address only while another server is chosen: with another provider it's put aside, not
+  // waiting to be used.
   const savedAddress = status.provider.kind === "server" ? status.provider.baseUrl : "";
-  useUnsavedChanges((waiting === "code" && code !== "") || key !== "" || address !== savedAddress);
+  useUnsavedChanges(
+    (waiting === "code" && code !== "") ||
+      key !== "" ||
+      (chosen === "server" && address !== savedAddress),
+  );
   /** Changes the provider in main, keeping the status it answers. */
   const use = (provider: Parameters<AssistantApi["update"]>[0]["provider"]) =>
     void api

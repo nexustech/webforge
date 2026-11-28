@@ -226,6 +226,7 @@ export const shell = {
   "command.clearRecent": "Clear Recent",
   // A copy of the whole site as a ZIP, and a site opened from one (4.7): not Export's website.
   "command.saveSiteZip": "Save a Copy as ZIP…",
+  "command.saveKeptCopy": "Save the Copy from Before the Update…",
   // File › Close Site (#1016): back to the start screen, the site saved.
   "command.closeSite": "Close Site",
   "command.openSiteZip": "Open Site from ZIP…",
