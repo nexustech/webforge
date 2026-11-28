@@ -583,7 +583,7 @@ describe("sample contact details (#1254)", () => {
         text: "<p>We have baked bread on this corner since the day we opened our doors.</p>",
         examples: { text: true },
       }),
-      // Marked but empty: found, with nothing to show.
+      // Marked but empty: nothing to check, so no row.
       element("Text", "empty", { text: "<p></p>", examples: { text: true } }),
     ]);
 
@@ -592,7 +592,6 @@ describe("sample contact details (#1254)", () => {
       { exampleText: "Owen" },
       { exampleText: "Aisha" },
       { exampleText: "We have baked bread on this corner sinc…" },
-      undefined,
     ]);
   });
 

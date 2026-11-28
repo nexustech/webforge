@@ -446,22 +446,22 @@ export const sampleDetailsRule: CheckRule = {
         // name and role), with the first detail of any of them that looks like a fact, and the
         // text it's known by (#1449): its name or title, else its first marked text.
         const plain = plainText(value);
+        // An empty text holds nothing to check: no row for it (#1449).
+        if (plain === "") return;
         const [detail] = factDetailsIn(plain);
         const naming = NAMING_FIELD.test(field);
         const text = shortened(plain, EXAMPLE_TEXT_SHOWN);
         const at = `${placed.on}/${node.props.id}`;
         const marked = markedAt.get(at);
         if (marked === undefined) {
-          markedAt.set(at, { index: found.length, named: naming && text !== "" });
-          const values = {
-            ...(text === "" ? {} : { exampleText: text }),
-            ...(detail === undefined ? {} : { example: detail.text }),
-          };
+          markedAt.set(at, { index: found.length, named: naming });
           found.push({
             key: fieldKey(placed),
             place: elementPlace(placed),
-            // A marked text that's empty has nothing to show: no values rather than none.
-            ...(Object.keys(values).length === 0 ? {} : { values }),
+            values: {
+              exampleText: text,
+              ...(detail === undefined ? {} : { example: detail.text }),
+            },
           });
           return;
         }
@@ -469,7 +469,7 @@ export const sampleDetailsRule: CheckRule = {
         if (first === undefined) return;
         const values = { ...first.values };
         if (detail !== undefined && values.example === undefined) values.example = detail.text;
-        if (text !== "" && (values.exampleText === undefined || (naming && !marked.named))) {
+        if (values.exampleText === undefined || (naming && !marked.named)) {
           values.exampleText = text;
           marked.named = naming;
         }
