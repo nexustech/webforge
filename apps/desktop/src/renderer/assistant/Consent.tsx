@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -91,9 +92,7 @@ export function AppConsentDialog({ open, reach, onAgree, onCancel }: AppConsentD
           ))}
         </ul>
         <DialogFooter>
-          <Button variant="ghost" onClick={onCancel}>
-            {t("assistant.consent.cancel")}
-          </Button>
+          <DialogCancel onClick={onCancel}>{t("assistant.consent.cancel")}</DialogCancel>
           <Button onClick={onAgree}>{t("assistant.consent.agree")}</Button>
         </DialogFooter>
       </DialogContent>

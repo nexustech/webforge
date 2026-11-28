@@ -118,7 +118,7 @@ test("adds a Netlify destination by token, offers Netlify Forms, and publishes t
   await expect(form.getByText("Visitors have to log in to see this site")).toBeVisible();
   await site.selectOption({ label: "rosas-bakery" });
   await expect(form.getByText("Visitors have to log in to see this site")).toHaveCount(0);
-  await form.getByRole("button", { name: "Save Destination" }).click();
+  await form.getByRole("button", { name: "Save", exact: true }).click();
   await expect(form).toBeHidden();
 
   // Listed, named after its site, and tested with the sign-in main keeps.
@@ -183,7 +183,7 @@ test("makes a new Netlify site for the destination, named as asked (4.4b)", asyn
   await form.getByLabel("Netlify site").selectOption({ label: "A new site" });
   await form.getByLabel("New site's name").fill("rosas-new");
   await form.getByLabel("Name", { exact: true }).fill("Rosa's shop");
-  await form.getByRole("button", { name: "Save Destination" }).click();
+  await form.getByRole("button", { name: "Save", exact: true }).click();
   await expect(form).toBeHidden();
 
   // Made on Netlify, as named, and the destination's site.

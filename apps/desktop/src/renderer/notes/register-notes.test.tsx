@@ -61,7 +61,7 @@ describe("notes on elements (UX-17, #868)", () => {
 
     await act(() => commands.run(COMMAND_IDS.note));
     await userEvent.type(screen.getByRole("textbox", { name: "Note" }), "  Swap this photo  ");
-    await userEvent.click(screen.getByRole("button", { name: "Save Note" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(note()).toBe("Swap this photo");
     expect(commands.get(COMMAND_IDS.note)?.label).toBe("Edit Note…");
     expect(commands.get(COMMAND_IDS.resolveNote)).toMatchObject({
@@ -74,7 +74,7 @@ describe("notes on elements (UX-17, #868)", () => {
     expect((field as HTMLTextAreaElement).value).toBe("Swap this photo");
     await userEvent.clear(field);
     await userEvent.type(field, "Swap it for the new one");
-    await userEvent.click(screen.getByRole("button", { name: "Save Note" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await act(() => commands.run(COMMAND_IDS.resolveNote));
     expect(note()).toBeUndefined();
@@ -92,13 +92,13 @@ describe("notes on elements (UX-17, #868)", () => {
     act(() => session.select("h"));
     await act(() => commands.run(COMMAND_IDS.note));
     await userEvent.type(screen.getByRole("textbox", { name: "Note" }), "Check the date");
-    await userEvent.click(screen.getByRole("button", { name: "Save Note" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await act(() => commands.run(COMMAND_IDS.note));
-    await userEvent.click(screen.getByRole("button", { name: "Save Note" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await act(() => commands.run(COMMAND_IDS.note));
     await userEvent.clear(screen.getByRole("textbox", { name: "Note" }));
-    await userEvent.click(screen.getByRole("button", { name: "Save Note" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
     expect(note()).toBeUndefined();
     expect(labels()).toEqual(["Added a note to Heading", "Resolved the note on Heading"]);

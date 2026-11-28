@@ -13,7 +13,7 @@ export const notes = {
   "notes.field": "Note",
   "notes.placeholder": "Swap this photo before launch",
   "notes.help": "Empty it and save to resolve the note.",
-  "notes.save": "Save Note",
+  "notes.save": "Save",
   // Undo steps.
   "notes.history.added": "Added a note to {item}",
   "notes.history.changed": "Changed the note on {item}",

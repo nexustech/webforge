@@ -802,7 +802,7 @@ async function connectAiApp({ app, page }: Context): Promise<{ remove(): Promise
     // Connected, as AI apps says, before it closes: the title bar's status follows that (a 5 s
     // wait for the status alone, the dialog closed at once, missed it once on macOS).
     await expect(dialog.getByText("Connected", { exact: true })).toBeVisible({ timeout: 15_000 });
-    await dialog.getByRole("button", { name: "Close" }).click();
+    await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
     await expect(
       page.getByRole("button", { name: "Connected AI apps: Test client. Open AI apps." }),
     ).toBeVisible({ timeout: 15_000 });
@@ -1079,7 +1079,7 @@ for (const round of ROUNDS) {
               await expect(
                 dialog.getByRole("img", { name: "QR code of the preview's address" }),
               ).toBeVisible({ timeout: 15_000 });
-              await dialog.getByRole("button", { name: "Close" }).click();
+              await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
             }
             // A step to undo: a section added.
             const add = await sideTab(page, "Left", "Add");
