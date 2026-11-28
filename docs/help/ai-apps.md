@@ -21,7 +21,7 @@ Choose **File › AI Apps…** (or search for it in **Search Commands…**, or c
 
 You need Claude Desktop installed on this computer.
 
-1. Click **Add AI App**, at the bottom of the window. **Claude Desktop** is already chosen, and named so. Click **Add**.
+1. Click **Add AI App…**, at the bottom of the window. **Claude Desktop** is already chosen, and named so. Click **Add**.
 2. {appName} shows the app's **Key**. Click **Copy the key**: you won't see it again, and it stops working if Claude Desktop doesn't use it within 5 minutes.
 3. Click **Install in Claude Desktop**. Claude Desktop opens {appName}'s extension and asks whether to install it.
 4. In Claude Desktop, paste the key into **Key**, and install the extension.
@@ -51,7 +51,7 @@ The key is cleared from the clipboard a minute after you copy it, and Windows do
 
 **Your AI apps** lists each app as _Connected_, _Not connected_ or _Waiting for its key_. While one is connected, an icon in the title bar says so; click it to open AI apps.
 
-To stop an app reaching your sites, click **Remove _name_** beside it, then **Remove**. To use it again, add it again with a new key. For Claude Desktop, remove {appName}'s extension in Claude Desktop's settings too, unless you'll add it again.
+To stop an app reaching your sites, click **Remove _name_…** beside it, then **Remove**. To use it again, add it again with a new key. For Claude Desktop, remove {appName}'s extension in Claude Desktop's settings too, unless you'll add it again.
 
 If {appName} says **{appName}'s address for AI apps has changed**, another program was using {appName}'s address while it was closed. Apps that connect directly, such as Cursor or Claude Code, might have sent it their keys, so {appName} removes them: add them again with the new address. Claude Desktop checks it's {appName} before it sends its key, so it stays, but its extension has the old address: remove it and add it again, then install its new extension. {appName} says this as it starts, until you open **AI Apps**.
 
@@ -173,7 +173,7 @@ ChatGPT can't connect to {appName} yet.
 
 ## For developers: Claude Code, VS Code and other apps
 
-Developer tools connect to {appName} directly, at an address on this computer: `http://127.0.0.1:<port>/mcp`. **Add AI App** sets up Claude Code and VS Code for you, and shows the address for any other app.
+Developer tools connect to {appName} directly, at an address on this computer: `http://127.0.0.1:<port>/mcp`. **Add AI App…** sets up Claude Code and VS Code for you, and shows the address for any other app.
 
 While **Let AI apps connect** is ticked, **AI Apps** shows the address under it, port and all, as **Address for AI apps**. Select it, or click **Copy the address** beside it. If AI Apps says {appName} couldn't start listening for AI apps, nothing can connect: untick **Let AI apps connect**, then tick it again.
 
@@ -183,7 +183,7 @@ Unlike Claude Desktop's extension, these tools can't check who answers at the ad
 
 You need [Claude Code](https://code.claude.com/docs/en/setup) installed.
 
-1. Click **Add AI App**, choose **Claude Code**, and click **Add**. {appName} shows the **Address** it adds Claude Code at, then three steps, each with what it copies, and the commands for your computer's terminal. On Windows the steps say PowerShell: run them there, not in Command Prompt, which splits the add command at its spaces.
+1. Click **Add AI App…**, choose **Claude Code**, and click **Add**. {appName} shows the **Address** it adds Claude Code at, then three steps, each with what it copies, and the commands for your computer's terminal. On Windows the steps say PowerShell: run them there, not in Command Prompt, which splits the add command at its spaces.
 2. **Add {appName} to Claude Code:** click **Copy the add command**, and run it in a terminal (Bash or Zsh), or in PowerShell on Windows. It adds {appName}'s server, named `webforge`, to Claude Code for all your projects:
 
    ```
@@ -216,7 +216,7 @@ If Claude Code says a server named `webforge` already exists, from an earlier ti
 
 You need VS Code with GitHub Copilot, whose agent mode uses {appName}'s tools.
 
-1. Click **Add AI App**, choose **VS Code (GitHub Copilot)**, and click **Add**.
+1. Click **Add AI App…**, choose **VS Code (GitHub Copilot)**, and click **Add**.
 2. Click **Copy the key**.
 3. Click **Install in VS Code**. VS Code shows {appName}'s server, named `webforge`: click **Install**.
 4. When VS Code starts the server, it asks for {appName}'s key: paste it. VS Code keeps it in its own secret storage, not in its settings. If it doesn't start the server itself, choose **MCP: List Servers** › **webforge** › **Start Server** within 5 minutes of adding it.
@@ -228,7 +228,7 @@ If VS Code already has a server named `webforge`, from an earlier time you added
 
 ### Other apps
 
-1. Click **Add AI App**, choose **Another app**, give it a **Name** such as "Cursor", and click **Add**.
+1. Click **Add AI App…**, choose **Another app**, give it a **Name** such as "Cursor", and click **Add**.
 2. {appName} shows an **Address** and a **Key**. Copy both with **Copy the address** and **Copy the key**.
 3. In the app's settings for MCP servers, add an HTTP (Streamable HTTP) server at that address, with this header:
 
@@ -255,7 +255,7 @@ For Claude Code:
    claude mcp remove --scope user webforge
    ```
 
-2. In {appName}, click **Add AI App**, choose **Claude Code**, and follow its steps (see [Claude Code](#claude-code)). Its add command holds the new address, and its key is new.
+2. In {appName}, click **Add AI App…**, choose **Claude Code**, and follow its steps (see [Claude Code](#claude-code)). Its add command holds the new address, and its key is new.
 
 For another app, add it again in **AI Apps**, then put the new address and key in its settings for MCP servers, in place of the old ones.
 

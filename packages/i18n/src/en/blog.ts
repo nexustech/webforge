@@ -52,7 +52,7 @@ export const blog = {
   // Undo steps.
   "blog.history.imported.one": "Imported 1 post",
   "blog.history.imported.other": "Imported {count} posts",
-  "blog.item": "post '{name}'",
+  "blog.item": "post “{name}”",
   "blog.history.addedBlog": "Added a blog",
   "blog.history.editedDesign": "Edited the design of {name}",
   "blog.history.inDesign": " in the design of {name}",
@@ -60,7 +60,7 @@ export const blog = {
   "blog.history.binding": "{item} shows the post's {field}",
   // Renaming a blog, its folder with it, and deleting it while it has no posts (#937).
   "blog.rename": "Rename…",
-  "blog.delete": "Delete",
+  "blog.delete": "Delete…",
   "blog.renameDialog.title": "Rename Blog",
   "blog.renameDialog.label": "Name",
   "blog.renameDialog.confirm": "Rename",
@@ -68,10 +68,10 @@ export const blog = {
   "blog.renameDialog.moveHint": "Each post's address changes from {from}/… to {folder}/….",
   "blog.renameDialog.moveHintKept":
     "Each post's address changes from {from}/… to {folder}/…. Links and search results that use the old addresses go on to the new ones. Your blog's feed gets a new address.",
-  "blog.deleteDialog.title": "Delete Blog '{name}'?",
-  "blog.deleteDialog.description": "It has no posts. Its design goes with it.",
+  "blog.deleteDialog.title": "Delete Blog “{name}”?",
+  "blog.deleteDialog.description": "It has no posts. Its design goes with it. You can undo this.",
   "blog.deleteDialog.cancel": "Cancel",
   "blog.deleteDialog.confirm": "Delete Blog",
-  "blog.blogItem": "blog '{name}'",
-  "blog.history.renamed": "Renamed blog '{name}'",
+  "blog.blogItem": "blog “{name}”",
+  "blog.history.renamed": "Renamed blog “{name}”",
 } as const;

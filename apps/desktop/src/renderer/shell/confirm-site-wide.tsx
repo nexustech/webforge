@@ -15,12 +15,17 @@ import type { CommandRegistry } from "./commands.js";
 
 /** An action that changes more than the page shown, to confirm first (D7, F-ED-14). */
 export type SiteWideAction = {
-  /** What will happen, as the dialog's title: "Delete page 'About'?". */
+  /** What will happen, as the dialog's title: "Delete Page “About”?". */
   readonly action: string;
   /** More about it, before the impact: "This removes the page and its content." */
   readonly description?: string;
   /** The confirm button: "Delete Page". */
   readonly confirm: string;
+  /**
+   * Whether the confirm button is red (#1445): only for what Undo can't bring back. Required, so
+   * each caller decides; every change confirmed here today is one undo step, so `false`.
+   */
+  readonly destructive: boolean;
   /** How many pages it changes, which the dialog states ("6 pages of your site will change."). */
   readonly affectedPages: number;
   /** The version's name, saved once confirmed, if not "Before: {confirm}" (an AI app's plan). */
@@ -322,7 +327,10 @@ export function SiteWideConfirmDialog({ confirm }: { readonly confirm: SiteWideC
             </AlertDialogAction>
           )}
           <AlertDialogCancel>{t("confirm.siteWide.cancel")}</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={() => confirm.answer(true)}>
+          <AlertDialogAction
+            variant={action?.destructive === true ? "destructive" : "default"}
+            onClick={() => confirm.answer(true)}
+          >
             {action?.confirm}
           </AlertDialogAction>
         </AlertDialogFooter>

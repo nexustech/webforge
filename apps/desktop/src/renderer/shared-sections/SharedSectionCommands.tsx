@@ -49,6 +49,7 @@ export function removeSharedSection(
       }),
       description: t("canvas.deleteSharedSection.description"),
       confirm: t("canvas.deleteSharedSection.confirm"),
+      destructive: false,
       affectedPages: pages,
     })
     .then((confirmed) => {
@@ -173,8 +174,8 @@ export function registerSharedSectionCommands(
 
 /**
  * Asks for a shared section's name (F-ED-23), refusing one another shared section has: to save the
- * selected section as one ("Saved 'Opening hours' as a shared section"), or to rename one
- * ("Renamed 'Hours' to 'Opening hours'"). One step either way.
+ * selected section as one ("Saved “Opening hours” as a shared section"), or to rename one
+ * ("Renamed “Hours” to “Opening hours”"). One step either way.
  */
 export function SharedSectionNameDialog({
   session,

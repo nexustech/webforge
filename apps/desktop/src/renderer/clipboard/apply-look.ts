@@ -283,7 +283,7 @@ function changedFields(
 }
 
 /**
- * The undo label: "Applied the Button look to 12 others", and " in the design of 'Blog'" when they
+ * The undo label: "Applied the Button look to 12 others", and " in the design of “Blog”" when they
  * are all in a Blog's design (#936).
  */
 function appliedLookLabel(site: SiteDoc, change: LookChange): string {
@@ -368,6 +368,7 @@ export function lookConfirmation(change: LookChange, scope: LookScope) {
     action: t(`look.confirm.title.${scope}`, { item: change.item }),
     description: [changes, ...hidden, ...reach].join(" "),
     confirm: t("look.confirm.apply"),
+    destructive: false,
     affectedPages: change.pages.length,
   };
 }

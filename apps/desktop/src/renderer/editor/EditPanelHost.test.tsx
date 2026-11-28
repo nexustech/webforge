@@ -351,8 +351,8 @@ describe("EditPanelHost", () => {
     expect(sharedHeading()?.text).toBe("Welcome to our business today");
     expect(currentPage(session)?.doc).toBe(pageBefore);
     expect(labels()).toEqual([
-      "Saved 'Welcome' as a shared section",
-      "Edited shared section 'Welcome'",
+      "Saved “Welcome” as a shared section",
+      "Edited shared section “Welcome”",
     ]);
     // Still selected as the canvas shows it.
     expect(session.history.entries()[1]?.selectionAfter.nodeId).toBe(
@@ -509,7 +509,7 @@ describe("EditPanelHost", () => {
       expect(spacing.hasAttribute("data-changed")).toBe(true);
 
       fireEvent.contextMenu(spacing);
-      await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
+      await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Default" }));
 
       expect(labels()).toEqual(["Changed Section space inside", "Reset Spacing on Section"]);
       expect(section()?.padding).toEqual(siteLibrary.components.Section?.defaults.padding);
@@ -541,7 +541,7 @@ describe("EditPanelHost", () => {
       await user.click(side("Space inside Top").getByRole("radio", { name: "S" }));
 
       fireEvent.contextMenu(screen.getByRole("button", { name: "Spacing" }));
-      await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
+      await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Default" }));
 
       expect(labels()).toEqual([
         "Changed Section space inside on Mobile",
@@ -1074,7 +1074,7 @@ describe("EditPanelHost", () => {
 
       expect(hero()?.image).toEqual({ mediaId: "shop", alt: "Fresh" });
       expect(labels()).toEqual([
-        "Added image 'shop.jpg'",
+        "Added image “shop.jpg”",
         "Changed Hero image",
         // Named by what changed (#1370).
         "Changed Hero alt text",

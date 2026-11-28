@@ -195,7 +195,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     await userEvent.click(within(rule("privacyPage")).getByRole("button", { name: /^Fix: / }));
 
     expect(added).toHaveBeenCalledWith(
-      expect.objectContaining({ label: "Added page 'Privacy'" }),
+      expect.objectContaining({ label: "Added page “Privacy”" }),
       "insert",
       true,
     );
@@ -230,7 +230,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     const about = session.history.document.getState().pages[ABOUT];
     expect([about?.folder, about?.slug]).toEqual(["aux-2/shop", "con-2"]);
     expect(session.history.entries().map((entry) => entry.label)).toEqual([
-      "Renamed the file of page 'About'",
+      "Renamed the file of page “About”",
     ]);
     recheck();
     expect(rule("deviceNames").dataset.status).toBe("pass");
@@ -338,7 +338,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
 
     const shown = session.history.document.getState().pages[session.ui.getState().pageId];
     expect(shown).toMatchObject({ title: "Privacy", settings: { privacy: true } });
-    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added page 'Privacy'"]);
+    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added page “Privacy”"]);
     expect(showPanel).toHaveBeenCalledWith("site");
   });
 

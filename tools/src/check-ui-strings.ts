@@ -393,6 +393,39 @@ export function checkCatalogue(folder: string, root: string): UiStringViolation[
   );
 }
 
+/**
+ * A name in straight or curly single quotation marks: a placeholder, such as `{name}`, in `'…'`,
+ * `"…"` or `‘…’`. Names take curly double ones, “{name}” (#1445).
+ */
+const NOT_CURLY_DOUBLE = /(['"‘’])\{[A-Za-z]+\}(['"‘’])/;
+
+/** Text a site's visitors read, in its own catalogues, with each language's own quotation marks. */
+const VISITOR_TEXT = "siteText.";
+
+/**
+ * Finds the messages in one file of the app's string catalogue that put a name in any quotation
+ * marks but curly double ones (#1445): “{name}”, as the glossary has it. Visitors' text is left
+ * alone. `file` is used for reporting only.
+ */
+export function findQuotedNames(source: string, file: string): UiStringViolation[] {
+  return messagesIn(source)
+    .filter(({ key, text }) => !key.startsWith(VISITOR_TEXT) && NOT_CURLY_DOUBLE.test(text))
+    .map(({ key, text, line }) => ({ file, line, where: key, text }));
+}
+
+/** Checks every file of the string catalogue under `folder` with {@link findQuotedNames}. */
+export function checkCatalogueQuotes(folder: string, root: string): UiStringViolation[] {
+  return readdirSync(folder, { withFileTypes: true, recursive: true })
+    .filter(
+      (entry) => entry.isFile() && entry.name.endsWith(".ts") && !entry.name.endsWith(".test.ts"),
+    )
+    .map((entry) => join(entry.parentPath, entry.name))
+    .toSorted()
+    .flatMap((path) =>
+      findQuotedNames(readFileSync(path, "utf8"), relative(root, path).replaceAll("\\", "/")),
+    );
+}
+
 /** Whether a file is checked: component sources, not their tests or stories. */
 export function isCheckedFile(path: string): boolean {
   return path.endsWith(".tsx") && !/\.(test|stories)\.tsx$/.test(path);
@@ -443,6 +476,17 @@ export function formatAppNameViolations(violations: readonly UiStringViolation[]
   ].join("\n");
 }
 
+export function formatQuotedNameViolations(violations: readonly UiStringViolation[]): string {
+  const lines = violations.map(
+    (violation) =>
+      `  ${violation.file}:${violation.line}  ${violation.where}: ${JSON.stringify(violation.text)}`,
+  );
+  return [
+    `Found ${violations.length} message(s) with a name in straight or single quotation marks. Write “{name}”, as research/product/01-terminology.md has it:`,
+    ...lines,
+  ].join("\n");
+}
+
 function main(): void {
   const args = process.argv.slice(2);
   const folders: string[] = [];
@@ -488,11 +532,18 @@ function main(): void {
     process.exitCode = 1;
     return;
   }
+  const quoted = catalogue === undefined ? [] : checkCatalogueQuotes(catalogue, process.cwd());
+  if (quoted.length > 0) {
+    console.error(formatQuotedNameViolations(quoted));
+    process.exitCode = 1;
+    return;
+  }
   console.log(`No hard-coded UI strings in ${folders.join(", ")}.`);
   const noTitles = [...new Set([...titled, ...titledProperties])];
   if (noTitles.length > 0) console.log(`No title attributes in ${noTitles.join(", ")}.`);
   if (catalogue !== undefined) {
     console.log(`No message in ${catalogue} spells out the app's name.`);
+    console.log(`Every name in ${catalogue} is in curly double quotation marks.`);
   }
 }
 

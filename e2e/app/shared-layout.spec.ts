@@ -74,7 +74,7 @@ test("starts the Footer from Full, adds to a column from the Add panel, on every
   await expect(
     columns.first().getByRole("navigation", { name: "Footer navigation" }),
   ).toBeVisible();
-  await expect(steps().first()).toHaveText("Started the Footer from 'Full'");
+  await expect(steps().first()).toHaveText("Started the Footer from “Full”");
 
   // A Heading dragged from the Add panel onto the lower half of the first column's title, into that
   // column after it.
@@ -174,7 +174,7 @@ test("says how far a change reaches, edits the Footer in the Edit panel, and hid
     .getByRole("button", { name: "Actions for My site" })
     .click();
   await page.getByRole("menuitem", { name: "Page Settings…" }).click();
-  const dialog = page.getByRole("dialog", { name: "Settings for 'My site'" });
+  const dialog = page.getByRole("dialog", { name: "Settings for “My site”" });
   await dialog.getByRole("checkbox", { name: "Hide the Footer on this page" }).check();
   await dialog.getByRole("button", { name: "Save" }).click();
 

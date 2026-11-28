@@ -117,7 +117,7 @@ describe("Theme Studio (2.3b, F-DS-7)", () => {
 
     expect(siteWide.confirmSiteWide).toHaveBeenCalledOnce();
     await vi.waitFor(() => expect(theme().preset).toBe("bistro"));
-    expect(labels()).toEqual(["Changed theme to 'Bistro'"]);
+    expect(labels()).toEqual(["Changed theme to “Bistro”"]);
   });
 
   it("sets a reversed section's colour on its own, with shades and warnings per palette", async () => {
@@ -217,7 +217,7 @@ describe("Theme Studio's My themes (2.23, PH2-17)", () => {
     await user.click(within(mine).getByRole("button", { name: /^Night/ }));
 
     await vi.waitFor(() => expect(theme().own?.name).toBe("Night"));
-    expect(labels()).toEqual(["Changed theme to 'Night'"]);
+    expect(labels()).toEqual(["Changed theme to “Night”"]);
   });
 
   it("creates a new theme from a built-in one, by name", async () => {
@@ -233,7 +233,7 @@ describe("Theme Studio's My themes (2.23, PH2-17)", () => {
 
     await vi.waitFor(() => expect(theme().own?.name).toBe("Shop"));
     expect(theme().preset).toBe("bistro");
-    expect(labels()).toEqual(["Created theme 'Shop'"]);
+    expect(labels()).toEqual(["Created theme “Shop”"]);
   });
 
   it("renames and deletes one of the person's own; the site keeps its copy", async () => {
@@ -241,16 +241,16 @@ describe("Theme Studio's My themes (2.23, PH2-17)", () => {
     await user.click(dialog().getByRole("button", { name: /^Night/ }));
     await vi.waitFor(() => expect(theme().own?.name).toBe("Night"));
 
-    await user.click(dialog().getByRole("button", { name: "Rename Night" }));
+    await user.click(dialog().getByRole("button", { name: "Rename Night…" }));
     const rename = within(await screen.findByRole("dialog", { name: "Rename Theme" }));
     const name = rename.getByRole("textbox", { name: "Theme name" });
     await user.clear(name);
     await user.type(name, "Late night");
     await user.click(rename.getByRole("button", { name: "Rename" }));
     await vi.waitFor(() => expect(theme().own?.name).toBe("Late night"));
-    expect(labels()).toEqual(["Changed theme to 'Night'", "Renamed theme to 'Late night'"]);
+    expect(labels()).toEqual(["Changed theme to “Night”", "Renamed theme to “Late night”"]);
 
-    await user.click(dialog().getByRole("button", { name: "Delete Late night" }));
+    await user.click(dialog().getByRole("button", { name: "Delete Late night…" }));
     const remove = within(await screen.findByRole("alertdialog"));
     expect(remove.getByText(/This site keeps its copy/)).toBeDefined();
     await user.click(remove.getByRole("button", { name: "Delete Theme" }));
@@ -324,6 +324,11 @@ describe("Theme Studio's Components (3.12, CT-1; M1)", () => {
     // No draft's bar, and nothing to compare: what shows is the theme.
     expect(dialog().queryByRole("button", { name: "Apply Changes" })).toBeNull();
     expect(dialog().queryByRole("radio", { name: "Theme now" })).toBeNull();
+    // The reset is in the bar, always there (#1517): unavailable while nothing is set, saying why.
+    const reset = () => dialog().getByRole("button", { name: "Reset Button to Default" });
+    expect(reset().getAttribute("aria-disabled")).toBe("true");
+    expect(reset().getAttribute("aria-describedby")).not.toBeNull();
+    expect(kinds().querySelector('option[value="Button"]')?.textContent).toBe("Button");
 
     await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
     await waitFor(() => expect(labels()).toEqual(["Changed the theme's look for Button"]));
@@ -343,10 +348,22 @@ describe("Theme Studio's Components (3.12, CT-1; M1)", () => {
     const said = { message: "Changed every Button on your site (2)", id: "theme-look:Button" };
     expect(notices).toEqual([said, said]);
 
-    // Reset is a step of its own at once: back to the theme's defaults.
-    await user.click(button().getByRole("button", { name: "Reset to Theme's Defaults" }));
+    // What's changed is marked (#1517): the kind in the list, in words, and each field set in
+    // the look, with the Edit panel's words for where its value comes from.
+    expect(kinds().querySelector('option[value="Button"]')?.textContent).toBe("Button (changed)");
+    const corners = button().getByRole("combobox", { name: "Corners" });
+    expect(corners.closest("[data-field]")?.querySelector("[data-changed-dot]")).not.toBeNull();
+    expect(corners.closest("[data-field]")?.textContent).toContain("Set here");
+    expect(reset().getAttribute("aria-disabled")).toBe("false");
+    const tokens = theme().buttons;
+
+    // Reset is a step of its own at once: back to the theme's defaults, the look alone.
+    await user.click(reset());
     await waitFor(() => expect(theme().looks).toBeUndefined());
     expect(labels().at(-1)).toBe("Reset the theme's look for Button");
+    expect(theme().buttons).toEqual(tokens);
+    expect(kinds().querySelector('option[value="Button"]')?.textContent).toBe("Button");
+    expect(reset().getAttribute("aria-disabled")).toBe("true");
   });
 
   it("previews the run of changes in the field in use, and writes it as the field is left", async () => {
@@ -446,7 +463,7 @@ describe("Theme Studio's Components (3.12, CT-1; M1)", () => {
   it("offers your colours in a look's colour fields, but no one-off (TC-1b, ADR 0009)", async () => {
     const { session, button, theme, user } = onButton();
     act(() =>
-      session.edit("root", "Added colour 'Harbour blue'", (draft) => {
+      session.edit("root", "Added colour “Harbour blue”", (draft) => {
         draft.theme.ownColors = [
           { id: "csky", name: "Harbour blue", color: { l: 0.62, c: 0.14, h: 240 } },
         ];

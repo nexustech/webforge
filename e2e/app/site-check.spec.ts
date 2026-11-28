@@ -146,7 +146,7 @@ test("says what a Fix did, and undoes it from there (#1164)", async () => {
     .getByRole("button", { name: /^Fix: / })
     .click();
 
-  const toast = page.locator("[data-sonner-toast]").filter({ hasText: "Added page 'Privacy'" });
+  const toast = page.locator("[data-sonner-toast]").filter({ hasText: "Added page “Privacy”" });
   await expect(toast).toBeVisible();
   const privacy = page
     .getByRole("list", { name: "Pages" })
@@ -188,7 +188,7 @@ test("opens Page Settings on a page without a description, in Being found (3.17)
     .first()
     .click();
 
-  const settings = page.getByRole("dialog", { name: /^Settings for '/ });
+  const settings = page.getByRole("dialog", { name: /^Settings for “/ });
   await expect(settings).toBeVisible();
   // On Search engines, where the description is (#1443).
   await expect(settings.getByRole("tab", { name: "Search engines" })).toHaveAttribute(

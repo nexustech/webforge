@@ -111,7 +111,7 @@ describe("Find and Replace, as the area registers it", () => {
     fireEvent.click(screen.getByRole("button", { name: "Heading · Text: Ask Smith" }));
     expect(session.ui.getState().nodeId).toBe("again");
 
-    fireEvent.click(screen.getByRole("button", { name: "Replace in 'Smith & Sons' on Home" }));
+    fireEvent.click(screen.getByRole("button", { name: "Replace in “Smith & Sons” on Home" }));
     const content = session.history.document.getState().pages[home]?.doc.content;
     expect(content?.map((node) => node.props.text)).toEqual(["Smyth & Sons", "Ask Smith"]);
   });
@@ -130,7 +130,7 @@ describe("Find and Replace, as the area registers it", () => {
     const content = session.history.document.getState().pages[home]?.doc.content;
     expect(content?.map((node) => node.props.text)).toEqual(["Smyth & Sons", "Ask Smyth"]);
     expect(session.history.entries().map((entry) => entry.label)).toEqual([
-      "Replaced 'Smith' with 'Smyth' in 1 place",
+      "Replaced “Smith” with “Smyth” in 1 place",
     ]);
     expect(screen.getByRole("status").textContent).toBe("Nothing found.");
   });

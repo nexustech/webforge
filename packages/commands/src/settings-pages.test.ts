@@ -590,9 +590,9 @@ describe("the page tools (4.11, AIB-3)", () => {
 
     const result = await api.run("removePage", { pageId: about }, app);
 
-    expect(result).toMatchObject({ status: "done", label: "AI (Claude): Deleted page 'About'" });
+    expect(result).toMatchObject({ status: "done", label: "AI (Claude): Deleted page “About”" });
     expect(confirm.mock.calls[0]?.[0]).toEqual({
-      action: "Allow Claude to Delete the Page About?",
+      action: "Allow Claude to Delete the Page “About”?",
       description: "This removes the page and its content.",
       confirm: "Allow",
       // About itself, and the home page, whose link to it breaks.
@@ -632,7 +632,7 @@ describe("the page tools (4.11, AIB-3)", () => {
 
     expect(await api.run("renamePage", { pageId: about, title: "About us" }, app)).toMatchObject({
       status: "done",
-      label: "AI (Claude): Renamed page 'About us'",
+      label: "AI (Claude): Renamed page “About us”",
     });
     await api.run("renamePage", { pageId: prices, title: "Price list" }, app);
 
@@ -733,7 +733,7 @@ describe("the page tools (4.11, AIB-3)", () => {
 
     expect(
       await api.run("movePage", { pageId: "page-contact", direction: "up", steps: 2 }, app),
-    ).toMatchObject({ status: "done", label: "AI (Claude): Moved page 'Contact'" });
+    ).toMatchObject({ status: "done", label: "AI (Claude): Moved page “Contact”" });
     // Each step swaps it with the page above it then, as the Pages panel's arrow does.
     expect(titles(history)).toEqual(["Home", "Not found", "Contact", "About", "Prices"]);
     history.undo();

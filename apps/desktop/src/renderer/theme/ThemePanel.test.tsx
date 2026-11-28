@@ -91,7 +91,7 @@ describe("the Theme tab (2.3a)", () => {
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "Theme" }), "atelier");
 
     expect(siteWide.confirmSiteWide).toHaveBeenCalledOnce();
-    await vi.waitFor(() => expect(labels(session)).toEqual(["Changed theme to 'Atelier'"]));
+    await vi.waitFor(() => expect(labels(session)).toEqual(["Changed theme to “Atelier”"]));
     expect(await screen.findByRole("heading", { name: "Theme: Atelier" })).toBeTruthy();
   });
 
