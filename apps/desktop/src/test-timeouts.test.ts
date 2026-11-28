@@ -1,5 +1,8 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { sourcesMatching } from "@webforge/test-utils/sources";
 import { describe, expect, it } from "vitest";
 
 // This package's tests already have a timeout scaled to the run's load (`vitest.config.ts`, ADR
@@ -88,6 +91,21 @@ function unscaledTimeouts(source: string): string[] {
   return found;
 }
 
+/**
+ * Whether `source` has a call whose last argument is a number or a constant's name, which an
+ * unscaled timeout is: a quick look that spares {@link unscaledTimeouts}' parse of the many test
+ * files with none, which ran past the test's time limit in a loaded run (#1569).
+ */
+const mayHaveTimeout = (source: string) => /,\s*(?:[\d_]+|[A-Z][A-Z0-9_]*)\s*,?\s*\)/.test(source);
+
+/**
+ * A line that could hold such a call's last argument, for `git grep -E`, which reads one line at a
+ * time: a number or a constant's name after a comma, or alone at the start of a line as Biome
+ * writes a long call, then a comma, a bracket or the line's end.
+ */
+const TIMEOUT_LINE =
+  "(,[[:space:]]*|^[[:space:]]*)([0-9][0-9_]*|[A-Z][A-Z0-9_]*)[[:space:]]*,?[[:space:]]*(\\)|$)";
+
 describe("this package's test timeouts (ADR 0014, #1093)", () => {
   it("finds a test's, group's or hook's own timeout given as a number, written or named", () => {
     expect(
@@ -115,14 +133,43 @@ afterEach(() => {});`),
     ]);
   });
 
-  it("are always scaled to the run's load", () => {
-    const root = import.meta.dirname;
-    const offending = readdirSync(root, { recursive: true, encoding: "utf8" })
-      // Not this file, whose own example sets numbers.
-      .filter((file) => /\.test\.tsx?$/.test(file) && !file.endsWith("test-timeouts.test.ts"))
-      .flatMap((file) =>
-        unscaledTimeouts(readFileSync(join(root, file), "utf8")).map((each) => `${file} ${each}`),
+  it("parses only a file that has a call ending in a number or a constant", () => {
+    const calls = [
+      'it("b", () => {}, 60_000);',
+      "}, SLOW);",
+      "beforeAll(async () => {}, 30_000);",
+      // As Biome writes a long call: one argument a line, and a comma after the last.
+      'it(\n  "a long name",\n  async () => {},\n  60_000,\n);',
+    ];
+    for (const call of calls) expect(mayHaveTimeout(call), call).toBe(true);
+    expect(mayHaveTimeout('it("e", () => {});\nsetTimeout(done, delay);')).toBe(false);
+
+    // git's search, a line at a time, finds a file with each of them, and not one with none.
+    const root = mkdtempSync(join(tmpdir(), "webforge-timeouts-"));
+    try {
+      execFileSync("git", ["init", "-q"], { cwd: root });
+      for (const [at, call] of calls.entries()) {
+        writeFileSync(join(root, `${at}.test.ts`), `${call}\n`);
+      }
+      writeFileSync(join(root, "none.test.ts"), 'it("e", () => {});\nexpect(x).toBe(3);\n');
+      expect(sourcesMatching(root, TIMEOUT_LINE, ["*.test.ts"]).map((file) => file.path)).toEqual(
+        calls.map((_, at) => `${at}.test.ts`),
       );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("are always scaled to the run's load", () => {
+    // Only the test files with a line that could end such a call, found by git in one search
+    // (#1569), then parsed where a whole call could.
+    const offending = sourcesMatching(import.meta.dirname, TIMEOUT_LINE, [
+      "*.test.ts",
+      "*.test.tsx",
+    ])
+      // Not this file, whose own example sets numbers.
+      .filter((file) => !file.path.endsWith("test-timeouts.test.ts") && mayHaveTimeout(file.text))
+      .flatMap((file) => unscaledTimeouts(file.text).map((each) => `${file.path} ${each}`));
     expect(offending).toEqual([]);
   });
 });
