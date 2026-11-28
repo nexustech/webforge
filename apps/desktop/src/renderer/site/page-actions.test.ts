@@ -30,7 +30,7 @@ function setUp() {
   const site = () => session.history.document.getState();
   const home = site().homePageId;
   const notFound = site().pageOrder.find((id) => site().pages[id]?.kind === "not-found");
-  if (notFound === undefined) throw new Error("no 'Page not found' page");
+  if (notFound === undefined) throw new Error("no “Page not found” page");
   const add = (name: string) => {
     const id = addPage(session, name);
     if (id === null) throw new Error("not added");
@@ -76,7 +76,7 @@ describe("pagesChangedByDeleting (D7)", () => {
 });
 
 describe("page actions (F-ED-13)", () => {
-  it("adds a page before 'Page not found', shows it and adds it to the menu", () => {
+  it("adds a page before “Page not found”, shows it and adds it to the menu", () => {
     const { session, site, add, labels, titles, shown } = setUp();
 
     const id = add("  About us ");
@@ -85,7 +85,7 @@ describe("page actions (F-ED-13)", () => {
     expect(site().pages[id]).toMatchObject({ kind: "page", slug: "about-us", title: "About us" });
     expect(shown()).toBe(id);
     expect(menuTitles(site())).toEqual(["My site", "About us"]);
-    expect(labels()).toEqual(["Added page 'About us'"]);
+    expect(labels()).toEqual(["Added page “About us”"]);
 
     session.history.undo();
     expect(site().pages[id]).toBeUndefined();
@@ -110,7 +110,7 @@ describe("page actions (F-ED-13)", () => {
     });
     expect(siteDocSchema.parse(site())).toEqual(site());
     expect(shown()).toBe(id);
-    expect(labels()).toEqual(["Added page 'Areas we cover'"]);
+    expect(labels()).toEqual(["Added page “Areas we cover”"]);
     session.history.undo();
     expect(site().pages[id as PageId]).toBeUndefined();
     expect(addSuggestedPage(session, "no-such-recipe")).toBeNull();
@@ -139,7 +139,7 @@ describe("page actions (F-ED-13)", () => {
     renamePage(session, about, " ");
 
     expect(site().pages[about]).toMatchObject({ title: "Team", slug: "team-2" });
-    expect(labels().at(-1)).toBe("Renamed page 'Team'");
+    expect(labels().at(-1)).toBe("Renamed page “Team”");
     expect(labels()).toHaveLength(3);
   });
 
@@ -153,7 +153,7 @@ describe("page actions (F-ED-13)", () => {
     expect(site().pages[copy as PageId]).toMatchObject({ kind: "page", slug: "my-site-copy" });
     expect(site().pages[copy as PageId]?.doc).toEqual(site().pages[home]?.doc);
     expect(shown()).toBe(copy);
-    expect(labels()).toEqual(["Duplicated page 'My site'"]);
+    expect(labels()).toEqual(["Duplicated page “My site”"]);
     expect(duplicatePage(session, notFound)).toBeNull();
   });
 
@@ -167,7 +167,7 @@ describe("page actions (F-ED-13)", () => {
 
     movePage(session, about, -1);
     expect(titles()).toEqual(["About", "My site", "Team", "Contact", "Page not found"]);
-    expect(labels().at(-1)).toBe("Moved page 'About'");
+    expect(labels().at(-1)).toBe("Moved page “About”");
     movePage(session, team, 1);
     expect(titles()).toEqual(["About", "My site", "Contact", "Team", "Page not found"]);
     const count = labels().length;
@@ -208,7 +208,7 @@ describe("page actions (F-ED-13)", () => {
 
     expect(site().homePageId).toBe(about);
     expect(site().pages[about]?.folder).toBeUndefined();
-    expect(labels().at(-1)).toBe("Set 'About' as Home page");
+    expect(labels().at(-1)).toBe("Set “About” as Home page");
     expect(canDelete(site(), site().pages[home] as never)).toBe(true);
     setHomePage(session, notFound);
     expect(site().homePageId).toBe(about);
@@ -256,7 +256,7 @@ describe("page actions (F-ED-13)", () => {
     expect(siteDocSchema.safeParse(site()).success).toBe(true);
   });
 
-  it("hides a page from navigation and shows it again, never 'Page not found'", () => {
+  it("hides a page from navigation and shows it again, never “Page not found”", () => {
     const { session, site, add, notFound, labels } = setUp();
     const about = add("About");
 
@@ -266,11 +266,11 @@ describe("page actions (F-ED-13)", () => {
     setHiddenFromNavigation(session, about, false);
     setHiddenFromNavigation(session, notFound, false);
 
-    expect(labels().slice(1)).toEqual(["Hid 'About' in the menu", "Showed 'About' in the menu"]);
+    expect(labels().slice(1)).toEqual(["Hid “About” in the menu", "Showed “About” in the menu"]);
     expect(site().pages[notFound]?.settings.hideFromNavigation).toBe(true);
   });
 
-  it("makes a page a draft and takes it out of drafts, one step each, never Home or 'Page not found' (G37)", () => {
+  it("makes a page a draft and takes it out of drafts, one step each, never Home or “Page not found” (G37)", () => {
     const { session, site, home, add, notFound, labels } = setUp();
     const about = add("About");
 
@@ -284,7 +284,7 @@ describe("page actions (F-ED-13)", () => {
     expect(site().pages[about]?.settings).not.toHaveProperty("draft");
     expect(site().pages[home]?.settings).not.toHaveProperty("draft");
     expect(site().pages[notFound]?.settings).not.toHaveProperty("draft");
-    expect(labels().slice(1)).toEqual(["Made 'About' a draft", "Took 'About' out of drafts"]);
+    expect(labels().slice(1)).toEqual(["Made “About” a draft", "Took “About” out of drafts"]);
     session.history.undo();
     expect(site().pages[about]?.settings.draft).toBe(true);
   });
@@ -310,7 +310,7 @@ describe("page actions (F-ED-13)", () => {
     expect(site().pageOrder).not.toContain(about);
     expect(menuTitles(site())).toEqual(["My site"]);
     expect(shown()).toBe(home);
-    expect(labels().at(-1)).toBe("Deleted page 'About'");
+    expect(labels().at(-1)).toBe("Deleted page “About”");
 
     session.history.undo();
     expect(site().pages[about]?.title).toBe("About");
@@ -327,7 +327,7 @@ describe("page actions (F-ED-13)", () => {
     expect(shown()).toBe(team);
   });
 
-  it("can't delete the Home page or 'Page not found' (F-ED-20)", () => {
+  it("can't delete the Home page or “Page not found” (F-ED-20)", () => {
     const { session, site, home, notFound } = setUp();
 
     deletePage(session, home);
@@ -439,7 +439,7 @@ describe("Page Settings (F-SET-2)", () => {
     expect(site().pages[about]?.settings).not.toHaveProperty("hideBackToTop");
   });
 
-  it("hides a page from search engines, storing nothing when shown, never 'Page not found' (3.15)", () => {
+  it("hides a page from search engines, storing nothing when shown, never “Page not found” (3.15)", () => {
     const { session, site, add, labels } = setUp();
     const about = add("About");
 
@@ -452,7 +452,7 @@ describe("Page Settings (F-SET-2)", () => {
 
     // "Page not found" is always kept out of search engines: nothing to store.
     const lost = Object.values(site().pages).find((page) => page.kind === "not-found");
-    if (lost === undefined) throw new Error("no 'Page not found'");
+    if (lost === undefined) throw new Error("no “Page not found”");
     changePageSettings(session, lost.id, settingsOf(site(), lost.id, { hideFromSearch: true }));
     expect(site().pages[lost.id]?.settings).not.toHaveProperty("hideFromSearch");
   });
@@ -516,7 +516,7 @@ describe("Page Settings (F-SET-2)", () => {
     expect(site().pages[about]?.settings).not.toHaveProperty("shareImage");
   });
 
-  it("keeps 'Page not found' out of navigation", () => {
+  it("keeps “Page not found” out of navigation", () => {
     const { session, site, notFound } = setUp();
 
     changePageSettings(

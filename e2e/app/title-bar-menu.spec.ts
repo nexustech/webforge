@@ -224,7 +224,7 @@ test("lists Edit in its groups, and the site's settings, theme and stylesheet un
   await expect(shared.getByRole("menuitem")).toHaveText([
     /^Save as Shared Section…/,
     /^Rename…/,
-    /^Delete…/,
+    /^Delete(?!…)/,
     /^Detach/,
     /^Paste as Linked Copy/,
   ]);

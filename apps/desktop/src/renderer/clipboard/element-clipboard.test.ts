@@ -509,7 +509,7 @@ describe("copy and paste (1.25)", () => {
 
       expect(content(session).at(-1)?.props.image).toEqual({ mediaId: photo.id });
       expect(site(session).media[photo.id]).toMatchObject({ fileName: "shop.jpg" });
-      expect(labels(session).at(-1)).toBe("Pasted image 'shop.jpg'");
+      expect(labels(session).at(-1)).toBe("Pasted image “shop.jpg”");
       session.history.undo();
       expect(content(session).at(-1)?.props).not.toHaveProperty("image");
       expect(site(session).media).toEqual({});
@@ -555,7 +555,7 @@ describe("copy and paste (1.25)", () => {
       expect(placed?.props.image).toEqual({ mediaId: photo.id });
       expect(site(session).media[photo.id]).toMatchObject({ fileName: "shop.jpg" });
       expect(session.ui.getState().nodeId).toBe(placed?.props.id);
-      expect(labels(session).at(-1)).toBe("Pasted image 'shop.jpg'");
+      expect(labels(session).at(-1)).toBe("Pasted image “shop.jpg”");
       expect(notify).not.toHaveBeenCalled();
 
       session.history.undo();
@@ -592,7 +592,7 @@ describe("copy and paste (1.25)", () => {
       expect(site(session).media[prices.id]).toBeDefined();
       expect(notify.mock.calls.map(([message]) => message)).toEqual([
         "notes.txt isn't an image or document Media takes, so it wasn't added.",
-        "Added 'prices.pdf' to Media",
+        "Added “prices.pdf” to Media",
       ]);
       // Nothing Media takes: nothing pasted.
       expect(
@@ -760,7 +760,7 @@ describe("copy and paste (1.25)", () => {
       expect(session.history.document.getState().layout.header.at(-1)?.props.image).toEqual({
         mediaId: photo.id,
       });
-      expect(labels(session).at(-1)).toBe("Pasted image 'shop.jpg' into shared Banner");
+      expect(labels(session).at(-1)).toBe("Pasted image “shop.jpg” into shared Banner");
     });
 
     it("never takes a Header or Footer the page hides", async () => {
@@ -871,7 +871,7 @@ describe("pasting into the Footer's columns (#1335, 5.39)", () => {
     await copySelected(session, clipboard, vi.fn());
     // Pasted into the Footer on another page: Home shows the Footer, with its "contact" too.
     const about = newId("page");
-    session.edit("insert", "Added page 'About'", (draft) => insertPage(draft, about, "About"));
+    session.edit("insert", "Added page “About”", (draft) => insertPage(draft, about, "About"));
     session.showPage(about);
     select(session, "t");
     expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
@@ -949,7 +949,7 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
       props: { sharedSectionId: shared.id, anchorSuffix: "2" },
     });
     expect(session.ui.getState().nodeId).toBe(copiedNodeId(second?.props.id ?? "", "section-1"));
-    expect(labels(session).at(-1)).toBe("Added a copy of 'Hours'");
+    expect(labels(session).at(-1)).toBe("Added a copy of “Hours”");
   });
 
   it("pastes a copied linked copy as a section of the page's own with Paste (Mod+V, F-ED-23)", async () => {
@@ -1027,7 +1027,7 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
     expect((now?.props.content as NodeDoc[] | undefined)?.map((node) => node.props.id)).toEqual([
       "text-1",
     ]);
-    expect(labels(session).at(-1)).toBe("Edited shared section 'Hours'");
+    expect(labels(session).at(-1)).toBe("Edited shared section “Hours”");
     expect(session.ui.getState().nodeId).toBeNull();
   });
 
@@ -1060,7 +1060,7 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
     expect(heroOf()?.props.image).toEqual({ mediaId: photo.id });
     expect(content(session)).toEqual([copy]);
     expect(session.history.document.getState().media[photo.id]).toMatchObject(photo);
-    expect(labels(session).at(-1)).toBe("Edited shared section 'Hours'");
+    expect(labels(session).at(-1)).toBe("Edited shared section “Hours”");
     session.history.undo();
     expect(heroOf()?.props).not.toHaveProperty("image");
     expect(session.history.document.getState().media).toEqual({});
@@ -1089,7 +1089,7 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
 
     expect(content(session)).toEqual([]);
     expect(session.history.document.getState().sharedSections[shared.id]).toBe(shared);
-    expect(labels(session).at(-1)).toBe("Cut 'Hours'");
+    expect(labels(session).at(-1)).toBe("Cut “Hours”");
   });
 
   it("pastes next to a selected copy, and keeps clear of its anchors", async () => {

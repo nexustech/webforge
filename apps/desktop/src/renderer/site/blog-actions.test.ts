@@ -149,7 +149,7 @@ describe("addPost (6.10a)", () => {
     });
     expect(site().pages[second ?? ("" as PageId)]?.slug).toBe("new-post-2");
     expect(shown()).toBe(second);
-    expect(labels()).toEqual(["Added a blog", "Added post 'New post'", "Added post 'New post'"]);
+    expect(labels()).toEqual(["Added a blog", "Added post “New post”", "Added post “New post”"]);
     expect(addPost(session, "none" as CollectionId)).toBeNull();
     expect(addPost(session, blogId(), "  ")).toBeNull();
   });
@@ -187,7 +187,7 @@ describe("renameBlog (#937)", () => {
     expect(site().collections[blogId()]).toMatchObject({ name: "News", folder: "blog" });
     expect(site().pages[postId]?.folder).toBe("blog");
     expect(site().settings.search.keptAddresses).toBeUndefined();
-    expect(labels().at(-1)).toBe("Renamed blog 'News'");
+    expect(labels().at(-1)).toBe("Renamed blog “News”");
     // The same name, or none, changes nothing.
     renameBlog(session, blogId(), "News", false, true);
     renameBlog(session, blogId(), "   ", true, true);
@@ -204,7 +204,7 @@ describe("renameBlog (#937)", () => {
     expect(renameMovesBlog(before, blogId(), "Blog")).toBe(false);
     renameBlog(session, blogId(), "News", true, true);
 
-    expect(labels().at(-1)).toBe("Renamed blog 'News'");
+    expect(labels().at(-1)).toBe("Renamed blog “News”");
     // Its own pages' old addresses are kept by the folder it was in (#942).
     expect(site().collections[blogId()]).toMatchObject({
       name: "News",
@@ -305,7 +305,7 @@ describe("deleteBlog (#937)", () => {
     deleteBlog(session, id);
 
     expect(site().collections).toEqual({});
-    expect(labels().at(-1)).toBe("Deleted blog 'Blog'");
+    expect(labels().at(-1)).toBe("Deleted blog “Blog”");
     expect(savedAndOpened(before, site()).collections).toEqual({});
     session.history.undo();
     expect(site().collections[id]?.name).toBe("Blog");
@@ -404,7 +404,7 @@ describe("editing a post's design on the canvas (6.10a)", () => {
     const [section] = blog?.design.before ?? [];
     const elements = (section?.props.content ?? []) as { props: Record<string, unknown> }[];
     expect(elements[0]?.props.size).toBe("medium");
-    expect(labels().at(-1)).toBe("Edited the design of 'Blog'");
+    expect(labels().at(-1)).toBe("Edited the design of “Blog”");
     // The other post draws the same design.
     expect(canvasLayout(site(), other ?? postId).header.at(-1)).toBe(section);
   });
@@ -460,7 +460,7 @@ describe("removing from a post's design or Header (6.10a, D7)", () => {
 
     expect(confirmSiteWide).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: "Delete Button from the Design of 'Blog'?",
+        action: "Delete Button from the Design of “Blog”?",
         description: "Every post shows the change.",
         affectedPages: 1,
       }),
@@ -512,7 +512,7 @@ describe("the Blog in the menu, renamed or deleted (#940, #943 review)", () => {
       renameBlog(session, blogId(), "News", false, false);
 
       expect(listItems().map((item) => item.kind === "link" && item.label)).toEqual(["News"]);
-      expect(labels().at(-1)).toBe("Renamed blog 'News'");
+      expect(labels().at(-1)).toBe("Renamed blog “News”");
       session.history.undo();
       expect(listItems().map((item) => item.kind === "link" && item.label)).toEqual(["Blog"]);
     }

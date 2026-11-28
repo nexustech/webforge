@@ -117,6 +117,7 @@ describe("versionHistoryArea (4.6)", () => {
     const answer = siteWide.confirmSiteWide({
       action: "Delete page 'About'?",
       confirm: "Delete Page",
+      destructive: false,
       affectedPages: 3,
     });
     siteWide.answer(true);
@@ -158,6 +159,7 @@ describe("versionHistoryArea (4.6)", () => {
     const answer = siteWide.confirmSiteWide({
       action: "Delete page 'About'?",
       confirm: "Delete Page",
+      destructive: false,
       affectedPages: 3,
     });
     siteWide.answer(true);

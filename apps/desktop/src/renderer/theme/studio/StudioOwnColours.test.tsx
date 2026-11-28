@@ -50,7 +50,7 @@ describe("Theme Studio's list of your colours (TC-1b, #1218)", () => {
     expect(props.onDelete).toHaveBeenCalledWith("csea", { kind: "oneOff" });
 
     await user.click(screen.getByRole("button", { name: "Delete Sky" }));
-    const ask = within(await screen.findByRole("alertdialog", { name: "Delete 'Sky'?" }));
+    const ask = within(await screen.findByRole("alertdialog", { name: "Delete “Sky”?" }));
     expect(ask.getByText(/used 3 times/)).toBeDefined();
     await user.click(ask.getByRole("button", { name: "Use That Colour" }));
     expect(props.onDelete).toHaveBeenLastCalledWith("csky", { kind: "replace", to: "csea" });
@@ -59,7 +59,7 @@ describe("Theme Studio's list of your colours (TC-1b, #1218)", () => {
   it("keeps each use as a one-off when asked, and offers only that with no other colour", async () => {
     const { props, user } = shown([SKY], () => 1);
     await user.click(screen.getByRole("button", { name: "Delete Sky" }));
-    const ask = within(await screen.findByRole("alertdialog", { name: "Delete 'Sky'?" }));
+    const ask = within(await screen.findByRole("alertdialog", { name: "Delete “Sky”?" }));
     expect(ask.queryByRole("button", { name: "Use That Colour" })).toBeNull();
     await user.click(ask.getByRole("button", { name: "Keep Each as It Looks" }));
     expect(props.onDelete).toHaveBeenCalledWith("csky", { kind: "oneOff" });

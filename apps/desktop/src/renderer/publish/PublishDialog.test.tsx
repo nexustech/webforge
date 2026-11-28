@@ -184,7 +184,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     // Netlify only where it's offered, Help only where it can open.
     expect(screen.queryByRole("button", { name: "Netlify" })).toBeNull();
     expect(screen.queryByRole("button", { name: "I don't have a host yet" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Add Destination" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Add Destination/ })).toBeNull();
     // Close, and the corner's ×.
     expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(2);
   });
@@ -214,7 +214,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
       expect(notify).toHaveBeenCalledOnce();
       // A site with destinations isn't asked for its first one behind the error.
       expect(screen.queryByRole("heading", { name: "Where is your website hosted?" })).toBeNull();
-      expect(screen.queryByRole("button", { name: "Add Destination" })).toBeNull();
+      expect(screen.queryByRole("button", { name: /^Add Destination/ })).toBeNull();
       cleanup();
     }
   });
@@ -270,7 +270,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
       undefined,
       "https://www.rosasbakery.co.uk",
     );
-    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    await user.click(await screen.findByRole("button", { name: "Add Destination…" }));
     const added = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     // Folded under More Options (#1172).
     await user.click(added.getByRole("button", { name: "More Options" }));
@@ -280,7 +280,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     // Nothing changed: Back goes at once.
     await user.click(added.getByRole("button", { name: "Back" }));
 
-    await user.click(await screen.findByRole("button", { name: "Edit Old host" }));
+    await user.click(await screen.findByRole("button", { name: "Edit Old host…" }));
     const edited = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     await user.click(edited.getByRole("button", { name: "More Options" }));
     // It has none of its own: the site's isn't put in its place.
@@ -293,7 +293,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     const { user, publish } = setUp([
       { destination: live, signIn: "saved", trust: { hostKey: HOST_KEY } },
     ]);
-    await user.click(await screen.findByRole("button", { name: "Edit Live" }));
+    await user.click(await screen.findByRole("button", { name: "Edit Live…" }));
 
     const form = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     await user.click(form.getByRole("button", { name: "More Options" }));
@@ -328,9 +328,9 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
 
   it("removes a destination once the person confirms", async () => {
     const { user, publish } = setUp([{ destination: old, signIn: "saved", trust: {} }]);
-    await user.click(await screen.findByRole("button", { name: "Remove Old host" }));
+    await user.click(await screen.findByRole("button", { name: "Remove Old host…" }));
 
-    const question = within(await screen.findByRole("alertdialog", { name: "Remove 'Old host'?" }));
+    const question = within(await screen.findByRole("alertdialog", { name: "Remove “Old host”?" }));
     await user.click(question.getByRole("button", { name: "Remove" }));
 
     await waitFor(() => expect(publish.removeDestination).toHaveBeenCalledWith(SESSION, old.id));
@@ -397,7 +397,7 @@ describe("a destination's form as a step of Publish (#1456)", () => {
 
   it("draws the form in Publish's place, one dialog named by the form, with Back and no Cancel", async () => {
     const { user } = setUpClosable();
-    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    await user.click(await screen.findByRole("button", { name: "Add Destination…" }));
 
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     const form = within(screen.getByRole("dialog", { name: "Publish to Your Web Host" }));
@@ -409,7 +409,7 @@ describe("a destination's form as a step of Publish (#1456)", () => {
 
   it("goes back to the list with Back, asking first with a change, Publish still open", async () => {
     const { user, onClose } = setUpClosable();
-    const add = await screen.findByRole("button", { name: "Add Destination" });
+    const add = await screen.findByRole("button", { name: "Add Destination…" });
     await user.click(add);
     await user.type(screen.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
 
@@ -425,7 +425,7 @@ describe("a destination's form as a step of Publish (#1456)", () => {
     expect(onClose).not.toHaveBeenCalled();
     // The focus is back on what opened the form; Esc on the list closes Publish without asking.
     await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Add Destination" })),
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Add Destination…" })),
     );
     await user.keyboard("{Escape}");
     expect(question()).toBeNull();
@@ -434,18 +434,18 @@ describe("a destination's form as a step of Publish (#1456)", () => {
 
   it("puts the focus back on the row's Edit after Back", async () => {
     const { user } = setUpClosable();
-    await user.click(await screen.findByRole("button", { name: "Edit Old host" }));
+    await user.click(await screen.findByRole("button", { name: "Edit Old host…" }));
 
     await user.click(screen.getByRole("button", { name: "Back" }));
 
     await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Edit Old host" })),
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Edit Old host…" })),
     );
   });
 
   it("asks before Esc closes Publish from the form, and opens on the list again", async () => {
     const { user, onClose } = setUpClosable();
-    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    await user.click(await screen.findByRole("button", { name: "Add Destination…" }));
     await user.type(screen.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
 
     await user.keyboard("{Escape}");
@@ -469,7 +469,7 @@ describe("a destination's form as a step of Publish (#1456)", () => {
     // The cards give way to the list read again, and the focus waits for its row.
     await waitFor(() =>
       expect(document.activeElement).toBe(
-        screen.getByRole("button", { name: "Edit ftp.rosasbakery.co.uk" }),
+        screen.getByRole("button", { name: "Edit ftp.rosasbakery.co.uk…" }),
       ),
     );
   });
@@ -487,7 +487,7 @@ describe("a destination's form as a step of Publish (#1456)", () => {
     };
     const { rerender } = render(<PublishDialog open {...props} />);
     const user = userEvent.setup({ delay: null });
-    await user.click(await screen.findByRole("button", { name: "Edit Old host" }));
+    await user.click(await screen.findByRole("button", { name: "Edit Old host…" }));
     await user.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalledOnce();
     rerender(<PublishDialog open={false} {...props} />);
@@ -631,6 +631,7 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
 
   it("adds another from Add Destination's menu, by the same plain names (#1014)", async () => {
     const { user } = setUpNetlify([{ destination: old, signIn: "saved", trust: {} }]);
+    // It opens a menu, not a dialog: no "…" (#1445).
     await user.click(await screen.findByRole("button", { name: "Add Destination" }));
     expect(screen.getByRole("menuitem", { name: "Netlify…" })).toBeTruthy();
     await user.click(screen.getByRole("menuitem", { name: "Web Host with a Control Panel…" }));

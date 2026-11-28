@@ -200,7 +200,7 @@ test("pastes a copied image into the selected Hero, as one step with its Media i
 
   await page.getByRole("tab", { name: "Undo History" }).click();
   await expect(page.locator(".undo-history__step").first()).toHaveText(
-    "Pasted image 'Pasted image.png'",
+    "Pasted image “Pasted image.png”",
   );
   await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved", {
     timeout: 10_000,

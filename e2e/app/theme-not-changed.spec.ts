@@ -54,7 +54,7 @@ async function addFeatures() {
   return { features, background };
 }
 
-test("a theme cancelled at its question with Escape says 'Not changed' and goes back (#614)", async () => {
+test("a theme cancelled at its question with Escape says “Not changed” and goes back (#614)", async () => {
   const { background } = await addFeatures();
   const before = await background();
 
@@ -64,7 +64,7 @@ test("a theme cancelled at its question with Escape says 'Not changed' and goes 
     .getByRole("button", { name: /^Bistro/ })
     .first()
     .click();
-  const question = page.getByRole("alertdialog", { name: "Switch to the theme 'Bistro'?" });
+  const question = page.getByRole("alertdialog", { name: "Switch to the theme “Bistro”?" });
   await expect(question).toBeVisible();
 
   // It opens with Cancel focused (the owner's decision). Meant for Theme Studio, the Escape

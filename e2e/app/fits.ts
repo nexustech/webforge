@@ -73,9 +73,12 @@ async function scrollAreasUnder(target: Locator): Promise<string[]> {
  * - 3: nothing in it scrolls sideways;
  * - 4: when something inside it scrolls, it doesn't scroll itself as well;
  * - 5: its top stays put through a change of state ({@link movedFaults});
- * - 6: the title bar fits ({@link titleBarFaults}).
+ * - 6: the title bar fits ({@link titleBarFaults});
+ * - 7: the keyboard can leave either end of a dialog: Shift+Tab from its first control, and Tab
+ *   from its last, move the focus to another inside it, never back to the same (#1650, WCAG
+ *   2.1.2).
  */
-export type FitRule = 2 | 3 | 4 | 5 | 6;
+export type FitRule = 2 | 3 | 4 | 5 | 6 | 7;
 
 /** A rule broken, with what was measured, so a failure says what it saw (anti-pattern 20). */
 export type FitFault = {

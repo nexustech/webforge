@@ -276,7 +276,7 @@ describe("PagesPanel (F-ED-13)", () => {
 
     await openMenu("Team");
     await userEvent.click(screen.getByRole("menuitem", { name: "Page Settings…" }));
-    const dialog = screen.getByRole("dialog", { name: "Settings for 'Team'" });
+    const dialog = screen.getByRole("dialog", { name: "Settings for “Team”" });
     const slug = within(dialog).getByRole("textbox", { name: "File name" });
     await userEvent.clear(slug);
     await userEvent.type(slug, "Our Team");
@@ -317,7 +317,7 @@ describe("PagesPanel (F-ED-13)", () => {
 
     await openMenu("Team");
     await userEvent.click(screen.getByRole("menuitem", { name: "Page Settings…" }));
-    const dialog = screen.getByRole("dialog", { name: "Settings for 'Team'" });
+    const dialog = screen.getByRole("dialog", { name: "Settings for “Team”" });
     await userEvent.click(
       within(dialog).getByRole("checkbox", { name: "Hide the back-to-top button on this page" }),
     );
@@ -352,7 +352,7 @@ describe("PagesPanel (F-ED-13)", () => {
     ).toBe("index.html");
   });
 
-  it("offers only Rename and moves for 'Page not found', and no Delete for the Home page", async () => {
+  it("offers only Rename and moves for “Page not found”, and no Delete for the Home page", async () => {
     setUp();
 
     await openMenu("Page not found");
@@ -489,13 +489,13 @@ describe("PagesPanel with a Blog (6.10a)", () => {
     render(<PagesPanel site={empty} shownPageId={empty.homePageId} actions={panel} />);
 
     await openMenu("Blog");
-    await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
-    const asked = screen.getByRole("alertdialog", { name: "Delete Blog 'Blog'?" });
+    await userEvent.click(screen.getByRole("menuitem", { name: "Delete…" }));
+    const asked = screen.getByRole("alertdialog", { name: "Delete Blog “Blog”?" });
     await userEvent.click(within(asked).getByRole("button", { name: "Cancel" }));
     expect(panel.removeBlog).not.toHaveBeenCalled();
 
     await openMenu("Blog");
-    await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Delete…" }));
     await userEvent.click(
       within(screen.getByRole("alertdialog")).getByRole("button", { name: "Delete Blog" }),
     );

@@ -185,3 +185,31 @@ export const RenameBlog: Story = {
     await dialog.findByRole("checkbox", { name: "Move its posts to a folder of the new name" });
   },
 };
+
+/**
+ * Deleting a Blog with no posts (#937) asks first. Undo brings it back, so its button is the
+ * ordinary primary, not red (#1445).
+ */
+export const DeleteBlog: Story = {
+  args: {
+    site: (() => {
+      const empty = site();
+      const blogId = "blog" as CollectionId;
+      empty.collections[blogId] = {
+        id: blogId,
+        preset: "blog",
+        name: "Blog",
+        folder: "blog",
+        fields: [{ name: "date", label: "Date", kind: "date" }],
+        design: { before: [], after: [] },
+      };
+      return empty;
+    })(),
+  },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "Actions for Blog" }));
+    const body = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await body.findByRole("menuitem", { name: "Delete…" }));
+    await body.findByRole("alertdialog");
+  },
+};

@@ -12,15 +12,15 @@ export const ai = {
   // The D7 question an AI app's change to more than one page waits for; the dialog then says how
   // many pages change ("This changes 3 pages.").
   "ai.confirm.theme": "Allow {app} to Change the Theme?",
-  "ai.confirm.addPage": "Allow {app} to Add the Page {title}, with a Menu Entry on Every Page?",
+  "ai.confirm.addPage": "Allow {app} to Add the Page “{title}”, with a Menu Entry on Every Page?",
   // Deleting a page, as the person's Delete Page asks (4.11): the dialog then says how many pages
   // change, links to it on other pages included.
-  "ai.confirm.removePage": "Allow {app} to Delete the Page {title}?",
+  "ai.confirm.removePage": "Allow {app} to Delete the Page “{title}”?",
   // A plan (4.12a): one question for a build of many changes, its title the app's.
   "ai.confirm.plan": "Allow {app} to Make These Changes: {title}?",
   "ai.plan.pagesAdded": "It adds the pages {pages}.",
   "ai.plan.pagesRemoved": "It deletes the pages {pages}.",
-  "ai.plan.pageRenamed": 'It renames the page "{from}" to "{to}".',
+  "ai.plan.pageRenamed": "It renames the page “{from}” to “{to}”.",
   "ai.plan.pagesMoved": "It moves the pages {pages}.",
   "ai.plan.pageSettings": "It changes the Page Settings of {pages}.",
   // A page newly hidden or shown: '"Home": Hide this page from search engines, from no to yes.'
@@ -44,7 +44,7 @@ export const ai = {
   // Site Settings show on every page (4.11): "Allow Claude to change Site Settings: Contact & hours?"
   "ai.confirm.settings": "Allow {app} to Change Site Settings: {sections}?",
   "ai.confirm.layout": "Allow {app} to Change the {part}?",
-  "ai.confirm.shared": "Allow {app} to Change the Shared Section {name}?",
+  "ai.confirm.shared": "Allow {app} to Change the Shared Section “{name}”?",
   "ai.confirm.allow": "Allow",
   // Asked whenever an AI app sets where visitors' money or details go (S18), on one page too:
   // "Allow Claude to change the Buy button's Payment link?", then where it goes now and would go.
@@ -86,7 +86,7 @@ export const ai = {
   "ai.away.failed": "{appName} couldn't put the site back. Try again, or use Version History.",
   "ai.away.keep": "Keep",
   "ai.media.description":
-    'Its reason: "{reason}" Only the files you choose are added to Media, and you can undo it.',
+    "Its reason: “{reason}” Only the files you choose are added to Media, and you can undo it.",
   "ai.media.addFiles": "Add Files…",
   "ai.media.notNow": "Not Now",
   // The MCP server's prompt (4.12b, AIB-8), in an AI app's prompt menu, and the message it puts in

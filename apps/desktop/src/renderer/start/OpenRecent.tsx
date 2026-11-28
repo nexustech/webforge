@@ -194,7 +194,8 @@ export function OpenRecent({ project, restart, recent }: OpenRecentProps) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t("site.clearRecent.cancel")}</AlertDialogCancel>
-          <AlertDialogAction onClick={() => void clear()}>
+          {/* Outside Undo: red (#1445). */}
+          <AlertDialogAction variant="destructive" onClick={() => void clear()}>
             {t("site.clearRecent.confirm")}
           </AlertDialogAction>
         </AlertDialogFooter>

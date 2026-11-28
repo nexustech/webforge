@@ -55,7 +55,7 @@ function switchesChanged(before: SiteDoc, after: SiteDoc): string[] {
       if (on(from) === on(to)) continue;
       lines.push(
         t("ai.plan.pageSwitch", {
-          page: `"${to.title}"`,
+          page: `“${to.title}”`,
           field: t(field),
           from: shown(on(from)),
           to: shown(on(to)),
@@ -89,7 +89,7 @@ function described(summary: PlanSummary, switches: readonly string[]): string {
   if (summary.asksFirst.length > 0) groups.push([t("ai.plan.first"), ...summary.asksFirst]);
   const list = (names: Iterable<string>) => {
     const all = [...names];
-    const shown = all.slice(0, MOST_LISTED).map((name) => `"${shortTitle(name)}"`);
+    const shown = all.slice(0, MOST_LISTED).map((name) => `“${shortTitle(name)}”`);
     const more = all.length - shown.length;
     return more > 0
       ? `${shown.join(", ")} ${t("ai.plan.more", { count: more })}`

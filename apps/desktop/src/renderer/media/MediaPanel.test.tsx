@@ -85,7 +85,7 @@ describe("MediaPanel", () => {
     await act(async () => button("Add Images or Files")?.click());
 
     expect(api.choose).toHaveBeenCalled();
-    expect(lastLabel()).toBe("Added image 'shop.jpg'");
+    expect(lastLabel()).toBe("Added image “shop.jpg”");
     // The new image is chosen at once, with its details.
     expect(container.querySelector('[aria-label="shop.jpg details"]')).not.toBeNull();
     expect(container.querySelector("li img")?.getAttribute("src")).toBe("test://thumbnail/shop");
@@ -136,8 +136,8 @@ describe("MediaPanel", () => {
 
     expect(media()[photo.id]).toMatchObject({ alt: "Our shop" });
     expect(session.history.state.getState().entries.map((entry) => entry.label)).toEqual([
-      "Added image 'shop.jpg'",
-      "Edited alt text of 'shop.jpg'",
+      "Added image “shop.jpg”",
+      "Edited alt text of “shop.jpg”",
     ]);
   });
 
@@ -147,7 +147,7 @@ describe("MediaPanel", () => {
     await act(async () => button("shop.jpg")?.click());
 
     await act(async () => button("Square")?.click());
-    expect(lastLabel()).toBe("Cropped image 'shop.jpg'");
+    expect(lastLabel()).toBe("Cropped image “shop.jpg”");
     expect(media()[photo.id]).toMatchObject({ crop: { width: 0.625, height: 1 } });
 
     const marker = button("Focal point");
@@ -155,7 +155,7 @@ describe("MediaPanel", () => {
     await act(async () => {
       marker?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
     });
-    expect(lastLabel()).toBe("Changed focal point of 'shop.jpg'");
+    expect(lastLabel()).toBe("Changed focal point of “shop.jpg”");
     expect(media()[photo.id]).toMatchObject({ focal: { x: 0.55, y: 0.5 } });
     expect(button("Focal point")?.getAttribute("aria-label")).toBe(
       "Focal point, 55% across, 50% down",
@@ -171,12 +171,12 @@ describe("MediaPanel", () => {
     await act(async () => button("shop.jpg")?.click());
 
     await act(async () => button("Replace")?.click());
-    expect(lastLabel()).toBe("Replaced image 'shop.jpg'");
+    expect(lastLabel()).toBe("Replaced image “shop.jpg”");
     expect(Object.keys(media())).toEqual(["photo"]);
     expect(media()[photo.id]).toMatchObject({ hash: "c".repeat(64), fileName: "new.jpg" });
 
     await act(async () => button("Delete")?.click());
-    expect(lastLabel()).toBe("Deleted image 'new.jpg'");
+    expect(lastLabel()).toBe("Deleted image “new.jpg”");
     expect(media()).toEqual({});
     expect(container.textContent).toContain("No images or files yet.");
   });
@@ -268,7 +268,7 @@ describe("MediaPanel", () => {
     await act(async () => button("prices.pdf")?.click());
     await act(async () => button("Delete")?.click());
     expect(dialogText()).toContain(
-      "The shared section 'Price lists' links to it, and isn't on any page yet.",
+      "The shared section “Price lists” links to it, and isn't on any page yet.",
     );
     await cancel();
     expect(media()[prices.id]).toEqual(prices);
@@ -280,7 +280,7 @@ describe("MediaPanel", () => {
     await act(async () => button("shop.jpg")?.click());
     await act(async () => button("Delete")?.click());
     expect(dialogText()).toContain(
-      "It's used in the shared section 'Weekly offer', which isn't on any page yet.",
+      "It's used in the shared section “Weekly offer”, which isn't on any page yet.",
     );
   });
 
@@ -298,7 +298,7 @@ describe("MediaPanel", () => {
 
     await act(async () => button("Delete")?.click());
     const dialog = document.querySelector('[role="alertdialog"]');
-    expect(dialog?.textContent).toContain("Delete shop.jpg?");
+    expect(dialog?.textContent).toContain("Delete “shop.jpg”?");
     expect(dialog?.textContent).toContain("It's used on 1 page.");
     // Cancel keeps it.
     await act(async () => {
@@ -314,7 +314,7 @@ describe("MediaPanel", () => {
         .find((element) => element.textContent === "Delete")
         ?.click();
     });
-    expect(lastLabel()).toBe("Deleted image 'shop.jpg'");
+    expect(lastLabel()).toBe("Deleted image “shop.jpg”");
     expect(media()).toEqual({});
     // The placement still points at the image, so one Undo restores both.
     act(() => {

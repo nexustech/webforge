@@ -125,7 +125,7 @@ describe("connectFieldDrags (1.32)", () => {
     const section = session.history.document.getState().sharedSections[shared.id]?.section;
     const content = section?.props.content as PageDoc["content"] | undefined;
     expect(content?.[0]?.props.margin).toEqual({ top: "l" });
-    expect(labels().at(-1)).toBe("Edited shared section 'Welcome'");
+    expect(labels().at(-1)).toBe("Edited shared section “Welcome”");
   });
 
   it("leaves no step for a drag let go where it started, keys in any order (#222)", () => {

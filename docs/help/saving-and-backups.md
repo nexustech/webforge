@@ -4,7 +4,7 @@ id: saving-and-backups
 title: Saving, copies and backups
 summary: How {appName} saves your work, how to copy a site to another computer, and what happens if something goes wrong.
 related: [version-history, undo-and-history, export, getting-started]
-updated: 2026-11-27
+updated: 2026-11-28
 ---
 
 # Saving, copies and backups
@@ -22,7 +22,7 @@ The title bar shows **Saved**, **Saving…**, or **Not saved. {appName} will try
 ## Opening sites
 
 - **File › Open Site…** (Ctrl+O) opens a site's file.
-- **File › Open Recent** lists the last five sites you opened. **Clear Recent** empties the list but keeps pinned sites; it never deletes a site.
+- **File › Open Recent** lists the last five sites you opened. **Clear Recent…** empties the list but keeps pinned sites; it never deletes a site.
 - Opening another site saves the one that's open first.
 
 ## Versions

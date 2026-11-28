@@ -499,8 +499,8 @@ export function PagesPanel({ site, shownPageId, published = false, actions }: Pa
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("blog.deleteDialog.cancel")}</AlertDialogCancel>
+            {/* Undo brings it back: the ordinary button, not red (#1445). */}
             <AlertDialogAction
-              variant="destructive"
               onClick={() => {
                 if (dialogBlog !== undefined) actions.removeBlog(dialogBlog.id);
                 close();

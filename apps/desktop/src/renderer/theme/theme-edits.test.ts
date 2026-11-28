@@ -92,6 +92,7 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(siteWide.beforeUnaskedChange).toHaveBeenCalledWith({
       action: "Changed card style",
       confirm: "Changed card style",
+      destructive: false,
       affectedPages: Object.keys(session.history.document.getState().pages).length,
     });
     expect(order).toEqual(["before, flat", "before, raised", "asked"]);
@@ -177,14 +178,15 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(await switchPreset(session, confirm, bistro)).toBe(true);
     expect(confirm.confirmSiteWide).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: "Switch to the Theme 'Bistro'?",
+        action: "Switch to the Theme “Bistro”?",
         confirm: "Switch Theme",
+        destructive: false,
         affectedPages: pages,
       }),
     );
     expect(theme()).toEqual(bistro);
     expect(theme()).not.toBe(bistro);
-    expect(labels()).toEqual(["Changed theme to 'Bistro'"]);
+    expect(labels()).toEqual(["Changed theme to “Bistro”"]);
   });
 
   it("keeps the person's own colours through a switch, adding those their own theme brings (TC-1a)", async () => {
@@ -363,7 +365,7 @@ describe("the Theme tab's edits (2.3a)", () => {
     const asks = answering(false);
     expect(await setBrandColours(session, asks, proposal, "Logo.png")).toBe(true);
     expect(asks.confirmSiteWide).not.toHaveBeenCalled();
-    expect(said).toEqual([expect.stringMatching(/^Colours from 'Logo.png' used on \d+ pages?$/)]);
+    expect(said).toEqual([expect.stringMatching(/^Colours from “Logo.png” used on \d+ pages?$/)]);
 
     expect(theme().colors.secondary).toEqual(proposal.secondary);
     expect(theme().colors["accent-content"]).toEqual(proposal["accent-content"]);
@@ -377,7 +379,7 @@ describe("the Theme tab's edits (2.3a)", () => {
     ).toBeGreaterThanOrEqual(4.5);
     expect(reversed?.["base-100"]).toEqual(before.inverse?.["base-100"]);
     expect(theme().colors["base-100"]).toEqual(before.colors["base-100"]);
-    expect(labels()).toEqual(["Changed brand colours from 'Logo.png'"]);
+    expect(labels()).toEqual(["Changed brand colours from “Logo.png”"]);
   });
 
   it("undoes them all back to the theme it started with", async () => {
@@ -548,7 +550,7 @@ describe("your own themes (2.23, PH2-17)", () => {
     ]);
   });
 
-  it("says 'Not changed' when another theme's question is cancelled, and nothing when answered (#614)", async () => {
+  it("says “Not changed” when another theme's question is cancelled, and nothing when answered (#614)", async () => {
     const { session, labels } = setUp();
     const notify = vi.fn();
     const bistro = themePreset("bistro");
@@ -573,7 +575,7 @@ describe("your own themes (2.23, PH2-17)", () => {
     expect(await createOwnTheme(session, answering(true), bistro, "Shop")).toBe(true);
 
     expect(theme()).toEqual({ ...bistro, own: { id: expect.any(String), name: "Shop" } });
-    expect(labels()).toEqual(["Created theme 'Shop'"]);
+    expect(labels()).toEqual(["Created theme “Shop”"]);
 
     // From the site's theme as it is, nothing on the page changes: nothing to ask, whatever order
     // its tokens' keys are in (a theme's reversed colours are added last, #500 review).
@@ -596,10 +598,10 @@ describe("your own themes (2.23, PH2-17)", () => {
     expect(site.confirmSiteWide).not.toHaveBeenCalled();
     expect(theme().own?.name).toBe("Shop, again");
     expect(labels()).toEqual([
-      "Created theme 'Shop'",
+      "Created theme “Shop”",
       "Changed Information colour in reversed sections",
-      "Created theme 'Shop, reordered'",
-      "Created theme 'Shop, again'",
+      "Created theme “Shop, reordered”",
+      "Created theme “Shop, again”",
     ]);
   });
 
@@ -612,7 +614,7 @@ describe("your own themes (2.23, PH2-17)", () => {
 
     renameOwnTheme(session, { ...theme(), own }, "Corner shop", keep);
     expect(theme().own?.name).toBe("Corner shop");
-    expect(labels()).toEqual(["Created theme 'Shop'", "Renamed theme to 'Corner shop'"]);
+    expect(labels()).toEqual(["Created theme “Shop”", "Renamed theme to “Corner shop”"]);
     // The window keeps the site's theme as it changes (register-own-themes).
     expect(keep).not.toHaveBeenCalled();
 
@@ -639,7 +641,7 @@ describe("your own themes (2.23, PH2-17)", () => {
     await switchPreset(session, naming(), mine);
 
     expect(theme()).toEqual(mine);
-    expect(labels()).toEqual(["Changed theme to 'Night'"]);
+    expect(labels()).toEqual(["Changed theme to “Night”"]);
   });
 });
 
@@ -779,10 +781,10 @@ describe("your colours (TC-1b, #1218)", () => {
     expect(theme().ownColors).toEqual([{ id: sky, name: "Morning sky", color: SEA }]);
     expect(background(session)).toBe(`own-${sky}-300/50`);
     expect(labels()).toEqual([
-      "Added colour 'Sky'",
+      "Added colour “Sky”",
       "Used a colour",
-      "Renamed colour 'Sky' to 'Morning sky'",
-      "Changed colour 'Morning sky'",
+      "Renamed colour “Sky” to “Morning sky”",
+      "Changed colour “Morning sky”",
     ]);
     // Nothing changed: no step.
     expect(await renameOwnColor(session, undefined, sky, "Morning sky")).toBe(false);
@@ -801,7 +803,7 @@ describe("your colours (TC-1b, #1218)", () => {
     ).toBe(true);
     expect(theme().ownColors?.map(({ id }) => id)).toEqual([sea]);
     expect(background(session)).toBe(`own-${sea}-300/50`);
-    expect(labels().at(-1)).toBe("Deleted colour 'Sky'");
+    expect(labels().at(-1)).toBe("Deleted colour “Sky”");
 
     session.history.undo();
     expect(theme().ownColors?.map(({ id }) => id)).toEqual([sky, sea]);
@@ -910,7 +912,7 @@ describe("a one-off made one of your colours (TC-3, #1221)", () => {
     expect(theme().ownColors?.at(-1)).toMatchObject({ id, name: "Ocean" });
     expect(backgrounds(session)).toEqual([`own-${id}/50`, `own-${id}`]);
     expect(countOneOffUses(site(), "#1f6feb", isColorField)).toBe(0);
-    expect(labels()).toEqual(["Used a colour twice", "Made 'Ocean' one of your colours"]);
+    expect(labels()).toEqual(["Used a colour twice", "Made “Ocean” one of your colours"]);
 
     session.history.undo();
     expect(theme().ownColors ?? []).toEqual(before);
@@ -970,9 +972,9 @@ describe("a one-off given the nearest of your colours (TC-4, #1222)", () => {
 
     expect(await applyNearestOwnColor(session, undefined, "#1f6feb", isColorField)).toBe("Sky");
     expect(backgrounds(session)).toEqual([`own-${sky}/50`, `own-${sky}`]);
-    expect(labels().at(-1)).toBe("Used 'Sky' in place of #1f6feb");
+    expect(labels().at(-1)).toBe("Used “Sky” in place of #1f6feb");
     // Its toast says how far it reached, with Undo (LF-15): both uses are on the home page.
-    expect(said.at(-1)).toBe("'Sky' used in place of #1f6feb on 1 page");
+    expect(said.at(-1)).toBe("“Sky” used in place of #1f6feb on 1 page");
     // Nothing in the theme changed.
     expect(theme()).toEqual(themeBefore);
 

@@ -262,7 +262,7 @@ describe("connectEngine", () => {
     const site = session.history.document.getState();
     expect(site.sharedSections[HOURS]?.section.props.text).toBe("Open");
     expect(doc()).toBe(page);
-    expect(labels().at(-1)).toBe("Edited shared section 'Opening hours'");
+    expect(labels().at(-1)).toBe("Edited shared section “Opening hours”");
     // The canvas gets the shared sections with every change, an undo included.
     session.history.undo();
     expect(engine.applyChange).toHaveBeenLastCalledWith(
@@ -292,7 +292,7 @@ describe("connectEngine", () => {
       copyOf: HOURS,
     });
 
-    expect(labels().at(-1)).toBe("Added a copy of 'Opening hours'");
+    expect(labels().at(-1)).toBe("Added a copy of “Opening hours”");
     expect(doc().content.at(-1)).toEqual(copy);
   });
 
