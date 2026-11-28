@@ -1,6 +1,7 @@
 import { Tabs as TabsPrimitive } from "radix-ui";
 import type { ComponentProps } from "react";
 import { cn } from "../../lib/cn.js";
+import { useRovingEntry } from "./roving-entry.js";
 
 /** Panel tabs (Add · Layers · Edit…): a 32 px strip on the tabs colour. */
 export function Tabs({ className, ...props }: ComponentProps<typeof TabsPrimitive.Root>) {
@@ -9,12 +10,21 @@ export function Tabs({ className, ...props }: ComponentProps<typeof TabsPrimitiv
   );
 }
 
-/** The strip that holds the {@link TabsTrigger}s: the active one sits on the panel below. */
-export function TabsList({ className, ...props }: ComponentProps<typeof TabsPrimitive.List>) {
+/**
+ * The strip that holds the {@link TabsTrigger}s: the active one sits on the panel below. Its own
+ * element leaves the tab order once a tab has had the focus, so Shift+Tab can leave tabs that come
+ * first in a dialog ({@link useRovingEntry}, #1650).
+ */
+export function TabsList({
+  className,
+  onFocus,
+  ...props
+}: ComponentProps<typeof TabsPrimitive.List>) {
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
       className={cn("flex h-8 shrink-0 items-stretch bg-tabs px-1 pt-1", className)}
+      {...useRovingEntry(onFocus)}
       {...props}
     />
   );
