@@ -4,7 +4,7 @@ id: saving-and-backups
 title: Saving, copies and backups
 summary: How {appName} saves your work, how to copy a site to another computer, and what happens if something goes wrong.
 related: [version-history, undo-and-history, export, getting-started]
-updated: 2026-11-22
+updated: 2026-11-27
 ---
 
 # Saving, copies and backups
@@ -47,6 +47,19 @@ If your site's file is ever damaged (for example by a sync service such as OneDr
 - **Choose a Backup…**.
 
 The damaged file is kept beside the restored one, so nothing is lost.
+
+## A copy from before an update
+
+Now and then a new version of {appName} saves sites in a newer way, which the version before it can't open. So the first time the new version saves a change to a site made in an older one, it first keeps a copy of the site's file exactly as it was. Opening a site without changing it keeps nothing and changes nothing.
+
+When it keeps one, {appName} says so, with a **Save…** button. **File › Save the Copy from Before the Update…** does the same; it's only there for a site that has such a copy. It saves the copy as a site file of its own, named for the versions of {appName} that open it, such as "Rosa's Bakery (for {appName} 0.3.1)". Open that file in the older version.
+
+- The copy stays on this computer, with the backups, until you save it somewhere else. There's one for each site file, so a copy of a site's file you made yourself has its own; a later update replaces it.
+- If {appName} can't keep the copy, for example because the disk is full, it doesn't save your change either, and the title bar says why. It tries again with your next change.
+
+## A site from a newer version
+
+A site saved by a newer version of {appName} doesn't open in an older one. {appName} says it was saved by a newer version and asks you to update, and it changes nothing in the file.
 
 ## If {appName} closes unexpectedly
 

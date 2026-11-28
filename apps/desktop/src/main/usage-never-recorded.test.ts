@@ -93,6 +93,7 @@ describe("the usage summary holds nothing of a site (BD-1)", () => {
     registerProjectHandlers(ipc, trusted, session as unknown as ProjectSession, {
       chooseNewProjectPath: async () => `/sites/${MARKER}.wforge`,
       chooseProjectToOpen: async () => undefined,
+      chooseKeptCopyToSave: async () => undefined,
       chooseSiteZipToSave: async () => undefined,
       chooseSiteZipToOpen: async () => undefined,
     });

@@ -18,6 +18,7 @@ import {
   ReadOnlyProjectError,
   reachableBlobs,
   type StoredBlob,
+  type StoredFormats,
   type VersionManifest,
 } from "@webforge/storage";
 import type {
@@ -39,6 +40,7 @@ import type {
   UiStateResult,
 } from "../shared/ipc-contract.js";
 import { createWriterJobs } from "../worker/writer-jobs.js";
+import { KeepCopyError } from "./backups.js";
 import { localDay, takeDailyVersion } from "./daily-version.js";
 import { setUiState, uiState } from "./editor-state.js";
 import { exportChoices, setExportChoices } from "./export-choices.js";
@@ -181,6 +183,15 @@ export type ProjectSessionOptions = {
   /** Opens a site's file; `ProjectStore.open` unless a test wraps it. */
   readonly openStore?: (path: string) => ProjectStore;
   /**
+   * Keeps the site's file as an older Webforge wrote it, before the first write that changes its
+   * format (#1525, UC-2): the backups' `keepBeforeUpdate`. If it throws, the write is refused, and
+   * a commit says why (`no-copy`). Told the site's id and the formats the file is in.
+   */
+  readonly beforeFormatChange?: (
+    path: string,
+    kept: { readonly projectId: string } & StoredFormats,
+  ) => void;
+  /**
    * Saves the daily version before the first change of the day (F-SITE-4), keeping `kept()` of
    * Webforge's own versions; none without it, as in most tests.
    */
@@ -238,7 +249,20 @@ export class ProjectSession {
   constructor(events: ProjectSessionEvents = {}, options: ProjectSessionOptions = {}) {
     this.#listeners = [events];
     this.#gate = options.gate ?? createStoreGate();
-    this.#openStore = options.openStore ?? ((path) => ProjectStore.open(path));
+    const keep = options.beforeFormatChange;
+    this.#openStore =
+      options.openStore ??
+      ((path) => {
+        if (keep === undefined) return ProjectStore.open(path);
+        // The hook runs at a later write, by when the store is there to say what it holds.
+        let opened: ProjectStore | undefined;
+        opened = ProjectStore.open(path, {
+          beforeFormatChange: (formats) => {
+            if (opened !== undefined) keep(path, { projectId: opened.info.projectId, ...formats });
+          },
+        });
+        return opened;
+      });
     this.#createStore =
       options.createStore ?? ((path, name) => ProjectStore.create(path, { name, timed: timeStep }));
     this.#writer = options.writer ?? createInlineStorageWriter(createWriterJobs());
@@ -273,6 +297,11 @@ export class ProjectSession {
   /** The open site's file, for the main process only (never sent to the renderer). */
   currentPath(): string | undefined {
     return this.#path;
+  }
+
+  /** The open site's project id, for the main process only: what its kept copy is found by. */
+  openProjectId(): string | undefined {
+    return this.#store?.info.projectId;
   }
 
   /** The open site, or `null`. */
@@ -519,6 +548,11 @@ export class ProjectSession {
         try {
           store.commit(changes);
         } catch (error) {
+          // The file couldn't be kept as the older Webforge wrote it, so nothing was written.
+          if (error instanceof KeepCopyError) {
+            logFailure("Webforge could not keep the site as it was before the update", error);
+            return { status: "failed", reason: "no-copy" };
+          }
           return storeFailure(error, "Webforge could not save the site");
         }
         this.#site = next.data;
@@ -681,6 +715,9 @@ export class ProjectSession {
     try {
       takeDailyVersion(store, this.#dailyVersion.kept());
     } catch (error) {
+      // The site's file wasn't kept from before an update, so nothing was written: the next
+      // change, which tries the copy again, tries the daily version too (#1525).
+      if (error instanceof KeepCopyError) this.#dailyChecked = undefined;
       if (!(error instanceof ReadOnlyProjectError)) {
         logFailure("Webforge could not save the daily version of a site", error);
       }

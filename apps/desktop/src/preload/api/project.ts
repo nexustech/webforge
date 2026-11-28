@@ -6,6 +6,8 @@ export const projectApi = (call: Call): ProjectApi => ({
   create: (request) => call("createProject", request),
   open: () => call("openProject"),
   saveZip: (sessionId) => call("saveSiteZip", sessionId),
+  keptCopy: (sessionId) => call("keptCopy", sessionId),
+  saveKeptCopy: (sessionId) => call("saveKeptCopy", sessionId),
   openZip: () => call("openSiteZip"),
   takeBusinessAbout: (sessionId) => call("takeBusinessAbout", sessionId),
   getCurrent: () => call("getCurrentProject"),
