@@ -389,6 +389,8 @@ Republishing a version (4.6) is the same flow from step 2, starting from that ve
 
 On `pnpm e2e:perf`'s large page (225 elements), the keystroke and drag row is enforced as long tasks: none over 120 ms while typing and none over 250 ms while dragging, set from CI's Windows and macOS runners ([ADR 0007](../docs/adr/0007-large-page-performance.md)'s addenda, `e2e/perf/large-page.perf.ts`). The editor's own handlers still keep to 16 ms per keystroke.
 
+The autosave commit's 50 ms is the whole commit on a person's machine. CI checks our part of it: the commit's time less the disk's flush (BEGIN and COMMIT, whose fsync is most of a Windows runner's commit, 16 of 20 ms, and varies with the runner's disk), with a median under 15 ms over 15 commits (`e2e/perf/commit.perf.ts`, #1621, product owner, 27 Nov 2026). The flush and the time end to end are recorded and printed on every run, and noted against the 50 ms, not failed. The 3 s opening of a site (F-SITE-1) is checked as the median of three openings of each template, each in a freshly launched app (`e2e/perf/open-site.perf.ts`), whose timed steps a miss prints.
+
 ## 11. Decision register
 
 | ID           | Decision                                                                                                                                                                                                           | Note                                                                                                           |

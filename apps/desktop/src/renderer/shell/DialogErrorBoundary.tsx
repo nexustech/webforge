@@ -39,7 +39,8 @@ export function DialogErrorBoundary({
             <DialogContent
               aria-describedby={undefined}
               showClose={false}
-              className="h-auto min-h-48 max-w-sm"
+              // `sm:`, as the primitive's own width is, so this one wins from 640 px (#1455).
+              className="h-auto min-h-48 sm:max-w-sm"
             >
               <DialogTitle className="sr-only">{t("panels.dialogError.title")}</DialogTitle>
               <ErrorFallback

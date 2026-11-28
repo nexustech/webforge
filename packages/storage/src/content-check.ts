@@ -49,16 +49,26 @@ export function stampContent(db: Database.Database): void {
  * change that alters no row (garbage collection with nothing to remove, a blob stored again)
  * leaves the fingerprint as it was and isn't stamped: the transaction then only read, so the
  * file's bytes and modified time stay as they were, and a sync folder or a backup sees no change
- * nobody made (#661).
+ * nobody made (#661). `inside`, when given, is told how long the work inside the transaction took,
+ * the stamp included, once it has committed (#1621).
  */
-export function stamped<T>(db: Database.Database, change: () => T): T {
+export function stamped<T>(
+  db: Database.Database,
+  change: () => T,
+  inside?: (ms: number) => void,
+): T {
   const totalChanges = db.prepare("SELECT total_changes()").pluck();
-  return db.transaction(() => {
+  let insideMs = 0;
+  const result = db.transaction(() => {
+    const start = inside === undefined ? 0 : performance.now();
     const before = Number(totalChanges.get());
-    const result = change();
+    const changed = change();
     if (Number(totalChanges.get()) !== before) stampContent(db);
-    return result;
+    if (inside !== undefined) insideMs = performance.now() - start;
+    return changed;
   })();
+  inside?.(insideMs);
+  return result;
 }
 
 const corrupt = (message: string) => new ProjectFileError("corrupt", message);

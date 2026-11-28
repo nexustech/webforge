@@ -57,7 +57,7 @@ Re-running a failed job hides all three, and each makes the next failure harder 
      - Locally it is 12 s, or CI's for the platform if more: openings took up to 8.4 s on a development machine under load.
    - **If a platform's Electron gives no `cumulativeCPUUsage`** (it is optional in Electron's types), the test fails and says so. It never skips.
    - **Nothing is retried.**
-3. **The 3 s is the product's target, checked where it means something:** `pnpm e2e:perf` (ADR 0007) opens each template on a quiet machine and checks each against 3 s, keeping the times in `e2e/perf-results/open-site.json`.
+3. **The 3 s is the product's target, checked where it means something:** `pnpm e2e:perf` (ADR 0007) opens each template on a quiet machine, three times, each in a freshly launched app, and checks the median against 3 s (#1621), keeping the times in `e2e/perf-results/open-site.json`.
 4. **Waits are generous, so a slow run fails on its budget, never on a wait.**
    - What a timed operation shows is waited for up to `OPEN_WAIT` (30 s).
    - Work the system does in its own time, such as the spell checker, is waited for up to `BACKGROUND_WAIT` (45 s), in tests marked `test.slow()`.

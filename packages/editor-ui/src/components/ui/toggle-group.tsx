@@ -1,17 +1,24 @@
 import { ToggleGroup as ToggleGroupPrimitive } from "radix-ui";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
+import { useRovingEntry } from "./roving-entry.js";
 import { Tooltip, TooltipContent, TooltipTrigger, useTooltipRoot } from "./tooltip.js";
 
-/** A segmented control: Desktop · Tablet · Mobile, Design | Content. */
+/**
+ * A segmented control: Desktop · Tablet · Mobile, Design | Content. Its own element leaves the tab
+ * order once an option has had the focus, so Shift+Tab can leave one that comes first in a dialog
+ * (a link's kind, {@link useRovingEntry}, #1650).
+ */
 export function ToggleGroup({
   className,
+  onFocus,
   ...props
 }: ComponentProps<typeof ToggleGroupPrimitive.Root>) {
   return (
     <ToggleGroupPrimitive.Root
       data-slot="toggle-group"
       className={cn("inline-flex items-center rounded-md bg-input p-px", className)}
+      {...useRovingEntry(onFocus)}
       {...props}
     />
   );

@@ -27,6 +27,8 @@ describe("the opening's step times (#1560)", () => {
 
       expect(timings.recordedSteps()).toEqual([]);
       expect("webforgeStepTimings" in globalThis).toBe(false);
+      // No write timer for the store: a write times nothing in the packaged app (#1621).
+      expect(timings.writeTimer).toBeUndefined();
     }
   });
 
@@ -63,6 +65,17 @@ describe("the opening's step times (#1560)", () => {
     expect((globalThis as { webforgeStepTimings?: () => unknown }).webforgeStepTimings?.()).toEqual(
       steps,
     );
+  });
+
+  it("records each committed write's changes and flush, to a tenth of a ms, once asked (#1621)", async () => {
+    const timings = await loaded("1");
+
+    timings.writeTimer?.({ changesMs: 2.04, flushMs: 16.36 });
+
+    expect(timings.recordedSteps()).toMatchObject([
+      { step: "a write's changes", ms: 2 },
+      { step: "a write's flush", ms: 16.4 },
+    ]);
   });
 
   it("keeps only the latest 500 steps", async () => {
