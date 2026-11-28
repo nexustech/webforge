@@ -83,7 +83,11 @@ export type CopiedGroup = {
   readonly values: ReadonlyMap<string, { readonly kind: FieldKind; readonly value: unknown }>;
 };
 
-/** One of a group header's icon buttons (SP-7), shown while the header is hovered or focused. */
+/**
+ * One of a group header's icon buttons (SP-7), shown while the header is hovered or focused, the
+ * keyboard's focus on it included. A 24 px square around its 14 px icon, as LF-18 asks of an icon
+ * button (#1454): #1181's measurement missed it, as it's transparent until shown.
+ */
 function GroupButton({
   label,
   onClick,
@@ -101,7 +105,7 @@ function GroupButton({
         disabled={onClick === undefined}
         onClick={onClick}
         className={cn(
-          "flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground",
+          "flex size-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground",
           "opacity-0 group-hover/header:opacity-100 group-focus-within/header:opacity-100",
           "hover:bg-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring",
           "disabled:pointer-events-none disabled:text-disabled [&_svg]:size-3.5",
