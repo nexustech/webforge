@@ -15,6 +15,15 @@ export type TabUntilOptions = {
   readonly max?: number;
 };
 
+/** The element with the focus, in a few words: its tag and name. */
+const focusedName = (page: Page) =>
+  page.evaluate(() => {
+    const focused = document.activeElement;
+    const label = focused?.getAttribute("aria-label") ?? focused?.textContent ?? "";
+    const role = focused?.getAttribute("role");
+    return `${focused?.tagName.toLowerCase()}${role ? `[${role}]` : ""} "${label.trim().slice(0, 30)}"`;
+  });
+
 /** Whether the focus is on `target` or inside it. */
 const holdsFocus = (target: Locator) =>
   target.evaluate(
@@ -25,7 +34,7 @@ const holdsFocus = (target: Locator) =>
  * Presses Tab (or Shift+Tab) until the focus is on `target` or inside it, checking after each key
  * that it's still `within` and never where `never` says (#1507, #1650). However many stops lie
  * between, which may change with what scrolls, it fails only if `target` is never reached within
- * `max` keys. Gives the number of keys it took.
+ * `max` keys, saying which stops it passed (#1672). Gives the number of keys it took.
  */
 export async function tabUntil(
   page: Page,
@@ -33,13 +42,15 @@ export async function tabUntil(
   { back = false, within, never, max = 40 }: TabUntilOptions = {},
 ): Promise<number> {
   const key = back ? "Shift+Tab" : "Tab";
+  const passed: string[] = [];
   for (let pressed = 1; pressed <= max; pressed++) {
     await page.keyboard.press(key);
+    passed.push(await focusedName(page));
     if (never !== undefined) expect(await never(), `${key} ${pressed}`).toBeNull();
     if (within !== undefined) {
       expect(await holdsFocus(within), `${key} ${pressed}: the focus stays inside`).toBe(true);
     }
     if (await holdsFocus(target)) return pressed;
   }
-  throw new Error(`${key} didn't reach its target in ${max} keys`);
+  throw new Error(`${key} didn't reach its target in ${max} keys, passing ${passed.join(", ")}`);
 }

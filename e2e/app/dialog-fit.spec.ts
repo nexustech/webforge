@@ -63,7 +63,7 @@ const ROUNDS: readonly Round[] = [
     height: 600,
     zoom: 1,
     theme: "dark",
-    rules: [2, 3, 4, 5, 6],
+    rules: [2, 3, 4, 5, 6, 8],
     changes: true,
   },
   // Appearance changes colours, not layout: Light skips the changes of state, which Dark covers.
@@ -83,7 +83,9 @@ const ROUNDS: readonly Round[] = [
     zoom: 1,
     theme: "dark",
     // The keyboard's ends (7) once, here: they don't change with the window's size or colours.
-    rules: [2, 3, 4, 5, 6, 7],
+    // Tab round each dialog (8) here and at 960 × 600, where a styling dialog's preview shows one
+    // device with a switch: about 12 s a round, so not in all six.
+    rules: [2, 3, 4, 5, 6, 7, 8],
     changes: true,
   },
   {
@@ -1009,12 +1011,52 @@ function firstLines(error: unknown): string {
   return waiting === undefined ? (lines[0] ?? "") : `${lines[0]} (${waiting.slice(2)})`;
 }
 
-/** Opens `each`, measures it, drives its changes, and checks what it found. */
+/**
+ * Focuses `dialog`'s first or last control, as a focus trap counts them: the elements it holds in
+ * the tab order, shown and enabled. Marks where the focus went (a list of tabs hands it on to its
+ * active tab) with `data-fit-from`, and gives it in words with how many controls there are; none
+ * when there's only one (the Commands box), as wrapping to itself is then right.
+ */
+function focusEnd(dialog: Locator, end: "first" | "last") {
+  return dialog.evaluate((element, which) => {
+    const tabbable = [
+      ...element.querySelectorAll<HTMLElement>(
+        'a[href], button, input, select, textarea, summary, [contenteditable]:not([contenteditable="false"]), [tabindex]:not([tabindex="-1"])',
+      ),
+    ].filter(
+      (each) =>
+        each.tabIndex >= 0 &&
+        !(each as HTMLButtonElement).disabled &&
+        each.getClientRects().length > 0 &&
+        each.closest("[inert]") === null,
+    );
+    if (tabbable.length < 2) return null;
+    const chosen = which === "first" ? tabbable[0] : tabbable.at(-1);
+    if (chosen === undefined) return null;
+    chosen.focus();
+    const focused = document.activeElement as HTMLElement | null;
+    focused?.setAttribute("data-fit-from", "");
+    const label = focused?.getAttribute("aria-label") ?? focused?.textContent ?? "";
+    return {
+      from: `${focused?.tagName.toLowerCase()} "${label.trim().slice(0, 30)}"`,
+      count: tabbable.length,
+    };
+  }, end);
+}
+
+/** Takes off {@link focusEnd}'s mark. */
+function unmark(dialog: Locator): Promise<void> {
+  return dialog.evaluate((element) => {
+    for (const each of element.querySelectorAll("[data-fit-from]")) {
+      each.removeAttribute("data-fit-from");
+    }
+  });
+}
+
 /**
  * Rule 7 (#1650): from `dialog`'s first control Shift+Tab, and from its last Tab, moves the focus to
- * another element inside it, where it has more than one. A trap puts it back on the same one; a dialog's focus trap wraps it to
- * the other end. Its first and last are what a focus trap counts: the elements it holds in the tab
- * order, shown and enabled.
+ * another element inside it, where it has more than one. A trap puts it back on the same one; a
+ * dialog's focus trap wraps it to the other end.
  */
 async function keyboardFaults(page: Page, dialog: Locator): Promise<FitFault[]> {
   const faults: FitFault[] = [];
@@ -1022,49 +1064,91 @@ async function keyboardFaults(page: Page, dialog: Locator): Promise<FitFault[]> 
     ["first", "Shift+Tab"],
     ["last", "Tab"],
   ] as const) {
-    const from = await dialog.evaluate((element, which) => {
-      const tabbable = [
-        ...element.querySelectorAll<HTMLElement>(
-          'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        ),
-      ].filter(
-        (each) =>
-          each.tabIndex >= 0 &&
-          !(each as HTMLButtonElement).disabled &&
-          each.getClientRects().length > 0 &&
-          each.closest("[inert]") === null,
-      );
-      // One control (the Commands box): wrapping to itself is right, as there's nowhere else.
-      if (tabbable.length < 2) return null;
-      const chosen = which === "first" ? tabbable[0] : tabbable.at(-1);
-      if (chosen === undefined) return null;
-      chosen.focus();
-      // Where the focus went: a list of tabs hands it on to its active tab.
-      const focused = document.activeElement as HTMLElement | null;
-      focused?.setAttribute("data-fit-from", "");
-      const label = focused?.getAttribute("aria-label") ?? focused?.textContent ?? "";
-      return `${focused?.tagName.toLowerCase()} "${label.trim().slice(0, 30)}"`;
-    }, end);
-    if (from === null) continue;
+    const start = await focusEnd(dialog, end);
+    if (start === null) continue;
     await page.keyboard.press(key);
     const after = await dialog.evaluate((element) => {
       const focused = document.activeElement;
-      const stuck = focused?.hasAttribute("data-fit-from") === true;
-      for (const each of element.querySelectorAll("[data-fit-from]")) {
-        each.removeAttribute("data-fit-from");
-      }
-      return { stuck, inside: focused !== null && element.contains(focused) };
+      return {
+        stuck: focused?.hasAttribute("data-fit-from") === true,
+        inside: focused !== null && element.contains(focused),
+      };
     });
+    await unmark(dialog);
     if (after.stuck || !after.inside) {
       faults.push({
         rule: 7,
-        says: `${key} from its ${end} control, ${from}, ${after.stuck ? "stayed on it" : "left the dialog"}`,
+        says: `${key} from its ${end} control, ${start.from}, ${after.stuck ? "stayed on it" : "left the dialog"}`,
       });
     }
   }
   return faults;
 }
 
+/** How long rule 8 gives a tooltip to open on the control the focus reached: its delay and more. */
+const TOOLTIP_OPENS_MS = 800;
+
+/**
+ * The most keys rule 8 presses: a dialog with a long list (the licences) isn't gone all round, as
+ * the trap it looks for shows within its first few controls, wherever a tooltip is.
+ */
+const TAB_ROUND_MOST = 60;
+
+/**
+ * Rule 8 (#1672): Tab from `dialog`'s first control goes round every control, back to that one
+ * (or {@link TAB_ROUND_MOST} of them), never landing on the dialog itself or leaving it. At a person's pace: where the focus reaches a
+ * control with a tooltip, the tooltip opens before the next key, as it does for someone reading
+ * it. A node removed from a dialog as the focus moved (a tooltip's description, as its tooltip
+ * closed) threw the focus back to the dialog, and Tab went round the top of it for good.
+ */
+async function tabRoundFaults(page: Page, dialog: Locator): Promise<FitFault[]> {
+  const start = await focusEnd(dialog, "first");
+  if (start === null) return [];
+  const passed: string[] = [];
+  const fault = (says: string): FitFault[] => [
+    {
+      rule: 8,
+      says: `Tab from its first control, ${start.from}, ${says}, past ${passed.join(", ")}`,
+    },
+  ];
+  try {
+    // A list of tabs or a group of options is one stop, and a scroll area with nothing to focus
+    // in it one more, so the controls and a few are the most it takes to come round.
+    const round = start.count + 5;
+    const most = Math.min(round, TAB_ROUND_MOST);
+    for (let pressed = 1; pressed <= most; pressed++) {
+      await page.keyboard.press("Tab");
+      const at = await dialog.evaluate((element) => {
+        const focused = document.activeElement;
+        const label = focused?.getAttribute("aria-label") ?? focused?.textContent ?? "";
+        return {
+          dialog: focused?.matches('[role="dialog"], [role="alertdialog"]') === true,
+          inside: focused !== null && element.contains(focused),
+          back: focused?.hasAttribute("data-fit-from") === true,
+          tooltip: focused?.closest('[data-slot="tooltip-trigger"]') !== null,
+          name: `${focused?.tagName.toLowerCase()} "${label.trim().slice(0, 30)}"`,
+        };
+      });
+      if (at.dialog) return fault(`went to the dialog itself at key ${pressed}`);
+      if (!at.inside) return fault(`left the dialog at key ${pressed}, to ${at.name}`);
+      if (at.back) return [];
+      passed.push(at.name);
+      if (at.tooltip) {
+        // One that opens only when its text is cut short stays shut: then this is the wait.
+        await page
+          .getByRole("tooltip")
+          .first()
+          .waitFor({ timeout: TOOLTIP_OPENS_MS })
+          .catch(() => undefined);
+      }
+    }
+    return most < round ? [] : fault(`didn't come back to it in ${most} keys`);
+  } finally {
+    await unmark(dialog);
+  }
+}
+
+/** Opens `each`, measures it, drives its changes, and checks what it found. */
 async function checkCase(context: Context, each: FitCase): Promise<void> {
   const { page, round } = context;
   const target = await each.open(context);
@@ -1076,6 +1160,8 @@ async function checkCase(context: Context, each: FitCase): Promise<void> {
   const faults = fitFaults(fit, rules, overlap);
   if (rules.includes(7) && each.kind === "dialog")
     faults.push(...(await keyboardFaults(page, target)));
+  if (rules.includes(8) && each.kind === "dialog")
+    faults.push(...(await tabRoundFaults(page, target)));
   if (round.changes) {
     for (const change of each.changes ?? []) {
       await change.run(target, context);
