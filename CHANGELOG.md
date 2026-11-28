@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.4.0](https://github.com/nexustech/webforge/compare/v0.3.1...v0.4.0) (2026-11-28)
+
+
+### Features
+
+* **ai-apps:** ai apps shows its address under let ai apps connect, to see and copy ([#1624](https://github.com/nexustech/webforge/issues/1624)) ([#1655](https://github.com/nexustech/webforge/issues/1655)) ([870f6cd](https://github.com/nexustech/webforge/commit/870f6cd8ef0af1b2d0829fb130d3bf16825366ff))
+* **canvas:** an element that isn't published says so in a badge, and in layers ([#1512](https://github.com/nexustech/webforge/issues/1512), part 1) ([#1551](https://github.com/nexustech/webforge/issues/1551)) ([d7159e4](https://github.com/nexustech/webforge/commit/d7159e43067f3978f126c090ef646c961fefd948))
+* **desktop:** keep a site as it was before an update changes its format, and save it out ([#1525](https://github.com/nexustech/webforge/issues/1525)) ([#1616](https://github.com/nexustech/webforge/issues/1616)) ([18bc002](https://github.com/nexustech/webforge/commit/18bc002e0742eb873ee9aab34719562262af7c6d))
+* **publish:** a destination's form is a step of publish, with back to the list ([#1456](https://github.com/nexustech/webforge/issues/1456)) ([#1657](https://github.com/nexustech/webforge/issues/1657)) ([f05931a](https://github.com/nexustech/webforge/commit/f05931a049d3c1dea938dbf5171a27150bd1b631))
+* **publish:** preview, publish and site check say how many elements aren't published ([#1512](https://github.com/nexustech/webforge/issues/1512), part 2) ([#1564](https://github.com/nexustech/webforge/issues/1564)) ([720c0ea](https://github.com/nexustech/webforge/commit/720c0ea6ba7c20eeb608d81eee0ca00e535bb7b4))
+* **site-components:** a text width for the hero, narrow or wide ([#1631](https://github.com/nexustech/webforge/issues/1631)) ([#1633](https://github.com/nexustech/webforge/issues/1633)) ([54df3b3](https://github.com/nexustech/webforge/commit/54df3b30a8ca2e9a0587048b5a5050f1f623ed79))
+* **site-components:** cards the same height on the canvas as on the site, and Card height ([#1511](https://github.com/nexustech/webforge/issues/1511)) ([#1563](https://github.com/nexustech/webforge/issues/1563)) ([8f80433](https://github.com/nexustech/webforge/commit/8f80433e4de64cdf8ac9bdc373c48b5594eade54))
+* **site-components:** columns line up top, middle or bottom, and last column first ([#1544](https://github.com/nexustech/webforge/issues/1544)) ([#1576](https://github.com/nexustech/webforge/issues/1576)) ([1890354](https://github.com/nexustech/webforge/commit/1890354d0f982a2913db4d47587448174e26277a))
+* **theme-studio:** the reset beside the list of kinds, and what's changed marked ([#1517](https://github.com/nexustech/webforge/issues/1517)) ([#1623](https://github.com/nexustech/webforge/issues/1623)) ([7bb8f1f](https://github.com/nexustech/webforge/commit/7bb8f1fdf74b75d33712c21c2a683b8b8aa54e21))
+* **theme:** theme studio's components applies at once, with a notice and undo (m1) ([#1522](https://github.com/nexustech/webforge/issues/1522)) ([a2dd4e6](https://github.com/nexustech/webforge/commit/a2dd4e696fe9492f622c4190d2c03e5b85d045a5))
+
+
+### Bug Fixes
+
+* **ai-apps:** ai apps and the dialog error box take the width they ask for ([#1455](https://github.com/nexustech/webforge/issues/1455)) ([#1653](https://github.com/nexustech/webforge/issues/1653)) ([4833dff](https://github.com/nexustech/webforge/commit/4833dffd62557f4d4d0cc22d07040241296fa20a))
+* **ai-apps:** no not-listening message while ai apps is still starting at launch ([#1665](https://github.com/nexustech/webforge/issues/1665)) ([#1666](https://github.com/nexustech/webforge/issues/1666)) ([d7dfca6](https://github.com/nexustech/webforge/commit/d7dfca6c61c2e3bc2a51ebc21ec740b8dc25c9ae))
+* **ai-apps:** the title bar's sign looks again as ai apps closes ([#1615](https://github.com/nexustech/webforge/issues/1615)) ([#1618](https://github.com/nexustech/webforge/issues/1618)) ([86633f8](https://github.com/nexustech/webforge/commit/86633f815b355c3c69dd3a1ba7f220ffd5b9ed0c))
+* **assistant:** another server's address counts as unsaved only while chosen ([#1439](https://github.com/nexustech/webforge/issues/1439)) ([#1619](https://github.com/nexustech/webforge/issues/1619)) ([c1884b8](https://github.com/nexustech/webforge/commit/c1884b879bc741dc5f554964d1ce03975b254b8b))
+* **desktop:** a kept copy for each file of a site; a wider reason it can fail ([#1525](https://github.com/nexustech/webforge/issues/1525)) ([#1632](https://github.com/nexustech/webforge/issues/1632)) ([5b0e94d](https://github.com/nexustech/webforge/commit/5b0e94d5a0b45dae3b62af896cd199afdf0d63a6))
+* **editor-ui:** a dialog with changes asks before esc or its x throws them away ([#1439](https://github.com/nexustech/webforge/issues/1439)) ([#1596](https://github.com/nexustech/webforge/issues/1596)) ([1577932](https://github.com/nexustech/webforge/commit/15779329de6f070aaea081321d6864e0327da463))
+* **editor-ui:** dialogs hang from their top edge, so nothing jumps under the pointer ([#1441](https://github.com/nexustech/webforge/issues/1441)) ([#1550](https://github.com/nexustech/webforge/issues/1550)) ([1973f6c](https://github.com/nexustech/webforge/commit/1973f6c1562e679cd75767b1b8d459b681663da8))
+* **editor-ui:** one footer rule for every dialog: cancel or close in grey, then the primary ([#1444](https://github.com/nexustech/webforge/issues/1444)) ([#1626](https://github.com/nexustech/webforge/issues/1626)) ([d002a86](https://github.com/nexustech/webforge/commit/d002a8678ad6dd19bdb0fb81cace61d32cc7d865))
+* **editor-ui:** red only where undo can't bring it back, curly quotes and "…" ([#1445](https://github.com/nexustech/webforge/issues/1445)) ([#1664](https://github.com/nexustech/webforge/issues/1664)) ([64e9f82](https://github.com/nexustech/webforge/commit/64e9f82000b9799db1d13327524ca12550f3f225))
+* **editor-ui:** reduced motion gives no element a transition ([#1497](https://github.com/nexustech/webforge/issues/1497)) ([#1547](https://github.com/nexustech/webforge/issues/1547)) ([6c90728](https://github.com/nexustech/webforge/commit/6c90728db6fd8076ef6f3646c38f8d0e9238d9f9))
+* **editor-ui:** shift+tab leaves tabs and toggle groups first in a dialog ([#1650](https://github.com/nexustech/webforge/issues/1650)) ([#1652](https://github.com/nexustech/webforge/issues/1652)) ([ba11dc4](https://github.com/nexustech/webforge/commit/ba11dc43a124433b96873767ac9f2c5b08f9713d))
+* **engine:** the caret stays where the person put it after an outside change ([#1613](https://github.com/nexustech/webforge/issues/1613)) ([#1622](https://github.com/nexustech/webforge/issues/1622)) ([9dc60e0](https://github.com/nexustech/webforge/commit/9dc60e0cc0a95c8de4d2ba4afc318e64cf70d476))
+* **preview:** a page's drawing tries a step that hangs again, and says which ([#1508](https://github.com/nexustech/webforge/issues/1508)) ([#1538](https://github.com/nexustech/webforge/issues/1538)) ([bfa5236](https://github.com/nexustech/webforge/commit/bfa5236bf6b0c4524f57bbf4e4c77e54af0d9de8))
+* **site-check:** each example to check is named by its text and says why ([#1449](https://github.com/nexustech/webforge/issues/1449)) ([#1670](https://github.com/nexustech/webforge/issues/1670)) ([7cbc23d](https://github.com/nexustech/webforge/commit/7cbc23d45b75409105dfd8a5fa4e1fe8baa04e4a))
+* **site-components:** a centred text only hero's box sits in the middle of its row ([#1648](https://github.com/nexustech/webforge/issues/1648)) ([#1654](https://github.com/nexustech/webforge/issues/1654)) ([9c07e2d](https://github.com/nexustech/webforge/commit/9c07e2d7a8fff1074590226d86994de2520c4b44))
+* **site-components:** a left hero's text sits at its row's left behind its picture ([#1658](https://github.com/nexustech/webforge/issues/1658)) ([#1663](https://github.com/nexustech/webforge/issues/1663)) ([b8bd162](https://github.com/nexustech/webforge/commit/b8bd162b71159ea8dc6c820fbb929819d9960baa))
+* **site-components:** a whole screen hero leaves an announcement bar's room ([#1489](https://github.com/nexustech/webforge/issues/1489)) ([#1503](https://github.com/nexustech/webforge/issues/1503)) ([687ea0d](https://github.com/nexustech/webforge/commit/687ea0dd165061bd217d22fd3dbb085e81a53926))
+* **site:** page settings on three tabs, in a wider dialog ([#1443](https://github.com/nexustech/webforge/issues/1443)) ([#1567](https://github.com/nexustech/webforge/issues/1567)) ([f316778](https://github.com/nexustech/webforge/commit/f316778d9e73f0b9540c6e7fdb7a5146fd734b18))
+
 ## [0.3.1](https://github.com/nexustech/webforge/compare/v0.3.0...v0.3.1) (2026-11-26)
 
 
