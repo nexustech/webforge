@@ -42,7 +42,7 @@ type ToastSession = {
 
 /**
  * Shows "Deleted Heading · Undo" after each delete (D4), and after an edit that asks for it, such as
- * Site Check's *Fix* ("Added page 'Privacy' · Undo", #1164), in its own words if it gives them
+ * Site Check's *Fix* ("Added page “Privacy” · Undo", #1164), in its own words if it gives them
  * ("Brand colour changed on 6 pages · Undo", LF-15), or in place of the toast it names
  * ("Changed every Button on your site (12) · Undo", M1). `flush` ends a text edit in progress
  * first, so Undo acts on what the person sees. A toast closes as soon as its step is undone some

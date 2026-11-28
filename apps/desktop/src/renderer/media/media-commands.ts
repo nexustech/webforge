@@ -30,7 +30,7 @@ export type CropPreset = (typeof CROP_PRESETS)[number]["key"];
 
 const quoted = (name: string) => t("history.namedItem", { name });
 
-/** How undo labels name a Media item: its file name, in quotes ("'shop.jpg'"). */
+/** How undo labels name a Media item: its file name, in quotes (“shop.jpg”). */
 export const quotedFileName = (item: Pick<MediaMeta, "fileName">) => quoted(item.fileName);
 
 /**

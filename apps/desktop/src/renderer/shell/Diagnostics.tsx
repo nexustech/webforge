@@ -216,7 +216,8 @@ export function DiagnosticsDialog(props: DiagnosticsDialogProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("diagnostics.confirm.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={props.onClear}>
+            {/* Outside Undo: red (#1445). */}
+            <AlertDialogAction variant="destructive" onClick={props.onClear}>
               {t("diagnostics.confirm.clear")}
             </AlertDialogAction>
           </AlertDialogFooter>

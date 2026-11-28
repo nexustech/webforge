@@ -598,7 +598,7 @@ export function pageOf(site: SiteDoc, pageId: string): PageEntry | Failure {
   );
 }
 
-/** "page 'About'", for the history's "Deleted {item}" labels, as the Pages panel's. */
+/** "page “About”", for the history's "Deleted {item}" labels, as the Pages panel's. */
 export const pageItem = (title: string) => t("pages.item", { name: title });
 
 export const nodeId = z.string().min(1).max(200);

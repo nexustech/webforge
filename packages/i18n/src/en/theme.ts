@@ -25,7 +25,7 @@ export const theme = {
   // The preset (S3); each preset's name is the templates area's (`theme.preset.<name>`).
   "theme.preset.label": "Theme",
   // Switching (D7): asked first, with the pages it changes.
-  "theme.preset.confirm": "Switch to the Theme '{name}'?",
+  "theme.preset.confirm": "Switch to the Theme “{name}”?",
   "theme.preset.confirmDescription":
     "Its colours, fonts and styles replace the site's, on every page.",
   "theme.preset.confirmButton": "Switch Theme",
@@ -192,7 +192,7 @@ export const theme = {
   "theme.studio.own.colour": "{name}: its colour",
   "theme.studio.own.name": "{name}: its name",
   "theme.studio.own.delete": "Delete {name}",
-  "theme.studio.own.deleteTitle": "Delete '{name}'?",
+  "theme.studio.own.deleteTitle": "Delete “{name}”?",
   "theme.studio.own.used.one": "It's used once on your site. What should it become?",
   "theme.studio.own.used.other": "It's used {count} times on your site. What should it become?",
   "theme.studio.own.replaceWith": "Another of your colours:",
@@ -287,14 +287,14 @@ export const theme = {
   "theme.image.unreadable": "That image couldn't be read. Try another.",
   "theme.image.use": "Use These Colours",
   "theme.image.dismiss": "Not Now",
-  "theme.changed.image.one": "Colours from '{name}' used on 1 page",
-  "theme.changed.image.other": "Colours from '{name}' used on {count} pages",
+  "theme.changed.image.one": "Colours from “{name}” used on 1 page",
+  "theme.changed.image.other": "Colours from “{name}” used on {count} pages",
   // The nearest of the person's colours used for a one-off everywhere (TC-4, #1222).
-  "theme.changed.oneOffToNearest.one": "'{name}' used in place of {hex} on 1 page",
-  "theme.changed.oneOffToNearest.other": "'{name}' used in place of {hex} on {count} pages",
+  "theme.changed.oneOffToNearest.one": "“{name}” used in place of {hex} on 1 page",
+  "theme.changed.oneOffToNearest.other": "“{name}” used in place of {hex} on {count} pages",
 
   // Undo steps (D2): one per change, named for what changed.
-  "theme.history.preset": "Changed theme to '{name}'",
+  "theme.history.preset": "Changed theme to “{name}”",
   "theme.history.color.brand": "Changed brand colour",
   "theme.history.color.accent": "Changed accent colour",
   "theme.history.color.secondAccent": "Changed second accent colour",
@@ -307,15 +307,15 @@ export const theme = {
   "theme.history.color": "Changed {name} colour",
   "theme.history.colorReversed": "Changed {name} colour in reversed sections",
   // Your colours (TC-1b, #1218): each add, rename, change and delete one step.
-  "theme.history.ownAdded": "Added colour '{name}'",
+  "theme.history.ownAdded": "Added colour “{name}”",
   // A one-off colour made one of the person's colours, every use of it with it (TC-3, #1221).
-  "theme.history.ownFromOneOff": "Made '{name}' one of your colours",
+  "theme.history.ownFromOneOff": "Made “{name}” one of your colours",
   // Every use of a one-off given the nearest of the person's colours (TC-4, #1222).
-  "theme.history.oneOffToNearest": "Used '{name}' in place of {hex}",
-  "theme.history.ownRenamed": "Renamed colour '{from}' to '{name}'",
-  "theme.history.ownChanged": "Changed colour '{name}'",
-  "theme.history.ownDeleted": "Deleted colour '{name}'",
-  "theme.history.image": "Changed brand colours from '{name}'",
+  "theme.history.oneOffToNearest": "Used “{name}” in place of {hex}",
+  "theme.history.ownRenamed": "Renamed colour “{from}” to “{name}”",
+  "theme.history.ownChanged": "Changed colour “{name}”",
+  "theme.history.ownDeleted": "Deleted colour “{name}”",
+  "theme.history.image": "Changed brand colours from “{name}”",
   "theme.history.headings": "Changed heading style",
   "theme.history.buttons": "Changed button style",
   "theme.history.links": "Changed link style",
@@ -329,8 +329,8 @@ export const theme = {
   "theme.history.effects": "Changed effects",
   "theme.history.look": "Changed the theme's look for {item}",
   "theme.history.lookReset": "Reset the theme's look for {item}",
-  "theme.history.created": "Created theme '{name}'",
-  "theme.history.renamed": "Renamed theme to '{name}'",
+  "theme.history.created": "Created theme “{name}”",
+  "theme.history.renamed": "Renamed theme to “{name}”",
 
   // Your own themes (2.23, PH2-17): built-in themes are read-only, so the first change to one
   // saves the person's own version, without asking, under a name they can change in Theme Studio
@@ -349,11 +349,11 @@ export const theme = {
   "theme.own.siteTheme": "The site's theme ({name})",
   "theme.own.newName": "{name} copy",
   "theme.own.create": "Create Theme",
-  "theme.own.rename": "Rename {name}",
+  "theme.own.rename": "Rename {name}…",
   "theme.own.renameTitle": "Rename Theme",
   "theme.own.renameButton": "Rename",
-  "theme.own.delete": "Delete {name}",
-  "theme.own.deleteTitle": "Delete the Theme '{name}'?",
+  "theme.own.delete": "Delete {name}…",
+  "theme.own.deleteTitle": "Delete the Theme “{name}”?",
   "theme.own.deleteDescription": "It's removed from My themes on this computer.",
   "theme.own.deleteInUse":
     "It's removed from My themes on this computer. This site keeps its copy, so it looks the same.",
@@ -361,7 +361,7 @@ export const theme = {
   "theme.own.full":
     "My themes is full, so this theme wasn't saved there. The site keeps it. Delete a theme you don't need to make room.",
   "theme.own.keepFailed":
-    "The theme '{name}' couldn't be saved in My themes. The site keeps it, and it's saved there with your next change.",
+    "The theme “{name}” couldn't be saved in My themes. The site keeps it, and it's saved there with your next change.",
   "theme.own.removeFailed": "The theme couldn't be removed from My themes. Try again.",
   // Style this ‹kind›… (3.13a, CT-2): the selected item's Appearance, previewed, and where it applies.
   "style.command": "Style This {item}…",

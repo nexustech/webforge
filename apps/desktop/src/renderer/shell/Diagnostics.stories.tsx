@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { screen, userEvent } from "storybook/test";
 import { DiagnosticsDialog } from "./Diagnostics.js";
 
 // Help › Diagnostics… (5.41, BD-2): what the usage summary holds, in words, before a tester saves
@@ -58,3 +59,11 @@ export const Summary: Story = {};
 
 /** Just saved, to attach to a report. */
 export const Saved: Story = { args: { status: "saved" } };
+
+/** Clear…'s question: the diagnostics can't be brought back, so its button is red (#1445). */
+export const Clearing: Story = {
+  play: async () => {
+    await userEvent.click(await screen.findByRole("button", { name: "Clear…" }));
+    await screen.findByRole("alertdialog");
+  },
+};

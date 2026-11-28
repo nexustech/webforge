@@ -681,7 +681,9 @@ export function AiAppsDialog({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("aiApps.cancel")}</AlertDialogCancel>
+            {/* Outside Undo: the app is cut off, and its key gone for good. Red (#1445). */}
             <AlertDialogAction
+              variant="destructive"
               onClick={() => {
                 if (removing !== null) void act(mcp.remove(removing.id));
                 setRemoving(null);

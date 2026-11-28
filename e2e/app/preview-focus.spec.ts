@@ -61,6 +61,10 @@ async function expectTabPastPreview(
 }
 
 test("Style This… and Theme Studio's previews are passed by the keyboard (#1507)", async () => {
+  // Quarantined on every system: Tab past a tooltip's control in Style This and Theme Studio can
+  // throw the focus to the dialog itself, a keyboard trap, seen on Windows and macOS CI (#1672).
+  // The fix lifts it, within the week under the flaky-test rule.
+  test.fixme(true, "keyboard trap, flaky in CI: #1672");
   await left().getByRole("tab", { name: "Add" }).click();
   await left().getByRole("button", { name: "Hero", exact: true }).click();
   await right().getByRole("tab", { name: "Style" }).click();

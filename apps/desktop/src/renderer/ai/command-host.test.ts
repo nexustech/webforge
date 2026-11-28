@@ -18,6 +18,7 @@ function setup(mode: "design" | "content" = "design") {
 const confirmation = {
   action: "Allow Claude to Change the Theme?",
   confirm: "Allow",
+  destructive: false,
   affectedPages: 3,
 };
 
@@ -27,7 +28,7 @@ describe("commandHost (4.8)", () => {
     const home = session.history.document.getState().homePageId;
     // A page of the person's, shown.
     const other = newId("page");
-    session.edit("insert", "Added page 'Prices'", (draft) => insertPage(draft, other, "Prices"));
+    session.edit("insert", "Added page “Prices”", (draft) => insertPage(draft, other, "Prices"));
     session.showPage(other);
 
     const deleting = api.run("removePage", { pageId: other }, { app: "Claude" });
@@ -167,7 +168,7 @@ describe("commandHost (4.8)", () => {
     );
     const api = createCommandApi(host);
     const page = newId("page");
-    session.edit("insert", "Added page 'Prices'", (draft) => insertPage(draft, page, "Prices"));
+    session.edit("insert", "Added page “Prices”", (draft) => insertPage(draft, page, "Prices"));
     const kept = () => session.history.document.getState().settings.search.keptAddresses;
 
     await api.run("renamePage", { pageId: page, title: "Price list" }, { app: "Claude" });
@@ -215,7 +216,12 @@ describe("commandHost (4.8)", () => {
     session.history.endSession(textSessionKey(pageId, "heading", "text"));
     expect(host.editing()).toBe(false);
 
-    void siteWide.confirmSiteWide({ action: "Delete page?", confirm: "Delete", affectedPages: 2 });
+    void siteWide.confirmSiteWide({
+      action: "Delete page?",
+      confirm: "Delete",
+      destructive: false,
+      affectedPages: 2,
+    });
     expect(host.editing()).toBe(true);
     siteWide.answer(false);
     expect(host.editing()).toBe(false);
@@ -231,6 +237,7 @@ describe("commandHost (4.8)", () => {
     const answered = siteWide.confirmSiteWide({
       action: "Delete page?",
       confirm: "Delete",
+      destructive: false,
       affectedPages: 2,
     });
     siteWide.answer(true);
@@ -273,7 +280,12 @@ describe("commandHost (4.8)", () => {
     const { siteWide, host } = setup();
     const timeout = new AbortController();
     const first = host.confirm(confirmation, timeout.signal);
-    const theirs = { action: "Delete page?", confirm: "Delete", affectedPages: 2 };
+    const theirs = {
+      action: "Delete page?",
+      confirm: "Delete",
+      destructive: false,
+      affectedPages: 2,
+    };
     void siteWide.confirmSiteWide(theirs);
     expect(await first).toBe(false);
     timeout.abort();
@@ -296,9 +308,9 @@ describe("answerRequest (4.8)", () => {
     await vi.waitFor(() => expect(siteWide.current()).not.toBeNull());
     siteWide.answer(true);
     const page = await adding;
-    expect(page).toMatchObject({ status: "done", label: "AI (Claude): Added page 'Menu'" });
+    expect(page).toMatchObject({ status: "done", label: "AI (Claude): Added page “Menu”" });
     expect(session.history.state.getState().entries.at(-1)?.label).toBe(
-      "AI (Claude): Added page 'Menu'",
+      "AI (Claude): Added page “Menu”",
     );
   });
 });

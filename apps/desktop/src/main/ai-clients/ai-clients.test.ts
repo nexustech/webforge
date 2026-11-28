@@ -1,5 +1,5 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join } from "node:path";
+import { isTestOrStory, sourcesMatching } from "@webforge/test-utils/sources";
 import { describe, expect, it } from "vitest";
 import {
   AI_CLIENT_IDS,
@@ -10,13 +10,6 @@ import {
 import { clientInstalls } from "./index.js";
 
 const SOURCE = join(import.meta.dirname, "../..");
-
-/** Every TypeScript file of the desktop app, leaving out tests and stories. */
-function sources(): string[] {
-  return readdirSync(SOURCE, { recursive: true, encoding: "utf8" })
-    .filter((file) => /\.tsx?$/.test(file) && !/\.(test|stories)\.tsx?$/.test(file))
-    .map((file) => join(SOURCE, file));
-}
 
 describe("the AI client registry (#980)", () => {
   it("lists each kind once, each with its words, and the default among them", () => {
@@ -56,9 +49,10 @@ describe("the AI client registry (#980)", () => {
   });
 
   it('names Claude Desktop\'s kind in its own module only: no "claude" in code anywhere else', () => {
-    const named = sources()
-      .filter((file) => readFileSync(file, "utf8").includes('"claude"'))
-      .map((file) => relative(SOURCE, file).replaceAll("\\", "/"));
+    // The desktop app's own code that says it, found by git in one search (#1566).
+    const named = sourcesMatching(SOURCE, '"claude"', ["*.ts", "*.tsx"], { fixed: true })
+      .filter((file) => !isTestOrStory(file.path))
+      .map((file) => file.path);
     expect(named).toEqual(["shared/ai-clients/claude-desktop.ts"]);
   });
 });

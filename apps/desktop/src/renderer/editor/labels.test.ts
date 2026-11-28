@@ -74,7 +74,7 @@ describe("labelFor", () => {
     ).toBe("Edited Question text");
   });
 
-  it("names the part of an image a change set, never 'Image image' (#1370)", () => {
+  it("names the part of an image a change set, never “Image image” (#1370)", () => {
     const image = (componentType: string, from: unknown, to: unknown) =>
       labelFor(
         edit("props", { componentType, field: "image" }),
@@ -111,7 +111,7 @@ describe("labelFor", () => {
       );
 
     // Its name in Layers is found in the layout, not the page.
-    expect(shared({})).toBe("Edited shared 'Small print' text");
+    expect(shared({})).toBe("Edited shared “Small print” text");
     expect(
       shared({ layout: { header: [], footer: [{ ...footer, props: { id: "f", text: "Bye" } }] } }),
     ).toBe("Edited shared Footer text");
@@ -119,10 +119,10 @@ describe("labelFor", () => {
 
   it("names an element by the name it has in Layers", () => {
     expect(labelFor(edit("text", { nodeId: "h", field: "text", page: named }), siteLibrary)).toBe(
-      "Edited 'Opening times' text",
+      "Edited “Opening times” text",
     );
     expect(labelFor(edit("props", { nodeId: "h", field: "size", page: named }), siteLibrary)).toBe(
-      "Changed 'Opening times' size",
+      "Changed “Opening times” size",
     );
   });
 
@@ -130,7 +130,7 @@ describe("labelFor", () => {
     const after = { ...named, content: [] };
 
     expect(labelFor(edit("remove", { nodeId: "h", page: after }), siteLibrary, named)).toBe(
-      "Deleted 'Opening times'",
+      "Deleted “Opening times”",
     );
   });
 
@@ -182,7 +182,7 @@ describe("element names (R10: one definition for every list, label and message)"
 
   it("names an element by the name given in Layers, trimmed, else by what it is", () => {
     expect(elementName(named, siteLibrary)).toBe("Hours");
-    expect(quotedElementName(named, siteLibrary)).toBe("'Hours'");
+    expect(quotedElementName(named, siteLibrary)).toBe("“Hours”");
     expect(elementName(heading, siteLibrary)).toBe("Heading");
     expect(quotedElementName(heading, siteLibrary)).toBe("Heading");
     expect(givenElementName({ ...heading, props: { ...heading.props, layerName: "  " } })).toBe(
@@ -193,14 +193,14 @@ describe("element names (R10: one definition for every list, label and message)"
   it("labels a canvas edit to an unnamed linked copy by its shared section's name (#333 review)", () => {
     const page: PageDoc = { root: { props: {} }, content: [copy] };
     const moved = edit("move", { nodeId: "c", componentType: "Section", page });
-    expect(labelFor(moved, siteLibrary, undefined, shared)).toBe("Moved 'Opening hours'");
+    expect(labelFor(moved, siteLibrary, undefined, shared)).toBe("Moved “Opening hours”");
     // Without the site's shared sections, all there is to go on is what it is.
     expect(labelFor(moved, siteLibrary)).toBe("Moved Section");
   });
 
   it("names a linked copy by its own name, else its shared section's, as a Section (F-ED-23)", () => {
     expect(elementKind(copy, siteLibrary, shared)).toBe("Section");
-    expect(quotedElementName(copy, siteLibrary, shared)).toBe("'Opening hours'");
+    expect(quotedElementName(copy, siteLibrary, shared)).toBe("“Opening hours”");
     const renamed = { ...copy, props: { ...copy.props, layerName: "Hours on Sunday" } };
     expect(elementName(renamed, siteLibrary, shared)).toBe("Hours on Sunday");
   });

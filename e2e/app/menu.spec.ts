@@ -60,10 +60,10 @@ test("adds a button, reorders by keyboard and drag, and undoes it all", async ()
   await expect(rows()).toHaveText(["Book now", "New page", "My site"]);
   await expect(canvasNav.getByRole("link")).toHaveText(["Book now", "New page", "My site"]);
   await expect(steps()).toHaveText([
-    "Moved menu item 'My site'",
-    "Moved menu item 'Book now'",
-    "Added menu item 'Book now'",
-    "Added page 'New page'",
+    "Moved menu item “My site”",
+    "Moved menu item “Book now”",
+    "Added menu item “Book now”",
+    "Added page “New page”",
     "Opened page",
   ]);
 

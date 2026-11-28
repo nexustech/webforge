@@ -117,7 +117,7 @@ describe("Theme Studio (2.3b, F-DS-7)", () => {
 
     expect(siteWide.confirmSiteWide).toHaveBeenCalledOnce();
     await vi.waitFor(() => expect(theme().preset).toBe("bistro"));
-    expect(labels()).toEqual(["Changed theme to 'Bistro'"]);
+    expect(labels()).toEqual(["Changed theme to “Bistro”"]);
   });
 
   it("sets a reversed section's colour on its own, with shades and warnings per palette", async () => {
@@ -217,7 +217,7 @@ describe("Theme Studio's My themes (2.23, PH2-17)", () => {
     await user.click(within(mine).getByRole("button", { name: /^Night/ }));
 
     await vi.waitFor(() => expect(theme().own?.name).toBe("Night"));
-    expect(labels()).toEqual(["Changed theme to 'Night'"]);
+    expect(labels()).toEqual(["Changed theme to “Night”"]);
   });
 
   it("creates a new theme from a built-in one, by name", async () => {
@@ -233,7 +233,7 @@ describe("Theme Studio's My themes (2.23, PH2-17)", () => {
 
     await vi.waitFor(() => expect(theme().own?.name).toBe("Shop"));
     expect(theme().preset).toBe("bistro");
-    expect(labels()).toEqual(["Created theme 'Shop'"]);
+    expect(labels()).toEqual(["Created theme “Shop”"]);
   });
 
   it("renames and deletes one of the person's own; the site keeps its copy", async () => {
@@ -241,16 +241,16 @@ describe("Theme Studio's My themes (2.23, PH2-17)", () => {
     await user.click(dialog().getByRole("button", { name: /^Night/ }));
     await vi.waitFor(() => expect(theme().own?.name).toBe("Night"));
 
-    await user.click(dialog().getByRole("button", { name: "Rename Night" }));
+    await user.click(dialog().getByRole("button", { name: "Rename Night…" }));
     const rename = within(await screen.findByRole("dialog", { name: "Rename Theme" }));
     const name = rename.getByRole("textbox", { name: "Theme name" });
     await user.clear(name);
     await user.type(name, "Late night");
     await user.click(rename.getByRole("button", { name: "Rename" }));
     await vi.waitFor(() => expect(theme().own?.name).toBe("Late night"));
-    expect(labels()).toEqual(["Changed theme to 'Night'", "Renamed theme to 'Late night'"]);
+    expect(labels()).toEqual(["Changed theme to “Night”", "Renamed theme to “Late night”"]);
 
-    await user.click(dialog().getByRole("button", { name: "Delete Late night" }));
+    await user.click(dialog().getByRole("button", { name: "Delete Late night…" }));
     const remove = within(await screen.findByRole("alertdialog"));
     expect(remove.getByText(/This site keeps its copy/)).toBeDefined();
     await user.click(remove.getByRole("button", { name: "Delete Theme" }));
@@ -463,7 +463,7 @@ describe("Theme Studio's Components (3.12, CT-1; M1)", () => {
   it("offers your colours in a look's colour fields, but no one-off (TC-1b, ADR 0009)", async () => {
     const { session, button, theme, user } = onButton();
     act(() =>
-      session.edit("root", "Added colour 'Harbour blue'", (draft) => {
+      session.edit("root", "Added colour “Harbour blue”", (draft) => {
         draft.theme.ownColors = [
           { id: "csky", name: "Harbour blue", color: { l: 0.62, c: 0.14, h: 240 } },
         ];

@@ -174,7 +174,7 @@ test("copies a layer dragged with Ctrl/Cmd, and places another linked copy with 
   await expect(tree().getByRole("treeitem", { name: /Welcome/ })).toHaveCount(1);
 
   // Shift held from before the press, which the browser's own drag ignored (#271).
-  await dragRow("Linked copy of 'Welcome'", "Linked copy of 'Welcome'", ["ControlOrMeta", "Shift"]);
+  await dragRow("Linked copy of “Welcome”", "Linked copy of “Welcome”", ["ControlOrMeta", "Shift"]);
   // Another linked copy of Welcome: Layers shows two, and the canvas two sections.
   await expect(tree().getByRole("treeitem", { name: /Welcome/ })).toHaveCount(2);
   await expect(canvas().locator(".site-section")).toHaveCount(2);

@@ -151,7 +151,7 @@ function firstHeading(nodes: readonly NodeDoc[]): string | undefined {
   return undefined;
 }
 
-/** "page 'About'", for the history's labels. */
+/** "page “About”", for the history's labels. */
 const pageItem = (name: string) => t("pages.item", { name });
 
 /** The folders in folder `parent` (its segments): what a new name there must not be. */

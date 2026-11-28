@@ -114,12 +114,13 @@ export const canvas = {
     "A shared section is stored once. Place copies of it on any page; editing one copy changes them all.",
   "canvas.saveSharedSection.name": "Name",
   "canvas.saveSharedSection.confirm": "Save",
-  // Names are unique (1.29): {name} is quoted, "'Opening hours'".
+  // Names are unique (1.29): {name} is quoted, “Opening hours”.
   "canvas.sharedSectionNameTaken": "A shared section called {name} already exists",
   "canvas.renameSharedSection": "Rename Shared Section…",
   "canvas.renameSharedSection.title": "Rename Shared Section",
   "canvas.renameSharedSection.confirm": "Rename",
-  "canvas.deleteSharedSection": "Delete Shared Section…",
+  // No "…": with no copy on a page, it deletes at once (#1445).
+  "canvas.deleteSharedSection": "Delete Shared Section",
   // D7's question before deleting a shared section: {name} is quoted.
   "canvas.deleteSharedSection.title": "Delete Shared Section {name}?",
   "canvas.deleteSharedSection.description":

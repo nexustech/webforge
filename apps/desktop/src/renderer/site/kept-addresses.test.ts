@@ -28,7 +28,7 @@ describe("keeping a page's old address working (#862, SEO-5)", () => {
 
     expect(site().pages[about]?.slug).toBe("about");
     expect(keptAddressesOf(site())).toEqual([{ from: "about-us.html", page: about }]);
-    expect(labels().at(-1)).toBe("Renamed page 'About'");
+    expect(labels().at(-1)).toBe("Renamed page “About”");
     expect(siteDocSchema.parse(site())).toEqual(site());
     // The export sends the old address on to the page.
     expect(siteToSnapshot(site(), new Map()).redirects).toEqual([

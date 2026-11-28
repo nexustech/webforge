@@ -44,7 +44,7 @@ export const shell = {
   "ui.picker.search": "Search",
   "ui.picker.categories": "Categories",
   "ui.picker.all": "All",
-  "ui.picker.noMatch": "Nothing matches '{query}'.",
+  "ui.picker.noMatch": "Nothing matches “{query}”.",
   // Webforge's own colour picker (5.26, OL-19).
   "ui.colourPicker.label": "Colour picker",
   "ui.colourPicker.area": "Saturation and brightness",
@@ -82,7 +82,7 @@ export const shell = {
   "shell.menu.edit.select": "Select",
   "shell.menu.edit.sharedSection": "Shared Section",
   "shell.menu.edit.sharedSection.rename": "Rename…",
-  "shell.menu.edit.sharedSection.delete": "Delete…",
+  "shell.menu.edit.sharedSection.delete": "Delete",
   "shell.menu.edit.sharedSection.detach": "Detach",
   "shell.menu.view": "View",
   // The site's settings, theme and stylesheet (#1016).
@@ -225,7 +225,7 @@ export const shell = {
   // A recent site in the command box, named by the menu it's in.
   "command.openRecent.palette": "Open Recent: {name}",
   "command.noRecent": "No Recent Sites",
-  "command.clearRecent": "Clear Recent",
+  "command.clearRecent": "Clear Recent…",
   // A copy of the whole site as a ZIP, and a site opened from one (4.7): not Export's website.
   "command.saveSiteZip": "Save a Copy as ZIP…",
   "command.saveKeptCopy": "Save the Copy from Before the Update…",
@@ -305,7 +305,7 @@ export const shell = {
   "shortcuts.title": "Keyboard Shortcuts",
   "shortcuts.description": "Keys for the things you do most. Menus show them too.",
   "shortcuts.search": "Search shortcuts",
-  "shortcuts.noMatch": "No shortcut matches '{query}'.",
+  "shortcuts.noMatch": "No shortcut matches “{query}”.",
   // A count: plural("shortcuts.match", n) picks one or other (B10).
   "shortcuts.match.one": "{count} shortcut",
   "shortcuts.match.other": "{count} shortcuts",
@@ -405,10 +405,10 @@ export const shell = {
   "footerToolbar.columns": "Columns",
   "footerToolbar.addColumn": "Add column",
   "footerToolbar.removeColumn": "Remove last column",
-  // {preset} is one of the presets above: "Started the Footer from 'Full'".
-  "footerToolbar.started": "Started the Footer from '{preset}'",
+  // {preset} is one of the presets above: "Started the Footer from “Full”".
+  "footerToolbar.started": "Started the Footer from “{preset}”",
   // Its Undo toast, when it replaced elements: how far it reached (LF-15).
-  "footerToolbar.startedEverywhere": "Started the Footer from '{preset}' on every page",
+  "footerToolbar.startedEverywhere": "Started the Footer from “{preset}” on every page",
   // The canvas frame's edges, dragged to set its width (1.33, F-ED-25).
   "canvasResize.left": "Canvas width, left edge",
   "canvasResize.right": "Canvas width, right edge",
