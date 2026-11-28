@@ -1066,9 +1066,14 @@ describe("renderNodesToHtml", () => {
           }
         }
       }
-      // The other layouts are unchanged.
-      expect(heroIn("split")).not.toContain("justify-start");
-      expect(heroIn("centred")).not.toContain("justify-start");
+      // The other layouts' rows are unchanged, on the left too (the helper's alignment).
+      const anyRow = (html: string) => /class="(hero-content [^"]*)"/.exec(html)?.[1];
+      expect(anyRow(heroIn("split"))).toBe(
+        "hero-content max-w-[74rem] flex-col gap-10 lg:flex-row-reverse text-left",
+      );
+      expect(anyRow(heroIn("centred"))).toBe(
+        "hero-content max-w-[74rem] flex-col gap-10 text-center",
+      );
     });
 
     it("draws its Overlay at the strength and in the colour chosen, Strong Neutral when new (HH-3)", () => {

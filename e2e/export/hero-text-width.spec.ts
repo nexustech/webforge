@@ -76,8 +76,8 @@ test("sets a left Hero's text at its row's left edge behind its picture (#1658)"
   await page.setViewportSize({ width: 375, height: 667 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
   const phone = await placeOf(page, "Hero left-wide-full");
-  // A long text fills the phone's width, centred or not: the same margins as one that's centred.
-  const centredPhone = await placeOf(page, "Hero text-narrow-wide");
+  // Its long text fills the phone's width, with the margins every Hero has there: the section's
+  // padding, then the row's own (16 px each).
   expect(phone.row).toBeLessThanOrEqual(375);
-  expect(phone.rowLeft + phone.inset).toBe(centredPhone.rowLeft + centredPhone.inset);
+  expect(phone.rowLeft + phone.inset).toBe(32);
 });
