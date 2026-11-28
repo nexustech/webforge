@@ -506,6 +506,25 @@ const CASES: readonly FitCase[] = [
       await chooseFromMenu(app, page, "File", "AI Apps…");
       return shown(page.getByRole("dialog", { name: "AI Apps" }));
     },
+    // On, it shows its address under the switch (#1624); off again, as the other cases expect.
+    changes: [
+      {
+        name: "Let AI apps connect turned on",
+        run: async (dialog) => {
+          await dialog.getByRole("checkbox", { name: "Let AI apps connect" }).check();
+          await expect(
+            dialog.getByRole("region", { name: "Address for AI apps" }).locator("code"),
+          ).toHaveText(/^http:\/\/127\.0\.0\.1:\d+\/mcp$/);
+        },
+      },
+      {
+        name: "Let AI apps connect turned off again",
+        run: async (dialog) => {
+          await dialog.getByRole("checkbox", { name: "Let AI apps connect" }).uncheck();
+          await expect(dialog.getByRole("region", { name: "Address for AI apps" })).toHaveCount(0);
+        },
+      },
+    ],
   },
   {
     name: "Preview on Your Phone",
