@@ -46,7 +46,7 @@ describe("SaveStatus (P2, #1195)", () => {
 
     act(() => store.setState({ status: "error", failure: "no-copy" }));
     expect(screen.getByRole("status").textContent).toBe(
-      "Not saved: Webforge couldn't keep a copy of this site as the older version saved it. Free some space on the disk. Webforge will try again.",
+      "Not saved: Webforge couldn't keep a copy of this site as the older version saved it. Freeing some space on the disk may help. Webforge will try again.",
     );
     act(() => store.setState({ status: "error", failure: "unknown" }));
     expect(screen.getByRole("status").textContent).toBe("Not saved. Webforge will try again.");
