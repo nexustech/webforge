@@ -93,7 +93,7 @@ describe("File › Open Recent (3.18, PF-1)", () => {
       ["Site 5", undefined],
       ["Site 4", undefined],
       ["Site 3", undefined],
-      ["Clear Recent", true],
+      ["Clear Recent…", true],
     ]);
     // The renderer knows sites by id only.
     expect(submenu(registry)[0]?.id).toBe(`site.openRecent.${"7".repeat(32)}`);
@@ -118,7 +118,7 @@ describe("File › Open Recent (3.18, PF-1)", () => {
     await userEvent.click(screen.getByRole("button", { name: /^Search commands/ }));
     const options = screen.getAllByRole("option").map((option) => option.textContent);
     expect(options).toEqual(
-      expect.arrayContaining(["Open Recent: Bakery", "Open Recent: Florist", "Clear Recent"]),
+      expect.arrayContaining(["Open Recent: Bakery", "Open Recent: Florist", "Clear Recent…"]),
     );
     // Open Recent itself opens a submenu, which the command box has no use for.
     expect(options).not.toContain("Open Recent");
@@ -138,7 +138,7 @@ describe("File › Open Recent (3.18, PF-1)", () => {
     expect(submenu(registry).map((command) => [command.label, command.enabled])).toEqual([
       ["Bakery", false],
       ["Florist", true],
-      ["Clear Recent", true],
+      ["Clear Recent…", true],
     ]);
     expect(registry.run(`site.openRecent.${"2".repeat(32)}`)).toBe(false);
     expect(fake.openRecent).not.toHaveBeenCalled();
@@ -162,7 +162,7 @@ describe("File › Open Recent (3.18, PF-1)", () => {
       "Bakery (Sites)",
       "Bakery (Old)",
       "Florist",
-      "Clear Recent",
+      "Clear Recent…",
     ]);
   });
 
@@ -257,7 +257,7 @@ describe("File › Open Recent (3.18, PF-1)", () => {
     await waitFor(() =>
       expect(submenu(registry).map((command) => command.label)).toEqual([
         "Florist",
-        "Clear Recent",
+        "Clear Recent…",
       ]),
     );
   });
@@ -292,7 +292,7 @@ describe("File › Open Recent (3.18, PF-1)", () => {
     await waitFor(() =>
       expect(submenu(registry).map((command) => [command.label, command.enabled])).toEqual([
         ["Pinned", true],
-        ["Clear Recent", false],
+        ["Clear Recent…", false],
       ]),
     );
   });

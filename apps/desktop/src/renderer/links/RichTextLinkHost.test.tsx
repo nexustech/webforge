@@ -135,7 +135,7 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
 
     const [entry] = session.history.entries();
     expect(entry?.coalesceKey).toBeNull();
-    expect(entry?.label).toBe("Changed 'Opening times' anchor ID");
+    expect(entry?.label).toBe("Changed “Opening times” anchor ID");
   });
 
   it("stops picking links when it goes, leaving an open request's text as it is", async () => {

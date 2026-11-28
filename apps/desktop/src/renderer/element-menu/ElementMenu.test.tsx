@@ -355,7 +355,7 @@ describe("CanvasElementMenu (1.35)", () => {
     const content = section?.props.content as { props: { layerName?: string } }[] | undefined;
     const heading = content?.[0];
     expect(heading?.props.layerName).toBe("Intro");
-    expect(session.history.entries().at(-1)?.label).toBe("Renamed Heading to 'Intro'");
+    expect(session.history.entries().at(-1)?.label).toBe("Renamed Heading to “Intro”");
   });
 
   it("gives the focus back to the canvas when the menu closes (#223 review)", async () => {

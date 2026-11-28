@@ -2,12 +2,15 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   checkCatalogue,
+  checkCatalogueQuotes,
   checkFolders,
   checkTitleFolders,
   findAppNames,
+  findQuotedNames,
   findTitleAttributes,
   findUiStrings,
   formatAppNameViolations,
+  formatQuotedNameViolations,
   formatTitleViolations,
   formatUiStringViolations,
   isCheckedFile,
@@ -216,5 +219,48 @@ describe("the app's name in the string catalogue (#450)", () => {
     ]);
     expect(message).toContain("Write {appName} instead");
     expect(message).toContain('en/site.ts:3  site.fileType: "Webforge site"');
+  });
+});
+
+describe("names in quotation marks (#1445)", () => {
+  const CATALOGUE = join(import.meta.dirname, "../../packages/i18n/src/en");
+
+  it("reports a name in straight, double or curly single quotation marks, but not in curly double ones", () => {
+    const source = [
+      "export const pages = {",
+      `  "pages.a": "Delete Page '{name}'?",`,
+      `  "pages.b": 'It renames the page "{from}".',`,
+      '  "pages.c": "Delete ‘{name}’?",',
+      '  "pages.d": "Delete Page “{name}”?",',
+      '  "pages.e": "Move into {name}",',
+      "} as const;",
+    ].join("\n");
+
+    expect(findQuotedNames(source, "en/panels.ts").map((each) => each.where)).toEqual([
+      "pages.a",
+      "pages.b",
+      "pages.c",
+    ]);
+  });
+
+  it("leaves visitors' text alone: each language has its own marks", () => {
+    const source = [
+      "export const posts = {",
+      `  "siteText.postsTagged": "Posts tagged '{tag}'",`,
+      "} as const;",
+    ].join("\n");
+    expect(findQuotedNames(source, "en/components/latestPosts.ts")).toEqual([]);
+  });
+
+  it("finds none in the app's catalogue", () => {
+    expect(checkCatalogueQuotes(CATALOGUE, CATALOGUE)).toEqual([]);
+  });
+
+  it("formats one line per message, saying how to write it", () => {
+    const message = formatQuotedNameViolations([
+      { file: "en/panels.ts", line: 3, where: "pages.a", text: "Delete Page '{name}'?" },
+    ]);
+    expect(message).toContain("Write “{name}”");
+    expect(message).toContain(`en/panels.ts:3  pages.a: "Delete Page '{name}'?"`);
   });
 });

@@ -81,12 +81,12 @@ describe("replaceAll", () => {
 
     expect(asked).toEqual([
       expect.objectContaining({
-        action: "Replace 'Smith' with 'Smyth' Everywhere?",
+        action: "Replace “Smith” with “Smyth” Everywhere?",
         confirm: "Replace All",
         affectedPages: 2,
       }),
     ]);
-    expect(labels()).toEqual(["Replaced 'Smith' with 'Smyth' in 3 places"]);
+    expect(labels()).toEqual(["Replaced “Smith” with “Smyth” in 3 places"]);
     expect(doc().pages[home]?.doc.content[0]?.props.text).toBe("Smyth & Sons");
     expect(doc().pages[about]?.doc.content[0]?.props.text).toBe("Ask Smyth");
     // The shared section once, for both its copies.
@@ -117,7 +117,7 @@ describe("replaceAll", () => {
     await replaceAll(actions, { ...SMITH, query: "Sons" }, "Daughters");
 
     expect(asked).toEqual([]);
-    expect(labels()).toEqual(["Replaced 'Sons' with 'Daughters' in 1 place"]);
+    expect(labels()).toEqual(["Replaced “Sons” with “Daughters” in 1 place"]);
   });
 
   it("counts only the places that change, not those a replacement skips", async () => {
@@ -135,7 +135,7 @@ describe("replaceAll", () => {
 
     expect(doc().pages[home]?.title).toBe("Sons");
     expect(doc().pages[about]?.doc.content[0]?.props.text).toBe("Ask the ");
-    expect(labels()).toEqual(["Replaced 'Sons' with '' in 1 place"]);
+    expect(labels()).toEqual(["Replaced “Sons” with “” in 1 place"]);
   });
 
   it("counts every page for a change to the menu, which every page shows", async () => {
@@ -188,7 +188,7 @@ describe("replaceOne", () => {
     replaceOne(session, SMITH, "Smyth", spot, 1);
 
     expect(doc().pages[about]?.doc.content[0]?.props.text).toBe("Smith and Smyth");
-    expect(labels()).toEqual(["Replaced 'Smith' with 'Smyth'"]);
+    expect(labels()).toEqual(["Replaced “Smith” with “Smyth”"]);
   });
 
   it("shortens long text in its label", () => {
@@ -197,7 +197,7 @@ describe("replaceOne", () => {
 
     replaceOne(session, { ...SMITH, query: "e" }, "x".repeat(60), spot, 0);
 
-    expect(labels()[0]).toBe(`Replaced 'e' with '${"x".repeat(39)}…'`);
+    expect(labels()[0]).toBe(`Replaced “e” with “${"x".repeat(39)}…”`);
   });
 });
 
@@ -276,7 +276,7 @@ describe("naming what was found", () => {
     expect(groupName(doc(), "footer")).toBe("Footer");
     expect(groupName(doc(), "settings")).toBe("Site Settings");
     expect(groupName(doc(), "menu")).toBe("Menu");
-    expect(groupName(doc(), shared)).toBe("Shared section 'Opening times'");
+    expect(groupName(doc(), shared)).toBe("Shared section “Opening times”");
   });
 
   it("names what a match is in: the element and its field, or the setting", () => {
@@ -335,7 +335,7 @@ describe("a Blog's design (#936)", () => {
     expect(found.map(({ spot }) => spot)).toEqual([
       { kind: "element", on: BLOG, nodeId: "signed", type: "Heading", field: "text" },
     ]);
-    expect(groupName(doc(), BLOG)).toBe("The design of 'Blog'");
+    expect(groupName(doc(), BLOG)).toBe("The design of “Blog”");
     // The title shown is each post's (bound), so the design's own "Post title" is never found.
     expect(
       findInSite(doc(), session.library, { ...SMITH, query: "Post title" }).map(
@@ -356,7 +356,7 @@ describe("a Blog's design (#936)", () => {
 
     replaceOne(session, SMITH, "Rosa", spot, 0);
     expect(doc().collections[BLOG]?.design.after[0]?.props.text).toBe("Rosa's news");
-    expect(labels()).toEqual(["Replaced 'Smith' with 'Rosa' in the design of 'Blog'"]);
+    expect(labels()).toEqual(["Replaced “Smith” with “Rosa” in the design of “Blog”"]);
 
     session.history.undo();
     await replaceAll(actions, { ...SMITH, query: "Smith's" }, "Our");

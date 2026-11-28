@@ -95,6 +95,23 @@ export const resettable = (field: EditPanelField) =>
   field.changed === true && field.disabled !== true;
 
 /**
+ * A field whose value is set where it's being edited, rather than coming from the theme (#1517):
+ * changed, with the words that say where its value comes from (3.12, CT-3). A field without them
+ * (what an element says, on Content) isn't marked, however it differs from its default.
+ */
+export const marked = (field: EditPanelField) =>
+  field.changed === true && field.source !== undefined;
+
+/**
+ * The mark beside a changed field's label, and a changed group's heading (#1517): a dot in the
+ * accent, not a warning's colour. Hidden from screen readers, which read the field's source words,
+ * or the group heading's own.
+ */
+export function ChangedDot() {
+  return <span aria-hidden data-changed-dot className="size-1.5 shrink-0 rounded-full bg-ring" />;
+}
+
+/**
  * Kinds whose control needs the panel's width (LF-7): their label sits above them, not beside.
  * Lists, spacing boxes, images and a paragraph of text.
  */
@@ -176,6 +193,7 @@ export function FieldRow({
                 {withMatch(field.label, query)}
               </label>
             </WithTooltip>
+            {marked(field) ? <ChangedDot /> : null}
             {field.responsive === true || field.overridden === true ? (
               <DeviceDot
                 label={field.label}

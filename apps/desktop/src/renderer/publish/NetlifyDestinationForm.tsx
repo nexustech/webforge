@@ -1,7 +1,7 @@
 import {
   Button,
-  FormDialog,
   type FormField,
+  FormPane,
   type FormSchema,
   type FormSpec,
 } from "@webforge/editor-ui";
@@ -125,8 +125,7 @@ type Signing =
   | { readonly status: "waiting"; readonly via: "browser" | "token" }
   | { readonly status: "failed"; readonly reason: NetlifyFailure };
 
-export type NetlifyDestinationDialogProps = {
-  readonly open: boolean;
+export type NetlifyDestinationFormProps = {
   /** The destination being edited, with its name and site; a new one when left out. */
   readonly editing?: {
     readonly id: string;
@@ -137,7 +136,8 @@ export type NetlifyDestinationDialogProps = {
   };
   readonly netlify: NetlifyDestinationApi;
   readonly onSave: (saved: NetlifySaved) => void;
-  readonly onCancel: () => void;
+  /** Back to Publish's list, which asks first when a value changed (#1456). */
+  readonly onBack: () => void;
 };
 
 /**
@@ -147,20 +147,38 @@ export type NetlifyDestinationDialogProps = {
  * token is sent to the main process once and kept in the keychain for this destination only
  * (4.4a, S2), never in the site's file.
  */
-export function NetlifyDestinationDialog({
-  open,
+export function NetlifyDestinationForm({
   editing,
   netlify,
   onSave,
-  onCancel,
-}: NetlifyDestinationDialogProps) {
+  onBack,
+}: NetlifyDestinationFormProps) {
   const [account, setAccount] = useState<NetlifyAccount | undefined>(
     editing?.signedIn === true ? { saved: editing.id } : undefined,
   );
   const [sites, setSites] = useState<Sites>({ status: "none" });
   const [signing, setSigning] = useState<Signing>({ status: "idle" });
-  // Cancelled: a sign-in that ends after it is let go, not held for a form that's gone.
+  // Gone: a sign-in that ends after it is let go, not held for a form that's gone.
   const closed = useRef(false);
+  // The sign-in made here, and the calls to let it go with, as they are when the form goes: a
+  // Netlify API object made again on a render mustn't end a sign-in under way.
+  const last = useRef({ account, netlify });
+  useEffect(() => {
+    last.current = { account, netlify };
+  }, [account, netlify]);
+  // However the form goes (Back, Esc or the X closing Publish, or Save), a browser sign-in still
+  // waiting stops; one made here, main lets go now, not after its 30 minutes. After a Save, the
+  // destination has its own copy in the keychain (#1456: Cancel did this before).
+  useEffect(() => {
+    // Drawn (again, in Strict Mode's second run): its sign-ins are held.
+    closed.current = false;
+    return () => {
+      closed.current = true;
+      const { account: made, netlify: calls } = last.current;
+      calls.cancelSignIn();
+      if (made !== undefined && "handle" in made) calls.forgetSignIn(made.handle);
+    };
+  }, []);
 
   // The account's sites, once there's a sign-in to ask with. On `sites` alone, so a Netlify API
   // object made again on a render asks no more.
@@ -243,8 +261,7 @@ export function NetlifyDestinationDialog({
   };
 
   return (
-    <FormDialog
-      open={open}
+    <FormPane
       title={t(editing === undefined ? "publish.netlify.title" : "publish.netlify.editTitle")}
       description={t("publish.netlify.description")}
       confirm={t("publish.netlify.confirm")}
@@ -255,16 +272,8 @@ export function NetlifyDestinationDialog({
         site: editing?.siteId ?? "",
         newSite: "",
       }}
-      size="lg"
       onSave={(saved) => onSave(saved)}
-      onCancel={() => {
-        closed.current = true;
-        // A browser sign-in still waiting stops; one made here and not saved, main lets go now,
-        // not after its 30 minutes.
-        netlify.cancelSignIn();
-        if (account !== undefined && "handle" in account) netlify.forgetSignIn(account.handle);
-        onCancel();
-      }}
+      onBack={onBack}
     />
   );
 }

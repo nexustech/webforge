@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ImageMeta, MediaId, MediaMeta } from "@webforge/model";
+import { userEvent, within } from "storybook/test";
 import { sessionWith } from "../testing/fixtures.js";
 import { MediaPanel } from "./MediaPanel.js";
 import { addMedia } from "./media-commands.js";
@@ -93,5 +94,33 @@ export const ImageChosen: Story = {
     );
     if (!(item instanceof HTMLButtonElement)) throw new Error("No Shop front.jpg in the list");
     item.click();
+  },
+};
+
+/**
+ * Deleting an image a page uses asks first, saying where. Undo brings it back for every place, so
+ * its button is the ordinary primary, not red (#1445).
+ */
+export const DeletingOneInUse: Story = {
+  args: {
+    session: (() => {
+      const session = sessionWithMedia(ITEMS);
+      session.edit("insert", "Added Hero", (draft) => {
+        draft.pages[draft.homePageId]?.doc.content.push({
+          type: "Hero",
+          props: { id: "hero", title: "Fresh bread", image: { mediaId: "a1" as MediaId } },
+        });
+      });
+      return session;
+    })(),
+  },
+  play: async ({ canvasElement }) => {
+    const item = [...canvasElement.querySelectorAll("li button")].find((button) =>
+      button.textContent?.includes("Shop front.jpg"),
+    );
+    if (!(item instanceof HTMLButtonElement)) throw new Error("No Shop front.jpg in the list");
+    item.click();
+    await userEvent.click(await within(canvasElement).findByRole("button", { name: "Delete" }));
+    await within(canvasElement.ownerDocument.body).findByRole("alertdialog");
   },
 };

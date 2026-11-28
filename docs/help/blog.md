@@ -5,7 +5,7 @@ title: Your blog
 summary: Add a blog, write posts on the page, tag them, list them anywhere, import them, and change the design every post shares.
 components: [LatestPosts, PostTags, ShareButtons]
 related: [pages, header-and-footer, edit-panel, export, site-settings]
-updated: 2026-11-27
+updated: 2026-11-28
 ---
 
 # Your blog
@@ -88,7 +88,7 @@ When the new name would give your posts a new folder, such as `news/` for _News_
 
 If another folder of your site has the name already, the posts go to one with a number, such as `news-2/`. Your blog's own pages, its list of posts and its tag pages, move with them, and their old addresses go on to them too. Its feed moves as well, but a feed's old address can't send readers on: those who follow it in an app need its new address.
 
-A blog with no posts can be deleted from the same menu: choose **Delete**, then **Delete Blog**. Its design goes with it, and **Undo** brings both back.
+A blog with no posts can be deleted from the same menu: choose **Delete…**, then **Delete Blog**. Its design goes with it, and **Undo** brings both back.
 
 ## What a post can't do
 

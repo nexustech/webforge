@@ -18,13 +18,13 @@ function copyBanner(site: SiteDoc, pageId: PageId, nodeId: string | null): strin
 /**
  * The banner over the canvas while an element of the shared Header or Footer is selected (F-ED-7,
  * D7): "Editing shared Footer: changes apply to all 6 pages", or of a linked copy of a shared
- * section (F-ED-23): "Editing shared section 'Opening hours': changes apply to 3 copies on 2
+ * section (F-ED-23): "Editing shared section “Opening hours”: changes apply to 3 copies on 2
  * pages". Editing a shared region doesn't ask for confirmation on every change; this says, for as
  * long as it lasts, how far a change reaches.
  */
 /**
  * The banner's text while an element of a Blog's design is selected (6.10a): "Editing the design
- * of 'Blog': changes show on all 4 posts".
+ * of “Blog”: changes show on all 4 posts".
  */
 function designBanner(site: SiteDoc, pageId: PageId, nodeId: string | null): string | undefined {
   const home = nodeId === null ? undefined : sharedHomeOf(site, pageId, nodeId);

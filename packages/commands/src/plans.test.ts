@@ -46,15 +46,15 @@ describe("a plan (4.12a, AIB-6)", () => {
     expect(asked?.action).toBe("Allow Claude to Make These Changes: Build the Rapidfix site?");
     // The Allow saves the plan's one version, named after it (S26).
     expect(asked?.version).toBe("Before Claude's changes: Build the Rapidfix site");
-    expect(asked?.description).toContain('It adds the pages "Services".');
-    expect(asked?.description).toContain('It deletes the pages "About".');
+    expect(asked?.description).toContain("It adds the pages “Services”.");
+    expect(asked?.description).toContain("It deletes the pages “About”.");
     expect(asked?.description).toContain("It changes the theme.");
     expect(asked?.description).toContain(
       "Sections and elements: 1 added, 1 changed, 0 moved, 0 removed.",
     );
     // What each would have asked on its own, the phone named from and to.
     expect(asked?.description).toContain("On their own, these would each have asked first:");
-    expect(asked?.description).toContain("Allow Claude to Delete the Page About?");
+    expect(asked?.description).toContain("Allow Claude to Delete the Page “About”?");
     expect(asked?.description).toContain("Phone number: from no address to 01234 567890.");
     expect(asked?.description).toContain("Allow Claude to Change the Theme?");
 
@@ -149,13 +149,13 @@ describe("a plan (4.12a, AIB-6)", () => {
 
     expect(result).toMatchObject({ status: "done" });
     const description = confirm.mock.calls[0]?.[0].description;
-    expect(description).toContain('It renames the page "About" to "About us".');
-    expect(description).toContain('It renames the page "About us" to "Our story".');
-    expect(description).toContain('It moves the pages "About us".');
-    expect(description).toContain('It changes the Page Settings of "About us", "Home".');
+    expect(description).toContain("It renames the page “About” to “About us”.");
+    expect(description).toContain("It renames the page “About us” to “Our story”.");
+    expect(description).toContain("It moves the pages “About us”.");
+    expect(description).toContain("It changes the Page Settings of “About us”, “Home”.");
     // The switches that decide whether a page is found, from and to, by its title after.
-    expect(description).toContain('"Home": Hide this page from search engines, from no to yes.');
-    expect(description).toContain('"Our story": Hide in menu, from no to yes.');
+    expect(description).toContain("“Home”: Hide this page from search engines, from no to yes.");
+    expect(description).toContain("“Our story”: Hide in menu, from no to yes.");
     expect(description).not.toContain("Sections and elements");
   });
 
@@ -368,7 +368,7 @@ describe("a long plan's question (S30, #795)", () => {
     expect(rest.join(" ")).not.toContain("09999");
     // 150 pages: ten named, the rest counted, and the long title cut short.
     expect(description).toContain("and 140 more.");
-    expect(description).toContain(`"Services ${"x".repeat(50)}…"`);
+    expect(description).toContain(`“Services ${"x".repeat(50)}…”`);
     expect(description).not.toContain("Service 11");
   });
 
@@ -427,7 +427,7 @@ describe("a long plan's question (S30, #795)", () => {
     );
 
     const description = confirm.mock.calls[0]?.[0].description ?? "";
-    expect(description).toContain(`"${"x".repeat(58)}\u{1F35E}…"`);
+    expect(description).toContain(`“${"x".repeat(58)}\u{1F35E}…”`);
     // No half of a character left anywhere.
     expect(description.isWellFormed()).toBe(true);
   });

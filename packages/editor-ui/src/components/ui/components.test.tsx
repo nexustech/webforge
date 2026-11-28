@@ -521,6 +521,34 @@ describe("Tooltip", () => {
     expect(button.hasAttribute("aria-describedby")).toBe(false);
   });
 
+  it("keeps an unavailable button reachable, saying why, and ignores its clicks (#1517)", async () => {
+    const onClick = vi.fn();
+    const user = userEvent.setup();
+    const view = render(
+      <Button tooltip="Nothing is changed yet." unavailable onClick={onClick}>
+        Reset
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Reset" });
+    expect(button.getAttribute("aria-disabled")).toBe("true");
+    expect(button.hasAttribute("disabled")).toBe(false);
+    // The reason is its description before any tooltip opens, so the keyboard reaches it.
+    const description = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+    expect(description?.textContent).toBe("Nothing is changed yet.");
+    await user.tab();
+    expect(document.activeElement).toBe(button);
+    await user.keyboard("{Enter}");
+    await user.click(button);
+    expect(onClick).not.toHaveBeenCalled();
+    view.rerender(
+      <Button tooltip="Nothing is changed yet." unavailable={false} onClick={onClick}>
+        Reset
+      </Button>,
+    );
+    await user.click(button);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps a button with a tooltip working as a menu's trigger (#1011)", async () => {
     render(
       <DropdownMenu modal={false}>

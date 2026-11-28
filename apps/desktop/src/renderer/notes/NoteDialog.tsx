@@ -7,7 +7,7 @@ import "../shell/form-messages.js";
 /** Props of {@link NoteDialog}. */
 export type NoteDialogProps = {
   readonly open: boolean;
-  /** What the note is on, as undo labels name it ("Heading", "'Opening times'"). */
+  /** What the note is on, as undo labels name it ("Heading", "“Opening times”"). */
   readonly item: string;
   /** The note it has now; empty when it has none. */
   readonly note: string;

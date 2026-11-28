@@ -38,6 +38,7 @@ function question(
     return {
       action: t(how === "delete" ? "canvas.sharedDelete.title" : "canvas.sharedCut.title", where),
       confirm,
+      destructive: false,
       affectedPages: pagesShowing(site, place.region),
     };
   }
@@ -53,6 +54,7 @@ function question(
       }),
       description: t("blog.designChange"),
       confirm,
+      destructive: false,
       affectedPages: collectionItems(site, place.collection).length,
     };
   }
@@ -72,6 +74,7 @@ function question(
         ? t("canvas.sharedSectionChange.one")
         : t("canvas.sharedSectionChange.many", { copies }),
     confirm,
+    destructive: false,
     affectedPages: pages,
   };
 }

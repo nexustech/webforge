@@ -4,7 +4,7 @@ id: publish
 title: Publish
 summary: Put your website on your web host or on Netlify, and update it with one click whenever you change something.
 related: [export, site-check, site-settings, version-history]
-updated: 2026-11-27
+updated: 2026-11-28
 ---
 
 # Publish
@@ -24,14 +24,14 @@ If your host offers none of these, for example only a page in your browser where
 
 ## Adding your web host
 
-The first time you publish, {appName} asks **Where is your website hosted?** Choose **A web host with a control panel**. After that, click **Add Destination** and choose **Web Host with a Control Panel…**. Then fill in the details from your web host's control panel:
+The first time you publish, {appName} asks **Where is your website hosted?** Choose **A web host with a control panel**. After that, click **Add Destination** and choose **Web Host with a Control Panel…**. The details take the place of the list in Publish, and **Back** returns to the list, asking first if you've changed something. Fill in the details from your web host's control panel:
 
 - **Host**, such as `ftp.example.com`.
 - **User name**, and your **Password**.
 
 **Test Connection**, just below them, checks the details first: anything missing is marked, and nothing connects until it's filled in. The first time you test or save an SFTP destination, {appName} shows the host's key and asks you to confirm it's your host.
 
-**More Options** has the rest. Most people can leave it as it is: it starts with cPanel's usual settings, over an encrypted connection. Beside it, a short line says what's set there, such as _SFTP · port 2222 · /site_. If **Save** finds something there to fix, or **Test Connection** says to check the connection, the port or the folder, it opens and takes you to that setting. In a small window the details scroll, and **Save** and **Cancel** stay at the bottom.
+**More Options** has the rest. Most people can leave it as it is: it starts with cPanel's usual settings, over an encrypted connection. Beside it, a short line says what's set there, such as _SFTP · port 2222 · /site_. If **Save** finds something there to fix, or **Test Connection** says to check the connection, the port or the folder, it opens and takes you to that setting. In a small window the details scroll, and **Back** and **Save** stay at the bottom.
 
 - **Control panel:** _cPanel_ or _Plesk_ fills in the usual settings for you. If you're not sure, choose _Another, or I don't know_.
 - **Connection:**
@@ -50,6 +50,8 @@ The first time you publish, {appName} asks **Where is your website hosted?** Cho
 1. **Sign in to Netlify.** Make a _personal access token_ on Netlify (in **User settings › Applications › Personal access tokens**), paste it into **Personal access token**, and click **Connect**. Where it's offered, **Sign In with Netlify** opens Netlify in your browser instead: approve {appName} there, then come back.
 2. **Choose the Netlify site** to publish to, or **A new site**. A new site's name becomes part of its address, such as `rosas-bakery.netlify.app`. Leave it empty and Netlify makes one up.
 3. **Name** it if you like, then click **Save**. If Site Settings has no web address yet, {appName} fills in the Netlify site's.
+
+As with a web host, **Back** returns to the list. A sign-in you made and didn't save isn't kept.
 
 Once your site has a Netlify destination, [forms](forms.md) can send their messages with **Netlify Forms**.
 
@@ -80,7 +82,7 @@ Where your text uses `{year}`, your published site shows the year you published 
 
 ### If publishing doesn't work
 
-{appName} says what went wrong and what to do, such as checking the user name, password or folder in **Edit**, or publishing again once your internet connection is back. If it stopped for no reason it can name, it says how far it got: before anything was sent, while sending your files, or after sending them, while checking your site is live. Publishing again sends whatever didn't arrive.
+{appName} says what went wrong and what to do, such as checking the user name, password or folder in **Edit…**, or publishing again once your internet connection is back. If it stopped for no reason it can name, it says how far it got: before anything was sent, while sending your files, or after sending them, while checking your site is live. Publishing again sends whatever didn't arrive.
 
 ## Testing, changing and removing
 
@@ -88,8 +90,8 @@ Each destination has:
 
 - **Publish**.
 - **Test Connection:** says whether {appName} can sign in and reach the folder, or what's wrong.
-- **Edit**.
-- **Remove:** {appName} forgets the destination and its password. Nothing on your host changes.
+- **Edit…**.
+- **Remove…:** {appName} forgets the destination and its password. Nothing on your host changes.
 
 A site can have up to 20 destinations.
 
