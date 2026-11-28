@@ -91,6 +91,16 @@ function heroMinHeight(height: HeroHeight, floored: boolean, place: HeroPlace): 
 
 /** Where the Hero's text sits on its picture, from top to bottom (HH-6). */
 const HERO_TEXT_PLACES = ["middle", "bottom"] as const;
+
+/**
+ * How wide the Hero's title and text are (#1631): Narrow, a reading width, as every Hero's was;
+ * or Wide, as wide as its Content width, at most Wide's own (about 1,150 px), as lines much longer
+ * are hard to read (WCAG 1.4.8 suggests 80 characters).
+ */
+const HERO_TEXT_WIDTHS = ["narrow", "wide"] as const;
+
+/** The Hero's copy at Wide (#1631): its section's content width, never wider than Wide's. */
+const HERO_WIDE_TEXT = "w-full max-w-6xl";
 const TEXT_IMAGE_LAYOUTS = ["imageRight", "imageLeft"] as const;
 const CTA_LAYOUTS = ["banner", "split"] as const;
 const FAQ_LAYOUTS = ["accordion", "columns", "open"] as const;
@@ -133,9 +143,10 @@ const hero = defineSection({
     // Text only has no image; centred is always centred (#311). Its overlay shows only over its
     // picture behind the text (`pictureBehind`, HH-3); where its text sits, only in that layout
     // (HH-6).
+    // Beside the picture, its text already has half the row: no Text width (#1631).
     ...(value === "minimal" ? { hides: ["image", "textPlace"] as const } : {}),
     ...(value === "centred" ? { hides: ["alignment", "textPlace"] as const } : {}),
-    ...(value === "split" ? { hides: ["textPlace"] as const } : {}),
+    ...(value === "split" ? { hides: ["textPlace", "textWidth"] as const } : {}),
   })),
   fields: {
     title: { kind: "text", label: t("field.title"), inline: true },
@@ -175,6 +186,17 @@ const hero = defineSection({
         value,
       })),
     },
+    // Just before Content width, in the Style tab, so the two widths read together (#1631).
+    textWidth: {
+      kind: "select",
+      label: t("field.heroTextWidth"),
+      help: t("field.heroTextWidth.help"),
+      group: "style",
+      options: HERO_TEXT_WIDTHS.map((value) => ({
+        label: t(`field.heroTextWidth.${value}`),
+        value,
+      })),
+    },
   },
   // Its layouts' widths before 3.21 were Wide, Medium (centred) and Narrow (text only); format 10
   // keeps those saved then.
@@ -186,6 +208,8 @@ const hero = defineSection({
     alignment: "centre",
     height: "fit",
     textPlace: "middle",
+    // A reading width, as every Hero's was, so a saved site draws as before (#1631).
+    textWidth: "narrow",
     contentWidth: "wide",
     // Strong, the step nearest the 70% every Hero had, lighter so the picture shows (HH-3); in the
     // Neutral colour it had, so its text keeps its colour. Format 21 keeps 70% for those saved.
@@ -259,8 +283,13 @@ const hero = defineSection({
           />
         </div>
       );
+    // Narrow, a reading width; Wide, as wide as the content width allows (#1631).
+    const wide = values.textWidth === "wide" && layout !== "split";
+    const copyWidth = layout === "centred" ? "mx-auto max-w-2xl" : "max-w-xl";
     const copy = (
-      <div className={layout === "centred" ? "mx-auto max-w-2xl" : "max-w-xl"}>
+      <div
+        className={wide ? `${layout === "centred" ? "mx-auto " : ""}${HERO_WIDE_TEXT}` : copyWidth}
+      >
         <SectionTitle size="page">{values.title}</SectionTitle>
         <SectionLead className="py-6">{values.text}</SectionLead>
         {buttons}

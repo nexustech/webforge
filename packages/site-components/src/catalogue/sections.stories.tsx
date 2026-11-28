@@ -70,6 +70,31 @@ export const HeroTextBottom: Story = {
   },
 };
 
+/**
+ * The Hero's title and text in `variant` at each Text width (#1631), Narrow above Wide, at the
+ * Content width Wide: Narrow a reading width, Wide as wide as the content width (in Centred, as
+ * wide as the picture).
+ */
+const textWidths = (variant: string) =>
+  ["narrow", "wide"].map((textWidth) =>
+    hero("centre", {
+      id: `hero-${variant}-${textWidth}`,
+      variant,
+      textWidth,
+      contentWidth: "wide",
+      text: "Sourdough, cakes and pastries from our oven to your table, baked fresh before the doors open every morning, with coffee from the roaster down the road.",
+    }),
+  );
+
+/** Text width in Centred, image below (#1631): Narrow, then Wide, as wide as the picture. */
+export const HeroTextWidthCentred: Story = { args: { nodes: textWidths("centred") } };
+
+/** Text width in Image behind the text (#1631): Narrow, then Wide. */
+export const HeroTextWidthBackground: Story = { args: { nodes: textWidths("background") } };
+
+/** Text width in Text only (#1631): Narrow, then Wide. */
+export const HeroTextWidthMinimal: Story = { args: { nodes: textWidths("minimal") } };
+
 /** A second button, outlined, beside the first (HH-5). */
 const twoButtons = {
   secondButtonLabel: "Book a table",

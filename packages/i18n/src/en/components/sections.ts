@@ -31,6 +31,12 @@ export const sections = {
     "Where the title, text and button sit on the picture. At the bottom, the picture's subject stays in view above them, most on a tall Hero.",
   "field.heroTextPlace.middle": "Middle",
   "field.heroTextPlace.bottom": "Bottom",
+  // How wide the Hero's title and text are (#1631): not Content width's Narrow…Full.
+  "field.heroTextWidth": "Text width",
+  "field.heroTextWidth.help":
+    "Narrow keeps long lines easy to read. Wide: as wide as the section's Content width, at most about as wide as Wide.",
+  "field.heroTextWidth.narrow": "Narrow",
+  "field.heroTextWidth.wide": "Wide",
   "field.heroLayout.minimal": "Text only",
   "field.textImageLayout.imageRight": "Image on the right",
   "field.textImageLayout.imageLeft": "Image on the left",
