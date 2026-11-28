@@ -213,7 +213,7 @@ export const panels = {
   "link.url": "Web address",
   "link.urlPlaceholder": "https://example.com",
   "link.newTab": "Open in a new tab",
-  "link.save": "Save Link",
+  "link.save": "Save",
   "link.error.page": "Choose a page.",
   "link.error.email": "Enter an email address such as hello@example.com.",
   "link.error.phone": "Enter a phone number using digits, spaces and an optional +.",

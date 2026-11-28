@@ -506,6 +506,31 @@ const CASES: readonly FitCase[] = [
       await chooseFromMenu(app, page, "File", "AI Apps…");
       return shown(page.getByRole("dialog", { name: "AI Apps" }));
     },
+    // On, it shows its address under the switch (#1624); off again, as the other cases expect.
+    changes: [
+      {
+        name: "Let AI apps connect turned on",
+        run: async (dialog) => {
+          // A click, not check(): the box follows main's answer, a moment later.
+          const allow = dialog.getByRole("checkbox", { name: "Let AI apps connect" });
+          await allow.click();
+          await expect(allow).toBeChecked();
+          await expect(
+            dialog.getByRole("region", { name: "Address for AI apps" }).locator("code"),
+          ).toHaveText(/^http:\/\/127\.0\.0\.1:\d+\/mcp$/);
+        },
+      },
+      {
+        name: "Let AI apps connect turned off again",
+        run: async (dialog) => {
+          // A click, not uncheck(): the box follows main's answer, a moment later.
+          const allow = dialog.getByRole("checkbox", { name: "Let AI apps connect" });
+          await allow.click();
+          await expect(allow).not.toBeChecked();
+          await expect(dialog.getByRole("region", { name: "Address for AI apps" })).toHaveCount(0);
+        },
+      },
+    ],
   },
   {
     name: "Preview on Your Phone",
@@ -802,7 +827,7 @@ async function connectAiApp({ app, page }: Context): Promise<{ remove(): Promise
     // Connected, as AI apps says, before it closes: the title bar's status follows that (a 5 s
     // wait for the status alone, the dialog closed at once, missed it once on macOS).
     await expect(dialog.getByText("Connected", { exact: true })).toBeVisible({ timeout: 15_000 });
-    await dialog.getByRole("button", { name: "Close" }).click();
+    await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
     await expect(
       page.getByRole("button", { name: "Connected AI apps: Test client. Open AI apps." }),
     ).toBeVisible({ timeout: 15_000 });
@@ -1079,7 +1104,7 @@ for (const round of ROUNDS) {
               await expect(
                 dialog.getByRole("img", { name: "QR code of the preview's address" }),
               ).toBeVisible({ timeout: 15_000 });
-              await dialog.getByRole("button", { name: "Close" }).click();
+              await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
             }
             // A step to undo: a section added.
             const add = await sideTab(page, "Left", "Add");

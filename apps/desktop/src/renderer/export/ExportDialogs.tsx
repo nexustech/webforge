@@ -171,18 +171,17 @@ function Report({
             {report.more > 0 ? <p>{t("export.report.more", { count: report.more })}</p> : null}
           </section>
         )}
+        {/* As Your Site Is Live has them (#1444): its other actions, then Done, the primary. */}
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            {t("export.report.done")}
-          </Button>
           {report.format === "folder" ? (
             <Button variant="outline" onClick={actions.onShowFolder}>
               {t("export.report.showFolder")}
             </Button>
           ) : null}
-          <Button onClick={actions.onOpen}>
+          <Button variant="outline" onClick={actions.onOpen}>
             {report.format === "zip" ? t("export.report.showZip") : t("export.report.openFolder")}
           </Button>
+          <Button onClick={onClose}>{t("export.report.done")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

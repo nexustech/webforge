@@ -68,7 +68,7 @@ import {
   versionPackage,
 } from "./site-versions.js";
 import { saveSiteZip } from "./site-zip.js";
-import { timeStep, timeStepLater } from "./step-timings.js";
+import { timeStep, timeStepLater, writeTimer } from "./step-timings.js";
 import { createInlineStorageWriter, type StorageWriter } from "./storage-writer.js";
 import { createStoreGate, type GateKind, type StoreGate } from "./store-gate.js";
 
@@ -253,13 +253,20 @@ export class ProjectSession {
     this.#openStore =
       options.openStore ??
       ((path) => {
-        if (keep === undefined) return ProjectStore.open(path);
         // The hook runs at a later write, by when the store is there to say what it holds.
         let opened: ProjectStore | undefined;
         opened = ProjectStore.open(path, {
-          beforeFormatChange: (formats) => {
-            if (opened !== undefined) keep(path, { projectId: opened.info.projectId, ...formats });
-          },
+          ...(keep === undefined
+            ? {}
+            : {
+                beforeFormatChange: (formats: StoredFormats) => {
+                  if (opened !== undefined) {
+                    keep(path, { projectId: opened.info.projectId, ...formats });
+                  }
+                },
+              }),
+          // Each write's two parts, for the E2E tests' step timings only (#1621).
+          ...(writeTimer === undefined ? {} : { timedWrite: writeTimer }),
         });
         return opened;
       });

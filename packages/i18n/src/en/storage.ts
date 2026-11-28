@@ -4,7 +4,7 @@ export const storage = {
   "storage.saving": "Saving…",
   "storage.saveFailed": "Not saved. {appName} will try again.",
   "storage.saveFailed.noCopy":
-    "Not saved: {appName} couldn't keep a copy of this site as the older version saved it. Free some space on the disk. {appName} will try again.",
+    "Not saved: {appName} couldn't keep a copy of this site as the older version saved it. Freeing some space on the disk may help. {appName} will try again.",
   "storage.recovery.title": "Site File Damaged",
   "storage.recovery.message": "This site file is damaged and can't be opened.",
   "storage.recovery.detail":

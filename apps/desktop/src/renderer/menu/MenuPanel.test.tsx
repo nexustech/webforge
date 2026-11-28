@@ -48,7 +48,7 @@ describe("MenuPanel (F-ED-17)", () => {
     await user.click(dialog.getByRole("radio", { name: "Web address" }));
     await user.click(dialog.getByRole("textbox", { name: "Web address" }));
     await user.paste("book.example");
-    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
 
     expect(rows()).toEqual(["My site, page", "About, page", "Book now, button"]);
     expect(site().menu.items[2]).toMatchObject({

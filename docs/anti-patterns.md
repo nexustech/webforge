@@ -42,7 +42,7 @@ The examples are the ones the reviews gave; most have been fixed since, and they
 
 - **Looks like:** six copies of "how an element is named", with different handling of an empty name. Five value-equality helpers with different meanings (A18). Three abortable sleeps, one rejecting and two resolving on abort. Three file-size formatters, so one file showed two sizes in Media and in Site Check.
 - **Why it hurts:** a fix lands in one copy and misses the others, and the copies decide things that matter, such as whether an edit becomes an undo step.
-- **Instead:** look for the helper first (`elementName`, `sameJson` in `@webforge/model`, `sleep` in `@webforge/publish`, `sha256HexSchema`); if it's missing, add one in the lowest package that can own it.
+- **Instead:** look for the helper first (`elementName`, `sameJson` in `@webforge/model`, `sleep` in `@webforge/publish`, `sha256HexSchema`); if it's missing, add one in the lowest package that can own it. One that only its caller needs can stay beside that caller; the PR that brings a second caller moves it and uses it from both, and never copies it. Don't write it for callers that don't exist yet and aren't planned, as a helper made general ahead of its second use grows options nobody asked for: a piece two open issues need is a foundation issue, built first ([23](#23-a-shared-piece-left-to-whichever-lands-first)). The author's review runs `/simplify`, which looks for this in the diff.
 - **Found by:** arch 1 (R10); architecture review 2 A18; codebase review D1, D2; [UI/UX audit](reviews/2026-11-14-ui-ux-audit.md) §9.5.
 
 ### 6. A model limit typed again as a number
@@ -170,6 +170,15 @@ The examples are the ones the reviews gave; most have been fixed since, and they
 - **Why it hurts:** the drop lands in whichever zone the preview happened to be in, so the test fails at random on a slow runner, or passes having dropped somewhere it doesn't check.
 - **Instead:** pass `drag()` the zone the drop is aimed at as `into`. It then lets go only once the preview is inside that zone. Give the point as a function, such as `() => lowerHalf(links)`, so it's measured again at every try. To check a drag is robust, run it with the renderer slowed: `WEBFORGE_E2E_CPU_SLOWDOWN=3` with `--repeat-each 20` (`e2e/README.md`). A miss says where the preview was and which zones were under the pointer, which is how #1393 found a place on the canvas where nothing dropped.
 - **Found by:** #1336's review (PR 1360).
+
+## Planning
+
+### 23. A shared piece left to "whichever lands first"
+
+- **Looks like:** an issue whose `Depends on` says a piece another open issue also needs is built by whichever lands first, or whichever is built second uses what the first made. Four v1.1 issues said it of a small line of text (#1585, #1586, #1591, #1609), and four of card colours and a card's own surface for Site Check (#1571, #1574, #1592, #1593); both now depend on foundation issues (#1640, #1641), as do a picture in a list item (#1642), forms found by what they collect (#1643) and the Carousel's frame and pause button (#1646). The Image's and the Gallery's link on a picture (#1541, #1531) said it too, until #1541 was made to build it first for both (28 Nov 2026).
+- **Why it hurts:** with three streams working at once, two can build the piece at the same time, or the first builds it in a shape only it needs and the second reworks it. It's the same mistake as [#18](#18-hand-building-a-piece-of-interface-that-has-a-shared-component), made before any code is written.
+- **Instead:** a small foundation issue that both depend on, its days taken out of theirs, planned with every user in view and built first (`CLAUDE.md`, _Working the plan_). `/plan-next` groups a block's items by the pieces they'd change and proposes the foundations.
+- **Found by:** the review of the v1.1 issues for shared pieces, 28 Nov 2026; then #1541 and #1531 in the sweep of the streams' queues the same day.
 
 ## Now checked
 

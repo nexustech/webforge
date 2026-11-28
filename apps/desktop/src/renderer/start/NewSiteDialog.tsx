@@ -2,6 +2,7 @@ import {
   Button,
   cn,
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -160,14 +161,6 @@ function NewSiteBody({ templates, onCreate, onCancel }: Omit<NewSiteDialogProps,
               </div>
             </ScrollArea>
           </fieldset>
-          <DialogFooter className="mt-auto">
-            <Button type="button" variant="secondary" onClick={onCancel}>
-              {t("newSite.cancel")}
-            </Button>
-            <Button type="submit" disabled={trimmed === ""}>
-              {t("newSite.create")}
-            </Button>
-          </DialogFooter>
         </div>
         <ScrollArea className="min-h-0 flex-1 rounded-md border border-border bg-panel">
           <div className="flex flex-col gap-4 p-3">
@@ -244,6 +237,13 @@ function NewSiteBody({ templates, onCreate, onCancel }: Omit<NewSiteDialogProps,
           </div>
         </ScrollArea>
       </div>
+      {/* At the bottom right, as every dialog has them (#1444), not under the left column. */}
+      <DialogFooter>
+        <DialogCancel onClick={onCancel}>{t("newSite.cancel")}</DialogCancel>
+        <Button type="submit" disabled={trimmed === ""}>
+          {t("newSite.create")}
+        </Button>
+      </DialogFooter>
       <TemplateDetails
         template={details}
         onUse={(template) => {

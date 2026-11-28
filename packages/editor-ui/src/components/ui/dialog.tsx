@@ -35,6 +35,8 @@ type Unsaved = {
   readonly report: (key: symbol, changed: boolean) => void;
   /** Whether some part has changes now, read as the dialog would close. */
   readonly changed: () => boolean;
+  /** Asks "Discard your changes?" when some part has them, running `then` on Discard. */
+  readonly ask: (then: () => void) => void;
 };
 
 const UnsavedContext = createContext<Unsaved | null>(null);
@@ -55,6 +57,20 @@ export function useUnsavedChanges(changed: boolean): void {
     return () => unsaved?.report(key, false);
   }, [unsaved, key, changed]);
 }
+
+/**
+ * What leaves a step of the dialog this is drawn in without closing it, such as a form's **Back**
+ * (#1456), asks with: `(then) => void` runs `then` at once when nothing in the dialog has changed,
+ * and otherwise asks "Discard your changes?" as Esc does, running `then` on _Discard_ and nothing
+ * on _Keep Editing_. Outside a {@link Dialog}, it runs `then` at once. After _Discard_, the focus
+ * doesn't go back to where the question was asked from, which `then` takes away: `then` places it.
+ */
+export function useAskBeforeDiscarding(): (then: () => void) => void {
+  const unsaved = useContext(UnsavedContext);
+  return unsaved?.ask ?? runNow;
+}
+
+const runNow = (then: () => void) => then();
 
 /**
  * {@link useUnsavedChanges} as an element, for a dialog whose state lives above its `Dialog`:
@@ -79,7 +95,15 @@ export function Dialog({
   // The parts with changes. A ref, not state: read as the dialog would close, it holds the latest
   // reports, not the last render's.
   const changed = useRef(new Set<symbol>());
-  const [asking, setAsking] = useState(false);
+  // What _Discard_ does, while the question is asked: close the dialog, or leave a step of it.
+  const [asking, setAsking] = useState<
+    { readonly kind: "close" } | { readonly kind: "step"; readonly onDiscard: () => void }
+  >();
+  // The dialog's latest close, called on _Discard_: not the one of the render that asked.
+  const close = useRef(onOpenChange);
+  useLayoutEffect(() => {
+    close.current = onOpenChange;
+  });
   const discarded = useRef(false);
   const unsaved = useMemo<Unsaved>(
     () => ({
@@ -88,6 +112,10 @@ export function Dialog({
         else changed.current.delete(key);
       },
       changed: () => changed.current.size > 0,
+      ask: (then) => {
+        if (changed.current.size > 0) setAsking({ kind: "step", onDiscard: then });
+        else then();
+      },
     }),
     [],
   );
@@ -98,7 +126,7 @@ export function Dialog({
         {...props}
         onOpenChange={(next) => {
           if (!next && unsaved.changed()) {
-            setAsking(true);
+            setAsking({ kind: "close" });
             return;
           }
           onOpenChange?.(next);
@@ -107,10 +135,10 @@ export function Dialog({
         {children}
       </DialogPrimitive.Root>
       <AlertDialog
-        open={asking}
+        open={asking !== undefined}
         onOpenChange={(next) => {
           // Esc on the question keeps editing.
-          if (!next) setAsking(false);
+          if (!next) setAsking(undefined);
         }}
       >
         <AlertDialogContent
@@ -134,10 +162,13 @@ export function Dialog({
               variant="destructive"
               onClick={() => {
                 discarded.current = true;
-                setAsking(false);
-                // Straight to the dialog's own close: its changes stay counted, so a dialog that
-                // stays open (busy applying) still asks the next time.
-                onOpenChange?.(false);
+                const discard =
+                  asking?.kind === "step" ? asking.onDiscard : () => close.current?.(false);
+                setAsking(undefined);
+                // Straight to the dialog's own close, or the step's way back: its changes stay
+                // counted until it goes, so a dialog that stays open (busy applying) still asks
+                // the next time.
+                discard?.();
               }}
             >
               {t("ui.unsaved.discard")}
@@ -157,6 +188,43 @@ export function DialogTrigger(props: ComponentProps<typeof DialogPrimitive.Trigg
 /** Closes the dialog; use `asChild` around a {@link Button}. */
 export function DialogClose(props: ComponentProps<typeof DialogPrimitive.Close>) {
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
+}
+
+/**
+ * A dialog's Cancel (#1444): the filled grey every Cancel has, "Cancel" unless named otherwise.
+ * It calls the dialog's own `onClick` and is never Radix's Close, which goes through the dialog's
+ * `onOpenChange` and would ask "Discard your changes?" (#1439): Cancel never asks.
+ */
+export function DialogCancel({
+  children,
+  ...props
+}: Omit<ComponentProps<typeof Button>, "variant" | "type"> & {
+  readonly onClick: () => void;
+}) {
+  return (
+    // Marked as the way out, for the footer rule's check (#1444).
+    <Button type="button" variant="secondary" data-way-out="" {...props}>
+      {children ?? t("ui.form.cancel")}
+    </Button>
+  );
+}
+
+/**
+ * The one way out of a dialog with nothing to save (#1444): **Close**, in Cancel's filled grey.
+ * Radix's Close, through the dialog's `onOpenChange`: such a dialog reports no changes, so it
+ * never asks first.
+ */
+export function DialogCloseButton({
+  children,
+  ...props
+}: Omit<ComponentProps<typeof Button>, "variant" | "type" | "asChild">) {
+  return (
+    <DialogPrimitive.Close asChild>
+      <Button type="button" variant="secondary" data-way-out="" {...props}>
+        {children ?? t("ui.close")}
+      </Button>
+    </DialogPrimitive.Close>
+  );
 }
 
 /**
@@ -209,7 +277,12 @@ export function DialogHeader({ className, ...props }: ComponentProps<"div">) {
   );
 }
 
-/** The dialog's buttons; the main action goes last. */
+/**
+ * The dialog's buttons, at its bottom right, in this order (#1444, `docs/extending.md`): other
+ * actions; {@link DialogCancel} or {@link DialogCloseButton}; Back, in a dialog of steps; then the
+ * primary, last. A dialog with nothing to save ends with Close alone, one that finishes a task
+ * with **Done** as its primary.
+ */
 export function DialogFooter({ className, ...props }: ComponentProps<"div">) {
   return (
     <div data-slot="dialog-footer" className={cn(dialogStyles.footer, className)} {...props} />

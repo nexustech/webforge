@@ -40,11 +40,22 @@ function placeCaret(element: HTMLElement, offset: number): void {
 const RESTORE_TIMEOUT_MS = 1_000;
 
 /**
+ * What the person does in the field that makes the caret theirs again (#1613): a key, typing (IME,
+ * paste and dictation too), a click, or leaving it.
+ */
+const PERSON_ACTS = ["keydown", "beforeinput", "pointerdown", "focusout"] as const;
+
+/**
  * Keeps the caret where it is in a focused plain-text inline field of `doc` while its text is
  * replaced. Puck's inline text field swaps its text node when the value changes from outside (undo
  * while typing), which would otherwise move the caret to the start. Call it just before the change;
  * the caret is put back as soon as the field's content changes, before the next key press.
  * Rich text (ProseMirror) restores its own selection and is left alone.
+ *
+ * A change that doesn't draw the field again leaves nothing to put back: once the person acts in
+ * the field after it, the next change to its text is theirs, and the caret stays where they put it
+ * (#1613). Their acts are listened for after the event under way, which may be the one making the
+ * change (Ctrl+Z).
  */
 export function preserveCaret(doc: Document | null): void {
   // The field lives in the canvas iframe, so `instanceof HTMLElement` (the host's) cannot be used.
@@ -61,12 +72,23 @@ export function preserveCaret(doc: Document | null): void {
   if (offset === null) {
     return;
   }
-  const observer = new MutationObserverImpl(() => {
+  let listening = false;
+  const stop = () => {
     observer.disconnect();
+    clearTimeout(arming);
+    clearTimeout(timer);
+    if (listening) for (const type of PERSON_ACTS) active.removeEventListener(type, stop, true);
+  };
+  const observer = new MutationObserverImpl(() => {
+    stop();
     placeCaret(active, offset);
   });
   observer.observe(active, { childList: true, characterData: true, subtree: true });
-  setTimeout(() => observer.disconnect(), RESTORE_TIMEOUT_MS);
+  const arming = setTimeout(() => {
+    listening = true;
+    for (const type of PERSON_ACTS) active.addEventListener(type, stop, true);
+  }, 0);
+  const timer = setTimeout(stop, RESTORE_TIMEOUT_MS);
 }
 
 /**

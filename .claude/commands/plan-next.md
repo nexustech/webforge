@@ -44,7 +44,11 @@ Don't close milestones or change due dates until I approve.
 
 ## 4. Plan the selected items
 
-Pick items in plan order whose dependencies are closed, until the scope is filled. For each item give:
+Pick items in plan order whose dependencies are closed, until the scope is filled.
+
+**Foundation pass first.** Group the selected items, the milestone's other open items, and the next milestone's when it's being pulled forward, by the files and shared pieces they would change. For any piece two or more items need that doesn't exist yet, propose a foundation issue (its days taken out of theirs) and put it first; for each shared piece being built or reshaped in this block, name the one stream that writes it. Show the groups in the plan.
+
+For each item give:
 
 - **Approach:** packages and files to create or change, public interfaces (TypeScript signatures), data/schema changes and migrations, IPC channels (zod schemas), and the undo labels for every document change
 - **PR breakdown:** 1–3 PRs of at most about 400 changed lines each. Give each a Conventional Commit title and a branch named after the same commit type: `feat/`, `fix/`, `chore/`, `docs/` or `test/` + `<area>-<slug>` (a `type/chore` item gets `chore/…`)

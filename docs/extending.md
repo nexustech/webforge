@@ -118,6 +118,27 @@ A panel is a tab in one of the window's slots: `left.top`, `left.bottom`, `left.
 - **An editor panel** joins the list of panels `Editor.test.tsx` expects, so a panel an area adds by mistake fails it.
 - **A new dialog, panel, menu or title bar control joins `CASES` in `e2e/app/dialog-fit.spec.ts`,** with how to open it and the changes of state that can move it (a section switched, an error shown, a choice changed). The spec checks it fits the window, below the title bar, at 960 × 600 and 1366 × 768, in Dark and Light and at 125% text, never scrolling sideways or scrolling itself as well as a list inside it, its top still as its content changes (#1433). A title bar control that shows only in some states is made to show before the spec's title bar step.
 
+### A dialog's buttons
+
+Every dialog ends with the same footer (#1444), so the eye learns it once:
+
+- **At the bottom right, in this order:**
+  1. other actions;
+  2. the way out, **Cancel** or **Close**;
+  3. **Back**, in a dialog of steps, so it sits beside the primary it pairs with;
+  4. the primary, last.
+- **The way out is always the filled grey `secondary`:**
+  - `DialogCancel` in a dialog, `AlertDialogCancel` in a confirmation;
+  - `DialogCloseButton` where there's nothing to save.
+- **`DialogCancel` never asks.** It calls the dialog's own handler, never Radix's Close, which goes through `onOpenChange` and would ask "Discard your changes?" (#1439).
+- **A dialog with nothing to save ends with one Close:** About, Keyboard Shortcuts, Publish, AI Apps.
+- **One that finishes a task ends with Done as its primary:** Site Exported, Your Site Is Live.
+- **The primary says Save** unless Save would be unclear. The title already names what's saved (Link, Note, a destination). An action keeps its name: Use This, Add Page, Create Site.
+- **An answer, not a way out, is the primary.** While You Were Away's **Keep** keeps the AI's changes, so it's the primary, not a Close by another name.
+- **A form drawn as a step inside another dialog ends with Back, not Cancel** (`FormPane`, #1456): Publish's destination forms. Back asks "Discard your changes?" first, as Esc does (`useAskBeforeDiscarding`), and Esc or the X close the whole dialog.
+
+`e2e/visual/stories.spec.ts` checks every editor story's footers against this rule (`footerFaults`).
+
 ### Window dialogs
 
 A dialog an area opens from anywhere (Theme Studio), not from inside one of its panels, is drawn once by the window: `windowDialogs.register({ id, component })` from a window area (`shell/window-dialogs.tsx`), its open state kept by the area (a store it makes as it registers). A dialog a panel opens for itself stays in that panel.
@@ -264,6 +285,10 @@ No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `
 - **Code that fills placeholders itself** (a script, Puck) uses `template(key)`.
 
 No control has the browser's `title` (`pnpm ui-strings` checks the renderer, `editor-ui` and the engine for one in JSX or set with `setAttribute`, and the engine for `element.title =` too, #1011): it is slow, unstyled and never shown on focus. Give a `Button` its `tooltip`, wrap another control in `WithTooltip` (`disableable` for one that can be disabled, `whenCut` for a label cut short), and give a control on the canvas `data-wf-tip`. An `iframe` keeps its `title`, which names it.
+
+## The site format
+
+A change to what a site file may hold (a new value in a select, a new component, a renamed field) bumps `SITE_FORMAT_VERSION` with a migration step and fixtures ([ADR 0012](adr/0012-site-format-migrations.md)). **A PR that changes the format takes the next number on `main` and never reuses one; a step that does nothing is fine.** Two PRs that bump at once conflict on the number, and the second takes the next one. Gathering every change before a release under one number was considered and dropped (#1644, 28 Nov 2026): later PRs would edit an earlier PR's step, and builds between releases would hold sites changed in different ways under the same number.
 
 ## Tests and stories
 

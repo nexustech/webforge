@@ -68,7 +68,7 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
     await user.click(dialog.getByRole("textbox", { name: "Web address" }));
     await user.paste("example.com");
     await user.click(dialog.getByRole("checkbox", { name: "Open in a new tab" }));
-    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
 
     await expect(answer).resolves.toEqual({ href: "https://example.com", newTab: true });
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -93,7 +93,7 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
     const answer = ask(null);
     const dialog = await openedDialog("Link");
     await user.selectOptions(dialog.getByRole("combobox", { name: "Section" }), "Opening times");
-    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
 
     const pageId = session.ui.getState().pageId;
     await expect(answer).resolves.toEqual({
@@ -115,7 +115,7 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
     const answer = ask(null, { nodeId: "columns", field: "right" });
     const dialog = await openedDialog("Link");
     await user.selectOptions(dialog.getByRole("combobox", { name: "Section" }), "Opening times");
-    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
     await answer;
 
     const pageId = session.ui.getState().pageId;
@@ -130,7 +130,7 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
     const answer = ask(null, null);
     const dialog = await openedDialog("Link");
     await user.selectOptions(dialog.getByRole("combobox", { name: "Section" }), "Opening times");
-    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
     await answer;
 
     const [entry] = session.history.entries();
@@ -169,7 +169,7 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
     await user.click(
       dialog.getByRole("checkbox", { name: "Download the file instead of opening it" }),
     );
-    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
 
     await expect(answer).resolves.toEqual({ href: "webforge:file/prices?download", newTab: true });
   });

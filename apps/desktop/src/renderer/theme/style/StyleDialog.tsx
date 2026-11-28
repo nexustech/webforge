@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogCancel,
   Tabs,
   TabsContent,
   TabsList,
@@ -133,9 +134,9 @@ function OpenStyleDialog({
               onChange={(next) => state.setState({ scope: next })}
             />
             <div className="ml-auto flex gap-2">
-              <Button variant="ghost" disabled={busy} onClick={cancel}>
+              <DialogCancel disabled={busy} onClick={cancel}>
                 {t("style.cancel")}
-              </Button>
+              </DialogCancel>
               <Button disabled={busy} onClick={apply}>
                 {t("style.apply")}
               </Button>

@@ -198,7 +198,10 @@ describe("AI apps (4.9)", () => {
     expect(mcp.add).toHaveBeenCalledWith("Claude Desktop", "claude");
     expect(await dialog().findByText(KEY)).toBeTruthy();
     // The extension holds the address: none to copy.
-    expect(dialog().queryByText(ADDRESS)).toBeNull();
+    // Its panel has none: only the line under the switch shows it (#1624).
+    expect(
+      within(dialog().getByRole("region", { name: /is added$/ })).queryByText(ADDRESS),
+    ).toBeNull();
     expect(dialog().getByText(/paste the key into Key/)).toBeTruthy();
     await user.click(dialog().getByRole("button", { name: "Copy the key" }));
     expect(copySecret).toHaveBeenCalledWith(KEY);
@@ -241,7 +244,9 @@ describe("AI apps (4.9)", () => {
 
     expect(mcp.add).toHaveBeenCalledWith("Cursor", "other");
     expect(await dialog().findByText(KEY)).toBeTruthy();
-    expect(dialog().getByText(ADDRESS)).toBeTruthy();
+    // Its panel's own address row, as well as the line under the switch (#1624).
+    const panel = within(dialog().getByRole("region", { name: "Cursor is added" }));
+    expect(panel.getByText(ADDRESS)).toBeTruthy();
     expect(dialog().getByText(/You won't see it again/)).toBeTruthy();
     // It can't check who answers at the address: the dialog says so.
     expect(dialog().getByText(/another program on this computer could answer/)).toBeTruthy();
@@ -254,7 +259,7 @@ describe("AI apps (4.9)", () => {
     expect(dialog().getByText(/cleared from the clipboard/)).toBeTruthy();
     // Waiting for it to use its key, with the time the key has left (#1245).
     expect(dialog().getByText(/Waiting for Cursor to connect/)).toBeTruthy();
-    await user.click(dialog().getByRole("button", { name: "Copy the address" }));
+    await user.click(panel.getByRole("button", { name: "Copy the address" }));
     expect(copyText).toHaveBeenCalledWith(ADDRESS);
 
     // Done: the key is gone, for good.
@@ -388,7 +393,10 @@ describe("AI apps (4.9)", () => {
     expect(mcp.add).toHaveBeenCalledWith("VS Code", "vscode");
     expect(await dialog().findByText(KEY)).toBeTruthy();
     // The link holds the address: none to copy.
-    expect(dialog().queryByText(ADDRESS)).toBeNull();
+    // Its panel has none: only the line under the switch shows it (#1624).
+    expect(
+      within(dialog().getByRole("region", { name: /is added$/ })).queryByText(ADDRESS),
+    ).toBeNull();
     expect(dialog().getByText(/another program on this computer could answer/)).toBeTruthy();
     await user.click(dialog().getByRole("button", { name: "Install in VS Code" }));
     expect(mcp.install).toHaveBeenCalledWith("1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5");
@@ -460,5 +468,174 @@ describe("AI apps (4.9)", () => {
   it("says when the address has moved and the apps must be added again", async () => {
     const { dialog } = setUp({ moved: true });
     expect(await dialog().findByText(/address for AI apps has changed/)).toBeTruthy();
+  });
+});
+
+describe("the address for AI apps, under Let AI apps connect (#1624)", () => {
+  const line = (dialog: () => ReturnType<typeof within>) =>
+    within(dialog().getByRole("region", { name: "Address for AI apps" }));
+
+  it("shows the address while AI apps is on, and copies it as plain text, never as the key", async () => {
+    const { dialog, copyText, copySecret, user } = setUp();
+    const shown = await waitFor(() => line(dialog));
+    expect(shown.getByText(ADDRESS)).toBeTruthy();
+    expect(shown.getByText(/if an app stops connecting, check it uses this one/)).toBeTruthy();
+    // The address alone: no key, and nothing to send with it.
+    expect(shown.queryByText(/Bearer/)).toBeNull();
+
+    await user.click(shown.getByRole("button", { name: "Copy the address" }));
+    expect(copyText).toHaveBeenCalledWith(ADDRESS);
+    expect(copySecret).not.toHaveBeenCalled();
+    expect(shown.getByRole("button", { name: "Copied" })).toBeTruthy();
+  });
+
+  it("shows no address while AI apps is off, and shows it once it's turned on", async () => {
+    const { dialog, user } = setUp({ enabled: false, address: null });
+    const box = await dialog().findByRole("checkbox", { name: "Let AI apps connect" });
+    expect(dialog().queryByRole("region", { name: "Address for AI apps" })).toBeNull();
+    expect(dialog().queryByRole("alert")).toBeNull();
+
+    await user.click(box);
+    expect(await waitFor(() => line(dialog).getByText(ADDRESS))).toBeTruthy();
+  });
+
+  it("says nothing can connect when it's on with no address, but not while it's being turned on", async () => {
+    const { dialog, mcp, user } = setUp({ enabled: false, address: null });
+    let answer: (status: McpStatus) => void = () => undefined;
+    mcp.setEnabled.mockImplementationOnce(
+      () =>
+        new Promise<McpStatus>((resolve) => {
+          answer = resolve;
+        }),
+    );
+    // Polled while main opens its port: on, with no address yet.
+    mcp.status.mockResolvedValue({ enabled: true, address: null, moved: false, apps: [CLAUDE] });
+    await user.click(await dialog().findByRole("checkbox", { name: "Let AI apps connect" }));
+    await waitFor(() => expect(dialog().getByRole("checkbox")).toHaveProperty("checked", true));
+    expect(dialog().queryByRole("alert")).toBeNull();
+
+    // No port could be had: main says it's on, with no address.
+    await act(async () => {
+      answer({ enabled: true, address: null, moved: false, apps: [CLAUDE] });
+    });
+    expect((await dialog().findByRole("alert")).textContent).toMatch(
+      /couldn't start listening for AI apps, so nothing can connect/,
+    );
+    expect(dialog().queryByRole("region", { name: "Address for AI apps" })).toBeNull();
+  });
+
+  it("says nothing of it while any turning on is still being answered", async () => {
+    const { dialog, mcp, user } = setUp({ enabled: false, address: null });
+    const answers: ((status: McpStatus) => void)[] = [];
+    mcp.setEnabled.mockImplementation(
+      () =>
+        new Promise<McpStatus>((resolve) => {
+          answers.push(resolve);
+        }),
+    );
+    const box = await dialog().findByRole("checkbox", { name: "Let AI apps connect" });
+    // Clicked three times before main answers (the box follows its answer, so each asks for on):
+    // polled meanwhile, on with no address yet.
+    await user.click(box);
+    await user.click(box);
+    await user.click(box);
+    expect(answers).toHaveLength(3);
+    const opening = { enabled: true, address: null, moved: false, apps: [CLAUDE] };
+    mcp.status.mockResolvedValue(opening);
+
+    // The first two answered: the last is still under way, so nothing is said yet.
+    await act(async () => {
+      answers[0]?.(opening);
+      answers[1]?.(opening);
+    });
+    expect(dialog().queryByRole("alert")).toBeNull();
+
+    await act(async () => {
+      answers[2]?.({ ...opening, address: ADDRESS });
+    });
+    expect(await waitFor(() => line(dialog).getByText(ADDRESS))).toBeTruthy();
+    expect(dialog().queryByRole("alert")).toBeNull();
+  });
+
+  it("says nothing of it while AI apps is still starting at launch, and says it if no address comes", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // Opened while {appName} is still opening its port: on, with no address yet.
+    const starting = { enabled: true, address: null, moved: false, apps: [CLAUDE] };
+    const { dialog, mcp } = setUp(starting);
+    await dialog().findByRole("checkbox", { name: "Let AI apps connect" });
+    expect(dialog().queryByRole("alert")).toBeNull();
+
+    // Started: the address shows, and nothing was said.
+    mcp.status.mockResolvedValue({ ...starting, address: ADDRESS });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect(line(dialog).getByText(ADDRESS)).toBeTruthy();
+    expect(dialog().queryByRole("alert")).toBeNull();
+
+    // No port could be had: two statuses in a row with no address, and it says so.
+    mcp.status.mockResolvedValue(starting);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect(dialog().queryByRole("alert")).toBeNull();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect((await dialog().findByRole("alert")).textContent).toMatch(/nothing can connect/);
+  });
+
+  it("says beside the new address that it has changed, and that apps need it", async () => {
+    const { dialog, mcp } = setUp({ moved: true });
+    const shown = await waitFor(() => line(dialog));
+    expect(shown.getByText(ADDRESS)).toBeTruthy();
+    expect(
+      shown.getByText(
+        /address for AI apps has changed, as another program was using the old one: an app set up with the old address needs the new one/,
+      ),
+    ).toBeTruthy();
+    // In place of the usual hint, and said once.
+    expect(shown.queryByText(/check it uses this one/)).toBeNull();
+    expect(dialog().getAllByText(/address for AI apps has changed/)).toHaveLength(1);
+    await waitFor(() => expect(mcp.seenMoved).toHaveBeenCalled());
+  });
+
+  it("shows a new address as not yet copied", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { dialog, mcp, user } = setUp();
+    await user.click(
+      await waitFor(() => line(dialog).getByRole("button", { name: "Copy the address" })),
+    );
+    expect(line(dialog).getByRole("button", { name: "Copied" })).toBeTruthy();
+
+    const moved = "http://127.0.0.1:52345/mcp";
+    mcp.status.mockResolvedValue({ enabled: true, address: moved, moved: true, apps: [CLAUDE] });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect(line(dialog).getByText(moved)).toBeTruthy();
+    expect(line(dialog).getByRole("button", { name: "Copy the address" })).toBeTruthy();
+  });
+
+  it("shows Claude Code's address as a value, and copying either address leaves the key's state alone", async () => {
+    const { dialog, copyText, copySecret, user } = setUp();
+    await user.click(await dialog().findByRole("button", { name: "Add AI App" }));
+    await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
+    await user.click(dialog().getByRole("button", { name: "Add" }));
+    const panel = within(await dialog().findByRole("region", { name: "Claude Code is added" }));
+    expect(panel.getByText(ADDRESS)).toBeTruthy();
+
+    await user.click(panel.getByRole("button", { name: "Copy the key" }));
+    expect(copySecret).toHaveBeenCalledWith(KEY);
+    await user.click(line(dialog).getByRole("button", { name: "Copy the address" }));
+    expect(copyText).toHaveBeenLastCalledWith(ADDRESS);
+    // The key's button still says it was copied, and when it's cleared.
+    expect(panel.getByRole("button", { name: "Copied" })).toBeTruthy();
+    expect(panel.getByText(/cleared from the clipboard/)).toBeTruthy();
+
+    await user.click(panel.getByRole("button", { name: "Copy the address" }));
+    expect(copyText).toHaveBeenLastCalledWith(ADDRESS);
+    expect(copySecret).toHaveBeenCalledTimes(1);
+    expect(copyText).not.toHaveBeenCalledWith(KEY);
   });
 });

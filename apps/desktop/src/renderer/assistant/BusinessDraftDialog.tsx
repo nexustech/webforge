@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -137,14 +138,12 @@ export function BusinessDraftDialog(props: BusinessDraftDialogProps) {
           </ScrollArea>
         )}
         <DialogFooter>
-          <Button variant="ghost" onClick={props.onCancel}>
-            {t("assistant.business.keep")}
-          </Button>
           {state.step === "draft" || state.step === "failed" ? (
             <Button variant="outline" onClick={props.onAgain}>
               {t("assistant.rewrite.again")}
             </Button>
           ) : null}
+          <DialogCancel onClick={props.onCancel}>{t("assistant.business.keep")}</DialogCancel>
           {drafts === undefined ? null : (
             <Button onClick={() => props.onUse(words.map((word) => word.trim()))}>
               {t("assistant.business.use")}

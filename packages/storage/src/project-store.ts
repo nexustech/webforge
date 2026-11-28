@@ -69,6 +69,7 @@ import {
   type VersionPublish,
   type VersionReason,
   versionPublishSchema,
+  type WriteParts,
 } from "./store-types.js";
 
 const JSON_MIME = "application/json";
@@ -92,15 +93,18 @@ export class ProjectStore {
   #unsavedMigration: SiteDoc | undefined;
   /** {@link OpenProjectOptions.beforeFormatChange}, until it has run. */
   #beforeFormatChange: ((formats: StoredFormats) => void) | undefined;
+  /** {@link OpenProjectOptions.timedWrite}, if set. */
+  readonly #timedWrite: ((parts: WriteParts) => void) | undefined;
 
   private constructor(
     db: Database.Database,
     info: ProjectInfo,
-    beforeFormatChange?: (formats: StoredFormats) => void,
+    hooks: Pick<OpenProjectOptions, "beforeFormatChange" | "timedWrite"> = {},
   ) {
     this.#db = db;
     this.#info = info;
-    this.#beforeFormatChange = info.readOnly ? undefined : beforeFormatChange;
+    this.#beforeFormatChange = info.readOnly ? undefined : hooks.beforeFormatChange;
+    this.#timedWrite = hooks.timedWrite;
   }
 
   /**
@@ -139,7 +143,7 @@ export class ProjectStore {
         return new ProjectStore(db, { ...validated, readOnly });
       }
       configureWrites(db);
-      return new ProjectStore(db, { ...validated, readOnly }, options.beforeFormatChange);
+      return new ProjectStore(db, { ...validated, readOnly }, options);
     } catch (error) {
       if (db.open) db.close();
       throw toProjectFileError(error);
@@ -670,10 +674,19 @@ export class ProjectStore {
     this.#assertWritable();
     this.#keepBeforeFormatChange();
     const from = this.#info.formatVersion;
-    const result = stamped(this.#db, () => {
-      if (from < FORMAT_VERSION) migrateSchema(this.#db, from);
-      return change();
-    });
+    const timed = this.#timedWrite;
+    const start = timed === undefined ? 0 : performance.now();
+    const result = stamped(
+      this.#db,
+      () => {
+        if (from < FORMAT_VERSION) migrateSchema(this.#db, from);
+        return change();
+      },
+      // Its two parts, once it has committed (#1621): the rest of its time is BEGIN and COMMIT.
+      timed === undefined
+        ? undefined
+        : (changesMs) => timed({ changesMs, flushMs: performance.now() - start - changesMs }),
+    );
     if (from < FORMAT_VERSION) this.#info = { ...this.#info, formatVersion: FORMAT_VERSION };
     return result;
   }

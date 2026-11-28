@@ -42,7 +42,7 @@ test("adds a button, reorders by keyboard and drag, and undoes it all", async ()
   await dialog.getByRole("textbox", { name: "Label" }).fill("Book now");
   await dialog.getByRole("radio", { name: "Web address" }).click();
   await dialog.getByRole("textbox", { name: "Web address" }).fill("book.example");
-  await dialog.getByRole("button", { name: "Save Link" }).click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(rows()).toHaveText(["My site", "New page", "Book now"]);
   // The canvas's Header shows the menu as the export will (1.21).
   const canvasNav = page.frameLocator(".editor__canvas iframe").getByRole("navigation");
