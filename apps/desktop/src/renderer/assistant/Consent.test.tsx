@@ -75,7 +75,7 @@ describe("a site's consent (AIA-6, ADR 0026 §4)", () => {
       />,
     );
     const ask = within(
-      screen.getByRole("region", { name: "Use the assistant on Rosie's Bakery?" }),
+      screen.getByRole("region", { name: "Use the assistant on “Rosie's Bakery”?" }),
     );
 
     expect(ask.getByText(/sent to OpenRouter and Anthropic/)).toBeDefined();

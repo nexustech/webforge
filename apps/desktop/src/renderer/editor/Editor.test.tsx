@@ -100,7 +100,7 @@ describe("Editor", () => {
     if (shared === undefined) throw new Error("not saved");
     const copyId = site().pages[site().homePageId]?.doc.content[0]?.props.id ?? "";
     await act(async () => session.select(copiedNodeId(copyId, "heading-1")));
-    expect(banner()).toBe("Editing shared section 'Welcome': changes apply to 1 copy on 1 page");
+    expect(banner()).toBe("Editing shared section “Welcome”: changes apply to 1 copy on 1 page");
 
     const place = (onHome: boolean) =>
       act(async () =>
@@ -114,9 +114,9 @@ describe("Editor", () => {
         }),
       );
     await place(true);
-    expect(banner()).toBe("Editing shared section 'Welcome': changes apply to 2 copies on 1 page");
+    expect(banner()).toBe("Editing shared section “Welcome”: changes apply to 2 copies on 1 page");
     await place(false);
-    expect(banner()).toBe("Editing shared section 'Welcome': changes apply to 3 copies on 2 pages");
+    expect(banner()).toBe("Editing shared section “Welcome”: changes apply to 3 copies on 2 pages");
   });
 
   it("saves the selected section as a shared section under the name it asks for, and detaches", async () => {
@@ -150,7 +150,7 @@ describe("Editor", () => {
 
     await act(async () => registry.run(detach));
     expect(enabled(detach)).toBe(false);
-    expect(session.history.entries().at(-1)?.label).toBe("Detached 'Opening hours'");
+    expect(session.history.entries().at(-1)?.label).toBe("Detached “Opening hours”");
   });
 
   it("renames a shared section, refusing a name in use, and deletes it after asking (D7)", async () => {
@@ -202,23 +202,24 @@ describe("Editor", () => {
       document.querySelector<HTMLButtonElement>('[role="dialog"] button[type="submit"]');
     await type(" TEAM ");
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
-      "A shared section called 'Team' already exists",
+      "A shared section called “Team” already exists",
     );
     expect(confirm()?.disabled).toBe(true);
     await type("Opening hours");
     expect(confirm()?.disabled).toBe(false);
     await act(async () => confirm()?.click());
-    expect(session.history.entries().at(-1)?.label).toBe("Renamed 'Welcome' to 'Opening hours'");
+    expect(session.history.entries().at(-1)?.label).toBe("Renamed “Welcome” to “Opening hours”");
 
     await act(async () => registry.run("edit.deleteSharedSection"));
     expect(siteWide.current()).toMatchObject({
-      action: "Delete Shared Section 'Opening hours'?",
+      action: "Delete Shared Section “Opening hours”?",
+      destructive: false,
       affectedPages: 1,
     });
     await act(async () => siteWide.answer(true));
     const site = session.history.document.getState();
     expect(Object.values(site.sharedSections).map((shared) => shared.name)).toEqual(["Team"]);
-    expect(session.history.entries().at(-1)?.label).toBe("Deleted shared section 'Opening hours'");
+    expect(session.history.entries().at(-1)?.label).toBe("Deleted shared section “Opening hours”");
     expect(enabled("edit.deleteSharedSection")).toBe(false);
   });
 
@@ -726,6 +727,7 @@ describe("Editor", () => {
     const answered = siteWide.confirmSiteWide({
       action: "Delete?",
       confirm: "Delete",
+      destructive: false,
       affectedPages: 2,
     });
     await act(async () => siteWide.answer(true));

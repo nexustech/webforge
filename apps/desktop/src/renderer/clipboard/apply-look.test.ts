@@ -167,6 +167,7 @@ describe("Apply Look to Every… (2.27, ST-4)", () => {
         description:
           "This gives 3 other Button elements the same look. 1 of them is hidden in Layers.",
         confirm: "Apply Look",
+        destructive: false,
         affectedPages: 2,
       },
     ]);
@@ -209,7 +210,7 @@ describe("Apply Look to Every… (2.27, ST-4)", () => {
     expect(labels()).toEqual([]);
   });
 
-  it("changes only the page shown for 'on this page', without asking", async () => {
+  it("changes only the page shown for “on this page”, without asking", async () => {
     const { session, home, about, props, labels } = setUp();
     const siteWide = confirmer(true);
 
@@ -315,6 +316,7 @@ describe("Apply Look to Every… (2.27, ST-4)", () => {
       action: "Give Every Button on This Page This Look?",
       description:
         "This gives 2 other Button elements the same look. The Footer is on other pages too.",
+      destructive: false,
       affectedPages: Object.keys(session.history.document.getState().pages).length,
     });
     expect(labels()).toEqual(["Applied the Button look to 2 others"]);
@@ -387,6 +389,7 @@ describe("Apply Look to Every… (2.27, ST-4)", () => {
       description:
         "This gives 3 other Section sections the same look. 1 of them is hidden in Layers.",
       confirm: "Apply Look",
+      destructive: false,
       affectedPages: 2,
     });
   });
@@ -486,9 +489,9 @@ describe("Apply Look to Every… in a Blog's design (#936)", () => {
 
     expect(lookOf(designButton(session)?.props)).toEqual(LOOK);
     expect(siteWide.asked[0]?.description).toBe(
-      "This gives 1 other Button the same look. The design of 'Blog' is on its other posts too.",
+      "This gives 1 other Button the same look. The design of “Blog” is on its other posts too.",
     );
-    expect(labels().at(-1)).toBe("Applied the Button look to 1 other in the design of 'Blog'");
+    expect(labels().at(-1)).toBe("Applied the Button look to 1 other in the design of “Blog”");
   });
 
   it("gives the look from the design's own Button to the others", () => {

@@ -73,7 +73,7 @@ test("switching the theme asks first, with the pages it changes, and is one undo
   const canvasHeading = page.frameLocator(".editor__canvas iframe").locator("h1").first();
 
   await page.getByRole("combobox", { name: "Theme", exact: true }).selectOption("bistro");
-  const ask = page.getByRole("alertdialog", { name: "Switch to the theme 'Bistro'?" });
+  const ask = page.getByRole("alertdialog", { name: "Switch to the theme “Bistro”?" });
   // Every page: the home page and Page not found.
   await expect(ask).toContainText("2 pages of your site will change.");
   await ask.getByRole("button", { name: "Cancel" }).click();
@@ -92,7 +92,7 @@ test("switching the theme asks first, with the pages it changes, and is one undo
   await page.getByRole("tab", { name: "Undo History" }).click();
   // Newest first.
   await expect(page.locator(".undo-history__step")).toHaveText([
-    "Changed theme to 'Bistro'",
+    "Changed theme to “Bistro”",
     "Opened page",
   ]);
   await page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }).click();
@@ -101,9 +101,6 @@ test("switching the theme asks first, with the pages it changes, and is one undo
 });
 
 test("a colour hard to read says so under it at once, in words, with a shade that reads (#1174)", async () => {
-  // Quarantined on Windows: its Colour picker was once still open, and the re-run passed (#1581).
-  // Fixed or deleted within a week, under the flaky-test rule.
-  test.fixme(process.platform === "win32", "flaky on Windows CI: #1581");
   const page = await openTheme();
   const brand = page.locator('[data-field="color.primary"]');
   await expect(brand.getByRole("listitem")).toHaveCount(0);
@@ -194,7 +191,7 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: "Undo History" }).click();
   await expect(page.locator(".undo-history__step").first()).toHaveText(
-    "Changed brand colours from 'Shop front.jpg'",
+    "Changed brand colours from “Shop front.jpg”",
   );
 });
 

@@ -63,6 +63,8 @@ export function commandHost(
       const { pictures, ...asked } = confirmation;
       const action: SiteWideAction = {
         ...asked,
+        // An app's change is one undo step, as any edit: the ordinary button, not red (#1445).
+        destructive: false,
         ...(pictures === undefined
           ? {}
           : { pictures: shownPictures(session.history.document.getState(), pictures) }),

@@ -321,10 +321,16 @@ describe("Version History's actions (4.6)", () => {
   it("saves a version before each confirmed change to every page, and one before the first unasked theme change (A21)", async () => {
     const save = vi.fn<VersionsApi["save"]>(async () => ({ status: "saved", version: summary() }));
     const { actions } = setUp(fakeVersions({ save }));
-    const deletePage = { action: "Delete page 'About'?", confirm: "Delete Page", affectedPages: 6 };
+    const deletePage = {
+      action: "Delete page 'About'?",
+      confirm: "Delete Page",
+      destructive: false,
+      affectedPages: 6,
+    };
     const cardStyle = {
       action: "Changed card style",
       confirm: "Changed card style",
+      destructive: false,
       affectedPages: 6,
     };
 
@@ -332,6 +338,7 @@ describe("Version History's actions (4.6)", () => {
     const plan = {
       action: "Allow Claude to make these changes: Build the site?",
       confirm: "Allow",
+      destructive: false,
       affectedPages: 6,
       version: "Before Claude's changes: Build the site",
     };
@@ -360,7 +367,12 @@ describe("Version History's actions (4.6)", () => {
     const { actions, list, notify } = setUp(
       fakeVersions({ save: async () => ({ status: "skipped" }) }),
     );
-    const deletePage = { action: "Delete page 'About'?", confirm: "Delete Page", affectedPages: 6 };
+    const deletePage = {
+      action: "Delete page 'About'?",
+      confirm: "Delete Page",
+      destructive: false,
+      affectedPages: 6,
+    };
 
     await actions.beforeSiteWide(deletePage, { asked: true });
 
@@ -380,6 +392,7 @@ describe("Version History's actions (4.6)", () => {
     const cardStyle = {
       action: "Changed card style",
       confirm: "Changed card style",
+      destructive: false,
       affectedPages: 6,
     };
 
@@ -439,6 +452,7 @@ describe("Version History's actions (4.6)", () => {
     const cardStyle = {
       action: "Changed card style",
       confirm: "Changed card style",
+      destructive: false,
       affectedPages: 6,
     };
 

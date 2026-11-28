@@ -305,7 +305,7 @@ describe("addComponent", () => {
     expect(header()).toEqual(before);
   });
 
-  it("adds with its defaults as one 'Added …' step that selects it, undone in one go", () => {
+  it("adds with its defaults as one “Added …” step that selects it, undone in one go", () => {
     const session = sessionWith();
     const content = () => currentPage(session)?.doc.content ?? [];
     session.select("heading-1");
@@ -469,7 +469,7 @@ describe("shared sections in the Add panel (F-ED-23)", () => {
     expect(added?.props.anchorSuffix).toBe("2");
     expect(session.ui.getState().nodeId).toBe(copiedNodeId(added?.props.id ?? "", "s"));
     expect(session.history.entries().map((entry) => entry.label)).toEqual([
-      "Added a copy of 'Opening hours'",
+      "Added a copy of “Opening hours”",
     ]);
     session.history.undo();
     expect(content().map((node) => node.props.id)).toEqual(["hero", "section", "c1"]);

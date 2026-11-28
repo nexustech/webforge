@@ -17,6 +17,7 @@ const deletePage = (affectedPages: number) => ({
   action: "Delete page 'About'?",
   description: "This removes the page and its content.",
   confirm: "Delete Page",
+  destructive: false,
   affectedPages,
 });
 
@@ -160,6 +161,7 @@ describe("confirmSiteWide (D7)", () => {
         action: "Allow Claude to Change Site Settings: General?",
         description: "Logo: from none to the picture “logo.png”.",
         confirm: "Allow",
+        destructive: false,
         affectedPages: 6,
         pictures: [{ label: "Logo", src: "webforge-media://thumbnail/abc" }],
       });
@@ -239,7 +241,12 @@ describe("confirmSiteWide (D7)", () => {
     const confirm = createSiteWideConfirm();
     const before = vi.fn();
     const remove = confirm.setBeforeSiteWideAction(before);
-    const fonts = { action: "Changed fonts", confirm: "Changed fonts", affectedPages: 4 };
+    const fonts = {
+      action: "Changed fonts",
+      confirm: "Changed fonts",
+      destructive: false,
+      affectedPages: 4,
+    };
 
     await confirm.beforeUnaskedChange(fonts);
     expect(before).toHaveBeenCalledWith(fonts, { asked: false });

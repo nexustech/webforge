@@ -377,7 +377,7 @@ const CASES: readonly FitCase[] = [
     open: async ({ page }) => {
       await pageActions(page, "About us");
       await page.getByRole("menuitem", { name: "Page Settings…" }).click();
-      return shown(page.getByRole("dialog", { name: "Settings for 'About us'" }));
+      return shown(page.getByRole("dialog", { name: "Settings for “About us”" }));
     },
     changes: pageSettingsTabs,
   },
@@ -780,7 +780,7 @@ const CASES: readonly FitCase[] = [
       );
       await pageActions(page, "Our first post");
       await page.getByRole("menuitem", { name: "Page Settings…" }).click();
-      const settings = page.getByRole("dialog", { name: "Settings for 'Our first post'" });
+      const settings = page.getByRole("dialog", { name: "Settings for “Our first post”" });
       await expect(settings.getByRole("textbox", { name: "Date" })).toBeVisible();
       return shown(settings);
     },
@@ -1344,11 +1344,11 @@ test("an unchecked case says what it was waiting for (#1433)", () => {
   expect(
     firstLines(
       new Error(
-        "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Add Page' })",
+        "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByRole(“button”, { name: “Add Page” })",
       ),
     ),
   ).toBe(
-    "Error: locator.click: Timeout 10000ms exceeded. (waiting for getByRole('button', { name: 'Add Page' }))",
+    "Error: locator.click: Timeout 10000ms exceeded. (waiting for getByRole(“button”, { name: “Add Page” }))",
   );
   expect(firstLines(new Error("no address or key shown"))).toBe("Error: no address or key shown");
 });

@@ -92,7 +92,7 @@ describe("Picker (UX-15)", () => {
     expect(options()).toEqual(["shop-front.jpg", "oven.jpg"]);
     await userEvent.keyboard(" zzz");
     // Shown in the list, and read out by the status.
-    expect(screen.getAllByText("Nothing matches 'places zzz'.")).toHaveLength(2);
+    expect(screen.getAllByText("Nothing matches “places zzz”.")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Choose" })).toHaveProperty("disabled", true);
   });
 
@@ -215,7 +215,7 @@ describe("Picker (UX-15)", () => {
     await userEvent.keyboard("{Backspace}{Backspace}{Backspace}cake");
     expect(status.textContent).toBe("1 match");
     await userEvent.keyboard("zzz");
-    expect(status.textContent).toBe("Nothing matches 'cakezzz'.");
+    expect(status.textContent).toBe("Nothing matches “cakezzz”.");
   });
 
   it("draws only its first matches when limited, and says a search finds the others", async () => {

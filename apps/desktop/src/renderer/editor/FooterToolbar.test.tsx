@@ -72,7 +72,7 @@ describe("the Footer's toolbar (HF-4, 5.39)", () => {
     expect(contact?.props).toMatchObject(siteLibrary.components.ContactDetails?.defaults ?? {});
     expect(contact?.props.id).not.toBe("footer-contact-details");
     expect(footerNode()?.props.text).toBe(text);
-    expect(labels()).toEqual(["Started the Footer from 'Full'"]);
+    expect(labels()).toEqual(["Started the Footer from “Full”"]);
     expect(session.ui.getState().nodeId).toBe(footerId);
 
     session.history.undo();
@@ -93,8 +93,8 @@ describe("the Footer's toolbar (HF-4, 5.39)", () => {
     expect(screen.queryByRole("alertdialog")).toBeNull();
     expect(shown()).toEqual([]);
     expect(footerNode()?.props.variant).toBe("centred");
-    expect(labels()).toEqual(["Started the Footer from 'Simple'"]);
-    expect(announced).toEqual(["Started the Footer from 'Simple' on every page"]);
+    expect(labels()).toEqual(["Started the Footer from “Simple”"]);
+    expect(announced).toEqual(["Started the Footer from “Simple” on every page"]);
 
     session.history.undo();
     expect(shown().map(typesIn)).toEqual([["Text"]]);

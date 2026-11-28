@@ -25,7 +25,7 @@ import { changingAddresses, editShowing, type PagesSession } from "./page-action
  * what a post is, and each is one undo step.
  */
 
-/** "post 'Spring opening'", for the history's "Added {item}" labels. */
+/** "post “Spring opening”", for the history's "Added {item}" labels. */
 const postItem = (name: string) => t("blog.item", { name });
 
 /**
@@ -190,7 +190,7 @@ export function addBlog(session: PagesSession): PageId {
 
 /**
  * *New Post* in the Blog's group: adds a post to collection `collectionId`, dated today, and shows
- * it. One undo step ("Added post 'New post'"). Returns its id, or null for a Blog there isn't or
+ * it. One undo step ("Added post “New post”"). Returns its id, or null for a Blog there isn't or
  * an empty name.
  */
 export function addPost(
@@ -238,7 +238,7 @@ export function renameMovesBlog(site: SiteDoc, collectionId: CollectionId, name:
  * and undo labels. With `moveFolder`, its posts move to the folder its new name gives
  * ({@link blogFolderFor}), its posts' old addresses kept working when `keepOldAddresses` (#862), as
  * once the site has been published, and its own pages' too: its list's and its tags' (#942), by the
- * folder it remembers. One undo step ("Renamed blog 'News'").
+ * folder it remembers. One undo step ("Renamed blog “News”").
  */
 export function renameBlog(
   session: PagesSession,

@@ -125,7 +125,7 @@ describe("AddPanel (F-ED-1)", () => {
     expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Hero"]);
     await userEvent.type(screen.getByRole("searchbox"), "es and more");
 
-    expect(screen.getByText("Nothing matches 'heroes and more'.")).toBeTruthy();
+    expect(screen.getByText("Nothing matches “heroes and more”.")).toBeTruthy();
   });
 
   it("switches tabs, and disables elements with nowhere to go", async () => {
@@ -319,7 +319,7 @@ describe("registerAddPanel", () => {
 
     // The + after the copy names it after its shared section.
     act(() => addPanel.openAt({ index: 2 }));
-    expect(screen.getByRole("status").textContent).toContain("after 'Opening hours'");
+    expect(screen.getByRole("status").textContent).toContain("after “Opening hours”");
     await userEvent.click(button("Opening hours"));
 
     const content = currentPage(session)?.doc.content ?? [];
@@ -370,7 +370,7 @@ describe("registerAddPanel", () => {
     expect(screen.queryByRole("menu")).toBeNull();
 
     await user.click(button("Actions for Opening hours"));
-    await user.click(screen.getByRole("menuitem", { name: "Delete…" }));
+    await user.click(screen.getByRole("menuitem", { name: "Delete" }));
     expect(sharedActions.remove).toHaveBeenCalledWith(HOURS);
     // The library's sections have no such menu.
     expect(screen.queryByRole("button", { name: "Actions for Hero" })).toBeNull();
@@ -482,11 +482,11 @@ describe("registerAddPanel", () => {
     saveAsSharedSection(session, "Welcome");
     const [id] = Object.keys(session.history.document.getState().sharedSections);
 
-    expect(registry.get(`add.item.${id}`)?.label).toBe("Add a copy of 'Welcome'");
+    expect(registry.get(`add.item.${id}`)?.label).toBe("Add a copy of “Welcome”");
     session.edit("props", "Renamed", (draft) => {
       for (const shared of Object.values(draft.sharedSections)) shared.name = "Hello";
     });
-    expect(registry.get(`add.item.${id}`)?.label).toBe("Add a copy of 'Hello'");
+    expect(registry.get(`add.item.${id}`)?.label).toBe("Add a copy of “Hello”");
   });
 
   it("turns an Add off in the palette while nothing on the page takes it", () => {

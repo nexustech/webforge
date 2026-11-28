@@ -222,8 +222,8 @@ describe("ShortcutSheet", () => {
 
     fireEvent.change(search, { target: { value: "xyz" } });
     expect(headings()).toEqual([]);
-    expect(within(sheet).getByRole("status").textContent).toBe("No shortcut matches 'xyz'.");
-    expect(within(sheet).getAllByText("No shortcut matches 'xyz'.")).toHaveLength(2);
+    expect(within(sheet).getByRole("status").textContent).toBe("No shortcut matches “xyz”.");
+    expect(within(sheet).getAllByText("No shortcut matches “xyz”.")).toHaveLength(2);
 
     fireEvent.keyDown(search, { key: "Escape" });
     expect(screen.getByRole("dialog", { name: "Keyboard Shortcuts" })).toBe(sheet);

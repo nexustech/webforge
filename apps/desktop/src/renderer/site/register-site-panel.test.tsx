@@ -117,12 +117,13 @@ describe("Site panel", () => {
 
     // It is in the menu that every page shows: all 3 pages change.
     expect(confirmSiteWide).toHaveBeenLastCalledWith({
-      action: "Delete Page 'About'?",
+      action: "Delete Page “About”?",
       description: "This removes the page and its content.",
       confirm: "Delete Page",
+      destructive: false,
       affectedPages: 3,
     });
-    expect(session.history.entries().at(-1)?.label).toBe("Deleted page 'About'");
+    expect(session.history.entries().at(-1)?.label).toBe("Deleted page “About”");
   });
 
   it("binds every action to the session as one undo step", () => {
@@ -144,14 +145,14 @@ describe("Site panel", () => {
     actions.remove(home);
 
     expect(session.history.entries().map((entry) => entry.label)).toEqual([
-      "Added page 'About'",
-      "Renamed page 'Company'",
-      "Duplicated page 'Company'",
-      "Moved page 'Company'",
-      "Moved page 'Company'",
-      "Hid 'Company' in the menu",
-      "Set 'Company' as Home page",
-      "Deleted page 'My site'",
+      "Added page “About”",
+      "Renamed page “Company”",
+      "Duplicated page “Company”",
+      "Moved page “Company”",
+      "Moved page “Company”",
+      "Hid “Company” in the menu",
+      "Set “Company” as Home page",
+      "Deleted page “My site”",
     ]);
   });
 });

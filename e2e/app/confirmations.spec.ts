@@ -82,7 +82,7 @@ test("deleting a page says how many pages change, and undo brings it back", asyn
   await page.getByRole("menuitem", { name: "Delete…" }).click();
 
   // About is in the menu every page shows: Home, About and "Not found".
-  await expect(confirmation()).toHaveAccessibleName("Delete Page 'About'?");
+  await expect(confirmation()).toHaveAccessibleName("Delete Page “About”?");
   await expect(confirmation()).toContainText(
     "3 pages of your site will change. You can undo it afterwards.",
   );

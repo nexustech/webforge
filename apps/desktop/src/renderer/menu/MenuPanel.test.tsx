@@ -55,7 +55,7 @@ describe("MenuPanel (F-ED-17)", () => {
       kind: "button",
       link: { kind: "url", href: "https://book.example" },
     });
-    expect(labels().at(-1)).toBe("Added menu item 'Book now'");
+    expect(labels().at(-1)).toBe("Added menu item “Book now”");
     // Edited now: it no longer follows the pages.
     expect(menu().queryByText(/The menu lists your pages in order/)).toBeNull();
     remove();
@@ -117,9 +117,9 @@ describe("MenuPanel (F-ED-17)", () => {
     await user.keyboard("{Delete}");
     expect(rows()).toEqual(["About, page, hidden"]);
     expect(labels().slice(-3)).toEqual([
-      "Moved menu item 'About'",
-      "Hid menu item 'About'",
-      "Deleted menu item 'My site'",
+      "Moved menu item “About”",
+      "Hid menu item “About”",
+      "Deleted menu item “My site”",
     ]);
     remove();
   });
@@ -145,12 +145,12 @@ describe("MenuPanel (F-ED-17)", () => {
     await user.paste("More");
     await user.click(screen.getByRole("button", { name: "Add Dropdown" }));
     await user.click(menu().getByRole("button", { name: "Actions for About" }));
-    await user.click(screen.getByRole("menuitem", { name: "Move into 'More'" }));
-    expect(rows()).toEqual(["My site, page", "More, dropdown", "About, page in 'More'"]);
+    await user.click(screen.getByRole("menuitem", { name: "Move into “More”" }));
+    expect(rows()).toEqual(["My site, page", "More, dropdown", "About, page in “More”"]);
 
     await user.click(menu().getByRole("button", { name: "Actions for About" }));
     // A dropdown is never offered as a place for itself or other dropdowns.
-    expect(screen.queryByRole("menuitem", { name: "Move into 'More'" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Move into “More”" })).toBeNull();
     await user.click(screen.getByRole("menuitem", { name: "Move Out of Dropdown" }));
     expect(rows()).toEqual(["My site, page", "More, dropdown", "About, page"]);
     remove();

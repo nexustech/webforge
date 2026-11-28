@@ -100,7 +100,7 @@ describe("My themes (2.23)", () => {
     api.keep.mockRejectedValueOnce(new Error("disk"));
     themes.keep(own(1, "Bakery"));
     await themes.flush();
-    expect(notify).toHaveBeenLastCalledWith(expect.stringContaining("'Bakery' couldn't be saved"));
+    expect(notify).toHaveBeenLastCalledWith(expect.stringContaining("“Bakery” couldn't be saved"));
     await waitFor(() => expect(listed()).toEqual(["Shop"]));
 
     api.keep.mockResolvedValueOnce("full");

@@ -225,7 +225,7 @@ export const OpenRecent: Story = {
         ),
         {
           id: COMMAND_IDS.clearRecent,
-          label: "Clear Recent",
+          label: "Clear Recent…",
           submenu: COMMAND_IDS.openRecent,
           separated: true,
           run: noop,

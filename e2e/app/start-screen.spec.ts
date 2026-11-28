@@ -403,7 +403,7 @@ test("opens a site from File › Open Recent, and Clear Recent keeps the pinned 
     .toEqual([
       { label: "Newer", enabled: false },
       { label: "Older", enabled: true },
-      { label: "Clear Recent", enabled: true },
+      { label: "Clear Recent…", enabled: true },
     ]);
   // The window starts over with the site chosen, the open one saved first.
   await chooseFromSubmenu(running(), page, "File", "Open Recent", "Older");
@@ -411,7 +411,7 @@ test("opens a site from File › Open Recent, and Clear Recent keeps the pinned 
   await waitForCanvas(page);
 
   // Clear Recent asks, then keeps the pinned site only, in the menu and on the start screen.
-  await chooseFromSubmenu(running(), page, "File", "Open Recent", "Clear Recent");
+  await chooseFromSubmenu(running(), page, "File", "Open Recent", "Clear Recent…");
   const question = page.getByRole("alertdialog", { name: "Clear the list of recent sites?" });
   await expect(question).toContainText("Sites you've pinned stay");
   await question.getByRole("button", { name: "Clear Recent" }).click();
@@ -419,7 +419,7 @@ test("opens a site from File › Open Recent, and Clear Recent keeps the pinned 
     .poll(() => submenuItems(running(), page, "File", "Open Recent"))
     .toEqual([
       { label: "Newer", enabled: true },
-      { label: "Clear Recent", enabled: false },
+      { label: "Clear Recent…", enabled: false },
     ]);
   await closeWindow();
 

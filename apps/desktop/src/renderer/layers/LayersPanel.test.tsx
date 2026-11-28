@@ -353,7 +353,7 @@ describe("LayersPanel (F-ED-12)", () => {
     const { actions } = setUp();
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Shown. Choose whether 'Hours' shows…" }),
+      screen.getByRole("button", { name: "Shown. Choose whether “Hours” shows…" }),
     );
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Don't Publish" }));
     await userEvent.click(
@@ -398,7 +398,7 @@ describe("LayersPanel (F-ED-12)", () => {
     const { actions } = setUp(null);
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Shown. Choose whether 'Hours' shows…" }),
+      screen.getByRole("button", { name: "Shown. Choose whether “Hours” shows…" }),
     );
     await userEvent.keyboard("{Escape}");
 
@@ -545,7 +545,7 @@ describe("LayersPanel (F-ED-12)", () => {
     for (const name of ["Move up", "Move down", "Duplicate", "Delete"]) {
       await userEvent.click(screen.getByRole("button", { name }));
     }
-    await userEvent.click(screen.getByRole("button", { name: "Don't publish 'Hours'" }));
+    await userEvent.click(screen.getByRole("button", { name: "Don't publish “Hours”" }));
     await userEvent.click(screen.getByRole("button", { name: "Rename" }));
 
     expect(actions.moveUp).toHaveBeenCalledOnce();
@@ -756,7 +756,7 @@ describe("LayersPanel (F-ED-12)", () => {
       expect(shown()).toEqual([
         "Locked: it can't be moved or deleted Header",
         "Animated Text",
-        "Linked copy of 'Hours' Section",
+        "Linked copy of “Hours” Section",
       ]);
       const locked = screen.getByText("Locked: it can't be moved or deleted").parentElement;
       const animated = screen.getByText("Animated").parentElement;

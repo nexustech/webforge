@@ -61,9 +61,6 @@ const opened = () =>
   app.evaluate(() => (globalThis as unknown as { opened: string[] }).opened.slice());
 
 test("opens the site in the browser, and every edit reaches it", async () => {
-  // Quarantined on Windows: its Colour picker was once still open after the swatch's second click,
-  // as #1581's (#1628). Fixed or deleted within a week, under the flaky-test rule.
-  test.fixme(process.platform === "win32", "flaky on Windows CI: #1628");
   await page.getByRole("banner").getByRole("button", { name: "Preview", exact: true }).click();
   await expect.poll(opened).toHaveLength(1);
   const [url] = await opened();
