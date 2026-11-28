@@ -155,7 +155,7 @@ describe("the privacy page (#855, PH5-1)", () => {
     });
     expect(siteDocSchema.parse(site())).toEqual(site());
     expect(session.ui.getState().pageId).toBe(id);
-    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added page 'Privacy'"]);
+    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added page “Privacy”"]);
     // Site Check no longer asks for a privacy page; it finds the note left for the owner, which
     // publishing won't take until it's gone.
     expect(failing(site())).not.toContain("privacyPage");

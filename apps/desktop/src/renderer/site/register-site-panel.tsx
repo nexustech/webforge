@@ -95,6 +95,7 @@ export function pagesPanelActions(
           action: t("pages.deleteDialog.title", { name: page.title }),
           description: t("pages.deleteDialog.description"),
           confirm: t("pages.deleteDialog.confirm"),
+          destructive: false,
           affectedPages: pagesChangedByDeleting(site, pageId),
         })
         .then((confirmed) => {

@@ -157,7 +157,7 @@ test("leaves out of the export a layer not published, and a draft page, but not 
     await page.getByRole("menuitemcheckbox", { name: "Draft" }).click();
     await expect(page.getByRole("button", { name: /^Winter menu Draft/ })).toBeVisible();
     await left().getByRole("tab", { name: "Undo History" }).click();
-    await expect(steps().first()).toHaveText("Made 'Winter menu' a draft");
+    await expect(steps().first()).toHaveText("Made “Winter menu” a draft");
 
     const folder = join(parent, "site");
     await stubFileDialogs(app, folder);

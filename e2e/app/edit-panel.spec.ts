@@ -149,7 +149,7 @@ test.describe("Edit panel", () => {
     await expect
       .poll(() => heading.evaluate((element) => getComputedStyle(element).color))
       .toMatch(/^oklch\(0\.543\d* 0\.17\d* 29\.\d+\)$/);
-    await expect(steps().first()).toHaveText("Made 'Brick' one of your colours");
+    await expect(steps().first()).toHaveText("Made “Brick” one of your colours");
 
     await page.keyboard.press("ControlOrMeta+z");
     await expect(heading).toHaveClass(/text-\[#c0392b\]/);
@@ -188,7 +188,7 @@ test.describe("Edit panel", () => {
     await listed.getByRole("textbox", { name: "Name" }).fill("Brick");
     await listed.getByRole("button", { name: "Add to Your Colours", exact: true }).click();
     await expect(studio.getByText("Your site uses only your theme's colours.")).toBeVisible();
-    await expect(steps().first()).toHaveText("Made 'Brick' one of your colours");
+    await expect(steps().first()).toHaveText("Made “Brick” one of your colours");
   });
 
   test("copies a heading's style onto another heading, as one step (1.37, UX-14)", async () => {

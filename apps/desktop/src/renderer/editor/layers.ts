@@ -383,7 +383,7 @@ export function setLayerNote(session: LayersSession, id: string, note: string): 
 }
 
 /**
- * Names a layer (shown in Layers and undo labels: "Edited 'Opening times' text"). An empty name
+ * Names a layer (shown in Layers and undo labels: "Edited “Opening times” text"). An empty name
  * removes it, so the component's name shows again.
  */
 export function renameLayer(session: LayersSession, id: string, name: string): void {
@@ -579,7 +579,7 @@ export function moveLayer(session: LayersSession, id: string, index: number): vo
  * UX-4), as the canvas's own copy-drag does and in the same step: the copy has ids and anchors of
  * its own ("Duplicated Heading"). A linked copy is copied as its section, the page's own; with
  * `linked` (Shift too), it places another linked copy of the same shared section instead ("Added
- * a copy of 'Hours'"), F-ED-23. The copy is selected. Returns why a copy was refused, to tell the
+ * a copy of “Hours”"), F-ED-23. The copy is selected. Returns why a copy was refused, to tell the
  * person: there's no room for it there (a Columns' four), it holds a slot over its limit itself,
  * or it is in the shared Header or Footer (#673), whose elements the canvas doesn't copy either.
  */

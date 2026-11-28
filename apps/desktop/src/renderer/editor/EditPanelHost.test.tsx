@@ -351,8 +351,8 @@ describe("EditPanelHost", () => {
     expect(sharedHeading()?.text).toBe("Welcome to our business today");
     expect(currentPage(session)?.doc).toBe(pageBefore);
     expect(labels()).toEqual([
-      "Saved 'Welcome' as a shared section",
-      "Edited shared section 'Welcome'",
+      "Saved “Welcome” as a shared section",
+      "Edited shared section “Welcome”",
     ]);
     // Still selected as the canvas shows it.
     expect(session.history.entries()[1]?.selectionAfter.nodeId).toBe(
@@ -1074,7 +1074,7 @@ describe("EditPanelHost", () => {
 
       expect(hero()?.image).toEqual({ mediaId: "shop", alt: "Fresh" });
       expect(labels()).toEqual([
-        "Added image 'shop.jpg'",
+        "Added image “shop.jpg”",
         "Changed Hero image",
         // Named by what changed (#1370).
         "Changed Hero alt text",

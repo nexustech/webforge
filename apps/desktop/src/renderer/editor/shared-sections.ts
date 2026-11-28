@@ -234,8 +234,8 @@ export function detachCopy(session: SharedSectionSession): boolean {
 }
 
 /**
- * Renames shared section `id` to `name` (F-ED-23), in one step ("Renamed 'Hours' to 'Opening
- * hours'"). Returns false, changing nothing, if it isn't there or another shared section has the
+ * Renames shared section `id` to `name` (F-ED-23), in one step ("Renamed “Hours” to “Opening
+ * hours”"). Returns false, changing nothing, if it isn't there or another shared section has the
  * name.
  */
 export function renameSharedSection(
@@ -265,7 +265,7 @@ export function renameSharedSection(
 }
 
 /**
- * Deletes shared section `id` (F-ED-23), in one step ("Deleted shared section 'Opening hours'"):
+ * Deletes shared section `id` (F-ED-23), in one step ("Deleted shared section “Opening hours”"):
  * every copy of it, on every page, becomes a normal section showing what the copy showed, its
  * elements with new ids and its anchors as the copy had them, so no content is lost and links to
  * it keep working. A selection inside a copy on the page shown moves to the section that copy

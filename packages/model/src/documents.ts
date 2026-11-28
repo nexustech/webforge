@@ -32,7 +32,7 @@ export type NodeDoc = {
   props: {
     id: string;
     /**
-     * The name the user gave it in Layers, used in undo labels ("Edited 'Opening times' text").
+     * The name the user gave it in Layers, used in undo labels ("Edited “Opening times” text").
      * Not `label`, which components use for their own fields (a Button's label).
      */
     layerName?: string | undefined;

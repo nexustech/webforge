@@ -388,7 +388,7 @@ test("warns before deleting a placed image, shows a placeholder, undoes it, and 
   await panel.getByRole("button", { name: "Shop front.jpg" }).click();
   await panel.getByRole("button", { name: "Delete" }).click();
   const warning = page.getByRole("alertdialog");
-  await expect(warning).toContainText("Delete Shop front.jpg?");
+  await expect(warning).toContainText("Delete “Shop front.jpg”?");
   await expect(warning).toContainText("It's used on 1 page.");
   await warning.getByRole("button", { name: "Delete" }).click();
 

@@ -565,7 +565,7 @@ export function suggestedItems(library: ComponentLibrary, types: readonly string
 
 /**
  * Places a linked copy of shared section `id` on the shown page where a section would go (F-ED-23),
- * as one "Added a copy of 'Opening hours'" step that selects it as the canvas shows it. Another
+ * as one "Added a copy of “Opening hours”" step that selects it as the canvas shows it. Another
  * copy on the same page gets anchors of its own. Returns whether it was placed.
  */
 export function addSharedCopy(

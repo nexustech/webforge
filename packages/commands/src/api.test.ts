@@ -513,10 +513,10 @@ describe("the command API's commands (4.8)", () => {
     expect(history.state.getState().entries).toHaveLength(7);
   });
 
-  it("adds a page before 'Page not found'", async () => {
+  it("adds a page before “Page not found”", async () => {
     const { history, host } = setup();
     const result = await createCommandApi(host).run("addPage", { title: "Menu" }, app);
-    expect(result).toMatchObject({ status: "done", label: "AI (Claude): Added page 'Menu'" });
+    expect(result).toMatchObject({ status: "done", label: "AI (Claude): Added page “Menu”" });
     if (result.status !== "done" || result.id === undefined) throw new Error("no page");
     const page = history.document.getState().pages[result.id as PageId];
     expect(page).toMatchObject({ title: "Menu", slug: "menu" });
@@ -526,7 +526,7 @@ describe("the command API's commands (4.8)", () => {
     const allowed = setup(true);
     await createCommandApi(allowed.host).run("addPage", { title: "Menu" }, app);
     expect(allowed.confirm.mock.calls[0]?.[0]).toEqual<Confirmation>({
-      action: "Allow Claude to Add the Page Menu, with a Menu Entry on Every Page?",
+      action: "Allow Claude to Add the Page “Menu”, with a Menu Entry on Every Page?",
       confirm: "Allow",
       affectedPages: 3,
     });
@@ -804,7 +804,7 @@ describe("the command API's commands on shared parts (4.8)", () => {
       ),
     ).toMatchObject({ status: "done", label: "AI (Claude): Edited Heading text" });
     expect(confirm.mock.calls[0]?.[0]).toMatchObject({
-      action: "Allow Claude to Change the Shared Section Opening hours?",
+      action: "Allow Claude to Change the Shared Section “Opening hours”?",
       affectedPages: 2,
     });
     expect((await api.run("removeNode", { location: shared, nodeId: "hours" }, app)).status).toBe(

@@ -52,5 +52,5 @@ export const history = {
   "history.renamedSharedSection": "Renamed {name} to {newName}",
   "history.deletedSharedSection": "Deleted shared section {name}",
   // An element the user named in Layers, used as {item} above.
-  "history.namedItem": "'{name}'",
+  "history.namedItem": "“{name}”",
 } as const;

@@ -162,7 +162,7 @@ export function syncCanvasLayout(
 
 /**
  * The undo label of an edit to an element of a collection's design (6.10a): "Edited the design of
- * 'Blog'", whichever element, as an edit inside a shared section is named by the section. Undefined
+ * “Blog”", whichever element, as an edit inside a shared section is named by the section. Undefined
  * for an element that isn't in the design of page `pageId`'s collection.
  */
 export function designLabel(
@@ -190,8 +190,8 @@ export function postShowingDesign(
 }
 
 /**
- * The words a change to collection `id`'s design is named with (#936): " in the design of 'Blog'",
- * after what the change did ("Renamed Heading to 'Date'").
+ * The words a change to collection `id`'s design is named with (#936): " in the design of “Blog”",
+ * after what the change did ("Renamed Heading to “Date”").
  */
 export const inDesign = (site: SiteDoc, id: CollectionId): string =>
   t("blog.history.inDesign", {

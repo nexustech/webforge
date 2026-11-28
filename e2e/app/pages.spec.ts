@@ -47,7 +47,7 @@ test.describe("Pages panel", () => {
 
     await pages().getByRole("button", { name: "Actions for Start" }).click();
     await page.getByRole("menuitem", { name: "Page Settings…" }).click();
-    const settings = page.getByRole("dialog", { name: "Settings for 'Start'" });
+    const settings = page.getByRole("dialog", { name: "Settings for “Start”" });
     await expect(settings.getByRole("textbox").first()).toBeFocused();
   });
 
@@ -65,7 +65,7 @@ test.describe("Pages panel", () => {
 
     await pages().getByRole("button", { name: "Actions for About us" }).click();
     await page.getByRole("menuitem", { name: "Delete…" }).click();
-    const confirm = page.getByRole("alertdialog", { name: "Delete page 'About us'?" });
+    const confirm = page.getByRole("alertdialog", { name: "Delete page “About us”?" });
     await expect(confirm).toBeVisible();
     await confirm.getByRole("button", { name: "Delete Page" }).click();
 
@@ -95,7 +95,7 @@ test.describe("Pages panel", () => {
     await expect(canvas().getByText("Our story")).toBeVisible();
   });
 
-  test("shows another page when it is clicked, and 'Page not found' can't be deleted", async () => {
+  test("shows another page when it is clicked, and “Page not found” can't be deleted", async () => {
     await pageButton("Page not found").click();
     await expect(pageButton("Page not found")).toHaveAttribute("aria-current", "page");
     // A new site's "Page not found" page starts with a message (F-ED-20).
@@ -114,7 +114,7 @@ test.describe("Pages panel", () => {
 
     await pages().getByRole("button", { name: "Actions for About us" }).click();
     await page.getByRole("menuitem", { name: "Page Settings…" }).click();
-    const dialog = page.getByRole("dialog", { name: "Settings for 'About us'" });
+    const dialog = page.getByRole("dialog", { name: "Settings for “About us”" });
     await dialog.getByRole("textbox", { name: "File name" }).fill("our story");
     await expect(dialog.getByText("File name: our-story.html")).toBeVisible();
     await dialog.getByRole("checkbox", { name: "Hide the Footer on this page" }).check();
