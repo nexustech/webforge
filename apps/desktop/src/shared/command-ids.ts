@@ -14,6 +14,8 @@ export const COMMAND_IDS = {
   // A site's ZIP (4.7): a copy of the open site saved as one, and a site opened from one.
   saveSiteZip: "site.saveZip",
   openSiteZip: "site.openZip",
+  // The copy kept from before an update (#1525): offered only while the open site has one.
+  saveKeptCopy: "site.saveKeptCopy",
   // File › Close Site (#1016): back to the start screen.
   closeSite: "site.close",
   undo: "edit.undo",
