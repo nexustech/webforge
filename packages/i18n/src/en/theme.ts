@@ -68,13 +68,13 @@ export const theme = {
   // The third font (3.22, PF-5): only what an element's or a title's Font sets to Accent uses it.
   "theme.fonts.accent": "Accent",
   "theme.fonts.accentHelp": "For text whose Font is set to Accent in its Style tab.",
-  // A change applies at once, with Undo (LF-15); the accent alone changes only what is set in it.
   // A Theme Studio change that restyles every one of a kind, said after it with Undo (M1).
   "theme.changed.look.one": "Changed every {item} on your site (1)",
   "theme.changed.look.other": "Changed every {item} on your site ({count})",
   // A style token's change, said after it with Undo (M1): "Changed corner style on 4 pages".
   "theme.changed.style.one": "{change} on 1 page",
   "theme.changed.style.other": "{change} on {count} pages",
+  // A change applies at once, with Undo (LF-15); the accent alone changes only what is set in it.
   "theme.changed.fonts.one": "Fonts changed on 1 page",
   "theme.changed.fonts.other": "Fonts changed on {count} pages",
   "theme.changed.accentFont.one": "Accent font changed on 1 page",
@@ -235,7 +235,12 @@ export const theme = {
   "theme.components.preview": "{item}, as it looks in this theme",
   "theme.components.buttons": "Every button",
   "theme.components.look": "Look for every {item}",
-  "theme.components.reset": "Reset to Theme's Defaults",
+  "theme.components.reset": "Reset {item} to Default",
+  /** What the reset does, as its tooltip (#1517): the look only, not what Style This… set. */
+  "theme.components.resetHelp":
+    "Every {item} takes the theme's colours, text and styles again. One styled with Style This… keeps its style.",
+  /** A kind in the list whose look is changed (#1517). */
+  "theme.components.kindChanged": "{item} (changed)",
   "theme.components.none": "Nothing chosen yet: each {item} uses the theme's defaults.",
   "theme.look.confirm": "Change How Every {item} Looks?",
   "theme.look.confirm.one": "This restyles the one on the site that has no look of its own.",

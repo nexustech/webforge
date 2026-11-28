@@ -44,6 +44,13 @@ import { UnaskedChoice } from "./UnaskedChoice.js";
 /** How often the dialog asks for the apps' status while open, so *Connected* follows them. */
 export const STATUS_EVERY_MS = 2_000;
 
+/**
+ * How many statuses in a row, on with no address, before the dialog says nothing can connect: at
+ * launch {appName} turns AI apps on without waiting, so the first may come while it's still
+ * opening its port. One that a turning on answers counts as all of them: it has finished trying.
+ */
+const NO_ADDRESS_POLLS = 2;
+
 export type AiAppsDialogProps = {
   readonly open: boolean;
   readonly mcp: McpApi;
@@ -396,6 +403,8 @@ export function AiAppsDialog({
   // How many turnings on or off main hasn't answered yet: a status polled meanwhile may have no
   // address yet, so nothing says it can't listen until each has (a quick off and on again too).
   const [switching, setSwitching] = useState(0);
+  // Statuses in a row that were on with no address (see {@link NO_ADDRESS_POLLS}).
+  const [withoutAddress, setWithoutAddress] = useState(0);
   const whichId = useId();
   // Opened again: no *moved* note from last time, from its first frame (#990).
   const [wasOpen, setWasOpen] = useState(open);
@@ -404,6 +413,7 @@ export function AiAppsDialog({
     if (open) {
       setMoved(false);
       setCopiedLine(null);
+      setWithoutAddress(0);
     }
   }
 
@@ -415,6 +425,9 @@ export function AiAppsDialog({
         (next: McpStatus | undefined) => {
           if (!live) return;
           setStatus(next ?? null);
+          setWithoutAddress((count) =>
+            next?.enabled === true && next.address === null ? count + 1 : 0,
+          );
           if (next?.moved === true) {
             setMoved(true);
             void mcp.seenMoved().catch(() => undefined);
@@ -529,7 +542,13 @@ export function AiAppsDialog({
               checked={enabled}
               onChange={(checked) => {
                 setSwitching((count) => count + 1);
-                void act(mcp.setEnabled(checked)).finally(() => setSwitching((count) => count - 1));
+                void act(
+                  mcp.setEnabled(checked).then((next) => {
+                    // Answered with no address: the port couldn't be had, nothing to wait for.
+                    setWithoutAddress(next.enabled && next.address === null ? NO_ADDRESS_POLLS : 0);
+                    return next;
+                  }),
+                ).finally(() => setSwitching((count) => count - 1));
               }}
             />
             {/* On: where apps reach it, or, with no address, that nothing can (#1624). */}
@@ -544,7 +563,7 @@ export function AiAppsDialog({
                 copied={copiedLine === status.address}
                 onCopy={() => copyLine(status.address ?? "")}
               />
-            ) : switching > 0 ? null : (
+            ) : switching > 0 || withoutAddress < NO_ADDRESS_POLLS ? null : (
               <p role="alert" className="text-sm">
                 {t("aiApps.notListening")}
               </p>

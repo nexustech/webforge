@@ -158,11 +158,13 @@ export const canvas = {
   // Back to the element's defaults (UX-13, UX-18): a field's right-click menu, and Ctrl/Cmd + Esc.
   "editPanel.resetField": "Reset to Default",
   "editPanel.resetToLook": "Reset to Theme's Look",
-  "editPanel.resetGroup": "Reset Group to Defaults",
+  "editPanel.resetGroup": "Reset Group to Default",
   // An option group's header, on hover (SP-7): "Copy Spacing", "Paste Spacing", "Reset Spacing".
   "editPanel.group.copy": "Copy {group}",
   "editPanel.group.paste": "Paste {group}",
   "editPanel.group.reset": "Reset {group}",
+  /** A group heading's description when a setting in it is set here, beside its dot (#1517). */
+  "editPanel.group.changed": "Changed",
   // The Edit panel's groups (UX-13): Ctrl/Cmd + Enter on a group's title opens or closes them all.
   "editPanel.expandAll": "Expand All",
   "editPanel.collapseAll": "Collapse All",

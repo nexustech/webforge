@@ -24,6 +24,7 @@ A desktop builder for non-technical small-business owners that produces self-con
   - The renderer never imports Node/Electron.
   - Core packages contain no React.
 - **Every document change goes through `HistoryManager.run/begin`.** It must be undoable, with a meaningful label ("Edited Header text").
+- **Shared code is written once** (product owner, 2026-11-28). Look for the helper, hook, schema or component before writing one (`docs/anti-patterns.md`, 5, 6, 18 and 23). The PR that brings a second use of a local one moves it to the lowest package both can import and uses it from both; it never copies it.
 - **No hard-coded UI strings.** Use `t('key')`, with wording from the glossary in `research/product/01-terminology.md`. Hierarchy: Site → Page → Section → Element.
 - **Help pages stay current.** A change people can see updates its page in `docs/help/` in the same PR, and the page's `updated` date (HP-4). Rules in `docs/help/README.md`; `pnpm help-check` checks the pages (HP-5).
 - **The app's name is `{appName}` in every message,** filled in from `app.name`; a rename changes that and `productName` only (`docs/branding.md`).
@@ -90,12 +91,12 @@ What each one builds, checks and writes, and how CI runs it, is in `docs/command
 
 ## Working the plan
 
-- Up to three stream sessions (A: shell and panels, B: data and site, C: history and canvas); `spec/04` lists each stream's queue, and an issue's `Planned:` line names its stream. Pick the next issue in your stream whose dependencies are met (a dependency counts as met when the PR it needs is merged to `main`), one item in progress per stream.
+- Up to three stream sessions (A: shell and panels, B: data and site, C: history and canvas); `spec/04` lists each stream's queue, and an issue's `Planned:` line names its stream. Pick the next issue in your stream whose dependencies are met (a dependency counts as met when the PR it needs is merged to `main`), one item in progress per stream. When picking one up, read its `Implementation plan` again against what has merged since it was posted: a piece it meant to build may be there now, and a file it names may have changed. Post what changed as a comment, and ask for the critique again if the approach did (product owner, 2026-11-28).
 - Each plan item is a GitHub issue with `Phase`, `Estimate`, `Planned`, `Refs` and `Depends on` lines, scope and acceptance criteria; from Phase 2, items over 5 days are split into sub-issues (`2.9a`). Out-of-plan work gets an issue in the current milestone with `type/chore` or `type/bug`.
 - **Plan, and have the plan critiqued, before writing code** (product owner, 2026-11-26), for every item of half a day or more: plan items, bugs, feedback and chores alike. Post an `Implementation plan` comment on the issue:
   - the approach, and the files and packages it changes;
   - **what else uses what it changes:** every caller, component, dialog or template that uses a shared piece it touches (a dialog primitive, a token, the title bar, a section every template has), and how each will be checked;
-  - **what it reuses and what it adds:** the shared pieces it takes (searched for first, in `docs/extending.md`'s list and in the code), any open issue that touches the same files or needs the same new piece, and anything it builds that another open issue could use, named on that issue;
+  - **what it reuses and what it adds:** the shared pieces it takes (searched for first, in `docs/extending.md` and in the code), any open issue that touches the same files or needs the same new piece, and anything it builds that another open issue could use, named on that issue;
   - the window sizes, appearances, systems and states it will check, and what the help pages and screenshots need;
   - its risks and open questions.
     Then ask the coordinating session (or, without one, a reviewer that hasn't seen your reasoning) to critique it, and start once its points are answered. A PR that touches a shared piece checks everything that plan listed, and says so.
@@ -115,7 +116,7 @@ What each one builds, checks and writes, and how CI runs it, is in `docs/command
   - apply code-review findings directly (`/code-review --fix`)
   - turn on the PR's CI Auto-fix when opening a PR, so CI failures, merge conflicts and review comments get fixed and pushed (after the merge review, tell its reviewer before a push: see _CI and merging_)
   - ask first only when a fix needs a product or design decision
-- **The author's review.** Every PR gets two reviews: its author's, then the merge review (see _CI and merging_). Once the PR is ready and its CI is running, review its full diff (`/code-review`), apply the fixes, re-run `pnpm check:quick` (plus the E2E specs the fixes touch), push, and summarise in the PR description what the review found and fixed. For a docs-only PR the review is for consistency: totals, dependencies and cross-references between the plan, the spec, the research notes and the issues.
+- **The author's review.** Every PR gets two reviews: its author's, then the merge review (see _CI and merging_). Once the PR is ready and its CI is running, review its full diff (`/code-review`, then `/simplify` for anything it writes that the codebase already has), apply the fixes, re-run `pnpm check:quick` (plus the E2E specs the fixes touch), push, and summarise in the PR description what the review found and fixed. For a docs-only PR the review is for consistency: totals, dependencies and cross-references between the plan, the spec, the research notes and the issues.
 - **Clean up after every merge.** Once a PR is merged, without asking:
   - delete its branch locally and on GitHub, after checking the branch tip is the PR's merged head commit (a squash merge leaves the branch outside `main`'s history, so ancestry alone can't confirm it);
   - remove any worktree that is no longer in use (its branch is merged and no running session works in it), after checking it has no uncommitted changes, then `git worktree prune`;
