@@ -209,8 +209,10 @@ export function registerProjectHandlers(
   /** The open site's copy from before an update, for the opening `sessionId`, if it has one. */
   const keptCopyOf = (sessionId: string) => {
     const projectId = session.openProjectId();
-    if (session.staleReason(sessionId) !== undefined || projectId === undefined) return undefined;
-    return keptCopies?.backups.keptBeforeUpdate(projectId);
+    const sitePath = session.currentPath();
+    if (session.staleReason(sessionId) !== undefined) return undefined;
+    if (projectId === undefined || sitePath === undefined) return undefined;
+    return keptCopies?.backups.keptBeforeUpdate(projectId, sitePath);
   };
   // The copy from before an update (#1525): whether the open site has one.
   registerIpcHandler(ipc, "keptCopy", isTrustedSender, async (sessionId) => {

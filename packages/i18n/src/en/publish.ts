@@ -141,7 +141,7 @@ export const publish = {
   "publish.netlify.editTitle": "Edit Netlify Destination",
   "publish.netlify.description":
     "Sign in to Netlify, then choose the Netlify site to publish to, or a new one. {appName} keeps your sign-in on this computer only.",
-  "publish.netlify.confirm": "Save Destination",
+  "publish.netlify.confirm": "Save",
   "publish.netlify.name": "Name",
   "publish.netlify.name.help": "How the list shows it. Left empty, it takes the site's name.",
   "publish.netlify.defaultName": "Netlify",

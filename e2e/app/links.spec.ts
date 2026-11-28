@@ -99,7 +99,7 @@ test("links a button to a section, and the exported link follows a renamed page"
   const dialog = page.getByRole("dialog", { name: "Link" });
   await dialog.getByRole("combobox", { name: "Page" }).selectOption("About");
   await dialog.getByRole("combobox", { name: "Section" }).selectOption("Opening times");
-  await dialog.getByRole("button", { name: "Save Link" }).click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(right().getByText("About › Opening times")).toBeVisible();
 
   // Rename the page: its file name follows.

@@ -161,6 +161,20 @@ export type OpenProjectOptions = {
    * in, which say which versions of Webforge open it.
    */
   readonly beforeFormatChange?: (formats: StoredFormats) => void;
+  /**
+   * Told how long each committed write took, in two parts (#1621): for the E2E tests' step
+   * timings only, which set it when `WEBFORGE_STEP_TIMINGS` is on. Unset, a write times nothing.
+   */
+  readonly timedWrite?: (parts: WriteParts) => void;
+};
+
+/**
+ * A committed write's time in two parts (#1621): the work inside its transaction (the changes and
+ * the content stamp), and the rest, BEGIN and COMMIT, whose fsync is the disk's flush.
+ */
+export type WriteParts = {
+  readonly changesMs: number;
+  readonly flushMs: number;
 };
 
 /**
@@ -175,6 +189,10 @@ export type StoredFormats = {
 /** The steps of making a new project, as {@link CreateProjectOptions.timed} is told them (#1560). */
 export type CreateProjectStep =
   | "make the file"
+  // Its three parts (#1625), inside it: one took 10 s once on a Windows runner.
+  | "make the file: open it"
+  | "make the file: its first write"
+  | "make the file: how it writes"
   | "first commit"
   | "move into place"
   | "check the new file";
