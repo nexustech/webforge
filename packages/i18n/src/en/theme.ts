@@ -344,10 +344,10 @@ export const theme = {
   "theme.own.siteTheme": "The site's theme ({name})",
   "theme.own.newName": "{name} copy",
   "theme.own.create": "Create Theme",
-  "theme.own.rename": "Rename {name}",
+  "theme.own.rename": "Rename {name}…",
   "theme.own.renameTitle": "Rename Theme",
   "theme.own.renameButton": "Rename",
-  "theme.own.delete": "Delete {name}",
+  "theme.own.delete": "Delete {name}…",
   "theme.own.deleteTitle": "Delete the Theme “{name}”?",
   "theme.own.deleteDescription": "It's removed from My themes on this computer.",
   "theme.own.deleteInUse":

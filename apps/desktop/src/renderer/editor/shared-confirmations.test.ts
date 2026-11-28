@@ -93,6 +93,7 @@ describe("confirmSharedRemovals (D7, F-ED-7)", () => {
     expect(confirmSiteWide).toHaveBeenCalledWith({
       action: "Delete Heading from the Shared Footer?",
       confirm: "Delete",
+      destructive: false,
       affectedPages: 2,
     });
     expect(footerIds()).toEqual(["footer", "fh2"]);
@@ -249,6 +250,7 @@ describe("confirmSharedRemovals (D7, F-ED-7)", () => {
     expect(confirmSiteWide).toHaveBeenCalledWith({
       action: "Cut Heading from the Shared Footer?",
       confirm: "Cut",
+      destructive: false,
       affectedPages: 2,
     });
   });
@@ -333,15 +335,16 @@ describe("deleting inside a linked copy (F-ED-23, D7)", () => {
       if (open !== undefined) open.props.text = "Open on Sundays";
     });
     expect(ctx.confirmSiteWide).toHaveBeenCalledWith({
-      action: "Delete Heading from the Shared Section 'Opening hours'?",
+      action: "Delete Heading from the Shared Section “Opening hours”?",
       description: "All 2 copies of the section show the change.",
       confirm: "Delete",
+      destructive: false,
       affectedPages: 2,
     });
     ctx.settle(true);
 
     await vi.waitFor(() =>
-      expect(ctx.labels()).toEqual(["Edited", "Edited shared section 'Opening hours'"]),
+      expect(ctx.labels()).toEqual(["Edited", "Edited shared section “Opening hours”"]),
     );
     expect(inSection(ctx.session)).toEqual([{ id: "u", text: "Open on Sundays" }]);
   });
@@ -419,9 +422,10 @@ describe("deleting inside a linked copy (F-ED-23, D7)", () => {
       sharedCutConfirmation(session, { confirmSiteWide })("Heading", { sharedSection: HOURS }),
     ).resolves.toBe(false);
     expect(confirmSiteWide).toHaveBeenCalledWith({
-      action: "Cut Heading from the Shared Section 'Opening hours'?",
+      action: "Cut Heading from the Shared Section “Opening hours”?",
       description: "The section's 1 copy shows the change.",
       confirm: "Cut",
+      destructive: false,
       affectedPages: 1,
     });
   });

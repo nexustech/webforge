@@ -26,7 +26,7 @@ describe("the banner over a Blog's design (6.10a)", () => {
     expect(session.ui.getState().pageId).toBe(postId);
     act(() => session.select(heading.props.id));
     expect(screen.getByRole("status").textContent).toBe(
-      "Editing the design of 'Blog': changes show on its 1 post",
+      "Editing the design of “Blog”: changes show on its 1 post",
     );
 
     act(() => {
@@ -34,7 +34,7 @@ describe("the banner over a Blog's design (6.10a)", () => {
       session.select(heading.props.id);
     });
     expect(screen.getByRole("status").textContent).toBe(
-      "Editing the design of 'Blog': changes show on all 2 posts",
+      "Editing the design of “Blog”: changes show on all 2 posts",
     );
   });
 });

@@ -35,7 +35,7 @@ describe("a finding in a Blog's design (#936)", () => {
     const finding: Finding = { key: "k", place: { kind: "element", on: BLOG, nodeId: title } };
 
     expect(describePlace(finding, session.history.document.getState(), siteLibrary)).toBe(
-      "Section in the design of 'Blog'",
+      "Section in the design of “Blog”",
     );
   });
 

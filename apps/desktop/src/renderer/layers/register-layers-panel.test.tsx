@@ -189,7 +189,7 @@ describe("registerLayersPanel", () => {
         },
       },
     });
-    const copy = screen.getByRole("treeitem", { name: /Linked copy of 'Opening hours'/ });
+    const copy = screen.getByRole("treeitem", { name: /Linked copy of “Opening hours”/ });
     expect(copy.textContent).toContain("Opening hours Section");
 
     act(() => session.select(copiedNodeId("c1", "s")));
@@ -208,7 +208,7 @@ describe("registerLayersPanel", () => {
     await userEvent.click(menu().getByRole("menuitem", { name: "Rename" }));
     await userEvent.keyboard("Intro{Enter}");
 
-    expect(session.history.entries().at(-1)?.label).toBe("Renamed Heading to 'Intro'");
+    expect(session.history.entries().at(-1)?.label).toBe("Renamed Heading to “Intro”");
 
     await userEvent.pointer({ keys: "[MouseRight]", target: heading() });
     await userEvent.keyboard("{Escape}");
@@ -315,7 +315,7 @@ describe("Layers' shared Header and Footer (#673)", () => {
     expect(session.history.document.getState().layout.footer[0]?.props.layerName).toBe(
       "Contact strip",
     );
-    expect(labels(session)).toEqual(["Renamed Footer to 'Contact strip'"]);
+    expect(labels(session)).toEqual(["Renamed Footer to “Contact strip”"]);
   });
 
   it("keeps a page's section from going above the Header, and reorders the Footer's own", () => {

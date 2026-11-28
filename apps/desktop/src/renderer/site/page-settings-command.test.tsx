@@ -41,7 +41,7 @@ describe("registerPageSettingsCommand (3.17)", () => {
     act(() => {
       commands.run("page.settings");
     });
-    const dialog = await openedDialog("Settings for 'About'");
+    const dialog = await openedDialog("Settings for “About”");
     // On General, as the command opens it; the description is on Search engines (#1443).
     expect(dialog.getByRole("tab", { name: "General" }).getAttribute("aria-selected")).toBe("true");
     await userEvent.click(dialog.getByRole("tab", { name: "Search engines" }));
@@ -69,7 +69,7 @@ describe("registerPageSettingsCommand (3.17)", () => {
     act(() => {
       commands.run("page.settings");
     });
-    const dialog = await openedDialog("Settings for 'About'");
+    const dialog = await openedDialog("Settings for “About”");
     expect(followers()).toBeGreaterThan(0);
     await userEvent.click(dialog.getByRole("button", { name: "Cancel" }));
 
@@ -81,7 +81,7 @@ describe("registerPageSettingsCommand (3.17)", () => {
     showAbout(session);
 
     act(() => pageSettings.show("search"));
-    const dialog = await openedDialog("Settings for 'About'");
+    const dialog = await openedDialog("Settings for “About”");
 
     const tab = dialog.getByRole("tab", { name: "Search engines" });
     expect(tab.getAttribute("aria-selected")).toBe("true");
@@ -95,14 +95,14 @@ describe("registerPageSettingsCommand (3.17)", () => {
     showAbout(session);
 
     act(() => pageSettings.show());
-    let dialog = await openedDialog("Settings for 'About'");
+    let dialog = await openedDialog("Settings for “About”");
     await waitFor(() =>
       expect(document.activeElement).toBe(dialog.getByRole("textbox", { name: "Title" })),
     );
     await userEvent.click(dialog.getByRole("button", { name: "Cancel" }));
 
     act(() => pageSettings.show("search"));
-    dialog = await openedDialog("Settings for 'About'");
+    dialog = await openedDialog("Settings for “About”");
     await waitFor(() =>
       expect(document.activeElement).toBe(dialog.getByRole("textbox", { name: "Description" })),
     );
@@ -112,7 +112,7 @@ describe("registerPageSettingsCommand (3.17)", () => {
     const { session, pageSettings } = setUp();
     showAbout(session);
     act(() => pageSettings.show());
-    const dialog = await openedDialog("Settings for 'About'");
+    const dialog = await openedDialog("Settings for “About”");
     await userEvent.clear(dialog.getByRole("textbox", { name: "Title" }));
     await userEvent.click(dialog.getByRole("tab", { name: "Social & sharing" }));
 
@@ -130,7 +130,7 @@ describe("registerPageSettingsCommand (3.17)", () => {
     const { session, pageSettings } = setUp();
     showAbout(session);
     act(() => pageSettings.show());
-    const dialog = await openedDialog("Settings for 'About'");
+    const dialog = await openedDialog("Settings for “About”");
     act(() => dialog.getByRole("tab", { name: "General" }).focus());
 
     await userEvent.keyboard("{ArrowRight}");

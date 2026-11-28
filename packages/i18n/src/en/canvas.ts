@@ -119,7 +119,8 @@ export const canvas = {
   "canvas.renameSharedSection": "Rename Shared Section…",
   "canvas.renameSharedSection.title": "Rename Shared Section",
   "canvas.renameSharedSection.confirm": "Rename",
-  "canvas.deleteSharedSection": "Delete Shared Section…",
+  // No "…": with no copy on a page, it deletes at once (#1445).
+  "canvas.deleteSharedSection": "Delete Shared Section",
   // D7's question before deleting a shared section: {name} is quoted.
   "canvas.deleteSharedSection.title": "Delete Shared Section {name}?",
   "canvas.deleteSharedSection.description":

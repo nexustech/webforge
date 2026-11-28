@@ -24,12 +24,12 @@ export const aiApps = {
   "aiApps.status.connected": "Connected",
   "aiApps.status.idle": "Not connected",
   "aiApps.status.waiting": "Waiting for its key",
-  "aiApps.remove": "Remove {name}",
+  "aiApps.remove": "Remove {name}…",
   "aiApps.removeTitle": "Remove “{name}”?",
   "aiApps.removeDescription":
     "“{name}” can't reach your sites any more. To use it again, add it again with a new key.",
   "aiApps.removeConfirm": "Remove",
-  "aiApps.add": "Add AI App",
+  "aiApps.add": "Add AI App…",
   "aiApps.add.which": "Which app?",
   "aiApps.client.claude.label": "Claude Desktop",
   "aiApps.client.claude.hint":

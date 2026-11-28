@@ -106,7 +106,7 @@ describe("bulk actions on several selected elements (1.31, UX-3)", () => {
     expect(moveSelected(session, "up")).toEqual({});
     expect(inS1()).toEqual(["b", "c", "a"]);
     expect(moveSelected(session, "up")).toEqual({
-      refused: "'Hours' is already first: nothing moved.",
+      refused: "“Hours” is already first: nothing moved.",
     });
     expect(moveSelected(session, "down")).toEqual({});
     expect(inS1()).toEqual(["a", "b", "c"]);
@@ -173,7 +173,7 @@ describe("Select similar (1.35)", () => {
 
   it("finds every linked copy of the same shared section", () => {
     const { session } = setUp();
-    session.edit("insert", "Added a copy of 'Opening hours'", (draft) => {
+    session.edit("insert", "Added a copy of “Opening hours”", (draft) => {
       draft.pages[draft.homePageId]?.doc.content.push({
         type: SHARED_COPY_TYPE,
         props: { id: "c2", sharedSectionId: HOURS },
@@ -222,7 +222,7 @@ describe("copyLayer: Ctrl/Cmd-drag in Layers (1.35, UX-4)", () => {
     expect(own?.type).toBe("Section");
     expect(isSharedCopy(own as NodeDoc)).toBe(false);
     expect(own?.props.id).not.toBe("s");
-    expect(labels()).toEqual(["Added a copy of 'Opening hours'", "Duplicated Section"]);
+    expect(labels()).toEqual(["Added a copy of “Opening hours”", "Duplicated Section"]);
   });
 
   it("copies nothing that isn't a layer, or past the end of its list", () => {

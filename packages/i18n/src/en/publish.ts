@@ -71,6 +71,8 @@ export const publish = {
   "publish.first.none.description":
     "What kind of host works, and other ways to put your website online.",
   "publish.destinations.add": "Add Destination",
+  // Opening the dialog itself, where Netlify isn't offered: "…", as it asks first (#1445).
+  "publish.destinations.addOne": "Add Destination…",
   "publish.destinations.close": "Close",
   "publish.destinations.where": "{host} · {folder}",
   "publish.destinations.netlifySite": "Netlify: {url}",
@@ -84,10 +86,10 @@ export const publish = {
   "publish.destinations.test": "Test Connection",
   "publish.destinations.test.label": "Test the connection to {name}",
   "publish.destinations.testing": "Testing…",
-  "publish.destinations.edit": "Edit",
-  "publish.destinations.edit.label": "Edit {name}",
-  "publish.destinations.remove": "Remove",
-  "publish.destinations.remove.label": "Remove {name}",
+  "publish.destinations.edit": "Edit…",
+  "publish.destinations.edit.label": "Edit {name}…",
+  "publish.destinations.remove": "Remove…",
+  "publish.destinations.remove.label": "Remove {name}…",
   "publish.destinations.removeTitle": "Remove “{name}”?",
   "publish.destinations.removeBody":
     "{appName} stops publishing there, and this computer forgets its password. Nothing on your host changes.",

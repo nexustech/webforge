@@ -28,7 +28,7 @@ describe("commandHost (4.8)", () => {
     const home = session.history.document.getState().homePageId;
     // A page of the person's, shown.
     const other = newId("page");
-    session.edit("insert", "Added page 'Prices'", (draft) => insertPage(draft, other, "Prices"));
+    session.edit("insert", "Added page “Prices”", (draft) => insertPage(draft, other, "Prices"));
     session.showPage(other);
 
     const deleting = api.run("removePage", { pageId: other }, { app: "Claude" });
@@ -168,7 +168,7 @@ describe("commandHost (4.8)", () => {
     );
     const api = createCommandApi(host);
     const page = newId("page");
-    session.edit("insert", "Added page 'Prices'", (draft) => insertPage(draft, page, "Prices"));
+    session.edit("insert", "Added page “Prices”", (draft) => insertPage(draft, page, "Prices"));
     const kept = () => session.history.document.getState().settings.search.keptAddresses;
 
     await api.run("renamePage", { pageId: page, title: "Price list" }, { app: "Claude" });
@@ -308,9 +308,9 @@ describe("answerRequest (4.8)", () => {
     await vi.waitFor(() => expect(siteWide.current()).not.toBeNull());
     siteWide.answer(true);
     const page = await adding;
-    expect(page).toMatchObject({ status: "done", label: "AI (Claude): Added page 'Menu'" });
+    expect(page).toMatchObject({ status: "done", label: "AI (Claude): Added page “Menu”" });
     expect(session.history.state.getState().entries.at(-1)?.label).toBe(
-      "AI (Claude): Added page 'Menu'",
+      "AI (Claude): Added page “Menu”",
     );
   });
 });

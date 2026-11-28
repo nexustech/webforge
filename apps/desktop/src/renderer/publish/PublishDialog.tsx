@@ -439,7 +439,7 @@ export function PublishDialog({
                 disabled={cannotAdd}
                 onClick={() => setEditing({ kind: "file-transfer", listed: undefined })}
               >
-                {t("publish.destinations.add")}
+                {t("publish.destinations.addOne")}
               </Button>
             ) : (
               // Which kind of destination (4.4b): a web host with a control panel, or Netlify. The

@@ -60,7 +60,7 @@ export const blog = {
   "blog.history.binding": "{item} shows the post's {field}",
   // Renaming a blog, its folder with it, and deleting it while it has no posts (#937).
   "blog.rename": "Rename…",
-  "blog.delete": "Delete",
+  "blog.delete": "Delete…",
   "blog.renameDialog.title": "Rename Blog",
   "blog.renameDialog.label": "Name",
   "blog.renameDialog.confirm": "Rename",

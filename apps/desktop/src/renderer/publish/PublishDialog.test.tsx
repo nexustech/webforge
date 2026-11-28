@@ -184,7 +184,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     // Netlify only where it's offered, Help only where it can open.
     expect(screen.queryByRole("button", { name: "Netlify" })).toBeNull();
     expect(screen.queryByRole("button", { name: "I don't have a host yet" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Add Destination" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Add Destination/ })).toBeNull();
     // Close, and the corner's ×.
     expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(2);
   });
@@ -214,7 +214,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
       expect(notify).toHaveBeenCalledOnce();
       // A site with destinations isn't asked for its first one behind the error.
       expect(screen.queryByRole("heading", { name: "Where is your website hosted?" })).toBeNull();
-      expect(screen.queryByRole("button", { name: "Add Destination" })).toBeNull();
+      expect(screen.queryByRole("button", { name: /^Add Destination/ })).toBeNull();
       cleanup();
     }
   });
@@ -269,7 +269,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
       undefined,
       "https://www.rosasbakery.co.uk",
     );
-    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    await user.click(await screen.findByRole("button", { name: "Add Destination…" }));
     const added = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     // Folded under More Options (#1172).
     await user.click(added.getByRole("button", { name: "More Options" }));
@@ -278,7 +278,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     );
     await user.click(added.getByRole("button", { name: "Cancel" }));
 
-    await user.click(await screen.findByRole("button", { name: "Edit Old host" }));
+    await user.click(await screen.findByRole("button", { name: "Edit Old host…" }));
     const edited = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     await user.click(edited.getByRole("button", { name: "More Options" }));
     // It has none of its own: the site's isn't put in its place.
@@ -291,7 +291,7 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     const { user, publish } = setUp([
       { destination: live, signIn: "saved", trust: { hostKey: HOST_KEY } },
     ]);
-    await user.click(await screen.findByRole("button", { name: "Edit Live" }));
+    await user.click(await screen.findByRole("button", { name: "Edit Live…" }));
 
     const form = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     await user.click(form.getByRole("button", { name: "More Options" }));
@@ -326,9 +326,9 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
 
   it("removes a destination once the person confirms", async () => {
     const { user, publish } = setUp([{ destination: old, signIn: "saved", trust: {} }]);
-    await user.click(await screen.findByRole("button", { name: "Remove Old host" }));
+    await user.click(await screen.findByRole("button", { name: "Remove Old host…" }));
 
-    const question = within(await screen.findByRole("alertdialog", { name: "Remove 'Old host'?" }));
+    const question = within(await screen.findByRole("alertdialog", { name: "Remove “Old host”?" }));
     await user.click(question.getByRole("button", { name: "Remove" }));
 
     await waitFor(() => expect(publish.removeDestination).toHaveBeenCalledWith(SESSION, old.id));
@@ -490,6 +490,7 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
 
   it("adds another from Add Destination's menu, by the same plain names (#1014)", async () => {
     const { user } = setUpNetlify([{ destination: old, signIn: "saved", trust: {} }]);
+    // It opens a menu, not a dialog: no "…" (#1445).
     await user.click(await screen.findByRole("button", { name: "Add Destination" }));
     expect(screen.getByRole("menuitem", { name: "Netlify…" })).toBeTruthy();
     await user.click(screen.getByRole("menuitem", { name: "Web Host with a Control Panel…" }));

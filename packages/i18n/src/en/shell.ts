@@ -80,7 +80,7 @@ export const shell = {
   "shell.menu.edit.select": "Select",
   "shell.menu.edit.sharedSection": "Shared Section",
   "shell.menu.edit.sharedSection.rename": "Rename…",
-  "shell.menu.edit.sharedSection.delete": "Delete…",
+  "shell.menu.edit.sharedSection.delete": "Delete",
   "shell.menu.edit.sharedSection.detach": "Detach",
   "shell.menu.view": "View",
   // The site's settings, theme and stylesheet (#1016).
@@ -223,7 +223,7 @@ export const shell = {
   // A recent site in the command box, named by the menu it's in.
   "command.openRecent.palette": "Open Recent: {name}",
   "command.noRecent": "No Recent Sites",
-  "command.clearRecent": "Clear Recent",
+  "command.clearRecent": "Clear Recent…",
   // A copy of the whole site as a ZIP, and a site opened from one (4.7): not Export's website.
   "command.saveSiteZip": "Save a Copy as ZIP…",
   "command.saveKeptCopy": "Save the Copy from Before the Update…",
