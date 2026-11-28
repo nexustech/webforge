@@ -60,16 +60,34 @@ async function expectTabPastPreview(
   });
 }
 
+/**
+ * At a person's pace, Tab from the Appearance group's Copy button, its tooltip open, goes on to the
+ * group's next control, not back to `dialog` itself: the tooltip's description, removed as it
+ * closed mid-Tab, once threw the focus to the dialog, and Tab then went round its top for good
+ * (#1672).
+ */
+async function expectTabPastTooltip(dialog: Locator, where: string): Promise<void> {
+  await test.step(`${where}: Tab past a tooltip`, async () => {
+    const copy = dialog.getByRole("button", { name: "Copy Appearance" });
+    await dialog.getByRole("button", { name: "Appearance", exact: true }).focus();
+    await page.keyboard.press("Tab");
+    await expect(copy).toBeFocused();
+    await expect(page.getByRole("tooltip")).toBeVisible();
+    await page.keyboard.press("Tab");
+    const at = await page.evaluate(() => document.activeElement?.getAttribute("role") ?? null);
+    expect(at, "Tab from Copy Appearance went to the dialog itself").not.toBe("dialog");
+    await expect(copy).not.toBeFocused();
+    expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+  });
+}
+
 test("Style This… and Theme Studio's previews are passed by the keyboard (#1507)", async () => {
-  // Quarantined on every system: Tab past a tooltip's control in Style This and Theme Studio can
-  // throw the focus to the dialog itself, a keyboard trap, seen on Windows and macOS CI (#1672).
-  // The fix lifts it, within the week under the flaky-test rule.
-  test.fixme(true, "keyboard trap, flaky in CI: #1672");
   await left().getByRole("tab", { name: "Add" }).click();
   await left().getByRole("button", { name: "Hero", exact: true }).click();
   await right().getByRole("tab", { name: "Style" }).click();
   await right().getByRole("button", { name: "Style This Hero…" }).click();
   const style = page.getByRole("dialog", { name: "Style this Hero" });
+  await expectTabPastTooltip(style, "Style this Hero");
   // Past the preview's resize handle and its scroll area to the bar at the bottom, and back.
   await expectTabPastPreview(style, style.getByRole("tabpanel").first(), "Style this Hero");
   await expectNothingFocusableHidden("Style this Hero");
@@ -79,6 +97,7 @@ test("Style This… and Theme Studio's previews are passed by the keyboard (#150
   await chooseFromMenu(app, page, "Site", "Theme Studio…");
   const studio = page.getByRole("dialog", { name: "Theme Studio" });
   await studio.getByRole("tab", { name: "Components" }).click();
+  await expectTabPastTooltip(studio, "Theme Studio, Components");
   await expectTabPastPreview(
     studio,
     studio.getByRole("tabpanel").first(),

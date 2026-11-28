@@ -501,6 +501,12 @@ describe("Tooltip", () => {
     // The button, not only the wrapper Radix describes: it's what a screen reader is on.
     const description = document.getElementById(button.getAttribute("aria-describedby") ?? "");
     expect(description?.textContent).toBe("Copy (Ctrl+C)");
+    // Leaving it, the description stays in the page and only stops describing it: removed as the
+    // focus moved on, it threw a dialog's focus back to the dialog (#1672).
+    await userEvent.tab();
+    await waitFor(() => expect(screen.queryByRole("tooltip")).toBeNull());
+    expect(button.hasAttribute("aria-describedby")).toBe(false);
+    expect(description?.isConnected).toBe(true);
   });
 
   it("describes a disabled button by its tooltip while it's disabled (#1011)", () => {

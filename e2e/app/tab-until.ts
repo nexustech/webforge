@@ -15,17 +15,26 @@ export type TabUntilOptions = {
   readonly max?: number;
 };
 
+/** Whether the focus is on `target` or inside it, and the element that has it, in a few words. */
+const focusOn = (target: Locator) =>
+  target.evaluate((element) => {
+    const focused = document.activeElement;
+    const label = focused?.getAttribute("aria-label") ?? focused?.textContent ?? "";
+    const role = focused?.getAttribute("role");
+    return {
+      holds: element === focused || element.contains(focused),
+      name: `${focused?.tagName.toLowerCase()}${role ? `[${role}]` : ""} "${label.trim().slice(0, 30)}"`,
+    };
+  });
+
 /** Whether the focus is on `target` or inside it. */
-const holdsFocus = (target: Locator) =>
-  target.evaluate(
-    (element) => element === document.activeElement || element.contains(document.activeElement),
-  );
+const holdsFocus = async (target: Locator) => (await focusOn(target)).holds;
 
 /**
  * Presses Tab (or Shift+Tab) until the focus is on `target` or inside it, checking after each key
  * that it's still `within` and never where `never` says (#1507, #1650). However many stops lie
  * between, which may change with what scrolls, it fails only if `target` is never reached within
- * `max` keys. Gives the number of keys it took.
+ * `max` keys, saying which stops it passed (#1672). Gives the number of keys it took.
  */
 export async function tabUntil(
   page: Page,
@@ -33,13 +42,16 @@ export async function tabUntil(
   { back = false, within, never, max = 40 }: TabUntilOptions = {},
 ): Promise<number> {
   const key = back ? "Shift+Tab" : "Tab";
+  const passed: string[] = [];
   for (let pressed = 1; pressed <= max; pressed++) {
     await page.keyboard.press(key);
     if (never !== undefined) expect(await never(), `${key} ${pressed}`).toBeNull();
     if (within !== undefined) {
       expect(await holdsFocus(within), `${key} ${pressed}: the focus stays inside`).toBe(true);
     }
-    if (await holdsFocus(target)) return pressed;
+    const at = await focusOn(target);
+    if (at.holds) return pressed;
+    passed.push(at.name);
   }
-  throw new Error(`${key} didn't reach its target in ${max} keys`);
+  throw new Error(`${key} didn't reach its target in ${max} keys, passing ${passed.join(", ")}`);
 }

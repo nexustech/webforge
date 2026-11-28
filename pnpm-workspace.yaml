@@ -52,8 +52,23 @@ allowBuilds:
 # edits Puck's ESM chunks only: the app and the tests import Puck, so its CommonJS copy is never
 # loaded. pnpm fails the install if the patch no longer applies, e.g. after a Puck upgrade: check
 # whether it is still needed then, and patch-contract.test.tsx says which item went.
+#
+# Radix's focus trap (FocusScope, under every modal dialog, alert dialog, popover and menu) moves
+# the focus to the dialog itself whenever a node inside it is removed while the focus is on <body>,
+# taking that as the focused element removed. But the focus is on <body> for an instant in every
+# Tab, between the control it leaves and the next one, and a node removed then (a tooltip closing
+# on blur) threw the focus back to the dialog's top, a keyboard trap (#1672). The patch returns
+# early while the element that last had the focus is still in the page and can still take it (not
+# disabled, hidden or inert); otherwise, as when it's removed, the dialog takes the focus as
+# before. Upstream: radix-ui/primitives#2387 (return early while that element is in the page; ours
+# adds "and can still take it", so a control disabled under the focus isn't left on <body>) and
+# radix-ui/primitives#3870 (check again a frame later). Drop it once a Radix release fixes this.
+# It edits both builds (ESM and CommonJS), as Vitest may load either. A Radix upgrade that brings
+# another focus-scope version fails the install here, the patch then unused; focus-trap.test.tsx
+# fails if the trap comes back.
 patchedDependencies:
   "@puckeditor/core@0.24.0": patches/@puckeditor__core@0.24.0.patch
+  "@radix-ui/react-focus-scope@1.3.1": patches/@radix-ui__react-focus-scope@1.3.1.patch
 
 # happy-dom, the DOM for Vitest, is pinned to 21.0.4 in each workspace that tests React
 # (CVE-2026-33943, Dependabot alerts 2–5), not in the catalog: the dependency graph reads a
