@@ -101,9 +101,6 @@ test("switching the theme asks first, with the pages it changes, and is one undo
 });
 
 test("a colour hard to read says so under it at once, in words, with a shade that reads (#1174)", async () => {
-  // Quarantined on Windows: its Colour picker was once still open, and the re-run passed (#1581).
-  // Fixed or deleted within a week, under the flaky-test rule.
-  test.fixme(process.platform === "win32", "flaky on Windows CI: #1581");
   const page = await openTheme();
   const brand = page.locator('[data-field="color.primary"]');
   await expect(brand.getByRole("listitem")).toHaveCount(0);
