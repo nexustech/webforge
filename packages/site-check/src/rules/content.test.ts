@@ -553,15 +553,46 @@ describe("sample contact details (#1254)", () => {
       values: finding.values,
     }));
     expect(found).toEqual([
-      { key: "hours/text", values: { example: "9am" } },
-      { key: "review/quote", values: { example: "Saturday" } },
-      { key: "both/text", values: undefined },
+      { key: "hours/text", values: { exampleText: "Open Mon–Fri, 9am to 5pm", example: "9am" } },
+      // Known by its name, though its quote was marked first (#1449).
+      { key: "review/quote", values: { exampleText: "Margaret", example: "Saturday" } },
+      { key: "both/text", values: { exampleText: "Add your opening hours here" } },
     ]);
     expect(
       findIn(placeholdersRule, site).map((finding) =>
         finding.key.replace(`${site.homePageId}/`, ""),
       ),
     ).not.toContain("both/text");
+  });
+
+  it("tells marked elements apart by their text, each found once with or without a detail (#1449)", () => {
+    const testimonial = (id: string, name: string, role: string) =>
+      element("Testimonial", id, {
+        quote: "Lovely spot to work for an hour, and the coffee is always good and hot.",
+        name,
+        role,
+        examples: { quote: true, name: true, role: true },
+      });
+    const site = siteWith([
+      testimonial("margaret", "Margaret", "Comes in every Saturday"),
+      testimonial("owen", "Owen", "Walks the river path"),
+      testimonial("aisha", "Aisha", "Works from the window seat"),
+      // No name or title: its first marked text, cut to 40 characters as a reader counts them
+      // (`shortened`, shared with the plan's titles).
+      element("Text", "story", {
+        text: "<p>We have baked bread on this corner since the day we opened our doors.</p>",
+        examples: { text: true },
+      }),
+      // Marked but empty: nothing to check, so no row.
+      element("Text", "empty", { text: "<p></p>", examples: { text: true } }),
+    ]);
+
+    expect(findIn(sampleDetailsRule, site).map((finding) => finding.values)).toEqual([
+      { exampleText: "Margaret", example: "Saturday" },
+      { exampleText: "Owen" },
+      { exampleText: "Aisha" },
+      { exampleText: "We have baked bread on this corner sinc…" },
+    ]);
   });
 
   it("leaves a field bound to Site Settings to Site Settings' own finding", () => {

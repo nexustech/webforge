@@ -53,6 +53,14 @@ describe("describePlace", () => {
     expect(name(at({ kind: "element", on: "footer", nodeId: "small" }))).toBe("Text in the Footer");
   });
 
+  it("tells an example to check apart by its text, unless it has a name given in Layers (#1449)", () => {
+    const footer = { kind: "element", on: "footer", nodeId: "small" } as const;
+    expect(name(at(footer, { exampleText: "Margaret" }))).toBe("Text “Margaret” in the Footer");
+    // A name the person gave wins: never both.
+    const logo = { kind: "element", on: "header", nodeId: "logo" } as const;
+    expect(name(at(logo, { exampleText: "Rosa's" }))).toBe("Logo in the Header");
+  });
+
   it("never names an element or a shared section by its id, when it can't find it (#1170)", () => {
     expect(name(at({ kind: "element", on: doc.homePageId, nodeId: "LD5wURuiGOJhw1YE" }))).toBe(
       "An element on Rosa's",
@@ -175,6 +183,16 @@ describe("describeDetail", () => {
     );
     expect(describeDetail(at(place, { sameAs: "menu/cakes.html" }))).toBe(
       "The same as menu/cakes.html",
+    );
+  });
+
+  it("says why an example is to be checked, with or without a detail (#1228, #1449)", () => {
+    const place = { kind: "element", on: "footer", nodeId: "small" } as const;
+    expect(describeDetail(at(place, { exampleText: "Margaret", example: "Saturday" }))).toBe(
+      "Saturday looks like an example",
+    );
+    expect(describeDetail(at(place, { exampleText: "Owen" }))).toBe(
+      "Marked as an example until you check it",
     );
   });
 

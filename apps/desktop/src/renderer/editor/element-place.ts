@@ -11,7 +11,7 @@ import {
   sharedSectionOf,
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
-import { elementName } from "./labels.js";
+import { elementKind, givenElementName } from "./labels.js";
 
 // Where an element is, in a few words (Site Check's places, #1170; Theme Studio's colours outside
 // the theme, TC-4): "Heading on About", "Logo in the Header", "Image in the design of “Blog”".
@@ -65,10 +65,17 @@ export function pageName(site: SiteDoc, pageId: string): string {
 export const ON_PAGE = (element: string, page: string) =>
   t("siteCheck.place.page", { element, page });
 
+/** `kind`, with `text` the element is known by when there is some: Testimonial “Margaret”. */
+const knownBy = (kind: string, text: string | undefined) =>
+  text === undefined || text.trim() === ""
+    ? kind
+    : t("siteCheck.place.named", { element: kind, text });
+
 /**
  * Where element `nodeId`, kept `on`, is: its name, and its page, the Header or Footer, a shared
  * section or a collection's design. `onPage` words an element on a page, for a caller with words
- * of its own (the code trust prompt).
+ * of its own (the code trust prompt). With no name given in Layers, `text` tells it apart from
+ * others of its kind (#1449): "Testimonial “Margaret” on Home".
  */
 export function elementPlaceName(
   site: SiteDoc,
@@ -76,12 +83,14 @@ export function elementPlaceName(
   on: ElementPlace,
   nodeId: string,
   onPage: (element: string, page: string) => string = ON_PAGE,
+  text?: string,
 ): string {
   const node = findNode(site, on, nodeId);
   const element =
     node === undefined
       ? missingElement(nodeId, library)
-      : elementName(node, library, site.sharedSections);
+      : (givenElementName(node, site.sharedSections) ??
+        knownBy(elementKind(node, library, site.sharedSections), text));
   const region = layoutRegion(on);
   if (region !== undefined) return t(`siteCheck.place.${region}`, { element });
   if (isPageIn(site.pages, on)) return onPage(element, pageName(site, on));

@@ -165,6 +165,10 @@ export default {
           // Declared subpath export: @webforge/test-utils/netlify (a stand-in for Netlify's API,
           // which publish's tests call and e2e's mock Netlify answers HTTP with, #70).
           "^packages/test-utils/src/netlify\\.ts$",
+          // Declared subpath export: @webforge/test-utils/sources (finds the source files a test
+          // scans with one `git grep`, #1566): Node only, so neither the root entry nor the
+          // renderer's kit loads it.
+          "^packages/test-utils/src/sources\\.ts$",
           // Declared subpath export: @webforge/site-components/catalogue-data (the catalogue as
           // plain data, without React, for the command layer, 4.8).
           "^packages/site-components/src/catalogue-data\\.(ts|json)$",
