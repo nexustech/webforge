@@ -145,7 +145,7 @@ describe("ProjectStore's writes (#295)", () => {
     expect(source.match(/this\.#db\.transaction\(/g)).toBeNull();
     expect(source.match(/stamped\(/g)).toHaveLength(1);
     expect(source).toMatch(
-      /#write<T>\(change: \(\) => T\): T \{[^}]*stamped\(this\.#db, \(\) => \{/,
+      /#write<T>\(change: \(\) => T\): T \{[^}]*stamped\(\s*this\.#db,\s*\(\) => \{/,
     );
   });
 });
