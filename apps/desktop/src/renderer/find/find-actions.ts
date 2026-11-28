@@ -141,7 +141,7 @@ export function showSpot(spot: TextSpot, { session, panels, settings, pageSettin
   }
 }
 
-/** The quoted text for an undo label, shortened: "'Smith'". */
+/** The text for an undo label, which puts it in quotes, shortened: “Smith”. */
 const quoted = (text: string) => (text.length > 40 ? `${text.slice(0, 39)}…` : text);
 
 /**
@@ -201,7 +201,7 @@ const spotsOf = (site: SiteDoc, library: ComponentLibrary, options: FindOptions)
 
 /**
  * Replaces every match of `options` with `replacement`, as one undo step named after it
- * ("Replaced 'Smith' with 'Smyth' in 4 places"). A change to more than one page asks first, as
+ * ("Replaced “Smith” with “Smyth” in 4 places"). A change to more than one page asks first, as
  * any site-wide change does (D7), which saves a version. A shared section is replaced once: its
  * matches are its own, never its copies'. Resolves with how many places changed.
  */

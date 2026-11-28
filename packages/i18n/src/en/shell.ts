@@ -403,7 +403,7 @@ export const shell = {
   "footerToolbar.columns": "Columns",
   "footerToolbar.addColumn": "Add column",
   "footerToolbar.removeColumn": "Remove last column",
-  // {preset} is one of the presets above: "Started the Footer from 'Full'".
+  // {preset} is one of the presets above: "Started the Footer from “Full”".
   "footerToolbar.started": "Started the Footer from “{preset}”",
   // Its Undo toast, when it replaced elements: how far it reached (LF-15).
   "footerToolbar.startedEverywhere": "Started the Footer from “{preset}” on every page",

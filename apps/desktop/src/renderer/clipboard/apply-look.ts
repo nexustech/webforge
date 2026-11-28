@@ -283,7 +283,7 @@ function changedFields(
 }
 
 /**
- * The undo label: "Applied the Button look to 12 others", and " in the design of 'Blog'" when they
+ * The undo label: "Applied the Button look to 12 others", and " in the design of “Blog”" when they
  * are all in a Blog's design (#936).
  */
 function appliedLookLabel(site: SiteDoc, change: LookChange): string {

@@ -15,7 +15,7 @@ import { applyAnchor, type LinkFieldChange } from "../editor/link-change.js";
 
 /**
  * The menu editor's changes (F-ED-17): each one undo step named after its item ("Added menu item
- * 'Book now'"). Adding, moving or removing an item makes the menu the person's own (`custom`), so
+ * “Book now”"). Adding, moving or removing an item makes the menu the person's own (`custom`), so
  * it stops following the page order; renaming, hiding and relinking keep it as it is.
  */
 
@@ -32,7 +32,7 @@ export function itemLabel(site: SiteDoc, item: MenuItem): string {
   return item.label ?? page?.navLabel ?? page?.title ?? "";
 }
 
-/** How undo labels name an item: "menu item 'Book now'". */
+/** How undo labels name an item: "menu item “Book now”". */
 const itemName = (site: SiteDoc, item: MenuItem) => t("menu.item", { name: itemLabel(site, item) });
 
 /** Where item `id` is: its list (the menu's or a dropdown's), its index there, and its dropdown. */

@@ -14,7 +14,7 @@ import type { ComponentLibrary } from "@webforge/site-components";
 import { elementName } from "./labels.js";
 
 // Where an element is, in a few words (Site Check's places, #1170; Theme Studio's colours outside
-// the theme, TC-4): "Heading on About", "Logo in the Header", "Image in the design of 'Blog'".
+// the theme, TC-4): "Heading on About", "Logo in the Header", "Image in the design of “Blog”".
 
 /** `"header"` or `"footer"` when that is where `on` is. */
 const layoutRegion = (on: ElementPlace): "header" | "footer" | undefined =>
@@ -85,7 +85,7 @@ export function elementPlaceName(
   const region = layoutRegion(on);
   if (region !== undefined) return t(`siteCheck.place.${region}`, { element });
   if (isPageIn(site.pages, on)) return onPage(element, pageName(site, on));
-  // A Blog's design (#936), on every post: "Image in the design of 'Blog'".
+  // A Blog's design (#936), on every post: "Image in the design of “Blog”".
   const design = designAt(site, on);
   if (design !== undefined) {
     return t("siteCheck.place.design", {

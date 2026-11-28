@@ -5,7 +5,7 @@ import { buttonVariants } from "./button.js";
 import { dialogStyles } from "./dialog-styles.js";
 import { useReturnFocus } from "./return-focus.js";
 
-/** A confirmation that needs an answer (D5/D7: "Delete page 'About'?"). */
+/** A confirmation that needs an answer (D5/D7: "Delete page “About”?"). */
 export function AlertDialog(props: ComponentProps<typeof AlertDialogPrimitive.Root>) {
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
 }

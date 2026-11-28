@@ -593,7 +593,7 @@ export function withOwnColor(tokens: ThemeTokens, id: string, color: Oklch): The
 
 /**
  * Uses the brand colours a palette from image `image` proposes (PG-2, F-DS-7): at once, one step,
- * "Changed brand colours from 'Logo.png'", with an Undo toast (LF-15): Brand, Accent and Second accent, each
+ * "Changed brand colours from “Logo.png”", with an Undo toast (LF-15): Brand, Accent and Second accent, each
  * with its text. Reversed sections take each brand colour's hue and chroma at their own lightness
  * (#200), fitted to their own surface with their text as the page's are ({@link reversedBrand},
  * #462 review), so a reversed band stays readable.
@@ -619,7 +619,7 @@ export async function setBrandColours(
 
 /**
  * Switches the theme to `preset` (D7): asked first, with the pages it changes, then one step,
- * "Changed theme to 'Bistro'". The preset's tokens replace the theme's, colours and fonts too, but
+ * "Changed theme to “Bistro”". The preset's tokens replace the theme's, colours and fonts too, but
  * not the person's own colours (TC-1a, #1217): those are the business's, and the site uses them.
  * One of their own themes brings its own with it, and keeps those the site had that it hasn't.
  */
@@ -765,7 +765,7 @@ function looksTheSame(a: ThemeTokens, b: ThemeTokens): boolean {
 /**
  * Creates one of the person's own themes (Theme Studio's *New theme*, 2.23): `base`'s tokens under
  * `name`, as the site's theme. Asked first when it changes how every page looks (D7), not when it
- * starts from the site's theme as it is; then one step, "Created theme 'Shop'".
+ * starts from the site's theme as it is; then one step, "Created theme “Shop”".
  */
 export async function createOwnTheme(
   session: ThemeSession,
@@ -789,7 +789,7 @@ export async function createOwnTheme(
 
 /**
  * Renames one of the person's own themes (2.23). The site's theme, if it's that one, is renamed in
- * one step, "Renamed theme to 'Shop'", which the window keeps in My themes as it keeps every change
+ * one step, "Renamed theme to “Shop”", which the window keeps in My themes as it keeps every change
  * to it; another of theirs is renamed in My themes only (`keep`).
  */
 export function renameOwnTheme(
