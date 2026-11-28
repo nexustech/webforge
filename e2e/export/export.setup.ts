@@ -626,6 +626,19 @@ setup(
                   secondButtonLabel: "Book a table",
                   secondButtonLink: { kind: "url", href: "https://example.com/book" },
                 }),
+                // Centred, its text Narrow, then Wide at Content width Wide and Full (#1631).
+                ...[
+                  ["narrow", "wide"],
+                  ["wide", "wide"],
+                  ["wide", "full"],
+                ].map(([textWidth, contentWidth]) =>
+                  hero(`text-${textWidth}-${contentWidth}`, "60", "neutral", {
+                    variant: "centred",
+                    textWidth,
+                    contentWidth,
+                    text: "Sourdough, cakes and pastries from our oven to your table, baked fresh before the doors open every morning, with coffee from the roaster down the road and bread to take home.",
+                  }),
+                ),
               ],
             },
           },

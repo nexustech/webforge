@@ -271,7 +271,7 @@ describe("defineComponent (2.5)", () => {
     if (hero === undefined) throw new Error("no Hero");
     expect(layoutHides(hero, { variant: "minimal" })).toEqual(new Set(["image", "textPlace"]));
     expect(layoutHides(hero, { variant: "centred" })).toEqual(new Set(["alignment", "textPlace"]));
-    expect(layoutHides(hero, { variant: "split" })).toEqual(new Set(["textPlace"]));
+    expect(layoutHides(hero, { variant: "split" })).toEqual(new Set(["textPlace", "textWidth"]));
     // Where its text sits, with its alignment, only over its picture (HH-6).
     expect(layoutHides(hero, { variant: "background" })).toEqual(new Set());
   });
