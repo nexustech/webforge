@@ -215,10 +215,11 @@ function ScopeChoice({
         <span aria-hidden className="text-muted-foreground">
           ·
         </span>
+        {/* A link to look at, but a button's 24 px height to click (LF-18, #1454). */}
         <Button
           ref={change}
           variant="link"
-          className="h-auto px-0"
+          className="px-0"
           aria-expanded={false}
           aria-describedby={`${id}-summary`}
           onClick={() => {
