@@ -3388,7 +3388,7 @@
         "textWidth": {
           "kind": "select",
           "label": "Text width",
-          "help": "Narrow keeps long lines easy to read. Wide: as wide as the section's Content width, at most about as wide as Wide.",
+          "help": "Narrow keeps long lines easy to read. Wide: as wide as the section's Content width, at most about as wide as Content width's Wide.",
           "group": "style",
           "options": [
             {

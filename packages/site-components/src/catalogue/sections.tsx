@@ -286,10 +286,11 @@ const hero = defineSection({
     // Narrow, a reading width; Wide, as wide as the content width allows (#1631).
     const wide = values.textWidth === "wide" && layout !== "split";
     const copyWidth = layout === "centred" ? "mx-auto max-w-2xl" : "max-w-xl";
+    // Wide and centred, the box is centred in its row too, which at Content width Full is wider
+    // than it; on the left, it keeps the row's left edge, as the sections around it do.
+    const wideWidth = aligned === "text-center" ? `mx-auto ${HERO_WIDE_TEXT}` : HERO_WIDE_TEXT;
     const copy = (
-      <div
-        className={wide ? `${layout === "centred" ? "mx-auto " : ""}${HERO_WIDE_TEXT}` : copyWidth}
-      >
+      <div className={wide ? wideWidth : copyWidth}>
         <SectionTitle size="page">{values.title}</SectionTitle>
         <SectionLead className="py-6">{values.text}</SectionLead>
         {buttons}

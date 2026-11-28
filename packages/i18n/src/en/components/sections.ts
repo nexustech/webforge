@@ -34,7 +34,7 @@ export const sections = {
   // How wide the Hero's title and text are (#1631): not Content width's Narrow…Full.
   "field.heroTextWidth": "Text width",
   "field.heroTextWidth.help":
-    "Narrow keeps long lines easy to read. Wide: as wide as the section's Content width, at most about as wide as Wide.",
+    "Narrow keeps long lines easy to read. Wide: as wide as the section's Content width, at most about as wide as Content width's Wide.",
   "field.heroTextWidth.narrow": "Narrow",
   "field.heroTextWidth.wide": "Wide",
   "field.heroLayout.minimal": "Text only",

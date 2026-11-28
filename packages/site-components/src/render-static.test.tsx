@@ -1039,6 +1039,10 @@ describe("renderNodesToHtml", () => {
           );
         }
       }
+      // Centred in Text only, Wide's box is centred in its row too, which is wider at Full.
+      expect(
+        copy(heroIn("minimal", { textWidth: "wide", contentWidth: "full", alignment: "centre" })),
+      ).toBe("mx-auto w-full max-w-6xl");
       // Beside its picture, its text has half the row: Text width changes nothing there.
       expect(heroIn("split", { textWidth: "wide" })).toBe(heroIn("split"));
     });
