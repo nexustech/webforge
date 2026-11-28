@@ -1,6 +1,6 @@
 import { join } from "node:path";
+import { isTestOrStory, sourcesMatching } from "@webforge/test-utils/sources";
 import { describe, expect, it } from "vitest";
-import { isTestOrStory, sourcesMatching } from "./main/source-files.js";
 
 // A dialog's width (#1455): the dialog primitive sets `sm:max-w-md`, so a `max-w-*` without `sm:`
 // on a dialog loses to it from 640 px and the dialog comes out narrower than its code asks.

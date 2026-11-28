@@ -1,7 +1,7 @@
 import { join } from "node:path";
+import { isTestOrStory, sourcesMatching } from "@webforge/test-utils/sources";
 import { describe, expect, it } from "vitest";
 import { failureContextSchema } from "../shared/ipc/app.js";
-import { isTestOrStory, sourcesMatching } from "./source-files.js";
 
 // The renderer's handled failures reach main's log by a context `logFailure`'s schema takes
 // (`clipboard.paste`); one it refuses is dropped, and the failure leaves no trace (#1285). Each

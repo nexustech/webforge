@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { isTestOrStory, sourcesMatching } from "@webforge/test-utils/sources";
 import { describe, expect, it } from "vitest";
 import {
   AI_CLIENT_IDS,
@@ -6,7 +7,6 @@ import {
   clientOf,
   DEFAULT_CLIENT,
 } from "../../shared/ai-clients/index.js";
-import { isTestOrStory, sourcesMatching } from "../source-files.js";
 import { clientInstalls } from "./index.js";
 
 const SOURCE = join(import.meta.dirname, "../..");

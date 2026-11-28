@@ -1,8 +1,8 @@
 import { join } from "node:path";
+import { isTestOrStory, sourcesMatching } from "@webforge/test-utils/sources";
 import { describe, expect, it } from "vitest";
 import { COMMAND_IDS } from "../shared/command-ids.js";
 import { USAGE_COMMANDS, usageCommandOf } from "../shared/usage.js";
-import { isTestOrStory, sourcesMatching } from "./source-files.js";
 
 // The usage summary counts each command by a name from a fixed list (5.40, BD-1): a command the
 // list doesn't have isn't counted. Every command the shell names, and every one the editor's code

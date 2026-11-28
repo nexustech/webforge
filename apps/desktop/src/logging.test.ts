@@ -1,5 +1,5 @@
+import { sourcesMatching } from "@webforge/test-utils/sources";
 import { describe, expect, it } from "vitest";
-import { sourcesMatching } from "./main/source-files.js";
 
 // Standards §4 and R12: the app logs only through `main/log.ts` (the app's log file, codes only)
 // and `renderer/log.ts` (which sends codes to it). A `console` call anywhere else could put a

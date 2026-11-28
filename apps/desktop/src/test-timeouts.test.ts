@@ -2,8 +2,8 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { sourcesMatching } from "@webforge/test-utils/sources";
 import { describe, expect, it } from "vitest";
-import { sourcesMatching } from "./main/source-files.js";
 
 // This package's tests already have a timeout scaled to the run's load (`vitest.config.ts`, ADR
 // 0014). A test that sets its own replaces it, and a number stays the same however busy the run
