@@ -209,7 +209,7 @@ test.describe("editor modes", () => {
     const dialog = page.getByRole("dialog", { name: "Link" });
     await dialog.getByRole("radio", { name: "Web address" }).click();
     await dialog.getByRole("textbox", { name: "Web address" }).fill("book.example");
-    await dialog.getByRole("button", { name: "Save Link" }).click();
+    await dialog.getByRole("button", { name: "Save", exact: true }).click();
     await expect(edit.getByText("https://book.example")).toBeVisible();
     await expect(frame.locator(".site-hero a.btn")).toHaveText("Visit us");
 

@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { createSite } from "@webforge/model";
 import { ProjectStore, writeSiteZip } from "@webforge/storage";
@@ -39,6 +39,7 @@ function setUp(
     open: vi.fn(() => opened),
     current: vi.fn(() => project),
     currentPath: vi.fn((): string | undefined => "/sites/Bakery.wforge"),
+    openProjectId: vi.fn((): string | undefined => "project-1"),
     readSite: vi.fn(() => ({ status: "empty" })),
     commit: vi.fn(() => ({ status: "saved" })),
     uiState: vi.fn(() => ({ editorMode: "content" })),
@@ -64,6 +65,7 @@ function setUp(
       chooseProjectToOpen: async () => "/sites/Bakery.wforge",
       chooseSiteZipToSave: async () => "/backups/Bakery.zip",
       chooseSiteZipToOpen: async () => "/backups/Bakery.zip",
+      chooseKeptCopyToSave: async () => undefined,
       ...dialogs,
     },
     options,
@@ -510,5 +512,119 @@ describe("making and saving sites in the usage summary (5.40)", () => {
     }
 
     expect(counted).toEqual([{ kind: "saveFailed", reason: "read-only" }]);
+  });
+});
+
+describe("the copy from before an update (#1525)", () => {
+  const tempDir = tempDirFactory("webforge-kept-ipc-");
+  /** A kept copy of the site in `formats`, as the backups give it: by default, older than 0.1.0. */
+  const keptAt = (path: string, formats = { fileFormat: 2, siteFormat: 11 }) => ({
+    keptBeforeUpdate: vi.fn((projectId: string) =>
+      projectId === "project-1"
+        ? { path, ...formats, keptAt: new Date("2026-11-27T10:00:00.000Z"), size: 4 }
+        : undefined,
+    ),
+  });
+
+  it("says whether the open site has one, with the releases that open its formats", async () => {
+    const dir = tempDir();
+    const backups = keptAt(join(dir, "kept.wforge"));
+    const { invoke } = setUp({}, { keptCopies: { backups, version: "0.4.0" } });
+
+    await expect(invoke("project:kept-copy", APP_URL, project.sessionId)).resolves.toEqual({
+      status: "kept",
+      first: "0.1.0",
+      last: "0.3.1",
+      keptAt: "2026-11-27T10:00:00.000Z",
+      size: 4,
+    });
+    // Found by the site's id and its file's path.
+    expect(backups.keptBeforeUpdate).toHaveBeenCalledWith("project-1", "/sites/Bakery.wforge");
+    // Formats no release opens: none named.
+    const unnamed = setUp(
+      {},
+      { keptCopies: { backups: keptAt("x", { fileFormat: 1, siteFormat: 1 }), version: "0.4.0" } },
+    );
+    await expect(
+      unnamed.invoke("project:kept-copy", APP_URL, project.sessionId),
+    ).resolves.toMatchObject({ first: null, last: null });
+    // None for a replaced opening, or a site without one.
+    await expect(
+      invoke("project:kept-copy", APP_URL, "22222222-2222-4222-8222-222222222222"),
+    ).resolves.toEqual({
+      status: "none",
+    });
+    const none = setUp(
+      {},
+      { keptCopies: { backups: { keptBeforeUpdate: () => undefined }, version: "0.4.0" } },
+    );
+    await expect(none.invoke("project:kept-copy", APP_URL, project.sessionId)).resolves.toEqual({
+      status: "none",
+    });
+  });
+
+  it("saves the kept file byte for byte where the person chooses, named for the releases", async () => {
+    const dir = tempDir();
+    const kept = join(dir, "kept.wforge");
+    writeFileSync(kept, Buffer.from([1, 2, 3, 4]));
+    const chooseKeptCopyToSave = vi.fn(async (_name: string) => join(dir, "Saved.wforge"));
+    const { invoke } = setUp(
+      { chooseKeptCopyToSave },
+      { keptCopies: { backups: keptAt(kept), version: "0.4.0" } },
+    );
+
+    await expect(invoke("project:save-kept-copy", APP_URL, project.sessionId)).resolves.toEqual({
+      status: "saved",
+      fileName: "Saved.wforge",
+    });
+    expect(chooseKeptCopyToSave).toHaveBeenCalledWith("Bakery (for Webforge 0.1.0 to 0.3.1)");
+    expect(readFileSync(join(dir, "Saved.wforge")).equals(readFileSync(kept))).toBe(true);
+  });
+
+  it("names the copy for the one release that opens it, or for the update when none does", async () => {
+    const chooseKeptCopyToSave = vi.fn(async (_name: string) => undefined);
+    // Saved by 0.3.1: the releases before it have an older site format.
+    const one = setUp(
+      { chooseKeptCopyToSave },
+      { keptCopies: { backups: keptAt("x", { fileFormat: 2, siteFormat: 22 }), version: "0.4.0" } },
+    );
+    await one.invoke("project:save-kept-copy", APP_URL, project.sessionId);
+    expect(chooseKeptCopyToSave).toHaveBeenLastCalledWith("Bakery (for Webforge 0.3.1)");
+
+    // Saved by a development build, newer than any release.
+    const none = setUp(
+      { chooseKeptCopyToSave },
+      { keptCopies: { backups: keptAt("x", { fileFormat: 2, siteFormat: 99 }), version: "0.4.0" } },
+    );
+    await none.invoke("project:save-kept-copy", APP_URL, project.sessionId);
+    expect(chooseKeptCopyToSave).toHaveBeenLastCalledWith("Bakery (from before the update)");
+  });
+
+  it("saves nothing without a copy, when the person cancels, or for a replaced opening", async () => {
+    const without = setUp(
+      {},
+      { keptCopies: { backups: { keptBeforeUpdate: () => undefined }, version: "0.4.0" } },
+    );
+    await expect(
+      without.invoke("project:save-kept-copy", APP_URL, project.sessionId),
+    ).resolves.toEqual({ status: "failed", reason: "no-copy" });
+
+    const canceled = setUp({}, { keptCopies: { backups: keptAt("x"), version: "0.4.0" } });
+    await expect(
+      canceled.invoke("project:save-kept-copy", APP_URL, project.sessionId),
+    ).resolves.toEqual({ status: "canceled" });
+
+    await expect(
+      canceled.invoke("project:save-kept-copy", APP_URL, "22222222-2222-4222-8222-222222222222"),
+    ).resolves.toEqual({ status: "canceled" });
+
+    // Never over the open site's own file, which the store has open.
+    const over = setUp(
+      { chooseKeptCopyToSave: async () => "/sites/Bakery.wforge" },
+      { keptCopies: { backups: keptAt("x"), version: "0.4.0" } },
+    );
+    await expect(
+      over.invoke("project:save-kept-copy", APP_URL, project.sessionId),
+    ).resolves.toEqual({ status: "failed", reason: "open-site" });
   });
 });

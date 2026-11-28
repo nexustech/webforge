@@ -72,6 +72,8 @@ export function Button({
   const button = (
     <Comp
       data-slot="button"
+      // Its kind, for the footer rule's check (#1444): `default` when none is given.
+      data-variant={variant ?? "default"}
       className={cn(buttonVariants({ variant, size, className }))}
       {...(asChild ? {} : { type })}
       {...props}

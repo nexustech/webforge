@@ -153,11 +153,32 @@ export type ProjectInfo = ValidatedProject & {
 export type OpenProjectOptions = {
   /** Open without write access, e.g. to look inside a backup. */
   readonly readOnly?: boolean;
+  /**
+   * Called once, before the first write that brings an older file's format or an older site's
+   * format up to date (#1525, UC-2): the moment to keep the file as the older Webforge wrote it.
+   * The file is whole then, between transactions. If it throws, that write doesn't happen. Never
+   * called for a file already up to date, or one opened read-only. Told the formats the file is
+   * in, which say which versions of Webforge open it.
+   */
+  readonly beforeFormatChange?: (formats: StoredFormats) => void;
+};
+
+/**
+ * The formats a site's file is in (#1525): the file's own, its tables, and the site's, which
+ * changes more often. Together they say which versions of Webforge can open it.
+ */
+export type StoredFormats = {
+  readonly fileFormat: number;
+  readonly siteFormat: number;
 };
 
 /** The steps of making a new project, as {@link CreateProjectOptions.timed} is told them (#1560). */
 export type CreateProjectStep =
   | "make the file"
+  // Its three parts (#1625), inside it: one took 10 s once on a Windows runner.
+  | "make the file: open it"
+  | "make the file: its first write"
+  | "make the file: how it writes"
   | "first commit"
   | "move into place"
   | "check the new file";

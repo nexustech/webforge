@@ -40,7 +40,7 @@ export const MENU_GROUPS: Partial<Record<MenuId, readonly (readonly GroupItem[])
       COMMAND_IDS.openRecent,
       COMMAND_IDS.openSiteZip,
     ],
-    [COMMAND_IDS.saveVersion, COMMAND_IDS.saveSiteZip],
+    [COMMAND_IDS.saveVersion, COMMAND_IDS.saveKeptCopy, COMMAND_IDS.saveSiteZip],
     [
       COMMAND_IDS.preview,
       COMMAND_IDS.previewOnPhone,

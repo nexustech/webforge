@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogCloseButton,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -70,6 +71,7 @@ export function AboutDialogView({
           <Button variant="outline" onClick={onShowLicences}>
             {t("command.licences")}
           </Button>
+          <DialogCloseButton />
         </DialogFooter>
       </DialogContent>
     </Dialog>

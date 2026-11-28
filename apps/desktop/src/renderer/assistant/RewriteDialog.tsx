@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogCancel,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -119,14 +120,12 @@ export function RewriteDialog(props: RewriteDialogProps) {
           <p className="m-0 text-xs text-muted-foreground">{t("assistant.rewrite.formatting")}</p>
         ) : null}
         <DialogFooter>
-          <Button variant="ghost" onClick={props.onCancel}>
-            {t("assistant.rewrite.cancel")}
-          </Button>
           {state.step === "draft" || state.step === "failed" ? (
             <Button variant="outline" onClick={props.onAgain}>
               {t("assistant.rewrite.again")}
             </Button>
           ) : null}
+          <DialogCancel onClick={props.onCancel}>{t("assistant.rewrite.cancel")}</DialogCancel>
           {state.step === "draft" ? (
             <Button onClick={() => props.onUse(state.text)}>{t("assistant.rewrite.use")}</Button>
           ) : null}

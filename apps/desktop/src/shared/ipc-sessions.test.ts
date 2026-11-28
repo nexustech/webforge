@@ -12,6 +12,8 @@ const SITE_CHANNELS = [
   "project:commit",
   "project:set-ui-state",
   "project:save-zip",
+  "project:kept-copy",
+  "project:save-kept-copy",
   "project:take-about",
   // File › Close Site (#1016): closes only the opening its page was loaded for.
   "project:close",

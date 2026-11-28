@@ -217,8 +217,8 @@ export function StudioOwnColours(props: StudioOwnColoursProps) {
               </select>
             </label>
           )}
+          {/* The other answer, then Cancel, then the primary (#1444); Cancel still has the focus. */}
           <AlertDialogFooter>
-            <AlertDialogCancel>{t("theme.studio.own.cancel")}</AlertDialogCancel>
             <Button
               variant="outline"
               onClick={() => {
@@ -228,6 +228,7 @@ export function StudioOwnColours(props: StudioOwnColoursProps) {
             >
               {t("theme.studio.own.keep")}
             </Button>
+            <AlertDialogCancel>{t("theme.studio.own.cancel")}</AlertDialogCancel>
             {to === undefined ? null : (
               <Button
                 onClick={() => {

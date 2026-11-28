@@ -106,7 +106,9 @@ export {
 } from "./components/ui/context-menu.js";
 export {
   Dialog,
+  DialogCancel,
   DialogClose,
+  DialogCloseButton,
   DialogContent,
   DialogDescription,
   DialogFooter,

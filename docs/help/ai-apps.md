@@ -4,7 +4,7 @@ id: ai-apps
 title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
 related: [undo-and-history, version-history, site-check]
-updated: 2026-11-24
+updated: 2026-11-27
 ---
 
 # AI apps
@@ -21,7 +21,7 @@ Choose **File › AI Apps…** (or search for it in **Search Commands…**, or c
 
 You need Claude Desktop installed on this computer.
 
-1. Click **Add AI App**. **Claude Desktop** is already chosen, and named so. Click **Add**.
+1. Click **Add AI App**, at the bottom of the window. **Claude Desktop** is already chosen, and named so. Click **Add**.
 2. {appName} shows the app's **Key**. Click **Copy the key**: you won't see it again, and it stops working if Claude Desktop doesn't use it within 5 minutes.
 3. Click **Install in Claude Desktop**. Claude Desktop opens {appName}'s extension and asks whether to install it.
 4. In Claude Desktop, paste the key into **Key**, and install the extension.

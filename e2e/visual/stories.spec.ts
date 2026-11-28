@@ -40,6 +40,40 @@ type Build = {
   readonly contrastReported: boolean;
 };
 
+/** A footer's button, as the story draws it: its words, its variant and whether it's the way out. */
+type FooterButton = { readonly text: string; readonly variant: string; readonly wayOut: boolean };
+
+/** The words of a way out drawn without `DialogCancel`, `DialogCloseButton` or `AlertDialogCancel`. */
+const WAY_OUT_WORDS = new Set(["Cancel", "Close"]);
+
+/**
+ * What breaks the footer rule (#1444) in `buttons`, in order: a way out (Cancel or Close) not in
+ * the filled grey `secondary`; one followed by anything but Back and the primary; a last button
+ * that's neither the primary (`default` or `destructive`) nor a way out. While You Were Away's
+ * **Keep** is its primary, an answer, not a way out, so it passes as one.
+ */
+function footerFaults(buttons: readonly FooterButton[]): string[] {
+  const faults: string[] = [];
+  const primary = (button: FooterButton | undefined) =>
+    button?.variant === "default" || button?.variant === "destructive";
+  buttons.forEach((button, at) => {
+    const wayOut = button.wayOut || WAY_OUT_WORDS.has(button.text);
+    if (!wayOut) return;
+    if (button.variant !== "secondary") faults.push(`${button.text} is ${button.variant}`);
+    const after = buttons.slice(at + 1);
+    const allowed =
+      after.length === 0 ||
+      (after.length === 1 && primary(after[0])) ||
+      (after.length === 2 && after[0]?.text === "Back" && primary(after[1]));
+    if (!allowed) faults.push(`${button.text} is followed by ${after.map((each) => each.text)}`);
+  });
+  const last = buttons.at(-1);
+  if (last !== undefined && !primary(last) && !last.wayOut && !WAY_OUT_WORDS.has(last.text)) {
+    faults.push(`it ends with ${last.text} (${last.variant}), not the primary or a way out`);
+  }
+  return faults;
+}
+
 /** The development presets (S3) every pull request checks the site components in (2.16). */
 const PR_PRESETS: readonly string[] = ["light", "dark", "high-contrast-rounded"];
 
@@ -185,6 +219,31 @@ for (const build of BUILDS) {
             serious.filter((violation) => !reported.includes(violation)).map(summarise),
           ).toEqual([]);
           expect(errors).toEqual([]);
+
+          // Every dialog's footer follows the rule (#1444, docs/extending.md): other actions, the
+          // way out (Cancel or Close, filled grey), Back in a dialog of steps, then the primary.
+          if (build.package === "editor-ui") {
+            const footers = await page.evaluate(() =>
+              [
+                ...document.querySelectorAll<HTMLElement>(
+                  '[data-slot="dialog-footer"], [data-slot="alert-dialog-footer"]',
+                ),
+              ]
+                .filter((footer) => footer.checkVisibility())
+                .map((footer) =>
+                  [...footer.querySelectorAll<HTMLElement>("button")]
+                    .filter((button) => button.checkVisibility())
+                    .map((button) => ({
+                      text: button.textContent?.trim() ?? "",
+                      variant: button.dataset.variant ?? "",
+                      wayOut: button.dataset.wayOut !== undefined,
+                    })),
+                ),
+            );
+            for (const buttons of footers) {
+              expect(footerFaults(buttons), `${story.title} › ${story.name}'s footer`).toEqual([]);
+            }
+          }
 
           // Screenshots in the development presets; the curated themes' look is the theme
           // stories' own screenshots (2.13), and the nightly run checks them with axe.
