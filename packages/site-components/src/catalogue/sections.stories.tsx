@@ -92,6 +92,27 @@ export const HeroTextWidthCentred: Story = { args: { nodes: textWidths("centred"
 /** Text width in Image behind the text (#1631): Narrow, then Wide. */
 export const HeroTextWidthBackground: Story = { args: { nodes: textWidths("background") } };
 
+/**
+ * Left behind its picture (#1658): the title and text at the left edge of the Hero's content width,
+ * Narrow at Content width Wide, then Wide at Full, the widest it goes.
+ */
+export const HeroLeftBehindPicture: Story = {
+  args: {
+    nodes: [
+      { textWidth: "narrow", contentWidth: "wide" },
+      { textWidth: "wide", contentWidth: "full" },
+    ].map(({ textWidth, contentWidth }) =>
+      hero("left", {
+        id: `hero-left-background-${textWidth}`,
+        variant: "background",
+        textWidth,
+        contentWidth,
+        text: "Sourdough, cakes and pastries from our oven to your table, baked fresh before the doors open every morning, with coffee from the roaster down the road.",
+      }),
+    ),
+  },
+};
+
 /** Text width in Text only (#1631): Narrow, then Wide. */
 export const HeroTextWidthMinimal: Story = { args: { nodes: textWidths("minimal") } };
 
