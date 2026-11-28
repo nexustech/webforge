@@ -83,6 +83,8 @@ async function openOnce(
 
 for (const template of TEMPLATES) {
   test(`opens a ${template.title} site in under 3 s (F-SITE-1)`, async () => {
+    // Three launches and closes, each up to its opening's wait and a slow runner's start.
+    test.setTimeout(OPENINGS * 90_000);
     const openings: { readonly ms: number; readonly steps: string }[] = [];
     for (let run = 0; run < OPENINGS; run++) openings.push(await openOnce(template));
     const openingsMs = openings.map((each) => each.ms);

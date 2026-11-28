@@ -83,46 +83,51 @@ for (const { name, otherPages } of [
     await waitForCanvas(page);
     await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved");
 
-    // Each commit's time, and when it started and ended on the clock main's steps use.
-    const commits = await page.evaluate(
+    /** The flushes main has timed so far (`step-timings.ts`), oldest first. */
+    const timedFlushes = async (running: ElectronApplication) =>
+      (
+        await running.evaluate(
+          () =>
+            (
+              globalThis as { webforgeStepTimings?: () => readonly TimedStep[] }
+            ).webforgeStepTimings?.() ?? [],
+        )
+      ).filter((each) => each.step === "a write's flush");
+    const before = (await timedFlushes(app)).length;
+
+    // Each commit's time, from the renderer.
+    const durations = await page.evaluate(
       async ({ changes }) => {
         const { project } = (window as unknown as RendererWindow).webforge;
         const sessionId = (await project.getCurrent())?.sessionId ?? "";
-        const timed: { ms: number; from: number; to: number }[] = [];
+        const times: number[] = [];
         for (const list of changes) {
-          const from = Date.now();
           const start = performance.now();
           const result = await project.commit(sessionId, list);
-          timed.push({ ms: performance.now() - start, from, to: Date.now() });
+          times.push(performance.now() - start);
           if ((result as { status: string }).status !== "saved") throw new Error("not saved");
         }
-        return timed;
+        return times;
       },
       { changes: changeLists },
     );
-    const steps = await app.evaluate(
-      () =>
-        (
-          globalThis as { webforgeStepTimings?: () => readonly TimedStep[] }
-        ).webforgeStepTimings?.() ?? [],
-    );
-    const flushes = steps.filter((each) => each.step === "a write's flush");
-
-    // Each measured commit, paired with the flush that ended within it: its last, as a first
-    // change of the day saves a version first.
-    const measured = commits.slice(WARM_UP).map((commit) => {
-      const within = flushes.filter((each) => each.at >= commit.from && each.at <= commit.to);
-      const flush = within.at(-1)?.ms;
-      if (flush === undefined) throw new Error("Main timed no flush for a commit");
-      return { total: commit.ms, flush, ours: commit.ms - flush };
+    // Paired by order, not by the two processes' clocks: after the warm-up each commit is one
+    // write of the store, so the measured commits are the last flushes. A first change of the
+    // day saves a version first, in the warm-up.
+    const flushes = (await timedFlushes(app)).slice(before).map((each) => each.ms);
+    const paired = flushes.length >= durations.length;
+    const measuredFlushes = paired ? flushes.slice(-MEASURED) : [];
+    const measured = durations.slice(WARM_UP).map((total, index) => {
+      const flush = measuredFlushes[index] ?? Number.NaN;
+      return { total, flush, ours: total - flush };
     });
     const result = {
       pages: otherPages + 1,
       medianMs: tenth(median(measured.map((each) => each.total))),
       ourPartMedianMs: tenth(median(measured.map((each) => each.ours))),
       flushMedianMs: tenth(median(measured.map((each) => each.flush))),
-      totals: commits.map((each) => tenth(each.ms)),
-      flushes: measured.map((each) => tenth(each.flush)),
+      totals: durations.map(tenth),
+      flushes: measuredFlushes.map(tenth),
     };
     record(name, result);
     console.log(
@@ -135,6 +140,10 @@ for (const { name, otherPages } of [
       test.info().annotations.push({ type: "over budget", description });
       console.log(`Over budget: ${description}`);
     }
+    // Recorded first, so a failure here still leaves the times.
+    expect(paired, `main timed ${flushes.length} flushes for ${durations.length} commits`).toBe(
+      true,
+    );
     // Soft, like the other budgets here: a miss is reported, not hidden.
     expect
       .soft(result.ourPartMedianMs, "our part of a commit, median (ms)")
