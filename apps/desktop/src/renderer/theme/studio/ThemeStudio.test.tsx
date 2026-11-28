@@ -324,6 +324,11 @@ describe("Theme Studio's Components (3.12, CT-1; M1)", () => {
     // No draft's bar, and nothing to compare: what shows is the theme.
     expect(dialog().queryByRole("button", { name: "Apply Changes" })).toBeNull();
     expect(dialog().queryByRole("radio", { name: "Theme now" })).toBeNull();
+    // The reset is in the bar, always there (#1517): unavailable while nothing is set, saying why.
+    const reset = () => dialog().getByRole("button", { name: "Reset Button to Default" });
+    expect(reset().getAttribute("aria-disabled")).toBe("true");
+    expect(reset().getAttribute("aria-describedby")).not.toBeNull();
+    expect(kinds().querySelector('option[value="Button"]')?.textContent).toBe("Button");
 
     await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
     await waitFor(() => expect(labels()).toEqual(["Changed the theme's look for Button"]));
@@ -343,10 +348,22 @@ describe("Theme Studio's Components (3.12, CT-1; M1)", () => {
     const said = { message: "Changed every Button on your site (2)", id: "theme-look:Button" };
     expect(notices).toEqual([said, said]);
 
-    // Reset is a step of its own at once: back to the theme's defaults.
-    await user.click(button().getByRole("button", { name: "Reset to Theme's Defaults" }));
+    // What's changed is marked (#1517): the kind in the list, in words, and each field set in
+    // the look, with the Edit panel's words for where its value comes from.
+    expect(kinds().querySelector('option[value="Button"]')?.textContent).toBe("Button (changed)");
+    const corners = button().getByRole("combobox", { name: "Corners" });
+    expect(corners.closest("[data-field]")?.querySelector("[data-changed-dot]")).not.toBeNull();
+    expect(corners.closest("[data-field]")?.textContent).toContain("Set here");
+    expect(reset().getAttribute("aria-disabled")).toBe("false");
+    const tokens = theme().buttons;
+
+    // Reset is a step of its own at once: back to the theme's defaults, the look alone.
+    await user.click(reset());
     await waitFor(() => expect(theme().looks).toBeUndefined());
     expect(labels().at(-1)).toBe("Reset the theme's look for Button");
+    expect(theme().buttons).toEqual(tokens);
+    expect(kinds().querySelector('option[value="Button"]')?.textContent).toBe("Button");
+    expect(reset().getAttribute("aria-disabled")).toBe("true");
   });
 
   it("previews the run of changes in the field in use, and writes it as the field is left", async () => {

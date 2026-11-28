@@ -10,16 +10,19 @@ import { WithTooltip } from "./tooltip.js";
  * with a fill has a muted fill as well, not its own colour behind grey text (#1010).
  */
 export const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:text-disabled [&:disabled_svg]:text-disabled aria-invalid:ring-2 aria-invalid:ring-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:text-disabled [&:disabled_svg]:text-disabled aria-disabled:cursor-default aria-disabled:text-disabled [&[aria-disabled=true]_svg]:text-disabled aria-invalid:ring-2 aria-invalid:ring-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary-hover disabled:bg-muted",
+        default:
+          "bg-primary text-primary-foreground hover:bg-primary-hover disabled:bg-muted aria-disabled:bg-muted aria-disabled:hover:bg-muted",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:bg-muted",
-        outline: "border border-border bg-transparent hover:bg-hover",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:bg-muted",
-        ghost: "hover:bg-hover",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:bg-muted aria-disabled:bg-muted aria-disabled:hover:bg-muted",
+        outline:
+          "border border-border bg-transparent hover:bg-hover aria-disabled:hover:bg-transparent",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:bg-muted aria-disabled:bg-muted aria-disabled:hover:bg-muted",
+        ghost: "hover:bg-hover aria-disabled:hover:bg-transparent",
         link: "text-info underline-offset-4 hover:underline",
       },
       size: {
@@ -44,6 +47,13 @@ export type ButtonProps = Omit<ComponentProps<"button">, "title"> &
      * `disabled`) given or not for good: adding or dropping either one remounts the button.
      */
     readonly tooltip?: ReactNode;
+    /**
+     * Unavailable but still reachable (#1517, #1451): looks disabled and ignores clicks, but keeps
+     * the keyboard's focus, so its `tooltip`, which should say why, reaches the keyboard and a
+     * screen reader as well as the pointer. Use it, rather than `disabled`, where the reason
+     * matters. Like `disabled`, keep it given or not for good.
+     */
+    readonly unavailable?: boolean;
   };
 
 /** A button. Defaults to `type="button"` so it never submits a form by accident. */
@@ -54,6 +64,8 @@ export function Button({
   asChild = false,
   type = "button",
   tooltip,
+  unavailable,
+  onClick,
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot.Root : "button";
@@ -65,11 +77,22 @@ export function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...(asChild ? {} : { type })}
       {...props}
+      {...(unavailable === undefined ? {} : { "aria-disabled": unavailable })}
+      onClick={(event) => {
+        if (unavailable === true) {
+          event.preventDefault();
+          return;
+        }
+        onClick?.(event);
+      }}
     />
   );
   if (tooltip === undefined) return button;
   return (
-    <WithTooltip tooltip={tooltip} disableable={props.disabled !== undefined}>
+    <WithTooltip
+      tooltip={tooltip}
+      disableable={props.disabled !== undefined || unavailable !== undefined}
+    >
       {button}
     </WithTooltip>
   );

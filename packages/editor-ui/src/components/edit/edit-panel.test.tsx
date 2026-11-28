@@ -60,6 +60,45 @@ describe("EditPanel", () => {
     expect(screen.getByRole("heading", { name: "Heading" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Help: The Edit panel" })).toBeDefined();
   });
+  it("marks a setting set here, and its group, but not changed content (#1517)", () => {
+    const select = (name: string, label: string, extra: Partial<EditPanelField>) =>
+      ({
+        name,
+        kind: "select",
+        label,
+        group: "content",
+        value: "a",
+        options: [{ label: "A", value: "a" }],
+        ...extra,
+      }) as EditPanelField;
+    render(
+      <EditPanel
+        heading="Look for every Button"
+        single
+        fields={[
+          // Set here, with the words that say so: marked.
+          select("corners", "Corners", { changed: true, source: { text: "Set here" } }),
+          // The theme's: not marked.
+          select("shadow", "Shadow", { source: { text: "Same as theme (Shadow: Small)" } }),
+          // Changed, but with no words for where it comes from (what an element says): not marked.
+          select("layout", "Layout", { changed: true }),
+        ]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+    const dotOf = (label: string) =>
+      screen.getByLabelText(label).closest("[data-field]")?.querySelector("[data-changed-dot]");
+    expect(dotOf("Corners")).not.toBeNull();
+    expect(dotOf("Shadow")).toBeNull();
+    expect(dotOf("Layout")).toBeNull();
+    // Its group says so too, in words for a screen reader.
+    const heading = document.querySelector<HTMLElement>("[data-field-group-heading] button");
+    expect(heading?.querySelector("[data-changed-dot]")).not.toBeNull();
+    const description = document.getElementById(heading?.getAttribute("aria-describedby") ?? "");
+    expect(description?.textContent).toBe(t("editPanel.group.changed"));
+  });
+
   it("shows the element's content fields first, its style fields on the Style tab", async () => {
     const { user } = setup();
 
@@ -769,7 +808,7 @@ describe("style field renderers (1.14 part 2)", () => {
       false,
     );
     fireEvent.contextMenu(spacing);
-    await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Default" }));
     expect(onResetToDefault).toHaveBeenLastCalledWith(["padding"], "Spacing");
 
     spacing.focus();
@@ -802,7 +841,7 @@ describe("style field renderers (1.14 part 2)", () => {
     fireEvent.contextMenu(screen.getByRole("button", { name: "Spacing" }));
     const items = await screen.findAllByRole("menuitem");
     expect(items.map((item) => item.textContent)).toEqual([
-      "Reset Group to Defaults",
+      "Reset Group to Default",
       "Collapse All",
       "Apply Look to Every Section on This Page",
       "Apply Look to Every Section on the Site",
