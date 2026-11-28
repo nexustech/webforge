@@ -328,7 +328,7 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   expect(all.some((node) => node.type === "Image" && node.props.hidden === true)).toBe(true);
   await expect(canvas().locator("[data-webforge-hidden] img")).toHaveCount(1);
   await showTab(left, "Layers");
-  await expect(sections()).toHaveText([/^Linked copy of 'Welcome'/]);
+  await expect(sections()).toHaveText([/^Linked copy of “Welcome”/]);
   await showPage("Our story");
   await expect(sections()).toHaveCount(2);
   await expect(tree().getByRole("treeitem", { name: /Welcome/ })).toBeVisible();

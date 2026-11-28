@@ -444,7 +444,7 @@ test("an AI app asks for pictures with its reason; the person chooses them in Ad
       name: "requestMedia",
       arguments: { reason: "Photos of your workshop" },
     });
-    await expect(asked.getByText('Its reason: "Photos of your workshop"')).toBeVisible();
+    await expect(asked.getByText("Its reason: “Photos of your workshop”")).toBeVisible();
     await asked.getByRole("button", { name: "Add Files…" }).click();
     const added = answer(await request) as unknown as {
       status: string;
@@ -499,7 +499,7 @@ test("an AI app asks for pictures with its reason; the person chooses them in Ad
       name: "requestMedia",
       arguments: { reason: "Photos of your team" },
     });
-    await expect(asked.getByText('Its reason: "Photos of your team"')).toBeVisible();
+    await expect(asked.getByText("Its reason: “Photos of your team”")).toBeVisible();
     await asked.getByRole("button", { name: "Not Now" }).click();
     expect(answer(await notNow)).toMatchObject({ status: "declined" });
     expect(

@@ -122,7 +122,7 @@ test("places a copy from the Add panel, asks before deleting inside one, marks c
   const copies = () =>
     left()
       .getByRole("tree", { name: "Layers" })
-      .getByRole("treeitem", { name: /^Linked copy of 'Welcome'/ });
+      .getByRole("treeitem", { name: /^Linked copy of “Welcome”/ });
   await expect(copies()).toHaveCount(2);
 
   // A whole copy goes from this page only, without the question: from Layers' Delete (the same

@@ -188,7 +188,7 @@ test("opens Page Settings on a page without a description, in Being found (3.17)
     .first()
     .click();
 
-  const settings = page.getByRole("dialog", { name: /^Settings for '/ });
+  const settings = page.getByRole("dialog", { name: /^Settings for “/ });
   await expect(settings).toBeVisible();
   // On Search engines, where the description is (#1443).
   await expect(settings.getByRole("tab", { name: "Search engines" })).toHaveAttribute(
