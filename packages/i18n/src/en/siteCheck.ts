@@ -264,6 +264,8 @@ export const siteCheck = {
   "siteCheck.place.shared": "{element} in the shared section {name}",
   "siteCheck.place.sharedUnnamed": "{element} in a shared section",
   "siteCheck.place.someElement": "An element",
+  // An example to check, told apart from others of its kind by its text (#1449).
+  "siteCheck.place.named": "{element} “{text}”",
   "siteCheck.place.design": "{element} in the design of {name}",
   "siteCheck.place.menu": "Menu item {name}",
   "siteCheck.place.address": "Site Settings › Web address",
@@ -302,6 +304,8 @@ export const siteCheck = {
   "siteCheck.detail.draftPage": "Goes to {page}, a draft",
   // The first detail in a text marked as an example (#1228): "01632 960123 looks like an example".
   "siteCheck.detail.example": "{detail} looks like an example",
+  // A text marked as an example with no detail that looks like a fact (#1449).
+  "siteCheck.detail.exampleText": "Still the example text {appName} wrote",
 
   // Fixes, each one undo step.
   "siteCheck.history.renamed": "Renamed the file of {item}",

@@ -274,6 +274,45 @@ describe("every template's sample contact details (#1254)", () => {
   });
 });
 
+describe("every template's examples to check (#1449)", () => {
+  it("are each told apart by their text, and each say why, on every template's pages", () => {
+    for (const { template, images } of templates) {
+      const site = siteFromTemplate(template, images, {
+        name: "Rosa's",
+        theme: template.site.theme,
+        business: {},
+      });
+      // The elements with a text marked as an example, and their kinds. A sample phone or email
+      // in a link is #1254's, found without a mark, and has neither This Is Correct nor a text.
+      const kinds = new Map<string, string>();
+      eachElement(site, (node) => {
+        if (exampleFields(node.props).length > 0) kinds.set(node.props.id, node.type);
+      });
+      const findings =
+        checkSite({ site, catalogue: CATALOGUE }, "export")
+          .results.find((each) => each.rule === "sampleDetails")
+          ?.findings.filter(
+            (finding) => finding.place.kind === "element" && kinds.has(finding.place.nodeId),
+          ) ?? [];
+      expect(findings.length, template.id).toBe(kinds.size);
+      // A row reads "{kind} “{text}” on {page}": no two the same on a page.
+      const rows = findings.map((finding) => {
+        const place = finding.place.kind === "element" ? finding.place : undefined;
+        return `${place?.on}|${kinds.get(place?.nodeId ?? "")}|${finding.values?.exampleText}`;
+      });
+      expect(new Set(rows).size, template.id).toBe(rows.length);
+      // Each says why: the detail that looks like a fact, or that it's still the example text.
+      for (const finding of findings) {
+        expect(
+          typeof finding.values?.example === "string" ||
+            typeof finding.values?.exampleText === "string",
+          `${template.id}: ${finding.key}`,
+        ).toBe(true);
+      }
+    }
+  });
+});
+
 describe("every template's main headings (#982, #1173)", () => {
   it("are one per page, with every recipe of its type, as Site Check counts them", () => {
     // Each template with every recipe of its type, so every page a new site can start with is
