@@ -123,7 +123,7 @@ function CopyRow({
     <>
       <dt>{label}</dt>
       <dd className="contents">
-        <code className="break-all font-mono">{value}</code>
+        <code className="break-all font-mono select-text">{value}</code>
         <Button variant="outline" size="sm" onClick={onCopy}>
           {copyLabel}
         </Button>
@@ -151,6 +151,15 @@ function SetupSteps({
   if (setup === undefined) return null;
   return (
     <>
+      {/* The address the command holds, as a value too (#1624), for an app set up by hand. */}
+      <dl className="mt-2 grid grid-cols-[auto_1fr_auto] items-center gap-2 text-sm">
+        <CopyRow
+          label={t("aiApps.key.address")}
+          value={shown.address}
+          copyLabel={copied === "address" ? t("aiApps.key.copied") : t("aiApps.key.copyAddress")}
+          onCopy={() => onCopy("address", shown.address)}
+        />
+      </dl>
       <h4 className="mt-2 text-sm font-medium">{setup.title()}</h4>
       <ol className="mt-1 flex list-decimal flex-col gap-3 pl-5 text-sm">
         {setup.steps(shown.address, shell).map((step, index) => {
@@ -188,6 +197,41 @@ function SetupSteps({
         })}
       </ol>
     </>
+  );
+}
+
+/**
+ * The address AI apps reach {appName} at (#1624), whenever it listens: to see and copy, for an app
+ * set up by hand or one that stopped connecting. When it has changed, it says so here, beside the
+ * new one. The address holds no key.
+ */
+function AddressLine({
+  address,
+  moved,
+  copied,
+  onCopy,
+}: {
+  readonly address: string;
+  readonly moved: boolean;
+  readonly copied: boolean;
+  readonly onCopy: () => void;
+}) {
+  return (
+    <section aria-label={t("aiApps.address")} className="flex flex-col gap-1">
+      <dl className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-sm">
+        <CopyRow
+          label={t("aiApps.address")}
+          value={address}
+          copyLabel={copied ? t("aiApps.key.copied") : t("aiApps.key.copyAddress")}
+          onCopy={onCopy}
+        />
+      </dl>
+      {moved ? (
+        <p className="text-sm">{t("aiApps.moved")}</p>
+      ) : (
+        <p className="text-sm text-muted-foreground">{t("aiApps.address.hint")}</p>
+      )}
+    </section>
   );
 }
 
@@ -344,12 +388,20 @@ export function AiAppsDialog({
   const [now, setNow] = useState(clock);
   const [removing, setRemoving] = useState<AppStatus | null>(null);
   const [installed, setInstalled] = useState<McpInstallResult["status"] | null>(null);
+  // The address under the switch last copied (#1624): apart from a new app's panel, so copying it
+  // leaves the key's state alone, and a new address isn't shown as copied.
+  const [copiedLine, setCopiedLine] = useState<string | null>(null);
+  // Turning AI apps on, until main answers: a status polled meanwhile has no address yet.
+  const [turningOn, setTurningOn] = useState(false);
   const whichId = useId();
   // Opened again: no *moved* note from last time, from its first frame (#990).
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
-    if (open) setMoved(false);
+    if (open) {
+      setMoved(false);
+      setCopiedLine(null);
+    }
   }
 
   useEffect(() => {
@@ -423,6 +475,13 @@ export function AiAppsDialog({
     );
   };
 
+  const copyLine = (address: string) => {
+    void copyText(address).then(
+      () => setCopiedLine(address),
+      () => notify(t("aiApps.failed")),
+    );
+  };
+
   /**
    * Switches the kind of app being added, offering its name for it: a name the person typed stays,
    * and one offered for another kind is replaced.
@@ -465,9 +524,28 @@ export function AiAppsDialog({
               label={t("aiApps.enabled")}
               hint={t("aiApps.enabledHint")}
               checked={enabled}
-              onChange={(checked) => void act(mcp.setEnabled(checked))}
+              onChange={(checked) => {
+                setTurningOn(checked);
+                void act(mcp.setEnabled(checked)).finally(() => setTurningOn(false));
+              }}
             />
-            {moved ? <p className="text-sm">{t("aiApps.moved")}</p> : null}
+            {/* On: where apps reach it, or, with no address, that nothing can (#1624). */}
+            {!enabled ? (
+              moved ? (
+                <p className="text-sm">{t("aiApps.moved")}</p>
+              ) : null
+            ) : status.address !== null ? (
+              <AddressLine
+                address={status.address}
+                moved={moved}
+                copied={copiedLine === status.address}
+                onCopy={() => copyLine(status.address ?? "")}
+              />
+            ) : turningOn ? null : (
+              <p role="alert" className="text-sm">
+                {t("aiApps.notListening")}
+              </p>
+            )}
             {shown !== null ? (
               <section aria-label={t("aiApps.key.title", { name: shown.name })}>
                 <h3 className="font-medium">{t("aiApps.key.title", { name: shown.name })}</h3>
