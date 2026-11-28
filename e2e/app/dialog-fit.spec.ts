@@ -63,6 +63,8 @@ const ROUNDS: readonly Round[] = [
     height: 600,
     zoom: 1,
     theme: "dark",
+    // Tab round each dialog at a person's pace (8) once, here: its tooltips' waits make it about
+    // 30 s a round, and the Tab order doesn't change with the window's size or colours.
     rules: [2, 3, 4, 5, 6, 8],
     changes: true,
   },
@@ -83,9 +85,7 @@ const ROUNDS: readonly Round[] = [
     zoom: 1,
     theme: "dark",
     // The keyboard's ends (7) once, here: they don't change with the window's size or colours.
-    // Tab round each dialog (8) here and at 960 × 600, where a styling dialog's preview shows one
-    // device with a switch: about 12 s a round, so not in all six.
-    rules: [2, 3, 4, 5, 6, 7, 8],
+    rules: [2, 3, 4, 5, 6, 7],
     changes: true,
   },
   {
@@ -1135,11 +1135,17 @@ async function tabRoundFaults(page: Page, dialog: Locator): Promise<FitFault[]> 
       if (at.back) return [];
       passed.push(at.name);
       if (at.tooltip) {
+        // Its own tooltip, not the last control's still fading: the trigger says when it's open.
         // One that opens only when its text is cut short stays shut: then this is the wait.
         await page
-          .getByRole("tooltip")
-          .first()
-          .waitFor({ timeout: TOOLTIP_OPENS_MS })
+          .waitForFunction(
+            () =>
+              document.activeElement
+                ?.closest('[data-slot="tooltip-trigger"]')
+                ?.getAttribute("data-state") !== "closed",
+            undefined,
+            { timeout: TOOLTIP_OPENS_MS },
+          )
           .catch(() => undefined);
       }
     }

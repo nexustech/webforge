@@ -87,8 +87,8 @@ test("Style This… and Theme Studio's previews are passed by the keyboard (#150
   await right().getByRole("tab", { name: "Style" }).click();
   await right().getByRole("button", { name: "Style This Hero…" }).click();
   const style = page.getByRole("dialog", { name: "Style this Hero" });
-  // Past the preview's resize handle and its scroll area to the bar at the bottom, and back.
   await expectTabPastTooltip(style, "Style this Hero");
+  // Past the preview's resize handle and its scroll area to the bar at the bottom, and back.
   await expectTabPastPreview(style, style.getByRole("tabpanel").first(), "Style this Hero");
   await expectNothingFocusableHidden("Style this Hero");
   await page.keyboard.press("Escape");
