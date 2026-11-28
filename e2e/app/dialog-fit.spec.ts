@@ -1096,10 +1096,11 @@ const TAB_ROUND_MOST = 60;
 
 /**
  * Rule 8 (#1672): Tab from `dialog`'s first control goes round every control, back to that one
- * (or {@link TAB_ROUND_MOST} of them), never landing on the dialog itself or leaving it. At a person's pace: where the focus reaches a
- * control with a tooltip, the tooltip opens before the next key, as it does for someone reading
- * it. A node removed from a dialog as the focus moved (a tooltip's description, as its tooltip
- * closed) threw the focus back to the dialog, and Tab went round the top of it for good.
+ * (or {@link TAB_ROUND_MOST} of them), never landing on the dialog itself or leaving it. At a
+ * person's pace: where the focus reaches a control with a tooltip, the tooltip opens before the
+ * next key, as it does for someone reading it. A node removed from a dialog as the focus moved (a
+ * tooltip's description, as its tooltip closed) threw the focus back to the dialog, and Tab went
+ * round the top of it for good.
  */
 async function tabRoundFaults(page: Page, dialog: Locator): Promise<FitFault[]> {
   const start = await focusEnd(dialog, "first");
