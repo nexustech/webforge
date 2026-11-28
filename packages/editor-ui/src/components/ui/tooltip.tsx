@@ -165,7 +165,8 @@ export function WithTooltip({
             // A description is read from a hidden element too, and this one isn't read twice. It
             // stays in the page while the tooltip comes and goes, only `aria-describedby` following
             // it: removed as the tooltip closed on blur, mid-Tab, it threw a dialog's focus back
-            // to the dialog (#1672).
+            // to the dialog (#1672). The focus trap's patch covers that too; this keeps it from
+            // resting on the patch alone.
             <span id={description} hidden>
               {tooltip}
             </span>

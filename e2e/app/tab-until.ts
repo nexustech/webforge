@@ -15,20 +15,20 @@ export type TabUntilOptions = {
   readonly max?: number;
 };
 
-/** The element with the focus, in a few words: its tag and name. */
-const focusedName = (page: Page) =>
-  page.evaluate(() => {
+/** Whether the focus is on `target` or inside it, and the element that has it, in a few words. */
+const focusOn = (target: Locator) =>
+  target.evaluate((element) => {
     const focused = document.activeElement;
     const label = focused?.getAttribute("aria-label") ?? focused?.textContent ?? "";
     const role = focused?.getAttribute("role");
-    return `${focused?.tagName.toLowerCase()}${role ? `[${role}]` : ""} "${label.trim().slice(0, 30)}"`;
+    return {
+      holds: element === focused || element.contains(focused),
+      name: `${focused?.tagName.toLowerCase()}${role ? `[${role}]` : ""} "${label.trim().slice(0, 30)}"`,
+    };
   });
 
 /** Whether the focus is on `target` or inside it. */
-const holdsFocus = (target: Locator) =>
-  target.evaluate(
-    (element) => element === document.activeElement || element.contains(document.activeElement),
-  );
+const holdsFocus = async (target: Locator) => (await focusOn(target)).holds;
 
 /**
  * Presses Tab (or Shift+Tab) until the focus is on `target` or inside it, checking after each key
@@ -45,12 +45,13 @@ export async function tabUntil(
   const passed: string[] = [];
   for (let pressed = 1; pressed <= max; pressed++) {
     await page.keyboard.press(key);
-    passed.push(await focusedName(page));
     if (never !== undefined) expect(await never(), `${key} ${pressed}`).toBeNull();
     if (within !== undefined) {
       expect(await holdsFocus(within), `${key} ${pressed}: the focus stays inside`).toBe(true);
     }
-    if (await holdsFocus(target)) return pressed;
+    const at = await focusOn(target);
+    if (at.holds) return pressed;
+    passed.push(at.name);
   }
   throw new Error(`${key} didn't reach its target in ${max} keys, passing ${passed.join(", ")}`);
 }

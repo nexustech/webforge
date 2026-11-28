@@ -1069,12 +1069,12 @@ async function keyboardFaults(page: Page, dialog: Locator): Promise<FitFault[]> 
     await page.keyboard.press(key);
     const after = await dialog.evaluate((element) => {
       const focused = document.activeElement;
-      return {
-        stuck: focused?.hasAttribute("data-fit-from") === true,
-        inside: focused !== null && element.contains(focused),
-      };
+      const stuck = focused?.hasAttribute("data-fit-from") === true;
+      for (const each of element.querySelectorAll("[data-fit-from]")) {
+        each.removeAttribute("data-fit-from");
+      }
+      return { stuck, inside: focused !== null && element.contains(focused) };
     });
-    await unmark(dialog);
     if (after.stuck || !after.inside) {
       faults.push({
         rule: 7,
@@ -1126,7 +1126,6 @@ async function tabRoundFaults(page: Page, dialog: Locator): Promise<FitFault[]> 
           dialog: focused?.matches('[role="dialog"], [role="alertdialog"]') === true,
           inside: focused !== null && element.contains(focused),
           back: focused?.hasAttribute("data-fit-from") === true,
-          tooltip: focused?.closest('[data-slot="tooltip-trigger"]') !== null,
           name: `${focused?.tagName.toLowerCase()} "${label.trim().slice(0, 30)}"`,
         };
       });
@@ -1134,20 +1133,19 @@ async function tabRoundFaults(page: Page, dialog: Locator): Promise<FitFault[]> 
       if (!at.inside) return fault(`left the dialog at key ${pressed}, to ${at.name}`);
       if (at.back) return [];
       passed.push(at.name);
-      if (at.tooltip) {
-        // Its own tooltip, not the last control's still fading: the trigger says when it's open.
-        // One that opens only when its text is cut short stays shut: then this is the wait.
-        await page
-          .waitForFunction(
-            () =>
-              document.activeElement
-                ?.closest('[data-slot="tooltip-trigger"]')
-                ?.getAttribute("data-state") !== "closed",
-            undefined,
-            { timeout: TOOLTIP_OPENS_MS },
-          )
-          .catch(() => undefined);
-      }
+      // Its own tooltip open, not the last control's still fading: the trigger says when. Off a
+      // trigger this holds at once; one that opens only when its text is cut short stays shut, and
+      // then this is the wait.
+      await page
+        .waitForFunction(
+          () =>
+            document.activeElement
+              ?.closest('[data-slot="tooltip-trigger"]')
+              ?.getAttribute("data-state") !== "closed",
+          undefined,
+          { timeout: TOOLTIP_OPENS_MS },
+        )
+        .catch(() => undefined);
     }
     return most < round ? [] : fault(`didn't come back to it in ${most} keys`);
   } finally {

@@ -576,7 +576,8 @@ function ItemPreview({
     };
   }, [draw, node, theme]);
   // The space it takes until it's drawn, then hidden, not removed: a node removed from a dialog
-  // while a Tab moves the focus threw the focus back to the dialog (#1672).
+  // while a Tab moves the focus threw the focus back to the dialog (#1672). The focus trap's patch
+  // covers that too; this keeps it from resting on the patch alone.
   return (
     <>
       <div
@@ -585,7 +586,7 @@ function ItemPreview({
         className="w-full"
         style={{ height: ITEM_PLACEHOLDER_HEIGHT }}
       />
-      {drawn === undefined ? null : (
+      {drawn !== undefined && (
         <ItemFrame drawn={drawn} device={device} themePreview={themePreview} />
       )}
     </>
