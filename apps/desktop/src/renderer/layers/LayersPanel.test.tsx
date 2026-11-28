@@ -102,8 +102,19 @@ function setUp(
   return { actions, item, lastMenu };
 }
 
+/**
+ * `element`'s text as it shows and is read: without what's hidden in it, as the descriptions a
+ * tooltip keeps in the page for its control (#1672).
+ */
+function readText(element: Element | null | undefined): string | undefined {
+  if (element === null || element === undefined) return undefined;
+  const copy = element.cloneNode(true) as Element;
+  for (const hidden of copy.querySelectorAll("[hidden]")) hidden.remove();
+  return copy.textContent ?? "";
+}
+
 /** The rows shown, as their text. */
-const shown = () => screen.queryAllByRole("treeitem").map((row) => row.textContent);
+const shown = () => screen.queryAllByRole("treeitem").map((row) => readText(row));
 
 describe("LayersPanel (F-ED-12)", () => {
   it("marks a layer with a note, its text on pointing at it and for screen readers (UX-17)", () => {
@@ -119,10 +130,10 @@ describe("LayersPanel (F-ED-12)", () => {
 
     const [noted, plain] = screen.getAllByRole("treeitem");
     // A short name, and the note's text as its description, read once the name has been.
-    expect(noted?.textContent).toBe("Heading, has a note");
+    expect(readText(noted)).toBe("Heading, has a note");
     expect(noted?.getAttribute("aria-description")).toBe("Swap this photo");
     expect(plain?.hasAttribute("aria-description")).toBe(false);
-    expect(plain?.textContent).toBe("Heading");
+    expect(readText(plain)).toBe("Heading");
   });
 
   it("shows a note's text on pointing at its mark (#1011)", async () => {
@@ -168,13 +179,13 @@ describe("LayersPanel (F-ED-12)", () => {
     // Inside it: dimmed and said so, with an eye of its own only for how it shows itself.
     for (const row of [inside, alsoHidden]) {
       expect(row?.className).toContain("text-muted-foreground");
-      expect(row?.textContent).toContain(", not published, as it's inside an item that isn't");
+      expect(readText(row)).toContain(", not published, as it's inside an item that isn't");
     }
     expect(inside?.querySelector("button[aria-haspopup]")?.className).toContain("opacity-0");
     // Elsewhere, as before.
     for (const row of [shownSection, shownInside]) {
       expect(row?.className).not.toContain("text-muted-foreground");
-      expect(row?.textContent).not.toContain("not published");
+      expect(readText(row)).not.toContain("not published");
     }
   });
 
@@ -182,7 +193,7 @@ describe("LayersPanel (F-ED-12)", () => {
     const { item } = setUp();
 
     const items = screen.getAllByRole("treeitem");
-    expect(items.map((row) => [row.textContent, row.getAttribute("aria-level")])).toEqual([
+    expect(items.map((row) => [readText(row), row.getAttribute("aria-level")])).toEqual([
       ["Section", "1"],
       ["Heading", "2"],
       ["Hours Heading", "2"],
