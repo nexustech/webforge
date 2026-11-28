@@ -396,6 +396,10 @@ export function checkCatalogue(folder: string, root: string): UiStringViolation[
 /**
  * A name in straight or curly single quotation marks: a placeholder, such as `{name}`, in `'…'`,
  * `"…"` or `‘…’`. Names take curly double ones, “{name}” (#1445).
+ *
+ * It catches a mark directly beside a placeholder only. A quoted phrase around one
+ * (`'{name} copy'`) or a literal name in straight quotes (`'Home'`) isn't caught: those are left
+ * to review, as no pattern can tell a quoted name from an apostrophe.
  */
 const NOT_CURLY_DOUBLE = /(['"‘’])\{[A-Za-z]+\}(['"‘’])/;
 

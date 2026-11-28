@@ -78,6 +78,11 @@ function footerFaults(buttons: readonly FooterButton[]): string[] {
  * Every editor story that shows a confirmation, by its id, and whether what it confirms is outside
  * Undo (#1445, T6 in research/product/01-terminology.md). Its confirming button is red only when
  * it is. A story showing one that isn't listed fails, so each new confirmation is decided here.
+ *
+ * It sees AlertDialog confirmations only (`[data-slot="alert-dialog-content"]`): a question that
+ * confirms an action is always an AlertDialog in this editor (the site-wide confirmation, Discard,
+ * Delete Page and the rest), as `docs/extending.md`'s footer rule has it (`AlertDialogCancel` in a
+ * confirmation). One built on a plain `Dialog` with a red button in its footer would slip past.
  */
 const CONFIRMATIONS: ReadonlyMap<string, boolean> = new Map([
   ["base-alertdialog--delete-page", false],
