@@ -218,13 +218,15 @@ function AddressLine({
 }) {
   return (
     <section aria-label={t("aiApps.address")} className="flex flex-col gap-1">
-      <dl className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-sm">
-        <CopyRow
-          label={t("aiApps.address")}
-          value={address}
-          copyLabel={copied ? t("aiApps.key.copied") : t("aiApps.key.copyAddress")}
-          onCopy={onCopy}
-        />
+      {/* Its label above, so the address keeps its port on one line beside its button. */}
+      <dl className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-1 text-sm">
+        <dt className="col-span-2">{t("aiApps.address")}</dt>
+        <dd className="contents">
+          <code className="break-all font-mono select-text">{address}</code>
+          <Button variant="outline" size="sm" onClick={onCopy}>
+            {copied ? t("aiApps.key.copied") : t("aiApps.key.copyAddress")}
+          </Button>
+        </dd>
       </dl>
       {moved ? (
         <p className="text-sm">{t("aiApps.moved")}</p>

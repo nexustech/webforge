@@ -511,7 +511,10 @@ const CASES: readonly FitCase[] = [
       {
         name: "Let AI apps connect turned on",
         run: async (dialog) => {
-          await dialog.getByRole("checkbox", { name: "Let AI apps connect" }).check();
+          // A click, not check(): the box follows main's answer, a moment later.
+          const allow = dialog.getByRole("checkbox", { name: "Let AI apps connect" });
+          await allow.click();
+          await expect(allow).toBeChecked();
           await expect(
             dialog.getByRole("region", { name: "Address for AI apps" }).locator("code"),
           ).toHaveText(/^http:\/\/127\.0\.0\.1:\d+\/mcp$/);
@@ -520,7 +523,10 @@ const CASES: readonly FitCase[] = [
       {
         name: "Let AI apps connect turned off again",
         run: async (dialog) => {
-          await dialog.getByRole("checkbox", { name: "Let AI apps connect" }).uncheck();
+          // A click, not uncheck(): the box follows main's answer, a moment later.
+          const allow = dialog.getByRole("checkbox", { name: "Let AI apps connect" });
+          await allow.click();
+          await expect(allow).not.toBeChecked();
           await expect(dialog.getByRole("region", { name: "Address for AI apps" })).toHaveCount(0);
         },
       },
