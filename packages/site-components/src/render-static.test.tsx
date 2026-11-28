@@ -1089,10 +1089,13 @@ describe("renderNodesToHtml", () => {
       const copy = (html: string) => /<div class="([^"]*)"><h1/.exec(html)?.[1];
 
       for (const contentWidth of ["narrow", "full"]) {
-        // Centred, the box is centred as its words are: its title's middle is the page's.
-        expect(copy(heroIn("minimal", { alignment: "centre", contentWidth }))).toBe(
-          "mx-auto max-w-xl",
-        );
+        // Centred, the box is centred as its words are: its title's middle is the page's, at
+        // every height (Tall and Whole screen set it in a flex row).
+        for (const height of ["fit", "tall", "screen"]) {
+          expect(copy(heroIn("minimal", { alignment: "centre", contentWidth, height }))).toBe(
+            "mx-auto max-w-xl",
+          );
+        }
         // On the left, it keeps the row's left edge, as before.
         expect(copy(heroIn("minimal", { alignment: "left", contentWidth }))).toBe("max-w-xl");
         // Behind the text, the row's flex centres the box already: unchanged.
