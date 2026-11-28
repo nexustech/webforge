@@ -276,6 +276,8 @@ describe("every template's sample contact details (#1254)", () => {
 
 describe("every template's examples to check (#1449)", () => {
   it("are each told apart by their text, and each say why, on every template's pages", () => {
+    // Some template has examples to check, so the test can't pass on none.
+    let checked = 0;
     for (const { template, images } of templates) {
       const site = siteFromTemplate(template, images, {
         name: "Rosa's",
@@ -295,6 +297,7 @@ describe("every template's examples to check (#1449)", () => {
             (finding) => finding.place.kind === "element" && kinds.has(finding.place.nodeId),
           ) ?? [];
       expect(findings.length, template.id).toBe(kinds.size);
+      checked += findings.length;
       // A row reads "{kind} “{text}” on {page}": no two the same on a page.
       const rows = findings.map((finding) => {
         const place = finding.place.kind === "element" ? finding.place : undefined;
@@ -310,6 +313,7 @@ describe("every template's examples to check (#1449)", () => {
         ).toBe(true);
       }
     }
+    expect(checked).toBeGreaterThan(0);
   });
 });
 

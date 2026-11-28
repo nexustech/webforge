@@ -453,13 +453,15 @@ export const sampleDetailsRule: CheckRule = {
         const marked = markedAt.get(at);
         if (marked === undefined) {
           markedAt.set(at, { index: found.length, named: naming && text !== "" });
+          const values = {
+            ...(text === "" ? {} : { exampleText: text }),
+            ...(detail === undefined ? {} : { example: detail.text }),
+          };
           found.push({
             key: fieldKey(placed),
             place: elementPlace(placed),
-            values: {
-              ...(text === "" ? {} : { exampleText: text }),
-              ...(detail === undefined ? {} : { example: detail.text }),
-            },
+            // A marked text that's empty has nothing to show: no values rather than none.
+            ...(Object.keys(values).length === 0 ? {} : { values }),
           });
           return;
         }
