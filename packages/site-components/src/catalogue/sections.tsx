@@ -285,7 +285,14 @@ const hero = defineSection({
       );
     // Narrow, a reading width; Wide, as wide as the content width allows (#1631).
     const wide = values.textWidth === "wide" && layout !== "split";
-    const copyWidth = layout === "centred" ? "mx-auto max-w-2xl" : "max-w-xl";
+    // Text only and centred, the box is centred in its row as its words are (#1648); behind the
+    // text, the row's flex centres it already.
+    const copyWidth =
+      layout === "centred"
+        ? "mx-auto max-w-2xl"
+        : layout === "minimal" && aligned === "text-center"
+          ? "mx-auto max-w-xl"
+          : "max-w-xl";
     // Wide and centred, the box is centred in its row too, which at Content width Full is wider
     // than it; on the left, it keeps the row's left edge, as the sections around it do.
     const wideWidth = aligned === "text-center" ? `mx-auto ${HERO_WIDE_TEXT}` : HERO_WIDE_TEXT;
