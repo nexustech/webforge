@@ -453,7 +453,8 @@ export function AiAppsDialog({
   const enabled = status?.enabled ?? false;
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
-      <DialogContent className="max-w-lg">
+      {/* `sm:`, as the primitive's own width is, so this one wins from 640 px (#1455). */}
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("aiApps.title")}</DialogTitle>
           <DialogDescription>{t("aiApps.description")}</DialogDescription>
