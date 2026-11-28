@@ -524,6 +524,39 @@ describe("the address for AI apps, under Let AI apps connect (#1624)", () => {
     expect(dialog().queryByRole("region", { name: "Address for AI apps" })).toBeNull();
   });
 
+  it("says nothing of it while any turning on is still being answered", async () => {
+    const { dialog, mcp, user } = setUp({ enabled: false, address: null });
+    const answers: ((status: McpStatus) => void)[] = [];
+    mcp.setEnabled.mockImplementation(
+      () =>
+        new Promise<McpStatus>((resolve) => {
+          answers.push(resolve);
+        }),
+    );
+    const box = await dialog().findByRole("checkbox", { name: "Let AI apps connect" });
+    // Clicked three times before main answers (the box follows its answer, so each asks for on):
+    // polled meanwhile, on with no address yet.
+    await user.click(box);
+    await user.click(box);
+    await user.click(box);
+    expect(answers).toHaveLength(3);
+    const opening = { enabled: true, address: null, moved: false, apps: [CLAUDE] };
+    mcp.status.mockResolvedValue(opening);
+
+    // The first two answered: the last is still under way, so nothing is said yet.
+    await act(async () => {
+      answers[0]?.(opening);
+      answers[1]?.(opening);
+    });
+    expect(dialog().queryByRole("alert")).toBeNull();
+
+    await act(async () => {
+      answers[2]?.({ ...opening, address: ADDRESS });
+    });
+    expect(await waitFor(() => line(dialog).getByText(ADDRESS))).toBeTruthy();
+    expect(dialog().queryByRole("alert")).toBeNull();
+  });
+
   it("says beside the new address that it has changed, and that apps need it", async () => {
     const { dialog, mcp } = setUp({ moved: true });
     const shown = await waitFor(() => line(dialog));

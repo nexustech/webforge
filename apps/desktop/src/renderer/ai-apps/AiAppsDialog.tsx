@@ -393,8 +393,9 @@ export function AiAppsDialog({
   // The address under the switch last copied (#1624): apart from a new app's panel, so copying it
   // leaves the key's state alone, and a new address isn't shown as copied.
   const [copiedLine, setCopiedLine] = useState<string | null>(null);
-  // Turning AI apps on, until main answers: a status polled meanwhile has no address yet.
-  const [turningOn, setTurningOn] = useState(false);
+  // How many turnings on or off main hasn't answered yet: a status polled meanwhile may have no
+  // address yet, so nothing says it can't listen until each has (a quick off and on again too).
+  const [switching, setSwitching] = useState(0);
   const whichId = useId();
   // Opened again: no *moved* note from last time, from its first frame (#990).
   const [wasOpen, setWasOpen] = useState(open);
@@ -527,8 +528,8 @@ export function AiAppsDialog({
               hint={t("aiApps.enabledHint")}
               checked={enabled}
               onChange={(checked) => {
-                setTurningOn(checked);
-                void act(mcp.setEnabled(checked)).finally(() => setTurningOn(false));
+                setSwitching((count) => count + 1);
+                void act(mcp.setEnabled(checked)).finally(() => setSwitching((count) => count - 1));
               }}
             />
             {/* On: where apps reach it, or, with no address, that nothing can (#1624). */}
@@ -543,7 +544,7 @@ export function AiAppsDialog({
                 copied={copiedLine === status.address}
                 onCopy={() => copyLine(status.address ?? "")}
               />
-            ) : turningOn ? null : (
+            ) : switching > 0 ? null : (
               <p role="alert" className="text-sm">
                 {t("aiApps.notListening")}
               </p>
