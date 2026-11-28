@@ -174,3 +174,11 @@ export const VsCodeAdded: Story = {
   args: { mcp: pairing(), now: NOW },
   play: addAs("VS Code (GitHub Copilot)"),
 };
+
+/** Removing an app asks first: it's cut off, and its key gone for good, so the button is red (#1445). */
+export const Removing: Story = {
+  play: async () => {
+    await userEvent.click(await screen.findByRole("button", { name: "Remove Cursor…" }));
+    await screen.findByRole("alertdialog");
+  },
+};

@@ -471,7 +471,7 @@ test("an AI app asks for pictures with its reason; the person chooses them in Ad
     expect(colours.data.colours.length).toBeGreaterThan(0);
     expect(colours.data.colours[0]?.hex).toMatch(/^#[0-9a-f]{6}$/);
     // The person's own step: it undoes as any other.
-    await expect(step("Added image 'Workshop.jpg'")).toBeVisible();
+    await expect(step("Added image “Workshop.jpg”")).toBeVisible();
 
     // The logo, from that picture (UA-8): asked, naming it, and showing its thumbnail small.
     const logo = client.callTool({
@@ -570,7 +570,7 @@ test("files chosen in Add files after an app's timeouts still reach it, through 
       setTimeout(resolve, Math.max(0, 80_000 - (Date.now() - started))),
     );
     await app.evaluate(() => (globalThis as unknown as { closeAddFiles(): void }).closeAddFiles());
-    await expect(step("Added image 'Workshop.jpg'")).toBeVisible();
+    await expect(step("Added image “Workshop.jpg”")).toBeVisible();
     expect(
       answer(await client.callTool({ name: "mediaStatus", arguments: { requestId } })),
     ).toMatchObject({

@@ -78,7 +78,7 @@ test("places a copy from the Add panel, asks before deleting inside one, marks c
   const dialog = page.getByRole("dialog", { name: "Save as shared section" });
   await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(steps().first()).toHaveText("Saved 'Welcome' as a shared section");
+  await expect(steps().first()).toHaveText("Saved “Welcome” as a shared section");
 
   // The Add panel lists it first; a click places another linked copy after the selected one.
   await left().getByRole("tab", { name: "Add" }).click();
@@ -88,12 +88,12 @@ test("places a copy from the Add panel, asks before deleting inside one, marks c
     .click();
   await expect(headings()).toHaveCount(2);
   await left().getByRole("tab", { name: "Undo History" }).click();
-  await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
+  await expect(steps().first()).toHaveText("Added a copy of “Welcome”");
 
   // Deleting a Heading inside a copy deletes it from every copy: asked first.
   await deleteHeading(1);
   await expect(confirmation()).toHaveAccessibleName(
-    "Delete Heading from the Shared Section 'Welcome'?",
+    "Delete Heading from the Shared Section “Welcome”?",
   );
   await expect(confirmation()).toContainText(
     "All 2 copies of the section show the change. 1 page of your site will change.",

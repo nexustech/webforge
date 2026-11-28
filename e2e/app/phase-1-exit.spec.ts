@@ -238,7 +238,7 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   await expect(sections()).toHaveCount(2);
   await pages().getByRole("button", { name: "Actions for Our story" }).click();
   await page.getByRole("menuitem", { name: "Page Settings…" }).click();
-  const pageSettings = page.getByRole("dialog", { name: "Settings for 'Our story'" });
+  const pageSettings = page.getByRole("dialog", { name: "Settings for “Our story”" });
   await pageSettings.getByRole("tab", { name: "Search engines" }).click();
   await pageSettings.getByRole("textbox", { name: "Description" }).fill("How we started");
   await pageSettings.getByRole("button", { name: "Save" }).click();

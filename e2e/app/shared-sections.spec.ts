@@ -95,31 +95,31 @@ test("saves a shared section, edits every copy at once, undoes it, and detaches 
   await selectSection();
   await saveAsShared("Welcome");
 
-  await expect(steps().first()).toHaveText("Saved 'Welcome' as a shared section");
+  await expect(steps().first()).toHaveText("Saved “Welcome” as a shared section");
   await expect(banner()).toHaveText(
-    "Editing shared section 'Welcome': changes apply to 1 copy on 1 page",
+    "Editing shared section “Welcome”: changes apply to 1 copy on 1 page",
   );
 
   // Duplicating a copy places another linked copy.
   await editMenu("Duplicate");
-  await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
+  await expect(steps().first()).toHaveText("Added a copy of “Welcome”");
   await expect(headings()).toHaveCount(2);
   await expect(banner()).toHaveText(
-    "Editing shared section 'Welcome': changes apply to 2 copies on 1 page",
+    "Editing shared section “Welcome”: changes apply to 2 copies on 1 page",
   );
 
   // An edit in the second copy shows in both, as one step.
   await selectHeading(1);
   await panel().getByLabel("Text", { exact: true }).fill("Opening hours");
   await expect(headings()).toHaveText(["Opening hours", "Opening hours"]);
-  await expect(steps().first()).toHaveText("Edited shared section 'Welcome'");
+  await expect(steps().first()).toHaveText("Edited shared section “Welcome”");
   await page.keyboard.press("ControlOrMeta+z");
   await expect(headings()).toHaveText(["Welcome to our business", "Welcome to our business"]);
 
   // Detached, the second copy is a normal section: its edits stay its own.
   await selectHeading(1);
   await sharedSectionMenu("Detach");
-  await expect(steps().first()).toHaveText("Detached 'Welcome'");
+  await expect(steps().first()).toHaveText("Detached “Welcome”");
   await expect(banner()).toHaveCount(0);
   await selectHeading(1);
   await panel().getByLabel("Text", { exact: true }).fill("Only here");
@@ -131,7 +131,7 @@ test("Ctrl/Cmd+V pastes a copied linked copy as the page's own; Ctrl/Cmd+Shift+V
   await selectSection();
   await saveAsShared("Welcome");
   await expect(banner()).toHaveText(
-    "Editing shared section 'Welcome': changes apply to 1 copy on 1 page",
+    "Editing shared section “Welcome”: changes apply to 1 copy on 1 page",
   );
   await settled(canvas().locator(".site-section").first());
   await selectSection();
@@ -144,10 +144,10 @@ test("Ctrl/Cmd+V pastes a copied linked copy as the page's own; Ctrl/Cmd+Shift+V
   await expect(banner()).toHaveCount(0);
 
   await page.keyboard.press("ControlOrMeta+Shift+v");
-  await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
+  await expect(steps().first()).toHaveText("Added a copy of “Welcome”");
   await expect(headings()).toHaveCount(3);
   await expect(banner()).toHaveText(
-    "Editing shared section 'Welcome': changes apply to 2 copies on 1 page",
+    "Editing shared section “Welcome”: changes apply to 2 copies on 1 page",
   );
 
   // An element isn't a shared section: nothing is pasted, and the reason is shown.
@@ -175,18 +175,18 @@ test("renames a shared section, then deletes it after asking, its copies staying
   await name.fill("Opening hours");
   await rename.getByRole("button", { name: "Rename" }).click();
   await expect(rename).toHaveCount(0);
-  await expect(steps().first()).toHaveText("Renamed 'Welcome' to 'Opening hours'");
+  await expect(steps().first()).toHaveText("Renamed “Welcome” to “Opening hours”");
   await expect(banner()).toHaveText(
-    "Editing shared section 'Opening hours': changes apply to 2 copies on 1 page",
+    "Editing shared section “Opening hours”: changes apply to 2 copies on 1 page",
   );
 
   // Deleting asks first (D7); its copies stay as normal sections.
-  await sharedSectionMenu("Delete…");
-  const ask = page.getByRole("alertdialog", { name: "Delete shared section 'Opening hours'?" });
+  await sharedSectionMenu("Delete");
+  const ask = page.getByRole("alertdialog", { name: "Delete shared section “Opening hours”?" });
   await expect(ask).toContainText("1 page of your site will change.");
   await ask.getByRole("button", { name: "Delete Shared Section" }).click();
   await expect(ask).toHaveCount(0);
-  await expect(steps().first()).toHaveText("Deleted shared section 'Opening hours'");
+  await expect(steps().first()).toHaveText("Deleted shared section “Opening hours”");
   await expect(banner()).toHaveCount(0);
   await expect(headings()).toHaveText(["Welcome to our business", "Welcome to our business"]);
 
@@ -197,7 +197,7 @@ test("renames a shared section, then deletes it after asking, its copies staying
   await page.keyboard.press("ControlOrMeta+z");
   await page.keyboard.press("ControlOrMeta+z");
   await expect(banner()).toHaveText(
-    "Editing shared section 'Opening hours': changes apply to 2 copies on 1 page",
+    "Editing shared section “Opening hours”: changes apply to 2 copies on 1 page",
   );
 });
 
@@ -222,7 +222,7 @@ test("renames and deletes a shared section on no page from the Add panel, and un
 
   // No page has a copy: nothing to ask (D7), and it goes in one step.
   await shared.getByRole("button", { name: "Actions for Opening hours" }).click();
-  await page.getByRole("menuitem", { name: "Delete…", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
   await expect(shared).toHaveCount(0);
 
@@ -230,8 +230,8 @@ test("renames and deletes a shared section on no page from the Add panel, and un
   await expect(shared.getByRole("button", { name: "Opening hours", exact: true })).toBeVisible();
   await left.getByRole("tab", { name: "Undo History" }).click();
   await expect(steps()).toContainText([
-    "Deleted shared section 'Opening hours'",
-    "Renamed 'Welcome' to 'Opening hours'",
+    "Deleted shared section “Opening hours”",
+    "Renamed “Welcome” to “Opening hours”",
   ]);
 });
 
@@ -251,12 +251,12 @@ const padding = (box: Box, fromBottom = 6) => ({
 test("Ctrl/Cmd+Shift-drag of a copy places another linked copy; Ctrl/Cmd-drag a section of the page's own (1.30)", async () => {
   await selectSection();
   await saveAsShared("Welcome");
-  await expect(steps().first()).toHaveText("Saved 'Welcome' as a shared section");
+  await expect(steps().first()).toHaveText("Saved “Welcome” as a shared section");
   const sections = canvas().locator(".site-section");
   const first = sections.first();
   // The section is shown again as a linked copy: grabbed only once it is drawn and still.
   await expect(banner()).toHaveText(
-    "Editing shared section 'Welcome': changes apply to 1 copy on 1 page",
+    "Editing shared section “Welcome”: changes apply to 1 copy on 1 page",
   );
   await settled(first);
 
@@ -266,10 +266,10 @@ test("Ctrl/Cmd+Shift-drag of a copy places another linked copy; Ctrl/Cmd-drag a 
   await drag(page, first, padding(await boxOf(first, "Section")), 0.01, GRAB_HEIGHT);
   await page.keyboard.up("Shift");
   await page.keyboard.up("ControlOrMeta");
-  await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
+  await expect(steps().first()).toHaveText("Added a copy of “Welcome”");
   await expect(headings()).toHaveCount(2);
   await expect(banner()).toHaveText(
-    "Editing shared section 'Welcome': changes apply to 2 copies on 1 page",
+    "Editing shared section “Welcome”: changes apply to 2 copies on 1 page",
   );
 
   // An element inside a copy can't be a linked copy: with Shift, its drag changes nothing.
@@ -284,7 +284,7 @@ test("Ctrl/Cmd+Shift-drag of a copy places another linked copy; Ctrl/Cmd-drag a 
   await page.keyboard.up("Shift");
   await page.keyboard.up("ControlOrMeta");
   await expect(headings()).toHaveCount(2);
-  await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
+  await expect(steps().first()).toHaveText("Added a copy of “Welcome”");
 
   // With Ctrl/Cmd alone: a section of the page's own, linked to nothing.
   const last = sections.last();

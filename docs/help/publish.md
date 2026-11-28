@@ -4,7 +4,7 @@ id: publish
 title: Publish
 summary: Put your website on your web host or on Netlify, and update it with one click whenever you change something.
 related: [export, site-check, site-settings, version-history]
-updated: 2026-11-27
+updated: 2026-11-28
 ---
 
 # Publish
@@ -80,7 +80,7 @@ Where your text uses `{year}`, your published site shows the year you published 
 
 ### If publishing doesn't work
 
-{appName} says what went wrong and what to do, such as checking the user name, password or folder in **Edit**, or publishing again once your internet connection is back. If it stopped for no reason it can name, it says how far it got: before anything was sent, while sending your files, or after sending them, while checking your site is live. Publishing again sends whatever didn't arrive.
+{appName} says what went wrong and what to do, such as checking the user name, password or folder in **Edit…**, or publishing again once your internet connection is back. If it stopped for no reason it can name, it says how far it got: before anything was sent, while sending your files, or after sending them, while checking your site is live. Publishing again sends whatever didn't arrive.
 
 ## Testing, changing and removing
 
@@ -88,8 +88,8 @@ Each destination has:
 
 - **Publish**.
 - **Test Connection:** says whether {appName} can sign in and reach the folder, or what's wrong.
-- **Edit**.
-- **Remove:** {appName} forgets the destination and its password. Nothing on your host changes.
+- **Edit…**.
+- **Remove…:** {appName} forgets the destination and its password. Nothing on your host changes.
 
 A site can have up to 20 destinations.
 

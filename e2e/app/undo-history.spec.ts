@@ -51,7 +51,7 @@ async function deleteHeading(): Promise<void> {
 }
 
 test.describe("Undo History and Undo toasts", () => {
-  test("a delete shows 'Deleted Heading · Undo', and Undo brings the heading back selected", async () => {
+  test("a delete shows “Deleted Heading · Undo”, and Undo brings the heading back selected", async () => {
     await deleteHeading();
 
     const toast = page.locator("[data-sonner-toast]").filter({ hasText: "Deleted Heading" });

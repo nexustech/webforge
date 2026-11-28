@@ -146,7 +146,7 @@ test("says what a Fix did, and undoes it from there (#1164)", async () => {
     .getByRole("button", { name: /^Fix: / })
     .click();
 
-  const toast = page.locator("[data-sonner-toast]").filter({ hasText: "Added page 'Privacy'" });
+  const toast = page.locator("[data-sonner-toast]").filter({ hasText: "Added page “Privacy”" });
   await expect(toast).toBeVisible();
   const privacy = page
     .getByRole("list", { name: "Pages" })
