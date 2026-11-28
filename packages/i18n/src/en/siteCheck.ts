@@ -304,8 +304,10 @@ export const siteCheck = {
   "siteCheck.detail.draftPage": "Goes to {page}, a draft",
   // The first detail in a text marked as an example (#1228): "01632 960123 looks like an example".
   "siteCheck.detail.example": "{detail} looks like an example",
-  // A text marked as an example with no detail that looks like a fact (#1449).
-  "siteCheck.detail.exampleText": "Still the example text {appName} wrote",
+  // A text marked as an example with no detail that looks like a fact (#1449). Templates, the
+  // assistant and AI apps all mark text, and an AI app's may be a real customer's words: so it
+  // says what the mark is, not who wrote it.
+  "siteCheck.detail.exampleText": "Marked as an example until you check it",
 
   // Fixes, each one undo step.
   "siteCheck.history.renamed": "Renamed the file of {item}",

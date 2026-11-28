@@ -192,7 +192,7 @@ describe("describeDetail", () => {
       "Saturday looks like an example",
     );
     expect(describeDetail(at(place, { exampleText: "Owen" }))).toBe(
-      "Still the example text Webforge wrote",
+      "Marked as an example until you check it",
     );
   });
 

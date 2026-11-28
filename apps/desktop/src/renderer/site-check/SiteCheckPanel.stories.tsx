@@ -80,7 +80,7 @@ const PLACES: Readonly<Record<string, { place: string; detail?: string }>> = {
   review: { place: "Testimonial “Margaret” on Home", detail: "Saturday looks like an example" },
   "review-2": {
     place: "Testimonial “Owen” on Home",
-    detail: "Still the example text Webforge wrote",
+    detail: "Marked as an example until you check it",
   },
   phone: { place: "Button on Home" },
 };
