@@ -82,9 +82,6 @@ async function expectTabPastTooltip(dialog: Locator, where: string): Promise<voi
 }
 
 test("Style This… and Theme Studio's previews are passed by the keyboard (#1507)", async () => {
-  // Quarantined on Windows: Tab once didn't reach Theme Studio's Close from its Components tab in
-  // 40 keys there (#1672). Fixed or deleted within a week, under the flaky-test rule.
-  test.fixme(process.platform === "win32", "flaky on Windows CI: #1672");
   await left().getByRole("tab", { name: "Add" }).click();
   await left().getByRole("button", { name: "Hero", exact: true }).click();
   await right().getByRole("tab", { name: "Style" }).click();
