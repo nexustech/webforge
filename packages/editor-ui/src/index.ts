@@ -53,7 +53,12 @@ export {
   type TextInputProps,
   TimeInput,
 } from "./components/form/form.js";
-export { FormDialog, type FormDialogProps } from "./components/form/form-dialog.js";
+export {
+  FormDialog,
+  type FormDialogProps,
+  FormPane,
+  type FormPaneProps,
+} from "./components/form/form-dialog.js";
 export { Form, type FormProps } from "./components/form/form-engine.js";
 export { MultiChoiceField } from "./components/form/form-fields.js";
 export type {
@@ -116,6 +121,7 @@ export {
   DialogTitle,
   DialogTrigger,
   UnsavedChanges,
+  useAskBeforeDiscarding,
   useUnsavedChanges,
 } from "./components/ui/dialog.js";
 export {

@@ -3,7 +3,7 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import { TooltipProvider } from "@webforge/editor-ui";
 import type { PublishDestination } from "@webforge/model";
-import type { ComponentProps, ReactNode } from "react";
+import { type ComponentProps, type ReactNode, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ListedDestination, PublishApi } from "../../shared/ipc/publish.js";
 import { HelpProvider } from "../help/index.js";
@@ -253,7 +253,8 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     );
     let form = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
     await user.type(form.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
-    await user.click(form.getByRole("button", { name: "Cancel" }));
+    await user.click(form.getByRole("button", { name: "Back" }));
+    await user.click(screen.getByRole("button", { name: "Discard" }));
     await waitFor(() =>
       expect(screen.queryByRole("dialog", { name: "Publish to Your Web Host" })).toBeNull(),
     );
@@ -276,7 +277,8 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     expect((added.getByLabelText("Web address", { exact: true }) as HTMLInputElement).value).toBe(
       "https://www.rosasbakery.co.uk",
     );
-    await user.click(added.getByRole("button", { name: "Cancel" }));
+    // Nothing changed: Back goes at once.
+    await user.click(added.getByRole("button", { name: "Back" }));
 
     await user.click(await screen.findByRole("button", { name: "Edit Old host" }));
     const edited = within(await screen.findByRole("dialog", { name: "Publish to Your Web Host" }));
@@ -356,6 +358,145 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
       ),
     );
     expect(screen.getByRole("dialog", { name: "Publish to Your Web Host" })).toBeTruthy();
+  });
+});
+
+describe("a destination's form as a step of Publish (#1456)", () => {
+  /** Publish, closed by its own onClose as the app closes it. */
+  function Closable({
+    listed,
+    onClose,
+  }: {
+    readonly listed: ListedDestination[];
+    readonly onClose: () => void;
+  }) {
+    const [open, setOpen] = useState(true);
+    return (
+      <PublishDialog
+        open={open}
+        publish={fakePublish(listed)}
+        sessionId={() => SESSION}
+        notify={vi.fn()}
+        onSaved={vi.fn()}
+        onPublish={vi.fn()}
+        onClose={() => {
+          setOpen(false);
+          onClose();
+        }}
+      />
+    );
+  }
+  const setUpClosable = (
+    listed: ListedDestination[] = [{ destination: old, signIn: "saved", trust: {} }],
+  ) => {
+    const onClose = vi.fn();
+    render(<Closable listed={listed} onClose={onClose} />);
+    return { onClose, user: userEvent.setup({ delay: null }) };
+  };
+  const question = () => screen.queryByRole("alertdialog", { name: "Discard your changes?" });
+
+  it("draws the form in Publish's place, one dialog named by the form, with Back and no Cancel", async () => {
+    const { user } = setUpClosable();
+    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    const form = within(screen.getByRole("dialog", { name: "Publish to Your Web Host" }));
+    expect(form.queryByRole("button", { name: "Cancel" })).toBeNull();
+    expect(form.getByRole("button", { name: "Back" })).toBeTruthy();
+    // Its first field has the focus, under its title.
+    expect(document.activeElement).toBe(form.getByLabelText("Host", { exact: true }));
+  });
+
+  it("goes back to the list with Back, asking first with a change, Publish still open", async () => {
+    const { user, onClose } = setUpClosable();
+    const add = await screen.findByRole("button", { name: "Add Destination" });
+    await user.click(add);
+    await user.type(screen.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(question()).not.toBeNull();
+    await user.click(screen.getByRole("button", { name: "Keep Editing" }));
+    expect(screen.getByRole("dialog", { name: "Publish to Your Web Host" })).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    await user.click(screen.getByRole("button", { name: "Discard" }));
+
+    expect(await screen.findByRole("dialog", { name: "Publish" })).toBeTruthy();
+    expect(onClose).not.toHaveBeenCalled();
+    // The focus is back on what opened the form; Esc on the list closes Publish without asking.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Add Destination" })),
+    );
+    await user.keyboard("{Escape}");
+    expect(question()).toBeNull();
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("puts the focus back on the row's Edit after Back", async () => {
+    const { user } = setUpClosable();
+    await user.click(await screen.findByRole("button", { name: "Edit Old host" }));
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Edit Old host" })),
+    );
+  });
+
+  it("asks before Esc closes Publish from the form, and opens on the list again", async () => {
+    const { user, onClose } = setUpClosable();
+    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    await user.type(screen.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
+
+    await user.keyboard("{Escape}");
+    expect(question()).not.toBeNull();
+    await user.click(screen.getByRole("button", { name: "Discard" }));
+
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("puts the focus on the new destination's Edit after a Save, from the first-run card too", async () => {
+    const { user } = setUpClosable([]);
+    await user.click(
+      await screen.findByRole("button", { name: "A web host with a control panel" }),
+    );
+    await user.type(screen.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
+    await user.type(screen.getByLabelText("User name", { exact: true }), "rosa");
+    await user.type(screen.getByLabelText("Password", { exact: true }), "test-only-password");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    // The cards give way to the list read again, and the focus waits for its row.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "Edit ftp.rosasbakery.co.uk" }),
+      ),
+    );
+  });
+
+  it("opens on the list again after Esc closed it from the form", async () => {
+    const onClose = vi.fn();
+    const publish = fakePublish([{ destination: old, signIn: "saved", trust: {} }]);
+    const props = {
+      publish,
+      sessionId: () => SESSION,
+      notify: vi.fn(),
+      onSaved: vi.fn(),
+      onPublish: vi.fn(),
+      onClose,
+    };
+    const { rerender } = render(<PublishDialog open {...props} />);
+    const user = userEvent.setup({ delay: null });
+    await user.click(await screen.findByRole("button", { name: "Edit Old host" }));
+    await user.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledOnce();
+    rerender(<PublishDialog open={false} {...props} />);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    rerender(<PublishDialog open {...props} />);
+
+    expect(await screen.findByRole("dialog", { name: "Publish" })).toBeTruthy();
+    expect(screen.queryByLabelText("Host", { exact: true })).toBeNull();
   });
 });
 

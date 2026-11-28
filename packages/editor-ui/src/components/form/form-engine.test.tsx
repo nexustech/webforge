@@ -3,7 +3,8 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { FormDialog } from "./form-dialog.js";
+import { Dialog, DialogContent } from "../ui/dialog.js";
+import { FormDialog, FormPane } from "./form-dialog.js";
 import { Form } from "./form-engine.js";
 import type { FormSpec } from "./form-spec.js";
 import { type FormSubmit, useForm } from "./use-form.js";
@@ -612,6 +613,76 @@ describe("FormDialog (2.21, B4)", () => {
 
     await user.click(screen.getByRole("tab", { name: "Contact" }));
     expect(screen.getByRole("button", { name: "Help: Contact" })).toBeTruthy();
+  });
+});
+
+describe("FormPane (#1456)", () => {
+  /** The pane as a step of another dialog, whose Esc closes it. */
+  const setUpPane = () => {
+    const onBack = vi.fn();
+    const onSave = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <Dialog open onOpenChange={(next) => (next ? undefined : onClose())}>
+        <DialogContent className="flex flex-col">
+          <FormPane
+            title="Publish to your web host"
+            confirm="Save"
+            spec={spec}
+            initial={initial}
+            onSave={onSave}
+            onBack={onBack}
+          />
+        </DialogContent>
+      </Dialog>,
+    );
+    return { onBack, onSave, onClose, user: userEvent.setup({ delay: null }) };
+  };
+  const question = () => screen.queryByRole("alertdialog", { name: "Discard your changes?" });
+
+  it("names the dialog it's drawn in, focuses its first field, and ends with Back then Save", () => {
+    setUpPane();
+
+    expect(screen.getByRole("dialog", { name: "Publish to your web host" })).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Site name" }));
+    const footer = screen.getByRole("button", { name: "Save" }).parentElement;
+    const buttons = [...(footer?.querySelectorAll("button") ?? [])].map((each) => each.textContent);
+    expect(buttons).toEqual(["Back", "Save"]);
+    // Back isn't a way out: the dialog stays open.
+    expect(screen.getByRole("button", { name: "Back" }).hasAttribute("data-way-out")).toBe(false);
+  });
+
+  it("goes back at once with nothing changed, and asks first with a change", async () => {
+    const { onBack, user } = setUpPane();
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(onBack).toHaveBeenCalledOnce();
+    expect(question()).toBeNull();
+
+    await user.type(screen.getByRole("textbox", { name: "Site name" }), "s");
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(question()).not.toBeNull();
+    expect(onBack).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole("button", { name: "Discard" }));
+    expect(onBack).toHaveBeenCalledTimes(2);
+  });
+
+  it("saves as a form dialog does, and Esc asks before closing the whole dialog", async () => {
+    const { onSave, onClose, onBack, user } = setUpPane();
+
+    await user.type(screen.getByRole("textbox", { name: "Site name" }), "s");
+    await user.keyboard("{Escape}");
+    expect(question()).not.toBeNull();
+    await user.click(screen.getByRole("button", { name: "Keep Editing" }));
+    expect(onClose).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledOnce();
+
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Discard" }));
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(onBack).not.toHaveBeenCalled();
   });
 });
 

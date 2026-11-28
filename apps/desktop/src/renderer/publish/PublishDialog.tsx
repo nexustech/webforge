@@ -38,19 +38,19 @@ import type {
 import { HelpButton } from "../help/index.js";
 import {
   connectionMessage,
-  FileTransferDestinationDialog,
+  FileTransferDestinationForm,
   type FileTransferSaved,
-} from "./FileTransferDestinationDialog.js";
+} from "./FileTransferDestinationForm.js";
 import { FirstDestination } from "./FirstDestination.js";
 import {
   type NetlifyAccount,
   type NetlifyDestinationApi,
-  NetlifyDestinationDialog,
+  NetlifyDestinationForm,
   type NetlifyFailure,
   type NetlifySaved,
   type NetlifySite,
   netlifyFailureMessage,
-} from "./NetlifyDestinationDialog.js";
+} from "./NetlifyDestinationForm.js";
 
 /** The person's words for why the destinations couldn't be read or changed. */
 function failureMessage(reason: DestinationsFailure): string {
@@ -130,6 +130,15 @@ export type PublishDialogProps = {
   readonly onPublish: (destination: PublishDestination) => void;
   readonly onClose: () => void;
 };
+
+/** Publish's Add a Destination button, where the focus goes back to after a new one's form. */
+const ADD_BUTTON = "[data-destination-add]";
+
+/**
+ * Where the focus goes back to as a destination's form goes (#1456): the first of `marks` found
+ * and enabled, once the list has been read `after` times (a Save reads it again).
+ */
+type ReturnTo = { readonly marks: readonly string[]; readonly after: number };
 
 /** A destination being added (none yet) or edited, and of which kind. */
 type Editing = {
@@ -225,6 +234,10 @@ export function PublishDialog({
   // cards nor Add, so a site's destinations aren't added again behind the error (#1014).
   const [listed, setListed] = useState<readonly ListedDestination[] | "unreadable" | undefined>();
   const [editing, setEditing] = useState<Editing | undefined>();
+  // Where the focus goes back to as the form goes (#1456), and how many times the list was read.
+  const returnTo = useRef<ReturnTo | undefined>(undefined);
+  const reads = useRef(0);
+  const content = useRef<HTMLDivElement>(null);
   const [removing, setRemoving] = useState<ListedDestination | undefined>();
   const [tests, setTests] = useState<Tests>({});
   // A Netlify save under way, which a second Save leaves be; and the site the last one made, which
@@ -235,6 +248,47 @@ export function PublishDialog({
   const [version, setVersion] = useState(0);
   const reload = () => setVersion((last) => last + 1);
 
+  /** Draws `next`'s form in place of the list, the focus to come back to `from` after it. */
+  const edit = (next: Editing, from: string) => {
+    returnTo.current = { marks: [from, ADD_BUTTON], after: 0 };
+    setEditing(next);
+  };
+  /** Back to the list after Back. */
+  const leave = () => {
+    madeSite.current = undefined;
+    setEditing(undefined);
+  };
+  /** Back to the list after `saved` is saved: the focus to its row, once the list is read again. */
+  const leaveSaved = (saved: PublishDestination) => {
+    returnTo.current = {
+      marks: [`[data-destination-edit="${saved.id}"]`, ADD_BUTTON],
+      after: reads.current + 1,
+    };
+    setEditing(undefined);
+    reload();
+  };
+
+  // Back on the list, the focus returns to what opened the form (the row's Edit, the card, or Add),
+  // or after a Save to the saved row. After the commit, so the form's going, which drops the focus
+  // it had, can't undo it; and again as the list is read, until it's there.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tried again as the list is read.
+  useEffect(() => {
+    const target = returnTo.current;
+    if (editing !== undefined || target === undefined || reads.current < target.after) {
+      return undefined;
+    }
+    const later = setTimeout(() => {
+      for (const mark of target.marks) {
+        const found = content.current?.querySelector<HTMLElement>(mark);
+        if (found === null || found === undefined || found.matches(":disabled")) continue;
+        found.focus();
+        if (found.ownerDocument.activeElement === found) returnTo.current = undefined;
+        return;
+      }
+    }, 0);
+    return () => clearTimeout(later);
+  }, [editing, listed]);
+
   // Read afresh each time the dialog opens, and after each change.
   // biome-ignore lint/correctness/useExhaustiveDependencies: a new `version` reads it again.
   useEffect(() => {
@@ -243,6 +297,7 @@ export function PublishDialog({
     publish.destinations(sessionId()).then(
       (result) => {
         if (!current) return;
+        reads.current += 1;
         setListed(result.status === "listed" ? result.destinations : "unreadable");
         if (result.status === "listed") {
           onListed?.(result.destinations.map(({ destination }) => destination));
@@ -291,9 +346,8 @@ export function PublishDialog({
       saved.trust,
     );
     if (result.status === "saved") {
-      setEditing(undefined);
+      leaveSaved(result.destination);
       onSaved(result.destination);
-      reload();
       return;
     }
     notify(
@@ -346,9 +400,8 @@ export function PublishDialog({
     );
     if (result.status === "saved") {
       madeSite.current = undefined;
-      setEditing(undefined);
+      leaveSaved(result.destination);
       onSaved(result.destination);
-      reload();
       return;
     }
     notify(
@@ -375,144 +428,168 @@ export function PublishDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
-        <DialogContent className="sm:max-w-xl" onOpenAutoFocus={focusPastUnpublished}>
-          <DialogHeader>
-            <DialogTitle>
-              {republishing === undefined
-                ? t("publish.destinations.title")
-                : t("publish.republish.title", { name: republishing })}
-            </DialogTitle>
-            <DialogDescription>
-              {republishing === undefined
-                ? t("publish.destinations.description")
-                : t("publish.republish.description")}
-            </DialogDescription>
-          </DialogHeader>
-          {unpublished === undefined || unpublished.count === 0 ? null : (
-            <UnpublishedLine
-              unpublished={unpublished}
-              version={republishing !== undefined}
-              onShow={onClose}
+        <DialogContent
+          ref={content}
+          // One width for the list and a destination's form, so nothing jumps sideways between
+          // them (#1456); a column while the form shows, so its fields can scroll.
+          className={editing === undefined ? "sm:max-w-2xl" : "flex flex-col sm:max-w-2xl"}
+          onOpenAutoFocus={focusPastUnpublished}
+          // Closed (from the form too, by Esc or the X), it opens on its list next time, with
+          // nothing of the form kept: not as it closes, which would draw the list as it fades.
+          onCloseAutoFocus={() => {
+            setEditing(undefined);
+            returnTo.current = undefined;
+            madeSite.current = undefined;
+          }}
+        >
+          {/*
+            A destination's form is a step of this dialog (#1456): drawn in place of the list, with
+            its own title, and Back to the list. Drawn only while it shows, so each time starts
+            afresh: no key or trust from the last.
+          */}
+          {editing?.kind === "netlify" && netlify !== undefined ? (
+            <NetlifyDestinationForm
+              {...(editedNetlify === undefined || edited === undefined
+                ? {}
+                : {
+                    editing: {
+                      id: editedNetlify.id,
+                      name: editedNetlify.name,
+                      siteId: editedNetlify.siteId,
+                      signedIn: edited.signIn === "saved",
+                    },
+                  })}
+              netlify={netlify}
+              onSave={saveNetlify}
+              onBack={leave}
             />
-          )}
-          {listed === undefined ? (
-            <p role="status" className="text-sm text-muted-foreground">
-              {t("publish.destinations.loading")}
-            </p>
-          ) : listed === "unreadable" ? (
-            <p role="status" className="text-sm text-destructive-text">
-              {t("publish.destinations.unreadable")}
-            </p>
-          ) : listed.length === 0 ? (
-            <FirstDestination
-              netlify={netlify !== undefined}
-              onAdd={(kind) => setEditing({ kind, listed: undefined })}
+          ) : editing?.kind === "file-transfer" ? (
+            <FileTransferDestinationForm
+              destination={editedSettings}
+              name={edited?.destination.name}
+              webAddress={edited === undefined ? webAddress?.() : undefined}
+              savedSignIn={edited?.signIn === "saved"}
+              trust={edited?.trust}
+              publish={publish}
+              testSaved={
+                edited === undefined
+                  ? undefined
+                  : (settings, trust) => testSaved(edited.destination.id, settings, trust)
+              }
+              onSave={(saved) => {
+                save(saved).catch(() => notify(failureMessage("unknown")));
+              }}
+              onBack={leave}
             />
           ) : (
-            <ul className="space-y-2">
-              {listed.map((each) => (
-                <DestinationRow
-                  key={each.destination.id}
-                  listed={each}
-                  test={tests[each.destination.id]}
-                  republish={republishing !== undefined}
-                  onTest={() => {
-                    test(each).catch(() =>
-                      setTests((all) => ({
-                        ...all,
-                        [each.destination.id]: { ok: false, code: "failed" },
-                      })),
-                    );
-                  }}
-                  onPublish={() => onPublish(each.destination)}
-                  canEdit={each.destination.kind !== "netlify" || netlify !== undefined}
-                  onEdit={() => setEditing({ kind: each.destination.kind, listed: each })}
-                  onRemove={() => setRemoving(each)}
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  {republishing === undefined
+                    ? t("publish.destinations.title")
+                    : t("publish.republish.title", { name: republishing })}
+                </DialogTitle>
+                <DialogDescription>
+                  {republishing === undefined
+                    ? t("publish.destinations.description")
+                    : t("publish.republish.description")}
+                </DialogDescription>
+              </DialogHeader>
+              {unpublished === undefined || unpublished.count === 0 ? null : (
+                <UnpublishedLine
+                  unpublished={unpublished}
+                  version={republishing !== undefined}
+                  onShow={onClose}
                 />
-              ))}
-            </ul>
-          )}
-          <DialogFooter>
-            {listed === "unreadable" || listed?.length === 0 ? null : netlify === undefined ? (
-              <Button
-                variant="outline"
-                disabled={cannotAdd}
-                onClick={() => setEditing({ kind: "file-transfer", listed: undefined })}
-              >
-                {t("publish.destinations.add")}
-              </Button>
-            ) : (
-              // Which kind of destination (4.4b): a web host with a control panel, or Netlify. The
-              // first one is chosen from cards instead (#1014).
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" disabled={cannotAdd}>
+              )}
+              {listed === undefined ? (
+                <p role="status" className="text-sm text-muted-foreground">
+                  {t("publish.destinations.loading")}
+                </p>
+              ) : listed === "unreadable" ? (
+                <p role="status" className="text-sm text-destructive-text">
+                  {t("publish.destinations.unreadable")}
+                </p>
+              ) : listed.length === 0 ? (
+                <FirstDestination
+                  netlify={netlify !== undefined}
+                  onAdd={(kind) =>
+                    edit({ kind, listed: undefined }, `[data-first-destination="${kind}"]`)
+                  }
+                />
+              ) : (
+                <ul className="space-y-2">
+                  {listed.map((each) => (
+                    <DestinationRow
+                      key={each.destination.id}
+                      listed={each}
+                      test={tests[each.destination.id]}
+                      republish={republishing !== undefined}
+                      onTest={() => {
+                        test(each).catch(() =>
+                          setTests((all) => ({
+                            ...all,
+                            [each.destination.id]: { ok: false, code: "failed" },
+                          })),
+                        );
+                      }}
+                      onPublish={() => onPublish(each.destination)}
+                      canEdit={each.destination.kind !== "netlify" || netlify !== undefined}
+                      onEdit={() =>
+                        edit(
+                          { kind: each.destination.kind, listed: each },
+                          `[data-destination-edit="${each.destination.id}"]`,
+                        )
+                      }
+                      onRemove={() => setRemoving(each)}
+                    />
+                  ))}
+                </ul>
+              )}
+              <DialogFooter>
+                {listed === "unreadable" || listed?.length === 0 ? null : netlify === undefined ? (
+                  <Button
+                    variant="outline"
+                    disabled={cannotAdd}
+                    data-destination-add=""
+                    onClick={() => edit({ kind: "file-transfer", listed: undefined }, ADD_BUTTON)}
+                  >
                     {t("publish.destinations.add")}
-                    <ChevronDownIcon aria-hidden />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onSelect={() => setEditing({ kind: "file-transfer", listed: undefined })}
-                  >
-                    {t("publish.destinations.add.fileTransfer")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={() => setEditing({ kind: "netlify", listed: undefined })}
-                  >
-                    {t("publish.destinations.add.netlify")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            <DialogCancel onClick={onClose}>{t("publish.destinations.close")}</DialogCancel>
-          </DialogFooter>
+                ) : (
+                  // Which kind of destination (4.4b): a web host with a control panel, or Netlify. The
+                  // first one is chosen from cards instead (#1014).
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" disabled={cannotAdd} data-destination-add="">
+                        {t("publish.destinations.add")}
+                        <ChevronDownIcon aria-hidden />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onSelect={() =>
+                          edit({ kind: "file-transfer", listed: undefined }, ADD_BUTTON)
+                        }
+                      >
+                        {t("publish.destinations.add.fileTransfer")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() => edit({ kind: "netlify", listed: undefined }, ADD_BUTTON)}
+                      >
+                        {t("publish.destinations.add.netlify")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                <DialogCancel onClick={onClose}>{t("publish.destinations.close")}</DialogCancel>
+              </DialogFooter>
+            </>
+          )}
           {/* Last, so the dialog's own first control still takes the focus as it opens. */}
           <HelpButton topic="publish" className="absolute top-2.5 right-9" />
         </DialogContent>
       </Dialog>
-      {/* Drawn only while open, so each opening starts afresh: no key or trust from the last. */}
-      {editing?.kind === "netlify" && netlify !== undefined && (
-        <NetlifyDestinationDialog
-          open
-          {...(editedNetlify === undefined || edited === undefined
-            ? {}
-            : {
-                editing: {
-                  id: editedNetlify.id,
-                  name: editedNetlify.name,
-                  siteId: editedNetlify.siteId,
-                  signedIn: edited.signIn === "saved",
-                },
-              })}
-          netlify={netlify}
-          onSave={saveNetlify}
-          onCancel={() => {
-            madeSite.current = undefined;
-            setEditing(undefined);
-          }}
-        />
-      )}
-      {editing?.kind === "file-transfer" && (
-        <FileTransferDestinationDialog
-          open
-          destination={editedSettings}
-          name={edited?.destination.name}
-          webAddress={edited === undefined ? webAddress?.() : undefined}
-          savedSignIn={edited?.signIn === "saved"}
-          trust={edited?.trust}
-          publish={publish}
-          testSaved={
-            edited === undefined
-              ? undefined
-              : (settings, trust) => testSaved(edited.destination.id, settings, trust)
-          }
-          onSave={(saved) => {
-            save(saved).catch(() => notify(failureMessage("unknown")));
-          }}
-          onCancel={() => setEditing(undefined)}
-        />
-      )}
       <AlertDialog
         open={removing !== undefined}
         onOpenChange={(next) => (next ? undefined : setRemoving(undefined))}
@@ -629,6 +706,7 @@ function DestinationRow({
               size="sm"
               variant="outline"
               aria-label={t("publish.destinations.edit.label", { name })}
+              data-destination-edit={destination.id}
               onClick={onEdit}
             >
               {t("publish.destinations.edit")}
