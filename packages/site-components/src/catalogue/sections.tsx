@@ -286,7 +286,7 @@ const hero = defineSection({
     // Narrow, a reading width; Wide, as wide as the content width allows (#1631).
     const wide = values.textWidth === "wide" && layout !== "split";
     // Text only and centred, the box is centred in its row as its words are (#1648); behind the
-    // text, the row's flex centres it already.
+    // text, the row's flex centres it when centred, and sets it at its start on the left (#1658).
     const copyWidth =
       layout === "centred"
         ? "mx-auto max-w-2xl"
@@ -324,7 +324,13 @@ const hero = defineSection({
           )}
           {/* As every Hero's was before HH-3, so a saved one's export is unchanged. */}
           {overlay.layer === "" ? null : <div className={`absolute inset-0 ${overlay.layer}`} />}
-          <div className={`hero-content relative ${heroWidth} ${overlay.text} ${aligned}`}>
+          {/*
+            On the left, the row spans the Hero's content width, its box at the row's left edge
+            (#1658): daisyUI's hero-content centres its box otherwise, whatever the alignment.
+          */}
+          <div
+            className={`hero-content relative ${heroWidth} ${aligned === "text-left" ? "w-full justify-start " : ""}${overlay.text} ${aligned}`}
+          >
             {copy}
           </div>
         </>

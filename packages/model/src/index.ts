@@ -282,7 +282,7 @@ export {
   slugsInFolder,
   swapPages,
 } from "./pages.js";
-export { plainText } from "./plain-text.js";
+export { plainText, shortened } from "./plain-text.js";
 export type { PublishDestination } from "./publish-destinations.js";
 export {
   DESTINATION_NAME_MAX,

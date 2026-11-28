@@ -1,5 +1,5 @@
 import { plural, t } from "@webforge/i18n";
-import type { PageId, SiteDoc } from "@webforge/model";
+import { type PageId, type SiteDoc, shortened } from "@webforge/model";
 import { produce } from "immer";
 import { z } from "zod";
 import { APP_PARSE } from "./app-errors.js";
@@ -75,24 +75,8 @@ const TITLE_SHOWN = 60;
 /** The most questions the summary repeats that aren't destinations or Site Settings. */
 const MOST_ASKS = 10;
 
-/** Splits text into what a reader sees as characters: an emoji with its modifiers is one. */
-const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: "grapheme" });
-
-/**
- * `title`, shortened to {@link TITLE_SHOWN} characters, as a reader counts them: never cut inside
- * an emoji, which would leave half of it before the "…".
- */
-const shortened = (title: string) => {
-  // Most titles are short: no need to split them.
-  if (title.length <= TITLE_SHOWN) return title;
-  const characters = Array.from(GRAPHEMES.segment(title), ({ segment }) => segment);
-  return characters.length <= TITLE_SHOWN
-    ? title
-    : `${characters
-        .slice(0, TITLE_SHOWN - 1)
-        .join("")
-        .trimEnd()}…`;
-};
+/** `title`, shortened to {@link TITLE_SHOWN} characters, as a reader counts them. */
+const shortTitle = (title: string) => shortened(title, TITLE_SHOWN);
 
 /**
  * The plan's one question's details (S30, #795), as paragraphs: first, set apart, every question
@@ -105,7 +89,7 @@ function described(summary: PlanSummary, switches: readonly string[]): string {
   if (summary.asksFirst.length > 0) groups.push([t("ai.plan.first"), ...summary.asksFirst]);
   const list = (names: Iterable<string>) => {
     const all = [...names];
-    const shown = all.slice(0, MOST_LISTED).map((name) => `“${shortened(name)}”`);
+    const shown = all.slice(0, MOST_LISTED).map((name) => `“${shortTitle(name)}”`);
     const more = all.length - shown.length;
     return more > 0
       ? `${shown.join(", ")} ${t("ai.plan.more", { count: more })}`
@@ -119,7 +103,7 @@ function described(summary: PlanSummary, switches: readonly string[]): string {
     changes.push(t("ai.plan.pagesRemoved", { pages: list(summary.pagesRemoved) }));
   }
   for (const { from, to } of summary.pagesRenamed.slice(0, MOST_LISTED)) {
-    changes.push(t("ai.plan.pageRenamed", { from: shortened(from), to: shortened(to) }));
+    changes.push(t("ai.plan.pageRenamed", { from: shortTitle(from), to: shortTitle(to) }));
   }
   if (summary.pagesRenamed.length > MOST_LISTED) {
     changes.push(plural("ai.plan.moreRenamed", summary.pagesRenamed.length - MOST_LISTED));
