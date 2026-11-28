@@ -78,9 +78,9 @@ export const panels = {
   "pages.renameDialog.title": "Rename Page",
   "pages.renameDialog.confirm": "Rename",
   "pages.folderDialog.title": "New Folder",
-  "pages.folderDialog.description": "Move '{name}' into a new folder.",
+  "pages.folderDialog.description": "Move “{name}” into a new folder.",
   "pages.folderDialog.confirm": "Move",
-  "pages.deleteDialog.title": "Delete Page '{name}'?",
+  "pages.deleteDialog.title": "Delete Page “{name}”?",
   "pages.deleteDialog.description": "This removes the page and its content.",
   "pages.deleteDialog.confirm": "Delete Page",
   // Add panel (F-ED-1): sections and elements to add to the page.
@@ -103,7 +103,7 @@ export const panels = {
   "add.noHolder.selected":
     "The selected section, {section}, holds no elements of its own. Elements go inside a Section: add one from Sections, or select one.",
   "add.noHolder": "Elements go inside a Section, and this page has none. Add one from Sections.",
-  "add.noMatch": "Nothing matches '{query}'.",
+  "add.noMatch": "Nothing matches “{query}”.",
   // What a section's larger preview shows of what the site gives it (#1175): sample contact
   // details and posts, never the site's own.
   "add.sample.businessName": "Your business",
@@ -158,7 +158,7 @@ export const panels = {
   "layers.nameField": "Name for this {item}",
   // A linked copy of a shared section, marked in Layers (1.29, F-ED-23).
   "layers.linkedCopy": "Linked copy of {name}",
-  "layers.history.renamed": "Renamed {item} to '{name}'",
+  "layers.history.renamed": "Renamed {item} to “{name}”",
   "layers.history.unnamed": "Removed the name of {item}",
   "layers.history.hid": "Kept {item} off your website",
   "layers.history.hidWhileEditing": "Hid {item} while editing",
@@ -241,10 +241,10 @@ export const panels = {
   "menu.kind.group": "dropdown",
   "menu.row": "{name}, {kind}",
   "menu.rowHidden": "{name}, {kind}, hidden",
-  "menu.rowInGroup": "{name}, {kind} in '{group}'",
-  "menu.rowInGroupHidden": "{name}, {kind} in '{group}', hidden",
+  "menu.rowInGroup": "{name}, {kind} in “{group}”",
+  "menu.rowInGroupHidden": "{name}, {kind} in “{group}”, hidden",
   "menu.rowPageHidden": "{name}, {kind}, hidden in Page Settings",
-  "menu.rowInGroupPageHidden": "{name}, {kind} in '{group}', hidden in Page Settings",
+  "menu.rowInGroupPageHidden": "{name}, {kind} in “{group}”, hidden in Page Settings",
   "menu.actions": "Actions for {name}",
   "menu.rename": "Rename…",
   "menu.usePageName": "Use Page Name",
@@ -253,7 +253,7 @@ export const panels = {
   "menu.show": "Show in Menu",
   "menu.moveUp": "Move Up",
   "menu.moveDown": "Move Down",
-  "menu.moveInto": "Move into '{name}'",
+  "menu.moveInto": "Move into “{name}”",
   "menu.moveOut": "Move Out of Dropdown",
   "menu.delete": "Delete",
   "menu.removePage": "Remove from Menu",
@@ -267,16 +267,16 @@ export const panels = {
   "menu.linkDialog.title": "Menu Link",
   "menu.buttonDialog.title": "Menu Button",
   // Undo steps; "Added {item}", "Moved {item}", "Deleted {item}" use menu.item.
-  "menu.item": "menu item '{name}'",
-  "menu.history.renamed": "Renamed menu item '{name}'",
-  "menu.history.changed": "Changed menu item '{name}'",
-  "menu.history.hid": "Hid menu item '{name}'",
-  "menu.history.showed": "Showed menu item '{name}'",
+  "menu.item": "menu item “{name}”",
+  "menu.history.renamed": "Renamed menu item “{name}”",
+  "menu.history.changed": "Changed menu item “{name}”",
+  "menu.history.hid": "Hid menu item “{name}”",
+  "menu.history.showed": "Showed menu item “{name}”",
   "menu.history.followPages": "Made the menu follow the page order",
 
   // Page Settings (F-SET-2).
   "pageSettings.open": "Page Settings…",
-  "pageSettings.title": "Settings for '{name}'",
+  "pageSettings.title": "Settings for “{name}”",
   "pageSettings.description":
     "How this page shows in search results, browser tabs and when shared.",
   // Its tabs, for screen readers (#1443); the tabs themselves are Settings' section names.
@@ -323,11 +323,11 @@ export const panels = {
   "pageSettings.preview.noImage": "No share image",
   "pageSettings.save": "Save",
   // Undo steps; "Added {item}", "Moved {item}"… use pages.item.
-  "pages.item": "page '{name}'",
-  "pages.history.renamed": "Renamed page '{name}'",
-  "pages.history.setHome": "Set '{name}' as Home page",
-  "pages.history.hidden": "Hid '{name}' in the menu",
-  "pages.history.shown": "Showed '{name}' in the menu",
-  "pages.history.drafted": "Made '{name}' a draft",
-  "pages.history.undrafted": "Took '{name}' out of drafts",
+  "pages.item": "page “{name}”",
+  "pages.history.renamed": "Renamed page “{name}”",
+  "pages.history.setHome": "Set “{name}” as Home page",
+  "pages.history.hidden": "Hid “{name}” in the menu",
+  "pages.history.shown": "Showed “{name}” in the menu",
+  "pages.history.drafted": "Made “{name}” a draft",
+  "pages.history.undrafted": "Took “{name}” out of drafts",
 } as const;

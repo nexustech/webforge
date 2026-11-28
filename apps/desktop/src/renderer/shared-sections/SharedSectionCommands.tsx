@@ -49,6 +49,7 @@ export function removeSharedSection(
       }),
       description: t("canvas.deleteSharedSection.description"),
       confirm: t("canvas.deleteSharedSection.confirm"),
+      destructive: false,
       affectedPages: pages,
     })
     .then((confirmed) => {

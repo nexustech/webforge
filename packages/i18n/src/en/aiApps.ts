@@ -25,9 +25,9 @@ export const aiApps = {
   "aiApps.status.idle": "Not connected",
   "aiApps.status.waiting": "Waiting for its key",
   "aiApps.remove": "Remove {name}",
-  "aiApps.removeTitle": "Remove {name}?",
+  "aiApps.removeTitle": "Remove “{name}”?",
   "aiApps.removeDescription":
-    "{name} can't reach your sites any more. To use it again, add it again with a new key.",
+    "“{name}” can't reach your sites any more. To use it again, add it again with a new key.",
   "aiApps.removeConfirm": "Remove",
   "aiApps.add": "Add AI App",
   "aiApps.add.which": "Which app?",

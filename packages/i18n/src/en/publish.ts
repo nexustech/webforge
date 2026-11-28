@@ -88,7 +88,7 @@ export const publish = {
   "publish.destinations.edit.label": "Edit {name}",
   "publish.destinations.remove": "Remove",
   "publish.destinations.remove.label": "Remove {name}",
-  "publish.destinations.removeTitle": "Remove '{name}'?",
+  "publish.destinations.removeTitle": "Remove “{name}”?",
   "publish.destinations.removeBody":
     "{appName} stops publishing there, and this computer forgets its password. Nothing on your host changes.",
   "publish.destinations.removeCancel": "Cancel",

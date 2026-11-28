@@ -221,6 +221,7 @@ export async function replaceAll(
     const confirmed = await siteWide.confirmSiteWide({
       action: t("findReplace.confirm.action", quotes),
       confirm: t("findReplace.replaceAll"),
+      destructive: false,
       affectedPages: pages,
     });
     if (!confirmed) return 0;

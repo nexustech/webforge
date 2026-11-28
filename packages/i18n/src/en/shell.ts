@@ -42,7 +42,7 @@ export const shell = {
   "ui.picker.search": "Search",
   "ui.picker.categories": "Categories",
   "ui.picker.all": "All",
-  "ui.picker.noMatch": "Nothing matches '{query}'.",
+  "ui.picker.noMatch": "Nothing matches “{query}”.",
   // Webforge's own colour picker (5.26, OL-19).
   "ui.colourPicker.label": "Colour picker",
   "ui.colourPicker.area": "Saturation and brightness",
@@ -303,7 +303,7 @@ export const shell = {
   "shortcuts.title": "Keyboard Shortcuts",
   "shortcuts.description": "Keys for the things you do most. Menus show them too.",
   "shortcuts.search": "Search shortcuts",
-  "shortcuts.noMatch": "No shortcut matches '{query}'.",
+  "shortcuts.noMatch": "No shortcut matches “{query}”.",
   // A count: plural("shortcuts.match", n) picks one or other (B10).
   "shortcuts.match.one": "{count} shortcut",
   "shortcuts.match.other": "{count} shortcuts",
@@ -404,9 +404,9 @@ export const shell = {
   "footerToolbar.addColumn": "Add column",
   "footerToolbar.removeColumn": "Remove last column",
   // {preset} is one of the presets above: "Started the Footer from 'Full'".
-  "footerToolbar.started": "Started the Footer from '{preset}'",
+  "footerToolbar.started": "Started the Footer from “{preset}”",
   // Its Undo toast, when it replaced elements: how far it reached (LF-15).
-  "footerToolbar.startedEverywhere": "Started the Footer from '{preset}' on every page",
+  "footerToolbar.startedEverywhere": "Started the Footer from “{preset}” on every page",
   // The canvas frame's edges, dragged to set its width (1.33, F-ED-25).
   "canvasResize.left": "Canvas width, left edge",
   "canvasResize.right": "Canvas width, right edge",

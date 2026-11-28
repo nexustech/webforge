@@ -218,7 +218,11 @@ async function confirmed(
   action: SiteWideQuestion,
 ): Promise<boolean> {
   if (asks?.siteWide === undefined) return true;
-  const ok = await asks.siteWide.confirmSiteWide({ ...action, affectedPages: pageCount(session) });
+  const ok = await asks.siteWide.confirmSiteWide({
+    ...action,
+    destructive: false,
+    affectedPages: pageCount(session),
+  });
   if (!ok) sayNotChanged(asks);
   return ok;
 }
@@ -278,6 +282,7 @@ async function changeTheme(
     await asks?.siteWide?.beforeUnaskedChange?.({
       action: label,
       confirm: label,
+      destructive: false,
       affectedPages: pages,
     });
   }
@@ -973,6 +978,7 @@ export async function applyNearestOwnColor(
   await asks?.siteWide?.beforeUnaskedChange?.({
     action: label,
     confirm: label,
+    destructive: false,
     affectedPages: pages,
   });
   session.edit(

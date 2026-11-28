@@ -368,6 +368,7 @@ export function lookConfirmation(change: LookChange, scope: LookScope) {
     action: t(`look.confirm.title.${scope}`, { item: change.item }),
     description: [changes, ...hidden, ...reach].join(" "),
     confirm: t("look.confirm.apply"),
+    destructive: false,
     affectedPages: change.pages.length,
   };
 }

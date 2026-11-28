@@ -18,6 +18,7 @@ function setup(mode: "design" | "content" = "design") {
 const confirmation = {
   action: "Allow Claude to Change the Theme?",
   confirm: "Allow",
+  destructive: false,
   affectedPages: 3,
 };
 
@@ -215,7 +216,12 @@ describe("commandHost (4.8)", () => {
     session.history.endSession(textSessionKey(pageId, "heading", "text"));
     expect(host.editing()).toBe(false);
 
-    void siteWide.confirmSiteWide({ action: "Delete page?", confirm: "Delete", affectedPages: 2 });
+    void siteWide.confirmSiteWide({
+      action: "Delete page?",
+      confirm: "Delete",
+      destructive: false,
+      affectedPages: 2,
+    });
     expect(host.editing()).toBe(true);
     siteWide.answer(false);
     expect(host.editing()).toBe(false);
@@ -231,6 +237,7 @@ describe("commandHost (4.8)", () => {
     const answered = siteWide.confirmSiteWide({
       action: "Delete page?",
       confirm: "Delete",
+      destructive: false,
       affectedPages: 2,
     });
     siteWide.answer(true);
@@ -273,7 +280,12 @@ describe("commandHost (4.8)", () => {
     const { siteWide, host } = setup();
     const timeout = new AbortController();
     const first = host.confirm(confirmation, timeout.signal);
-    const theirs = { action: "Delete page?", confirm: "Delete", affectedPages: 2 };
+    const theirs = {
+      action: "Delete page?",
+      confirm: "Delete",
+      destructive: false,
+      affectedPages: 2,
+    };
     void siteWide.confirmSiteWide(theirs);
     expect(await first).toBe(false);
     timeout.abort();
