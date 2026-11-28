@@ -16,7 +16,7 @@ import type {
   FieldGroup,
   OptionGroup,
 } from "./edit-panel-types.js";
-import { FieldRow, resettable } from "./field-row.js";
+import { ChangedDot, FieldRow, marked, resettable } from "./field-row.js";
 import type { FieldKind } from "./field-spec.js";
 
 /** The groups of fields that name none (UX-13), by kind; each id is its translation key's. */
@@ -169,6 +169,8 @@ export function FieldList({
         // Searching shows every group with a match open.
         const open = query !== "" || !closed.includes(key);
         const changed = inGroup.filter(resettable);
+        // Marked as its fields are, with words for a screen reader (#1517).
+        const dotted = inGroup.some(marked);
         const resetGroup =
           changed.length > 0 && onResetToDefault !== undefined
             ? () =>
@@ -231,6 +233,7 @@ export function FieldList({
                       changed.length > 0 ? "text-ring" : "text-foreground",
                     )}
                     data-changed={changed.length > 0 ? "" : undefined}
+                    aria-describedby={dotted ? `${bodyId}-changed` : undefined}
                     onClick={() => onToggle(key)}
                     onKeyDown={(event) => {
                       if (!(event.ctrlKey || event.metaKey)) return;
@@ -256,6 +259,14 @@ export function FieldList({
                       className={cn("size-3.5 shrink-0 transition-transform", open && "rotate-90")}
                     />
                     {name}
+                    {dotted ? (
+                      <>
+                        <ChangedDot />
+                        <span id={`${bodyId}-changed`} hidden>
+                          {t("editPanel.group.changed")}
+                        </span>
+                      </>
+                    ) : null}
                   </button>
                 </ContextMenuTrigger>
                 <ContextMenuContent>
