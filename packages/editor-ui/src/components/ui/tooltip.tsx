@@ -148,10 +148,9 @@ export function WithTooltip({
   // One unavailable (`aria-disabled`, #1517) keeps the focus, and is described as it takes it.
   const hidden = children.props["aria-hidden"];
   const off = children.props["aria-disabled"];
+  const read = hidden !== true && hidden !== "true";
   const described =
-    hidden !== true &&
-    hidden !== "true" &&
-    (open || children.props.disabled === true || off === true || off === "true");
+    read && (open || children.props.disabled === true || off === true || off === "true");
   const describedBy = [children.props["aria-describedby"], described ? description : undefined]
     .filter((each) => each !== undefined)
     .join(" ");
@@ -162,8 +161,11 @@ export function WithTooltip({
           {cloneElement(children, {
             "aria-describedby": describedBy === "" ? undefined : describedBy,
           })}
-          {described && (
-            // A description is read from a hidden element too, and this one isn't read twice.
+          {read && (
+            // A description is read from a hidden element too, and this one isn't read twice. It
+            // stays in the page while the tooltip comes and goes, only `aria-describedby` following
+            // it: removed as the tooltip closed on blur, mid-Tab, it threw a dialog's focus back
+            // to the dialog (#1672).
             <span id={description} hidden>
               {tooltip}
             </span>

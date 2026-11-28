@@ -575,10 +575,20 @@ function ItemPreview({
       clearTimeout(timer);
     };
   }, [draw, node, theme]);
-  return drawn === undefined ? (
-    <div aria-hidden className="w-full" style={{ height: ITEM_PLACEHOLDER_HEIGHT }} />
-  ) : (
-    <ItemFrame drawn={drawn} device={device} themePreview={themePreview} />
+  // The space it takes until it's drawn, then hidden, not removed: a node removed from a dialog
+  // while a Tab moves the focus threw the focus back to the dialog (#1672).
+  return (
+    <>
+      <div
+        aria-hidden
+        hidden={drawn !== undefined}
+        className="w-full"
+        style={{ height: ITEM_PLACEHOLDER_HEIGHT }}
+      />
+      {drawn === undefined ? null : (
+        <ItemFrame drawn={drawn} device={device} themePreview={themePreview} />
+      )}
+    </>
   );
 }
 

@@ -207,8 +207,14 @@ describe("createItemPreviews (3.13a)", () => {
     const button: NodeDoc = { type: "Button", props: { id: "b", label: "Book now", link: "" } };
 
     const { container, rerender } = render(previews(button, "mobile"));
+    // The space it takes until it's drawn, then hidden, not removed: a node removed mid-Tab threw
+    // a dialog's focus back to the dialog (#1672).
+    const space = container.querySelector<HTMLElement>("div[aria-hidden]");
+    expect(space?.hidden).toBe(false);
     await wait(0);
     const frame = () => container.querySelector("iframe");
+    expect(space?.isConnected).toBe(true);
+    expect(space?.hidden).toBe(true);
 
     expect(frame()?.getAttribute("sandbox")).toBe("allow-same-origin");
     expect(frame()?.style.width).toBe("375px");
