@@ -72,8 +72,16 @@ const PLACES: Readonly<Record<string, { place: string; detail?: string }>> = {
   about: { place: "About us", detail: "2 main headings: keep one large Heading or Hero" },
   businessProfile: { place: "Open Google Business Profile" },
   searchConsole: { place: "Open Google Search Console" },
-  hours: { place: "Text on Contact us", detail: "9am looks like an example" },
-  review: { place: "Testimonial on Home" },
+  hours: {
+    place: "Text “Open Mon–Fri, 9am to 5pm” on Contact us",
+    detail: "9am looks like an example",
+  },
+  // Named by their text, each saying why (#1449).
+  review: { place: "Testimonial “Margaret” on Home", detail: "Saturday looks like an example" },
+  "review-2": {
+    place: "Testimonial “Owen” on Home",
+    detail: "Still the example text Webforge wrote",
+  },
   phone: { place: "Button on Home" },
 };
 
@@ -164,8 +172,9 @@ export const AllClear: Story = {
 };
 
 /**
- * Examples to check before publishing (#1228, WN-3): a made-up time and a sample testimonial, each
- * with *This Is Correct* for when the example happens to be right, and a sample phone number.
+ * Examples to check before publishing (#1228, WN-3): a made-up time and two sample testimonials,
+ * each named by its text and saying why (#1449), with *This Is Correct* for when the example happens
+ * to be right, and a sample phone number.
  */
 export const Examples: Story = {
   args: {
@@ -176,7 +185,7 @@ export const Examples: Story = {
         {
           rule: "sampleDetails",
           level: "must",
-          findings: [at("hours"), at("review"), at("phone")],
+          findings: [at("hours"), at("review"), at("review-2"), at("phone")],
           ignored: 0,
         },
         { rule: "placeholders", level: "must", findings: [], ignored: 0 },
