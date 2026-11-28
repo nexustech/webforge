@@ -1,6 +1,8 @@
 import { type ReactNode, useId } from "react";
 import { cn } from "../../lib/cn.js";
 import { fieldControlClass } from "../edit/text-field.js";
+import { FileName } from "../ui/file-name.js";
+import { WithTooltip } from "../ui/tooltip.js";
 
 /**
  * What a form control gets from its {@link Field}: the id its label points at, and what describes
@@ -278,7 +280,9 @@ export function TimeInput({
 
 /**
  * One choice of image: a radio button showing the image, or the default (no `thumbnail`). `name`
- * groups the choices of one picker, so a form can have several.
+ * groups the choices of one picker, so a form can have several. An image's label is its file's
+ * name, on one line and cut in the middle when it's long, its whole name in a tooltip (#1452); its
+ * box is filled while the picture loads, so the choices look the same from the first frame.
  */
 export function ImageChoice({
   label,
@@ -288,7 +292,7 @@ export function ImageChoice({
   name,
   disabled = false,
 }: {
-  /** Already translated. */
+  /** Already translated; an image's is its file's name. */
   readonly label: string;
   readonly thumbnail?: string;
   readonly selected: boolean;
@@ -297,33 +301,45 @@ export function ImageChoice({
   readonly disabled?: boolean;
 }) {
   return (
-    <label
-      className={cn(
-        "flex w-20 cursor-pointer flex-col items-center gap-1 rounded-sm border border-border p-1 text-center text-xs",
-        "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-        selected && "border-primary bg-accent text-accent-foreground",
-        // Disabled (#1010): muted text, and the chosen one a muted fill and edge.
-        "has-[:disabled]:cursor-default has-[:disabled]:text-disabled",
-        selected && "has-[:disabled]:border-disabled has-[:disabled]:bg-muted",
-      )}
-    >
-      <input
-        type="radio"
-        name={name}
-        className="sr-only"
-        checked={selected}
-        disabled={disabled}
-        onChange={onSelect}
-      />
-      {thumbnail === undefined ? (
-        <span
-          className="flex size-12 items-center justify-center rounded-sm bg-input"
-          aria-hidden
+    <WithTooltip tooltip={label} whenCut>
+      <label
+        className={cn(
+          // 96 px: a name such as `breakfast.jpg` shows whole, only a longer one is cut (#1452).
+          "flex w-24 cursor-pointer flex-col items-center gap-1 rounded-sm border border-border p-1 text-center text-xs",
+          "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+          selected && "border-primary bg-accent text-accent-foreground",
+          // Disabled (#1010): muted text, and the chosen one a muted fill and edge.
+          "has-[:disabled]:cursor-default has-[:disabled]:text-disabled",
+          selected && "has-[:disabled]:border-disabled has-[:disabled]:bg-muted",
+        )}
+      >
+        <input
+          type="radio"
+          name={name}
+          className="sr-only"
+          checked={selected}
+          disabled={disabled}
+          onChange={onSelect}
         />
-      ) : (
-        <img src={thumbnail} alt="" className="size-12 rounded-sm object-cover" />
-      )}
-      <span className="line-clamp-2 break-all">{label}</span>
-    </label>
+        {thumbnail === undefined ? (
+          <span
+            className="flex size-12 items-center justify-center rounded-sm bg-input"
+            aria-hidden
+          />
+        ) : (
+          <img
+            src={thumbnail}
+            alt=""
+            decoding="async"
+            className="size-12 rounded-sm bg-input object-cover"
+          />
+        )}
+        {thumbnail === undefined ? (
+          <span className="line-clamp-2 break-words">{label}</span>
+        ) : (
+          <FileName name={label} className="w-full justify-center" />
+        )}
+      </label>
+    </WithTooltip>
   );
 }

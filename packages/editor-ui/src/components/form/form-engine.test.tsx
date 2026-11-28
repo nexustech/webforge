@@ -382,6 +382,45 @@ describe("Form (2.21)", () => {
     expect(screen.getByRole("radio", { name: "shop" })).toHaveProperty("checked", true);
   });
 
+  it("names each image choice by its whole file name, on one line, its box filled as it loads (#1452)", () => {
+    const names = ["riverside-terrace-breakfast.jpg", "menu.v2.final.png", ".hidden", "logo.png"];
+    function Host() {
+      const state = useForm(
+        {
+          fields: [
+            {
+              kind: "imageChoice",
+              name: "logo",
+              label: "Logo",
+              noneLabel: "None",
+              options: names.map((name) => ({
+                value: name,
+                label: name,
+                thumbnail: `test://${name}`,
+              })),
+            },
+          ],
+          schema: z.unknown(),
+          toModel: (values) => values,
+        },
+        {},
+      );
+      return <Form form={state} />;
+    }
+    render(<Host />);
+
+    for (const name of names) {
+      const radio = screen.getByRole("radio", { name });
+      const label = radio.closest("label");
+      // Never broken across lines: the start is cut, the extension kept.
+      expect(label?.innerHTML).not.toContain("break-all");
+      expect(label?.querySelector(".truncate")).not.toBeNull();
+      expect(label?.querySelector("img")?.className).toContain("bg-input");
+    }
+    // The none choice is words, not a file's name: it wraps as words do.
+    expect(screen.getByRole("radio", { name: "None" })).toHaveProperty("checked", true);
+  });
+
   it("gives a text field that checks what's typed its kind of text and its limit too", () => {
     function Host() {
       const state = useForm(

@@ -109,6 +109,15 @@ export const Times: Story = {
   ),
 };
 
+/** A plain square of `colour`, in place of a Media thumbnail: stories make no requests (C8). */
+const swatch = (colour: string) =>
+  `data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><rect width="4" height="4" fill="${colour}"/></svg>`,
+  )}`;
+
+/** A thumbnail still loading: nothing drawn yet, so its box's fill shows (#1452). */
+const LOADING = swatch("transparent");
+
 function ImageChoices() {
   const [chosen, setChosen] = useState<string | undefined>("shop");
   return (
@@ -123,6 +132,7 @@ function ImageChoices() {
       <ImageChoice
         name="share-image"
         label="shop-front.jpg"
+        thumbnail={swatch("#5b7fa6")}
         selected={chosen === "shop"}
         onSelect={() => setChosen("shop")}
       />
@@ -134,4 +144,54 @@ function ImageChoices() {
 export const ImageChoiceGroup: Story = {
   args: { label: "", children: () => null },
   render: () => <ImageChoices />,
+};
+
+/** Names Settings' logo pickers meet (#1452): long, with several dots, a dot first, short. */
+const FILE_NAMES = [
+  { name: "riverside-terrace-breakfast.jpg", thumbnail: swatch("#d97757") },
+  { name: "menu.v2.final.png", thumbnail: swatch("#c9a46b") },
+  { name: ".hidden", thumbnail: swatch("#7a9a6b") },
+  { name: "hannah.jpg", thumbnail: LOADING },
+  { name: "cake.jpg", thumbnail: swatch("#8c6a9e") },
+];
+
+function LongNames({ scale }: { readonly scale: number }) {
+  const [chosen, setChosen] = useState<string | undefined>(FILE_NAMES[0]?.name);
+  return (
+    // 125% interface text is the window's zoom: the same here.
+    <fieldset className="flex flex-wrap gap-2" style={{ zoom: scale }}>
+      <legend className="mb-1 text-xs text-muted-foreground">Logo at {scale * 100}%</legend>
+      <ImageChoice
+        name={`logo-${scale}`}
+        label="None"
+        selected={chosen === undefined}
+        onSelect={() => setChosen(undefined)}
+      />
+      {FILE_NAMES.map(({ name, thumbnail }) => (
+        <ImageChoice
+          key={name}
+          name={`logo-${scale}`}
+          label={name}
+          thumbnail={thumbnail}
+          selected={chosen === name}
+          onSelect={() => setChosen(name)}
+        />
+      ))}
+    </fieldset>
+  );
+}
+
+/**
+ * Long file names on one line (#1452), at 100% and 125% interface text: cut in the middle, the
+ * extension and the three characters before it kept, the whole name in a tooltip. `hannah.jpg`'s
+ * picture is still loading: its box is filled, its size kept.
+ */
+export const ImageChoiceLongNames: Story = {
+  args: { label: "", children: () => null },
+  render: () => (
+    <div className="flex flex-col gap-4">
+      <LongNames scale={1} />
+      <LongNames scale={1.25} />
+    </div>
+  ),
 };

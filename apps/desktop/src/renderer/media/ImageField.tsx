@@ -2,9 +2,11 @@ import {
   Button,
   type FieldRenderer,
   type FieldRendererProps,
+  FileName,
   fieldControlClass,
   Picker,
   toast,
+  WithTooltip,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
@@ -133,7 +135,12 @@ export function ImageField({
             alt=""
             className="aspect-[4/3] w-full rounded-sm bg-input object-cover"
           />
-          <figcaption className="truncate text-xs">{image.fileName}</figcaption>
+          {/* Its file's name, cut in the middle to keep its extension in view (#1452). */}
+          <WithTooltip tooltip={image.fileName} whenCut>
+            <figcaption className="text-xs">
+              <FileName name={image.fileName} />
+            </figcaption>
+          </WithTooltip>
         </figure>
       )}
       <div className="flex flex-wrap gap-1.5">
@@ -163,6 +170,7 @@ export function ImageField({
         title={t("site.media.picker.title")}
         description={t("site.media.picker.description")}
         items={images}
+        labelKind="fileName"
         value={current?.mediaId ?? null}
         renderItem={(candidate) => (
           <img

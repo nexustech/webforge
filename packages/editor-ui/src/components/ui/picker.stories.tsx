@@ -15,6 +15,8 @@ const IMAGES: readonly (PickerItem & { readonly colour: string })[] = [
   { id: "team", label: "our-team.jpg", colour: "#7a9a6b" },
   { id: "oven", label: "oven.jpg", colour: "#8c6a9e" },
   { id: "flour", label: "flour.jpg", colour: "#d8d2c4" },
+  { id: "terrace", label: "riverside-terrace-breakfast.jpg", colour: "#a65b5b" },
+  { id: "menu", label: "menu.v2.final.png", colour: "#5ba6a0" },
 ];
 
 /** Fonts in a list, each with its category, as the font picker (2.2) will show them. */
@@ -52,6 +54,8 @@ type Story = StoryObj<typeof meta>;
 export const Images: Story = {
   args: {
     value: "shop",
+    // File names, cut in the middle to keep their extensions in view (#1452).
+    labelKind: "fileName",
     actions: (
       <Button type="button" size="sm" variant="outline">
         <ImagePlusIcon />

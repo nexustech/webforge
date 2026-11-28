@@ -160,6 +160,7 @@ export function StudioImagePalette({
         title={t("theme.image.pickerTitle")}
         description={t("theme.image.pickerDescription")}
         items={images}
+        labelKind="fileName"
         renderItem={(candidate) => (
           <img
             src={imageUrl(candidate.image)}

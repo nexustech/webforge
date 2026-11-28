@@ -143,7 +143,7 @@ function postField(
         noneLabel: t("blog.settings.noPicture"),
         options: images.map((image) => ({
           value: image.id,
-          label: image.name,
+          label: image.fileName,
           thumbnail: imageUrl(image),
         })),
         ...(images.length === 0 ? { help: t("pageSettings.noImages") } : {}),
@@ -216,7 +216,7 @@ export function pageSettingsSpec(
           noneLabel: t("pageSettings.siteShareImage"),
           options: images.map((image) => ({
             value: image.id,
-            label: image.name,
+            label: image.fileName,
             thumbnail: imageUrl(image),
           })),
           ...(images.length === 0 ? { help: t("pageSettings.noImages") } : {}),

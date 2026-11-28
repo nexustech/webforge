@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./dialog.js";
+import { FileName } from "./file-name.js";
 import { ScrollArea } from "./scroll-area.js";
 import { WithTooltip } from "./tooltip.js";
 
@@ -53,6 +54,11 @@ export type PickerProps<Item extends PickerItem> = {
   /** Tiles in `columns` columns (images, icons), or one item per row (fonts). */
   readonly layout?: "grid" | "list";
   readonly columns?: keyof typeof GRID_COLUMNS;
+  /**
+   * What an item's name is: `fileName` for a file's (images), cut in the middle to keep its
+   * extension in view (#1452); else text, cut at its end. Either is whole in its tooltip.
+   */
+  readonly labelKind?: "text" | "fileName";
   /** An item's tile, beside or above its name; the name itself is drawn by the picker. */
   readonly renderItem: (item: Item) => ReactNode;
   /** A larger look at the item the person is on (a font's sample text, a photo); none when left out. */
@@ -118,6 +124,7 @@ export function Picker<Item extends PickerItem>({
   categories,
   layout = "grid",
   columns = 4,
+  labelKind = "text",
   renderItem,
   renderPreview,
   value,
@@ -331,7 +338,11 @@ export function Picker<Item extends PickerItem>({
                       onKeyDown={onItemKeyDown}
                     >
                       {renderItem(item)}
-                      <span className="truncate">{item.label}</span>
+                      {labelKind === "fileName" ? (
+                        <FileName name={item.label} />
+                      ) : (
+                        <span className="truncate">{item.label}</span>
+                      )}
                     </div>
                   </WithTooltip>
                 );

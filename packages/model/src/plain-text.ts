@@ -23,3 +23,13 @@ export function plainText(html: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+
+/**
+ * `text`'s characters as a reader counts them: an emoji or an accented letter made of several
+ * code points is one. A name cut short is cut between them, never inside one (#1452).
+ */
+export function graphemes(text: string): string[] {
+  return Array.from(GRAPHEMES.segment(text), ({ segment }) => segment);
+}
