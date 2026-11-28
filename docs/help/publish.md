@@ -24,7 +24,7 @@ If your host offers none of these, for example only a page in your browser where
 
 ## Adding your web host
 
-The first time you publish, {appName} asks **Where is your website hosted?** Choose **A web host with a control panel**. After that, click **Add Destination** and choose **Web Host with a Control Panel…**. The details take the place of the list in the Publish window, and **Back** returns to the list, asking first if you've changed something. Fill in the details from your web host's control panel:
+The first time you publish, {appName} asks **Where is your website hosted?** Choose **A web host with a control panel**. After that, click **Add Destination** and choose **Web Host with a Control Panel…**. The details take the place of the list in Publish, and **Back** returns to the list, asking first if you've changed something. Fill in the details from your web host's control panel:
 
 - **Host**, such as `ftp.example.com`.
 - **User name**, and your **Password**.
@@ -51,7 +51,7 @@ The first time you publish, {appName} asks **Where is your website hosted?** Cho
 2. **Choose the Netlify site** to publish to, or **A new site**. A new site's name becomes part of its address, such as `rosas-bakery.netlify.app`. Leave it empty and Netlify makes one up.
 3. **Name** it if you like, then click **Save**. If Site Settings has no web address yet, {appName} fills in the Netlify site's.
 
-As with a web host, **Back** returns to the list. A sign-in you made and didn't save is let go.
+As with a web host, **Back** returns to the list. A sign-in you made and didn't save isn't kept.
 
 Once your site has a Netlify destination, [forms](forms.md) can send their messages with **Netlify Forms**.
 

@@ -158,7 +158,9 @@ export type FormPaneProps<V extends FormValues, Out> = Omit<
  * Cancel. Back asks "Discard your changes?" first when a value changed, as Esc does, and goes back
  * on _Discard_. Esc and the X close the whole dialog, asking first in the same way. Its first field
  * takes the focus as it's drawn. Draw it inside a `DialogContent` laid out as a column
- * (`flex flex-col`), so its fields can scroll.
+ * (`flex flex-col`), so its fields can scroll. It's for a later step, not a dialog's first: the
+ * dialog's own opening focus, and where the focus goes back to as it closes, come from that step.
+ * After Back, the dialog places the focus (on what opened the form).
  */
 export function FormPane<V extends FormValues, Out>({ onBack, ...body }: FormPaneProps<V, Out>) {
   return <FormDialogBody {...body} exit={{ kind: "back", run: onBack }} />;
@@ -190,11 +192,14 @@ function FormDialogBody<V extends FormValues, Out>({
   const step = exit.kind === "back";
   useEffect(() => {
     if (!step) return;
-    formRef.current
-      ?.querySelector<HTMLElement>(
-        '[data-slot="form-fields"] :is(input, textarea, select):not(:disabled)',
-      )
-      ?.focus();
+    // As a dialog's own opening focuses: the first field shown, its text selected.
+    const first = [
+      ...(formRef.current?.querySelectorAll<HTMLElement>(
+        '[data-slot="form-fields"] :is(input:not([type="hidden"]), textarea, select):not(:disabled)',
+      ) ?? []),
+    ].find((field) => field.closest("[hidden]") === null);
+    first?.focus();
+    if (first instanceof HTMLInputElement) first.select();
   }, [step]);
   // With a value changed, a click outside leaves it open, and Esc or the X asks first (#1439).
   useUnsavedChanges(form.changed);

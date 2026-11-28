@@ -455,6 +455,49 @@ describe("a destination's form as a step of Publish (#1456)", () => {
     expect(onClose).toHaveBeenCalledOnce();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
+
+  it("puts the focus on the new destination's Edit after a Save, from the first-run card too", async () => {
+    const { user } = setUpClosable([]);
+    await user.click(
+      await screen.findByRole("button", { name: "A web host with a control panel" }),
+    );
+    await user.type(screen.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
+    await user.type(screen.getByLabelText("User name", { exact: true }), "rosa");
+    await user.type(screen.getByLabelText("Password", { exact: true }), "test-only-password");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    // The cards give way to the list read again, and the focus waits for its row.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "Edit ftp.rosasbakery.co.uk" }),
+      ),
+    );
+  });
+
+  it("opens on the list again after Esc closed it from the form", async () => {
+    const onClose = vi.fn();
+    const publish = fakePublish([{ destination: old, signIn: "saved", trust: {} }]);
+    const props = {
+      publish,
+      sessionId: () => SESSION,
+      notify: vi.fn(),
+      onSaved: vi.fn(),
+      onPublish: vi.fn(),
+      onClose,
+    };
+    const { rerender } = render(<PublishDialog open {...props} />);
+    const user = userEvent.setup({ delay: null });
+    await user.click(await screen.findByRole("button", { name: "Edit Old host" }));
+    await user.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledOnce();
+    rerender(<PublishDialog open={false} {...props} />);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    rerender(<PublishDialog open {...props} />);
+
+    expect(await screen.findByRole("dialog", { name: "Publish" })).toBeTruthy();
+    expect(screen.queryByLabelText("Host", { exact: true })).toBeNull();
+  });
 });
 
 describe("the Publish dialog's Netlify destinations (4.4b)", () => {

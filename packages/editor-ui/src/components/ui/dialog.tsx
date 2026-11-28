@@ -62,7 +62,8 @@ export function useUnsavedChanges(changed: boolean): void {
  * What leaves a step of the dialog this is drawn in without closing it, such as a form's **Back**
  * (#1456), asks with: `(then) => void` runs `then` at once when nothing in the dialog has changed,
  * and otherwise asks "Discard your changes?" as Esc does, running `then` on _Discard_ and nothing
- * on _Keep Editing_. Outside a {@link Dialog}, it runs `then` at once.
+ * on _Keep Editing_. Outside a {@link Dialog}, it runs `then` at once. After _Discard_, the focus
+ * doesn't go back to where the question was asked from, which `then` takes away: `then` places it.
  */
 export function useAskBeforeDiscarding(): (then: () => void) => void {
   const unsaved = useContext(UnsavedContext);
@@ -95,7 +96,14 @@ export function Dialog({
   // reports, not the last render's.
   const changed = useRef(new Set<symbol>());
   // What _Discard_ does, while the question is asked: close the dialog, or leave a step of it.
-  const [asking, setAsking] = useState<{ readonly onDiscard: () => void } | undefined>();
+  const [asking, setAsking] = useState<
+    { readonly kind: "close" } | { readonly kind: "step"; readonly onDiscard: () => void }
+  >();
+  // The dialog's latest close, called on _Discard_: not the one of the render that asked.
+  const close = useRef(onOpenChange);
+  useLayoutEffect(() => {
+    close.current = onOpenChange;
+  });
   const discarded = useRef(false);
   const unsaved = useMemo<Unsaved>(
     () => ({
@@ -105,7 +113,7 @@ export function Dialog({
       },
       changed: () => changed.current.size > 0,
       ask: (then) => {
-        if (changed.current.size > 0) setAsking({ onDiscard: then });
+        if (changed.current.size > 0) setAsking({ kind: "step", onDiscard: then });
         else then();
       },
     }),
@@ -118,7 +126,7 @@ export function Dialog({
         {...props}
         onOpenChange={(next) => {
           if (!next && unsaved.changed()) {
-            setAsking({ onDiscard: () => onOpenChange?.(false) });
+            setAsking({ kind: "close" });
             return;
           }
           onOpenChange?.(next);
@@ -154,7 +162,8 @@ export function Dialog({
               variant="destructive"
               onClick={() => {
                 discarded.current = true;
-                const discard = asking?.onDiscard;
+                const discard =
+                  asking?.kind === "step" ? asking.onDiscard : () => close.current?.(false);
                 setAsking(undefined);
                 // Straight to the dialog's own close, or the step's way back: its changes stay
                 // counted until it goes, so a dialog that stays open (busy applying) still asks

@@ -131,10 +131,16 @@ export type PublishDialogProps = {
   readonly onClose: () => void;
 };
 
-/** A destination being added (none yet) or edited, and of which kind. */
 /** Publish's Add a Destination button, where the focus goes back to after a new one's form. */
 const ADD_BUTTON = "[data-destination-add]";
 
+/**
+ * Where the focus goes back to as a destination's form goes (#1456): the first of `marks` found
+ * and enabled, once the list has been read `after` times (a Save reads it again).
+ */
+type ReturnTo = { readonly marks: readonly string[]; readonly after: number };
+
+/** A destination being added (none yet) or edited, and of which kind. */
 type Editing = {
   readonly kind: PublishDestination["kind"];
   readonly listed: ListedDestination | undefined;
@@ -228,8 +234,9 @@ export function PublishDialog({
   // cards nor Add, so a site's destinations aren't added again behind the error (#1014).
   const [listed, setListed] = useState<readonly ListedDestination[] | "unreadable" | undefined>();
   const [editing, setEditing] = useState<Editing | undefined>();
-  // Where the focus goes back to as the form goes (#1456): what opened it, by its marks, in order.
-  const returnTo = useRef<readonly string[] | undefined>(undefined);
+  // Where the focus goes back to as the form goes (#1456), and how many times the list was read.
+  const returnTo = useRef<ReturnTo | undefined>(undefined);
+  const reads = useRef(0);
   const content = useRef<HTMLDivElement>(null);
   const [removing, setRemoving] = useState<ListedDestination | undefined>();
   const [tests, setTests] = useState<Tests>({});
@@ -243,31 +250,43 @@ export function PublishDialog({
 
   /** Draws `next`'s form in place of the list, the focus to come back to `from` after it. */
   const edit = (next: Editing, from: string) => {
-    returnTo.current = [from, ADD_BUTTON];
+    returnTo.current = { marks: [from, ADD_BUTTON], after: 0 };
     setEditing(next);
   };
-  /** Back to the list, after Back or a Save. */
-  const leave = () => setEditing(undefined);
+  /** Back to the list after Back. */
+  const leave = () => {
+    madeSite.current = undefined;
+    setEditing(undefined);
+  };
+  /** Back to the list after `saved` is saved: the focus to its row, once the list is read again. */
+  const leaveSaved = (saved: PublishDestination) => {
+    returnTo.current = {
+      marks: [`[data-destination-edit="${saved.id}"]`, ADD_BUTTON],
+      after: reads.current + 1,
+    };
+    setEditing(undefined);
+    reload();
+  };
 
-  // Closed, it opens on its list again.
-  useEffect(() => {
-    if (!open) setEditing(undefined);
-  }, [open]);
-
-  // Back on the list, the focus returns to what opened the form: the row's Edit, the card, or Add.
-  // A new destination's row may come with the list read again, so it's tried on each.
+  // Back on the list, the focus returns to what opened the form (the row's Edit, the card, or Add),
+  // or after a Save to the saved row. After the commit, so the form's going, which drops the focus
+  // it had, can't undo it; and again as the list is read, until it's there.
   // biome-ignore lint/correctness/useExhaustiveDependencies: tried again as the list is read.
   useEffect(() => {
-    const marks = returnTo.current;
-    if (editing !== undefined || marks === undefined) return;
-    for (const mark of marks) {
-      const target = content.current?.querySelector<HTMLElement>(mark);
-      if (target !== null && target !== undefined && !target.matches(":disabled")) {
-        target.focus();
-        returnTo.current = undefined;
+    const target = returnTo.current;
+    if (editing !== undefined || target === undefined || reads.current < target.after) {
+      return undefined;
+    }
+    const later = setTimeout(() => {
+      for (const mark of target.marks) {
+        const found = content.current?.querySelector<HTMLElement>(mark);
+        if (found === null || found === undefined || found.matches(":disabled")) continue;
+        found.focus();
+        if (found.ownerDocument.activeElement === found) returnTo.current = undefined;
         return;
       }
-    }
+    }, 0);
+    return () => clearTimeout(later);
   }, [editing, listed]);
 
   // Read afresh each time the dialog opens, and after each change.
@@ -278,6 +297,7 @@ export function PublishDialog({
     publish.destinations(sessionId()).then(
       (result) => {
         if (!current) return;
+        reads.current += 1;
         setListed(result.status === "listed" ? result.destinations : "unreadable");
         if (result.status === "listed") {
           onListed?.(result.destinations.map(({ destination }) => destination));
@@ -326,9 +346,8 @@ export function PublishDialog({
       saved.trust,
     );
     if (result.status === "saved") {
-      leave();
+      leaveSaved(result.destination);
       onSaved(result.destination);
-      reload();
       return;
     }
     notify(
@@ -381,9 +400,8 @@ export function PublishDialog({
     );
     if (result.status === "saved") {
       madeSite.current = undefined;
-      leave();
+      leaveSaved(result.destination);
       onSaved(result.destination);
-      reload();
       return;
     }
     notify(
@@ -416,6 +434,13 @@ export function PublishDialog({
           // them (#1456); a column while the form shows, so its fields can scroll.
           className={editing === undefined ? "sm:max-w-2xl" : "flex flex-col sm:max-w-2xl"}
           onOpenAutoFocus={focusPastUnpublished}
+          // Closed (from the form too, by Esc or the X), it opens on its list next time, with
+          // nothing of the form kept: not as it closes, which would draw the list as it fades.
+          onCloseAutoFocus={() => {
+            setEditing(undefined);
+            returnTo.current = undefined;
+            madeSite.current = undefined;
+          }}
         >
           {/*
             A destination's form is a step of this dialog (#1456): drawn in place of the list, with
@@ -436,10 +461,7 @@ export function PublishDialog({
                   })}
               netlify={netlify}
               onSave={saveNetlify}
-              onBack={() => {
-                madeSite.current = undefined;
-                leave();
-              }}
+              onBack={leave}
             />
           ) : editing?.kind === "file-transfer" ? (
             <FileTransferDestinationForm
