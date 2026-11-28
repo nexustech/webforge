@@ -1,0 +1,52 @@
+diff --git a/dist/index.js b/dist/index.js
+index b0720f20151604c8c207f40cbe73128001bac032..632787a3d4b4d0c98f0e7706412e9cc7d2491700 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -105,6 +105,7 @@ var FocusScope = /* @__PURE__ */ React.forwardRef(
+         }, handleMutations2 = function(mutations) {
+           const focusedElement = document.activeElement;
+           if (focusedElement !== document.body) return;
++          if (stillFocusable(lastFocusedElementRef.current)) return;
+           for (const mutation of mutations) {
+             if (mutation.removedNodes.length > 0) focus(container);
+           }
+@@ -267,6 +268,13 @@ function isHidden(node, { upTo }) {
+   return false;
+ }
+ __name(isHidden, "isHidden");
++function stillFocusable(element) {
++  if (!element || !element.isConnected) return false;
++  if (element.disabled || element.closest("[inert]") !== null) return false;
++  if (element.closest("[hidden]") !== null) return false;
++  return !isHidden(element, { upTo: void 0 });
++}
++__name(stillFocusable, "stillFocusable");
+ function isSelectableInput(element) {
+   return element.tagName === "INPUT" && typeof element.select === "function";
+ }
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 692ec7d0d36895f87ec69c0811efc562b2e5ca82..7fb7d06ee4ae07909bb365ac87a7bc014437da0d 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -67,6 +67,7 @@ var FocusScope = /* @__PURE__ */ React.forwardRef(
+         }, handleMutations2 = function(mutations) {
+           const focusedElement = document.activeElement;
+           if (focusedElement !== document.body) return;
++          if (stillFocusable(lastFocusedElementRef.current)) return;
+           for (const mutation of mutations) {
+             if (mutation.removedNodes.length > 0) focus(container);
+           }
+@@ -229,6 +230,13 @@ function isHidden(node, { upTo }) {
+   return false;
+ }
+ __name(isHidden, "isHidden");
++function stillFocusable(element) {
++  if (!element || !element.isConnected) return false;
++  if (element.disabled || element.closest("[inert]") !== null) return false;
++  if (element.closest("[hidden]") !== null) return false;
++  return !isHidden(element, { upTo: void 0 });
++}
++__name(stillFocusable, "stillFocusable");
+ function isSelectableInput(element) {
+   return element.tagName === "INPUT" && typeof element.select === "function";
+ }
